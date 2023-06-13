@@ -1,10 +1,14 @@
 
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.CMDBPORT || 8222;
+const dbuser = process.env.CMDBUSER || "cmdb";
+const dbpass = process.env.CMDBPASS ||  '7^!2Ujd8oJQn';
+const dbhost = process.env.CMDBHOST ||  'localhost';
+const dbschema = process.env.CMDBSCHEMA ||  'tenfour_cmdb';
 
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize('cmdb', 'cmdb', '7^!2Ujd8oJQn', {
+const sequelize = new Sequelize('tenfour_cmdb', dbuser, dbpass, {
   host: 'localhost',
   dialect: 'mysql',
 });

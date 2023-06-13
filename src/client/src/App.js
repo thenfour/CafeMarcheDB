@@ -6,7 +6,7 @@ import io from 'socket.io-client';
 const MyComponent = () => {
   useEffect(() => {
     // Create a WebSocket connection
-    const socket = io('http://localhost:3000'); // Replace with your server URL
+    const socket = io('http://localhost:8222'); // Replace with your server URL
 
     // Event listeners
     socket.on('connect', () => {
