@@ -1,0 +1,14 @@
+{
+  "development": {
+    "storage": "cmdb.sqlite",
+    "dialect": "sqlite"
+  },
+  "test": {
+    "storage": "cmdb.sqlite",
+    "dialect": "sqlite"
+  },
+  "production": {
+    "storage": "cmdb.sqlite",
+    "dialect": "sqlite"
+  }
+}
