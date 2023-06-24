@@ -40,6 +40,8 @@ const UserInfo = () => {
         <Link href={Routes.SignupPage()} className={styles.button}>
           <strong>Sign Up</strong>
         </Link>
+        <Link href="/api/auth/auth0"><strong>auth0</strong></Link>
+        <Link href="/api/auth/google">Link Log In With Google</Link>
         <Link href={Routes.LoginPage()} className={styles.loginButton}>
           <strong>Login</strong>
         </Link>
