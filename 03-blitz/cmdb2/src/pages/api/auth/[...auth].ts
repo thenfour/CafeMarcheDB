@@ -14,38 +14,22 @@ export default api(
       {
         strategy: new GoogleStrategy(
           {
-            //scope: ["google", "scopes"], // email profile ... ?
             scope: ["openid", "email", "profile"],
-            //prompt: "consent",
-            //accessType: "online",
-            //includeGrantedScopes: true,
-
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: process.env.GOOGLE_CALLBACK_URL,
 
           },
           async function (accessToken, refreshToken, params, profile, done) {
-            // Create user and call done
-            //console.log(` user token: ${accessToken}`);
-            //console.log(`${typeof db.user}`);
-
             // find or create user with this google ID.
             // 1. matching googleID on existing user
             // 2. matching email & no matching googleID. on existing user
             // 3. create new.
 
-            // upsert won't work because it doesn't support all that logic, at least not in a simple enough way to justify.
-            //const session = await getSession(req, res);
-
             try {
               const email = profile.emails[0].value.toLowerCase();
               const googleId = profile.id;
               const displayName = profile.displayName;
-
-              //const user = await db.user.findFirst({ where: { email: email.toLowerCase() } })
-
-              //await prisma.$queryRaw("SELECT pg_notify('prisma', '');");
 
               let user = await db.user.findFirst({
                 where: {
@@ -69,6 +53,8 @@ export default api(
                     data: { googleId },
                   });
                 } else {
+                  // i should just create separate schema validation/mutation for when a user uses a password vs. external auth.
+                  // but whatever; simpler to just supply a password that will never be used.
                   user = await signupMutation({ email, googleId, password: "1234567890!@#$%^&aoeuAOEU", name: displayName }, ctx);
                 }
               }
@@ -80,40 +66,6 @@ export default api(
           }
         ),
       }, // new google strategy
-      {
-        strategy: new Auth0Strategy(
-          {
-            scope: ["openid", "email", "profile"],
-            clientID: process.env.AUTH0_CLIENT_ID,
-            clientSecret: process.env.AUTH0_CLIENT_SECRET,
-            callbackURL: process.env.AUTH0_CALLBACK_URL,
-            domain: process.env.AUTH0_DOMAIN,
-          },
-          async function (accessToken, refreshToken, params, profile, done) {
-            // Create user and call done
-            //console.log(` user token: ${accessToken}`);
-            //console.log(`${typeof db.user}`);
-
-            // find or create user with this google ID.
-            // 1. matching googleID on existing user
-            // 2. matching email & no matching googleID. on existing user
-            // 3. create new.
-
-            // upsert won't work because it doesn't support all that logic, at least not in a simple enough way to justify.
-            //const session = await getSession(req, res);
-
-            try {
-              const email = profile.emails[0].value.toLowerCase();
-              const googleId = profile.id;
-              const displayName = profile.displayName;
-
-              done(null, false);
-            } catch (err) {
-              done(null, false);
-            }
-          }
-        ),
-      } // auth0 strategy,
     ],
   }))
 )

@@ -18,7 +18,7 @@ export const LoginForm = (props: LoginFormProps) => {
       <h1>Login</h1>
 
       <Form
-        submitText="Login"
+        submitText="Loginh"
         schema={Login}
         initialValues={{ email: "", password: "" }}
         onSubmit={async (values) => {
@@ -39,14 +39,14 @@ export const LoginForm = (props: LoginFormProps) => {
       >
         <LabeledTextField name="email" label="Email" placeholder="Email" />
         <LabeledTextField name="password" label="Password" placeholder="Password" type="password" />
-        <div>
-          <Link href={Routes.ForgotPasswordPage()}>Forgot your password?</Link>
-        </div>
       </Form>
-
-      <div style={{ marginTop: "1rem" }}>
-        Or <Link href={Routes.SignupPage()}>Sign Up</Link>
+      <div>
+        <Link href={Routes.ForgotPasswordPage()}>Forgot your password?</Link>
       </div>
+
+      {/* <div style={{ marginTop: "1rem" }}>
+        Or <Link href={Routes.SignupPage()}>Sign Up</Link>
+      </div> */}
     </div>
   )
 }
