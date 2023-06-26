@@ -40,7 +40,7 @@ export const MyMenu = () => (
 
 const DashboardMain = () => {
     //const dataProvider = fakeRestDataProvider(data, true);
-    const dataProvider = blitzDataProvider({ invoke, searchEntities });
+    const dataProvider = blitzDataProvider({ invoke, searchEntities, handlerRoot: 'src' });
     const [logoutMutation] = useMutation(logout)
 
     return (

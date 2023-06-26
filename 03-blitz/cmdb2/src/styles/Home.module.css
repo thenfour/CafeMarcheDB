@@ -1,4 +1,4 @@
-.container {
+/* .container {
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -284,7 +284,7 @@
   fill: #7450ec;
 }
 
-/* MOBILE */
+
 @media (max-width: 800px) {
   .linkGrid {
     width: 100%;
@@ -301,4 +301,4 @@
   .buttonContainer {
     flex-wrap: wrap;
   }
-}
+} */
