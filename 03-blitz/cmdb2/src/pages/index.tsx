@@ -8,7 +8,9 @@ import { Routes, BlitzPage } from "@blitzjs/next"
 import styles from "src/styles/Home.module.css"
 import { LoginForm } from "src/auth/components/LoginForm"
 import { useRouter } from "next/router"
-import DashboardMain from "src/core/components/DashboardMain"
+//import DashboardMain from "src/core/components/DashboardMain"
+import Dashboard2 from "src/core/components/Dashboard2"
+import UserAppBarIcon from "src/core/components/UserAppBarIcon";
 
 
 const LoginSignup = () => {
@@ -37,9 +39,10 @@ const Home2 = () => {
   const currentUser = useCurrentUser()
 
   if (currentUser) {
-    return <>
-      <DashboardMain></DashboardMain>
-    </>;
+    return (
+      <Dashboard2></Dashboard2>
+      //<UserAppBarIcon></UserAppBarIcon>
+    );
   }
 
   // no user:

@@ -45,11 +45,11 @@ export function Form<S extends z.ZodType<any, any>>({
             </button>
           )}
 
-          <style global={undefined} jsx={undefined}>{`
+          {/* <style global={undefined} jsx={undefined}>{`
             .form > * + * {
               margin-top: 1rem;
             }
-          `}</style>
+          `}</style> */}
         </form>
       )}
     />
