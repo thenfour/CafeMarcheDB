@@ -29,6 +29,11 @@ export default function UserAppBarIcon() {
         setAnchorEl(null);
     };
 
+    const handleLogout = async () => {
+        await logoutMutation();
+        handleClose();
+    };
+
     return (
         <Box>
             <IconButton
@@ -57,7 +62,7 @@ export default function UserAppBarIcon() {
                 onClose={handleClose}
             >
                 <MenuItem onClick={handleClose}>Profile</MenuItem>
-                <MenuItem onClick={handleClose}>My account</MenuItem>
+                <MenuItem onClick={handleLogout}>Log out</MenuItem>
             </Menu>
         </Box>
     );

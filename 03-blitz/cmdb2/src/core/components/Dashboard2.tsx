@@ -1,26 +1,26 @@
 //  https://codesandbox.io/s/material-ui-responsive-drawer-skqdw?resolutionWidth=1292&resolutionHeight=758&file=/src/App.js
-//import React from "react";
-import * as React from 'react';
+// import Drawer from "@material-ui/core/Drawer";
 import { makeStyles, useTheme } from "@material-ui/core/styles";
-import useMediaQuery from "@material-ui/core/useMediaQuery";
-import Drawer from "@material-ui/core/Drawer";
+// import useMediaQuery from "@material-ui/core/useMediaQuery";
+import Link from "next/link";
+import * as React from 'react';
 //import CssBaseline from "@material-ui/core/CssBaseline";
-import AppBar from "@material-ui/core/AppBar";
-import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
-import List from "@material-ui/core/List";
-import Typography from "@material-ui/core/Typography";
-import Divider from "@material-ui/core/Divider";
-import ListItem from "@material-ui/core/ListItem";
-import ListItemIcon from "@material-ui/core/ListItemIcon";
-import ListItemText from "@material-ui/core/ListItemText";
+// import AppBar from "@material-ui/core/AppBar";
+// import Divider from "@material-ui/core/Divider";
+// import IconButton from "@material-ui/core/IconButton";
+// import List from "@material-ui/core/List";
+// import ListItem from "@material-ui/core/ListItem";
+// import ListItemIcon from "@material-ui/core/ListItemIcon";
+// import ListItemText from "@material-ui/core/ListItemText";
+// import Toolbar from "@material-ui/core/Toolbar";
+// import Typography from "@material-ui/core/Typography";
+import HomeIcon from '@mui/icons-material/Home';
 import LabelIcon from '@mui/icons-material/Label';
 import MenuIcon from '@mui/icons-material/Menu';
 //import AccountCircle from '@mui/icons-material/AccountCircle';
+import { AppBar, Box, Drawer, IconButton, List, ListItem, ListItemIcon, ListItemText, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import UserAppBarIcon from "src/core/components/UserAppBarIcon";
-import { Box } from '@mui/material';
-import MenuItem from '@mui/material/MenuItem';
-import Menu from '@mui/material/Menu';
+//import { useTheme } from "@emotion/react";
 
 const drawerWidth = 200;
 
@@ -45,10 +45,10 @@ const useStyles = makeStyles(theme => ({
         }
     },
     toolbar: {
-        ...theme.mixins.toolbar, // a dummy toolbar element pushing drawer icons down below the appbar. for small screens this padding is not desired because it's on top of the appbar.
-        [theme.breakpoints.down("sm")]: {
-            display: "none"
-        }
+        ...theme.mixins.toolbar, // a dummy toolbar element pushing drawer icons down below the appbar.
+        // [theme.breakpoints.down("sm")]: { // for small screens this padding is not desired because it's on top of the appbar.
+        //     display: "none"
+        // }
     },
     content: {
         flexGrow: 1,
@@ -60,10 +60,13 @@ const useStyles = makeStyles(theme => ({
     }
 }));
 
-const Dashboard2 = () => {
-    const classes = useStyles();
+const Dashboard2 = ({ children }) => {
+
     const theme = useTheme();
+    const classes = useStyles();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+    //const isMdUp = true;
+    //const classes = {};
 
     const [open, setOpen] = React.useState(false);
 
@@ -109,22 +112,23 @@ const Dashboard2 = () => {
             >
                 <div className={classes.toolbar} />
                 <List>
-                    {["Inbox", "Starred", "Send email", "Drafts"].map((text, index) => (
-                        <ListItem button key={text}>
-                            <ListItemIcon><LabelIcon /></ListItemIcon>
-                            <ListItemText primary={text} />
-                        </ListItem>
-                    ))}
+                    <ListItem button key="home">
+                        <ListItemIcon><HomeIcon /></ListItemIcon>
+                        <ListItemText primary="Home" />
+                    </ListItem>
+                    <ListItem button key="aoeu">
+                        <ListItemIcon><LabelIcon /></ListItemIcon>
+                        <ListItemText primary="Users" />
+                    </ListItem>
+                    <ListItem button component={Link} href="/">
+                        <ListItemText primary="home?" />
+                    </ListItem>
                 </List>
             </Drawer>
             <main className={classes.content}>
                 <Toolbar />
-                <Typography component="h2" variant="h6" gutterBottom>
-                    On small and extra-small screens the sidebar/drawer is temporary and
-                    can be opened via the menu icon in the toolbar.
-                </Typography>
+                {children}
             </main>
-            {/* </div> */}
         </Box>
     );
 }
