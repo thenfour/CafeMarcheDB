@@ -1,5 +1,5 @@
+import { BlitzPage, Routes } from "@blitzjs/next";
 import { Suspense } from "react";
-import { Routes } from "@blitzjs/next";
 import Head from "next/head";
 import Link from "next/link";
 import { usePaginatedQuery } from "@blitzjs/rpc";
@@ -30,12 +30,12 @@ export const QuestionsList = () => {
               {question.text}
             </Link>
             <ul>
-       {question.choices.map((choice) => (
-         <li key={choice.id}>
-           {choice.text} - {choice.votes} votes
-         </li>
-       ))}
-     </ul>
+              {question.choices.map((choice) => (
+                <li key={choice.id}>
+                  {choice.text} - {choice.votes} votes
+                </li>
+              ))}
+            </ul>
           </li>
         ))}
       </ul>
@@ -50,7 +50,7 @@ export const QuestionsList = () => {
   );
 };
 
-const QuestionsPage = () => {
+const QuestionsPage: BlitzPage = () => {
   return (
     <Layout>
       <Head>
@@ -69,5 +69,8 @@ const QuestionsPage = () => {
     </Layout>
   );
 };
+
+//QuestionsPage.authenticate = { role: "ROLE_ADMIN" }
+QuestionsPage.authenticate = { role: "ADMIN" }
 
 export default QuestionsPage;

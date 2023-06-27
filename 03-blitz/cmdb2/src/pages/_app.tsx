@@ -24,6 +24,7 @@ function RootErrorFallback({ error }: ErrorFallbackProps) {
   if (error instanceof AuthenticationError) {
     return <div>Error: You are not authenticated</div>
   } else if (error instanceof AuthorizationError) {
+    console.log(`${error.message || error.name}`);
     return (
       <ErrorComponent
         statusCode={error.statusCode}

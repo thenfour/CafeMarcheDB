@@ -10,7 +10,7 @@ export default resolver.pipe(resolver.zod(Signup), async ({ email, password, nam
     data: {
       email: email.toLowerCase().trim(),
       hashedPassword,
-      role: "USER",
+      role: "ROLE_USER",
       name,
       googleId,
     },

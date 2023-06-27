@@ -2,7 +2,7 @@
 // import Drawer from "@material-ui/core/Drawer";
 import { useTheme } from "@mui/material/styles";
 // import useMediaQuery from "@material-ui/core/useMediaQuery";
-import { css } from '@emotion/react';
+//import { css } from '@emotion/react';
 import Link from "next/link";
 import * as React from 'react';
 //import CssBaseline from "@material-ui/core/CssBaseline";
@@ -107,9 +107,6 @@ const Dashboard2 = ({ children }) => {
                     width: drawerWidth
                 }}
                 variant={isMdUp ? "permanent" : "temporary"}
-                classes={{
-                    paper: classes.drawerPaper
-                }}
                 anchor="left"
                 open={open}
                 onClose={toggleDrawer}
@@ -129,6 +126,9 @@ const Dashboard2 = ({ children }) => {
                     </ListItem>
                     <ListItem component={Link} href="/questions">
                         <ListItemText primary="questions" />
+                    </ListItem>
+                    <ListItem component={Link} href="/users">
+                        <ListItemText primary="users" />
                     </ListItem>
                 </List>
             </Drawer>
