@@ -59,7 +59,7 @@ export default api(
                 }
               }
 
-              done(null, { publicData: { userId: user.id } });
+              done(null, { publicData: { userId: user.id, role: user.role } });
             } catch (err) {
               done(null, false);
             }

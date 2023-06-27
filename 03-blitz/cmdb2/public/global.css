@@ -1,0 +1,7 @@
+:root {
+    --drawer-paper-width: 1000px;
+  }
+
+.MuiDrawer-paper {
+    width: var(--drawer-paper-width);
+}

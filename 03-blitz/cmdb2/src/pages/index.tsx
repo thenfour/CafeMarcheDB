@@ -1,32 +1,18 @@
 import { BlitzPage, Routes } from "@blitzjs/next";
-import { useMutation } from "@blitzjs/rpc";
-//import { AppBar, Paper, Toolbar } from '@mui/core';
-//import CssBaseline from "@material-ui/core/CssBaseline";
+import Backdrop from '@mui/material/Backdrop';
+import CircularProgress from '@mui/material/CircularProgress';
+import Button from '@mui/material/Button';
+//import { Backdrop, CircularProgress } from "@material-ui/core";
 import { AppBar } from "@mui/material";
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
-import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Link from "next/link";
 import { useRouter } from "next/router";
-import * as React from 'react';
 import { Suspense } from "react";
-import ReactDOM from 'react-dom/client';
 import { LoginForm } from "src/auth/components/LoginForm";
-import logout from "src/auth/mutations/logout";
 import Dashboard2 from "src/core/components/Dashboard2";
-import Dashboard3 from "src/core/components/Dashboard3";
-import UserAppBarIcon from "src/core/components/UserAppBarIcon";
 import Test from 'src/core/components/test';
-import Layout from "src/core/layouts/Layout";
 import { useCurrentUser } from "src/users/hooks/useCurrentUser";
-
-// import { createTheme, ThemeProvider } from '@mui/material/styles';
-// import { themeOptions } from "src/core/theme"
-
-//const theme = createTheme(themeOptions);
 
 const LoginSignup = () => {
   const router = useRouter()
@@ -73,18 +59,15 @@ const Home2 = () => {
 
 const Home: BlitzPage = () => {
 
-  // return (
-  //   <div>
-  //     <Button variant="text">Text</Button>
-  //     <Button variant="contained">Contained</Button>
-  //     <Button variant="outlined">Outlined</Button>
-  //   </div>
-  // );
 
-  // return <></>;
+  const fallback =
+    <Backdrop open={true} sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <CircularProgress color="inherit" />
+    </Backdrop>
+    ;
 
   return (
-    <Suspense fallback="Loading...">
+    <Suspense fallback={fallback}>
       <Home2></Home2>
     </Suspense>
   )
@@ -92,19 +75,19 @@ const Home: BlitzPage = () => {
 
 
 
-const Home3: BlitzPage = () => {
+// const Home3: BlitzPage = () => {
 
-  return <Box>
-    <AppBar position="relative" color="primary">
-      ntaoheu
-    </AppBar>
-    <Test>
-    </Test>
-  </Box>
-    ;
+//   return <Box>
+//     <AppBar position="relative" color="primary">
+//       ntaoheu
+//     </AppBar>
+//     <Test>
+//     </Test>
+//   </Box>
+//     ;
 
-  //return <Box><Test></Test></Box>;
-}
+//   //return <Box><Test></Test></Box>;
+// }
 
 
 
