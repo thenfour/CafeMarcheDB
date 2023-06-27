@@ -1,7 +1,15 @@
 :root {
     --drawer-paper-width: 1000px;
+    --data-grid-column-header-background-color: #f0f0f0;
   }
 
 .MuiDrawer-paper {
     width: var(--drawer-paper-width);
+}
+
+.MuiDataGrid-columnHeaders {
+  background-color: var(--data-grid-column-header-background-color);
+}
+.MuiDataGrid-footerContainer {
+  background-color: var(--data-grid-column-header-background-color);
 }
