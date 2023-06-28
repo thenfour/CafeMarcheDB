@@ -17,11 +17,21 @@ export const password = z
   .max(100)
   .transform((str) => str.trim())
 
+export const role = z
+  .string()
+
 export const Signup = z.object({
   email,
   password,
   name,
   googleId,
+})
+
+export const UpdateUserFromGrid = z.object({
+  id: z.number(),
+  email,
+  name,
+  role,
 })
 
 export const Login = z.object({

@@ -9,6 +9,7 @@ import { withBlitz } from "src/blitz-client";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
 import '../../public/global.css';
+import React from "react";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -50,6 +51,7 @@ function MyApp({
   emotionCache = clientSideEmotionCache
 }: MyAppProps) {
   const getLayout = Component.getLayout || ((page) => page)
+
   return (
     <CacheProvider value={emotionCache}>
       <ThemeProvider theme={theme}>

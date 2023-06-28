@@ -13,6 +13,7 @@ import { LoginForm } from "src/auth/components/LoginForm";
 import Dashboard2 from "src/core/components/Dashboard2";
 import Test from 'src/core/components/test';
 import { useCurrentUser } from "src/users/hooks/useCurrentUser";
+import { css } from '@emotion/react'
 
 const LoginSignup = () => {
   const router = useRouter()
@@ -46,6 +47,16 @@ const Home2 = () => {
           On small and extra-small screens the sidebar/drawer is temporary and
           can be opened via the menu icon in the toolbar.
         </Typography>
+        <div
+          css={{
+            backgroundColor: 'hotpink',
+            '&:hover': {
+              color: 'lightgreen'
+            }
+          }}
+        >
+          This has a hotpink background.
+        </div>
       </Dashboard2>
     );
   }
@@ -72,25 +83,6 @@ const Home: BlitzPage = () => {
     </Suspense>
   )
 }
-
-
-
-// const Home3: BlitzPage = () => {
-
-//   return <Box>
-//     <AppBar position="relative" color="primary">
-//       ntaoheu
-//     </AppBar>
-//     <Test>
-//     </Test>
-//   </Box>
-//     ;
-
-//   //return <Box><Test></Test></Box>;
-// }
-
-
-
 
 
 export default Home;

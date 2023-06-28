@@ -1,6 +1,7 @@
 :root {
     --drawer-paper-width: 1000px;
     --data-grid-column-header-background-color: #f0f0f0;
+    --primary-color: red;
   }
 
 .MuiDrawer-paper {
@@ -12,4 +13,8 @@
 }
 .MuiDataGrid-footerContainer {
   background-color: var(--data-grid-column-header-background-color);
+}
+
+.hoverActionIcon:hover {
+  color: var(--primary-color);
 }
