@@ -14,6 +14,10 @@
 //  - filtering
 //  - sorting
 //  - pagination
+// RESPONSIVE
+//   list of cards feels the most useful: https://github.com/mui/mui-x/issues/6460#issuecomment-1409912710
+// FILTERING
+//   stuff like freeform text + tag text or something may require custom
 import { useAuthorize, useSession } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
@@ -22,10 +26,11 @@ import CancelIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
-import { Backdrop, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Pagination, Stack } from "@mui/material";
+import { Backdrop, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, Pagination, Stack, TextField } from "@mui/material";
 import Alert, { AlertProps } from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import { useTheme } from "@mui/material/styles";
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
     DataGrid,
     GridActionsCellItem,
@@ -51,23 +56,102 @@ import Dashboard2 from "src/core/components/Dashboard2";
 import { useCurrentUser } from "src/users/hooks/useCurrentUser";
 import updateUserFromGrid from "src/users/mutations/updateUserFromGrid";
 import getUsers from "src/users/queries/getUsers";
-import db from "db"
+//import db from "db"
+import { Signup as NewUserSchema } from "src/auth/schemas"
+import NewUserMutationSpec from "src/auth/mutations/signup"
 
-function CustomToolbar() {
+function ValidationTextField({ schema, field, label, obj, onChange }) {
+    const [text, setText] = React.useState(obj[field]);
+    const [errorText, setErrorText] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        const inp = { [field]: text };
+        schema.pick({ [field]: true }).safeParseAsync(inp).then((res) => {
+            setErrorText(res.success ? null : "error");
+        });
+    }, [text]);
+
+    return (
+        <TextField
+            id={field}
+            label={label}
+            error={!!errorText}
+            helperText={errorText}
+            onChange={(e) => { setText(e.target.value); onChange(e); }}
+            value={text}
+            margin="dense"
+            type="text"
+            fullWidth
+            variant="filled"
+            inputProps={{
+                'data-lpignore': true, // supposedly prevent lastpass from auto-completing. doesn't work for me tho
+            }}
+        />
+    );
+}
+
+function AddUserDialog({ onOK, onCancel, initialObj }) {
+    const theme = useTheme();
+    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+    const [obj, setObj] = React.useState(initialObj);
+
+    const handleOK = (e) => {
+        onOK(obj);
+    };
+
+    return (
+        <Dialog
+            open={true}
+            onClose={onCancel}
+            scroll="paper"
+            fullScreen={fullScreen}
+        >
+            <DialogTitle>New user</DialogTitle>
+            <DialogContent dividers>
+                <DialogContentText>
+                    To subscribe to this website, please enter your email address here. We
+                    will send updates occasionally.
+                </DialogContentText>
+                <FormControl>
+                    <ValidationTextField field="name" label="Name" schema={NewUserSchema} obj={obj} onChange={(e) => {
+                        obj["name"] = e.target.value;
+                        console.log(obj);
+                        setObj(obj);
+                    }}></ValidationTextField>
+                    <ValidationTextField field="email" label="Email" schema={NewUserSchema} obj={obj} onChange={(e) => {
+                        obj["email"] = e.target.value;
+                        console.log(obj);
+                        setObj(obj);
+                    }}></ValidationTextField>
+                </FormControl>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onCancel}>Cancel</Button>
+                <Button onClick={handleOK}>OK</Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+function CustomToolbar({ onNewClicked }) {
     return (
         <GridToolbarContainer>
-            <Button startIcon={<AddIcon />} href="/users/add">
+            <Button startIcon={<AddIcon />} onClick={onNewClicked}>
                 New user
             </Button>
-            <GridToolbarColumnsButton />
+
+            {/* <GridToolbarColumnsButton /> */}
             <GridToolbarFilterButton />
             {/* <GridToolbarDensitySelector /> */}
-            <GridToolbarExport />
+            {/* <GridToolbarExport /> */}
             <GridToolbarQuickFilter />
         </GridToolbarContainer>
     );
 }
 
+// todo: the main point of this is to return whether the data has changed or not.
+// as a side-effect, it can also therefore show WHAT changed. whether this is useful or not remains to be seen.
+// if so, structure it better.
 function computeMutation(newRow: GridRowModel, oldRow: GridRowModel) {
     if (newRow.name !== oldRow.name) {
         return `name changed'`;
@@ -81,21 +165,7 @@ function computeMutation(newRow: GridRowModel, oldRow: GridRowModel) {
     return null;
 }
 
-function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-const useMutationWrapper = (mutation) => {
-    const cb = async (user) => {
-        return await mutation(user);
-    };
-    return React.useCallback(
-        cb, // fn to callback
-        [], // dependencies
-    );
-};
-
-const Inner = () => {
+const UserGrid = () => {
     useAuthorize();
     const currentUser = useCurrentUser();
     const session = useSession();
@@ -109,8 +179,7 @@ const Inner = () => {
 
     // allow code to invoke the snackbar
     const [snackbar, setSnackbar] = React.useState<Pick<AlertProps, 'children' | 'severity'> | null>(null);
-    const [updateUserFromGridMutationRaw] = useMutation(updateUserFromGrid);
-    const updateUserFromGridMutation = useMutationWrapper(updateUserFromGridMutationRaw);
+    const [updateUserFromGridMutation] = useMutation(updateUserFromGrid);
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState({
@@ -179,9 +248,8 @@ const Inner = () => {
         [],
     );
 
-    // const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
-    //     setRowModesModel(newRowModesModel);
-    // };
+    const [showingNewDialog, setShowingNewDialog] = React.useState<boolean>(false);
+    //AddUserDialog
 
     const columns: GridColDef[] = [
         { field: 'id', headerName: 'id' },
@@ -238,35 +306,22 @@ const Inner = () => {
         setPromiseArguments(null);
     };
 
-    const handleYes = async () => {
+    const handleYes = () => {
         const { newRow, oldRow, reject, resolve, mutation } = promiseArguments;
-        console.log(`handling yes...`);
-        const id = newRow.id;
-
         try {
-            // Make the HTTP request to save in the backend
-            //const updatedObj = await updateUserFromGridMutation(newRow);
             updateUserFromGridMutation(newRow).then((updatedObj) => {
-                console.log(`updateUserFromGridMutation returned; updated object: `);
-                console.log(updatedObj);
                 setSnackbar({ children: 'User successfully saved', severity: 'success' });
                 refetch();
-            });
-            //await sleep(100);
-
-            console.log(`resolving temporarily with the optimistic values...`);
-            resolve(newRow);
-            console.log(`setting promise arguments...`);
-            setPromiseArguments(null);
-
-            //setSnackbar({ children: 'User successfully saved', severity: 'success' });
-            console.log(`and this should be success?`);
+            }).catch((reason => {
+                setSnackbar({ children: "Some server error", severity: 'error' });
+                refetch(); // should revert the data.
+            }));
+            resolve(newRow); // optimistic
         } catch (error) {
-            console.log(`updateUserFromGridMutation seems to have thrown exception: ${error}`);
             setSnackbar({ children: "Some server error", severity: 'error' });
             reject(oldRow);
-            setPromiseArguments(null);
         }
+        setPromiseArguments(null);
     };
 
     const renderConfirmDialog = () => {
@@ -290,8 +345,32 @@ const Inner = () => {
         );
     };
 
+    const [newUserMutation] = useMutation(NewUserMutationSpec);
+
+    const onAddUserOK = (obj) => {
+        newUserMutation(obj).then(() => {
+            setSnackbar({ children: 'New user success', severity: 'success' });
+            //newUserActions.refetch();
+            refetch();
+        }).catch(err => {
+            setSnackbar({ children: "Some server error when adding", severity: 'error' });
+        });
+        setShowingNewDialog(false);
+    };
+
+    const initialObj = {
+        name: "",
+        email: "",
+        password: "1234567890!@#$%^&aoeuAOEU",
+    };
+
     return (<>
         {renderConfirmDialog()}
+        {!!showingNewDialog && <AddUserDialog
+            onCancel={() => { setShowingNewDialog(false); }}
+            onOK={onAddUserOK}
+            initialObj={initialObj}
+        ></AddUserDialog>}
         <DataGrid
             // basic config
             editMode="row"
@@ -299,7 +378,12 @@ const Inner = () => {
             checkboxSelection
             disableRowSelectionOnClick
             slots={{
-                toolbar: CustomToolbar,//GridToolbar,//EditToolbar,
+                toolbar: CustomToolbar,
+            }}
+            slotProps={{
+                toolbar: {
+                    onNewClicked: () => { setShowingNewDialog(true); }
+                }
             }}
             //getRowClassName={(params) => `super-app-theme--${params.row.status}`}
 
@@ -362,7 +446,7 @@ const UserListPage: BlitzPage = () => {
     return (
         <Suspense fallback="loading">
             <Dashboard2>
-                <Inner></Inner>
+                <UserGrid></UserGrid>
             </Dashboard2>
         </Suspense>
     );
