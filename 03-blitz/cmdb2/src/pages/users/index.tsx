@@ -70,48 +70,16 @@ function CustomToolbar() {
 
 function computeMutation(newRow: GridRowModel, oldRow: GridRowModel) {
     if (newRow.name !== oldRow.name) {
-        return `Name from '${oldRow.name}' to '${newRow.name}'`;
+        return `name changed'`;
+    }
+    if (newRow.email !== oldRow.email) {
+        return `email changed`;
+    }
+    if (newRow.role !== oldRow.role) {
+        return `role changed`;
     }
     return null;
 }
-
-// const cb2 = (user: Partial<User>) => {
-//     return new Promise<Partial<User>>((resolve, reject) => {
-//         setTimeout(() => {
-//             if (user.name?.trim() === '') {
-//                 reject();
-//             } else {
-//                 resolve(user);
-//             }
-//         }, 200);
-//     });
-// }
-
-// const useFakeMutation = () => {
-//     return React.useCallback(
-//         cb2,
-//         [],
-//     );
-// };
-
-// const cb = async () => {
-//     return await new Promise((resolve) => {
-//         setTimeout(resolve, time);
-//     });
-// };
-// function useDelay(time = 1000) {
-//     return React.useCallback(cb, [time]);
-// }
-
-// const useMutationWrapper = (mutation) => {
-//     return React.useCallback(user =>
-//         return await mutation(user);
-//         // new Promise<Partial<User>>((resolve, reject) => {
-//         //     await mutation();
-//         // }),
-//         [],
-//     );
-// };
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -167,33 +135,14 @@ const Inner = () => {
         }
     }
 
-    const [{ users, hasMore, count }] = usePaginatedQuery(getUsers, {
+    const [{ users, hasMore, count }, { refetch }] = usePaginatedQuery(getUsers, {
         orderBy,//: { [sortModel[0].field]: sortModel[0].sort }, // 
         where,
         skip: paginationModel.pageSize * paginationModel.page,
         take: paginationModel.pageSize,
     });
 
-    // console.log(`users: `);
-    // console.log(users);
-
-
-    //const [rows, setRows] = React.useState(initialRows);
-    const [rowModesModel, setRowModesModel2] = React.useState({});
-
-    const setRowModesModel = (o) => {
-        console.log(`SETTING rowModesModel to: `);
-        console.log(o);
-        setRowModesModel2(o);
-    };
-    console.log(`rowModesModel: `);
-    console.log(rowModesModel);
-
-    const handleRowEditStop = (params, event) => {
-        if (params.reason === GridRowEditStopReasons.rowFocusOut) {
-            event.defaultMuiPrevented = true;
-        }
-    };
+    const [rowModesModel, setRowModesModel] = React.useState({});
 
     const handleEditClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
@@ -230,27 +179,15 @@ const Inner = () => {
         [],
     );
 
-    const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
-        console.log(`handleRowModesModelChange`);
-        setRowModesModel(newRowModesModel);
-    };
+    // const handleRowModesModelChange = (newRowModesModel: GridRowModesModel) => {
+    //     setRowModesModel(newRowModesModel);
+    // };
 
     const columns: GridColDef[] = [
         { field: 'id', headerName: 'id' },
-        { field: 'name', headerName: 'Name', editable: true, maxWidth: 350 },
-        { field: 'email', headerName: 'email', editable: true, maxWidth: 350 },
-        {
-            field: 'col2',
-            headerName: 'Column 2',
-            valueGetter: (params) => {
-
-                console.log(`col2 value getter... row:`);
-                console.log(params.row);
-                return `..${params.row.role || ''}..`;
-            },
-            renderCell: (params) => (params.value.name),
-            renderHeader: (params) => (<Box color="secondary">column 2</Box>)
-        },
+        { field: 'name', headerName: 'Name', editable: true, width: 150 },
+        { field: 'email', headerName: 'email', editable: true, width: 150 },
+        { field: 'role', headerName: 'role', editable: true, width: 150 },
         {
             field: 'actions',
             type: 'actions',
@@ -308,17 +245,21 @@ const Inner = () => {
 
         try {
             // Make the HTTP request to save in the backend
-            const updatedObj = await updateUserFromGridMutation(newRow);
+            //const updatedObj = await updateUserFromGridMutation(newRow);
+            updateUserFromGridMutation(newRow).then((updatedObj) => {
+                console.log(`updateUserFromGridMutation returned; updated object: `);
+                console.log(updatedObj);
+                setSnackbar({ children: 'User successfully saved', severity: 'success' });
+                refetch();
+            });
             //await sleep(100);
-            console.log(`updateUserFromGridMutation returned; updated object (id: ${id}): `);
-            console.log(updatedObj);
 
-            console.log(`resolving...`);
-            resolve(updatedObj);
+            console.log(`resolving temporarily with the optimistic values...`);
+            resolve(newRow);
             console.log(`setting promise arguments...`);
             setPromiseArguments(null);
 
-            setSnackbar({ children: 'User successfully saved', severity: 'success' });
+            //setSnackbar({ children: 'User successfully saved', severity: 'success' });
             console.log(`and this should be success?`);
         } catch (error) {
             console.log(`updateUserFromGridMutation seems to have thrown exception: ${error}`);
@@ -392,22 +333,19 @@ const Inner = () => {
             // sorting
             sortingMode="server"
             onSortModelChange={(model) => {
-                console.log(`sort model changing to ${JSON.stringify(model)}`);
                 setSortModel(model);
             }}
 
             // filtering
             filterMode="server"
             onFilterModelChange={(model) => {
-                console.log(`filter model changing to ${JSON.stringify(model)}`);
                 setFilterModel(model);
             }}
 
             // editing
             rowModesModel={rowModesModel}
-            onRowModesModelChange={handleRowModesModelChange}
-            onProcessRowUpdateError={(error) => { console.log(error) }}
-            onRowEditStop={handleRowEditStop}
+            onRowModesModelChange={newRowModesModel => { setRowModesModel(newRowModesModel) }}
+            onProcessRowUpdateError={(error) => { console.error(error) }}
             processRowUpdate={processRowUpdate}
         />
         {!!snackbar && (
