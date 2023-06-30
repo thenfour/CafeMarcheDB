@@ -15,11 +15,13 @@ import Menu from '@mui/material/Menu';
 import { useMutation } from "@blitzjs/rpc"
 import logout from "src/auth/mutations/logout"
 import { CssBaseline } from '@mui/material';
+import { useCurrentUser } from 'src/users/hooks/useCurrentUser';
 
 export default function UserAppBarIcon() {
 
     const [logoutMutation] = useMutation(logout);
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const currentUser = useCurrentUser();
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -45,6 +47,7 @@ export default function UserAppBarIcon() {
                 color="inherit"
             >
                 <AccountCircle />
+                {currentUser?.name}
             </IconButton>
             <Menu
                 id="menu-appbar"

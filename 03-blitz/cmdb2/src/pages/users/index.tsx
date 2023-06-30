@@ -62,6 +62,7 @@ import getUsers from "src/users/queries/getUsers";
 //import db from "db"
 import { Signup as NewUserSchema } from "src/auth/schemas"
 import NewUserMutationSpec from "src/auth/mutations/signup"
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 function ValidationTextField({ schema, field, label, obj, onChange, autoFocus }) {
     const [text, setText] = React.useState(obj[field]);
@@ -177,11 +178,6 @@ const UserGrid = () => {
     const session = useSession();
     const theme = useTheme();
     const router = useRouter();
-
-    React.useEffect(() => {
-        document.documentElement.style.setProperty('--primary-color', theme.palette.primary.main);
-        document.documentElement.style.setProperty('--secondary-color', theme.palette.secondary.main);
-    }, []);
 
     // allow code to invoke the snackbar
     const [snackbar, setSnackbar] = React.useState<Pick<AlertProps, 'children' | 'severity'> | null>(null);
@@ -461,11 +457,9 @@ const UserGrid = () => {
 const UserListPage: BlitzPage = () => {
 
     return (
-        <Suspense fallback="loading">
-            <Dashboard2>
-                <UserGrid></UserGrid>
-            </Dashboard2>
-        </Suspense>
+        <DashboardLayout title="Users">
+            <UserGrid></UserGrid>
+        </DashboardLayout>
     );
 };
 

@@ -16,40 +16,16 @@ import * as React from 'react';
 // import Toolbar from "@material-ui/core/Toolbar";
 // import Typography from "@material-ui/core/Typography";
 import HomeIcon from '@mui/icons-material/Home';
-import LabelIcon from '@mui/icons-material/Label';
 import MenuIcon from '@mui/icons-material/Menu';
+import PersonIcon from '@mui/icons-material/Person';
+import SecurityIcon from '@mui/icons-material/Security';
 //import AccountCircle from '@mui/icons-material/AccountCircle';
-import { AppBar, Box, Drawer, IconButton, List, ListItem, ListItemIcon, ListItemText, Slider, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import UserAppBarIcon from "src/core/components/UserAppBarIcon";
 //import { useTheme } from "@emotion/react";
+import { useRouter } from "next/router"
 
 const drawerWidth = 200;
-
-// const useStyles = makeStyles(theme => ({
-//     drawerPaper: {
-//         width: drawerWidth
-//     },
-//     menuButton: {
-//         marginRight: theme.spacing(2),
-//         [theme.breakpoints.up("md")]: { // don't show menu button for small screens
-//             display: "none"
-//         }
-//     },
-//     toolbar: {
-//         ...theme.mixins.toolbar, // a dummy toolbar element pushing drawer icons down below the appbar.
-//         // [theme.breakpoints.down("sm")]: { // for small screens this padding is not desired because it's on top of the appbar.
-//         //     display: "none"
-//         // }
-//     },
-//     content: {
-//         flexGrow: 1,
-//         backgroundColor: theme.palette.background.default,
-//         padding: theme.spacing(3)
-//     },
-//     headerText: {
-//         flexGrow: 1,// make the header text consume most of the display pushing the avatar to the right.
-//     }
-// }));
 
 const Dashboard2 = ({ children }) => {
 
@@ -57,12 +33,9 @@ const Dashboard2 = ({ children }) => {
         document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
     }, []);
 
-    //const theme = useTheme();
     const theme = useTheme();
-    //const classes = useStyles();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-    //const isMdUp = true;
-    const classes = {};
+    const router = useRouter();
 
     const [open, setOpen] = React.useState(false);
 
@@ -96,7 +69,7 @@ const Dashboard2 = ({ children }) => {
                         <MenuIcon />
                     </IconButton>
                     <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-                        Responsive Drawer Example
+                        Café Marché Backstage 2
                     </Typography>
                     <UserAppBarIcon></UserAppBarIcon>
                 </Toolbar>
@@ -112,24 +85,19 @@ const Dashboard2 = ({ children }) => {
                 onClose={toggleDrawer}
             >
                 <Box sx={{ ...theme.mixins.toolbar }} />
-                <List>
-                    <ListItem button key="home">
+                <List component="nav">
+                    <ListItemButton component={Link} href="/" selected={router.pathname == "/"}>
                         <ListItemIcon><HomeIcon /></ListItemIcon>
                         <ListItemText primary="Home" />
-                    </ListItem>
-                    <ListItem button key="aoeu">
-                        <ListItemIcon><LabelIcon /></ListItemIcon>
-                        <ListItemText primary="Users" />
-                    </ListItem>
-                    <ListItem button component={Link} href="/">
-                        <ListItemText primary="home?" />
-                    </ListItem>
-                    <ListItem component={Link} href="/questions">
-                        <ListItemText primary="questions" />
-                    </ListItem>
-                    <ListItem component={Link} href="/users">
-                        <ListItemText primary="users" />
-                    </ListItem>
+                    </ListItemButton>
+                    <ListItemButton component={Link} href="/users" selected={router.pathname == "/users"}>
+                        <ListItemIcon><PersonIcon /></ListItemIcon>
+                        <ListItemText primary="Manage Users" />
+                    </ListItemButton>
+                    <ListItemButton component={Link} href="/roles" selected={router.pathname == "/roles"}>
+                        <ListItemIcon><SecurityIcon /></ListItemIcon>
+                        <ListItemText primary="Manage Roles" />
+                    </ListItemButton>
                 </List>
             </Drawer>
             <Box sx={{
@@ -144,7 +112,5 @@ const Dashboard2 = ({ children }) => {
         </Box>
     );
 }
-
-
 
 export default Dashboard2;

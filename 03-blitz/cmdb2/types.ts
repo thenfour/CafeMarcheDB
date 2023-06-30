@@ -35,7 +35,7 @@ declare module "@blitzjs/auth" {
   }
 }
 
-export function CreatePublicData(user: User) {
+export function CreatePublicData(user: any) {
   if (!user) return {};
   return {
     userId: user.id,
