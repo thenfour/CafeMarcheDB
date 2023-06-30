@@ -1,23 +1,35 @@
 :root {
-    --drawer-paper-width: 1000px;
-    --data-grid-column-header-background-color: #f0f0f0;
-    --primary-color: red;
-  }
+  --drawer-paper-width: 1000px;
+  --data-grid-column-header-background-color: #f0f0f0;
+  --primary-color: red;
+}
 
 .MuiDrawer-paper {
-    width: var(--drawer-paper-width);
+  width: var(--drawer-paper-width);
 }
 
 .MuiDataGrid-columnHeaders {
   background-color: var(--data-grid-column-header-background-color);
 }
+
 .MuiDataGrid-footerContainer {
   background-color: var(--data-grid-column-header-background-color);
 }
-.MuiDataGrid-toolbarContainer  {
+
+.MuiDataGrid-toolbarContainer {
   background-color: var(--data-grid-column-header-background-color);
 }
 
 .hoverActionIcon:hover {
   color: var(--primary-color);
+}
+
+/* this is a small way to make selected nav more visible */
+nav>.Mui-selected {
+  border-left: 4px solid var(--primary-color);
+}
+
+/* for selecting user roles, if user can select chip text it gets very annoying. */
+.MuiChip-label {
+  user-select: none;
 }

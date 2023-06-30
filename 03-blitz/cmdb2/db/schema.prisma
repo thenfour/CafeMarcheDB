@@ -15,6 +15,7 @@ generator client {
 model Role {
   id          Int              @id @default(autoincrement())
   name        String           @unique
+  description String?
   permissions RolePermission[]
   User        User[]
 }
@@ -22,6 +23,7 @@ model Role {
 model Permission {
   id    Int              @id @default(autoincrement())
   name  String           @unique
+  description String?
   roles RolePermission[]
 }
 
@@ -243,6 +245,9 @@ model EventUserResponse {
   user    User  @relation(fields: [userId], references: [id])
   eventId Int
   event   Event @relation(fields: [eventId], references: [id])
+
+  expectApproval Boolean @default(false)
+  expectAttendance Boolean @default(false)
 
   attendanceId   Int?
   attendance     EventAttendance? @relation(fields: [attendanceId], references: [id])

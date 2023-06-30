@@ -14,8 +14,10 @@ import Menu from '@mui/material/Menu';
 
 import { useMutation } from "@blitzjs/rpc"
 import logout from "src/auth/mutations/logout"
-import { CssBaseline } from '@mui/material';
+import { Avatar, Badge, CssBaseline } from '@mui/material';
 import { useCurrentUser } from 'src/users/hooks/useCurrentUser';
+import { deepOrange, deepPurple, red } from '@mui/material/colors';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 export default function UserAppBarIcon() {
 
@@ -45,26 +47,34 @@ export default function UserAppBarIcon() {
                 aria-haspopup="true"
                 onClick={handleMenu}
                 color="inherit"
+                sx={{ padding: 0 }}
             >
-                <AccountCircle />
-                {currentUser?.name}
+                <Badge badgeContent={4} color="error">
+                    {/* <NotificationsIcon /> */}
+                    <Avatar alt={currentUser?.name || ""}>CC</Avatar>
+                </Badge>
+                {/*
+                 color="action"
+                <Avatar sx={{ bgcolor: deepOrange[500] }}>CC</Avatar>
+                */}
+                <Typography sx={{ p: 2 }}>{currentUser?.name}</Typography>
             </IconButton>
             <Menu
                 id="menu-appbar"
                 anchorEl={anchorEl}
-                anchorOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                }}
+                // anchorOrigin={{
+                //     vertical: 'top',
+                //     horizontal: 'right',
+                // }}
                 keepMounted
-                transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'right',
-                }}
+                // transformOrigin={{
+                //     vertical: 'top',
+                //     horizontal: 'right',
+                // }}
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
             >
-                <MenuItem onClick={handleClose}>Profile</MenuItem>
+                <MenuItem onClick={handleClose}>Profile asonetuh aosentuha oseunthe </MenuItem>
                 <MenuItem onClick={handleLogout}>Log out</MenuItem>
             </Menu>
         </Box>

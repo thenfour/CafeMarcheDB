@@ -1,3 +1,6 @@
+// next steps:
+// - roles: selecting related item via dropdown + quickly create new
+
 // main features to consider:
 // snackbar to notify async changes
 // confirmation dialog
@@ -11,7 +14,7 @@
 // DELETING
 //   esp. for users, i think i should not actually cascade delete users. probably just mark users as inactive
 // JOURNALING / AUDIT TRACING
-//   register every mutation in a journal
+//   register every mutation in a journal - done at the mutation level, not here in a datagrid.
 // SERVER-BACKED DATA:
 //   not completely trivial because now instead of the grid performing filtering, sorting, pagination, it must be passed to a query.
 //  - filtering
@@ -26,10 +29,11 @@ import { BlitzPage } from "@blitzjs/next";
 import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import AddIcon from '@mui/icons-material/Add';
 import CancelIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
-import { Backdrop, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, IconButton, Pagination, Stack, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputAdornment, List, ListItem, ListItemButton, ListItemIcon, ListItemText, ListSubheader, TextField } from "@mui/material";
 import Alert, { AlertProps } from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import { useTheme } from "@mui/material/styles";
@@ -39,30 +43,20 @@ import {
     GridActionsCellItem,
     GridColDef,
     GridFilterModel,
-    GridRowEditStopReasons,
-    GridRowModel,
-    GridRowModesModel,
-    GridRowModes,
-    GridRowsProp,
-    GridSortModel,
-    GridToolbar,
-    GridToolbarColumnsButton,
-    GridToolbarContainer,
-    GridToolbarDensitySelector,
-    GridToolbarExport,
-    GridToolbarFilterButton,
+    GridRenderEditCellParams, GridRowModel, GridRowModes, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
     GridToolbarQuickFilter,
+    GridCellModes,
+    useGridApiContext
 } from '@mui/x-data-grid';
 import { useRouter } from "next/router";
-import React, { Suspense } from "react";
-import Dashboard2 from "src/core/components/Dashboard2";
+import React from "react";
 import { useCurrentUser } from "src/users/hooks/useCurrentUser";
 import updateUserFromGrid from "src/users/mutations/updateUserFromGrid";
 import getUsers from "src/users/queries/getUsers";
-//import db from "db"
-import { Signup as NewUserSchema } from "src/auth/schemas"
-import NewUserMutationSpec from "src/auth/mutations/signup"
+import { Signup as NewUserSchema } from "src/auth/schemas";
+import NewUserMutationSpec from "src/auth/mutations/signup";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import Chip from '@mui/material/Chip';
 
 function ValidationTextField({ schema, field, label, obj, onChange, autoFocus }) {
     const [text, setText] = React.useState(obj[field]);
@@ -94,6 +88,85 @@ function ValidationTextField({ schema, field, label, obj, onChange, autoFocus })
         />
     );
 }
+
+
+function SelectRoleDialog({ roleId, onOK, onCancel }) {
+    const theme = useTheme();
+    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+    const [selectedValue, setSelectedValue] = React.useState(roleId);
+
+    return (
+        <Dialog
+            open={true}
+            onClose={onCancel}
+            scroll="paper"
+            fullScreen={fullScreen}
+        >
+            <DialogTitle>Select role</DialogTitle>
+            <DialogContent dividers>
+                <DialogContentText>
+                    To subscribe to this website, please enter your email address here. We
+                    will send updates occasionally.
+                </DialogContentText>
+
+                <TextField
+                    label="filter"
+                    size="small"
+                    InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon />
+                            </InputAdornment>
+                        ),
+                    }}
+                    variant="filled"
+                />
+
+                <List>
+                    <ListItem>
+                        <ListItemText primary="Sent mail" />
+                    </ListItem>
+                    <ListItem>
+                        <ListItemText primary="Drafts" />
+                    </ListItem>
+                </List>
+
+
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onCancel}>Cancel</Button>
+                <Button onClick={() => { onOK(selectedValue) }}>OK</Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
+function RoleEditCell(props: GridRenderEditCellParams) {
+    const { id, value, field } = props;
+    const apiRef = useGridApiContext();
+    const [showingRoleSelectDialog, setShowingRoleSelectDialog] = React.useState<boolean>(false);
+
+    // when viewing, it's just a chip, no click or delete.
+    // when editing but not in focus, same thing
+    // when editing with focus, show a dropdown menu, with options to delete & create new.
+
+    if (props.cellMode != GridCellModes.Edit || !props.hasFocus) {
+        return props.colDef.renderCell(props);
+    }
+    //const { id, value, field } = params;
+    if (showingRoleSelectDialog) {
+        return <SelectRoleDialog roleId={value} onCancel={() => { setShowingRoleSelectDialog(false) }} onOK={(newRoleId) => {
+
+            apiRef.current.setEditCellValue({ id, field, value: newRoleId });
+            setShowingRoleSelectDialog(false);
+        }}></SelectRoleDialog>;
+    }
+    return <>{props.colDef.renderCell(props)}<Button onClick={() => { setShowingRoleSelectDialog(true) }}>
+        Select...
+    </Button>
+    </>;
+}
+
 
 function AddUserDialog({ onOK, onCancel, initialObj }) {
     const theme = useTheme();
@@ -138,7 +211,7 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
             </DialogActions>
         </Dialog>
     );
-}
+};
 
 function CustomToolbar({ onNewClicked }) {
     return (
@@ -178,6 +251,7 @@ const UserGrid = () => {
     const session = useSession();
     const theme = useTheme();
     const router = useRouter();
+    //const apiRef = useGridApiContext();
 
     // allow code to invoke the snackbar
     const [snackbar, setSnackbar] = React.useState<Pick<AlertProps, 'children' | 'severity'> | null>(null);
@@ -262,13 +336,23 @@ const UserGrid = () => {
     );
 
     const [showingNewDialog, setShowingNewDialog] = React.useState<boolean>(false);
-    //AddUserDialog
 
     const columns: GridColDef[] = [
         { field: 'id', headerName: 'id' },
         { field: 'name', headerName: 'Name', editable: true, width: 150 },
         { field: 'email', headerName: 'email', editable: true, width: 150 },
-        { field: 'role', headerName: 'role', editable: true, width: 150 },
+        {
+            field: 'roleId',
+            headerName: 'role',
+            editable: true,
+            width: 150,
+            renderCell: (params) => {
+                return (params.row.role && (<Chip size="small" label={params.row.role.name}></Chip>));
+            },
+            renderEditCell: (params) => {
+                return <RoleEditCell {...params} />;
+            }
+        },
         {
             field: 'actions',
             type: 'actions',
@@ -363,7 +447,6 @@ const UserGrid = () => {
     const onAddUserOK = (obj) => {
         newUserMutation(obj).then(() => {
             setSnackbar({ children: 'New user success', severity: 'success' });
-            //newUserActions.refetch();
             refetch();
         }).catch(err => {
             setSnackbar({ children: "Some server error when adding", severity: 'error' });

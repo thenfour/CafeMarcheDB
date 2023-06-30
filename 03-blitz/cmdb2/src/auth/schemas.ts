@@ -58,3 +58,35 @@ export const ChangePassword = z.object({
   currentPassword: z.string(),
   newPassword: password,
 })
+
+// model Role {
+export const CreateRole = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+});
+
+export const UpdateRole = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().optional(),
+});
+
+export const DeleteRole = z.object({
+  id: z.number(),
+});
+
+export const CreatePermission = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+});
+
+export const UpdatePermission = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().optional(),
+});
+
+export const DeletePermission = z.object({
+  id: z.number(),
+});
+
