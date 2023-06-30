@@ -9,6 +9,9 @@
 //   grid is just not a great UI regarding validation etc. better for modifying existing fields
 // EDITING in grid: should not be a problem.
 // DELETING
+//   esp. for users, i think i should not actually cascade delete users. probably just mark users as inactive
+// JOURNALING / AUDIT TRACING
+//   register every mutation in a journal
 // SERVER-BACKED DATA:
 //   not completely trivial because now instead of the grid performing filtering, sorting, pagination, it must be passed to a query.
 //  - filtering
@@ -60,7 +63,7 @@ import getUsers from "src/users/queries/getUsers";
 import { Signup as NewUserSchema } from "src/auth/schemas"
 import NewUserMutationSpec from "src/auth/mutations/signup"
 
-function ValidationTextField({ schema, field, label, obj, onChange }) {
+function ValidationTextField({ schema, field, label, obj, onChange, autoFocus }) {
     const [text, setText] = React.useState(obj[field]);
     const [errorText, setErrorText] = React.useState<string | null>(null);
 
@@ -74,6 +77,7 @@ function ValidationTextField({ schema, field, label, obj, onChange }) {
     return (
         <TextField
             id={field}
+            autoFocus={autoFocus}
             label={label}
             error={!!errorText}
             helperText={errorText}
@@ -117,12 +121,14 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
                         obj["name"] = e.target.value;
                         console.log(obj);
                         setObj(obj);
-                    }}></ValidationTextField>
+                    }}
+                        autoFocus={true}></ValidationTextField>
                     <ValidationTextField field="email" label="Email" schema={NewUserSchema} obj={obj} onChange={(e) => {
                         obj["email"] = e.target.value;
                         console.log(obj);
                         setObj(obj);
-                    }}></ValidationTextField>
+                    }}
+                        autoFocus={false}></ValidationTextField>
                 </FormControl>
             </DialogContent>
             <DialogActions>
@@ -194,18 +200,29 @@ const UserGrid = () => {
     }
 
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
-    //  {"items":[],"quickFilterValues":["c","c","9","+49","\"aoeu\""]}
-    let where = {};
+    const where = { AND: [] };
     if (filterModel.quickFilterValues) {
-        where = {
-            AND: filterModel.quickFilterValues.map(q => {
-                return { name: { contains: q } };
-            })
-        }
+        const quickFilterItems = filterModel.quickFilterValues.map(q => {
+            return {
+                OR: [
+                    { name: { contains: q } },
+                    { email: { contains: q } },
+                ]
+            };
+        });
+        where.AND.push(...quickFilterItems);
+    }
+    if (filterModel.items && filterModel.items.length > 0) {
+        // convert items to prisma filter
+        // TODO: fuzzier search using LIKE "%t%o%k%e%n%"
+        const filterItems = filterModel.items.map((i) => {
+            return { [i.field]: { [i.operator]: i.value } }
+        });
+        where.AND.push(...filterItems);
     }
 
     const [{ users, hasMore, count }, { refetch }] = usePaginatedQuery(getUsers, {
-        orderBy,//: { [sortModel[0].field]: sortModel[0].sort }, // 
+        orderBy,
         where,
         skip: paginationModel.pageSize * paginationModel.page,
         take: paginationModel.pageSize,
