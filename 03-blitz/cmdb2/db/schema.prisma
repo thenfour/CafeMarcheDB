@@ -12,24 +12,65 @@ generator client {
 
 // --------------------------------------
 
-model User {
-  id             Int      @id @default(autoincrement())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  name           String?
-  email          String   @unique
-  hashedPassword String?
-  role           String   @default("ROLE_USER") // see types.ts
-  googleId       String?
+model Role {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  permissions RolePermission[]
+  User        User[]
+}
 
-  tokens   Token[]
-  sessions Session[]
+model Permission {
+  id    Int              @id @default(autoincrement())
+  name  String           @unique
+  roles RolePermission[]
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  // you could also cluster the keys but this is just simpler
+  //   @@id([roleId, permissionId])
+}
+
+model User {
+  id             Int                 @id @default(autoincrement())
+  name           String?
+  isSysAdmin Boolean @default(false)
+  isDeleted Boolean @default(false)
+  email          String              @unique
+  phone          String?
+  hashedPassword String?
+  googleId       String?
+  roleId         Int? // nullable for new users a role should be assigned by an admin. null = public
+  role           Role?                @relation(fields: [roleId], references: [id])
+  tokens         Token[]
+  sessions       Session[]
+  Changes        Changes[] // yea don't include this
+  taggedFiles    FileUserTag[]
+  eventResponses EventUserResponse[]
+}
+
+model Changes {
+  id Int @id @default(autoincrement())
+
+  table    String
+  column   String
+  recordId Int
+  action   String // create, update, delete
+
+  changedAt DateTime @default(now())
+  userId    Int?
+  oldValues String? // for create, empty. for update, JSON of fields. for delete, all column values.
+  newValues String? // for create & update, JSON of fields. for delete, empty.
+
+  user User? @relation(fields: [userId], references: [id])
 }
 
 model Session {
   id                 Int       @id @default(autoincrement())
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
   expiresAt          DateTime?
   handle             String    @unique
   hashedSessionToken String?
@@ -43,8 +84,6 @@ model Session {
 
 model Token {
   id          Int      @id @default(autoincrement())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
   hashedToken String
   type        String
   // See note below about TokenType enum
@@ -65,20 +104,151 @@ model Token {
 //   RESET_PASSWORD
 // }
 
-model Question {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  text      String
-  choices    Choice[]
+// model Question {
+//   id        Int      @id @default(autoincrement())
+//   text      String
+//   choices   Choice[]
+// }
+
+// model Choice {
+//   id         Int      @id @default(autoincrement())
+//   text       String
+//   votes      Int      @default(0)
+//   question   Question @relation(fields: [questionId], references: [id])
+//   questionId Int
+// }
+
+model Song {
+  id          Int           @id @default(autoincrement())
+  name        String
+  // ... metadata bpm composer etc.
+  // so what about variations like roger variete? do we relate them? or score stuff? i think don't bother; maybe there can be related songs or something but not yet.
+  FileSongTag FileSongTag[]
 }
 
-model Choice {
+model InstrumentGroup {
+  id          Int          @id @default(autoincrement())
+  name        String
+  color       String
+  scoreOrder  Int
+  instruments Instrument[]
+}
+
+model Instrument {
+  id                Int                 @id @default(autoincrement())
+  name              String
+  scoreOrder        Int
+  instrumentGroup   InstrumentGroup     @relation(fields: [instrumentGroupId], references: [id])
+  instrumentGroupId Int
+  fileTags          FileInstrumentTag[]
+}
+
+model Event {
+  id        Int                  @id @default(autoincrement())
+  name      String
+  occursAt  DateTime
+  // contact people ?
+  // links ?
+  // details ?
+  // workflow confirmation etc.
+  fileTags  FileEventTag[]
+  tags      EventTagAssignment[]
+  responses EventUserResponse[]
+}
+
+model EventTag {
+  id     Int                  @id @default(autoincrement())
+  text   String
+  color  String
+  events EventTagAssignment[]
+}
+
+model EventTagAssignment {
   id         Int      @id @default(autoincrement())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  text       String
-  votes      Int      @default(0)
-  question   Question @relation(fields: [questionId], references: [id])
-  questionId Int
+  eventId    Int
+  event      Event    @relation(fields: [eventId], references: [id])
+  eventTagId Int
+  eventTag   EventTag @relation(fields: [eventTagId], references: [id])
+}
+
+model File {
+  id                Int                 @id @default(autoincrement())
+  filename          String
+  description       String
+  type              String //  (video, photo, link, partition)
+  taggedUsers       FileUserTag[]
+  taggedSongs       FileSongTag[]
+  taggedEvents      FileEventTag[]
+  taggedInstruments FileInstrumentTag[]
+}
+
+model FileUserTag {
+  id     Int     @id @default(autoincrement())
+  fileId Int
+  file   File    @relation(fields: [fileId], references: [id])
+  name   String? // if userid is not there...
+  user   User?   @relation(fields: [userId], references: [id])
+  userId Int?
+}
+
+model FileSongTag {
+  id     Int     @id @default(autoincrement())
+  fileId Int
+  file   File    @relation(fields: [fileId], references: [id])
+  name   String? // if songid is not there...
+  song   Song?   @relation(fields: [songId], references: [id])
+  songId Int?
+}
+
+model FileEventTag {
+  id      Int     @id @default(autoincrement())
+  fileId  Int
+  file    File    @relation(fields: [fileId], references: [id])
+  name    String? // if eventid is not there...
+  event   Event?  @relation(fields: [eventId], references: [id])
+  eventId Int?
+}
+
+model FileInstrumentTag {
+  id           Int         @id @default(autoincrement())
+  fileId       Int
+  file         File        @relation(fields: [fileId], references: [id])
+  name         String? // if instrumentid is not there...
+  instrument   Instrument? @relation(fields: [instrumentId], references: [id])
+  instrumentId Int?
+}
+
+// things like yes no maybe
+model EventAttendance {
+  id       Int    @id @default(autoincrement())
+  text     String
+  color    String
+  strength Int // in order to be able to filter people who aren't coming.
+
+  responses EventUserResponse[]
+}
+
+model EventApproval {
+  id       Int    @id @default(autoincrement())
+  text     String
+  color    String
+  strength Int // in order to be able to filter people who aren't coming.
+
+  responses EventUserResponse[]
+}
+
+model EventUserResponse {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  user    User  @relation(fields: [userId], references: [id])
+  eventId Int
+  event   Event @relation(fields: [eventId], references: [id])
+
+  attendanceId   Int?
+  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id])
+  attendanceText String?
+
+  approvalId   Int?
+  approval     EventApproval? @relation(fields: [approvalId], references: [id])
+  approvalText String?
 }

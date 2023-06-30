@@ -5,6 +5,7 @@ import db from "db"
 import { Strategy as GoogleStrategy } from "passport-google-oauth20"
 import { Strategy as Auth0Strategy } from 'passport-auth0';
 import signupMutation from "src/auth/mutations/signup"
+import { CreatePublicData } from "types";
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
@@ -33,16 +34,24 @@ export default api(
 
               let user = await db.user.findFirst({
                 where: {
-                  googleId
-                }
+                  AND: [
+                    { googleId },
+                    { isDeleted: false }
+                  ]
+                },
+                include: { role: { include: { permissions: { include: { permission: true } } } } }
               });
 
               if (!user) {
 
                 user = await db.user.findFirst({
                   where: {
-                    email
-                  }
+                    AND: [
+                      { email },
+                      { isDeleted: false }
+                    ]
+                  },
+                  include: { role: { include: { permissions: { include: { permission: true } } } } }
                 });
 
                 if (user) {
@@ -51,6 +60,7 @@ export default api(
                   user = await db.user.update({
                     where: { id: user.id },
                     data: { googleId },
+                    include: { role: { include: { permissions: { include: { permission: true } } } } }
                   });
                 } else {
                   // i should just create separate schema validation/mutation for when a user uses a password vs. external auth.
@@ -59,7 +69,10 @@ export default api(
                 }
               }
 
-              done(null, { publicData: { userId: user.id, role: user.role } });
+              // list permissions:
+              // user.role.permissions.map(p => p.permission.name);
+
+              done(null, { publicData: CreatePublicData(user) });
             } catch (err) {
               done(null, false);
             }

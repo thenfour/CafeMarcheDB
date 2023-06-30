@@ -1,22 +1,36 @@
 import { SecurePassword } from "@blitzjs/auth/secure-password"
 import { resolver } from "@blitzjs/rpc"
-import db from "db"
-import { Role } from "types"
+import db, { Role } from "db"
+
+//import { Role } from "types"
 import { Signup } from "../schemas"
+//import { PublicData } from "@blitzjs/auth";
+import { CreatePublicData } from "types";
 
 export default resolver.pipe(resolver.zod(Signup), async ({ email, password, name, googleId }, ctx) => {
   const hashedPassword = await SecurePassword.hash(password.trim())
-  const user = await db.user.create({
-    data: {
-      email: email.toLowerCase().trim(),
-      hashedPassword,
-      role: "ROLE_USER",
-      name,
-      googleId,
-    },
-    select: { id: true, name: true, email: true, role: true, googleId: true },
-  })
+  email = email.toLowerCase().trim();
+  try {
+    const user = await db.user.create({
+      data: {
+        email,
+        hashedPassword,
+        isSysAdmin: (email == process.env.ADMIN_EMAIL),
+        name,
+        googleId,
+      },
+      include: { role: { include: { permissions: { include: { permission: true } } } } }
+      //select: { id: true, name: true, email: true, roleId: true, role: true, googleId: true, isSysAdmin: true },
+    });
 
-  await ctx.session.$create({ userId: user.id, role: user.role as Role })
-  return user
-})
+    // todo: register in change log.
+
+    await ctx.session.$create(CreatePublicData(user));
+    return user;
+
+  } catch (e) {
+    console.error(`Exception while creating user`);
+    console.error(e);
+    throw (e);
+  }
+});

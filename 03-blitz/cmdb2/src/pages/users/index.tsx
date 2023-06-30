@@ -469,4 +469,6 @@ const UserListPage: BlitzPage = () => {
     );
 };
 
+UserListPage.authenticate = { role: ["hello?"] };
+
 export default UserListPage;
