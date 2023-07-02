@@ -1,4 +1,15 @@
+import db, { Prisma } from "db";
 import { z } from "zod"
+
+// generic
+export const GetObjectByNullableIdSchema = z.object({
+  // allows null (and the query should probably return an empty object or null then.)
+  id: z.number().nullable().optional(),
+});
+export const GetObjectByIdSchema = z.object({
+  // This accepts type of undefined, but is required at runtime
+  id: z.number().optional()/*.refine(Boolean, "Required")*/, // refine to ensure IDs are truthy. but that's only necessary when inserting?
+});
 
 export const email = z
   .string()
@@ -31,7 +42,7 @@ export const UpdateUserFromGrid = z.object({
   id: z.number(),
   email,
   name,
-  role,
+  roleId: z.number().nullable().optional(),
 })
 
 export const Login = z.object({

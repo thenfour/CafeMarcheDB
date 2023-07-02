@@ -1,12 +1,20 @@
 // next steps:
-// - roles: selecting related item via dropdown + quickly create new
+// x roles: selecting related item via dropdown
+// x quick-creating roles
+// x when stopping editing because clicking outside the cell, give cancel option.
+// - delete user
+// - warn when navigating away while editing
+
+// OK qusetion for the roles dialog: when selecting a related field, we need a list.
+// but do we suppport pagination filtering etc? i feel like yes it should.
+// so it's already time to do this?
 
 // main features to consider:
-// snackbar to notify async changes
-// confirmation dialog
-// properly handle server-side errors
-// validation based on schema. (see validateZodSchema)
-// authorization for viewing, editing (by column), adding, deleting
+// x snackbar to notify async changes
+// x confirmation dialog
+// - properly handle server-side errors
+// - validation based on schema. (see validateZodSchema)
+// - authorization for viewing, editing (by column), adding, deleting
 // ADDING: let's not add directly in the grid.
 //   doing so would result in weirdness wrt paging / sorting /filtering. Better to just display a modal or inline form specifically for adding items.
 //   grid is just not a great UI regarding validation etc. better for modifying existing fields
@@ -26,37 +34,54 @@
 //   stuff like freeform text + tag text or something may require custom
 import { useAuthorize, useSession } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
-import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
-import AddIcon from '@mui/icons-material/Add';
-import CancelIcon from '@mui/icons-material/Close';
-import SearchIcon from '@mui/icons-material/Search';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputAdornment, List, ListItem, ListItemButton, ListItemIcon, ListItemText, ListSubheader, TextField } from "@mui/material";
+import { useMutation, useQuery, usePaginatedQuery } from "@blitzjs/rpc";
+import {
+    Add as AddIcon,
+    Close as CancelIcon,
+    DeleteOutlined as DeleteIcon,
+    Edit as EditIcon,
+    Save as SaveIcon,
+    Search as SearchIcon,
+    Security as SecurityIcon,
+} from '@mui/icons-material';
+
+import {
+    Box,
+    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Divider,
+    FormControl,
+    InputBase,
+    List,
+    ListItemButton, ListItemIcon, ListItemText,
+    TextField
+} from "@mui/material";
 import Alert, { AlertProps } from '@mui/material/Alert';
+import Chip from '@mui/material/Chip';
 import Snackbar from '@mui/material/Snackbar';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {
     DataGrid,
     GridActionsCellItem,
+    GridCellModes,
     GridColDef,
     GridFilterModel,
     GridRenderEditCellParams, GridRowModel, GridRowModes, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
     GridToolbarQuickFilter,
-    GridCellModes,
     useGridApiContext
 } from '@mui/x-data-grid';
 import { useRouter } from "next/router";
 import React from "react";
+import NewUserMutationSpec from "src/auth/mutations/signup";
+import { Signup as NewUserSchema } from "src/auth/schemas";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { useCurrentUser } from "src/users/hooks/useCurrentUser";
 import updateUserFromGrid from "src/users/mutations/updateUserFromGrid";
 import getUsers from "src/users/queries/getUsers";
-import { Signup as NewUserSchema } from "src/auth/schemas";
-import NewUserMutationSpec from "src/auth/mutations/signup";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import Chip from '@mui/material/Chip';
+import CreateRoleMutation from "src/auth/mutations/createRole";
+import GetRolesQuery from "src/auth/queries/getRoles";
+import GetRoleQuery from "src/auth/queries/getRole";
+import { userInfo } from "os";
 
 function ValidationTextField({ schema, field, label, obj, onChange, autoFocus }) {
     const [text, setText] = React.useState(obj[field]);
@@ -89,11 +114,74 @@ function ValidationTextField({ schema, field, label, obj, onChange, autoFocus })
     );
 }
 
+function RoleValue({ roleId, role, onClick = undefined, onValueDelete = undefined }) {
+
+    // when editing, you are really editing the roleId field.
+    // but the `role` object might be out-of-sync with the updated value. correction is therefore necessary for rendering the value for edit cells.
+    const [correctedRole, setCorrectedRole] = React.useState(role);
+
+    // todo: is this going to query too often?
+    const [updatedRole] = useQuery(GetRoleQuery, { id: roleId });
+    React.useEffect(() => {
+        setCorrectedRole(updatedRole);
+    }, [roleId]);
+
+    //console.log(`<RoleValue; roleId=${roleId}; roleName=${role?.name}; correctedName=${correctedRole?.name}`);
+
+    let handleClick: any = null;
+    if (onClick) {
+        handleClick = (e) => onClick(e, correctedRole);
+    }
+    let handleDelete: any = null;
+    if (onValueDelete) {
+        handleDelete = (e) => onValueDelete(e, correctedRole);
+    }
+
+    return !!correctedRole ?
+        (<Chip size="small" label={correctedRole?.name} onClick={handleClick} onDelete={handleDelete}></Chip>) :
+        (<Chip size="small" label={"none"} variant="outlined" onClick={handleClick} sx={{ fontStyle: "italic" }}></Chip>);
+}
 
 function SelectRoleDialog({ roleId, onOK, onCancel }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedValue, setSelectedValue] = React.useState(roleId);
+    const [filterText, setFilterText] = React.useState("");
+
+    const where = { AND: [] };
+    if (filterText?.length) {
+        const tokens = filterText.split(/\s+/).filter(token => token.length > 0);
+        const quickFilterItems = tokens.map(q => {
+            return {
+                OR: [
+                    { name: { contains: q } },
+                    { description: { contains: q } },
+                ]
+            };
+        });
+        where.AND.push(...quickFilterItems);
+    }
+
+    const [{ items }, { refetch }] = usePaginatedQuery(GetRolesQuery, { where, orderBy: {} });
+
+    const selectedRole = items.find((r) => r.id == selectedValue);
+
+    const [createRoleMutation] = useMutation(CreateRoleMutation);
+
+    const onNewClicked = (e) => {
+        createRoleMutation({ name: filterText, description: "" }).then((updatedObj) => {
+            //setSnackbar({ children: 'Role successfully created', severity: 'success' });
+            refetch();
+        }).catch((reason => {
+            //setSnackbar({ children: "Some server error", severity: 'error' });
+            refetch(); // should revert the data.
+        }));
+    };
+
+    const handleItemClick = (e, clickedRoleId) => {
+        //console.log(`handleItemClick ${clickedRoleId}`);
+        setSelectedValue(clickedRoleId);
+    };
 
     return (
         <Dialog
@@ -102,40 +190,76 @@ function SelectRoleDialog({ roleId, onOK, onCancel }) {
             scroll="paper"
             fullScreen={fullScreen}
         >
-            <DialogTitle>Select role</DialogTitle>
+            <DialogTitle>Role</DialogTitle>
             <DialogContent dividers>
                 <DialogContentText>
                     To subscribe to this website, please enter your email address here. We
                     will send updates occasionally.
                 </DialogContentText>
 
-                <TextField
-                    label="filter"
-                    size="small"
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon />
-                            </InputAdornment>
-                        ),
-                    }}
-                    variant="filled"
-                />
+                <Box sx={{ p: 2 }}>
+                    Selected: <RoleValue roleId={selectedRole?.id} role={selectedRole} onValueDelete={(e, role) => { setSelectedValue(null); }}></RoleValue>
+                </Box>
 
-                <List>
-                    <ListItem>
-                        <ListItemText primary="Sent mail" />
-                    </ListItem>
-                    <ListItem>
-                        <ListItemText primary="Drafts" />
-                    </ListItem>
-                </List>
+                <Box>
+                    <InputBase
+                        size="small"
+                        placeholder="Filter"
+                        sx={{
+                            backgroundColor: "#f0f0f0",
+                            borderRadius: 3,
+                        }}
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                        startAdornment={<SearchIcon />}
+                    />
+                </Box>
 
+                {
+                    !!filterText && (
+                        <Box><Button
+                            size="small"
+                            startIcon={<AddIcon />}
+                            onClick={onNewClicked}
+                        >
+                            Create role "{filterText}"
+                        </Button>
+                        </Box>
+                    )
+                }
+
+                {
+                    (items.length == 0) ?
+                        <Box>Nothing here</Box>
+                        :
+                        <List>
+                            {
+                                items.map(item =>
+                                (
+                                    <React.Fragment key={item.id}>
+                                        <ListItemButton selected={item.id == selectedValue} onClick={e => handleItemClick(e, item.id)}>
+                                            <ListItemIcon>
+                                                <SecurityIcon />
+                                            </ListItemIcon>
+                                            <ListItemText
+                                                primary={item.name}
+                                                secondary={item.description}
+                                            />
+                                        </ListItemButton>
+                                        <Divider></Divider>
+                                    </React.Fragment>
+                                )
+
+                                )
+
+                            }
+                        </List>
+                }
 
             </DialogContent>
             <DialogActions>
                 <Button onClick={onCancel}>Cancel</Button>
-                <Button onClick={() => { onOK(selectedValue) }}>OK</Button>
+                <Button onClick={() => { onOK(selectedValue, selectedRole) }}>OK</Button>
             </DialogActions>
         </Dialog>
     );
@@ -149,19 +273,20 @@ function RoleEditCell(props: GridRenderEditCellParams) {
     // when viewing, it's just a chip, no click or delete.
     // when editing but not in focus, same thing
     // when editing with focus, show a dropdown menu, with options to delete & create new.
+    //console.log(`rendering edit cell; roleID: ${props?.row?.roleId}; row=${props?.row}; role=${props?.row?.role} name=${props?.row?.role?.name}`);
 
     if (props.cellMode != GridCellModes.Edit || !props.hasFocus) {
-        return props.colDef.renderCell(props);
+        return <RoleValue roleId={props?.row?.roleId} role={props?.row?.role}></RoleValue>; //props.colDef.renderCell(props);
     }
     //const { id, value, field } = params;
     if (showingRoleSelectDialog) {
-        return <SelectRoleDialog roleId={value} onCancel={() => { setShowingRoleSelectDialog(false) }} onOK={(newRoleId) => {
-
+        return <SelectRoleDialog roleId={value} onCancel={() => { setShowingRoleSelectDialog(false) }} onOK={(newRoleId, newRole) => {
+            //console.log(`you clicked on a new ${field}: ${newRoleId}`);
             apiRef.current.setEditCellValue({ id, field, value: newRoleId });
             setShowingRoleSelectDialog(false);
         }}></SelectRoleDialog>;
     }
-    return <>{props.colDef.renderCell(props)}<Button onClick={() => { setShowingRoleSelectDialog(true) }}>
+    return <>{<RoleValue roleId={props?.row?.roleId} role={props?.row?.role}></RoleValue>}<Button onClick={() => { setShowingRoleSelectDialog(true) }}>
         Select...
     </Button>
     </>;
@@ -193,13 +318,13 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
                 <FormControl>
                     <ValidationTextField field="name" label="Name" schema={NewUserSchema} obj={obj} onChange={(e) => {
                         obj["name"] = e.target.value;
-                        console.log(obj);
+                        //console.log(obj);
                         setObj(obj);
                     }}
                         autoFocus={true}></ValidationTextField>
                     <ValidationTextField field="email" label="Email" schema={NewUserSchema} obj={obj} onChange={(e) => {
                         obj["email"] = e.target.value;
-                        console.log(obj);
+                        //console.log(obj);
                         setObj(obj);
                     }}
                         autoFocus={false}></ValidationTextField>
@@ -239,7 +364,7 @@ function computeMutation(newRow: GridRowModel, oldRow: GridRowModel) {
     if (newRow.email !== oldRow.email) {
         return `email changed`;
     }
-    if (newRow.role !== oldRow.role) {
+    if (newRow.roleId !== oldRow.roleId) {
         return `role changed`;
     }
     return null;
@@ -251,7 +376,6 @@ const UserGrid = () => {
     const session = useSession();
     const theme = useTheme();
     const router = useRouter();
-    //const apiRef = useGridApiContext();
 
     // allow code to invoke the snackbar
     const [snackbar, setSnackbar] = React.useState<Pick<AlertProps, 'children' | 'severity'> | null>(null);
@@ -299,13 +423,17 @@ const UserGrid = () => {
     });
 
     const [rowModesModel, setRowModesModel] = React.useState({});
+    const [explicitSave, setExplicitSave] = React.useState(false);
 
     const handleEditClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
     };
 
     const handleSaveClick = (id) => () => {
+        console.log(`handleSaveClick. explicitSave = true`);
+        setExplicitSave(true);
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+        console.log(` -> row modes model should have changed right?`);
     };
 
     const handleDeleteClick = (id) => () => {
@@ -321,19 +449,33 @@ const UserGrid = () => {
 
     const [promiseArguments, setPromiseArguments] = React.useState<any>(null);
 
-    const processRowUpdate = React.useCallback(
+    const processRowUpdate =
         (newRow: GridRowModel, oldRow: GridRowModel) =>
             new Promise<GridRowModel>((resolve, reject) => {
                 const mutation = computeMutation(newRow, oldRow);
                 if (mutation) {
                     // Save the arguments to resolve or reject the promise later
+                    console.log(`process row update - ask user confirm; explicitSave = ${explicitSave}`);
                     setPromiseArguments({ resolve, reject, newRow, oldRow, mutation });
                 } else {
                     resolve(oldRow); // Nothing was changed
                 }
-            }),
-        [],
-    );
+            });
+
+    // const processRowUpdate = React.useCallback(
+    //     (newRow: GridRowModel, oldRow: GridRowModel) =>
+    //         new Promise<GridRowModel>((resolve, reject) => {
+    //             const mutation = computeMutation(newRow, oldRow);
+    //             if (mutation) {
+    //                 // Save the arguments to resolve or reject the promise later
+    //                 console.log(`process row update - ask user confirm; explicitSave = ${explicitSave}`);
+    //                 setPromiseArguments({ resolve, reject, newRow, oldRow, mutation });
+    //             } else {
+    //                 resolve(oldRow); // Nothing was changed
+    //             }
+    //         }),
+    //     [],
+    // );
 
     const [showingNewDialog, setShowingNewDialog] = React.useState<boolean>(false);
 
@@ -347,7 +489,8 @@ const UserGrid = () => {
             editable: true,
             width: 150,
             renderCell: (params) => {
-                return (params.row.role && (<Chip size="small" label={params.row.role.name}></Chip>));
+                //console.log(`rendering value cell; roleID: ${params?.row?.roleId}`);
+                return <RoleValue roleId={params?.row?.roleId} role={params?.row?.role}></RoleValue>;
             },
             renderEditCell: (params) => {
                 return <RoleEditCell {...params} />;
@@ -383,7 +526,6 @@ const UserGrid = () => {
                         onClick={handleEditClick(id)}
                         color="inherit"
                     //showInMenu={true} // allows showing actions in a menu.
-                    // cellClassName
                     />,
                     <GridActionsCellItem
                         icon={<DeleteIcon className="hoverActionIcon" />}
@@ -430,12 +572,12 @@ const UserGrid = () => {
 
         return (
             <Dialog open={true}>
-                <DialogTitle>Are you sure?</DialogTitle>
+                <DialogTitle>{explicitSave ? "Are you sure?" : "Save your changes?"}</DialogTitle>
                 <DialogContent dividers>
                     {`Pressing 'Yes' will change ${mutation}.`}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleNo}>No</Button>
+                    <Button onClick={handleNo}>{explicitSave ? "No" : "Cancel"}</Button>
                     <Button onClick={handleYes}>Yes</Button>
                 </DialogActions>
             </Dialog>
@@ -524,7 +666,11 @@ const UserGrid = () => {
 
             // editing
             rowModesModel={rowModesModel}
-            onRowModesModelChange={newRowModesModel => { setRowModesModel(newRowModesModel) }}
+            onRowModesModelChange={newRowModesModel => {
+                console.log(`row modes model change. explicitSave = false`);
+                setExplicitSave(false); // this is called before editing, or after saving. so it's safe to reset explicit save flag always here.
+                setRowModesModel(newRowModesModel);
+            }}
             onProcessRowUpdateError={(error) => { console.error(error) }}
             processRowUpdate={processRowUpdate}
         />

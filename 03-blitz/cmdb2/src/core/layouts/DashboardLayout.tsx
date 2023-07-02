@@ -55,7 +55,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode 
     return (
         <>
             <Head>
-                <title>CM: {title}</title>
+                <title>CM</title>
             </Head>
 
             <Suspense fallback={fallback}>
