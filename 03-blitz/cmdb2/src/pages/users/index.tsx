@@ -3,18 +3,30 @@
 // x quick-creating roles
 // x when stopping editing because clicking outside the cell, give cancel option.
 // x delete user
+// x warn when navigating away while editing
+// x select role for new users (autocomplete version)
 // - validation for all fields
 // - authorization for pages, gui, columns, db queries & mutations
-// x warn when navigating away while editing
+// - fix some flicker problem what is going on?
+// - make things generic
+// - separate signup from google signup from admin create, regarding fields & auth
+// - validation show pretty errors
 
-// OK qusetion for the roles dialog: when selecting a related field, we need a list.
-// but do we suppport pagination filtering etc? i feel like yes it should.
-// so it's already time to do this?
+// there are 2 ways to select objects:
+// from an edit cell
+//   not much space, demanding a dialog which can allow:
+//      - seeing more detailed view of all items
+//      - filtering & adding new items
+//      - with a dialog there's enough space to see ALL options
+// from an existing dialog. like creating a new user, select a role for that new user.
+//   so we can't show all items, need to find a compact way to do this.
+//   mui auto-complete is perfect for this.
+//   see https://mui.com/material-ui/react-autocomplete/#creatable
 
+// - support pagination on the [SELECT...] selection dialog.
 // main features to consider:
 // x snackbar to notify async changes
 // x confirmation dialog
-// - properly handle server-side errors
 // - validation based on schema. (see validateZodSchema)
 // - authorization for viewing, editing (by column), adding, deleting
 // ADDING: let's not add directly in the grid.
@@ -46,10 +58,11 @@ import {
     Search as SearchIcon,
     Security as SecurityIcon,
 } from '@mui/icons-material';
-
+import { createFilterOptions } from '@mui/material/Autocomplete';
 import {
     Box,
     Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Autocomplete,
     Divider,
     FormControl,
     InputBase,
@@ -143,6 +156,92 @@ function RoleValue({ roleId, role, onClick = undefined, onValueDelete = undefine
         (<Chip size="small" label={correctedRole?.name} onClick={handleClick} onDelete={handleDelete}></Chip>) :
         (<Chip size="small" label={"none"} variant="outlined" onClick={handleClick} sx={{ fontStyle: "italic" }}></Chip>);
 }
+
+
+const filterRoles = createFilterOptions();
+
+// https://mui.com/material-ui/react-autocomplete/#creatable
+// option items are role objects themselves (not just IDs)
+function SelectRoleInput({ valueObj, onChange }) {
+    //const [value, setValue] = React.useState(valueObj);
+    const [{ items }, { refetch }] = usePaginatedQuery(GetRolesQuery, { where: {}, orderBy: {} });
+    const [createRoleMutation] = useMutation(CreateRoleMutation);
+
+    return (<Autocomplete
+        value={valueObj}
+        onChange={(event, newValue) => {
+            if (typeof newValue === 'string') {
+                // console.log(`onChange string(${newValue})`);
+                // when the user types in a value that doesn't exist, and hits enter, this triggers.
+                // don't create new, and don't select
+            } else if (newValue && newValue.inputValue) {
+                // Create a new value from the user input
+                //console.log(`create new role(${newValue})`);
+
+                createRoleMutation({ name: newValue.inputValue, description: "" }).then((updatedObj) => {
+                    //setValue(updatedObj);
+                    onChange(updatedObj);
+                    refetch();
+                }).catch((reason => {
+                    refetch(); // should revert the data.
+                }));
+            } else {
+                // user selecting a normal item from the dropdown
+                console.log(`on change role obj(${newValue})`);
+                //setValue(newValue);
+                onChange(newValue);
+            }
+        }}
+        filterOptions={(options, params) => {
+            const filtered = filterRoles(options, params);
+            const { inputValue } = params;
+            // Suggest the creation of a new value
+            const isExisting = options.some((option) => inputValue === option.name);
+            if (inputValue !== '' && !isExisting) {
+                filtered.unshift({
+                    inputValue,
+                    name: `Add "${inputValue}"`,
+                });
+            }
+            console.log(`filteroptions`);
+            return filtered;
+        }}
+        freeSolo
+        selectOnFocus
+        clearOnBlur
+        handleHomeEndKeys
+        options={items}
+        getOptionLabel={(option) => { // it's not completely clear to me what this is used for, considering we render items ourselves.
+            // Value selected with enter, right from the input. docs state that for freesolo this case must be handled.
+            if (typeof option === 'string') {
+                return option;
+            }
+            // Add the virtual dynamic option
+            if (option.inputValue) {
+                return option.inputValue;
+            }
+            // Regular option
+            return option.name;
+        }}
+        renderOption={(props, option) => {
+            return option.inputValue ?
+                (<li {...props}>
+                    <AddIcon />
+                    <span style={{ fontStyle: "italic" }}>{option.name}</span>
+                </li>) :
+                (<li {...props}>
+                    <SecurityIcon />
+                    {option.name}
+                </li>);
+        }}
+        renderInput={(params) => (
+            <TextField {...params} label="Select role" />
+        )}
+    />
+    );
+};
+
+
 
 function SelectRoleDialog({ roleId, onOK, onCancel }) {
     const theme = useTheme();
@@ -325,6 +424,12 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
                         setObj(obj);
                     }}
                         autoFocus={false}></ValidationTextField>
+                    <SelectRoleInput valueObj={obj.role} onChange={(role) => {
+                        obj.role = role;
+                        obj.roleId = role?.id || null;
+                        console.log(`set new user obj role to ${role?.id}`);
+                        setObj(obj);
+                    }}></SelectRoleInput>
                 </FormControl>
             </DialogContent>
             <DialogActions>
@@ -607,6 +712,7 @@ const UserGrid = () => {
     const [newUserMutation] = useMutation(NewUserMutationSpec);
 
     const onAddUserOK = (obj) => {
+        console.log(`about to add new user with role ID ${obj.roleId}`);
         newUserMutation(obj).then(() => {
             setSnackbar({ children: 'New user success', severity: 'success' });
             refetch();
