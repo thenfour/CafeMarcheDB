@@ -2,8 +2,10 @@
 // x roles: selecting related item via dropdown
 // x quick-creating roles
 // x when stopping editing because clicking outside the cell, give cancel option.
-// - delete user
-// - warn when navigating away while editing
+// x delete user
+// - validation for all fields
+// - authorization for pages, gui, columns, db queries & mutations
+// x warn when navigating away while editing
 
 // OK qusetion for the roles dialog: when selecting a related field, we need a list.
 // but do we suppport pagination filtering etc? i feel like yes it should.
@@ -60,6 +62,7 @@ import Chip from '@mui/material/Chip';
 import Snackbar from '@mui/material/Snackbar';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { useBeforeunload } from 'react-beforeunload';
 import {
     DataGrid,
     GridActionsCellItem,
@@ -81,7 +84,7 @@ import getUsers from "src/users/queries/getUsers";
 import CreateRoleMutation from "src/auth/mutations/createRole";
 import GetRolesQuery from "src/auth/queries/getRoles";
 import GetRoleQuery from "src/auth/queries/getRole";
-import { userInfo } from "os";
+import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
 
 function ValidationTextField({ schema, field, label, obj, onChange, autoFocus }) {
     const [text, setText] = React.useState(obj[field]);
@@ -114,6 +117,7 @@ function ValidationTextField({ schema, field, label, obj, onChange, autoFocus })
     );
 }
 
+
 function RoleValue({ roleId, role, onClick = undefined, onValueDelete = undefined }) {
 
     // when editing, you are really editing the roleId field.
@@ -125,8 +129,6 @@ function RoleValue({ roleId, role, onClick = undefined, onValueDelete = undefine
     React.useEffect(() => {
         setCorrectedRole(updatedRole);
     }, [roleId]);
-
-    //console.log(`<RoleValue; roleId=${roleId}; roleName=${role?.name}; correctedName=${correctedRole?.name}`);
 
     let handleClick: any = null;
     if (onClick) {
@@ -179,7 +181,6 @@ function SelectRoleDialog({ roleId, onOK, onCancel }) {
     };
 
     const handleItemClick = (e, clickedRoleId) => {
-        //console.log(`handleItemClick ${clickedRoleId}`);
         setSelectedValue(clickedRoleId);
     };
 
@@ -273,7 +274,6 @@ function RoleEditCell(props: GridRenderEditCellParams) {
     // when viewing, it's just a chip, no click or delete.
     // when editing but not in focus, same thing
     // when editing with focus, show a dropdown menu, with options to delete & create new.
-    //console.log(`rendering edit cell; roleID: ${props?.row?.roleId}; row=${props?.row}; role=${props?.row?.role} name=${props?.row?.role?.name}`);
 
     if (props.cellMode != GridCellModes.Edit || !props.hasFocus) {
         return <RoleValue roleId={props?.row?.roleId} role={props?.row?.role}></RoleValue>; //props.colDef.renderCell(props);
@@ -281,7 +281,6 @@ function RoleEditCell(props: GridRenderEditCellParams) {
     //const { id, value, field } = params;
     if (showingRoleSelectDialog) {
         return <SelectRoleDialog roleId={value} onCancel={() => { setShowingRoleSelectDialog(false) }} onOK={(newRoleId, newRole) => {
-            //console.log(`you clicked on a new ${field}: ${newRoleId}`);
             apiRef.current.setEditCellValue({ id, field, value: newRoleId });
             setShowingRoleSelectDialog(false);
         }}></SelectRoleDialog>;
@@ -318,13 +317,11 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
                 <FormControl>
                     <ValidationTextField field="name" label="Name" schema={NewUserSchema} obj={obj} onChange={(e) => {
                         obj["name"] = e.target.value;
-                        //console.log(obj);
                         setObj(obj);
                     }}
                         autoFocus={true}></ValidationTextField>
                     <ValidationTextField field="email" label="Email" schema={NewUserSchema} obj={obj} onChange={(e) => {
                         obj["email"] = e.target.value;
-                        //console.log(obj);
                         setObj(obj);
                     }}
                         autoFocus={false}></ValidationTextField>
@@ -430,14 +427,15 @@ const UserGrid = () => {
     };
 
     const handleSaveClick = (id) => () => {
-        console.log(`handleSaveClick. explicitSave = true`);
         setExplicitSave(true);
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
-        console.log(` -> row modes model should have changed right?`);
     };
+
+    const [deleteRowId, setDeleteRowId] = React.useState(null);
 
     const handleDeleteClick = (id) => () => {
         //setRows(rows.filter((row) => row.id !== id));
+        setDeleteRowId(id);
     };
 
     const handleCancelClick = (id) => () => {
@@ -449,33 +447,18 @@ const UserGrid = () => {
 
     const [promiseArguments, setPromiseArguments] = React.useState<any>(null);
 
-    const processRowUpdate =
+    const processRowUpdate = // previously used // const processRowUpdate = React.useCallback( but i don't quite get why.
         (newRow: GridRowModel, oldRow: GridRowModel) =>
             new Promise<GridRowModel>((resolve, reject) => {
                 const mutation = computeMutation(newRow, oldRow);
                 if (mutation) {
                     // Save the arguments to resolve or reject the promise later
-                    console.log(`process row update - ask user confirm; explicitSave = ${explicitSave}`);
                     setPromiseArguments({ resolve, reject, newRow, oldRow, mutation });
                 } else {
+                    setSnackbar({ children: "No changes were made", severity: 'success' });
                     resolve(oldRow); // Nothing was changed
                 }
             });
-
-    // const processRowUpdate = React.useCallback(
-    //     (newRow: GridRowModel, oldRow: GridRowModel) =>
-    //         new Promise<GridRowModel>((resolve, reject) => {
-    //             const mutation = computeMutation(newRow, oldRow);
-    //             if (mutation) {
-    //                 // Save the arguments to resolve or reject the promise later
-    //                 console.log(`process row update - ask user confirm; explicitSave = ${explicitSave}`);
-    //                 setPromiseArguments({ resolve, reject, newRow, oldRow, mutation });
-    //             } else {
-    //                 resolve(oldRow); // Nothing was changed
-    //             }
-    //         }),
-    //     [],
-    // );
 
     const [showingNewDialog, setShowingNewDialog] = React.useState<boolean>(false);
 
@@ -489,7 +472,6 @@ const UserGrid = () => {
             editable: true,
             width: 150,
             renderCell: (params) => {
-                //console.log(`rendering value cell; roleID: ${params?.row?.roleId}`);
                 return <RoleValue roleId={params?.row?.roleId} role={params?.row?.role}></RoleValue>;
             },
             renderEditCell: (params) => {
@@ -563,6 +545,41 @@ const UserGrid = () => {
         setPromiseArguments(null);
     };
 
+    const [softDeleteUserMutation] = useMutation(SoftDeleteUserMutation);
+
+    const renderDeleteConfirmation = () => {
+        if (!deleteRowId) {
+            return null;
+        }
+        const handleYes = () => {
+            softDeleteUserMutation({ id: deleteRowId });
+            setDeleteRowId(null);
+        };
+        const row = users.find(u => u.id == deleteRowId);
+        if (!row) { // not found wut? maybe some weird async pagination or background refresh error
+            setDeleteRowId(null);
+            return null;
+        }
+
+        const handleClose = () => setDeleteRowId(null);
+
+        return (
+            <Dialog
+                open={true}
+                onClose={handleClose}
+            >
+                <DialogTitle>Delete row?</DialogTitle>
+                <DialogContent dividers>
+                    Pressing 'Yes' will delete this row with name {row.name}.
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Cancel</Button>
+                    <Button onClick={handleYes}>Yes</Button>
+                </DialogActions>
+            </Dialog>
+        );
+    };
+
     const renderConfirmDialog = () => {
         if (!promiseArguments) {
             return null;
@@ -571,7 +588,10 @@ const UserGrid = () => {
         const { mutation } = promiseArguments;
 
         return (
-            <Dialog open={true}>
+            <Dialog
+                open={true}
+                onClose={handleNo}
+            >
                 <DialogTitle>{explicitSave ? "Are you sure?" : "Save your changes?"}</DialogTitle>
                 <DialogContent dividers>
                     {`Pressing 'Yes' will change ${mutation}.`}
@@ -602,8 +622,24 @@ const UserGrid = () => {
         password: "1234567890!@#$%^&aoeuAOEU",
     };
 
+
+    const isAnyRowEdited = (rowModels) => {
+        for (const rowModel of Object.values(rowModels)) {
+            if (rowModel.mode === GridRowModes.Edit) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const isDirty = !!showingNewDialog || isAnyRowEdited(rowModesModel);
+
+    useBeforeunload(isDirty ? (event) => event.preventDefault() : null);
+
     return (<>
         {renderConfirmDialog()}
+        {renderDeleteConfirmation()}
+
         {!!showingNewDialog && <AddUserDialog
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddUserOK}
@@ -623,7 +659,6 @@ const UserGrid = () => {
                     onNewClicked: () => { setShowingNewDialog(true); }
                 }
             }}
-            //getRowClassName={(params) => `super-app-theme--${params.row.status}`}
 
             // schema
             columns={columns}
@@ -667,7 +702,6 @@ const UserGrid = () => {
             // editing
             rowModesModel={rowModesModel}
             onRowModesModelChange={newRowModesModel => {
-                console.log(`row modes model change. explicitSave = false`);
                 setExplicitSave(false); // this is called before editing, or after saving. so it's safe to reset explicit save flag always here.
                 setRowModesModel(newRowModesModel);
             }}

@@ -42,6 +42,7 @@
     "passport-google-oauth20": "2.0.0",
     "prisma": "4.6.1",
     "react": "18.2.0",
+    "react-beforeunload": "2.6.0",
     "react-dom": "18.2.0",
     "react-final-form": "6.5.9",
     "secure-password": "4.0.0",
