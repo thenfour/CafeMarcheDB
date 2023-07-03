@@ -10,6 +10,8 @@
 // - authorization for pages, components, columns, db queries & mutations
 // - fix some flicker problem what is going on?
 // - separate signup from google signup from admin create, regarding fields & auth
+//   - note huge bug right now where adding a user makes you become that user.
+// - impersonation
 // - validation show pretty errors
 // - other datatypes (boolean, datetime...)
 
@@ -48,6 +50,7 @@
 import { useAuthorize } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import GetAllRolesQuery from "src/auth/queries/getAllRoles";
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -57,6 +60,7 @@ import {
     Search as SearchIcon,
     Security as SecurityIcon,
 } from '@mui/icons-material';
+//import CreateRoleMutation from "src/auth/mutations/createRole";
 import {
     Autocomplete,
     Box,
@@ -69,6 +73,7 @@ import {
     TextField
 } from "@mui/material";
 import { createFilterOptions } from '@mui/material/Autocomplete';
+import db, { Prisma, Role as DBRole } from "db";
 import Chip from '@mui/material/Chip';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -91,6 +96,8 @@ import NewUserMutationSpec from "src/auth/mutations/signup";
 import GetRoleQuery from "src/auth/queries/getRole";
 import GetRolesQuery from "src/auth/queries/getRoles";
 import { Signup as NewUserSchema } from "src/auth/schemas";
+import { CMAutocompleteField } from "src/core/cmdashboard/CMAutocompleteField";
+import { CMColumnSpec, GetCaptionReasons, GetCaptionParams } from "src/core/cmdashboard/CMColumnSpec";
 import { CMTextField } from "src/core/cmdashboard/CMTextField";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -118,90 +125,24 @@ import getUsers from "src/users/queries/getUsers";
 // UpdateConfirmationDialog
 // DeleteConfirmationDialog
 
-const RoleSpec = {
+const RoleColumnSpec: CMColumnSpec<DBRole> =
+{
+    GetAllItemsQuery: GetAllRolesQuery,
+    CreateFromStringMutation: CreateRoleMutation,
+    GetCaption({ reason, obj, err, inputString }: GetCaptionParams<DBRole>) {
+        switch (reason) {
+            case GetCaptionReasons.AutocompleteCreatedItemSnackbar:
+                return `Created new role ${obj?.name || "<error>"}`;
+            case GetCaptionReasons.AutocompleteInsertErrorSnackbar:
+                return `Failed to create new role.`;
+            case GetCaptionReasons.AutocompleteInsertVirtualItemCaption:
+                return `Add "${inputString || "<error>"}"`
+            case GetCaptionReasons.AutocompletePlaceholderText:
+                return `Select a role`;
+        }
+        return `${obj?.name || "(none)"} reason=${reason}`;
+    },
 };
-
-const gFilterRoles = createFilterOptions();
-
-// autocomplete selection of a single related object
-// https://mui.com/material-ui/react-autocomplete/#creatable
-// option items are role objects themselves (not just IDs)
-function SelectRoleInput({ valueObj, onChange }) {
-    const [{ items }, { refetch }] = usePaginatedQuery(GetRolesQuery, { where: {}, orderBy: {} });
-    const [createRoleMutation] = useMutation(CreateRoleMutation);
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    return (<Autocomplete
-        value={valueObj || null} // null to make sure the component acts as a controlled component
-        onChange={(event, newValue) => {
-            if (typeof newValue === 'string') {
-                // when the user types in a value that doesn't exist, and hits enter, this triggers.
-                // don't create new, and don't select
-            } else if (newValue && newValue.inputValue) {
-                // Create a new value from the user input
-                createRoleMutation({ name: newValue.inputValue, description: "" }).then((updatedObj) => {
-                    showSnackbar({ children: "Role created", severity: "success" });
-                    onChange(updatedObj);
-                    refetch();
-                }).catch((err => {
-                    showSnackbar({ children: `Failed to create role: ${err}`, severity: "error" });
-                    refetch(); // should revert the data.
-                }));
-            } else {
-                // user selecting a normal item from the dropdown
-                onChange(newValue);
-            }
-        }}
-        filterOptions={(options, params) => {
-            const filtered = gFilterRoles(options, params);
-            const { inputValue } = params;
-            // Suggest the creation of a new value
-            const isExisting = options.some((option) => inputValue === option.name);
-            if (inputValue !== '' && !isExisting) {
-                filtered.push({ // push vs. unshift; hard to choose really. but adding to end has the advantage that you are encouraged to select existing items, and the auto-highlighted first option is going to be the existing one rather than creating new.
-                    inputValue,
-                    name: `Add "${inputValue}"`,
-                });
-            }
-            return filtered;
-        }}
-        freeSolo
-        autoHighlight={true}
-        selectOnFocus
-        clearOnBlur
-        handleHomeEndKeys
-        options={items}
-        getOptionLabel={(option) => { // it's not completely clear to me what this is used for, considering we render items ourselves.
-            // Value selected with enter, right from the input. docs state that for freesolo this case must be handled.
-            if (typeof option === 'string') {
-                return option;
-            }
-            // Add the virtual dynamic option
-            if (option.inputValue) {
-                return option.inputValue;
-            }
-            // Regular option
-            return option.name;
-        }}
-        renderOption={(props, option) => {
-            return option.inputValue ?
-                (<li {...props}>
-                    <AddIcon />
-                    <span style={{ fontStyle: "italic" }}>{option.name}</span>
-                </li>) :
-                (<li {...props}>
-                    <SecurityIcon />
-                    {option.name}
-                </li>);
-        }}
-        renderInput={(params) => (
-            <TextField {...params} label="Select role" />
-        )}
-    />
-    );
-};
-
-
 
 
 
@@ -431,9 +372,9 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
                         setObj({ ...obj, email: val });
                     }}
                         autoFocus={false}></CMTextField>
-                    <SelectRoleInput valueObj={obj.role} onChange={(role) => {
+                    <CMAutocompleteField<DBRole> columnSpec={RoleColumnSpec} valueObj={obj.role} onChange={(role) => {
                         setObj({ ...obj, role, roleId: (role?.id || null) });
-                    }}></SelectRoleInput>
+                    }}></CMAutocompleteField>
                 </FormControl>
             </DialogContent>
             <DialogActions>
