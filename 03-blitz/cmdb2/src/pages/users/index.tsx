@@ -5,12 +5,13 @@
 // x delete user
 // x warn when navigating away while editing
 // x select role for new users (autocomplete version)
-// - validation for all fields
-// - authorization for pages, gui, columns, db queries & mutations
+// - make things generic; use mui existing components as model
+// - validation for all fields in all scenarios
+// - authorization for pages, components, columns, db queries & mutations
 // - fix some flicker problem what is going on?
-// - make things generic
 // - separate signup from google signup from admin create, regarding fields & auth
 // - validation show pretty errors
+// - other datatypes (boolean, datetime...)
 
 // there are 2 ways to select objects:
 // from an edit cell
@@ -27,8 +28,6 @@
 // main features to consider:
 // x snackbar to notify async changes
 // x confirmation dialog
-// - validation based on schema. (see validateZodSchema)
-// - authorization for viewing, editing (by column), adding, deleting
 // ADDING: let's not add directly in the grid.
 //   doing so would result in weirdness wrt paging / sorting /filtering. Better to just display a modal or inline form specifically for adding items.
 //   grid is just not a great UI regarding validation etc. better for modifying existing fields
@@ -46,9 +45,9 @@
 //   list of cards feels the most useful: https://github.com/mui/mui-x/issues/6460#issuecomment-1409912710
 // FILTERING
 //   stuff like freeform text + tag text or something may require custom
-import { useAuthorize, useSession } from "@blitzjs/auth";
+import { useAuthorize } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
-import { useMutation, useQuery, usePaginatedQuery } from "@blitzjs/rpc";
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -58,11 +57,10 @@ import {
     Search as SearchIcon,
     Security as SecurityIcon,
 } from '@mui/icons-material';
-import { createFilterOptions } from '@mui/material/Autocomplete';
 import {
+    Autocomplete,
     Box,
     Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-    Autocomplete,
     Divider,
     FormControl,
     InputBase,
@@ -70,12 +68,10 @@ import {
     ListItemButton, ListItemIcon, ListItemText,
     TextField
 } from "@mui/material";
-import Alert, { AlertProps } from '@mui/material/Alert';
+import { createFilterOptions } from '@mui/material/Autocomplete';
 import Chip from '@mui/material/Chip';
-import Snackbar from '@mui/material/Snackbar';
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useBeforeunload } from 'react-beforeunload';
 import {
     DataGrid,
     GridActionsCellItem,
@@ -86,127 +82,91 @@ import {
     GridToolbarQuickFilter,
     useGridApiContext
 } from '@mui/x-data-grid';
-import { useRouter } from "next/router";
+import { formatZodError } from "blitz";
 import React from "react";
+import { useBeforeunload } from 'react-beforeunload';
+import CreateRoleMutation from "src/auth/mutations/createRole";
+import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
 import NewUserMutationSpec from "src/auth/mutations/signup";
+import GetRoleQuery from "src/auth/queries/getRole";
+import GetRolesQuery from "src/auth/queries/getRoles";
 import { Signup as NewUserSchema } from "src/auth/schemas";
+import { CMTextField } from "src/core/cmdashboard/CMTextField";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { useCurrentUser } from "src/users/hooks/useCurrentUser";
+import { Permission } from "src/core/permissions";
 import updateUserFromGrid from "src/users/mutations/updateUserFromGrid";
 import getUsers from "src/users/queries/getUsers";
-import CreateRoleMutation from "src/auth/mutations/createRole";
-import GetRolesQuery from "src/auth/queries/getRoles";
-import GetRoleQuery from "src/auth/queries/getRole";
-import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
 
-function ValidationTextField({ schema, field, label, obj, onChange, autoFocus }) {
-    const [text, setText] = React.useState(obj[field]);
-    const [errorText, setErrorText] = React.useState<string | null>(null);
+// FORM FIELDS
+// ValidationTextField = TextField for string, used by new item dialog
+// ChipValue = Chip for object, used in various places (edit cell)
+// SelectObjectAutocomplete = autocomplete selection with quick add
 
-    React.useEffect(() => {
-        const inp = { [field]: text };
-        schema.pick({ [field]: true }).safeParseAsync(inp).then((res) => {
-            setErrorText(res.success ? null : "error");
-        });
-    }, [text]);
+// CELL VIEWER
 
-    return (
-        <TextField
-            id={field}
-            autoFocus={autoFocus}
-            label={label}
-            error={!!errorText}
-            helperText={errorText}
-            onChange={(e) => { setText(e.target.value); onChange(e); }}
-            value={text}
-            margin="dense"
-            type="text"
-            fullWidth
-            variant="filled"
-            inputProps={{
-                'data-lpignore': true, // supposedly prevent lastpass from auto-completing. doesn't work for me tho
-            }}
-        />
-    );
-}
+// CELL EDITOR
+// SelectObjectDialog = modal dialog for selection with quick add, more beautiful ux
+// ObjectEditCell
 
+// AddObjectDialog
+// CREATE FORM
 
-function RoleValue({ roleId, role, onClick = undefined, onValueDelete = undefined }) {
+// EDIT DATAGRID
+// EditableGrid
 
-    // when editing, you are really editing the roleId field.
-    // but the `role` object might be out-of-sync with the updated value. correction is therefore necessary for rendering the value for edit cells.
-    const [correctedRole, setCorrectedRole] = React.useState(role);
+// UpdateConfirmationDialog
+// DeleteConfirmationDialog
 
-    // todo: is this going to query too often?
-    const [updatedRole] = useQuery(GetRoleQuery, { id: roleId });
-    React.useEffect(() => {
-        setCorrectedRole(updatedRole);
-    }, [roleId]);
+const RoleSpec = {
+};
 
-    let handleClick: any = null;
-    if (onClick) {
-        handleClick = (e) => onClick(e, correctedRole);
-    }
-    let handleDelete: any = null;
-    if (onValueDelete) {
-        handleDelete = (e) => onValueDelete(e, correctedRole);
-    }
+const gFilterRoles = createFilterOptions();
 
-    return !!correctedRole ?
-        (<Chip size="small" label={correctedRole?.name} onClick={handleClick} onDelete={handleDelete}></Chip>) :
-        (<Chip size="small" label={"none"} variant="outlined" onClick={handleClick} sx={{ fontStyle: "italic" }}></Chip>);
-}
-
-
-const filterRoles = createFilterOptions();
-
+// autocomplete selection of a single related object
 // https://mui.com/material-ui/react-autocomplete/#creatable
 // option items are role objects themselves (not just IDs)
 function SelectRoleInput({ valueObj, onChange }) {
-    //const [value, setValue] = React.useState(valueObj);
     const [{ items }, { refetch }] = usePaginatedQuery(GetRolesQuery, { where: {}, orderBy: {} });
     const [createRoleMutation] = useMutation(CreateRoleMutation);
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     return (<Autocomplete
-        value={valueObj}
+        value={valueObj || null} // null to make sure the component acts as a controlled component
         onChange={(event, newValue) => {
             if (typeof newValue === 'string') {
-                // console.log(`onChange string(${newValue})`);
                 // when the user types in a value that doesn't exist, and hits enter, this triggers.
                 // don't create new, and don't select
             } else if (newValue && newValue.inputValue) {
                 // Create a new value from the user input
-                //console.log(`create new role(${newValue})`);
-
                 createRoleMutation({ name: newValue.inputValue, description: "" }).then((updatedObj) => {
-                    //setValue(updatedObj);
+                    showSnackbar({ children: "Role created", severity: "success" });
                     onChange(updatedObj);
                     refetch();
-                }).catch((reason => {
+                }).catch((err => {
+                    showSnackbar({ children: `Failed to create role: ${err}`, severity: "error" });
                     refetch(); // should revert the data.
                 }));
             } else {
                 // user selecting a normal item from the dropdown
-                console.log(`on change role obj(${newValue})`);
-                //setValue(newValue);
                 onChange(newValue);
             }
         }}
         filterOptions={(options, params) => {
-            const filtered = filterRoles(options, params);
+            const filtered = gFilterRoles(options, params);
             const { inputValue } = params;
             // Suggest the creation of a new value
             const isExisting = options.some((option) => inputValue === option.name);
             if (inputValue !== '' && !isExisting) {
-                filtered.unshift({
+                filtered.push({ // push vs. unshift; hard to choose really. but adding to end has the advantage that you are encouraged to select existing items, and the auto-highlighted first option is going to be the existing one rather than creating new.
                     inputValue,
                     name: `Add "${inputValue}"`,
                 });
             }
-            console.log(`filteroptions`);
             return filtered;
         }}
         freeSolo
+        autoHighlight={true}
         selectOnFocus
         clearOnBlur
         handleHomeEndKeys
@@ -243,6 +203,38 @@ function SelectRoleInput({ valueObj, onChange }) {
 
 
 
+
+
+// a single read-only value rendered as a <Chip>.
+// optionally deleteable
+function RoleValue({ roleId, role, onClick = undefined, onValueDelete = undefined }) {
+
+    // when editing, you are really editing the roleId field.
+    // but the `role` object might be out-of-sync with the updated value. correction is therefore necessary for rendering the value for edit cells.
+    const [correctedRole, setCorrectedRole] = React.useState(role);
+
+    // todo: is this going to query too often?
+    const [updatedRole] = useQuery(GetRoleQuery, { id: roleId });
+    React.useEffect(() => {
+        setCorrectedRole(updatedRole);
+    }, [roleId]);
+
+    let handleClick: any = null;
+    if (onClick) {
+        handleClick = (e) => onClick(e, correctedRole);
+    }
+    let handleDelete: any = null;
+    if (onValueDelete) {
+        handleDelete = (e) => onValueDelete(e, correctedRole);
+    }
+
+    return !!correctedRole ?
+        (<Chip size="small" label={correctedRole?.name} onClick={handleClick} onDelete={handleDelete}></Chip>) :
+        (<Chip size="small" label={"none"} variant="outlined" onClick={handleClick} sx={{ fontStyle: "italic" }}></Chip>);
+}
+
+
+
 function SelectRoleDialog({ roleId, onOK, onCancel }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -268,13 +260,14 @@ function SelectRoleDialog({ roleId, onOK, onCancel }) {
     const selectedRole = items.find((r) => r.id == selectedValue);
 
     const [createRoleMutation] = useMutation(CreateRoleMutation);
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onNewClicked = (e) => {
         createRoleMutation({ name: filterText, description: "" }).then((updatedObj) => {
-            //setSnackbar({ children: 'Role successfully created', severity: 'success' });
+            showSnackbar({ children: 'Role successfully created', severity: 'success' });
             refetch();
-        }).catch((reason => {
-            //setSnackbar({ children: "Some server error", severity: 'error' });
+        }).catch((err => {
+            showSnackbar({ children: `Some server error ${err}`, severity: 'error' });
             refetch(); // should revert the data.
         }));
     };
@@ -374,7 +367,7 @@ function RoleEditCell(props: GridRenderEditCellParams) {
     // when editing but not in focus, same thing
     // when editing with focus, show a dropdown menu, with options to delete & create new.
 
-    if (props.cellMode != GridCellModes.Edit || !props.hasFocus) {
+    if (props.cellMode != GridCellModes.Edit) {
         return <RoleValue roleId={props?.row?.roleId} role={props?.row?.role}></RoleValue>; //props.colDef.renderCell(props);
     }
     //const { id, value, field } = params;
@@ -395,6 +388,22 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(initialObj);
+    const [validationErrors, setValidationErrors] = React.useState({}); // don't allow null for syntax simplicity
+
+    React.useEffect(() => {
+        //debugger;
+        NewUserSchema.safeParseAsync(obj).then((res) => {
+            //console.log(`Parsed schema... result:`);
+            //console.log(res);
+            if (!res.error) {
+                setValidationErrors({});
+                return;
+            }
+            setValidationErrors(formatZodError(res.error));
+            //const [errorText] = Object.values(formatZodError(res.error));
+            //setErrorText(res.success ? null : (errorText || "Invalid value"));
+        });
+    }, [obj]);
 
     const handleOK = (e) => {
         onOK(obj);
@@ -414,21 +423,16 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
                     will send updates occasionally.
                 </DialogContentText>
                 <FormControl>
-                    <ValidationTextField field="name" label="Name" schema={NewUserSchema} obj={obj} onChange={(e) => {
-                        obj["name"] = e.target.value;
-                        setObj(obj);
+                    <CMTextField label="Name" validationError={validationErrors["name"]} value={obj["name"]} onChange={(e, val) => {
+                        setObj({ ...obj, name: val });
                     }}
-                        autoFocus={true}></ValidationTextField>
-                    <ValidationTextField field="email" label="Email" schema={NewUserSchema} obj={obj} onChange={(e) => {
-                        obj["email"] = e.target.value;
-                        setObj(obj);
+                        autoFocus={true}></CMTextField>
+                    <CMTextField label="Email" validationError={validationErrors["email"]} value={obj["email"]} onChange={(e, val) => {
+                        setObj({ ...obj, email: val });
                     }}
-                        autoFocus={false}></ValidationTextField>
+                        autoFocus={false}></CMTextField>
                     <SelectRoleInput valueObj={obj.role} onChange={(role) => {
-                        obj.role = role;
-                        obj.roleId = role?.id || null;
-                        console.log(`set new user obj role to ${role?.id}`);
-                        setObj(obj);
+                        setObj({ ...obj, role, roleId: (role?.id || null) });
                     }}></SelectRoleInput>
                 </FormControl>
             </DialogContent>
@@ -474,13 +478,14 @@ function computeMutation(newRow: GridRowModel, oldRow: GridRowModel) {
 
 const UserGrid = () => {
     useAuthorize();
-    const currentUser = useCurrentUser();
-    const session = useSession();
-    const theme = useTheme();
-    const router = useRouter();
+    // const currentUser = useCurrentUser();
+    // const session = useSession();
+    // const theme = useTheme();
+    // const router = useRouter();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     // allow code to invoke the snackbar
-    const [snackbar, setSnackbar] = React.useState<Pick<AlertProps, 'children' | 'severity'> | null>(null);
+    //const [snackbar, setSnackbar] = React.useState<Pick<AlertProps, 'children' | 'severity'> | null>(null);
     const [updateUserFromGridMutation] = useMutation(updateUserFromGrid);
 
     // set initial pagination values + get pagination state.
@@ -539,7 +544,6 @@ const UserGrid = () => {
     const [deleteRowId, setDeleteRowId] = React.useState(null);
 
     const handleDeleteClick = (id) => () => {
-        //setRows(rows.filter((row) => row.id !== id));
         setDeleteRowId(id);
     };
 
@@ -560,7 +564,7 @@ const UserGrid = () => {
                     // Save the arguments to resolve or reject the promise later
                     setPromiseArguments({ resolve, reject, newRow, oldRow, mutation });
                 } else {
-                    setSnackbar({ children: "No changes were made", severity: 'success' });
+                    showSnackbar({ children: "No changes were made", severity: 'success' });
                     resolve(oldRow); // Nothing was changed
                 }
             });
@@ -636,15 +640,15 @@ const UserGrid = () => {
         const { newRow, oldRow, reject, resolve, mutation } = promiseArguments;
         try {
             updateUserFromGridMutation(newRow).then((updatedObj) => {
-                setSnackbar({ children: 'User successfully saved', severity: 'success' });
+                showSnackbar({ children: 'User successfully saved', severity: 'success' });
                 refetch();
             }).catch((reason => {
-                setSnackbar({ children: "Some server error", severity: 'error' });
+                showSnackbar({ children: "Some server error", severity: 'error' });
                 refetch(); // should revert the data.
             }));
             resolve(newRow); // optimistic
         } catch (error) {
-            setSnackbar({ children: "Some server error", severity: 'error' });
+            showSnackbar({ children: "Some server error", severity: 'error' });
             reject(oldRow);
         }
         setPromiseArguments(null);
@@ -714,10 +718,10 @@ const UserGrid = () => {
     const onAddUserOK = (obj) => {
         console.log(`about to add new user with role ID ${obj.roleId}`);
         newUserMutation(obj).then(() => {
-            setSnackbar({ children: 'New user success', severity: 'success' });
+            showSnackbar({ children: 'New user success', severity: 'success' });
             refetch();
         }).catch(err => {
-            setSnackbar({ children: "Some server error when adding", severity: 'error' });
+            showSnackbar({ children: "Some server error when adding", severity: 'error' });
         });
         setShowingNewDialog(false);
     };
@@ -814,11 +818,6 @@ const UserGrid = () => {
             onProcessRowUpdateError={(error) => { console.error(error) }}
             processRowUpdate={processRowUpdate}
         />
-        {!!snackbar && (
-            <Snackbar open onClose={() => setSnackbar(null)} autoHideDuration={6000}>
-                <Alert {...snackbar} onClose={() => setSnackbar(null)} />
-            </Snackbar>
-        )}
     </>
     );
 };
@@ -832,6 +831,6 @@ const UserListPage: BlitzPage = () => {
     );
 };
 
-UserListPage.authenticate = { role: ["hello?"] };
+UserListPage.authenticate = { role: [Permission.can_edit_users] };
 
 export default UserListPage;

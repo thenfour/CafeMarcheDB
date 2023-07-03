@@ -11,6 +11,7 @@ import { themeOptions } from "src/core/theme";
 import '../../public/global.css';
 import React from "react";
 import { useTheme } from "@mui/material/styles";
+import { SnackbarProvider } from "src/core/components/SnackbarContext";
 
 // Client-side cache, shared for the whole session of the user in the browser.
 const clientSideEmotionCache = createEmotionCache();
@@ -53,7 +54,11 @@ function ThemedApp({ Component, pageProps, emotionCache = clientSideEmotionCache
     document.documentElement.style.setProperty('--secondary-color', theme.palette.secondary.main);
   }, []);
 
-  return getLayout(<Component {...pageProps} />);
+  return getLayout(
+    <SnackbarProvider>
+      <Component {...pageProps} />
+    </SnackbarProvider>
+  );
 }
 
 const theme = createTheme(themeOptions);

@@ -28,13 +28,10 @@ export const password = z
   .max(100)
   .transform((str) => str.trim())
 
-// export const role = z
-//   .string()
-
 export const Signup = z.object({
   email,
   password,
-  name,
+  name: name.min(1),
   googleId,
   roleId: z.number().nullable().optional(),
 })

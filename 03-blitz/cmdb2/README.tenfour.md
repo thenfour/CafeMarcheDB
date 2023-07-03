@@ -27,5 +27,29 @@ blitz install material-ui
 
 
 
+
+
+# permissions vs. roles
+
+by default Blitz wants to just assign string-based roles to users, and pages specify which role(s) are allowed to access.
+that's a bit rigid for my tastes and i think exact permissions will need to evolve a bit over time.
+
+therefore i added ROLES, and PERMISSIONS. Roles are assigned multiple permissions.
+
+Permissions are what the code is trying to do.
+Roles are groupings of these.
+
+So for example, user has role "ADMIN". They try to access a user mgmt page which requests permission "CAN_EDIT_USERS".
+if ADMIN has permission CAN_EDIT_USERS, then they pass.
+
+so this is obvious and clear and simple.
+
+it gets fuzzy only because Blitz wants to still call permissions "ROLES". So you'll see things like,
+
+    Page.authenticate = { role: ["CAN_EDIT_USERS"] };
+
+And the point is: don't be confused by the use of the token `role` here. It's a permission, NOT a role.
+
+
 # how: deployment?
 
