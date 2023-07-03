@@ -1,10 +1,4 @@
 // next steps:
-// x roles: selecting related item via dropdown
-// x quick-creating roles
-// x when stopping editing because clicking outside the cell, give cancel option.
-// x delete user
-// x warn when navigating away while editing
-// x select role for new users (autocomplete version)
 // - make things generic; use mui existing components as model
 // - validation for all fields in all scenarios
 // - authorization for pages, components, columns, db queries & mutations
@@ -14,6 +8,7 @@
 // - impersonation
 // - validation show pretty errors
 // - other datatypes (boolean, datetime...)
+// - selected item scrolls off screen on the select item dialog
 
 // there are 2 ways to select objects:
 // from an edit cell
@@ -60,7 +55,6 @@ import {
     Search as SearchIcon,
     Security as SecurityIcon,
 } from '@mui/icons-material';
-//import CreateRoleMutation from "src/auth/mutations/createRole";
 import {
     Autocomplete,
     Box,
@@ -70,9 +64,7 @@ import {
     InputBase,
     List,
     ListItemButton, ListItemIcon, ListItemText,
-    TextField
 } from "@mui/material";
-import { createFilterOptions } from '@mui/material/Autocomplete';
 import db, { Prisma, Role as DBRole } from "db";
 import Chip from '@mui/material/Chip';
 import { useTheme } from "@mui/material/styles";
@@ -93,17 +85,16 @@ import { useBeforeunload } from 'react-beforeunload';
 import CreateRoleMutation from "src/auth/mutations/createRole";
 import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
 import NewUserMutationSpec from "src/auth/mutations/signup";
-import GetRoleQuery from "src/auth/queries/getRole";
-import GetRolesQuery from "src/auth/queries/getRoles";
 import { Signup as NewUserSchema } from "src/auth/schemas";
 import { CMAutocompleteField } from "src/core/cmdashboard/CMAutocompleteField";
-import { CMColumnSpec, GetCaptionReasons, GetCaptionParams } from "src/core/cmdashboard/CMColumnSpec";
+import { CMColumnSpec, GetCaptionReasons, GetCaptionParams, RenderItemParams, CreateFromStringParams } from "src/core/cmdashboard/CMColumnSpec";
 import { CMTextField } from "src/core/cmdashboard/CMTextField";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Permission } from "src/core/permissions";
 import updateUserFromGrid from "src/users/mutations/updateUserFromGrid";
 import getUsers from "src/users/queries/getUsers";
+import { CMSelectItemDialog } from "src/core/cmdashboard/CMSelectItemDialog";
 
 // FORM FIELDS
 // ValidationTextField = TextField for string, used by new item dialog
@@ -129,6 +120,15 @@ const RoleColumnSpec: CMColumnSpec<DBRole> =
 {
     GetAllItemsQuery: GetAllRolesQuery,
     CreateFromStringMutation: CreateRoleMutation,
+    CreateFromString: async (params: CreateFromStringParams<DBRole>) => {
+        return await params.mutation({ name: params.input, description: "" });
+    },
+    MatchesExactly: (value: DBRole, input: string) => { // used by autocomplete to know if the item created by single text string already exists
+        return value.name.trim() == input;
+    },
+    GetStringCaptionForValue: (value: DBRole) => {
+        return value.name;
+    },
     GetCaption({ reason, obj, err, inputString }: GetCaptionParams<DBRole>) {
         switch (reason) {
             case GetCaptionReasons.AutocompleteCreatedItemSnackbar:
@@ -138,169 +138,53 @@ const RoleColumnSpec: CMColumnSpec<DBRole> =
             case GetCaptionReasons.AutocompleteInsertVirtualItemCaption:
                 return `Add "${inputString || "<error>"}"`
             case GetCaptionReasons.AutocompletePlaceholderText:
+            case GetCaptionReasons.SelectItemDialogTitle:
                 return `Select a role`;
         }
         return `${obj?.name || "(none)"} reason=${reason}`;
     },
+    RenderAutocompleteItem({ obj }) {
+        return <>
+            <SecurityIcon />
+            {obj.name}
+        </>;
+    },
+    RenderItem(params: RenderItemParams<DBRole>) {
+        return !params.value ?
+            <>--</> :
+            <Chip
+                size="small"
+                label={`${params.value.name}`}
+                onClick={params.onClick ? () => { params.onClick(params.value) } : undefined}
+                onDelete={params.onDelete ? () => { params.onDelete(params.value) } : undefined}
+            />;
+    },
+    IsEqual: (item1, item2) => {
+        if (!item1 && !item2) return true; // both considered null.
+        return item1?.id == item2?.id;
+    },
+    RenderSelectListItemChildren: (value: DBRole) => {
+        return <>
+            <ListItemIcon>
+                <SecurityIcon />
+            </ListItemIcon>
+            <ListItemText
+                primary={value.name}
+                secondary={value.description}
+            />
+        </>;
+    },
 };
 
 
+type CMRenderEditCellProps<TDBModel> = GridRenderEditCellParams & {
+    columnSpec: CMColumnSpec<TDBModel>
+};
 
-// a single read-only value rendered as a <Chip>.
-// optionally deleteable
-function RoleValue({ roleId, role, onClick = undefined, onValueDelete = undefined }) {
-
-    // when editing, you are really editing the roleId field.
-    // but the `role` object might be out-of-sync with the updated value. correction is therefore necessary for rendering the value for edit cells.
-    const [correctedRole, setCorrectedRole] = React.useState(role);
-
-    // todo: is this going to query too often?
-    const [updatedRole] = useQuery(GetRoleQuery, { id: roleId });
-    React.useEffect(() => {
-        setCorrectedRole(updatedRole);
-    }, [roleId]);
-
-    let handleClick: any = null;
-    if (onClick) {
-        handleClick = (e) => onClick(e, correctedRole);
-    }
-    let handleDelete: any = null;
-    if (onValueDelete) {
-        handleDelete = (e) => onValueDelete(e, correctedRole);
-    }
-
-    return !!correctedRole ?
-        (<Chip size="small" label={correctedRole?.name} onClick={handleClick} onDelete={handleDelete}></Chip>) :
-        (<Chip size="small" label={"none"} variant="outlined" onClick={handleClick} sx={{ fontStyle: "italic" }}></Chip>);
-}
-
-
-
-function SelectRoleDialog({ roleId, onOK, onCancel }) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [selectedValue, setSelectedValue] = React.useState(roleId);
-    const [filterText, setFilterText] = React.useState("");
-
-    const where = { AND: [] };
-    if (filterText?.length) {
-        const tokens = filterText.split(/\s+/).filter(token => token.length > 0);
-        const quickFilterItems = tokens.map(q => {
-            return {
-                OR: [
-                    { name: { contains: q } },
-                    { description: { contains: q } },
-                ]
-            };
-        });
-        where.AND.push(...quickFilterItems);
-    }
-
-    const [{ items }, { refetch }] = usePaginatedQuery(GetRolesQuery, { where, orderBy: {} });
-
-    const selectedRole = items.find((r) => r.id == selectedValue);
-
-    const [createRoleMutation] = useMutation(CreateRoleMutation);
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    const onNewClicked = (e) => {
-        createRoleMutation({ name: filterText, description: "" }).then((updatedObj) => {
-            showSnackbar({ children: 'Role successfully created', severity: 'success' });
-            refetch();
-        }).catch((err => {
-            showSnackbar({ children: `Some server error ${err}`, severity: 'error' });
-            refetch(); // should revert the data.
-        }));
-    };
-
-    const handleItemClick = (e, clickedRoleId) => {
-        setSelectedValue(clickedRoleId);
-    };
-
-    return (
-        <Dialog
-            open={true}
-            onClose={onCancel}
-            scroll="paper"
-            fullScreen={fullScreen}
-        >
-            <DialogTitle>Role</DialogTitle>
-            <DialogContent dividers>
-                <DialogContentText>
-                    To subscribe to this website, please enter your email address here. We
-                    will send updates occasionally.
-                </DialogContentText>
-
-                <Box sx={{ p: 2 }}>
-                    Selected: <RoleValue roleId={selectedRole?.id} role={selectedRole} onValueDelete={(e, role) => { setSelectedValue(null); }}></RoleValue>
-                </Box>
-
-                <Box>
-                    <InputBase
-                        size="small"
-                        placeholder="Filter"
-                        sx={{
-                            backgroundColor: "#f0f0f0",
-                            borderRadius: 3,
-                        }}
-                        value={filterText}
-                        onChange={(e) => setFilterText(e.target.value)}
-                        startAdornment={<SearchIcon />}
-                    />
-                </Box>
-
-                {
-                    !!filterText && (
-                        <Box><Button
-                            size="small"
-                            startIcon={<AddIcon />}
-                            onClick={onNewClicked}
-                        >
-                            Create role "{filterText}"
-                        </Button>
-                        </Box>
-                    )
-                }
-
-                {
-                    (items.length == 0) ?
-                        <Box>Nothing here</Box>
-                        :
-                        <List>
-                            {
-                                items.map(item =>
-                                (
-                                    <React.Fragment key={item.id}>
-                                        <ListItemButton selected={item.id == selectedValue} onClick={e => handleItemClick(e, item.id)}>
-                                            <ListItemIcon>
-                                                <SecurityIcon />
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={item.name}
-                                                secondary={item.description}
-                                            />
-                                        </ListItemButton>
-                                        <Divider></Divider>
-                                    </React.Fragment>
-                                )
-
-                                )
-
-                            }
-                        </List>
-                }
-
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onCancel}>Cancel</Button>
-                <Button onClick={() => { onOK(selectedValue, selectedRole) }}>OK</Button>
-            </DialogActions>
-        </Dialog>
-    );
-}
-
-function RoleEditCell(props: GridRenderEditCellParams) {
-    const { id, value, field } = props;
+// the field we're editing is the OBJECT field.
+function RoleEditCell<TDBModel>(props: CMRenderEditCellProps<TDBModel>) {
+    const { id, value, field, columnSpec } = props;
+    console.assert(!!columnSpec);
     const apiRef = useGridApiContext();
     const [showingRoleSelectDialog, setShowingRoleSelectDialog] = React.useState<boolean>(false);
 
@@ -309,18 +193,22 @@ function RoleEditCell(props: GridRenderEditCellParams) {
     // when editing with focus, show a dropdown menu, with options to delete & create new.
 
     if (props.cellMode != GridCellModes.Edit) {
-        return <RoleValue roleId={props?.row?.roleId} role={props?.row?.role}></RoleValue>; //props.colDef.renderCell(props);
+        // viewing.
+        return columnSpec.RenderItem({ value });
     }
-    //const { id, value, field } = params;
+
     if (showingRoleSelectDialog) {
-        return <SelectRoleDialog roleId={value} onCancel={() => { setShowingRoleSelectDialog(false) }} onOK={(newRoleId, newRole) => {
-            apiRef.current.setEditCellValue({ id, field, value: newRoleId });
+        // show dialog instead of value.
+        const onOK = (newRole: TDBModel | null) => {
+            apiRef.current.setEditCellValue({ id, field, value: newRole });
+            apiRef.current.setEditCellValue({ id, field: "roleId", value: (newRole?.id || null) });
             setShowingRoleSelectDialog(false);
-        }}></SelectRoleDialog>;
+        };
+        return <CMSelectItemDialog columnSpec={columnSpec} value={props.value} onCancel={() => { setShowingRoleSelectDialog(false) }} onOK={onOK} />;
     }
-    return <>{<RoleValue roleId={props?.row?.roleId} role={props?.row?.role}></RoleValue>}<Button onClick={() => { setShowingRoleSelectDialog(true) }}>
-        Select...
-    </Button>
+    return <>
+        {columnSpec.RenderItem({ value })}
+        <Button onClick={() => { setShowingRoleSelectDialog(true) }}>Select...</Button>
     </>;
 }
 
@@ -332,17 +220,12 @@ function AddUserDialog({ onOK, onCancel, initialObj }) {
     const [validationErrors, setValidationErrors] = React.useState({}); // don't allow null for syntax simplicity
 
     React.useEffect(() => {
-        //debugger;
         NewUserSchema.safeParseAsync(obj).then((res) => {
-            //console.log(`Parsed schema... result:`);
-            //console.log(res);
             if (!res.error) {
                 setValidationErrors({});
                 return;
             }
             setValidationErrors(formatZodError(res.error));
-            //const [errorText] = Object.values(formatZodError(res.error));
-            //setErrorText(res.success ? null : (errorText || "Invalid value"));
         });
     }, [obj]);
 
@@ -417,16 +300,21 @@ function computeMutation(newRow: GridRowModel, oldRow: GridRowModel) {
     return null;
 }
 
+
+// there is a flow which justifies the use of column pairs in the datagrid to represent both the roleId and role members.
+// in short it all comes down to the fact that the temporary editing values of a row edit are managed by the datagrid (and not in the database),
+// and thus go through setEditGridCellValue(). And we need to make sure both roleId and role are always available and in sync.
+// 1. user is in EDIT mode (so values are not fetched from the DB; they're controlled by the datagrid)
+// 2. user selects a new role here
+// 3. the datagrid now has the updated roleId (because of setEditCellValue({ id, field, value });)
+//    BUT, the "edit cell"'s parent item doesn't have a corrected `role` object; it hasn't been updated.
+//    and I'm not sure how to access that edit item.
+// so one solution is to create a new column in the datagrid for each object. so there are always column pairs for ID/object.
+
 const UserGrid = () => {
     useAuthorize();
-    // const currentUser = useCurrentUser();
-    // const session = useSession();
-    // const theme = useTheme();
-    // const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    // allow code to invoke the snackbar
-    //const [snackbar, setSnackbar] = React.useState<Pick<AlertProps, 'children' | 'severity'> | null>(null);
     const [updateUserFromGridMutation] = useMutation(updateUserFromGrid);
 
     // set initial pagination values + get pagination state.
@@ -517,17 +405,19 @@ const UserGrid = () => {
         { field: 'name', headerName: 'Name', editable: true, width: 150 },
         { field: 'email', headerName: 'email', editable: true, width: 150 },
         {
-            field: 'roleId',
+            field: 'role',
             headerName: 'role',
             editable: true,
-            width: 150,
+            width: 250,
             renderCell: (params) => {
-                return <RoleValue roleId={params?.row?.roleId} role={params?.row?.role}></RoleValue>;
+                //return <RoleValue role={params.value}></RoleValue>;
+                return RoleColumnSpec.RenderItem({ value: params.value });
             },
             renderEditCell: (params) => {
-                return <RoleEditCell {...params} />;
+                return <RoleEditCell columnSpec={RoleColumnSpec} {...params} />;
             }
         },
+        { field: 'roleId', editable: true, filterable: false },
         {
             field: 'actions',
             type: 'actions',

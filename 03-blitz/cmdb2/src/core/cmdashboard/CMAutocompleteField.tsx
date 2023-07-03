@@ -1,7 +1,6 @@
-import { useMutation, useQuery, usePaginatedQuery } from "@blitzjs/rpc";
+import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
-    Security as SecurityIcon
 } from '@mui/icons-material';
 import {
     Autocomplete,
@@ -37,6 +36,7 @@ type CMAutocompleteFieldParams<TDBModel> = {
 export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }: CMAutocompleteFieldParams<TDBModel>) {
     const [items, { refetch }] = useQuery(columnSpec.GetAllItemsQuery, {});
     const [createMutation] = useMutation(columnSpec.CreateFromStringMutation);
+
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     return (<Autocomplete
@@ -47,14 +47,15 @@ export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }
                 // don't create new, and don't select
             } else if (newValue && newValue.inputValue) {
                 // Create a new value from the user input
-                createMutation({ name: newValue.inputValue, description: "" }).then((updatedObj) => {
-                    showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteCreatedItemSnackbar, obj: updatedObj }), severity: "success" });
-                    onChange(updatedObj);
-                    refetch();
-                }).catch((err => {
-                    showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteInsertErrorSnackbar, err }), severity: "error" });
-                    refetch(); // should revert the data.
-                }));
+                columnSpec.CreateFromString({ mutation: createMutation, input: newValue.inputValue })
+                    .then((updatedObj) => {
+                        showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteCreatedItemSnackbar, obj: updatedObj }), severity: "success" });
+                        onChange(updatedObj);
+                        refetch();
+                    }).catch((err => {
+                        showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteInsertErrorSnackbar, err }), severity: "error" });
+                        refetch(); // should revert the data.
+                    }));
             } else {
                 // user selecting a normal item from the dropdown
                 onChange(newValue);
@@ -64,7 +65,7 @@ export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }
             const filtered = filterObjects(options, params);
             const { inputValue } = params;
             // Suggest the creation of a new value
-            const isExisting = options.some((option) => inputValue === option.name);
+            const isExisting = options.some((option) => columnSpec.MatchesExactly(option, inputValue));
             if (inputValue !== '' && !isExisting) {
                 filtered.push({ // push vs. unshift; hard to choose really. but adding to end has the advantage that you are encouraged to select existing items, and the auto-highlighted first option is going to be the existing one rather than creating new.
                     inputValue
@@ -88,22 +89,23 @@ export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }
                 return option.inputValue;
             }
             // Regular option
-            return option.name;
+            return columnSpec.GetStringCaptionForValue(option);
         }}
         renderOption={(props, option) => {
             return option.inputValue ?
                 (<li {...props}>
                     <AddIcon />
                     <span style={{ fontStyle: "italic" }}>{
+                        // "+ Add new role 'power user'"
                         columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteInsertVirtualItemCaption, inputString: option.inputValue })
                     }</span>
                 </li>) :
                 (<li {...props}>
-                    <SecurityIcon />
-                    {option.name}
+                    {columnSpec.RenderAutocompleteItem({ obj: option })}
                 </li>);
         }}
         renderInput={(params) => (
+            // text field with placeholder
             <TextField {...params} label={columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompletePlaceholderText })} />
         )}
     />

@@ -20,7 +20,6 @@ type CreateInput = Prisma.UserCreateInput & {
 export default resolver.pipe(
   resolver.zod(Signup),
   async (fields: CreateInput, ctx: any) => {
-    debugger;
     fields.hashedPassword = await SecurePassword.hash(fields.password?.trim());
     delete fields.password;
     fields.email = fields.email.toLowerCase().trim();
