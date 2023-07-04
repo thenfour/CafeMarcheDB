@@ -13,7 +13,8 @@ export const SnackbarContext = createContext<SnackbarContextType>({
     showMessage: () => { },
 });
 
-export const SnackbarProvider: React.FC = ({ children }) => {
+
+export const SnackbarProvider = ({ children }) => {
     const [snackbar, setSnackbar] = React.useState<SnackbarProps>(null);
 
     const showMessage = (props: SnackbarProps) => {

@@ -30,15 +30,12 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
     const [selectedObj, setSelectedObj] = React.useState<TDBModel | undefined | null>(value);
     const [filterText, setFilterText] = React.useState("");
 
-    const where = { AND: [] };
+    const where = { AND: [] as any[] };
     if (filterText?.length) {
         const tokens = filterText.split(/\s+/).filter(token => token.length > 0);
         const quickFilterItems = tokens.map(q => {
             return {
-                OR: [
-                    { name: { contains: q } },
-                    { description: { contains: q } },
-                ]
+                OR: spec.GetQuickFilterWhereClauseExpression(q)
             };
         });
         where.AND.push(...quickFilterItems);
@@ -54,10 +51,10 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
             .then((updatedObj) => {
                 setSelectedObj(updatedObj);
                 showSnackbar({ children: spec.NewItemSuccessSnackbarText(updatedObj), severity: 'success' });
-                refetch();
+                void refetch();
             }).catch((err => {
                 showSnackbar({ children: spec.NewItemErrorSnackbarText(err), severity: 'error' });
-                refetch(); // should revert the data.
+                void refetch(); // should revert the data.
             }));
     };
 

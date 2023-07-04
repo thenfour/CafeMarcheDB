@@ -5,7 +5,7 @@ import db from "db";
 export default resolver.pipe(
     resolver.zod(GetObjectByIdSchema),
     resolver.authorize(),
-    async ({ id }) => {
+    async ({ id }, ctx) => {
         try {
             // TODO: do permissions check
             const obj = await db.user.update({

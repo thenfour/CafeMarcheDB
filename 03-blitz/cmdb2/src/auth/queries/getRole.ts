@@ -7,7 +7,7 @@ import { GetObjectByNullableIdSchema } from "../schemas";
 export default resolver.pipe(
     resolver.zod(GetObjectByNullableIdSchema),
     resolver.authorize(),
-    async ({ id }) => {
+    async ({ id }, ctx) => {
         // TODO: do permissions check
         if (id == null) return null;
         try {

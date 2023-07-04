@@ -12,7 +12,7 @@ interface GetUsersInput
 
 export default resolver.pipe(
     resolver.authorize(),
-    async ({ where, orderBy, skip = 0, take = 100 }: GetUsersInput) => {
+    async ({ where, orderBy, skip = 0, take = 100 }: GetUsersInput, ctx) => {
         // TODO: authorize
         // TODO: catch
         // TODO: in multi-tenant app, you must add validation to ensure correct tenant

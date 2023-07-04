@@ -151,10 +151,10 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
         try {
             updateMutation(newRow).then((updatedObj) => {
                 showSnackbar({ children: spec.UpdateItemSuccessSnackbar(updatedObj as TDBModel), severity: 'success' });
-                refetch();
+                void refetch();
             }).catch((reason => {
                 showSnackbar({ children: spec.UpdateItemErrorSnackbar(reason), severity: 'error' });
-                refetch(); // should revert the data.
+                void refetch(); // should revert the data.
             }));
             resolve(newRow); // optimistic
         } catch (error) {
@@ -224,7 +224,7 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
     const onAddOK = (obj) => {
         createMutation(obj).then((newRow) => {
             showSnackbar({ children: spec.CreateSuccessSnackbar(newRow as TDBModel), severity: 'success' });
-            refetch();
+            void refetch();
         }).catch(err => {
             showSnackbar({ children: spec.CreateErrorSnackbar(err), severity: 'error' });
         });
@@ -296,11 +296,13 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
                 if (isInEditMode) {
                     return [
                         <GridActionsCellItem
+                            key="save"
                             icon={<SaveIcon className="hoverActionIcon" />}
                             label="Save"
                             onClick={handleSaveClick(id)}
                         />,
                         <GridActionsCellItem
+                            key="concel"
                             icon={<CancelIcon className="hoverActionIcon" />}
                             label="Cancel"
                             onClick={handleCancelClick(id)}
@@ -312,12 +314,14 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
                 return [
                     <GridActionsCellItem
                         icon={<EditIcon className="hoverActionIcon" />}
+                        key="edit"
                         label="Edit"
                         onClick={handleEditClick(id)}
                         color="inherit"
                     />,
                     <GridActionsCellItem
                         icon={<DeleteIcon className="hoverActionIcon" />}
+                        key="delete"
                         label="Delete"
                         onClick={handleDeleteClick(id)}
                         color="inherit"

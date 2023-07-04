@@ -54,10 +54,10 @@ export function CMAutocompleteField<TDBModel>({ key, valueObj, onChange, columnS
                         //showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteCreatedItemSnackbar, obj: updatedObj }), severity: "success" });
                         showSnackbar({ children: columnSpec.NewItemSuccessSnackbarText(updatedObj), severity: "success" });
                         onChange(updatedObj);
-                        refetch();
+                        void refetch();
                     }).catch((err => {
                         showSnackbar({ children: columnSpec.NewItemErrorSnackbarText(err), severity: "error" });
-                        refetch(); // should revert the data.
+                        void refetch(); // should revert the data.
                     }));
             } else {
                 // user selecting a normal item from the dropdown

@@ -12,7 +12,7 @@ import {
 export default resolver.pipe(
     resolver.zod(DeleteRoleSchema),
     resolver.authorize(),
-    async ({ id }) => {
+    async ({ id }, ctx) => {
         try {
             // TODO: do permissions check
             const choice = await db.role.deleteMany({ where: { id } });

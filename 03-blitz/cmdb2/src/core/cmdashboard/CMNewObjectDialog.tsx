@@ -22,12 +22,12 @@ export function CMNewObjectDialog<TDBModel>({ onOK, onCancel, spec }: CMNewObjec
 
     React.useEffect(() => {
         spec.ZodSchema.safeParseAsync(obj).then((res) => {
-            if (!res.error) {
+            if (res.success) {
                 setValidationErrors({});
                 return;
             }
             setValidationErrors(formatZodError(res.error));
-        });
+        }).catch(() => { });
     }, [obj]);
 
     const handleOK = () => {

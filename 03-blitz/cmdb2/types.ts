@@ -1,6 +1,6 @@
 //import { SimpleRolesIsAuthorized } from "@blitzjs/auth"
 import { SessionContext } from "@blitzjs/auth";
-import { User, Role, Permission } from "db"
+import { User, Role, Permission, RolePermission } from "db"
 
 type CMDBRolesIsAuthorizedArgs = {
   ctx: any
@@ -36,11 +36,14 @@ declare module "@blitzjs/auth" {
 }
 
 export function CreatePublicData(user: any) {
-  if (!user) return { userId: 0, isSysAdmin: false, permissions: [] };
+  //debugger;
+  if (!user) {
+    return { userId: 0, isSysAdmin: false, permissions: [] };
+  }
   return {
     userId: user.id,
     isSysAdmin: user.isSysAdmin,
-    permissions: ((((user.role) as Role)?.permissions) as Permission[])?.map(p => p.permission?.name) || [],
+    permissions: (user.role?.permissions)?.map(p => p.permission?.name) || [],
   };
 };
 

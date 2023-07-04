@@ -33,6 +33,7 @@ export interface CMSelectItemDialogSpec<TDBModel> {
     RenderListItemChildren: (value: TDBModel) => any, // react component; render the item in a select dialog
     IsEqual: (item1: TDBModel | undefined | null, item2: TDBModel | undefined | null) => boolean;
     RenderItem: (params: RenderItemParams<TDBModel>) => any, // return react component
+    GetQuickFilterWhereClauseExpression: (query: string) => any[], // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
 
     NewItemSuccessSnackbarText: (obj: TDBModel) => string;
     NewItemErrorSnackbarText: (err: any) => string;

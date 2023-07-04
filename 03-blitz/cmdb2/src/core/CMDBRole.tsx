@@ -71,6 +71,12 @@ export const RoleSelectItemDialogSpec: CMSelectItemDialogSpec<DBRole> = {
     NewItemErrorSnackbarText: RoleAutocompleteSpec.NewItemErrorSnackbarText,
     DialogTitleText: RoleAutocompleteSpec.PlaceholderText,
     NewItemText: RoleAutocompleteSpec.VirtualNewItemText,
+    GetQuickFilterWhereClauseExpression: (query: string) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
+        return [
+            { name: { contains: query } },
+            { description: { contains: query } },
+        ];
+    },
 };
 
 export const RoleGridEditCellSpec: CMGridEditCellSpec<DBRole> = {

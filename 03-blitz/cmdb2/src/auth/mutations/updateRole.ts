@@ -12,7 +12,7 @@ import {
 export default resolver.pipe(
     resolver.zod(UpdateRoleSchema),
     resolver.authorize(),
-    async ({ id, ...data }) => {
+    async ({ id, ...data }, ctx) => {
         try {
             // TODO: do permissions check
             const obj = await db.role.update({

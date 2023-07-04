@@ -3,7 +3,7 @@ import db from "db";
 
 export default resolver.pipe(
     resolver.authorize(),
-    async () => {
+    async ({ }, ctx) => {
         // TODO: do permissions check
         try {
             const items = await db.role.findMany({
