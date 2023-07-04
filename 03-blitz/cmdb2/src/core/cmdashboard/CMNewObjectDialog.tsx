@@ -5,14 +5,8 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { formatZodError } from "blitz";
-import { Role as DBRole } from "db";
 import React from "react";
-import { Signup as NewUserSchema } from "src/auth/schemas";
-//import { RoleColumnSpec } from "src/core/CMDBRole";
-import { CMAutocompleteField } from "src/core/cmdashboard/CMAutocompleteField";
 import { CMNewItemDialogSpec } from "src/core/cmdashboard/CMColumnSpec";
-import { CMTextField } from "src/core/cmdashboard/CMTextField";
-import { RoleAutocompleteSpec } from "../CMDBRole";
 
 type CMNewObjectDialogProps<TDBModel> = {
     onOK: (obj: TDBModel) => any;
@@ -47,26 +41,31 @@ export function CMNewObjectDialog<TDBModel>({ onOK, onCancel, spec }: CMNewObjec
             scroll="paper"
             fullScreen={fullScreen}
         >
-            <DialogTitle>New user</DialogTitle>
+            <DialogTitle>{spec.DialogTitle()}</DialogTitle>
             <DialogContent dividers>
                 <DialogContentText>
                     To subscribe to this website, please enter your email address here. We
                     will send updates occasionally.
                 </DialogContentText>
                 <FormControl>
+                    {
+                        spec.Fields.map(field => {
+                            return field.RenderInputField({
+                                key: field.MemberName,
+                                validationErrors,
+                                value: obj[field.MemberName],
+                                onChange: (fieldValue) => {
+                                    const newObj = { ...obj };
+                                    newObj[field.MemberName] = fieldValue;
+                                    if (field.IsForeignObject) {
+                                        newObj[field.FKIDMemberName as string] = field.GetIDOfFieldValue!(fieldValue);
+                                    }
+                                    setObj(newObj);
+                                }
+                            });
 
-                    <CMTextField autoFocus={true} label="Name" validationError={validationErrors["name"]} value={obj["name"]} onChange={(e, val) => {
-                        setObj({ ...obj, name: val });
-                    }}
-                    ></CMTextField>
-                    <CMTextField autoFocus={false} label="Email" validationError={validationErrors["email"]} value={obj["email"]} onChange={(e, val) => {
-                        setObj({ ...obj, email: val });
-                    }}
-                    ></CMTextField>
-                    <CMAutocompleteField<DBRole> columnSpec={RoleAutocompleteSpec} valueObj={obj.role} onChange={(role) => {
-                        setObj({ ...obj, role, roleId: (role?.id || null) });
-                    }}></CMAutocompleteField>
-
+                        })
+                    }
                 </FormControl>
             </DialogContent>
             <DialogActions>

@@ -34,9 +34,10 @@ export function CMGridEditCell<TDBModel>(props: CMGridRenderEditCellParams<TDBMo
     if (showingSelectDialog) {
         // show dialog instead of value.
         const onOK = (value?: TDBModel) => {
-            console.assert(spec.FKObjectFieldName === field); // assert that we're operating on object column, not the ID column.
+            console.assert(spec.FKObjectMemberName === field); // assert that we're operating on object column, not the ID column.
+            console.assert(!!spec.GetIDOfFieldValue); // this is designed only for foreign object types
             apiRef.current.setEditCellValue({ id, field, value: (value || null) });
-            apiRef.current.setEditCellValue({ id, field: spec.FKIDFieldName, value: (value ? value[spec.PKID] : null) });
+            apiRef.current.setEditCellValue({ id, field: spec.FKIDMemberName, value: spec.GetIDOfFieldValue!(value) });
             setShowingSelectDialog(false);
         };
         return <CMSelectItemDialog spec={spec.SelectItemDialogSpec} value={props.value} onCancel={() => { setShowingSelectDialog(false) }} onOK={onOK} />;

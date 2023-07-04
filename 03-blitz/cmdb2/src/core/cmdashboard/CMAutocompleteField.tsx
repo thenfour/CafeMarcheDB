@@ -28,18 +28,20 @@ const filterObjects = createFilterOptions();
 // option items are role objects themselves (not just IDs)
 
 type CMAutocompleteFieldParams<TDBModel> = {
+    key?: string,
     valueObj: any,
     onChange: any,
     columnSpec: CMAutocompleteFieldSpec<TDBModel>,
 };
 
-export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }: CMAutocompleteFieldParams<TDBModel>) {
+export function CMAutocompleteField<TDBModel>({ key, valueObj, onChange, columnSpec }: CMAutocompleteFieldParams<TDBModel>) {
     const [items, { refetch }] = useQuery(columnSpec.GetAllItemsQuery, {});
     const [createMutation] = useMutation(columnSpec.CreateFromStringMutation);
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     return (<Autocomplete
+        key={key}
         value={valueObj || null} // null to make sure the component acts as a controlled component
         onChange={(event, newValue) => {
             if (typeof newValue === 'string') {

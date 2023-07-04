@@ -72,10 +72,12 @@ export const RoleSelectItemDialogSpec: CMSelectItemDialogSpec<DBRole> = {
 };
 
 export const RoleGridEditCellSpec: CMGridEditCellSpec<DBRole> = {
-    PKID: "id",
-    FKObjectFieldName: "role",
-    FKIDFieldName: "roleId",
+    PKIDMemberName: "id",
+    ForeignPKIDMemberName: "id",
+    FKObjectMemberName: "role",
+    FKIDMemberName: "roleId",
     RenderItem: RoleSelectItemDialogSpec.RenderItem,
     SelectItemDialogSpec: RoleSelectItemDialogSpec,
+    GetIDOfFieldValue: (value?) => (value?.id || null),
 };
 

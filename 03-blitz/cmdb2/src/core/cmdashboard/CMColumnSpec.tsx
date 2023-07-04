@@ -40,16 +40,62 @@ export type CMSelectItemDialogSpec<TDBModel> = {
     NewItemText: (inputText: string) => string;
 };
 
-export type CMGridEditCellSpec<TDBModel> = {
-    PKID: string, // field name of the primary key ... almost always this should be "id"
-    FKObjectFieldName: string, // the field name of the object, if this is a foreign key. so on the user table, this is 'role' -- the foreign role object
-    FKIDFieldName: string, // corresponding ID field of the fk. so on user table this is 'roleId'
-    RenderItem: (params: RenderItemParams<TDBModel>) => any, // return react component
+export type CMNewItemDialogFieldSpecParams<TFieldModel> = {
+    key: string, // react component key
+    validationErrors,
+    value?: TFieldModel | undefined, // foreign object
+    onChange: (fieldValue?: TFieldModel | undefined) => void,
+};
 
-    SelectItemDialogSpec: CMSelectItemDialogSpec<TDBModel>,
+export type CMNewItemDialogFieldSpec<TFieldModel> = {
+    RenderInputField: (params: CMNewItemDialogFieldSpecParams<TFieldModel>) => any; // react component
+    MemberName: string;
+    IsForeignObject: boolean;
+    FKIDMemberName?: string, // corresponding ID field of the fk. so on user table this is 'roleId'
+    GetIDOfFieldValue?: (value?: TFieldModel | undefined) => (number | null),
 };
 
 export type CMNewItemDialogSpec<TDBModel> = {
     InitialObj: any;
     ZodSchema: z.ZodObject<any>;
+    Fields: CMNewItemDialogFieldSpec<any>[];
+
+    DialogTitle: () => string;
 };
+
+
+export type CMGridEditCellSpec<TDBModel> = {
+    PKIDMemberName: string, // field name of the primary key ... almost always this should be "id"
+    ForeignPKIDMemberName: string, // field name of the pk of the foreign object. also almost always 'id'
+    FKObjectMemberName: string, // the field name of the object, if this is a foreign key. so on the user table, this is 'role' -- the foreign role object
+    FKIDMemberName: string, // corresponding ID field of the fk. so on user table this is 'roleId'
+    GetIDOfFieldValue?: (value?: TDBModel | undefined) => (number | null),
+    RenderItem: (params: RenderItemParams<TDBModel>) => any, // return react component
+
+    SelectItemDialogSpec: CMSelectItemDialogSpec<TDBModel>,
+};
+
+export type CMEditGridColumnSpec<TDBModel> = {
+
+};
+
+// export type CMEditGridSpec<TDBModel> = {
+//     Columns: [],
+
+// };
+
+
+// export const CMTextInput<T> = (params: CMNewItemDialogFieldSpecParams<T>) => {
+//                     // <CMTextField autoFocus={true} label="Name" validationError={validationErrors["name"]} value={obj["name"]} onChange={(e, val) => {
+//                     //     setObj({ ...obj, name: val });
+//                     // }}
+//                 }
+
+                    // ></CMTextField>
+                    // <CMTextField autoFocus={false} label="Email" validationError={validationErrors["email"]} value={obj["email"]} onChange={(e, val) => {
+                    //     setObj({ ...obj, email: val });
+                    // }}
+                    // ></CMTextField>
+                    // <CMAutocompleteField<DBRole> columnSpec={RoleAutocompleteSpec} valueObj={obj.role} onChange={(role) => {
+                    //     setObj({ ...obj, role, roleId: (role?.id || null) });
+                    // }}></CMAutocompleteField>
