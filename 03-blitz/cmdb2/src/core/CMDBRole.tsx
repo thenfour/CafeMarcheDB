@@ -38,6 +38,17 @@ export const RoleAutocompleteSpec: CMAutocompleteFieldSpec<DBRole> = {
     PlaceholderText: () => `Select a role`,
 };
 
+export const RenderRole = (params: RenderItemParams<DBRole>) => {
+    return !params.value ?
+        <>--</> :
+        <Chip
+            size="small"
+            label={`${params.value.name}`}
+            onClick={params.onClick ? () => { params.onClick!(params.value) } : undefined}
+            onDelete={params.onDelete ? () => { params.onDelete!(params.value) } : undefined}
+        />;
+};
+
 export const RoleSelectItemDialogSpec: CMSelectItemDialogSpec<DBRole> = {
     GetAllItemsQuery: RoleAutocompleteSpec.GetAllItemsQuery,
     CreateFromStringMutation: RoleAutocompleteSpec.CreateFromStringMutation,
@@ -54,16 +65,7 @@ export const RoleSelectItemDialogSpec: CMSelectItemDialogSpec<DBRole> = {
             />
         </>;
     },
-    RenderItem: (params: RenderItemParams<DBRole>) => {
-        return !params.value ?
-            <>--</> :
-            <Chip
-                size="small"
-                label={`${params.value.name}`}
-                onClick={params.onClick ? () => { params.onClick(params.value) } : undefined}
-                onDelete={params.onDelete ? () => { params.onDelete(params.value) } : undefined}
-            />;
-    },
+    RenderItem: RenderRole,
 
     NewItemSuccessSnackbarText: RoleAutocompleteSpec.NewItemSuccessSnackbarText,
     NewItemErrorSnackbarText: RoleAutocompleteSpec.NewItemErrorSnackbarText,
@@ -76,7 +78,7 @@ export const RoleGridEditCellSpec: CMGridEditCellSpec<DBRole> = {
     ForeignPKIDMemberName: "id",
     FKObjectMemberName: "role",
     FKIDMemberName: "roleId",
-    RenderItem: RoleSelectItemDialogSpec.RenderItem,
+    RenderItem: RenderRole,
     SelectItemDialogSpec: RoleSelectItemDialogSpec,
     GetIDOfFieldValue: (value?) => (value?.id || null),
 };

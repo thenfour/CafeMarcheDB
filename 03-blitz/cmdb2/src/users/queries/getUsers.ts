@@ -17,7 +17,7 @@ export default resolver.pipe(
         // TODO: catch
         // TODO: in multi-tenant app, you must add validation to ensure correct tenant
         const {
-            items: users,
+            items,
             hasMore,
             nextPage,
             count,
@@ -35,7 +35,7 @@ export default resolver.pipe(
         });
 
         return {
-            users,
+            items,
             nextPage,
             hasMore,
             count,

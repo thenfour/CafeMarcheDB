@@ -1,8 +1,7 @@
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
-    Search as SearchIcon,
-    Security as SecurityIcon
+    Search as SearchIcon
 } from '@mui/icons-material';
 import {
     Box,
@@ -10,7 +9,7 @@ import {
     Divider,
     InputBase,
     List,
-    ListItemButton, ListItemIcon, ListItemText
+    ListItemButton
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
