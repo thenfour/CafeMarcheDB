@@ -15,17 +15,17 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { CMColumnSpec, GetCaptionReasons } from "src/core/cmdashboard/CMColumnSpec";
+import { CMSelectItemDialogSpec } from "src/core/cmdashboard/CMColumnSpec";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 
 type CMSelectItemDialogProps<TDBModel> = {
     value?: TDBModel | null,
     onOK: (value?: TDBModel | null) => void,
     onCancel: () => void,
-    columnSpec: CMColumnSpec<TDBModel>,
+    spec: CMSelectItemDialogSpec<TDBModel>,
 };
 
-export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, columnSpec }: CMSelectItemDialogProps<TDBModel>) {
+export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CMSelectItemDialogProps<TDBModel>) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedObj, setSelectedObj] = React.useState<TDBModel | undefined | null>(value);
@@ -45,19 +45,19 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, columnSpec
         where.AND.push(...quickFilterItems);
     }
 
-    const [items, { refetch }] = useQuery(columnSpec.GetAllItemsQuery, {});
+    const [items, { refetch }] = useQuery(spec.GetAllItemsQuery, {});
 
-    const [createItemMutation] = useMutation(columnSpec.CreateFromStringMutation);
+    const [createItemMutation] = useMutation(spec.CreateFromStringMutation);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onNewClicked = (e) => {
-        columnSpec.CreateFromString({ mutation: createItemMutation, input: filterText })
+        spec.CreateFromString({ mutation: createItemMutation, input: filterText })
             .then((updatedObj) => {
                 setSelectedObj(updatedObj);
-                showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteCreatedItemSnackbar, obj: updatedObj }), severity: 'success' });
+                showSnackbar({ children: spec.NewItemSuccessSnackbarText(updatedObj), severity: 'success' });
                 refetch();
             }).catch((err => {
-                showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteCreatedItemSnackbar, err }), severity: 'error' });
+                showSnackbar({ children: spec.NewItemErrorSnackbarText(err), severity: 'error' });
                 refetch(); // should revert the data.
             }));
     };
@@ -73,21 +73,22 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, columnSpec
             scroll="paper"
             fullScreen={fullScreen}
         >
-            <DialogTitle>{columnSpec.GetCaption({ reason: GetCaptionReasons.SelectItemDialogTitle })}</DialogTitle>
-            <DialogContent dividers>
-                <DialogContentText>
-                    To subscribe to this website, please enter your email address here. We
-                    will send updates occasionally.
-                </DialogContentText>
-
-                <Box sx={{ p: 2 }}>
-                    Selected: {columnSpec.RenderItem({
+            <DialogTitle>
+                {spec.DialogTitleText()}
+                <Box sx={{ p: 0 }}>
+                    Selected: {spec.RenderItem({
                         value: selectedObj,
                         onDelete: () => {
                             setSelectedObj(null);
                         }
                     })}
                 </Box>
+            </DialogTitle>
+            <DialogContent dividers>
+                <DialogContentText>
+                    To subscribe to this website, please enter your email address here. We
+                    will send updates occasionally.
+                </DialogContentText>
 
                 <Box>
                     <InputBase
@@ -110,7 +111,7 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, columnSpec
                             startIcon={<AddIcon />}
                             onClick={onNewClicked}
                         >
-                            {columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteInsertVirtualItemCaption, inputString: filterText })}
+                            {spec.NewItemText(filterText)}
                         </Button>
                         </Box>
                     )
@@ -124,8 +125,8 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, columnSpec
                             {
                                 items.map(item => (
                                     <React.Fragment key={item.id}>
-                                        <ListItemButton selected={columnSpec.IsEqual(item, selectedObj)} onClick={e => { handleItemClick(item) }}>
-                                            {columnSpec.RenderSelectListItemChildren(item)}
+                                        <ListItemButton selected={spec.IsEqual(item, selectedObj)} onClick={e => { handleItemClick(item) }}>
+                                            {spec.RenderListItemChildren(item)}
                                         </ListItemButton>
                                         <Divider></Divider>
                                     </React.Fragment>

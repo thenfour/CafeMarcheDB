@@ -5,6 +5,8 @@ import {
 // validation should probably NOT be done per-field.
 // but rather, validation done as Zod is designed at the object level, then error object is passed down into fields
 
+// callers controls the value
+
 // textfield for a string field on an object.
 export function CMTextField({ validationError, label, value, onChange, autoFocus }) {
     return (

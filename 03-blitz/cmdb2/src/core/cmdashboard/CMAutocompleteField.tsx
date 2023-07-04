@@ -9,7 +9,7 @@ import {
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { CMColumnSpec, GetCaptionReasons } from "./CMColumnSpec";
+import { CMAutocompleteFieldSpec } from "./CMColumnSpec";
 
 const filterObjects = createFilterOptions();
 
@@ -30,7 +30,7 @@ const filterObjects = createFilterOptions();
 type CMAutocompleteFieldParams<TDBModel> = {
     valueObj: any,
     onChange: any,
-    columnSpec: CMColumnSpec<TDBModel>,
+    columnSpec: CMAutocompleteFieldSpec<TDBModel>,
 };
 
 export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }: CMAutocompleteFieldParams<TDBModel>) {
@@ -49,11 +49,12 @@ export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }
                 // Create a new value from the user input
                 columnSpec.CreateFromString({ mutation: createMutation, input: newValue.inputValue })
                     .then((updatedObj) => {
-                        showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteCreatedItemSnackbar, obj: updatedObj }), severity: "success" });
+                        //showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteCreatedItemSnackbar, obj: updatedObj }), severity: "success" });
+                        showSnackbar({ children: columnSpec.NewItemSuccessSnackbarText(updatedObj), severity: "success" });
                         onChange(updatedObj);
                         refetch();
                     }).catch((err => {
-                        showSnackbar({ children: columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteInsertErrorSnackbar, err }), severity: "error" });
+                        showSnackbar({ children: columnSpec.NewItemErrorSnackbarText(err), severity: "error" });
                         refetch(); // should revert the data.
                     }));
             } else {
@@ -97,16 +98,17 @@ export function CMAutocompleteField<TDBModel>({ valueObj, onChange, columnSpec }
                     <AddIcon />
                     <span style={{ fontStyle: "italic" }}>{
                         // "+ Add new role 'power user'"
-                        columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteInsertVirtualItemCaption, inputString: option.inputValue })
+                        //columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompleteInsertVirtualItemCaption, inputString: option.inputValue });
+                        columnSpec.VirtualNewItemText(option.inputValue)
                     }</span>
                 </li>) :
                 (<li {...props}>
-                    {columnSpec.RenderAutocompleteItem({ obj: option })}
+                    {columnSpec.RenderListItemChildren({ obj: option })}
                 </li>);
         }}
         renderInput={(params) => (
             // text field with placeholder
-            <TextField {...params} label={columnSpec.GetCaption({ reason: GetCaptionReasons.AutocompletePlaceholderText })} />
+            <TextField {...params} label={columnSpec.PlaceholderText()} />
         )}
     />
     );

@@ -2,11 +2,10 @@
 // - make things generic; use mui existing components as model
 // - validation for all fields in all scenarios
 // - authorization for pages, components, columns, db queries & mutations
-// - fix some flicker problem what is going on?
+// - fix some flicker problem what is going on? maybe just long loads too high in tree?
 // - separate signup from google signup from admin create, regarding fields & auth
 //   - note huge bug right now where adding a user makes you become that user.
 // - impersonation
-// - validation show pretty errors
 // - other datatypes (boolean, datetime...)
 // - selected item scrolls off screen on the select item dialog
 
@@ -44,229 +43,40 @@
 //   stuff like freeform text + tag text or something may require custom
 import { useAuthorize } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
-import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
-import GetAllRolesQuery from "src/auth/queries/getAllRoles";
+import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
     Close as CancelIcon,
     DeleteOutlined as DeleteIcon,
     Edit as EditIcon,
-    Save as SaveIcon,
-    Search as SearchIcon,
-    Security as SecurityIcon,
+    Save as SaveIcon
 } from '@mui/icons-material';
 import {
-    Autocomplete,
-    Box,
-    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-    Divider,
-    FormControl,
-    InputBase,
-    List,
-    ListItemButton, ListItemIcon, ListItemText,
+    Button, Dialog, DialogActions, DialogContent,
+    DialogTitle
 } from "@mui/material";
-import db, { Prisma, Role as DBRole } from "db";
-import Chip from '@mui/material/Chip';
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from '@mui/material/useMediaQuery';
 import {
     DataGrid,
     GridActionsCellItem,
-    GridCellModes,
     GridColDef,
     GridFilterModel,
-    GridRenderEditCellParams, GridRowModel, GridRowModes, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
-    GridToolbarQuickFilter,
-    useGridApiContext
+    GridRowModel, GridRowModes, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
+    GridToolbarQuickFilter
 } from '@mui/x-data-grid';
-import { formatZodError } from "blitz";
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
-import CreateRoleMutation from "src/auth/mutations/createRole";
 import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
 import NewUserMutationSpec from "src/auth/mutations/signup";
-import { Signup as NewUserSchema } from "src/auth/schemas";
-import { CMAutocompleteField } from "src/core/cmdashboard/CMAutocompleteField";
-import { CMColumnSpec, GetCaptionReasons, GetCaptionParams, RenderItemParams, CreateFromStringParams } from "src/core/cmdashboard/CMColumnSpec";
-import { CMTextField } from "src/core/cmdashboard/CMTextField";
+import { RoleGridEditCellSpec, RoleSelectItemDialogSpec } from "src/core/CMDBRole";
+import { NewUserDialogSpec } from "src/core/CMDBUser";
+import { CMGridEditCell } from "src/core/cmdashboard/CMGridEditCell";
+import { CMNewObjectDialog } from "src/core/cmdashboard/CMNewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Permission } from "src/core/permissions";
 import updateUserFromGrid from "src/users/mutations/updateUserFromGrid";
 import getUsers from "src/users/queries/getUsers";
-import { CMSelectItemDialog } from "src/core/cmdashboard/CMSelectItemDialog";
 
-// FORM FIELDS
-// ValidationTextField = TextField for string, used by new item dialog
-// ChipValue = Chip for object, used in various places (edit cell)
-// SelectObjectAutocomplete = autocomplete selection with quick add
-
-// CELL VIEWER
-
-// CELL EDITOR
-// SelectObjectDialog = modal dialog for selection with quick add, more beautiful ux
-// ObjectEditCell
-
-// AddObjectDialog
-// CREATE FORM
-
-// EDIT DATAGRID
-// EditableGrid
-
-// UpdateConfirmationDialog
-// DeleteConfirmationDialog
-
-const RoleColumnSpec: CMColumnSpec<DBRole> =
-{
-    GetAllItemsQuery: GetAllRolesQuery,
-    CreateFromStringMutation: CreateRoleMutation,
-    CreateFromString: async (params: CreateFromStringParams<DBRole>) => {
-        return await params.mutation({ name: params.input, description: "" });
-    },
-    MatchesExactly: (value: DBRole, input: string) => { // used by autocomplete to know if the item created by single text string already exists
-        return value.name.trim() == input;
-    },
-    GetStringCaptionForValue: (value: DBRole) => {
-        return value.name;
-    },
-    GetCaption({ reason, obj, err, inputString }: GetCaptionParams<DBRole>) {
-        switch (reason) {
-            case GetCaptionReasons.AutocompleteCreatedItemSnackbar:
-                return `Created new role ${obj?.name || "<error>"}`;
-            case GetCaptionReasons.AutocompleteInsertErrorSnackbar:
-                return `Failed to create new role.`;
-            case GetCaptionReasons.AutocompleteInsertVirtualItemCaption:
-                return `Add "${inputString || "<error>"}"`
-            case GetCaptionReasons.AutocompletePlaceholderText:
-            case GetCaptionReasons.SelectItemDialogTitle:
-                return `Select a role`;
-        }
-        return `${obj?.name || "(none)"} reason=${reason}`;
-    },
-    RenderAutocompleteItem({ obj }) {
-        return <>
-            <SecurityIcon />
-            {obj.name}
-        </>;
-    },
-    RenderItem(params: RenderItemParams<DBRole>) {
-        return !params.value ?
-            <>--</> :
-            <Chip
-                size="small"
-                label={`${params.value.name}`}
-                onClick={params.onClick ? () => { params.onClick(params.value) } : undefined}
-                onDelete={params.onDelete ? () => { params.onDelete(params.value) } : undefined}
-            />;
-    },
-    IsEqual: (item1, item2) => {
-        if (!item1 && !item2) return true; // both considered null.
-        return item1?.id == item2?.id;
-    },
-    RenderSelectListItemChildren: (value: DBRole) => {
-        return <>
-            <ListItemIcon>
-                <SecurityIcon />
-            </ListItemIcon>
-            <ListItemText
-                primary={value.name}
-                secondary={value.description}
-            />
-        </>;
-    },
-};
-
-
-type CMRenderEditCellProps<TDBModel> = GridRenderEditCellParams & {
-    columnSpec: CMColumnSpec<TDBModel>
-};
-
-// the field we're editing is the OBJECT field.
-function RoleEditCell<TDBModel>(props: CMRenderEditCellProps<TDBModel>) {
-    const { id, value, field, columnSpec } = props;
-    console.assert(!!columnSpec);
-    const apiRef = useGridApiContext();
-    const [showingRoleSelectDialog, setShowingRoleSelectDialog] = React.useState<boolean>(false);
-
-    // when viewing, it's just a chip, no click or delete.
-    // when editing but not in focus, same thing
-    // when editing with focus, show a dropdown menu, with options to delete & create new.
-
-    if (props.cellMode != GridCellModes.Edit) {
-        // viewing.
-        return columnSpec.RenderItem({ value });
-    }
-
-    if (showingRoleSelectDialog) {
-        // show dialog instead of value.
-        const onOK = (newRole: TDBModel | null) => {
-            apiRef.current.setEditCellValue({ id, field, value: newRole });
-            apiRef.current.setEditCellValue({ id, field: "roleId", value: (newRole?.id || null) });
-            setShowingRoleSelectDialog(false);
-        };
-        return <CMSelectItemDialog columnSpec={columnSpec} value={props.value} onCancel={() => { setShowingRoleSelectDialog(false) }} onOK={onOK} />;
-    }
-    return <>
-        {columnSpec.RenderItem({ value })}
-        <Button onClick={() => { setShowingRoleSelectDialog(true) }}>Select...</Button>
-    </>;
-}
-
-
-function AddUserDialog({ onOK, onCancel, initialObj }) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [obj, setObj] = React.useState(initialObj);
-    const [validationErrors, setValidationErrors] = React.useState({}); // don't allow null for syntax simplicity
-
-    React.useEffect(() => {
-        NewUserSchema.safeParseAsync(obj).then((res) => {
-            if (!res.error) {
-                setValidationErrors({});
-                return;
-            }
-            setValidationErrors(formatZodError(res.error));
-        });
-    }, [obj]);
-
-    const handleOK = (e) => {
-        onOK(obj);
-    };
-
-    return (
-        <Dialog
-            open={true}
-            onClose={onCancel}
-            scroll="paper"
-            fullScreen={fullScreen}
-        >
-            <DialogTitle>New user</DialogTitle>
-            <DialogContent dividers>
-                <DialogContentText>
-                    To subscribe to this website, please enter your email address here. We
-                    will send updates occasionally.
-                </DialogContentText>
-                <FormControl>
-                    <CMTextField label="Name" validationError={validationErrors["name"]} value={obj["name"]} onChange={(e, val) => {
-                        setObj({ ...obj, name: val });
-                    }}
-                        autoFocus={true}></CMTextField>
-                    <CMTextField label="Email" validationError={validationErrors["email"]} value={obj["email"]} onChange={(e, val) => {
-                        setObj({ ...obj, email: val });
-                    }}
-                        autoFocus={false}></CMTextField>
-                    <CMAutocompleteField<DBRole> columnSpec={RoleColumnSpec} valueObj={obj.role} onChange={(role) => {
-                        setObj({ ...obj, role, roleId: (role?.id || null) });
-                    }}></CMAutocompleteField>
-                </FormControl>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onCancel}>Cancel</Button>
-                <Button onClick={handleOK}>OK</Button>
-            </DialogActions>
-        </Dialog>
-    );
-};
 
 function CustomToolbar({ onNewClicked }) {
     return (
@@ -410,11 +220,11 @@ const UserGrid = () => {
             editable: true,
             width: 250,
             renderCell: (params) => {
-                //return <RoleValue role={params.value}></RoleValue>;
-                return RoleColumnSpec.RenderItem({ value: params.value });
+                // todo: should be in grid spec or something.
+                return RoleSelectItemDialogSpec.RenderItem({ value: params.value });
             },
             renderEditCell: (params) => {
-                return <RoleEditCell columnSpec={RoleColumnSpec} {...params} />;
+                return <CMGridEditCell spec={RoleGridEditCellSpec} {...params} />;
             }
         },
         { field: 'roleId', editable: true, filterable: false },
@@ -557,13 +367,6 @@ const UserGrid = () => {
         setShowingNewDialog(false);
     };
 
-    const initialObj = {
-        name: "",
-        email: "",
-        password: "1234567890!@#$%^&aoeuAOEU",
-    };
-
-
     const isAnyRowEdited = (rowModels) => {
         for (const rowModel of Object.values(rowModels)) {
             if (rowModel.mode === GridRowModes.Edit) {
@@ -581,11 +384,11 @@ const UserGrid = () => {
         {renderConfirmDialog()}
         {renderDeleteConfirmation()}
 
-        {!!showingNewDialog && <AddUserDialog
+        {!!showingNewDialog && <CMNewObjectDialog
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddUserOK}
-            initialObj={initialObj}
-        ></AddUserDialog>}
+            spec={NewUserDialogSpec}
+        />}
         <DataGrid
             // basic config
             editMode="row"

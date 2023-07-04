@@ -8,7 +8,7 @@ import {
 
 interface GetRolesInput
     extends Pick<
-        Prisma.RolesFindManyArgs,
+        Prisma.RoleFindManyArgs,
         "where" | "orderBy" | "skip" | "take"
     > { }
 

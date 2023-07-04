@@ -1,0 +1,49 @@
+import {
+    Button
+} from "@mui/material";
+import {
+    GridCellModes,
+    GridRenderEditCellParams,
+    useGridApiContext
+} from '@mui/x-data-grid';
+import React from "react";
+import { CMSelectItemDialog } from "src/core/cmdashboard/CMSelectItemDialog";
+import { CMGridEditCellSpec } from "./CMColumnSpec";
+
+
+type CMGridRenderEditCellParams<TDBModel> = GridRenderEditCellParams & {
+    spec: CMGridEditCellSpec<TDBModel>
+};
+
+// the field we're editing is the OBJECT field.
+export function CMGridEditCell<TDBModel>(props: CMGridRenderEditCellParams<TDBModel>) {
+    const { id, value, field, spec } = props;
+    console.assert(!!spec);
+    const apiRef = useGridApiContext();
+    const [showingSelectDialog, setShowingSelectDialog] = React.useState<boolean>(false);
+
+    // when viewing, it's just a chip, no click or delete.
+    // when editing but not in focus, same thing
+    // when editing with focus, show a dropdown menu, with options to delete & create new.
+
+    if (props.cellMode != GridCellModes.Edit) {
+        // viewing.
+        return spec.RenderItem({ value });
+    }
+
+    if (showingSelectDialog) {
+        // show dialog instead of value.
+        const onOK = (value?: TDBModel) => {
+            console.assert(spec.FKObjectFieldName === field); // assert that we're operating on object column, not the ID column.
+            apiRef.current.setEditCellValue({ id, field, value: (value || null) });
+            apiRef.current.setEditCellValue({ id, field: spec.FKIDFieldName, value: (value ? value[spec.PKID] : null) });
+            setShowingSelectDialog(false);
+        };
+        return <CMSelectItemDialog spec={spec.SelectItemDialogSpec} value={props.value} onCancel={() => { setShowingSelectDialog(false) }} onOK={onOK} />;
+    }
+    return <>
+        {spec.RenderItem({ value })}
+        <Button onClick={() => { setShowingSelectDialog(true) }}>Select...</Button>
+    </>;
+}
+

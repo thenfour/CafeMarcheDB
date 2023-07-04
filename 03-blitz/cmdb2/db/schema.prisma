@@ -39,7 +39,7 @@ model RolePermission {
 
 model User {
   id             Int                 @id @default(autoincrement())
-  name           String?
+  name           String @default("")
   isSysAdmin Boolean @default(false)
   isDeleted Boolean @default(false)
   email          String              @unique

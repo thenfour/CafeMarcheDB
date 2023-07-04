@@ -36,7 +36,7 @@ declare module "@blitzjs/auth" {
 }
 
 export function CreatePublicData(user: any) {
-  if (!user) return {};
+  if (!user) return { userId: 0, isSysAdmin: false, permissions: [] };
   return {
     userId: user.id,
     isSysAdmin: user.isSysAdmin,
