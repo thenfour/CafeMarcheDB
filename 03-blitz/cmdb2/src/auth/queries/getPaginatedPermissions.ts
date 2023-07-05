@@ -6,16 +6,15 @@ import {
     GetObjectByIdSchema
 } from "../schemas";
 
-interface GetRolesInput
+interface GetPermissionsInput
     extends Pick<
-        Prisma.RoleFindManyArgs,
+        Prisma.PermissionFindManyArgs,
         "where" | "orderBy" | "skip" | "take"
     > { }
 
 export default resolver.pipe(
     resolver.authorize(),
-    async ({ where, orderBy, skip = 0, take = 100 }: GetRolesInput, ctx) => {
-        // TODO: in multi-tenant app, you must add validation to ensure correct tenant
+    async ({ where, orderBy, skip = 0, take = 100 }: GetPermissionsInput, ctx) => {
         // TODO: do permissions check
         try {
             const {
@@ -26,9 +25,14 @@ export default resolver.pipe(
             } = await paginate({
                 skip,
                 take,
-                count: () => db.role.count({ where }),
+                count: () => db.permission.count({ where }),
                 query: (paginateArgs) =>
-                    db.role.findMany({ ...paginateArgs, where, orderBy }),
+                    db.permission.findMany({
+                        ...paginateArgs,
+                        where,
+                        orderBy,
+                        include: { roles: { include: { role: true } } },
+                    }),
             });
 
             return {
@@ -38,7 +42,7 @@ export default resolver.pipe(
                 count,
             };
         } catch (e) {
-            console.error(`Exception while querying roles`);
+            console.error(`Exception while querying permission`);
             console.error(e);
             throw (e);
         }

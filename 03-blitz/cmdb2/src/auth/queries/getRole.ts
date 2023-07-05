@@ -13,7 +13,7 @@ export default resolver.pipe(
         try {
             const item = await db.role.findFirst({
                 where: { id },
-                include: { permissions: { include: { permission: true } } }
+                include: { permissions: { include: { permission: true } } },
             });
             if (!item) throw new NotFoundError();
             return item;
