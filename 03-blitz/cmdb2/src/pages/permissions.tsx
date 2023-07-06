@@ -4,7 +4,7 @@ import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Permission } from "src/core/permissions";
 
-const RolesListPage: BlitzPage = () => {
+const PermissionsListPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Users">
             <CMEditGrid spec={PermissionEditGridSpec} />
@@ -12,6 +12,6 @@ const RolesListPage: BlitzPage = () => {
     );
 };
 
-RolesListPage.authenticate = { role: [Permission.can_edit_users] };
+PermissionsListPage.authenticate = { role: [Permission.can_edit_users] };
 
-export default RolesListPage;
+export default PermissionsListPage;

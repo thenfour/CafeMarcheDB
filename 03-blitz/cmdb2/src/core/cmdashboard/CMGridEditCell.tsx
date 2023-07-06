@@ -1,3 +1,5 @@
+// specifically, a single foreign object edit cell.
+
 import {
     Button
 } from "@mui/material";
@@ -6,7 +8,7 @@ import {
     GridRenderEditCellParams,
     useGridApiContext
 } from '@mui/x-data-grid';
-import React from "react";
+import React, { ReactElement } from "react";
 import { CMSelectItemDialog } from "src/core/cmdashboard/CMSelectItemDialog";
 import { CMGridEditCellSpec } from "./CMColumnSpec";
 

@@ -11,8 +11,8 @@ import { Signup as NewUserSchema } from "src/auth/schemas";
 import { CMTextField } from './cmdashboard/CMTextField';
 import { CMAutocompleteField } from './cmdashboard/CMAutocompleteField';
 import { RenderRole, RoleAutocompleteSpec, RoleGridEditCellSpec } from './CMDBRole';
-import getUsers from "src/users/queries/getUsers";
-import updateUserFromGrid from "src/users/mutations/updateUserFromGrid";
+import getUsers from "src/auth/queries/getUsers";
+import updateUserFromGrid from "src/auth/mutations/updateUserFromGrid";
 import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
 import NewUserMutationSpec from "src/auth/mutations/signup";
 
@@ -91,6 +91,7 @@ export const UserEditGridSpec: CMEditGridSpec<DBUser> = {
     PageSizeOptions: [3, 25, 100],
     PageSizeDefault: 25,
 
+    CreateItemButtonText: () => `New user`,
     CreateSuccessSnackbar: (item: DBUser) => `User ${item.name} added`,
     CreateErrorSnackbar: (err: any) => `Server error while adding user`,
     UpdateItemSuccessSnackbar: (updatedItem: DBUser) => `User ${updatedItem.name} updated.`,

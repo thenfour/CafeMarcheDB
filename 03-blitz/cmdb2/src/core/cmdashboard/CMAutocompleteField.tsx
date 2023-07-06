@@ -105,7 +105,7 @@ export function CMAutocompleteField<TDBModel>({ key, valueObj, onChange, columnS
                     }</span>
                 </li>) :
                 (<li {...props}>
-                    {columnSpec.RenderListItemChildren({ obj: option })}
+                    {columnSpec.RenderListItemChild({ obj: option })}
                 </li>);
         }}
         renderInput={(params) => (

@@ -1,6 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
-import { UpdateUserFromGrid } from "../../auth/schemas"
+import { UpdateUserFromGrid } from "../schemas"
 
 export default resolver.pipe(
     resolver.zod(UpdateUserFromGrid),

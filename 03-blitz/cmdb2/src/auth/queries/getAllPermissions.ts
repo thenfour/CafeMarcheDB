@@ -1,12 +1,19 @@
 import { resolver } from "@blitzjs/rpc";
-import db from "db";
+import db, { Prisma } from "db";
 
-// NO PERMISSION CHECK BECAUSE THIS IS RUN AT STARTUP WITHOUT ANY USER CONTEXT
+
+interface QueryParams
+    extends Pick<
+        Prisma.PermissionFindManyArgs,
+        "where" | "orderBy" | "skip" | "take"
+    > { }
+
 
 export default resolver.pipe(
-    async ({ }, ctx) => {
+    async (params: QueryParams, ctx) => {
         try {
             const items = await db.permission.findMany({
+                ...params,
                 include: { roles: { include: { role: true } } }
             });
             return items;

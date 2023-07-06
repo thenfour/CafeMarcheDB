@@ -9,20 +9,23 @@ import {
 export default resolver.pipe(
     resolver.zod(UpdatePermissionSchema),
     resolver.authorize(),
-    async ({ id, ...data }, ctx) => {
+    async ({ id, name, description, rolesChanges }, ctx) => {
         try {
             // TODO: do permissions check
             const obj = await db.permission.update({
                 where: { id },
                 data: {
-                    name: data.name,//
-                    description: data.description,//
+                    name,//
+                    description,//
                 }
             });
+
+            // todo: perform rolesChanges
+
             // todo: register in change log.
             return obj;
         } catch (e) {
-            console.error(`Exception while updating permission ${id}: ${data?.name}`);
+            console.error(`Exception while updating permission ${id}: ${name}`);
             console.error(e);
             throw (e);
         }

@@ -26,7 +26,7 @@ export const RoleAutocompleteSpec: CMAutocompleteFieldSpec<DBRole> = {
         if (!item1 && !item2) return true; // both considered null.
         return item1?.id == item2?.id;
     },
-    RenderListItemChildren({ obj }) {
+    RenderListItemChild({ obj }) {
         return <>
             <SecurityIcon />
             {obj.name}
@@ -54,7 +54,7 @@ export const RoleSelectItemDialogSpec: CMSelectItemDialogSpec<DBRole> = {
     CreateFromStringMutation: RoleAutocompleteSpec.CreateFromStringMutation,
     CreateFromString: RoleAutocompleteSpec.CreateFromString,
     IsEqual: RoleAutocompleteSpec.IsEqual,
-    RenderListItemChildren: (value: DBRole) => {
+    RenderListItemChild: (value: DBRole) => {
         return <>
             <ListItemIcon>
                 <SecurityIcon />
@@ -80,7 +80,6 @@ export const RoleSelectItemDialogSpec: CMSelectItemDialogSpec<DBRole> = {
 };
 
 export const RoleGridEditCellSpec: CMGridEditCellSpec<DBRole> = {
-    PKIDMemberName: "id",
     ForeignPKIDMemberName: "id",
     FKObjectMemberName: "role",
     FKIDMemberName: "roleId",

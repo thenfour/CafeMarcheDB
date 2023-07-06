@@ -70,13 +70,13 @@ export const ChangePassword = z.object({
 
 // model Role {
 export const CreateRole = z.object({
-  name: z.string(),
+  name: z.string().min(1),
   description: z.string().optional(),
 });
 
 export const UpdateRole = z.object({
   id: z.number(),
-  name: z.string(),
+  name: z.string().min(1),
   description: z.string().optional(),
 });
 
@@ -90,14 +90,15 @@ export const DeleteRole = z.object({
 //   description String?
 
 export const CreatePermission = z.object({
-  name: z.string(),
-  description: z.string().optional(),
+  name: z.string().min(1),
+  description: z.string(),
 });
 
 export const UpdatePermission = z.object({
   id: z.number(),
-  name: z.string(),
-  description: z.string().optional(),
+  name: z.string().min(1),
+  description: z.string(),
+  rolesChanges: z.any(), // see ComputeChangePlan
 });
 
 export const DeletePermission = z.object({

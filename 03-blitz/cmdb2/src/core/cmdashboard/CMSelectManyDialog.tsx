@@ -1,3 +1,8 @@
+// the value type we operate on is TAssociationModel[].
+// why do we need to pass the row? because associations refer to the row, so the spec will need to access the row for its ID etc.
+
+// i would actually prefer to refactor this so it's not so much "row" and "association[]", but rather just "parentObject" and array "value". maybe?
+
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
@@ -14,20 +19,21 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { CMSelectItemDialogSpec } from "src/core/cmdashboard/CMColumnSpec";
+import { CMSelectMultiDialogSpec } from "src/core/cmdashboard/CMColumnSpec";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 
-type CMSelectItemDialogProps<TDBModel> = {
-    value?: TDBModel | null,
-    onOK: (value?: TDBModel | null) => void,
+type CMSelectMultiDialogProps<TRow, TAssociation> = {
+    rowObject: TRow,
+    value: TAssociation[], // no null. empty array yes.
+    onOK: (value: TAssociation[]) => void,
     onCancel: () => void,
-    spec: CMSelectItemDialogSpec<TDBModel>,
+    spec: CMSelectMultiDialogSpec<TRow, TAssociation>,
 };
 
-export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CMSelectItemDialogProps<TDBModel>) {
+export function CMSelectMultiDialog<TRow, TAssociation>({ rowObject, value, onOK, onCancel, spec }: CMSelectMultiDialogProps<TRow, TAssociation>) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [selectedObj, setSelectedObj] = React.useState<TDBModel | undefined | null>(value);
+    const [selectedObj, setSelectedObj] = React.useState<TAssociation[]>(value);
     const [filterText, setFilterText] = React.useState("");
 
     const where = { AND: [] as any[] };
@@ -41,16 +47,18 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
         where.AND.push(...quickFilterItems);
     }
 
-    const [items, { refetch }] = useQuery(spec.GetAllItemsQuery, { where });
+    //const [items, { refetch }] = useQuery<any, TAssociation[]>(spec.GetAllForeignItemsQuery, where);
+    const { items, refetch } = spec.GetAllForeignItemOptionsAsAssociations({ where, existingAssociations: selectedObj, rowObject });
 
-    const [createItemMutation] = useMutation(spec.CreateFromStringMutation);
+    const [createForeignItemMutation] = useMutation(spec.CreateForeignFromStringMutation);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const onNewClicked = (e) => {
-        spec.CreateFromString({ mutation: createItemMutation, input: filterText })
-            .then((updatedObj) => {
-                setSelectedObj(updatedObj);
-                showSnackbar({ children: spec.NewItemSuccessSnackbarText(updatedObj), severity: 'success' });
+    const onNewClicked = () => {
+        spec.CreateAssociationWithNewForeignObjectFromString({ rowObject, mutation: createForeignItemMutation, input: filterText })
+            .then((newAssociation) => {
+                const newValue = [...selectedObj, newAssociation];
+                setSelectedObj(newValue);
+                showSnackbar({ children: spec.NewItemSuccessSnackbarText(newAssociation), severity: 'success' });
                 void refetch();
             }).catch((err => {
                 showSnackbar({ children: spec.NewItemErrorSnackbarText(err), severity: 'error' });
@@ -58,8 +66,14 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
             }));
     };
 
-    const handleItemClick = (value) => {
-        setSelectedObj(value);
+    const handleDeleteAssociation = (ass: TAssociation) => {
+        const newValue = selectedObj.filter(sass => !spec.IsEqualAssociation(ass, sass));
+        setSelectedObj(newValue);
+    };
+
+    const handleListItemClick = (newAssociation: TAssociation) => {
+        const newValue = [...selectedObj, newAssociation];
+        setSelectedObj(newValue);
     };
 
     return (
@@ -72,11 +86,10 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
             <DialogTitle>
                 {spec.DialogTitleText()}
                 <Box sx={{ p: 0 }}>
-                    Selected: {spec.RenderItem({
+                    {spec.RenderValue({
+                        rowObject,
                         value: selectedObj,
-                        onDelete: () => {
-                            setSelectedObj(null);
-                        }
+                        onDelete: handleDeleteAssociation,
                     })}
                 </Box>
             </DialogTitle>
@@ -119,14 +132,15 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
                         :
                         <List>
                             {
-                                items.map(item => (
-                                    <React.Fragment key={item.id}>
-                                        <ListItemButton selected={spec.IsEqual(item, selectedObj)} onClick={e => { handleItemClick(item) }}>
-                                            {spec.RenderListItemChild(item)}
+                                items.map(item => {
+                                    const selected = !!selectedObj.find(ass => spec.IsEqualAssociation(ass, item));
+                                    return (<React.Fragment key={spec.GetKey(item)}>
+                                        <ListItemButton disabled={selected} onClick={e => handleListItemClick(item)}>
+                                            {spec.RenderListItemChild({ rowObject, value: item, selected })}
                                         </ListItemButton>
                                         <Divider></Divider>
-                                    </React.Fragment>
-                                ))
+                                    </React.Fragment>);
+                                })
                             }
                         </List>
                 }

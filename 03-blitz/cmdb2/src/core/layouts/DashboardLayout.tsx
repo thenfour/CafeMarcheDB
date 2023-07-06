@@ -3,7 +3,7 @@ import React, { FC, Suspense } from "react"
 import { BlitzLayout } from "@blitzjs/next"
 import Dashboard2 from "../components/Dashboard2";
 import { Backdrop, CircularProgress } from "@mui/material";
-import { useCurrentUser } from "src/users/hooks/useCurrentUser";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { useRouter } from "next/router";
 import { BlitzPage, Routes } from "@blitzjs/next";
 import Link from "next/link";

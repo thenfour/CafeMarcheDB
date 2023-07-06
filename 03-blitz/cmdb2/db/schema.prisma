@@ -1,6 +1,12 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+// note that we can generate model types which include related objects like this:
+// https://github.com/prisma/prisma/discussions/10928
+// type FactionWithOwner = Prisma.FactionGetPayload<{
+//   include: { owner: true }
+// }>
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
@@ -21,10 +27,10 @@ model Role {
 }
 
 model Permission {
-  id    Int              @id @default(autoincrement())
-  name  String           @unique
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
   description String?
-  roles RolePermission[]
+  roles       RolePermission[]
 }
 
 model RolePermission {
@@ -33,21 +39,23 @@ model RolePermission {
   permissionId Int
   role         Role       @relation(fields: [roleId], references: [id])
   permission   Permission @relation(fields: [permissionId], references: [id])
+
   // you could also cluster the keys but this is just simpler
   //   @@id([roleId, permissionId])
+  @@unique([roleId, permissionId]) // 
 }
 
 model User {
   id             Int                 @id @default(autoincrement())
-  name           String @default("")
-  isSysAdmin Boolean @default(false)
-  isDeleted Boolean @default(false)
+  name           String              @default("")
+  isSysAdmin     Boolean             @default(false)
+  isDeleted      Boolean             @default(false)
   email          String              @unique
   phone          String?
   hashedPassword String?
   googleId       String?
   roleId         Int? // nullable for new users a role should be assigned by an admin. null = public
-  role           Role?                @relation(fields: [roleId], references: [id])
+  role           Role?               @relation(fields: [roleId], references: [id])
   tokens         Token[]
   sessions       Session[]
   Changes        Changes[] // yea don't include this
@@ -157,6 +165,8 @@ model EventTagAssignment {
   event      Event    @relation(fields: [eventId], references: [id])
   eventTagId Int
   eventTag   EventTag @relation(fields: [eventTagId], references: [id])
+
+  @@unique([eventId, eventTagId]) // 
 }
 
 model File {
@@ -177,6 +187,8 @@ model FileUserTag {
   name   String? // if userid is not there...
   user   User?   @relation(fields: [userId], references: [id])
   userId Int?
+
+  @@unique([fileId, userId]) // 
 }
 
 model FileSongTag {
@@ -186,6 +198,8 @@ model FileSongTag {
   name   String? // if songid is not there...
   song   Song?   @relation(fields: [songId], references: [id])
   songId Int?
+
+  @@unique([fileId, songId]) // 
 }
 
 model FileEventTag {
@@ -195,6 +209,8 @@ model FileEventTag {
   name    String? // if eventid is not there...
   event   Event?  @relation(fields: [eventId], references: [id])
   eventId Int?
+
+  @@unique([fileId, eventId]) // 
 }
 
 model FileInstrumentTag {
@@ -204,6 +220,8 @@ model FileInstrumentTag {
   name         String? // if instrumentid is not there...
   instrument   Instrument? @relation(fields: [instrumentId], references: [id])
   instrumentId Int?
+
+  @@unique([fileId, instrumentId]) // 
 }
 
 // things like yes no maybe
@@ -232,7 +250,7 @@ model EventUserResponse {
   eventId Int
   event   Event @relation(fields: [eventId], references: [id])
 
-  expectApproval Boolean @default(false)
+  expectApproval   Boolean @default(false)
   expectAttendance Boolean @default(false)
 
   attendanceId   Int?
@@ -242,4 +260,6 @@ model EventUserResponse {
   approvalId   Int?
   approval     EventApproval? @relation(fields: [approvalId], references: [id])
   approvalText String?
+
+  @@unique([userId, eventId]) // 
 }

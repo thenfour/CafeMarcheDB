@@ -25,13 +25,12 @@ import { CMGridEditCell } from "src/core/cmdashboard/CMGridEditCell";
 import { CMNewObjectDialog } from "src/core/cmdashboard/CMNewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CMEditGridColumnType, CMEditGridSpec } from "./CMColumnSpec";
+import { CMGridEditCellMultiFK } from "./CMGridEditCellMultiFK";
 
-function CustomToolbar({ onNewClicked }) {
+function CustomToolbar({ onNewClicked, spec }) {
     return (
         <GridToolbarContainer>
-            <Button startIcon={<AddIcon />} onClick={onNewClicked}>
-                New user
-            </Button>
+            <Button startIcon={<AddIcon />} onClick={onNewClicked}>{spec.CreateItemButtonText()}</Button>
 
             {/* <GridToolbarColumnsButton /> */}
             <GridToolbarFilterButton />
@@ -149,6 +148,8 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
     const handleYes = () => {
         const { newRow, oldRow, reject, resolve } = confirmDialogArgs;
         try {
+            // console.log(`calling UPDATE MUTATION on new row:`);
+            // console.log(newRow);
             updateMutation(newRow).then((updatedObj) => {
                 showSnackbar({ children: spec.UpdateItemSuccessSnackbar(updatedObj as TDBModel), severity: 'success' });
                 void refetch();
@@ -248,21 +249,33 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
     const columns: GridColDef[] = spec.Columns.map(colSpec => {
         switch (colSpec.Behavior) {
             case CMEditGridColumnType.ForeignObject:
+                {
+                    // for each foreign object column, also add the corresponding ID column.
+                    fkidColumns.push({ field: colSpec.FKIDMemberName!, editable: true, filterable: false });
 
-                // for each foreign object column, also add the corresponding ID column.
-                fkidColumns.push({ field: colSpec.FKIDMemberName!, editable: true, filterable: false });
-
+                    return {
+                        field: colSpec.MemberName,
+                        headerName: colSpec.HeaderText,
+                        editable: colSpec.Editable,
+                        width: colSpec.Width,
+                        renderCell: (params) => {
+                            return colSpec.FKRenderViewCell!({ value: params.value });
+                        },
+                        renderEditCell: (params) => <CMGridEditCell spec={colSpec.FKEditCellSpec!} {...params} />,
+                        ...(colSpec.GridColProps || {}),
+                    };
+                }
+            case CMEditGridColumnType.MultiForeignObjects:
                 return {
                     field: colSpec.MemberName,
                     headerName: colSpec.HeaderText,
                     editable: colSpec.Editable,
                     width: colSpec.Width,
                     renderCell: (params) => {
-                        return colSpec.FKRenderViewCell!({ value: params.value });//.SelectItemDialogSpec.RenderItem({ value: params.value });
+                        return colSpec.FKRenderViewCell!({ value: params.value });
                     },
-                    renderEditCell: (params) => {
-                        return <CMGridEditCell spec={colSpec.FKEditCellSpec!} {...params} />;
-                    }
+                    renderEditCell: (params) => <CMGridEditCellMultiFK spec={colSpec.FKEditCellMultiSpec!} {...params} />,
+                    ...(colSpec.GridColProps || {}),
                 };
             case CMEditGridColumnType.PK:
                 return {
@@ -271,6 +284,15 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
                     editable: false,
                     width: colSpec.Width,
                     type: 'number',
+                    ...(colSpec.GridColProps || {}),
+                };
+            case CMEditGridColumnType.Custom:
+                return {
+                    field: colSpec.MemberName,
+                    headerName: colSpec.HeaderText,
+                    editable: colSpec.Editable,
+                    width: colSpec.Width,
+                    ...(colSpec.GridColProps || {}),
                 };
             default:
             case CMEditGridColumnType.String:
@@ -280,6 +302,7 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
                     editable: colSpec.Editable,
                     width: colSpec.Width,
                     type: 'string',
+                    ...(colSpec.GridColProps || {}),
                 };
 
         }
@@ -352,7 +375,8 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
             }}
             slotProps={{
                 toolbar: {
-                    onNewClicked: () => { setShowingNewDialog(true); }
+                    onNewClicked: () => { setShowingNewDialog(true); },
+                    spec: spec,
                 }
             }}
 

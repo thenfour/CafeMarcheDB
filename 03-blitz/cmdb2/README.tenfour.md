@@ -11,6 +11,7 @@ blitz install material-ui
 # tech & rationale
 
   * blitz-js: because it seems to provide the full-stack dev in a single place (raw react/express won't without hacking like 7jam), conventional, targets specifically things like dashboards (otoh Next.js loves to demonstrate simple blogs). So if i go with learning next.js, i would be learning the mechanics of next which blitz lets me ignore, while having to reinvent many of the wheels that blitz provides.
+    * in particular, the blitz RPC, auth, and db are all pretty much invaluable here.
   * do NOT use react-admin; it has too many limitations and you end up customizing everything. it's literally easier to just build your own based off MUI
   * material-ui because it's conventional and the datagrid has everything i need
   * google-oauth via passport
@@ -21,7 +22,8 @@ blitz install material-ui
 
   1. modify `schema.prisma`
   1. `blitz prisma db push`       // for intermediate prototyping
-  1. `blitz prisma migrate dev --name <migration_name>` for committing schema change to be run in prod
+  1. `blitz prisma format` // for generating schemas and formatting the .schema file.
+  1. `blitz prisma migrate dev --name <migration_name>` for committing schema change as a migration on dev. clobbers data.
 
 # how: reset db and start fresh
 

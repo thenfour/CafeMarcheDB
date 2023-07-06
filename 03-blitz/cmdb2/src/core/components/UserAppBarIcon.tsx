@@ -15,7 +15,7 @@ import Menu from '@mui/material/Menu';
 import { useMutation } from "@blitzjs/rpc"
 import logout from "src/auth/mutations/logout"
 import { Avatar, Badge, CssBaseline } from '@mui/material';
-import { useCurrentUser } from 'src/users/hooks/useCurrentUser';
+import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { deepOrange, deepPurple, red } from '@mui/material/colors';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
