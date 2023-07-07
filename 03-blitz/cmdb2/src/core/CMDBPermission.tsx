@@ -27,6 +27,7 @@ import {
 import { RoleAutocompleteSpec } from "./CMDBRole";
 import { CMTextField } from './cmdashboard/CMTextField';
 import { Permission } from "./permissions";
+import AU from "shared/associationUtils";
 
 type DBPermission = Prisma.PermissionGetPayload<{
     include: { roles: true }
@@ -36,24 +37,6 @@ type DBRolePermission = Prisma.RolePermissionGetPayload<{
 }>;
 
 type DBRole = Prisma.RoleGetPayload<{}>;
-
-// returns changes required to update old associations to the new.
-export interface ChangePlan<T> {
-    create: T[],
-    delete: T[],
-};
-export function InAButNotB<T>(a: T[], b: T[], isEqualFn: (a: T, b: T) => boolean): T[] {
-    return a.filter((item) => !b.some((element) => isEqualFn(item, element)));
-};
-
-export function ComputeChangePlan<T>(a: T[], b: T[], isEqualFn: (a: T, b: T) => boolean): ChangePlan<T> {
-    const ret = {
-        create: InAButNotB(b, a, isEqualFn),// creates are items in B but not in A.
-        delete: InAButNotB(a, b, isEqualFn),// creates are items in B but not in A.
-    };
-    return ret;
-};
-
 
 
 // UTILS //////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +96,7 @@ export const ComputeDiff = (oldItem: DBPermission, newItem: DBPermission) => { /
     if (newItem.description !== oldItem.description) {
         return true;
     }
-    const x = ComputeChangePlan(oldItem.roles, newItem.roles, IsEqualAssociation);
+    const x = AU.ComputeChangePlan(oldItem.roles, newItem.roles, IsEqualAssociation);
     if (x.create.length || x.delete.length) {
         return true;
     }

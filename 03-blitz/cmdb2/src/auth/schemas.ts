@@ -98,7 +98,10 @@ export const UpdatePermission = z.object({
   id: z.number(),
   name: z.string().min(1),
   description: z.string(),
-  rolesChanges: z.any(), // see ComputeChangePlan
+  roles: z.object({
+    roleId: z.number(),
+    permissionId: z.number(),
+  }).array(),
 });
 
 export const DeletePermission = z.object({

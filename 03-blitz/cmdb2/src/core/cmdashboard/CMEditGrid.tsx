@@ -148,8 +148,6 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
     const handleYes = () => {
         const { newRow, oldRow, reject, resolve } = confirmDialogArgs;
         try {
-            // console.log(`calling UPDATE MUTATION on new row:`);
-            // console.log(newRow);
             updateMutation(newRow).then((updatedObj) => {
                 showSnackbar({ children: spec.UpdateItemSuccessSnackbar(updatedObj as TDBModel), severity: 'success' });
                 void refetch();
