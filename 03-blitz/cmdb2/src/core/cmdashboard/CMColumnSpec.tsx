@@ -206,6 +206,10 @@ export interface CMEditGridSpec<TDBModel> {
     CreateErrorSnackbar: (err: any) => string,
     UpdateItemSuccessSnackbar: (updatedItem: TDBModel) => string,
     UpdateItemErrorSnackbar: (err: any) => string,
+
+    DeleteItemSuccessSnackbar: (updatedItem: TDBModel) => string,
+    DeleteItemErrorSnackbar: (err: any) => string,
+
     NoChangesMadeSnackbar: (item: TDBModel) => string, //  "No changes were made"
     DeleteConfirmationMessage: (item: TDBModel) => string, // Pressing 'Yes' will delete this row with name {row.name}.
     UpdateConfirmationMessage: (oldItem: TDBModel, newItem: TDBModel, mutation: any[]) => string,

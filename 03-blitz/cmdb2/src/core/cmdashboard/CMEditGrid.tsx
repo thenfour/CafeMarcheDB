@@ -168,8 +168,14 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
             return null;
         }
         const handleYes = () => {
-            deleteMutation({ [spec.PKIDMemberName]: deleteRowId });
-            setDeleteRowId(null);
+            deleteMutation({ [spec.PKIDMemberName]: deleteRowId }).then(() => {
+                showSnackbar({ children: spec.DeleteItemSuccessSnackbar(row), severity: 'success' });
+                setDeleteRowId(null);
+                void refetch();
+            }).catch(e => {
+                showSnackbar({ children: spec.DeleteItemErrorSnackbar(e), severity: 'error' });
+                console.error(e);
+            });
         };
         const row = items.find(u => u[spec.PKIDMemberName] == deleteRowId);
         if (!row) { // not found wut? maybe some weird async pagination or background refresh error

@@ -38,8 +38,8 @@ model RolePermission {
   id           Int        @id @default(autoincrement())
   roleId       Int
   permissionId Int
-  role         Role       @relation(fields: [roleId], references: [id])
-  permission   Permission @relation(fields: [permissionId], references: [id])
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   // you could also cluster the keys but this is just simpler
   //   @@id([roleId, permissionId])
@@ -123,6 +123,9 @@ model Song {
   FileSongTag FileSongTag[]
 }
 
+// let's support 2 levels of instruments. it's just practical.
+// mostly for coloring, so this is a pretty high level thing like "drums", "strings", "high instruments"
+// honestly not sure how useful this is.
 model InstrumentGroup {
   id          Int          @id @default(autoincrement())
   name        String
@@ -131,12 +134,13 @@ model InstrumentGroup {
   instruments Instrument[]
 }
 
+// 
 model Instrument {
   id                Int                 @id @default(autoincrement())
   name              String
   scoreOrder        Int
-  instrumentGroup   InstrumentGroup     @relation(fields: [instrumentGroupId], references: [id])
-  instrumentGroupId Int
+  instrumentGroup   InstrumentGroup?     @relation(fields: [instrumentGroupId], references: [id], onDelete: SetNull)
+  instrumentGroupId Int?
   fileTags          FileInstrumentTag[]
 }
 
@@ -163,9 +167,9 @@ model EventTag {
 model EventTagAssignment {
   id         Int      @id @default(autoincrement())
   eventId    Int
-  event      Event    @relation(fields: [eventId], references: [id])
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventTagId Int
-  eventTag   EventTag @relation(fields: [eventTagId], references: [id])
+  eventTag   EventTag @relation(fields: [eventTagId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, eventTagId]) // 
 }
@@ -184,9 +188,9 @@ model File {
 model FileUserTag {
   id     Int     @id @default(autoincrement())
   fileId Int
-  file   File    @relation(fields: [fileId], references: [id])
+  file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   name   String? // if userid is not there...
-  user   User?   @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int?
 
   @@unique([fileId, userId]) // 
@@ -195,9 +199,9 @@ model FileUserTag {
 model FileSongTag {
   id     Int     @id @default(autoincrement())
   fileId Int
-  file   File    @relation(fields: [fileId], references: [id])
+  file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   name   String? // if songid is not there...
-  song   Song?   @relation(fields: [songId], references: [id])
+  song   Song?   @relation(fields: [songId], references: [id], onDelete: Cascade)
   songId Int?
 
   @@unique([fileId, songId]) // 
@@ -206,9 +210,9 @@ model FileSongTag {
 model FileEventTag {
   id      Int     @id @default(autoincrement())
   fileId  Int
-  file    File    @relation(fields: [fileId], references: [id])
+  file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   name    String? // if eventid is not there...
-  event   Event?  @relation(fields: [eventId], references: [id])
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId Int?
 
   @@unique([fileId, eventId]) // 
@@ -217,9 +221,9 @@ model FileEventTag {
 model FileInstrumentTag {
   id           Int         @id @default(autoincrement())
   fileId       Int
-  file         File        @relation(fields: [fileId], references: [id])
+  file         File        @relation(fields: [fileId], references: [id], onDelete: Cascade)
   name         String? // if instrumentid is not there...
-  instrument   Instrument? @relation(fields: [instrumentId], references: [id])
+  instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
   instrumentId Int?
 
   @@unique([fileId, instrumentId]) // 
@@ -247,19 +251,19 @@ model EventApproval {
 model EventUserResponse {
   id      Int   @id @default(autoincrement())
   userId  Int
-  user    User  @relation(fields: [userId], references: [id])
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   eventId Int
-  event   Event @relation(fields: [eventId], references: [id])
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   expectApproval   Boolean @default(false)
   expectAttendance Boolean @default(false)
 
   attendanceId   Int?
-  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id])
+  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
   attendanceText String?
 
   approvalId   Int?
-  approval     EventApproval? @relation(fields: [approvalId], references: [id])
+  approval     EventApproval? @relation(fields: [approvalId], references: [id], onDelete: SetDefault)
   approvalText String?
 
   @@unique([userId, eventId]) // 

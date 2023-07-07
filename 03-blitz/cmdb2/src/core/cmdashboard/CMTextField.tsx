@@ -8,10 +8,10 @@ import {
 // callers controls the value
 
 // textfield for a string field on an object.
-export function CMTextField({ key, validationError, label, value, onChange, autoFocus }) {
+export function CMTextField({ validationError, label, value, onChange, autoFocus }) {
     return (
         <TextField
-            key={key}
+            //key={key}
             autoFocus={autoFocus}
             label={label}
             error={!!validationError}

@@ -12,6 +12,7 @@ export default resolver.pipe(
     async ({ id }, ctx) => {
         try {
             // TODO: do permissions check
+
             const choice = await db.permission.deleteMany({ where: { id } });
             // todo: register in change log.
             return choice;
