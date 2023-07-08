@@ -9,12 +9,14 @@ import {
     GetObjectByIdSchema,
 } from "../schemas"
 import { Permission } from "shared/permissions";
+import utils, { ChangeAction } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(UpdateRoleSchema),
     resolver.authorize("updateRole", Permission.admin_auth),
     async ({ id, ...data }, ctx) => {
         try {
+            const oldValues = await db.role.findFirst({ where: { id } });
             const obj = await db.role.update({
                 where: { id },
                 data: {
@@ -22,7 +24,17 @@ export default resolver.pipe(
                     description: data.description,//
                 }
             });
-            // todo: register in change log.
+
+            await utils.RegisterChange({
+                action: ChangeAction.update,
+                context: "updateRole",
+                table: "role",
+                pkid: id,
+                oldValues,
+                newValues: obj,
+                ctx,
+            });
+
             return obj;
         } catch (e) {
             console.error(`Exception while updating role ${id}: ${data?.name}`);

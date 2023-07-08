@@ -2,6 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { CreateRole as CreateRoleSchema } from "../schemas";
 import { Permission } from "shared/permissions";
+import utils, { ChangeAction } from "shared/utils"
 
 
 
@@ -14,7 +15,14 @@ export default resolver.pipe(
                 data: fields,
             });
 
-            // todo: register in change log.
+            await utils.RegisterChange({
+                action: ChangeAction.create,
+                context: "createRole",
+                table: "role",
+                pkid: obj.id,
+                newValues: obj,
+                ctx,
+            });
 
             return obj;
         } catch (e) {

@@ -2,12 +2,16 @@ import { resolver } from "@blitzjs/rpc"
 import { GetObjectByIdSchema } from "../schemas"
 import db from "db";
 import { Permission } from "shared/permissions";
+import utils, { ChangeAction } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(GetObjectByIdSchema),
     resolver.authorize("SoftDeleteUser", Permission.admin_users),
     async ({ id }, ctx) => {
         try {
+
+            const oldValues = await db.user.findFirst({ where: { id } });
+
             const obj = await db.user.update({
                 where: { id },
                 data: {
@@ -15,7 +19,16 @@ export default resolver.pipe(
                 }
             });
 
-            // todo: register in change log.
+            await utils.RegisterChange({
+                action: ChangeAction.update,
+                context: "SoftDeleteUser",
+                table: "user",
+                pkid: id!,
+                oldValues,
+                newValues: obj,
+                ctx,
+            });
+
             return obj;
         } catch (e) {
             console.error(`Exception while soft-deleting user ${id}`);

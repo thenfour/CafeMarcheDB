@@ -6,6 +6,9 @@ import {
 import { z } from "zod"
 import AU from "shared/associationUtils";
 import { Permission } from "shared/permissions";
+import utils, { ChangeAction } from "shared/utils"
+import { randomUUID } from "crypto";
+import { AuthenticatedMiddlewareCtx } from "blitz";
 
 type InputType = z.infer<typeof UpdatePermissionSchema>;
 
@@ -14,8 +17,10 @@ export const IsEqualAssociation = (item1: any, item2: any) => {
     return (item1?.roleId == item2?.roleId) && (item1?.permissionId == item2?.permissionId);
 };
 
-const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, ...fields }: InputType) => {
+const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, ...fields }: InputType, ctx: AuthenticatedMiddlewareCtx) => {
     try {
+        const operationId = randomUUID();
+        const changedAt = new Date();
 
         const currentAssociations = await prisma.rolePermission.findMany({
             where: {
@@ -34,20 +39,63 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
             },
         });
 
+        for (let i = 0; i < cp.delete.length; ++i) {
+            const oldValues = cp.delete[i];
+            await utils.RegisterChange({
+                action: ChangeAction.delete,
+                context: "updatePermission",
+                table: "rolePermission",
+
+                pkid: oldValues.id,
+                oldValues,
+
+                operationId,
+                changedAt,
+                ctx,
+            });
+        }
+
         for (let i = 0; i < cp.create.length; ++i) {
             const assoc = cp.create[i]!;
-            await prisma.rolePermission.create({
+            const newAssoc = await prisma.rolePermission.create({
                 data: {
                     roleId: assoc.roleId,
                     permissionId: assoc.permissionId,
                 },
             });
+
+            await utils.RegisterChange({
+                action: ChangeAction.create,
+                context: "updatePermission",
+                table: "rolePermission",
+
+                pkid: newAssoc.id,
+                newValues: newAssoc,
+
+                operationId,
+                changedAt,
+                ctx,
+            });
         }
+
+        const oldValues = await db.permission.findFirst({ where: { id } });
 
         const obj = await db.permission.update({
             where: { id },
             data: fields,
             include: { roles: true },
+        });
+
+        await utils.RegisterChange({
+            action: ChangeAction.update,
+            context: "updatePermission",
+            table: "permission",
+            pkid: obj.id,
+            newValues: fields,
+            oldValues,
+            operationId,
+            changedAt,
+            ctx,
         });
 
         return obj;
@@ -69,7 +117,7 @@ export default resolver.pipe(
             // });
 
             // non-transaction
-            let obj = await op(db, data);
+            let obj = await op(db, data, ctx);
 
             // todo: register in change log.
             return obj;

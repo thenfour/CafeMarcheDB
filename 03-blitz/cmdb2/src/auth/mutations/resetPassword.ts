@@ -4,6 +4,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { ResetPassword } from "../schemas"
 import login from "./login"
+import utils, { ChangeAction } from "shared/utils"
 
 export class ResetPasswordError extends Error {
   name = "ResetPasswordError"
@@ -34,12 +35,27 @@ export default resolver.pipe(
       throw new ResetPasswordError()
     }
 
+    const userId = savedToken.userId;
+
+    const oldValues = await db.user.findFirst({ where: { id: userId } });
+
     // 5. Since token is valid, now we can update the user's password
     const hashedPassword = await SecurePassword.hash(password.trim())
     const user = await db.user.update({
-      where: { id: savedToken.userId },
+      where: { id: userId },
       data: { hashedPassword },
     })
+
+    await utils.RegisterChange({
+      action: ChangeAction.update,
+      context: "reset password",
+      table: "user",
+      pkid: userId,
+      oldValues,
+      newValues: user,
+      ctx,
+    });
+
 
     // 6. Revoke all existing login sessions for this user
     await db.session.deleteMany({ where: { userId: user.id } })

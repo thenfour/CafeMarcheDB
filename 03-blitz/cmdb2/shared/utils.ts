@@ -1,3 +1,4 @@
+import { Ctx } from "@blitzjs/next";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 import { randomUUID } from "crypto";
 import db from "db"
@@ -9,13 +10,15 @@ export enum ChangeAction {
 }
 
 type RegisterChangeArgs = {
+    operationId?: string | null,
+    changedAt?: Date | null,
     context: string,
     table: string,
     pkid: number,
     action: ChangeAction,
     oldValues?: any,
     newValues?: any,
-    ctx: AuthenticatedMiddlewareCtx,
+    ctx: Ctx,
 }
 
 type CalculateChangesResult = {
@@ -40,8 +43,8 @@ function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
 }
 
 async function RegisterChange(args: RegisterChangeArgs) {
-    const operationId = randomUUID();
-    const changeTime = new Date();
+    const operationId = args.operationId || randomUUID();
+    const changedAt = args.changedAt || new Date();
 
     let oldValues: any = null;
     let newValues: any = null;
@@ -55,6 +58,10 @@ async function RegisterChange(args: RegisterChangeArgs) {
             break;
         case ChangeAction.update:
             const changes = CalculateChanges(args.oldValues, args.newValues);
+            if (Object.keys(changes.oldValues).length < 1) {
+                // you didn't change anything.
+                return;
+            }
             oldValues = changes.oldValues;
             newValues = changes.newValues;
             break;
@@ -62,17 +69,14 @@ async function RegisterChange(args: RegisterChangeArgs) {
             throw new Error(`unknown change action ${args?.action || "<null>"}`);
     }
 
-    //const x : ChangesCreateInput = {};
-
-
     await db.changes.create({
         data: {
             operationId,
+            changedAt,
             context: args.context,
             table: args.table,
             recordId: args.pkid,
             action: args.action,
-            changedAt: changeTime,
             userId: args.ctx.session.userId,
             oldValues: JSON.stringify(oldValues),
             newValues: JSON.stringify(newValues),

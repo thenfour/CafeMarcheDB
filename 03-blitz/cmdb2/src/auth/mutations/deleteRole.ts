@@ -9,14 +9,29 @@ import {
     GetObjectByIdSchema,
 } from "../schemas"
 import { Permission } from "shared/permissions";
+import utils, { ChangeAction } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(DeleteRoleSchema),
-    resolver.authorize("DeleteRoleSchema", Permission.admin_auth),
+    resolver.authorize("deleteRole", Permission.admin_auth),
     async ({ id }, ctx) => {
         try {
+
+            const oldValues = await db.role.findFirst({ where: { id } });
+
             const choice = await db.role.deleteMany({ where: { id } });
-            // todo: register in change log.
+
+
+            await utils.RegisterChange({
+                action: ChangeAction.delete,
+                context: "deleteRole",
+                table: "role",
+                pkid: id,
+                oldValues,
+                ctx,
+            });
+
+
             return choice;
         } catch (e) {
             console.error(`Exception while deleting role ${id}`);
