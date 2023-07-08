@@ -9,6 +9,8 @@ import { BlitzPage, Routes } from "@blitzjs/next";
 import Link from "next/link";
 import { LoginForm } from "src/auth/components/LoginForm";
 import { useTheme } from "@mui/material/styles";
+import { Permission } from "shared/permissions";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
 
 const LoginSignup = () => {
     const router = useRouter()
@@ -33,6 +35,8 @@ const LoginSignup = () => {
 
 const DashboardLayout2 = ({ children }) => {
     const currentUser = useCurrentUser();
+    //const isAuthorized = useAuthorization("DashboardLayout2", Permission.can_edit_users);
+
     return <Dashboard2>
         {
             !!currentUser ? children : (<LoginSignup></LoginSignup>)
@@ -64,6 +68,9 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode 
 
         </>
     )
-}
+};
+
+//DashboardLayout.authenticate = {};
+//DashboardLayout.authenticate = { role: ["ADMIN", "USER"] }
 
 export default DashboardLayout

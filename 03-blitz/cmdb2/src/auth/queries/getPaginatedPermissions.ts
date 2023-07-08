@@ -13,7 +13,7 @@ interface GetPermissionsInput
     > { }
 
 export default resolver.pipe(
-    resolver.authorize(),
+    resolver.authorize("a reason", "an arg PermissionFindManyArgs"),
     async ({ where, orderBy, skip = 0, take = 100 }: GetPermissionsInput, ctx) => {
         // TODO: do permissions check
         try {

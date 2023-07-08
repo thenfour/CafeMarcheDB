@@ -26,7 +26,7 @@ import {
 } from "src/core/cmdashboard/CMColumnSpec";
 import { RoleAutocompleteSpec } from "./CMDBRole";
 import { CMTextField } from './cmdashboard/CMTextField';
-import { Permission } from "./permissions";
+import { Permission } from "../../shared/permissions";
 import AU from "shared/associationUtils";
 
 type DBPermission = Prisma.PermissionGetPayload<{

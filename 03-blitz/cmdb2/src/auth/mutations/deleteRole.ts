@@ -11,7 +11,7 @@ import {
 
 export default resolver.pipe(
     resolver.zod(DeleteRoleSchema),
-    resolver.authorize(),
+    resolver.authorize("an arg DeleteRoleSchema"),
     async ({ id }, ctx) => {
         try {
             // TODO: do permissions check

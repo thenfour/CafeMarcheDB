@@ -13,7 +13,7 @@ interface GetRolesInput
     > { }
 
 export default resolver.pipe(
-    resolver.authorize(),
+    resolver.authorize("an argRoleFindManyArgs"),
     async ({ where, orderBy, skip = 0, take = 100 }: GetRolesInput, ctx) => {
         // TODO: in multi-tenant app, you must add validation to ensure correct tenant
         // TODO: do permissions check

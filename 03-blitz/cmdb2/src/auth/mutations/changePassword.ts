@@ -7,7 +7,7 @@ import { ChangePassword } from "../schemas"
 
 export default resolver.pipe(
   resolver.zod(ChangePassword),
-  resolver.authorize(),
+  resolver.authorize("an arg ChangePassword"),
   async ({ currentPassword, newPassword }, ctx) => {
     const user = await db.user.findFirst({ where: { id: ctx.session.userId } })
     if (!user) throw new NotFoundError()

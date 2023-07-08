@@ -56,7 +56,7 @@ export type CMEditGridProps<TDBModel> = {
 };
 
 export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
-    useAuthorize();
+    //useAuthorize();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [updateMutation] = useMutation(spec.UpdateMutation);
     const [deleteMutation] = useMutation(spec.DeleteMutation) as any[];

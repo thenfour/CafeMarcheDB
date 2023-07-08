@@ -10,7 +10,7 @@ interface QueryParams
 
 
 export default resolver.pipe(
-    resolver.authorize(),
+    resolver.authorize("an arg get all roles"),
     async (params: QueryParams, ctx) => {
         // TODO: do permissions check
         try {

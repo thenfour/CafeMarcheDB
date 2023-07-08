@@ -1,44 +1,50 @@
-//import { SimpleRolesIsAuthorized } from "@blitzjs/auth"
+import { EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
 import { SessionContext } from "@blitzjs/auth";
-import { User, Role, Permission, RolePermission } from "db"
+import { User } from "db"
+import { Permission } from "shared/permissions";
 
-type CMDBRolesIsAuthorizedArgs = {
-  ctx: any
-  args: [roleOrRoles?: string]
-}
+type PublicDataType = {
+  userId: User["id"],
+  isSysAdmin: boolean,
+  permissions: string[],
+};
 
-interface CMDBRolesIsAuthorized {
-  ({ ctx, args }: {
-    ctx: any;
-    args: [roleOrRoles?: string];
-  }): boolean;
-}
+type CMAuthorizeArgs = {
+  reason: string,
+  permission?: Permission | null,
+  publicData?: Partial<PublicDataType> | EmptyPublicData,
+};
 
+export function CMAuthorize(args: CMAuthorizeArgs) {
+  console.assert(!!args.permission && args.permission.length, `CMAuthorize: Permission is invalid; Maybe a call was improperly made. args=${JSON.stringify(args)}`);
+  console.assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
+  const ret = (!!args.publicData?.userId) && (args.publicData?.isSysAdmin || args.publicData?.permissions?.some(p => p === args.permission));
+  console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] perm:${args.permission} for user ${args.publicData?.userId || "<null>"} with perms ${JSON.stringify(args.publicData?.permissions || [])}`);
+  return ret;
+};
 
-export function CMDBRolesIsAuthorized({ ctx, args }: CMDBRolesIsAuthorizedArgs) {
-  // todo
-  console.log(`CMDBRolesIsAuthorized for ctx,args:`);
-  //console.log((ctx.session as SessionContext));
-  console.log((ctx.session as SessionContext).$publicData);
-  console.log(args);
-  return true;
+// intended only for use via resolver.authorize("reason", "an arg PermissionFindManyArgs"),
+export function CMDBRolesIsAuthorized(params: any) {
+  const publicData = (params.ctx.session as SessionContext).$publicData;
+  const [reason, permission] = params.args;
+
+  return CMAuthorize({ reason, permission, publicData });
 }
 
 declare module "@blitzjs/auth" {
   export interface Session {
-    isAuthorized: CMDBRolesIsAuthorized//myRolesIsAuthorized
-    PublicData: {
-      userId: User["id"],
-      isSysAdmin: boolean,
-      permissions: string[]
-    }
+    isAuthorized: SimpleRolesIsAuthorized,//myRolesIsAuthorized
+    PublicData: PublicDataType,
   }
 }
 
-export function CreatePublicData(user: any) {
-  //debugger;
+export function CreatePublicData(user: any): PublicDataType {
   if (!user) {
-    return { userId: 0, isSysAdmin: false, permissions: [] };
+    return {
+      userId: 0, // numeric & falsy
+      isSysAdmin: false,
+      permissions: []
+    };
   }
   return {
     userId: user.id,

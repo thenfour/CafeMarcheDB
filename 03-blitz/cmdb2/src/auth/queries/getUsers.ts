@@ -2,6 +2,7 @@ import { paginate } from "blitz";
 import { Ctx } from "blitz"
 import db, { Prisma } from "db";
 import { resolver } from "@blitzjs/rpc";
+import { Permission } from "shared/permissions";
 
 interface GetUsersInput
     extends Pick<
@@ -11,7 +12,7 @@ interface GetUsersInput
 
 
 export default resolver.pipe(
-    resolver.authorize(),
+    resolver.authorize("Get paginated users", Permission.can_edit_users),
     async ({ where, orderBy, skip = 0, take = 100 }: GetUsersInput, ctx) => {
         // TODO: authorize
         // TODO: catch

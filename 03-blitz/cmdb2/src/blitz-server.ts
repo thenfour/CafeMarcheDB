@@ -12,6 +12,7 @@ export const { gSSP, gSP, api } = setupBlitzServer({
       ...authConfig,
       storage: PrismaStorage(db),
       isAuthorized: CMDBRolesIsAuthorized,
+      //isAuthorized: simpleRolesIsAuthorized,//CMDBRolesIsAuthorized,
     }),
   ],
   logger: BlitzLogger({}),

@@ -4,7 +4,7 @@ import db from "db";
 
 export default resolver.pipe(
     resolver.zod(GetObjectByIdSchema),
-    resolver.authorize(),
+    resolver.authorize("an arg delrete user"),
     async ({ id }, ctx) => {
         try {
             // TODO: do permissions check

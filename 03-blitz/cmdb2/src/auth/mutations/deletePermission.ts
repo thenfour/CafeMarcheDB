@@ -8,7 +8,7 @@ import {
 
 export default resolver.pipe(
     resolver.zod(DeletePermissionSchema),
-    resolver.authorize(),
+    resolver.authorize("an arg DeletePermission"),
     async ({ id }, ctx) => {
         try {
             // TODO: do permissions check

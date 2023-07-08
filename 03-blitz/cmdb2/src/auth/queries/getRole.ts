@@ -6,7 +6,7 @@ import { GetObjectByNullableIdSchema } from "../schemas";
 
 export default resolver.pipe(
     resolver.zod(GetObjectByNullableIdSchema),
-    resolver.authorize(),
+    resolver.authorize("an arg get role by id"),
     async ({ id }, ctx) => {
         // TODO: do permissions check
         if (id == null) return null;

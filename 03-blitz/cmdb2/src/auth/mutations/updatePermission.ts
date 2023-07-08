@@ -62,7 +62,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, name, de
 
 export default resolver.pipe(
     resolver.zod(UpdatePermissionSchema),
-    resolver.authorize(),
+    resolver.authorize("an arg update permission"),
     async (data, ctx) => {
         try {
 

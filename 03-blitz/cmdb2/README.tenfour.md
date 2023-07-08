@@ -52,6 +52,32 @@ it gets fuzzy only because Blitz wants to still call permissions "ROLES". So you
 
 And the point is: don't be confused by the use of the token `role` here. It's a permission, NOT a role.
 
+** UPDATE: OK this is not really correct; there's a bug in Blitz where `Page.authenticate` only works when it's a boolean. Amazingly critical bug tbh.
 
+So we just don't use it.
+
+Instead i just make some custom functions to perform authorization.
+
+````
+useAuthorization   // for client-side authorization
+  which flows to CMAuthorize
+resolver.authorize // for securing db queries on the server
+  which eventually flows to CMDBRolesIsAuthorized -> CMAuthorize
+````
+
+### Securing pages:
+````
+import { Permission } from "shared/permissions";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
+
+...
+
+const isAuthorized = useAuthorization("DashboardLayout2", Permission.can_edit_users);
+````
+### Securing queries & mutations:
+
+````
+    resolver.authorize("GetPaginatedUsers", Permission.can_edit_users),
+````
 # how: deployment?
 

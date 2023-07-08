@@ -11,7 +11,7 @@ import {
 
 export default resolver.pipe(
     resolver.zod(UpdateRoleSchema),
-    resolver.authorize(),
+    resolver.authorize("an argUpdateRoleSchema"),
     async ({ id, ...data }, ctx) => {
         try {
             // TODO: do permissions check

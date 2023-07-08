@@ -1,6 +1,6 @@
 // https://github.com/vercel/next.js/discussions/15341
 // Run code once per node server startup
-import { Permission } from "./core/permissions";
+import { Permission } from "../shared/permissions";
 import db from "db"
 
 async function SyncPermissionsTable() {
