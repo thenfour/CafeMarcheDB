@@ -2,13 +2,13 @@ import { resolver } from "@blitzjs/rpc";
 import { NotFoundError } from "blitz";
 import db from "db";
 import { GetObjectByNullableIdSchema } from "../schemas";
+import { Permission } from "shared/permissions";
 
 
 export default resolver.pipe(
     resolver.zod(GetObjectByNullableIdSchema),
-    resolver.authorize("an arg get role by id"),
+    resolver.authorize("getRole", Permission.view_roles),
     async ({ id }, ctx) => {
-        // TODO: do permissions check
         if (id == null) return null;
         try {
             const item = await db.role.findFirst({

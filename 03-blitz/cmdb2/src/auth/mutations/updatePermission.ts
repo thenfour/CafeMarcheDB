@@ -5,6 +5,7 @@ import {
 } from "../schemas"
 import { z } from "zod"
 import AU from "shared/associationUtils";
+import { Permission } from "shared/permissions";
 
 type InputType = z.infer<typeof UpdatePermissionSchema>;
 
@@ -13,7 +14,7 @@ export const IsEqualAssociation = (item1: any, item2: any) => {
     return (item1?.roleId == item2?.roleId) && (item1?.permissionId == item2?.permissionId);
 };
 
-const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, name, description, roles }: InputType) => {
+const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, ...fields }: InputType) => {
     try {
 
         const currentAssociations = await prisma.rolePermission.findMany({
@@ -45,10 +46,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, name, de
 
         const obj = await db.permission.update({
             where: { id },
-            data: {
-                name,//
-                description,//
-            },
+            data: fields,
             include: { roles: true },
         });
 
@@ -62,12 +60,9 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, name, de
 
 export default resolver.pipe(
     resolver.zod(UpdatePermissionSchema),
-    resolver.authorize("an arg update permission"),
+    resolver.authorize("updatePermission", Permission.admin_auth),
     async (data, ctx) => {
         try {
-
-            // TODO: do permissions check
-
             // todo: put this in a transaction. it fails right now. perhaps a sqlite thing?
             // const obj = await db.$transaction(async (prisma) => {
             //     return await op(prisma, data);

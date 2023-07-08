@@ -298,6 +298,15 @@ export function CMEditGrid<TDBModel>({ spec }: CMEditGridProps<TDBModel>) {
                     width: colSpec.Width,
                     ...(colSpec.GridColProps || {}),
                 };
+            case CMEditGridColumnType.UInt16:
+                return {
+                    field: colSpec.MemberName,
+                    headerName: colSpec.HeaderText,
+                    editable: colSpec.Editable,
+                    width: colSpec.Width,
+                    type: 'number',
+                    ...(colSpec.GridColProps || {}),
+                };
             default:
             case CMEditGridColumnType.String:
                 return {

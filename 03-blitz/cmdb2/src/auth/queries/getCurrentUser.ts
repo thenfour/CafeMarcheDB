@@ -3,14 +3,6 @@ import db, { prisma } from "db"
 import { User } from "db"
 import { Permission } from "shared/permissions";
 
-// type GetCurrentUserArgs = {
-//   permission?: Permission,
-// };
-
-// type UserWithAuthResult = User & {
-//   isAuthorized: 
-// };
-
 export default async function getCurrentUser(_ = null, { session }: Ctx) {
 
   if (!session.userId) {

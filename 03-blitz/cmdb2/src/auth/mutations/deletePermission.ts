@@ -2,19 +2,32 @@ import { paginate } from "blitz";
 import { resolver } from "@blitzjs/rpc"
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
+import utils, { ChangeAction } from "shared/utils"
+
 import {
     DeletePermission as DeletePermissionSchema,
 } from "../schemas"
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(DeletePermissionSchema),
-    resolver.authorize("an arg DeletePermission"),
+    resolver.authorize("deletePermission", Permission.admin_auth),
     async ({ id }, ctx) => {
         try {
-            // TODO: do permissions check
+
+            const oldValues = await db.permission.findFirst({ where: { id } });
 
             const choice = await db.permission.deleteMany({ where: { id } });
-            // todo: register in change log.
+
+            await utils.RegisterChange({
+                action: ChangeAction.delete,
+                context: "deletePermission",
+                table: "permission",
+                pkid: id,
+                oldValues: oldValues,
+                ctx,
+            });
+
             return choice;
         } catch (e) {
             console.error(`Exception while deleting permission ${id}`);

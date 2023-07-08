@@ -154,6 +154,7 @@ export enum CMEditGridColumnType {
     String = "String", // simple one-liner string.
     MultiForeignObjects = "MultiForeignObjects",
     Custom = "Custom", // spec renders by itself
+    UInt16 = "UInt16",
     // datetime
     // multiline text
     // boolean

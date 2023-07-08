@@ -8,13 +8,13 @@ import {
     DeleteRole as DeleteRoleSchema,
     GetObjectByIdSchema,
 } from "../schemas"
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(UpdateRoleSchema),
-    resolver.authorize("an argUpdateRoleSchema"),
+    resolver.authorize("updateRole", Permission.admin_auth),
     async ({ id, ...data }, ctx) => {
         try {
-            // TODO: do permissions check
             const obj = await db.role.update({
                 where: { id },
                 data: {

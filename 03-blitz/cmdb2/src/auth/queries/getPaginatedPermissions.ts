@@ -5,6 +5,7 @@ import db, { Prisma } from "db";
 import {
     GetObjectByIdSchema
 } from "../schemas";
+import { Permission } from "shared/permissions";
 
 interface GetPermissionsInput
     extends Pick<
@@ -13,9 +14,8 @@ interface GetPermissionsInput
     > { }
 
 export default resolver.pipe(
-    resolver.authorize("a reason", "an arg PermissionFindManyArgs"),
+    resolver.authorize("getPaginatedPermissions", Permission.view_permissions),
     async ({ where, orderBy, skip = 0, take = 100 }: GetPermissionsInput, ctx) => {
-        // TODO: do permissions check
         try {
             const {
                 items,
@@ -34,6 +34,8 @@ export default resolver.pipe(
                         include: { roles: { include: { role: true } } },
                     }),
             });
+
+            //debugger;
 
             return {
                 items,

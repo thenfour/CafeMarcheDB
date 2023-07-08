@@ -1,18 +1,15 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { CreateRole as CreateRoleSchema } from "../schemas";
+import { Permission } from "shared/permissions";
 
 
 
 export default resolver.pipe(
     resolver.zod(CreateRoleSchema),
+    resolver.authorize("createRole", Permission.admin_auth),
     async (fields, ctx) => {
         try {
-            // TODO: do permissions check
-            // if (!ctx.session.roles.includes("admin")) {
-            //     throw new Error("You don't have permission to create a role.");
-            //   }
-
             const obj = await db.role.create({
                 data: fields,
             });

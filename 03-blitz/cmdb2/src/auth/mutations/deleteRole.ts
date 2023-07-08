@@ -8,13 +8,13 @@ import {
     DeleteRole as DeleteRoleSchema,
     GetObjectByIdSchema,
 } from "../schemas"
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(DeleteRoleSchema),
-    resolver.authorize("an arg DeleteRoleSchema"),
+    resolver.authorize("DeleteRoleSchema", Permission.admin_auth),
     async ({ id }, ctx) => {
         try {
-            // TODO: do permissions check
             const choice = await db.role.deleteMany({ where: { id } });
             // todo: register in change log.
             return choice;

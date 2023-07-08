@@ -84,11 +84,6 @@ export const DeleteRole = z.object({
   id: z.number(),
 });
 
-// model Permission {
-//   id    Int              @id @default(autoincrement())
-//   name  String           @unique
-//   description String?
-
 export const CreatePermission = z.object({
   name: z.string().min(1),
   description: z.string(),
@@ -98,6 +93,7 @@ export const UpdatePermission = z.object({
   id: z.number(),
   name: z.string().min(1),
   description: z.string(),
+  sortOrder: z.number(),
   roles: z.object({
     roleId: z.number(),
     permissionId: z.number(),

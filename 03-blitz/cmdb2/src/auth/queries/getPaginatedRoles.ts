@@ -5,6 +5,7 @@ import db, { Prisma } from "db";
 import {
     GetObjectByIdSchema
 } from "../schemas";
+import { Permission } from "shared/permissions";
 
 interface GetRolesInput
     extends Pick<
@@ -13,10 +14,8 @@ interface GetRolesInput
     > { }
 
 export default resolver.pipe(
-    resolver.authorize("an argRoleFindManyArgs"),
+    resolver.authorize("getPaginatedRoles", Permission.view_roles),
     async ({ where, orderBy, skip = 0, take = 100 }: GetRolesInput, ctx) => {
-        // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-        // TODO: do permissions check
         try {
             const {
                 items,

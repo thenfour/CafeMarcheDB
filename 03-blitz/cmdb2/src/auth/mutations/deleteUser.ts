@@ -1,13 +1,13 @@
 import { resolver } from "@blitzjs/rpc"
 import { GetObjectByIdSchema } from "../schemas"
 import db from "db";
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(GetObjectByIdSchema),
-    resolver.authorize("an arg delrete user"),
+    resolver.authorize("SoftDeleteUser", Permission.admin_users),
     async ({ id }, ctx) => {
         try {
-            // TODO: do permissions check
             const obj = await db.user.update({
                 where: { id },
                 data: {

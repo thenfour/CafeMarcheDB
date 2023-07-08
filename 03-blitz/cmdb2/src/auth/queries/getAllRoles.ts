@@ -1,5 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
+import { Permission } from "shared/permissions";
 
 
 interface QueryParams
@@ -10,7 +11,7 @@ interface QueryParams
 
 
 export default resolver.pipe(
-    resolver.authorize("an arg get all roles"),
+    resolver.authorize("getRoles", Permission.view_roles),
     async (params: QueryParams, ctx) => {
         // TODO: do permissions check
         try {

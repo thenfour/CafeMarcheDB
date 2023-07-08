@@ -23,6 +23,7 @@ model Role {
   id          Int              @id @default(autoincrement())
   name        String           @unique
   description String?
+  sortOrder   Int              @default(0)
   permissions RolePermission[]
   User        User[]
 }
@@ -31,6 +32,7 @@ model Permission {
   id          Int              @id @default(autoincrement())
   name        String           @unique
   description String?
+  sortOrder   Int              @default(0)
   roles       RolePermission[]
 }
 
@@ -67,8 +69,11 @@ model User {
 model Changes {
   id Int @id @default(autoincrement())
 
+  context String
+  operationId String // a GUID that groups together all changes that were performed in 1 logical update (for example updating permission relations is many ops, or multiple changing fields)
+
   table    String
-  column   String
+  //column   String
   recordId Int
   action   String // create, update, delete
 
@@ -139,7 +144,7 @@ model Instrument {
   id                Int                 @id @default(autoincrement())
   name              String
   scoreOrder        Int
-  instrumentGroup   InstrumentGroup?     @relation(fields: [instrumentGroupId], references: [id], onDelete: SetNull)
+  instrumentGroup   InstrumentGroup?    @relation(fields: [instrumentGroupId], references: [id], onDelete: SetNull)
   instrumentGroupId Int?
   fileTags          FileInstrumentTag[]
 }

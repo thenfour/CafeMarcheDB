@@ -96,6 +96,9 @@ export const ComputeDiff = (oldItem: DBPermission, newItem: DBPermission) => { /
     if (newItem.description !== oldItem.description) {
         return true;
     }
+    if (newItem.sortOrder !== oldItem.sortOrder) {
+        return true;
+    }
     const x = AU.ComputeChangePlan(oldItem.roles, newItem.roles, IsEqualAssociation);
     if (x.create.length || x.delete.length) {
         return true;
@@ -238,6 +241,7 @@ export const PermissionEditGridSpec: CMEditGridSpec<DBPermission> = {
 
     Columns: [
         CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.PK, MemberName: "id", Editable: false, }),
+        CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.UInt16, MemberName: "sortOrder", Editable: true, }),
         CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.String, MemberName: "name", Editable: true, }),
         CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.String, MemberName: "description", Editable: true, }),
         CreateEditGridColumnSpec({

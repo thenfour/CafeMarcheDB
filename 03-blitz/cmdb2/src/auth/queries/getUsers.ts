@@ -12,35 +12,38 @@ interface GetUsersInput
 
 
 export default resolver.pipe(
-    resolver.authorize("Get paginated users", Permission.can_edit_users),
+    resolver.authorize("getUsers", Permission.view_all_user_data),
     async ({ where, orderBy, skip = 0, take = 100 }: GetUsersInput, ctx) => {
-        // TODO: authorize
-        // TODO: catch
-        // TODO: in multi-tenant app, you must add validation to ensure correct tenant
-        const {
-            items,
-            hasMore,
-            nextPage,
-            count,
-        } = await paginate({
-            skip,
-            take,
-            count: () => db.user.count({ where }),
-            query: (paginateArgs) =>
-                db.user.findMany({
-                    ...paginateArgs,
-                    where,
-                    orderBy,
-                    include: { role: true },
-                }),
-        });
+        try {
+            const {
+                items,
+                hasMore,
+                nextPage,
+                count,
+            } = await paginate({
+                skip,
+                take,
+                count: () => db.user.count({ where }),
+                query: (paginateArgs) =>
+                    db.user.findMany({
+                        ...paginateArgs,
+                        where,
+                        orderBy,
+                        include: { role: true },
+                    }),
+            });
 
-        return {
-            items,
-            nextPage,
-            hasMore,
-            count,
-        };
+            return {
+                items,
+                nextPage,
+                hasMore,
+                count,
+            };
+        } catch (e) {
+            console.error(`Exception / GetPaginatedUsers`);
+            console.error(e);
+            throw (e);
+        }
     }
 );
 
