@@ -102,6 +102,10 @@ const Dashboard2 = ({ children }) => {
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
                         <ListItemText primary="Manage Permissions" />
                     </ListItemButton>
+                    <ListItemButton component={Link} href="/rolePermissions" selected={router.pathname == "/rolePermissions"}>
+                        <ListItemIcon><SecurityIcon /></ListItemIcon>
+                        <ListItemText primary="Manage Role-perms" />
+                    </ListItemButton>
                 </List>
             </Drawer>
             <Box sx={{

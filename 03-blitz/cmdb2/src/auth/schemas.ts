@@ -103,3 +103,14 @@ export const UpdatePermission = z.object({
 export const DeletePermission = z.object({
   id: z.number(),
 });
+
+export const ToggleRolePermission = z.object({
+  association: z.object({
+    id: z.number(),
+    roleId: z.number(),
+    permissionId: z.number(),
+  }).nullable(),
+
+  xId: z.number(), // x = column = role
+  yId: z.number(), // y = row = permission
+});

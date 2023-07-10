@@ -220,3 +220,34 @@ export interface CMEditGridSpec<TDBModel> {
 
     Columns: CMEditGridColumnSpec[],
 };
+
+// export interface CMAssociationMatrixSpecCellClickHandlerParams<Tx, TAssociation, Ty> {
+// };
+
+export interface CMAssociationMatrixSpecColumnPropsParams<Tx, TAssociation, Ty> {
+    // if you want to have a toggle on-off sort of thing,
+    handleClick_simpleToggle: (params: GridRenderCellParams) => void,
+};
+
+// all 3 template params are DB Model objects.
+// X and Y types are column/row respectively.
+export interface CMAssociationMatrixSpec<Tx, TAssociation, Ty> {
+    PageSizeOptions: number[], // [20,50,100]
+    PageSizeDefault: number, // 50
+    DefaultOrderBy: any,// { id: "asc" }
+
+    ToggleMutation: any,
+
+    GetQuickFilterWhereClauseExpression: (query: string) => any[], // for filtering rows (Ty) takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
+
+    // CreateMutation: any,
+    GetPaginatedRowsIncludingAssociationsQuery: any, // a query that, when queried, returns [{ rows, count, columns }, { refetch: refetchRows }]. Rows must have fields per column (key: id), and values which are association model objects. `Columns` does not need to include sub objects.
+    GetRowFieldForColumn: (obj: Tx) => string, // 
+    GetColumnHeading: (obj: Tx) => string,
+    RowPKField: string,
+    RowNameField: string,
+    GetGridColumnProps: (obj: Tx, params: CMAssociationMatrixSpecColumnPropsParams<Tx, TAssociation, Ty>) => Partial<GridColDef>;
+
+    ToggleSuccessSnackbar: (oldObj: TAssociation | null, newObj: TAssociation | null) => string,
+    ToggleErrorSnackbar: (err: any) => string,
+};

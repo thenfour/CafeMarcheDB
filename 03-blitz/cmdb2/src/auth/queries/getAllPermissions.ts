@@ -18,7 +18,6 @@ export default resolver.pipe(
                 ...params,
                 include: { roles: { include: { role: true } } }
             });
-            debugger;
             return items;
         } catch (e) {
             console.error(`Exception while querying permissions`);

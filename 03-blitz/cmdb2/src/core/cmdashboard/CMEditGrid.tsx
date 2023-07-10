@@ -51,6 +51,7 @@ function CustomToolbar({ onNewClicked, spec }) {
 //    and I'm not sure how to access that edit item.
 // so one solution is to create a new column in the datagrid for each object. so there are always column pairs for ID/object.
 
+
 export type CMEditGridProps<TDBModel> = {
     spec: CMEditGridSpec<TDBModel>,
 };

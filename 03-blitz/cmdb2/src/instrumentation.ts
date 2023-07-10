@@ -22,6 +22,7 @@ async function SyncPermissionsTable() {
         }
     }
 
+    // TODO: other startup assertions.
 }
 
 export function register() {
