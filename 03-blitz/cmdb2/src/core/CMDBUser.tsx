@@ -14,8 +14,8 @@ import { RenderRole, RoleAutocompleteSpec, RoleGridEditCellSpec } from './CMDBRo
 import getUsers from "src/auth/queries/getUsers";
 import updateUserFromGrid from "src/auth/mutations/updateUserFromGrid";
 import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
-import NewUserMutationSpec from "src/auth/mutations/signup";
-
+//import NewUserMutationSpec from "src/auth/mutations/signup";
+import NewUserMutationSpec from "src/auth/mutations/newUser";
 
 export const NewUserDialogSpec: CMNewItemDialogSpec<DBUser> = {
     InitialObj: {

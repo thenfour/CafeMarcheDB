@@ -114,3 +114,10 @@ export const ToggleRolePermission = z.object({
   xId: z.number(), // x = column = role
   yId: z.number(), // y = row = permission
 });
+
+
+export const RegisterActivitySchema = z.object({
+  action: z.string(), // x = column = role
+  data: z.unknown(),
+});
+

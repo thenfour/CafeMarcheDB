@@ -1,29 +1,16 @@
 //  https://codesandbox.io/s/material-ui-responsive-drawer-skqdw?resolutionWidth=1292&resolutionHeight=758&file=/src/App.js
-// import Drawer from "@material-ui/core/Drawer";
 import { useTheme } from "@mui/material/styles";
-// import useMediaQuery from "@material-ui/core/useMediaQuery";
-//import { css } from '@emotion/react';
 import Link from "next/link";
 import * as React from 'react';
-//import CssBaseline from "@material-ui/core/CssBaseline";
-// import AppBar from "@material-ui/core/AppBar";
-// import Divider from "@material-ui/core/Divider";
-// import IconButton from "@material-ui/core/IconButton";
-// import List from "@material-ui/core/List";
-// import ListItem from "@material-ui/core/ListItem";
-// import ListItemIcon from "@material-ui/core/ListItemIcon";
-// import ListItemText from "@material-ui/core/ListItemText";
-// import Toolbar from "@material-ui/core/Toolbar";
-// import Typography from "@material-ui/core/Typography";
+import { Info as InfoIcon, CalendarMonth as CalendarIcon, ExpandLess, ExpandMore, MusicNote as MusicNoteIcon } from '@mui/icons-material';
+import { CalendarMonthOutlined as CalendarMonthOutlinedIcon, MusicNoteOutlined as MusicNoteOutlinedIcon } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
-//import AccountCircle from '@mui/icons-material/AccountCircle';
-import { AppBar, Box, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Box, Collapse, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import UserAppBarIcon from "src/core/components/UserAppBarIcon";
-//import { useTheme } from "@emotion/react";
-import { useRouter } from "next/router"
+import { useRouter } from "next/router";
 
 const drawerWidth = 200;
 
@@ -55,6 +42,21 @@ const Dashboard2 = ({ children }) => {
         display: isMdUp ? "none" : "inline-flex" // don't show menu button for small screens
     };
 
+
+    const [editorsOpen, setEditorsOpen] = React.useState(true);
+
+    const handleEditorsClick = () => {
+        setEditorsOpen(!editorsOpen);
+    };
+
+
+    const [adminOpen, setAdminOpen] = React.useState(true);
+
+    const handleAdminClick = () => {
+        setAdminOpen(!adminOpen);
+    };
+
+
     return (
         <Box sx={{ display: "flex" }}>
             <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
@@ -85,27 +87,93 @@ const Dashboard2 = ({ children }) => {
                 onClose={toggleDrawer}
             >
                 <Box sx={{ ...theme.mixins.toolbar }} />
-                <List component="nav">
+                <List component="nav"
+                // subheader={
+                //     <ListSubheader component="div" id="nested-list-subheader">
+                //         Nested List Items
+                //     </ListSubheader>
+                // }
+                >
                     <ListItemButton component={Link} href="/" selected={router.pathname == "/"}>
                         <ListItemIcon><HomeIcon /></ListItemIcon>
                         <ListItemText primary="Home" />
                     </ListItemButton>
+
+                    <ListItemButton component={Link} href="/songs" selected={router.pathname == "/songs"}>
+                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
+                        <ListItemText primary="Songs" />
+                    </ListItemButton>
+
+                    <ListItemButton component={Link} href="/events" selected={router.pathname == "/events"}>
+                        <ListItemIcon><CalendarIcon /></ListItemIcon>
+                        <ListItemText primary="Agenda" />
+                    </ListItemButton>
+
+                    <ListItemButton component={Link} href="/info" selected={router.pathname == "/info"}>
+                        <ListItemIcon><InfoIcon /></ListItemIcon>
+                        <ListItemText primary="General Info" />
+                    </ListItemButton>
+
+                    <ListSubheader component="div" id="nested-list-subheader">Editing</ListSubheader>
+
+                    <ListItemButton component={Link} href="/editSongs" selected={router.pathname == "/editSongs"}>
+                        <ListItemIcon><MusicNoteOutlinedIcon /></ListItemIcon>
+                        <ListItemText primary="Edit Songs" />
+                    </ListItemButton>
+
+                    <ListItemButton component={Link} href="/editEvents" selected={router.pathname == "/editEvents"}>
+                        <ListItemIcon><CalendarMonthOutlinedIcon /></ListItemIcon>
+                        <ListItemText primary="Edit Events" />
+                    </ListItemButton>
+
+                    <ListSubheader component="div" id="nested-list-subheader">Admin</ListSubheader>
+
+                    {/* <ListItemButton onClick={() => { setAdminOpen(!adminOpen) }}>
+                        <ListItemIcon>
+                            <SecurityIcon />
+                        </ListItemIcon>
+                        <ListItemText primary="Admin" />
+                        {adminOpen ? <ExpandMore /> : <ExpandLess />}
+                    </ListItemButton> */}
+                    {/* 
+                    <ListSubheader component="div" onClick={() => { setAdminOpen(!adminOpen) }}>
+                        <ListItemButton onClick={() => { setAdminOpen(!adminOpen) }}>
+                            <ListItemIcon>
+                                <SecurityIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Admin" />
+                            {adminOpen ? <ExpandMore /> : <ExpandLess />}
+                        </ListItemButton>
+                    </ListSubheader>
+ */}
+
+                    {/* <Collapse in={adminOpen} unmountOnExit>
+                        <List component="nav" disablePadding> */}
                     <ListItemButton component={Link} href="/users" selected={router.pathname == "/users"}>
                         <ListItemIcon><PersonIcon /></ListItemIcon>
-                        <ListItemText primary="Manage Users" />
+                        <ListItemText primary="Users" />
                     </ListItemButton>
                     <ListItemButton component={Link} href="/roles" selected={router.pathname == "/roles"}>
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
-                        <ListItemText primary="Manage Roles" />
+                        <ListItemText primary="Roles" />
+                    </ListItemButton>
+                    <ListItemButton component={Link} href="/instrumentGroups" selected={router.pathname == "/instrumentGroups"}>
+                        <ListItemIcon><SecurityIcon /></ListItemIcon>
+                        <ListItemText primary="Instrument Groups" />
                     </ListItemButton>
                     <ListItemButton component={Link} href="/permissions" selected={router.pathname == "/permissions"}>
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
-                        <ListItemText primary="Manage Permissions" />
+                        <ListItemText primary="Permissions" />
                     </ListItemButton>
                     <ListItemButton component={Link} href="/rolePermissions" selected={router.pathname == "/rolePermissions"}>
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
-                        <ListItemText primary="Manage Role-perms" />
+                        <ListItemText primary="Permission matrix" />
                     </ListItemButton>
+                    {/* </List>
+                    </Collapse> */}
+
+
+
                 </List>
             </Drawer>
             <Box sx={{

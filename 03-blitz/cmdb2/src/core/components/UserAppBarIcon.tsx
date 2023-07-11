@@ -74,7 +74,7 @@ export default function UserAppBarIcon() {
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
             >
-                <MenuItem onClick={handleClose}>Profile asonetuh aosentuha oseunthe </MenuItem>
+                <MenuItem onClick={handleClose} href='/profile'>Your profile</MenuItem>
                 <MenuItem onClick={handleLogout}>Log out</MenuItem>
             </Menu>
         </Box>

@@ -26,7 +26,11 @@
 
 /* this is a small way to make selected nav more visible */
 nav>.Mui-selected {
-  border-left: 4px solid var(--primary-color);
+  border-right: 4px solid var(--primary-color);
+}
+
+nav>* {
+  border-right: 4px solid transparent;
 }
 
 /* for selecting user roles, if user can select chip text it gets very annoying. */

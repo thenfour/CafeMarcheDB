@@ -137,14 +137,10 @@ const RolePermissionEditGridSpec: CMAssociationMatrixSpec<DBRole, DBRolePermissi
         width: 90,
         renderCell(rcparams) {
             const rolePermission = rcparams.row[rcparams.colDef.field] as DBRolePermission;
-            //if (!rolePermission) {
-            //return <Button onClick={() => ggparams.handleClick_simpleToggle(rcparams)}>{!!rolePermission ? }</Button>;
+            const exists = !!rolePermission;
             return (
-                <IconButton onClick={() => ggparams.handleClick_simpleToggle(rcparams)}>{!!rolePermission ? <RadioButtonCheckedIcon /> : <RadioButtonUncheckedIcon />}</IconButton>
+                <IconButton onClick={() => ggparams.handleClick_simpleToggle(rcparams)}>{exists ? <RadioButtonCheckedIcon color="success" /> : <RadioButtonUncheckedIcon color="disabled" />}</IconButton>
             );
-            //}
-            //return <Button onClick={() => alert('lol')}>{`r:${rolePermission.role.name}::p:${rolePermission.permissionId}`}</Button>;
-            //return <Button onClick={() => ggparams.handleClick_toggleOff(rcparams)}>(FILLED)</Button>;
         },
         renderHeader(params) {
             return <Tooltip title={`Role: ${obj.name}`}><span>{obj.name}</span></Tooltip>;

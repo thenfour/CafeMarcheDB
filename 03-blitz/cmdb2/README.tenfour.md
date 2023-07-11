@@ -79,5 +79,15 @@ const isAuthorized = useAuthorization("DashboardLayout2", Permission.can_edit_us
 ````
     resolver.authorize("GetPaginatedUsers", Permission.can_edit_users),
 ````
+
+
+
+# changes, activities
+
+* db changes get logged in the `changes` table. call from (almost all) mutations. see schema for details. the point is a kind of shoddy backup / diagnostic tool. these can be grouped into logical operation, associated with user.
+
+* logical activities are logged in `activity` table. call from client code. point of this is for analytics for site usage and user ops. most of these will cascade into the `changes` table but not necessarily, and certainly with less detail. Changes to this table itself are not logged in `changes` because it's redundant.
+
+
 # how: deployment?
 

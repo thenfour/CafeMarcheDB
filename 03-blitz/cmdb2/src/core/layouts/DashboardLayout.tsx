@@ -60,6 +60,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode 
         <>
             <Head>
                 <title>CM</title>
+                <meta charSet="utf-8" /> { /* needed for Draft.js */}
             </Head>
 
             <Suspense fallback={fallback}>
@@ -69,8 +70,5 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode 
         </>
     )
 };
-
-//DashboardLayout.authenticate = {};
-//DashboardLayout.authenticate = { role: ["ADMIN", "USER"] }
 
 export default DashboardLayout

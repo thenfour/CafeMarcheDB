@@ -1,3 +1,17 @@
+// some common patterns:
+
+// sortOrder   Int              @default(0)
+// isDeleted      Boolean             @default(false)
+// significance String? // for tags
+// isPublished Boolean @default(false)
+
+// note about soft delete. for the moment, just song, user, event
+// at least for the moment, FK relations with soft-delete objects should onDelete:Restrict.
+// rationale: soft delete is for objects with a lot of data attached so we don't lose much. so the onDelete
+// action should rarely be invoked. only by some kind of exceptional admin action. and in that case we should respect
+// the fact that it's a sort of emergency action and play it safe. if you can hard-delete objects via admin, then you can 
+// hard-delete the related objects first.
+
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -40,8 +54,8 @@ model RolePermission {
   id           Int        @id @default(autoincrement())
   roleId       Int
   permissionId Int
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade) // cascade delete association
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade) // cascade delete association
 
   // you could also cluster the keys but this is just simpler
   //   @@id([roleId, permissionId])
@@ -49,40 +63,70 @@ model RolePermission {
 }
 
 model User {
-  id             Int                 @id @default(autoincrement())
-  name           String              @default("")
-  isSysAdmin     Boolean             @default(false)
-  isDeleted      Boolean             @default(false)
-  email          String              @unique
+  id             Int       @id @default(autoincrement())
+  name           String    @default("")
+  isSysAdmin     Boolean   @default(false)
+  isDeleted      Boolean   @default(false)
+  email          String    @unique
   phone          String?
   hashedPassword String?
   googleId       String?
   roleId         Int? // nullable for new users a role should be assigned by an admin. null = public
-  role           Role?               @relation(fields: [roleId], references: [id])
+  role           Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
   tokens         Token[]
   sessions       Session[]
-  Changes        Changes[] // yea don't include this
+  changes        Change[] // yea don't include this
+
   taggedFiles    FileUserTag[]
   eventResponses EventUserResponse[]
+  activity       Activity[]
+  songCredits    SongCredit[]
+  eventComments  EventComment[]
+  songComments   SongComment[]
+  instruments    UserInstrument[]
 }
 
-model Changes {
+model Setting {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @default("")
+  value String @default("") // json value
+}
+
+model Change {
   id Int @id @default(autoincrement())
 
-  context String
+  action String // create, update, delete
+
+  context     String // depends on 
   operationId String // a GUID that groups together all changes that were performed in 1 logical update (for example updating permission relations is many ops, or multiple changing fields)
 
   table    String
-  //column   String
   recordId Int
-  action   String // create, update, delete
 
-  changedAt DateTime @default(now())
-  userId    Int?
-  oldValues String? // for create, empty. for update, JSON of fields. for delete, all column values.
-  newValues String? // for create & update, JSON of fields. for delete, empty.
+  changedAt     DateTime @default(now())
+  userId        Int?
+  sessionHandle String?
+  oldValues     String? // for create, empty. for update, JSON of fields. for delete, all column values.
+  newValues     String? // for create & update, JSON of fields. for delete, empty.
 
-  user User? @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
+}
+
+// activity & changes are different.
+// changes is really for minute database changes, for diagnostics / backup / emergency undo
+// activity is for analytics.
+model Activity {
+  id Int @id @default(autoincrement())
+
+  userId        Int?
+  sessionHandle String?
+
+  action String //
+  data   String? // additional data for the action
+
+  happenedAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
 }
 
 model Session {
@@ -121,69 +165,199 @@ model Token {
 // }
 
 model Song {
-  id          Int           @id @default(autoincrement())
-  name        String
-  // ... metadata bpm composer etc.
-  // so what about variations like roger variete? do we relate them? or score stuff? i think don't bother; maybe there can be related songs or something but not yet.
+  id             Int    @id @default(autoincrement())
+  name           String
+  startKey       String
+  endKey         String
+  startBPM       Int
+  endBPM         Int
+  introducedYear Int? // purposely fuzzy
+
+  isDeleted Boolean @default(false)
+
+  lengthSeconds Int? // length. this is approximate, and could vary wildly esp. considering variations.
+  // so what about variations like roger variete, or tango long/short versions? do we relate them? or score stuff? i think don't bother; maybe there can be related songs or something but not yet.
+
   FileSongTag FileSongTag[]
+  tags        SongTagAssociation[]
+  comments    SongComment[]
+  credits     SongCredit[]
+  songLists   EventSongListSong[]
 }
 
-// let's support 2 levels of instruments. it's just practical.
-// mostly for coloring, so this is a pretty high level thing like "drums", "strings", "high instruments"
-// honestly not sure how useful this is.
-model InstrumentGroup {
+model SongComment {
+  id        Int  @id @default(autoincrement())
+  songId    Int
+  song      Song @relation(fields: [songId], references: [id], onDelete: Restrict) // song deleted = comments too. songs are soft-delete.
+  sortOrder Int  @default(0)
+
+  userId    Int
+  createdAt DateTime
+  updatedAt DateTime
+  text      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict) // users are soft delete; if an admin wants to force delete, then they can go through this.
+
+  // we want users to be able to unpublish things they edit.
+  // deletes are always hard.
+  isPublished Boolean @default(false)
+
+  //@@unique([songId, commentId])
+}
+
+model SongCredit {
+  id         Int     @id @default(autoincrement())
+  type       String // composer / arranger / whatever
+  userId     Int?
+  user       User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userString String? // in case there's no user for this, type-in.
+  songId     Int
+  song       Song    @relation(fields: [songId], references: [id], onDelete: Restrict)
+  sortOrder  Int     @default(0)
+
+  @@unique([userId, songId])
+}
+
+model SongTag {
+  id           Int                  @id @default(autoincrement())
+  text         String
+  color        String?
+  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  songs        SongTagAssociation[]
+}
+
+model SongTagAssociation {
+  id     Int     @id @default(autoincrement())
+  songId Int
+  song   Song    @relation(fields: [songId], references: [id], onDelete: Restrict)
+  tagId  Int
+  tag    SongTag @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@unique([tagId, songId])
+}
+
+// we could benefit from instrument grouping if they serve some identical purpose.
+// for example sousaphone, bass guitar, double bass, serve the same function at events.
+// flute, clarinet, sax would all be separate functional groups. so it may be nearly 1:1 with instruments.
+// users will associate with instruments like "electric bass" but then when we look at event attendance we see the bass function fulfilled.
+// this directly addresses the issue on the google sheet where i can't tell if we have enough drummers
+// that's one use in particular that justifies grouping. are there other such uses?
+
+// functional groups are admin-managed.
+// individual instruments are user-managed.
+model InstrumentFunctionalGroup {
   id          Int          @id @default(autoincrement())
   name        String
-  color       String
-  scoreOrder  Int
+  sortOrder   Int
   instruments Instrument[]
 }
 
-// 
 model Instrument {
-  id                Int                 @id @default(autoincrement())
+  id                Int                        @id @default(autoincrement())
   name              String
-  scoreOrder        Int
-  instrumentGroup   InstrumentGroup?    @relation(fields: [instrumentGroupId], references: [id], onDelete: SetNull)
-  instrumentGroupId Int?
-  fileTags          FileInstrumentTag[]
+  sortOrder         Int
+  functionalGroupId Int
+  functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Restrict) // if you want to delete a functional group, you need to manually reassign
+  instrumentTags    InstrumentTagAssociation[]
+
+  fileTags FileInstrumentTag[]
+  users    UserInstrument[]
+}
+
+model InstrumentTag {
+  id           Int                        @id @default(autoincrement())
+  text         String
+  color        String?
+  significance String? // "uses electricity" for example?
+  instruments  InstrumentTagAssociation[]
+}
+
+model InstrumentTagAssociation {
+  id           Int           @id @default(autoincrement())
+  instrumentId Int
+  instrument   Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
+  tagId        Int
+  tag          InstrumentTag @relation(fields: [tagId], references: [id], onDelete: Cascade) // cascade delete association
+
+  @@unique([instrumentId, tagId]) // 
+}
+
+model UserInstrument {
+  id           Int        @id @default(autoincrement())
+  instrumentId Int
+  instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
+  userId       Int
+  user         User       @relation(fields: [userId], references: [id], onDelete: Restrict) // cascade delete association
 }
 
 model Event {
   id        Int                  @id @default(autoincrement())
   name      String
   occursAt  DateTime
+  isDeleted Boolean              @default(false)
   // contact people ?
   // links ?
-  // details ?
   // workflow confirmation etc.
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
   responses EventUserResponse[]
+  comments  EventComment[]
+  songLists EventSongList[]
 }
 
 model EventTag {
-  id     Int                  @id @default(autoincrement())
-  text   String
-  color  String
-  events EventTagAssignment[]
+  id           Int                  @id @default(autoincrement())
+  text         String
+  color        String?
+  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  events       EventTagAssignment[]
 }
 
 model EventTagAssignment {
   id         Int      @id @default(autoincrement())
   eventId    Int
-  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
   eventTagId Int
-  eventTag   EventTag @relation(fields: [eventTagId], references: [id], onDelete: Cascade)
+  eventTag   EventTag @relation(fields: [eventTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
 
   @@unique([eventId, eventTagId]) // 
+}
+
+model EventComment {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // cascade delete association
+  userId    Int
+  createdAt DateTime
+  updatedAt DateTime
+  text      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // we want users to be able to unpublish things they edit.
+  // deletes are always hard.
+  isPublished Boolean @default(false)
+}
+
+model EventSongList {
+  id        Int    @id @default(autoincrement())
+  eventId   Int
+  sortOrder Int    @default(0)
+  name      String
+  event     Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
+}
+
+model EventSongListSong {
+  id       Int     @id @default(autoincrement())
+  songId   Int
+  subtitle String? // could be a small comment like "short version"
+
+  song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
 }
 
 model File {
   id                Int                 @id @default(autoincrement())
   filename          String
   description       String
-  type              String //  (video, photo, link, partition)
+  type              String // enum (video, photo, link, partition)
   taggedUsers       FileUserTag[]
   taggedSongs       FileSongTag[]
   taggedEvents      FileEventTag[]
@@ -195,7 +369,7 @@ model FileUserTag {
   fileId Int
   file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   name   String? // if userid is not there...
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
   userId Int?
 
   @@unique([fileId, userId]) // 
@@ -206,7 +380,7 @@ model FileSongTag {
   fileId Int
   file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   name   String? // if songid is not there...
-  song   Song?   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  song   Song?   @relation(fields: [songId], references: [id], onDelete: Restrict)
   songId Int?
 
   @@unique([fileId, songId]) // 
@@ -217,12 +391,13 @@ model FileEventTag {
   fileId  Int
   file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   name    String? // if eventid is not there...
-  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Restrict)
   eventId Int?
 
   @@unique([fileId, eventId]) // 
 }
 
+// this is hm. i suppose this is correct, but tagging instrument groups may be more accurate in some scenarios?
 model FileInstrumentTag {
   id           Int         @id @default(autoincrement())
   fileId       Int
@@ -236,18 +411,18 @@ model FileInstrumentTag {
 
 // things like yes no maybe
 model EventAttendance {
-  id       Int    @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
   text     String
-  color    String
+  color    String?
   strength Int // in order to be able to filter people who aren't coming.
 
   responses EventUserResponse[]
 }
 
 model EventApproval {
-  id       Int    @id @default(autoincrement())
+  id       Int     @id @default(autoincrement())
   text     String
-  color    String
+  color    String?
   strength Int // in order to be able to filter people who aren't coming.
 
   responses EventUserResponse[]
@@ -256,9 +431,9 @@ model EventApproval {
 model EventUserResponse {
   id      Int   @id @default(autoincrement())
   userId  Int
-  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
   eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
 
   expectApproval   Boolean @default(false)
   expectAttendance Boolean @default(false)
