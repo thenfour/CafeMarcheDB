@@ -6,17 +6,14 @@
 // so there needs to be many intermediate steps, between both the text editor and the caller.
 // better to just make it uncontrolled, so what the user sees is ALWAYS correct.
 
-import React, { Suspense } from "react";
-import { Box, Button, ButtonGroup, CircularProgress, IconButton, LinearProgress, Tab, Tabs, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import MarkdownIt from 'markdown-it';
-import useDebounce from "shared/useDebounce";
 import {
-    Add as AddIcon,
-    Close as CancelIcon,
     DeleteOutlined as DeleteIcon,
-    Edit as EditIcon,
-    Save as SaveIcon
+    Edit as EditIcon
 } from '@mui/icons-material';
+import { Box, Button, ButtonGroup, CircularProgress, TextField } from "@mui/material";
+import MarkdownIt from 'markdown-it';
+import React from "react";
+import useDebounce from "shared/useDebounce";
 
 interface RichTextEditorProps {
     initialValue: string, // value which may be coming from the database.
@@ -27,7 +24,7 @@ interface RichTextEditorProps {
 
 // we will control the value, but callers must treat as uncontrolled.
 interface RichTextEditorValueState {
-    markdown: string,
+    markdown: string | null, // null indicates the value has'nt been set at all. don't call callbacks for example.
     html: string,
 }
 
@@ -39,15 +36,16 @@ function MarkdownToHTML(md: any, value: string): string {
 export default function RichTextEditor(props: RichTextEditorProps) {
     const [md, setMd] = React.useState<any>(null);
     const [valueState, setValueState] = React.useState<RichTextEditorValueState>({
-        markdown: "",
+        markdown: null,
         html: "",
     });
 
     const [isDebouncing, setIsDebouncing] = React.useState<boolean>(false);
-    const debouncedMarkdown = useDebounce<string>(valueState.markdown, props.debounceMilliseconds); // 
+    const debouncedMarkdown = useDebounce<string | null>(valueState.markdown, props.debounceMilliseconds); // 
 
     React.useEffect(() => {
         const md2 = new MarkdownIt;
+        //console.log(`init richtexteditor with initial value ${props.initialValue}`);
         setMd(md2);
         setValueState({
             markdown: props.initialValue,
@@ -57,8 +55,12 @@ export default function RichTextEditor(props: RichTextEditorProps) {
 
     // when debounced value changes, tell caller to commit.
     React.useEffect(() => {
+        //console.log(`debouncedMarkdown changed to ${debouncedMarkdown}`);
         setIsDebouncing(false);
-        if (props.onValueChanged) props.onValueChanged(debouncedMarkdown);
+        if (debouncedMarkdown !== null) {
+            //console.log(`calling onValueChanged with ${debouncedMarkdown}; ${typeof md}`);
+            if (props.onValueChanged) props.onValueChanged(debouncedMarkdown);
+        }
     }, [debouncedMarkdown]);
 
     // raw onchange; set internal state for temp use while debouncing
@@ -81,9 +83,9 @@ export default function RichTextEditor(props: RichTextEditorProps) {
                 <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>
                 <Button startIcon={<DeleteIcon />}>Delete</Button>
             </ButtonGroup>
-            {props.isSaving ? (<LinearProgress color="info" sx={{ width: 25 }} />) : (
-                isDebouncing ? (<LinearProgress color="warning" sx={{ width: 25 }} />) : (
-                    <LinearProgress variant="determinate" value={100} color="success" sx={{ width: 25 }} />
+            {props.isSaving ? (<CircularProgress color="info" size="1rem" />) : (
+                isDebouncing ? (<CircularProgress color="warning" size="1rem" />) : (
+                    <></>
                 )
             )}
 
