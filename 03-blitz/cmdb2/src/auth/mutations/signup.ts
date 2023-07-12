@@ -24,7 +24,7 @@ export default resolver.pipe(
 
 
       await utils.RegisterChange({
-        action: ChangeAction.create,
+        action: ChangeAction.insert,
         context: "Signup",
         table: "user",
         pkid: user.id,

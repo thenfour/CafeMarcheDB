@@ -65,7 +65,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
             });
 
             await utils.RegisterChange({
-                action: ChangeAction.create,
+                action: ChangeAction.insert,
                 context: "updatePermission",
                 table: "rolePermission",
 

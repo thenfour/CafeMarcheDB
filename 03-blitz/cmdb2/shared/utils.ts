@@ -5,7 +5,7 @@ import db from "db"
 
 // CHANGES /////////////////////////////////////////////////////////////////////////////////////////////////////////
 export enum ChangeAction {
-    create = "create",
+    insert = "insert",
     update = "update",
     delete = "delete",
 }
@@ -51,7 +51,7 @@ async function RegisterChange(args: RegisterChangeArgs) {
     let newValues: any = null;
 
     switch (args.action) {
-        case ChangeAction.create:
+        case ChangeAction.insert:
             newValues = args.newValues;
             break;
         case ChangeAction.delete:

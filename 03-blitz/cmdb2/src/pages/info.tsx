@@ -1,13 +1,16 @@
 'use client'
-import dynamic from "next/dynamic";
 //import { BlitzPage, dynamic } from "blitz"
 import { BlitzPage } from "@blitzjs/next";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import React from 'react';
-import { lazy, Suspense } from 'react';
+import { useMutation, useQuery } from "@blitzjs/rpc";
+import getSetting from "src/auth/queries/getSetting";
+import updateSettingMutation from "src/auth/mutations/updateSetting";
 import RichTextEditor from "src/core/components/RichTextEditor";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
+import React, { Suspense } from "react";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+
+import NoSSR from 'react-no-ssr';
+//import RichTextEditorDraft from "src/core/components/RichTextEditorDraft";
 
 //import ReactDOM from 'react-dom';
 //import { Editor, EditorState } from 'draft-js';
@@ -66,18 +69,70 @@ import RichTextEditor from "src/core/components/RichTextEditor";
 // const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 //const ReactQuill = dynamic(() => import("react-quill"), { ssr: false });
 
+interface MyProps {
 
+};
+
+//props: React.PropsWithChildren<MyProps>
+const MyContent = (props: React.PropsWithChildren<MyProps>) => {
+    // we want to use the db value, but also want to show the user's typed value while the db saves.
+    let [value, { refetch }] = useQuery(getSetting, "info_text");
+    const [optimisticValue, setOptimisticValue] = React.useState<string>(value || "");
+    const [updateSetting] = useMutation(updateSettingMutation);
+    const [saved, setSaved] = React.useState(true);
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const onValueChanged = (newValue: string) => {
+        console.log(`-> caller onValueChanged('${newValue}'). setting saved=false and switching to optimistic`);
+        setOptimisticValue(newValue); // while we wait for the save to take place, keep the value optimistically.
+        setSaved(false);
+        updateSetting({ name: "info_text", value: newValue }).then(x => {
+            showSnackbar({ severity: "success", children: `should be saved...` });
+            setSaved(true);
+            console.log(`-> mutation complete; setting saved=true and switching to db value`);
+            refetch();
+        }).catch(e => {
+            showSnackbar({ severity: "error", children: `error when updating setting` });
+        });
+    };
+
+    //const publicValue = saved ? value : optimisticValue;
+    const publicValue = optimisticValue;
+
+    console.log(`caller rendering. publicValue:${publicValue}, dbvalue:${value}, saved:${saved}`);
+
+    return <RichTextEditor value={publicValue || ""} saved={saved} onValueChanged={onValueChanged} debounceMilliseconds={500}></RichTextEditor>;
+};
 
 
 
 const Info9Page: BlitzPage = () => {
 
+    // return (
+    //     <NoSSR fallback="Loading...">
+    //         <MyContent>info</MyContent>
+    //     </NoSSR>
+    // );
 
     return (
         <DashboardLayout title="Info">
-            <RichTextEditor></RichTextEditor>
+            <Suspense fallback="Loading...">
+                <MyContent />
+            </Suspense>
         </DashboardLayout>
-    )
+    );
+
+
+
+    // return (
+    //     // <NoSSR fallback="Loading...">
+    //     //<DashboardLayout title="Info">
+    //     {/* <Suspense fallback="Loading..."> */ }
+    // {/* <RichTextEditor value={value} saved={saved} onValueChanged={null}></RichTextEditor> */ }
+    // {/* </Suspense> */ }
+    //     //</DashboardLayout>
+    //     // </NoSSR>
+    // )
 }
 
 export default Info9Page;

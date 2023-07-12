@@ -1,0 +1,82 @@
+import { paginate } from "blitz";
+import { resolver } from "@blitzjs/rpc"
+import { NotFoundError } from "blitz";
+import db, { Prisma } from "db";
+import { UpdateSettingSchema } from "../schemas"
+import { Permission } from "shared/permissions";
+import utils, { ChangeAction } from "shared/utils"
+
+export default resolver.pipe(
+    resolver.zod(UpdateSettingSchema),
+    resolver.authorize("updateSetting", Permission.admin_settings),
+    async (args, ctx) => {
+        try {
+            const oldValues = await db.setting.findFirst({ where: { name: args.name } });
+            const shouldBeDeleted = (args.value === null || args.value === undefined || args.value === "");
+
+            if (oldValues) { // exists.
+                if (shouldBeDeleted) {
+                    // delete existing.
+                    await utils.RegisterChange({
+                        action: ChangeAction.delete,
+                        context: "deleteSetting",
+                        table: "setting",
+                        pkid: oldValues.id,
+                        oldValues,
+                        ctx,
+                    });
+                    return null;
+                }
+
+                // update existing.
+                if (oldValues.value === args.value) {
+                    // nop.
+                    return oldValues;
+                }
+                const newValues = await db.setting.update({
+                    where: { name: args.name },
+                    data: {
+                        value: args.value || "",//
+                    }
+                });
+                await utils.RegisterChange({
+                    action: ChangeAction.update,
+                    context: "updateSetting",
+                    table: "setting",
+                    pkid: oldValues.id,
+                    oldValues,
+                    newValues,
+                    ctx,
+                });
+                return newValues;
+            }
+
+            if (shouldBeDeleted) {
+                // nop.
+                return null;
+            }
+
+            // insert.
+            const newValues = await db.setting.create({
+                data: {
+                    name: args.name,//
+                    value: args.value || "",//
+                }
+            });
+
+            await utils.RegisterChange({
+                action: ChangeAction.insert,
+                context: "insertSetting",
+                table: "setting",
+                pkid: newValues.id,
+                newValues,
+                ctx,
+            });
+
+        } catch (e) {
+            console.error(`Exception while creating/updating setting ${JSON.stringify(args)}`);
+            console.error(e);
+            throw (e);
+        }
+    }
+);

@@ -37,6 +37,7 @@
     "@prisma/client": "4.6.1",
     "blitz": "2.0.0-beta.29",
     "final-form": "4.20.9",
+    "markdown-it": "13.0.1",
     "next": "13.4.5",
     "passport-auth0": "1.4.3",
     "passport-google-oauth20": "2.0.0",

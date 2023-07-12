@@ -16,8 +16,8 @@ export default resolver.pipe(
             });
 
             await utils.RegisterChange({
-                action: ChangeAction.create,
-                context: "createRole",
+                action: ChangeAction.insert,
+                context: "insertRole",
                 table: "role",
                 pkid: obj.id,
                 newValues: obj,

@@ -8,6 +8,9 @@ export enum Permission {
     view_events = "view_events",
     view_general_info = "view_general_info",
 
+    view_settings = "view_settings",
+    admin_settings = "admin_settings",
+
     admin_users = "admin_users",
     view_all_user_data = "view_all_user_data",
 

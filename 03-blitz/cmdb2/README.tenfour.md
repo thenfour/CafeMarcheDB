@@ -17,6 +17,10 @@ blitz install material-ui
   * google-oauth via passport
   * prisma ORM - default
   * tailwind css + emotion engine because it's the default, though i don't really use its features
+  * using markdown editing, and the simplest flexible light engine is markdown-it. NOT using wysiwyg, because
+    * almost all are riddled with weird behaviors, bugs, dubious support lifetimes or paywalls
+    * the ones which feel comfortable enough to use are so complex i don't want to put the effort
+
 
 # how: change db schema
 
@@ -87,6 +91,14 @@ const isAuthorized = useAuthorization("DashboardLayout2", Permission.can_edit_us
 * db changes get logged in the `changes` table. call from (almost all) mutations. see schema for details. the point is a kind of shoddy backup / diagnostic tool. these can be grouped into logical operation, associated with user.
 
 * logical activities are logged in `activity` table. call from client code. point of this is for analytics for site usage and user ops. most of these will cascade into the `changes` table but not necessarily, and certainly with less detail. Changes to this table itself are not logged in `changes` because it's redundant.
+
+
+
+# dev note: DYNAMIC_SERVER_USAGE {name: 'Rendering Suspense fallback...', digest: 'DYNAMIC_SERVER_USAGE', message: 'DYNAMIC_SERVER_USAGE'}
+
+this is a very weird error because thingsn appear fine, then you hit F5 and this error happens. Then it feels like it never goes away.
+
+seems like it happens often when I add `useQuery()` or `useMutation()` or other server calls to a component. You need the correct hierarchy of `<Suspense>`. Similar with other things like `<ThemeProvider>`, you can't put `useQuery()` in the same component as the `<Suspense>`.
 
 
 # how: deployment?

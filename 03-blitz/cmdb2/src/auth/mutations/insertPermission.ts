@@ -14,8 +14,8 @@ export default resolver.pipe(
             });
 
             await utils.RegisterChange({
-                action: ChangeAction.create,
-                context: "createPermission",
+                action: ChangeAction.insert,
+                context: "insertPermission",
                 table: "permission",
                 pkid: obj.id,
                 newValues: fields,

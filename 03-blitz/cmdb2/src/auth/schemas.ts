@@ -121,3 +121,10 @@ export const RegisterActivitySchema = z.object({
   data: z.unknown(),
 });
 
+export const GetSettingSchema = z.string().min(1);
+
+export const UpdateSettingSchema = z.object({
+  name: z.string().min(1),
+  value: z.string().nullable(),
+});
+
