@@ -77,20 +77,20 @@ export default function RichTextEditor(props: RichTextEditorProps) {
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
 
     return (
-        <Box sx={{ border: 2 }}>
+        <Box>
 
-            <ButtonGroup variant="outlined" size="small" aria-label="outlined primary button group">
+            <ButtonGroup size="small" variant='text'>
                 <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>
                 <Button startIcon={<DeleteIcon />}>Delete</Button>
             </ButtonGroup>
-            {props.isSaving ? (<CircularProgress color="info" size="1rem" />) : (
-                isDebouncing ? (<CircularProgress color="warning" size="1rem" />) : (
+            {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+                isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
                     <></>
                 )
             )}
 
             {showingEditor && (<>
-                <Box sx={{ p: 0 }}>
+                <Box sx={{ p: 1 }}>
                     <TextField sx={{ width: "100%" }} multiline={true} value={valueState.markdown} onChange={onChange} variant="filled"></TextField>
                 </Box>
             </>
