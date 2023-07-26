@@ -6,6 +6,10 @@ import { UpdateSettingSchema } from "../schemas"
 import { Permission } from "shared/permissions";
 import utils, { ChangeAction } from "shared/utils"
 
+// set a setting by name.
+// args is { name, value }
+
+
 export default resolver.pipe(
     resolver.zod(UpdateSettingSchema),
     resolver.authorize("updateSetting", Permission.admin_settings),

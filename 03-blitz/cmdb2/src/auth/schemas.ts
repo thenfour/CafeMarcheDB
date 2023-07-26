@@ -10,6 +10,10 @@ export const GetObjectByIdSchema = z.object({
   // This accepts type of undefined, but is required at runtime
   id: z.number().optional()/*.refine(Boolean, "Required")*/, // refine to ensure IDs are truthy. but that's only necessary when inserting?
 });
+export const DeleteByIdSchema = z.object({
+  id: z.number(),
+});
+
 
 export const email = z
   .string()
@@ -121,6 +125,8 @@ export const RegisterActivitySchema = z.object({
   data: z.unknown(),
 });
 
+// SETTING
+
 export const GetSettingSchema = z.string().min(1);
 
 export const UpdateSettingSchema = z.object({
@@ -128,3 +134,15 @@ export const UpdateSettingSchema = z.object({
   value: z.string().nullable(),
 });
 
+export const CreateSettingSchema = z.object({
+  name: z.string().min(1),
+  value: z.string(),
+});
+
+export const UpdateSettingByIdSchema = z.object({
+  id: z.number(),
+  name: z.string().min(1),
+  value: z.string(),
+});
+
+export const UpdateBulkSettingsSchema = z.array(UpdateSettingSchema);

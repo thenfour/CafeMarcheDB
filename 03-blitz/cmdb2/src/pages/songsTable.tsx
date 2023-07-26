@@ -4,15 +4,15 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 
-const SongsPage: BlitzPage = () => {
-    if (!useAuthorization("songs page", Permission.view_songs)) {
+const SongsTablePage: BlitzPage = () => {
+    if (!useAuthorization("songs table page", Permission.admin_songs)) {
         throw new Error(`unauthorized`);
     }
     return (
         <DashboardLayout title="Songs">
-            <SettingMarkdown settingName="songs_markdown"></SettingMarkdown>
+            <SettingMarkdown settingName="songs_table_markdown"></SettingMarkdown>
         </DashboardLayout>
     )
 }
 
-export default SongsPage;
+export default SongsTablePage;

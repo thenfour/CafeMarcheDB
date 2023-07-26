@@ -5,6 +5,9 @@
 // significance String? // for tags
 // isPublished Boolean @default(false)
 
+// journals...
+// i think stuff like events should have a timeline with things like "arnold approved this on 4/8" or whatever. that can be derived i guess. but it means attaching dates to things.
+
 // note about soft delete. for the moment, just song, user, event
 // at least for the moment, FK relations with soft-delete objects should onDelete:Restrict.
 // rationale: soft delete is for objects with a lot of data attached so we don't lose much. so the onDelete
@@ -289,11 +292,34 @@ model UserInstrument {
   user         User       @relation(fields: [userId], references: [id], onDelete: Restrict) // cascade delete association
 }
 
+// concerts vs. rehearsals? i originally thought these would be tags, but should it just be a dropdown?
+// disadvantages of tag:
+// - events may not get a type assignment; that's probably not a good idea.
+// - events can get multiple conflicting types
+// - type is used for things; tag significance is sorta a lame way to accomplish this.
+// advantages of dropdown:
+// - field is required, structured, queryable, and obvious
+
+// to go further i could make events & rehearsals separate tables. but i don't think that's a good idea; the idea would be that
+// they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
+// nothing here is specific to any type of event. should that be the case it can be attached somehow.
 model Event {
-  id        Int                  @id @default(autoincrement())
-  name      String
-  occursAt  DateTime
-  isDeleted Boolean              @default(false)
+  id                  Int      @id @default(autoincrement())
+  name                String
+  description         String // what's the diff between a description & comment? description is the pinned general description in markdown.
+  startsAt            DateTime
+  endsAt              DateTime
+  locationDescription String   @default("")
+  locationURL         String   @default("")
+  isDeleted           Boolean  @default(false)
+  // status - new -> request responses -> confirmed with organizer  -> confirmed
+  //                                      confirmed with group
+  //                                      confirmed with directors
+  // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
+  isCancelled         Boolean  @default(false) // used as an input for calculating status
+
+  createdAt DateTime
+
   // contact people ?
   // links ?
   // workflow confirmation etc.
@@ -353,11 +379,23 @@ model EventSongListSong {
   song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
 }
 
+// tech rider, invoice, event media, what is the usage? the point is to find similar things
+model FileSignificance {
+  id                Int                 @id @default(autoincrement())
+  Files File[]
+}
+
 model File {
   id                Int                 @id @default(autoincrement())
   filename          String
   description       String
   type              String // enum (video, photo, link, partition)
+  significanceId    Int?
+  isDeleted         Boolean             @default(false)
+
+  subtitle String? // could be a small comment like "short version"
+
+  significance FileSignificance? @relation(fields: [significanceId], references: [id], onDelete:SetNull) // when you delete a significance, set null.
   taggedUsers       FileUserTag[]
   taggedSongs       FileSongTag[]
   taggedEvents      FileEventTag[]
@@ -411,19 +449,21 @@ model FileInstrumentTag {
 
 // things like yes no maybe
 model EventAttendance {
-  id       Int     @id @default(autoincrement())
-  text     String
-  color    String?
-  strength Int // in order to be able to filter people who aren't coming.
+  id        Int     @id @default(autoincrement())
+  text      String
+  color     String?
+  strength  Int // in order to be able to filter people who aren't coming.
+  isDeleted Boolean @default(false)
 
   responses EventUserResponse[]
 }
 
 model EventApproval {
-  id       Int     @id @default(autoincrement())
-  text     String
-  color    String?
-  strength Int // in order to be able to filter people who aren't coming.
+  id        Int     @id @default(autoincrement())
+  text      String
+  color     String?
+  strength  Int // in order to be able to filter people who aren't coming.
+  isDeleted Boolean @default(false)
 
   responses EventUserResponse[]
 }

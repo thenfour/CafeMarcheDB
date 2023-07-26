@@ -3,7 +3,10 @@
 import { useTheme } from "@mui/material/styles";
 import Link from "next/link";
 import * as React from 'react';
-import { Info as InfoIcon, CalendarMonth as CalendarIcon, ExpandLess, ExpandMore, MusicNote as MusicNoteIcon, AccountCircle } from '@mui/icons-material';
+import {
+    Info as InfoIcon, CalendarMonth as CalendarIcon, ExpandLess, ExpandMore, MusicNote as MusicNoteIcon, AccountCircle,
+    Settings as SettingsIcon,
+} from '@mui/icons-material';
 import { CalendarMonthOutlined as CalendarMonthOutlinedIcon, MusicNoteOutlined as MusicNoteOutlinedIcon } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -201,12 +204,12 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     </Search>
                     <Box sx={{ flexGrow: 1 }} />
                     <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                        <IconButton size="large" aria-label="show 4 new mails" color="inherit">
+                        {/* <IconButton size="large" aria-label="show 4 new mails" color="inherit">
                             <Badge badgeContent={4} color="error">
                                 <MailIcon />
                             </Badge>
-                        </IconButton>
-                        <IconButton
+                        </IconButton> */}
+                        {/* <IconButton
                             size="large"
                             aria-label="show 17 new notifications"
                             color="inherit"
@@ -214,8 +217,9 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             <Badge badgeContent={17} color="error">
                                 <NotificationsIcon />
                             </Badge>
-                        </IconButton>
-                        <IconButton
+                        </IconButton> */}
+                        <UserAppBarIcon></UserAppBarIcon>
+                        {/* <IconButton
                             size="large"
                             edge="end"
                             aria-label="account of current user"
@@ -225,7 +229,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             color="inherit"
                         >
                             <AccountCircle />
-                        </IconButton>
+                        </IconButton> */}
                     </Box>
                     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
                         <IconButton
@@ -437,6 +441,10 @@ const Dashboard2 = ({ children }) => {
                     <ListItemButton component={Link} href="/rolePermissions" selected={router.pathname == "/rolePermissions"}>
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
                         <ListItemText primary="Permission matrix" />
+                    </ListItemButton>
+                    <ListItemButton component={Link} href="/settings" selected={router.pathname == "/settings"}>
+                        <ListItemIcon><SettingsIcon /></ListItemIcon>
+                        <ListItemText primary="Settings" />
                     </ListItemButton>
                     {/* </List>
                     </Collapse> */}

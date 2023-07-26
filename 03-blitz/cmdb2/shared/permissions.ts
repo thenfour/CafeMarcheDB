@@ -5,8 +5,11 @@ export enum Permission {
     view_roles = "view_roles",
     view_permissions = "view_permissions",
     view_songs = "view_songs",
-    view_events = "view_events",
+    admin_songs = "admin_songs",
     view_general_info = "view_general_info",
+
+    view_events = "view_events",
+    admin_events = "admin_events",
 
     view_settings = "view_settings",
     admin_settings = "admin_settings",

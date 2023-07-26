@@ -89,13 +89,16 @@ async function RegisterChange(args: RegisterChangeArgs) {
 }
 
 // SETTINGS /////////////////////////////////////////////////////////////////////////////////////////////////////////
+// for use on the server only.
+// if you need to get / set settings on client, useQuery is required.
+
 enum Setting {
     HomeDescription = "HomeDescription",
 };
 
 interface SetSettingArgs {
     ctx: Ctx,
-    setting: Setting,
+    setting: Setting | string,
     value?: any,
 };
 
