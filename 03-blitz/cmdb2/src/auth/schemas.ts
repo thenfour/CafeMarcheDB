@@ -14,15 +14,6 @@ export const DeleteByIdSchema = z.object({
   id: z.number(),
 });
 
-
-// export const email = z
-//   .string()
-//   .email()
-//   .transform((str) => str.toLowerCase().trim())
-
-// export const name = z
-//   .string()
-
 export const UserNameSchema = z.string().min(1);
 export const UserEmailSchema = z
   .string()
@@ -43,6 +34,12 @@ export const Signup = z.object({
   password,
   name: UserNameSchema,
   googleId,
+  roleId: z.number().nullable().optional(),
+})
+
+export const InsertUserSchema = z.object({
+  email: UserEmailSchema,
+  name: UserNameSchema,
   roleId: z.number().nullable().optional(),
 })
 

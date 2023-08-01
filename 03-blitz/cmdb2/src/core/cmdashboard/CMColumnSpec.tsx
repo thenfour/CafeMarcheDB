@@ -2,6 +2,7 @@
 import { Stack, TextField } from "@mui/material";
 import { GridColDef, GridPreProcessEditCellProps, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { ZodSchema, z } from "zod"
+import { CMTextField } from "./CMTextField";
 
 
 // base specs for specifying db object behaviors //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -12,10 +13,55 @@ export interface ValidateAndParseResult {
     parsedValue: any; // implementer should set this to the value to be actually used (after zod parse)
 };
 
+export interface ValidateAndComputeDiffResultFields {
+    success: boolean;
+    errors: { [key: string]: string };
+    hasChanges: boolean; // only meaningful if success
+    changes: { [key: string]: [any, any] }; // only meaningful if success
+};
+
+export class ValidateAndComputeDiffResult implements ValidateAndComputeDiffResultFields {
+    success: boolean = true;
+    errors: { [key: string]: string } = {};
+    hasChanges: boolean = false; // only meaningful if success
+    changes: { [key: string]: [any, any] } = {}; // only meaningful if success
+
+    constructor(args: Partial<ValidateAndComputeDiffResultFields>) {
+        Object.assign(this, args);
+    }
+
+    hasErrorForField = (key: string) => {
+        const ret = (!this.success && !!this.errors[key]);
+        //console.log(`hasErrorForField[${key}] = ${ret}`);
+        //console.log(this);
+        return ret;
+    };
+}
+
+export const EmptyValidateAndComputeDiffResult: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({});
+
+
+
+
+export interface NewDialogAPI<DBModel> {
+    setFieldValue: (member: string, value: any) => void,
+};
+
+export interface RenderForNewItemDialogArgs<DBModel> {
+    key: any;
+    obj: DBModel,
+    value: any;
+    validationResult: ValidateAndComputeDiffResult;
+    api: NewDialogAPI<DBModel>,
+};
+
 export abstract class CMFieldSpecBase<DBModel> {
     member: string; // the member corresponds to the conceptual value. so for FK, it's the OBJECT member, not the ID member (e.g. user, not userId).
     fkidMember?: string; // if this is a foreign key, this is the id (e.g. userId)
     columnHeaderText: string;
+
+    initialNewItemValue: string;
+    zodSchema: ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
 
     // determines a few things:
     // 1. does it enable editing behavior in the grid?
@@ -29,8 +75,8 @@ export abstract class CMFieldSpecBase<DBModel> {
     abstract ValidateAndParse: (val: any) => ValidateAndParseResult;
 
     renderForEditGridView?: (params: GridRenderCellParams) => React.ReactElement;
-    renderForEditGridEdit?: ((params: GridRenderEditCellParams) => React.ReactElement);
-    abstract renderForNewDialog: () => React.ReactElement;
+    renderForEditGridEdit?: (params: GridRenderEditCellParams) => React.ReactElement;
+    renderForNewDialog?: (params: RenderForNewItemDialogArgs<DBModel>) => React.ReactElement; // will render as a child of <FormControl>
 
     // returns whether the two values are considered equal (and thus the row has been modified).
     // should use the schema to validate both sides. there is an assumption that the fields have passed validation, and the sanitized versions are passed in.
@@ -62,18 +108,6 @@ export class PKIDField<DBModel> extends CMFieldSpecBase<DBModel> {
         this.cellWidth = 40;
     }
 
-    renderForEditGridView = (params: GridRenderCellParams) => {
-        return <>{params.value}</>;
-    };
-
-    renderForEditGridEdit = (params: GridRenderEditCellParams) => {
-        return <>cant edit pk</>;
-    };
-
-    renderForNewDialog = () => {
-        return <>no mans land</>;
-    };
-
     ValidateAndParse = (val: any) => {
         throw new Error(`pkid is not editable`);
     }
@@ -92,9 +126,9 @@ export class PKIDField<DBModel> extends CMFieldSpecBase<DBModel> {
 interface SimpleTextFieldArgs {
     member: string,
     label: string,
-    initialNewItemValue: string,
-    zodSchema: ZodSchema, // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
     cellWidth: number,
+    initialNewItemValue: string;
+    zodSchema: ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
     // for things like treating empty as null, case sensitivity, trimming, do it in the zod schema via transform
 };
 
@@ -110,29 +144,9 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
         this.columnHeaderText = args.member;
         this.isEditableInGrid = true;
         this.cellWidth = args.cellWidth;
+        this.initialNewItemValue = args.initialNewItemValue;
+        this.zodSchema = args.zodSchema;
     }
-
-    // renderForEditGridView = (params: GridRenderCellParams) => {
-    //     return <>{params.value}</>;
-    // };
-
-    //renderForEditGridEdit = undefined;
-
-    // // is responsible for
-    // // - showing validation errors
-    // // - setting the edit cell value via api.setEditCellValue
-    // renderForEditGridEdit = ({ api, id, field, ...params }: GridRenderEditCellParams) => {
-    //     const parseResult = this.ValidateAndParse(params.value);// this.args.zodSchema.safeParse(params.value);
-    //     return <TextField
-    //         onChange={(e) => api.setEditCellValue({ id, field, value: e.target.value })}
-    //         value={params.value}
-    //         size="small"
-    //         error={!parseResult.success}
-    //         helperText={parseResult.errortext}
-    //     // "required" is an odd property; sometimes you want empty values to be null, sometimes empty string. i don't think it matters personally; don't bother using required
-    //     // let's see further how we use this before implementing any logic.
-    //     />;
-    // };
 
     GridColProps = {
         type: "string",
@@ -142,17 +156,28 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
         }
     };
 
-    renderForNewDialog = () => {
-        return <>rfnd</>;
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+        return <CMTextField
+            key={params.key}
+            autoFocus={false}
+            label={this.args.label}
+            validationError={params.validationResult.hasErrorForField(this.args.member)}
+            value={params.value}
+            onChange={(e, val) => {
+                //return onChange(val);
+                params.api.setFieldValue(this.args.member, val);
+            }}
+        />;
     };
 
     ValidateAndParse = (val: any) => {
-        const parseResult = this.args.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
-        return {
+        const parseResult = this.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
+        const ret: ValidateAndParseResult = {
             success: parseResult.success,
-            errortext: parseResult.error && parseResult.error.flatten().formErrors.join(", "),
+            errorMessage: parseResult.error && parseResult.error.flatten().formErrors.join(", "),
             parsedValue: parseResult.data,
         };
+        return ret;
     }
 
     isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
@@ -164,6 +189,7 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
         obj[this.member] = { contains: query };
         return obj;
     }; // return either falsy, or an object like { name: { contains: query } }
+
 };
 
 export class CMTableSpecRequiredValues<DBModel> {
@@ -171,6 +197,7 @@ export class CMTableSpecRequiredValues<DBModel> {
     devName: string;
     CreateMutation: any;
     CreateSchema: z.ZodObject<any>; // hm is this necessary?
+    //initialObj: DBModel; // an object loaded with defaults. populate in ctor.
     GetPaginatedItemsQuery: any;
     UpdateMutation: any;
     UpdateSchema: z.ZodObject<any>;
@@ -179,18 +206,13 @@ export class CMTableSpecRequiredValues<DBModel> {
     renderForListItemChild: ({ obj }: { obj: DBModel }) => React.ReactElement;
 };
 
-interface ValidateAndComputeDiffResult {
-    success: boolean,
-    errors: { [key: string]: string },
-    hasChanges: boolean, // only meaningful if success
-    changes: { [key: string]: [any, any] }, // only meaningful if success
-}
 
 // default implementations of stuff. could i just make an abstract base class and not bother with the interface? probably
 export class CMTableSpec<DBModel> extends CMTableSpecRequiredValues<DBModel> {// implements ITableSpec<DBModel> {
     PageSizeOptions = [20, 50, 100] as number[];
     PageSizeDefault = 50 as number;
     DefaultOrderBy = { id: "asc" } as any;
+    initialObj = {} as DBModel; // yes this breaks typing but will be populated in a bit.
 
     PKIDMemberName = "id" as string; // field name of the primary key ... almost always this should be "id"
 
@@ -198,9 +220,14 @@ export class CMTableSpec<DBModel> extends CMTableSpecRequiredValues<DBModel> {//
         super();
         Object.assign(this, reqValues);
         if (!!overrides) Object.assign(this, overrides);
+        for (let i = 0; i < this.fields.length; ++i) {
+            const field = this.fields[i]!;
+            this.initialObj[field.member] = field.initialNewItemValue;
+        }
     }
 
     CreateItemButtonText = () => `New ${this.devName}`;
+    NewItemDialogTitle = () => `New ${this.devName}`;
     CreateSuccessSnackbar = (item: DBModel) => `${this.devName} added: ${this.GetNameOfRow(item)} `;
     CreateErrorSnackbar = (err: any) => `Server error while adding ${this.devName} `;
     UpdateItemSuccessSnackbar = (updatedItem: DBModel) => `${this.devName} ${this.GetNameOfRow(updatedItem)} updated.`;
@@ -213,12 +240,12 @@ export class CMTableSpec<DBModel> extends CMTableSpecRequiredValues<DBModel> {//
 
     // returns an object describing changes and validation errors.
     ValidateAndComputeDiff(oldItem: DBModel, newItem: DBModel): ValidateAndComputeDiffResult {
-        const ret: ValidateAndComputeDiffResult = {
+        const ret: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({
             changes: {},
             errors: {},
             success: true,
             hasChanges: false,
-        };
+        });
         for (let i = 0; i < this.fields.length; ++i) {
             const field = this.fields[i]!;
             if (!field.isEditableInGrid) {
@@ -231,6 +258,7 @@ export class CMTableSpec<DBModel> extends CMTableSpecRequiredValues<DBModel> {//
             if (!b_parseResult.success) {
                 ret.success = false;
                 ret.errors[field.member] = b_parseResult.errorMessage!;
+                console.log(b_parseResult);
                 continue;
             }
             const b = b_parseResult.parsedValue;

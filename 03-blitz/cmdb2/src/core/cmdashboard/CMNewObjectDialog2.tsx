@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { formatZodError } from "blitz";
 import React from "react";
-import { CMTableSpec } from "src/core/cmdashboard/CMColumnSpec";
+import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, ValidateAndComputeDiffResult } from "src/core/cmdashboard/CMColumnSpec";
 
 type CMNewObject2DialogProps<TDBModel> = {
     onOK: (obj: TDBModel) => any;
@@ -17,21 +17,25 @@ type CMNewObject2DialogProps<TDBModel> = {
 export function CMNewObjectDialog2<TDBModel>({ onOK, onCancel, spec }: CMNewObject2DialogProps<TDBModel>) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [obj, setObj] = React.useState(spec.InitialObj);
-    const [validationErrors, setValidationErrors] = React.useState({}); // don't allow null for syntax simplicity
+    const [obj, setObj] = React.useState(spec.initialObj);
+    const [oldObj, setOldObj] = React.useState(spec.initialObj); // needed for tracking changes
+    const [validationResult, setValidationResult] = React.useState<ValidateAndComputeDiffResult>(EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
 
+    // validate on change
     React.useEffect(() => {
-        spec.ZodSchema.safeParseAsync(obj).then((res) => {
-            if (res.success) {
-                setValidationErrors({});
-                return;
-            }
-            setValidationErrors(formatZodError(res.error));
-        }).catch(() => { });
+        setValidationResult(spec.ValidateAndComputeDiff(oldObj, obj));
     }, [obj]);
 
     const handleOK = () => {
         onOK(obj);
+    };
+
+    const api: NewDialogAPI<TDBModel> = {
+        setFieldValue: (member: string, value: any) => {
+            const newObj = { ...obj };
+            newObj[member] = value;
+            setObj(newObj);
+        },
     };
 
     return (
@@ -41,7 +45,7 @@ export function CMNewObjectDialog2<TDBModel>({ onOK, onCancel, spec }: CMNewObje
             scroll="paper"
             fullScreen={fullScreen}
         >
-            <DialogTitle>{spec.DialogTitle()}</DialogTitle>
+            <DialogTitle>{spec.NewItemDialogTitle()}</DialogTitle>
             <DialogContent dividers>
                 <DialogContentText>
                     To subscribe to this website, please enter your email address here. We
@@ -49,19 +53,16 @@ export function CMNewObjectDialog2<TDBModel>({ onOK, onCancel, spec }: CMNewObje
                 </DialogContentText>
                 <FormControl>
                     {
-                        spec.Fields.map(field => {
-                            return field.RenderInputField({
-                                key: field.MemberName,
-                                validationErrors,
-                                value: obj[field.MemberName],
-                                onChange: (fieldValue) => {
-                                    const newObj = { ...obj };
-                                    newObj[field.MemberName] = fieldValue;
-                                    if (field.IsForeignObject) {
-                                        newObj[field.FKIDMemberName as string] = field.GetIDOfFieldValue!(fieldValue);
-                                    }
-                                    setObj(newObj);
-                                }
+                        spec.fields.map(field => {
+                            if (!field.renderForNewDialog) {
+                                return null;
+                            }
+                            return field.renderForNewDialog!({
+                                key: field.member,
+                                validationResult,
+                                obj,
+                                value: obj[field.member],
+                                api,
                             });
 
                         })
