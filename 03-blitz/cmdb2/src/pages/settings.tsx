@@ -1,18 +1,16 @@
 import { BlitzPage } from "@blitzjs/next";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
+import { Button } from "@mui/material";
+import React from "react";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
-import { SettingsEditGridSpec } from "src/core/CMDBSettings";
-import { Button } from "@mui/material";
-import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
-import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
-import React from "react";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import updateSetting from "src/auth/mutations/updateSetting";
-import { z } from "zod";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
+import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
+import { SettingsEditGridSpec } from "src/core/CMDBSettings";
+import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const SettingsControls = (props) => {
     if (!useAuthorization("settings page", Permission.admin_settings)) {

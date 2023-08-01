@@ -6,16 +6,56 @@ import {
 } from "@mui/material";
 import Chip from '@mui/material/Chip';
 import { User as DBUser, Role as DBRole } from "db";
-import { CMNewItemDialogSpec, CMNewItemDialogFieldSpec, CMEditGridSpec, CreateEditGridColumnSpec, CMEditGridColumnType } from "src/core/cmdashboard/CMColumnSpec";
-import { Signup as NewUserSchema } from "src/auth/schemas";
+import { CMNewItemDialogSpec, CMNewItemDialogFieldSpec, CMEditGridSpec, CreateEditGridColumnSpec, CMEditGridColumnType, PKIDField, CMTableSpec, SimpleTextField } from "src/core/cmdashboard/CMColumnSpec";
+import { Signup as NewUserSchema, UpdateUserFromGrid as UpdateUserFromGridSchema, UserEmailSchema, UserNameSchema } from "src/auth/schemas";
 import { CMTextField } from './cmdashboard/CMTextField';
 import { CMAutocompleteField } from './cmdashboard/CMAutocompleteField';
 import { RenderRole, RoleAutocompleteSpec, RoleGridEditCellSpec } from './CMDBRole';
 import getUsers from "src/auth/queries/getUsers";
 import updateUserFromGrid from "src/auth/mutations/updateUserFromGrid";
 import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
-//import NewUserMutationSpec from "src/auth/mutations/signup";
 import NewUserMutationSpec from "src/auth/mutations/newUser";
+
+
+export const UserTableSpec = new CMTableSpec<DBUser>({
+    devName: "user",
+    CreateMutation: NewUserMutationSpec,
+    CreateSchema: NewUserSchema,
+    GetPaginatedItemsQuery: getUsers,
+    UpdateMutation: updateUserFromGrid,
+    UpdateSchema: UpdateUserFromGridSchema,
+    DeleteMutation: SoftDeleteUserMutation,
+    GetNameOfRow: (row: DBUser) => { return row.name; },
+    renderForListItemChild: ({ obj }) => {
+        return <>an item?</>;
+    },
+    fields: [
+        new PKIDField({ member: "id" }),
+        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: UserNameSchema }),
+        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Email", member: "email", zodSchema: UserEmailSchema }),
+
+        // CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.PK, MemberName: "id", Editable: true, }),
+        // CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.String, MemberName: "name", Editable: true, }),
+        // CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.String, MemberName: "email", Editable: true, }),
+        // CreateEditGridColumnSpec({
+        //     Behavior: CMEditGridColumnType.ForeignObject,
+        //     MemberName: "role",
+        //     FKIDMemberName: "roleId",
+        //     FKEditCellSpec: RoleGridEditCellSpec,
+        //     FKRenderViewCell: RenderRole,
+        //     Editable: true,
+        // }),
+
+
+        // new PKIDField({ member: "id" }),
+        // new SimpleTextField({ label: "name", member: "name", initialNewItemValue: "", zodSchema: SettingNameSchema, cellWidth: 220 }),
+        // new SimpleTextField({ label: "value", member: "value", initialNewItemValue: "", zodSchema: SettingValueSchema, cellWidth: 550 }),
+    ],
+});
+
+
+
+
 
 export const NewUserDialogSpec: CMNewItemDialogSpec<DBUser> = {
     InitialObj: {

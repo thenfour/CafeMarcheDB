@@ -37,3 +37,15 @@ nav>* {
 .MuiChip-label {
   user-select: none;
 }
+
+
+
+.CMEditGrid2 .MuiDataGrid-cell {
+  align-items: flex-start;
+}
+
+
+div.Mui-error {
+  background-color: #fee;
+  border: 1px solid red;
+}

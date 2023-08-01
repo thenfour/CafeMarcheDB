@@ -1,5 +1,280 @@
-import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import { z } from "zod"
+
+import { Stack, TextField } from "@mui/material";
+import { GridColDef, GridPreProcessEditCellProps, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
+import { ZodSchema, z } from "zod"
+
+
+// base specs for specifying db object behaviors //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export interface ValidateAndParseResult {
+    success: boolean;
+    errorMessage?: string;
+    parsedValue: any; // implementer should set this to the value to be actually used (after zod parse)
+};
+
+export abstract class CMFieldSpecBase<DBModel> {
+    member: string; // the member corresponds to the conceptual value. so for FK, it's the OBJECT member, not the ID member (e.g. user, not userId).
+    fkidMember?: string; // if this is a foreign key, this is the id (e.g. userId)
+    columnHeaderText: string;
+
+    // determines a few things:
+    // 1. does it enable editing behavior in the grid?
+    // 2. does it participate in update mutations?
+    isEditableInGrid: boolean;
+    cellWidth: number;
+
+    GridColProps!: Partial<GridColDef>;
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    abstract ValidateAndParse: (val: any) => ValidateAndParseResult;
+
+    renderForEditGridView?: (params: GridRenderCellParams) => React.ReactElement;
+    renderForEditGridEdit?: ((params: GridRenderEditCellParams) => React.ReactElement);
+    abstract renderForNewDialog: () => React.ReactElement;
+
+    // returns whether the two values are considered equal (and thus the row has been modified).
+    // should use the schema to validate both sides. there is an assumption that the fields have passed validation, and the sanitized versions are passed in.
+    // there is another assumption that the input values are not null-y. the caller checks that condition already.
+    abstract isEqual: (lhsRow: DBModel, rhsRow: DBModel) => boolean;
+
+    // return either falsy, or an object like { name: { contains: query } }
+    abstract getQuickFilterWhereClause: (query: string) => any;
+};
+
+// local fields //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+interface PKIDFieldArgs {
+    member: string,
+};
+
+export class PKIDField<DBModel> extends CMFieldSpecBase<DBModel> {
+
+    args: PKIDFieldArgs;
+
+    constructor(args: PKIDFieldArgs) {
+        super();
+        this.args = args;
+        this.member = args.member;
+        this.fkidMember = undefined;
+
+        this.columnHeaderText = args.member;
+        this.isEditableInGrid = false;
+        this.cellWidth = 40;
+    }
+
+    renderForEditGridView = (params: GridRenderCellParams) => {
+        return <>{params.value}</>;
+    };
+
+    renderForEditGridEdit = (params: GridRenderEditCellParams) => {
+        return <>cant edit pk</>;
+    };
+
+    renderForNewDialog = () => {
+        return <>no mans land</>;
+    };
+
+    ValidateAndParse = (val: any) => {
+        throw new Error(`pkid is not editable`);
+    }
+
+    isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
+        return (lhsSanitizedFieldValue as number) === (rhsSanitizedFieldValue as number);
+    };
+
+    getQuickFilterWhereClause = (query: string) => {
+        const obj = {};
+        obj[this.member] = { contains: query };
+        return obj;
+    }; // return either falsy, or an object like { name: { contains: query } }
+};
+
+interface SimpleTextFieldArgs {
+    member: string,
+    label: string,
+    initialNewItemValue: string,
+    zodSchema: ZodSchema, // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
+    cellWidth: number,
+    // for things like treating empty as null, case sensitivity, trimming, do it in the zod schema via transform
+};
+
+export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
+
+    args: SimpleTextFieldArgs;
+
+    constructor(args: SimpleTextFieldArgs) {
+        super();
+        this.args = args;
+        this.member = args.member;
+        this.fkidMember = undefined;
+        this.columnHeaderText = args.member;
+        this.isEditableInGrid = true;
+        this.cellWidth = args.cellWidth;
+    }
+
+    // renderForEditGridView = (params: GridRenderCellParams) => {
+    //     return <>{params.value}</>;
+    // };
+
+    //renderForEditGridEdit = undefined;
+
+    // // is responsible for
+    // // - showing validation errors
+    // // - setting the edit cell value via api.setEditCellValue
+    // renderForEditGridEdit = ({ api, id, field, ...params }: GridRenderEditCellParams) => {
+    //     const parseResult = this.ValidateAndParse(params.value);// this.args.zodSchema.safeParse(params.value);
+    //     return <TextField
+    //         onChange={(e) => api.setEditCellValue({ id, field, value: e.target.value })}
+    //         value={params.value}
+    //         size="small"
+    //         error={!parseResult.success}
+    //         helperText={parseResult.errortext}
+    //     // "required" is an odd property; sometimes you want empty values to be null, sometimes empty string. i don't think it matters personally; don't bother using required
+    //     // let's see further how we use this before implementing any logic.
+    //     />;
+    // };
+
+    GridColProps = {
+        type: "string",
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => {
+            const parseResult = this.ValidateAndParse(params.props.value);
+            return { ...params.props, error: !parseResult.success };
+        }
+    };
+
+    renderForNewDialog = () => {
+        return <>rfnd</>;
+    };
+
+    ValidateAndParse = (val: any) => {
+        const parseResult = this.args.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
+        return {
+            success: parseResult.success,
+            errortext: parseResult.error && parseResult.error.flatten().formErrors.join(", "),
+            parsedValue: parseResult.data,
+        };
+    }
+
+    isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
+        return (lhsSanitizedFieldValue as string) === (rhsSanitizedFieldValue as string);
+    };
+
+    getQuickFilterWhereClause = (query: string) => {
+        const obj = {};
+        obj[this.member] = { contains: query };
+        return obj;
+    }; // return either falsy, or an object like { name: { contains: query } }
+};
+
+export class CMTableSpecRequiredValues<DBModel> {
+    fields: CMFieldSpecBase<DBModel>[];
+    devName: string;
+    CreateMutation: any;
+    CreateSchema: z.ZodObject<any>; // hm is this necessary?
+    GetPaginatedItemsQuery: any;
+    UpdateMutation: any;
+    UpdateSchema: z.ZodObject<any>;
+    DeleteMutation: any;
+    GetNameOfRow: (row: DBModel) => string;
+    renderForListItemChild: ({ obj }: { obj: DBModel }) => React.ReactElement;
+};
+
+interface ValidateAndComputeDiffResult {
+    success: boolean,
+    errors: { [key: string]: string },
+    hasChanges: boolean, // only meaningful if success
+    changes: { [key: string]: [any, any] }, // only meaningful if success
+}
+
+// default implementations of stuff. could i just make an abstract base class and not bother with the interface? probably
+export class CMTableSpec<DBModel> extends CMTableSpecRequiredValues<DBModel> {// implements ITableSpec<DBModel> {
+    PageSizeOptions = [20, 50, 100] as number[];
+    PageSizeDefault = 50 as number;
+    DefaultOrderBy = { id: "asc" } as any;
+
+    PKIDMemberName = "id" as string; // field name of the primary key ... almost always this should be "id"
+
+    constructor(reqValues: CMTableSpecRequiredValues<DBModel>, overrides?: Partial<CMTableSpec<DBModel>>) {
+        super();
+        Object.assign(this, reqValues);
+        if (!!overrides) Object.assign(this, overrides);
+    }
+
+    CreateItemButtonText = () => `New ${this.devName}`;
+    CreateSuccessSnackbar = (item: DBModel) => `${this.devName} added: ${this.GetNameOfRow(item)} `;
+    CreateErrorSnackbar = (err: any) => `Server error while adding ${this.devName} `;
+    UpdateItemSuccessSnackbar = (updatedItem: DBModel) => `${this.devName} ${this.GetNameOfRow(updatedItem)} updated.`;
+    UpdateItemErrorSnackbar = (err: any) => `Server error while updating ${this.devName} `;
+    DeleteItemSuccessSnackbar = (updatedItem: DBModel) => `deleted ${this.devName} success`;
+    DeleteItemErrorSnackbar = (err: any) => `deleted ${this.devName} error`;
+    NoChangesMadeSnackbar = (item: DBModel) => "No changes were made";
+    DeleteConfirmationMessage = (item: DBModel) => `Pressing 'Yes' will delete ${this.devName} '${this.GetNameOfRow(item)}'`;
+    UpdateConfirmationMessage = (oldItem: DBModel, newItem: DBModel, validateResult: ValidateAndComputeDiffResult) => `Pressing 'Yes' will update ${this.devName} ${this.GetNameOfRow(oldItem)} `;
+
+    // returns an object describing changes and validation errors.
+    ValidateAndComputeDiff(oldItem: DBModel, newItem: DBModel): ValidateAndComputeDiffResult {
+        const ret: ValidateAndComputeDiffResult = {
+            changes: {},
+            errors: {},
+            success: true,
+            hasChanges: false,
+        };
+        for (let i = 0; i < this.fields.length; ++i) {
+            const field = this.fields[i]!;
+            if (!field.isEditableInGrid) {
+                continue;
+            }
+            const a = oldItem[field.member];
+            const b_raw = newItem[field.member];
+            const b_parseResult = field.ValidateAndParse(b_raw); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
+
+            if (!b_parseResult.success) {
+                ret.success = false;
+                ret.errors[field.member] = b_parseResult.errorMessage!;
+                continue;
+            }
+            const b = b_parseResult.parsedValue;
+
+            const a_isNully = ((a === null) || (a === undefined));
+            const b_isNully = ((b === null) || (b === undefined));
+            if (a_isNully !== b_isNully) {
+                // one is null, other is not. guaranteed 
+                ret.hasChanges = true;
+                ret.changes[field.member] = [a, b];
+            }
+
+            if (!field.isEqual(a, b)) {
+                ret.hasChanges = true;
+                ret.changes[field.member] = [a, b];
+            }
+        }
+
+        return ret;
+    };
+
+    GetQuickFilterWhereClauseExpression = (query: string) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
+        const ret = [] as any[];
+        for (let i = 0; i < this.fields.length; ++i) {
+            const field = this.fields[i]!;
+            const clause = field.getQuickFilterWhereClause(query);
+            if (clause) {
+                ret.push(clause);
+            }
+        }
+        return ret;
+    };
+};
+
+
+
+
+
+
+
+
+
+
+
 
 // single item support (*-to-one relation) //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

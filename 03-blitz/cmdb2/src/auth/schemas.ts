@@ -15,13 +15,19 @@ export const DeleteByIdSchema = z.object({
 });
 
 
-export const email = z
+// export const email = z
+//   .string()
+//   .email()
+//   .transform((str) => str.toLowerCase().trim())
+
+// export const name = z
+//   .string()
+
+export const UserNameSchema = z.string().min(1);
+export const UserEmailSchema = z
   .string()
   .email()
-  .transform((str) => str.toLowerCase().trim())
-
-export const name = z
-  .string()
+  .transform((str) => str.toLowerCase().trim());
 
 export const googleId = z
   .string().optional()
@@ -33,27 +39,27 @@ export const password = z
   .transform((str) => str.trim())
 
 export const Signup = z.object({
-  email,
+  email: UserEmailSchema,
   password,
-  name: name.min(1),
+  name: UserNameSchema,
   googleId,
   roleId: z.number().nullable().optional(),
 })
 
 export const UpdateUserFromGrid = z.object({
   id: z.number(),
-  email,
-  name,
+  email: UserEmailSchema,
+  name: UserNameSchema,
   roleId: z.number().nullable().optional(),
 })
 
 export const Login = z.object({
-  email,
+  email: UserEmailSchema,
   password: z.string(),
 })
 
 export const ForgotPassword = z.object({
-  email,
+  email: UserEmailSchema,
 })
 
 export const ResetPassword = z
@@ -126,23 +132,27 @@ export const RegisterActivitySchema = z.object({
 });
 
 // SETTING
+export const SettingNameSchema = z.string().min(1);
+export const SettingValueSchema = z.string(); // allow empty strings
 
-export const GetSettingSchema = z.string().min(1);
+export const GetSettingSchema = z.string().min(1); // by name
+
 
 export const UpdateSettingSchema = z.object({
-  name: z.string().min(1),
+  name: SettingNameSchema,
   value: z.string().nullable(),
 });
 
 export const CreateSettingSchema = z.object({
-  name: z.string().min(1),
+  name: SettingNameSchema,
   value: z.string(),
 });
 
 export const UpdateSettingByIdSchema = z.object({
   id: z.number(),
-  name: z.string().min(1),
-  value: z.string(),
+  name: SettingNameSchema,
+  value: SettingValueSchema,
 });
 
 export const UpdateBulkSettingsSchema = z.array(UpdateSettingSchema);
+

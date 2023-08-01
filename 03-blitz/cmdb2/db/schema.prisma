@@ -5,6 +5,9 @@
 // significance String? // for tags
 // isPublished Boolean @default(false)
 
+// TODO:
+// website integration (fields for events, image editing, whether it's published etc)
+
 // journals...
 // i think stuff like events should have a timeline with things like "arnold approved this on 4/8" or whatever. that can be derived i guess. but it means attaching dates to things.
 
@@ -168,12 +171,13 @@ model Token {
 // }
 
 model Song {
-  id             Int    @id @default(autoincrement())
+  id             Int     @id @default(autoincrement())
   name           String
-  startKey       String
-  endKey         String
-  startBPM       Int
-  endBPM         Int
+  slug           String
+  startKey       String?
+  endKey         String?
+  startBPM       Int?
+  endBPM         Int?
   introducedYear Int? // purposely fuzzy
 
   isDeleted Boolean @default(false)
@@ -306,6 +310,7 @@ model UserInstrument {
 model Event {
   id                  Int      @id @default(autoincrement())
   name                String
+  slug                String
   description         String // what's the diff between a description & comment? description is the pinned general description in markdown.
   startsAt            DateTime
   endsAt              DateTime
@@ -364,11 +369,12 @@ model EventComment {
 }
 
 model EventSongList {
-  id        Int    @id @default(autoincrement())
-  eventId   Int
-  sortOrder Int    @default(0)
-  name      String
-  event     Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
+  id          Int    @id @default(autoincrement())
+  eventId     Int
+  sortOrder   Int    @default(0)
+  name        String
+  description String @default("")
+  event       Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
 }
 
 model EventSongListSong {
@@ -379,23 +385,26 @@ model EventSongListSong {
   song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
 }
 
-// tech rider, invoice, event media, what is the usage? the point is to find similar things
+// tech rider, invoice, contract, event media, other, what is the usage? the point is to find similar things
 model FileSignificance {
-  id                Int                 @id @default(autoincrement())
+  id    Int    @id @default(autoincrement())
+  name  String @unique
   Files File[]
 }
 
 model File {
-  id                Int                 @id @default(autoincrement())
-  filename          String
-  description       String
-  type              String // enum (video, photo, link, partition)
-  significanceId    Int?
-  isDeleted         Boolean             @default(false)
+  id             Int     @id @default(autoincrement())
+  fileLeafName   String // the name of the file as it was uploaded, visible to users. IMG20113.jpg for example.
+  storedLeafName String // a unique filename used in server storage; a guid probably.
+  uri            String // if this is a link, then here's the URI
+  description    String
+  type           String // enum (video, photo, link, partition)
+  significanceId Int?
+  isDeleted      Boolean @default(false)
 
   subtitle String? // could be a small comment like "short version"
 
-  significance FileSignificance? @relation(fields: [significanceId], references: [id], onDelete:SetNull) // when you delete a significance, set null.
+  significance      FileSignificance?   @relation(fields: [significanceId], references: [id], onDelete: SetNull) // when you delete a significance, set null.
   taggedUsers       FileUserTag[]
   taggedSongs       FileSongTag[]
   taggedEvents      FileEventTag[]
