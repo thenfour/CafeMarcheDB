@@ -24,6 +24,7 @@ export function CMNewObjectDialog2<TDBModel>({ onOK, onCancel, spec }: CMNewObje
     // validate on change
     React.useEffect(() => {
         setValidationResult(spec.ValidateAndComputeDiff(oldObj, obj));
+        setOldObj(obj);
     }, [obj]);
 
     const handleOK = () => {

@@ -30,9 +30,9 @@ export const SettingTableSpec = new CMTableSpec<DBSetting>({
     UpdateSchema: UpdateSettingByIdSchema,
     DeleteMutation: deleteSetting,
     GetNameOfRow: (row: DBSetting) => { return row.name; },
-    renderForListItemChild: ({ obj }) => {
-        return <>an item?</>;
-    },
+    // renderForListItemChild: ({ obj }) => {
+    //     return <>an item?</>;
+    // },
     fields: [
         new PKIDField({ member: "id" }),
         new SimpleTextField({ label: "name", member: "name", initialNewItemValue: "", zodSchema: SettingNameSchema, cellWidth: 220 }),

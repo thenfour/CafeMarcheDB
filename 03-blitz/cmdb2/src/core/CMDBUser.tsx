@@ -1,22 +1,66 @@
-import {
-    Person as UserIcon
-} from '@mui/icons-material';
-import {
-    ListItemIcon, ListItemText
-} from "@mui/material";
+import CloseIcon from '@mui/icons-material/Close';
+import DoneIcon from '@mui/icons-material/Done';
 import Chip from '@mui/material/Chip';
-import { User as DBUser, Role as DBRole } from "db";
-import { CMNewItemDialogSpec, CMNewItemDialogFieldSpec, CMEditGridSpec, CreateEditGridColumnSpec, CMEditGridColumnType, PKIDField, CMTableSpec, SimpleTextField } from "src/core/cmdashboard/CMColumnSpec";
-import { InsertUserSchema, Signup as NewUserSchema, UpdateUserFromGrid as UpdateUserFromGridSchema, UserEmailSchema, UserNameSchema } from "src/auth/schemas";
-import { CMTextField } from './cmdashboard/CMTextField';
-import { CMAutocompleteField } from './cmdashboard/CMAutocompleteField';
-import { RenderRole, RoleAutocompleteSpec, RoleGridEditCellSpec } from './CMDBRole';
-import getUsers from "src/auth/queries/getUsers";
-import updateUserFromGrid from "src/auth/mutations/updateUserFromGrid";
+import { Role as DBRole, User as DBUser } from "db";
+import CreateRoleMutation from "src/auth/mutations/createRole";
 import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
-import NewUserMutationSpec from "src/auth/mutations/newUser";
 import insertUserMutation from 'src/auth/mutations/insertUser';
+import NewUserMutationSpec from "src/auth/mutations/newUser";
+import updateUserFromGrid from "src/auth/mutations/updateUserFromGrid";
+import getAllRoles from 'src/auth/queries/getAllRoles';
+import getUsers from "src/auth/queries/getUsers";
+import { InsertUserSchema, Signup as NewUserSchema, UpdateUserFromGrid as UpdateUserFromGridSchema, UserEmailSchema, UserNameSchema } from "src/auth/schemas";
+import { CMEditGridColumnType, CMEditGridSpec, CMNewItemDialogFieldSpec, CMNewItemDialogSpec, CMTableSpec, CreateEditGridColumnSpec, ForeignSingleField, InsertFromStringParams, PKIDField, RenderAsChipParams, SimpleTextField } from "src/core/cmdashboard/CMColumnSpec";
+import { RenderRole, RoleAutocompleteSpec, RoleGridEditCellSpec } from './CMDBRole';
+import { CMAutocompleteField } from './cmdashboard/CMAutocompleteField';
+import { CMTextField } from './cmdashboard/CMTextField';
 
+export class UserRoleField extends ForeignSingleField<DBUser, DBRole> {
+    constructor() {
+        super({
+            getAllOptionsQuery: getAllRoles,
+            allowNull: true,
+            cellWidth: 220,
+            fkidMember: "roleId",
+            member: "role",
+            foreignPk: "id",
+            label: "Role",
+            allowInsertFromString: true,
+            insertFromStringMutation: CreateRoleMutation,
+            insertFromStringSchema: null,
+            insertFromString: async (params: InsertFromStringParams<DBRole>) => {
+                return await params.mutation({ name: params.input, description: "" });
+            },
+            getForeignQuickFilterWhereClause: (query: string) => {
+                return { name: { contains: query } };
+            },
+            doesItemExactlyMatchText: (item: DBRole, filterText: string) => {
+                return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
+            },
+            renderAsChip: (args: RenderAsChipParams<DBRole>) => {
+                if (!args.value) {
+                    return <>--</>;
+                }
+                return <Chip
+                    size="small"
+                    label={`${args.value.name}`}
+                    onDelete={args.onDelete}
+                />;
+            },
+            renderAsListItem: (props, value, selected) => {
+                return <li {...props}>
+                    {selected && <DoneIcon />}
+                    {value.name}
+                    {selected && <CloseIcon />}
+                </li>
+            },
+        });
+    }
+
+    getQuickFilterWhereClause = (query: string) => {
+        return { role: { name: { contains: query } } };
+    };
+};
 
 export const UserTableSpec = new CMTableSpec<DBUser>({
     devName: "user",
@@ -27,22 +71,14 @@ export const UserTableSpec = new CMTableSpec<DBUser>({
     UpdateSchema: UpdateUserFromGridSchema,
     DeleteMutation: SoftDeleteUserMutation,
     GetNameOfRow: (row: DBUser) => { return row.name; },
-    renderForListItemChild: ({ obj }) => {
-        return <>an item?</>;
-    },
+    // renderForListItemChild: ({ obj }) => {
+    //     return <>{obj.name}</>;
+    // },
     fields: [
         new PKIDField({ member: "id" }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: UserNameSchema }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Email", member: "email", zodSchema: UserEmailSchema }),
-
-        // CreateEditGridColumnSpec({
-        //     Behavior: CMEditGridColumnType.ForeignObject,
-        //     MemberName: "role",
-        //     FKIDMemberName: "roleId",
-        //     FKEditCellSpec: RoleGridEditCellSpec,
-        //     FKRenderViewCell: RenderRole,
-        //     Editable: true,
-        // }),
+        new UserRoleField(),
     ],
 });
 

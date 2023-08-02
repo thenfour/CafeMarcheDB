@@ -10,7 +10,7 @@ import { UserTableSpec } from "src/core/CMDBUser";
 
 const EditSongsContent = (props) => {
     return <>
-        <CMEditGrid2 spec={SettingTableSpec}></CMEditGrid2>
+        {/* <CMEditGrid2 spec={SettingTableSpec}></CMEditGrid2> */}
         <CMEditGrid2 spec={UserTableSpec}></CMEditGrid2>
     </>;
     //return <>aoeu</>;

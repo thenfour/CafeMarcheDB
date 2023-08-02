@@ -1,9 +1,30 @@
+// validation errors break things (editing when not in edit mode?)
+// new item dlg foreign items
 
-import { Stack, TextField } from "@mui/material";
+// select item dialog is changing height all the time
+// select item dialog should have a clear filter x
+// hitting enter on select item dlg broken
+
+// multi foregin items selection dialog
+// multi foreign items on new
+
+import CloseIcon from '@mui/icons-material/Close';
+import DoneIcon from '@mui/icons-material/Done';
+import SettingsIcon from '@mui/icons-material/Settings';
+import { Autocomplete, AutocompleteCloseReason, Box, Button, ClickAwayListener, Popper } from "@mui/material";
+import {
+    AutocompleteRenderOptionState,
+    autocompleteClasses
+} from '@mui/material/Autocomplete';
+import ButtonBase from '@mui/material/ButtonBase';
+import InputBase from '@mui/material/InputBase';
+import { styled, useTheme } from '@mui/material/styles';
 import { GridColDef, GridPreProcessEditCellProps, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { ZodSchema, z } from "zod"
+import React from "react";
+import { ZodSchema, z } from "zod";
 import { CMTextField } from "./CMTextField";
-
+import { ForeignSingleAutocomplete } from './CMForeignAutocomplete';
+import { CMSelectItemDialog2 } from './CMSelectForeignItemDialog';
 
 // base specs for specifying db object behaviors //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -60,8 +81,8 @@ export abstract class CMFieldSpecBase<DBModel> {
     fkidMember?: string; // if this is a foreign key, this is the id (e.g. userId)
     columnHeaderText: string;
 
-    initialNewItemValue: string;
-    zodSchema: ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
+    initialNewItemValue: any;
+    zodSchema: null | ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
 
     // determines a few things:
     // 1. does it enable editing behavior in the grid?
@@ -81,7 +102,7 @@ export abstract class CMFieldSpecBase<DBModel> {
     // returns whether the two values are considered equal (and thus the row has been modified).
     // should use the schema to validate both sides. there is an assumption that the fields have passed validation, and the sanitized versions are passed in.
     // there is another assumption that the input values are not null-y. the caller checks that condition already.
-    abstract isEqual: (lhsRow: DBModel, rhsRow: DBModel) => boolean;
+    abstract isEqual: (lhsRow: DBModel, rhsRow: DBModel/*, lhsFKID?: number, rhsFKID?: number*/) => boolean;
 
     // return either falsy, or an object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => any;
@@ -117,9 +138,7 @@ export class PKIDField<DBModel> extends CMFieldSpecBase<DBModel> {
     };
 
     getQuickFilterWhereClause = (query: string) => {
-        const obj = {};
-        obj[this.member] = { contains: query };
-        return obj;
+        return false;
     }; // return either falsy, or an object like { name: { contains: query } }
 };
 
@@ -170,7 +189,15 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
         />;
     };
 
-    ValidateAndParse = (val: any) => {
+    ValidateAndParse = (val: any): ValidateAndParseResult => {
+        if (!this.zodSchema) {
+            // no schema = no validation
+            return {
+                parsedValue: val,
+                success: true,
+                errorMessage: "",
+            };
+        }
         const parseResult = this.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
         const ret: ValidateAndParseResult = {
             success: parseResult.success,
@@ -192,20 +219,176 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
 
 };
 
+
+export type InsertFromStringParams<T> = {
+    mutation: any,
+    input: string,
+};
+
+export interface RenderAsChipParams<T> {
+    value: T | null;
+    onDelete?: () => void;
+}
+
+interface ForeignSingleFieldArgs<ForeignModel> {
+    member: string,
+    fkidMember: string,
+    label: string,
+    cellWidth: number,
+    allowNull: boolean,
+    foreignPk: string, // i guess this is always "id".
+    getAllOptionsQuery: any,
+
+    // for filtering a list of the foreign items, fetched by getAllOptionsQuery
+    getForeignQuickFilterWhereClause: (query: string) => any,
+
+    // when filtering a list, we only show the "Add new item 'text'" when it doesn't match an existing item already. This is therefore required.
+    doesItemExactlyMatchText: (item: ForeignModel, filterText: string) => boolean,
+
+    allowInsertFromString: boolean,
+    insertFromStringMutation: any,
+    insertFromString: ((params: InsertFromStringParams<ForeignModel>) => Promise<ForeignModel>), // create an object from string asynchronously.
+    insertFromStringSchema: any,
+
+    // should render a <li {...props}> for autocomplete
+    //renderOption: (props: React.HTMLAttributes<HTMLLIElement>, option: ForeignModel, state: AutocompleteRenderOptionState) => React.ReactElement;
+    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: ForeignModel, selected: boolean) => React.ReactElement;
+
+    // also for autocomplete
+    renderAsChip: (args: RenderAsChipParams<ForeignModel>) => React.ReactElement;
+};
+
+
+export interface ForeignSingleFieldEditCellProps<DBModel, ForeignModel> {
+    field: ForeignSingleField<DBModel, ForeignModel>;
+    value: ForeignModel | null;
+    params: GridRenderEditCellParams;
+};
+
+export const ForeignSingleFieldEditCell = <DBModel, ForeignModel,>(props: ForeignSingleFieldEditCellProps<DBModel, ForeignModel>) => {
+
+    const [isOpen, setIsOpen] = React.useState<boolean>(false);
+
+    const chip = props.field.args.renderAsChip({
+        value: props.value,
+        onDelete: () => {
+            props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.member, value: null }).then(() => {
+                props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.fkidMember, value: null });
+            });
+        },
+    });
+
+    return <div>
+        {chip}
+        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.field.args.label}</Button>
+        {isOpen && <CMSelectItemDialog2
+            value={props.value}
+            spec={props.field}
+            onOK={(newValue: ForeignModel) => {
+                //console.log({ id: props.params.id, field: props.field.args.member, value: newValue });
+                props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.member, value: newValue }).then(() => {
+                    if (newValue === null || newValue === undefined) {
+                        props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.fkidMember, value: null });
+                        return;
+                    }
+                    props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.fkidMember, value: newValue[props.field.args.foreignPk] });
+                });
+
+                setIsOpen(false);
+            }}
+            onCancel={() => { setIsOpen(false); }}
+        />
+        }
+    </div>;
+};
+
+// a single-selection foreign object (one-to-one or one-to-many)
+export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldSpecBase<DBModel> {
+
+    args: ForeignSingleFieldArgs<ForeignModel>;
+
+    constructor(args: ForeignSingleFieldArgs<ForeignModel>) {
+        super();
+        this.args = args;
+        this.member = args.member;
+        this.fkidMember = args.fkidMember;
+        this.columnHeaderText = args.member;
+        this.isEditableInGrid = true;
+        this.cellWidth = args.cellWidth;
+        this.initialNewItemValue = null;
+        this.zodSchema = null;
+    }
+
+    // only validation is currently checking null.
+    ValidateAndParse = (val: any): ValidateAndParseResult => {
+        if (val === null || val === undefined) {
+            if (!this.args.allowNull) {
+                return {
+                    parsedValue: null,
+                    success: false,
+                    errorMessage: `${this.member} is required`,
+                };
+            }
+        }
+        return {
+            parsedValue: val,
+            success: true,
+            errorMessage: "",
+        };
+    };
+
+    isEqual = (a: any, b: any) => {
+        const anull = (a === null || a === undefined);
+        const bnull = (b === null || b === undefined);
+        if (anull && bnull) return true;
+        if (anull !== bnull) return false;
+        // both non-null.
+        return a[this.args.foreignPk] === b[this.args.foreignPk]; // todo
+    };
+
+    // child classes must implement:
+    // getQuickFilterWhereClause = (query: string) => {
+    //     ...
+    // };
+
+    // view: render as a single chip
+    renderForEditGridView = (params: GridRenderCellParams): React.ReactElement => {
+        return this.args.renderAsChip({
+            value: params.value,
+            //onDelete: null,
+        });
+    };
+
+    // edit cell
+    renderForEditGridEdit = (params: GridRenderEditCellParams): React.ReactElement => {
+        return <ForeignSingleFieldEditCell
+            field={this}
+            value={params.value}
+            params={params}
+        />
+    }
+
+    // edit: render as single chip with "SELECT..." and a github style autocomplete.
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+        //const chip = this.renderAsChip(params);
+        //return <>{chip}<GitHubLabel /></>;
+        return <>renderForNewDialog</>;
+    };
+};
+
+
+
 export class CMTableSpecRequiredValues<DBModel> {
     fields: CMFieldSpecBase<DBModel>[];
     devName: string;
     CreateMutation: any;
     CreateSchema: z.ZodObject<any>; // hm is this necessary?
-    //initialObj: DBModel; // an object loaded with defaults. populate in ctor.
     GetPaginatedItemsQuery: any;
     UpdateMutation: any;
     UpdateSchema: z.ZodObject<any>;
     DeleteMutation: any;
     GetNameOfRow: (row: DBModel) => string;
-    renderForListItemChild: ({ obj }: { obj: DBModel }) => React.ReactElement;
 };
-
 
 // default implementations of stuff. could i just make an abstract base class and not bother with the interface? probably
 export class CMTableSpec<DBModel> extends CMTableSpecRequiredValues<DBModel> {// implements ITableSpec<DBModel> {
@@ -271,9 +454,20 @@ export class CMTableSpec<DBModel> extends CMTableSpecRequiredValues<DBModel> {//
                 ret.changes[field.member] = [a, b];
             }
 
-            if (!field.isEqual(a, b)) {
-                ret.hasChanges = true;
-                ret.changes[field.member] = [a, b];
+            // in order to support fk, we should also pass in the fkid members.
+            if (field.fkidMember) {
+                if (!field.isEqual(a, b)) {
+                    ret.hasChanges = true;
+                    ret.changes[field.member] = [a, b];
+                    const a_fkid = oldItem[field.fkidMember];
+                    const b_fkid = newItem[field.fkidMember];
+                    ret.changes[field.fkidMember] = [a_fkid, b_fkid];
+                }
+            } else {
+                if (!field.isEqual(a, b)) {
+                    ret.hasChanges = true;
+                    ret.changes[field.member] = [a, b];
+                }
             }
         }
 

@@ -1,3 +1,8 @@
+// a modal dialog for selecting 1 item.
+// the show/hide logic is not here.
+// the selected item is transmitted back on onOK().
+// all datasource is dsecribed by the spec: ForeignSingleField<any, TDBModel>,
+
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
@@ -14,20 +19,19 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { CMSelectItemDialogSpec } from "src/core/cmdashboard/CMColumnSpec";
+import { ForeignSingleField } from "src/core/cmdashboard/CMColumnSpec";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 
-// old version
-// a modal dialog for selecting 1 item.
 
-type CMSelectItemDialogProps<TDBModel> = {
+// why is it important that this class knows about the local model? shouldn't we simply allow selecting from the list of foreign values alone?
+type CMSelectItemDialog2Props<TDBModel> = {
     value?: TDBModel | null,
     onOK: (value?: TDBModel | null) => void,
     onCancel: () => void,
-    spec: CMSelectItemDialogSpec<TDBModel>,
+    spec: ForeignSingleField<any, TDBModel>,
 };
 
-export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CMSelectItemDialogProps<TDBModel>) {
+export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: CMSelectItemDialog2Props<TDBModel>) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedObj, setSelectedObj] = React.useState<TDBModel | undefined | null>(value);
@@ -37,26 +41,29 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
     if (filterText?.length) {
         const tokens = filterText.split(/\s+/).filter(token => token.length > 0);
         const quickFilterItems = tokens.map(q => {
+            const OR = spec.args.getForeignQuickFilterWhereClause(q);
+            if (!OR) return null;
             return {
-                OR: spec.GetQuickFilterWhereClauseExpression(q)
+                OR,
             };
         });
-        where.AND.push(...quickFilterItems);
+        where.AND.push(...quickFilterItems.filter(i => i !== null));
+        console.log(where.AND);
     }
 
-    const [items, { refetch }] = useQuery(spec.GetAllItemsQuery, { where });
+    const [items, { refetch }]: [TDBModel[], any] = useQuery(spec.args.getAllOptionsQuery, { where });
 
-    const [createItemMutation] = useMutation(spec.CreateFromStringMutation);
+    const [createItemMutation] = useMutation(spec.args.insertFromStringMutation);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onNewClicked = (e) => {
-        spec.CreateFromString({ mutation: createItemMutation, input: filterText })
+        spec.args.insertFromString({ mutation: createItemMutation, input: filterText })
             .then((updatedObj) => {
                 setSelectedObj(updatedObj);
-                showSnackbar({ children: spec.NewItemSuccessSnackbarText(updatedObj), severity: 'success' });
+                showSnackbar({ children: "created new success", severity: 'success' });
                 void refetch();
             }).catch((err => {
-                showSnackbar({ children: spec.NewItemErrorSnackbarText(err), severity: 'error' });
+                showSnackbar({ children: "create error", severity: 'error' });
                 void refetch(); // should revert the data.
             }));
     };
@@ -64,6 +71,8 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
     const handleItemClick = (value) => {
         setSelectedObj(value);
     };
+
+    const filterMatchesAnyItemsExactly = items.some(item => spec.args.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
 
     return (
         <Dialog
@@ -73,10 +82,10 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
             fullScreen={fullScreen}
         >
             <DialogTitle>
-                {spec.DialogTitleText()}
+                select {spec.member}
                 <Box sx={{ p: 0 }}>
-                    Selected: {spec.RenderItem({
-                        value: selectedObj,
+                    Selected: {spec.args.renderAsChip({
+                        value: selectedObj || null,
                         onDelete: () => {
                             setSelectedObj(null);
                         }
@@ -104,13 +113,13 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
                 </Box>
 
                 {
-                    !!filterText && (
+                    !!filterText.length && !filterMatchesAnyItemsExactly && spec.args.allowInsertFromString && (
                         <Box><Button
                             size="small"
                             startIcon={<AddIcon />}
                             onClick={onNewClicked}
                         >
-                            {spec.NewItemText(filterText)}
+                            add {filterText}
                         </Button>
                         </Box>
                     )
@@ -122,14 +131,17 @@ export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CM
                         :
                         <List>
                             {
-                                items.map(item => (
-                                    <React.Fragment key={item.id}>
-                                        <ListItemButton selected={spec.IsEqual(item, selectedObj)} onClick={e => { handleItemClick(item) }}>
-                                            {spec.RenderListItemChild(item)}
-                                        </ListItemButton>
-                                        <Divider></Divider>
-                                    </React.Fragment>
-                                ))
+                                items.map(item => {
+                                    const selected = spec.isEqual(item, selectedObj);
+                                    return (
+                                        <React.Fragment key={item[spec.args.foreignPk]}>
+                                            <ListItemButton selected onClick={e => { handleItemClick(item) }}>
+                                                {spec.args.renderAsListItem({}, item, selected)}
+                                            </ListItemButton>
+                                            <Divider></Divider>
+                                        </React.Fragment>
+                                    );
+                                })
                             }
                         </List>
                 }
