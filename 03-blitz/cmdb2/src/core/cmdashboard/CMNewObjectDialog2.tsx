@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { formatZodError } from "blitz";
 import React from "react";
-import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, ValidateAndComputeDiffResult } from "src/core/cmdashboard/CMColumnSpec";
+import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, NewDialogAPIFieldValue, ValidateAndComputeDiffResult } from "src/core/cmdashboard/CMColumnSpec";
 
 type CMNewObject2DialogProps<TDBModel> = {
     onOK: (obj: TDBModel) => any;
@@ -31,12 +31,27 @@ export function CMNewObjectDialog2<TDBModel>({ onOK, onCancel, spec }: CMNewObje
         onOK(obj);
     };
 
-    const api: NewDialogAPI<TDBModel> = {
-        setFieldValue: (member: string, value: any) => {
-            const newObj = { ...obj };
-            newObj[member] = value;
+    const api: NewDialogAPI = {
+        setFieldValues: (fieldValues: { [key: string]: any }) => {
+            // so i think the reason MUI datagrid's API makes this a promise, is that when you setState(), it doesn't update
+            // local variables; it's asynchronous. either we go that model which is more complex, or this where you can set multiple fields at once.
+            // drawback is callers don't know when the change has been applied so can't do anything afterwards.
+            const newObj = { ...obj, ...fieldValues };
             setObj(newObj);
+            console.log(`New object dlg set new object to:`);
+            console.log(newObj);
         },
+        // setFieldValues: (fieldValues: NewDialogAPIFieldValue[]) => {
+        //     const newObj = { ...obj, }
+        // },
+
+        // setFieldValues: (member: string, value: any) => {
+        //     // so i think the reason MUI datagrid's API makes this a promise, is that when you setState(), it doesn't update
+        //     // local variables; it's asynchronous.
+        //     const newObj = { ...obj };
+        //     newObj[member] = value;
+        //     setObj(newObj);
+        // },
     };
 
     return (

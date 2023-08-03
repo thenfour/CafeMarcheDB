@@ -71,9 +71,6 @@ export const UserTableSpec = new CMTableSpec<DBUser>({
     UpdateSchema: UpdateUserFromGridSchema,
     DeleteMutation: SoftDeleteUserMutation,
     GetNameOfRow: (row: DBUser) => { return row.name; },
-    // renderForListItemChild: ({ obj }) => {
-    //     return <>{obj.name}</>;
-    // },
     fields: [
         new PKIDField({ member: "id" }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: UserNameSchema }),

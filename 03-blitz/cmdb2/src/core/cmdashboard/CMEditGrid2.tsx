@@ -247,6 +247,9 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
     };
 
     const onAddOK = (obj) => {
+        console.log(`edit grid invoking create mutation with object:`);
+        console.log(obj);
+
         createMutation(obj).then((newRow) => {
             showSnackbar({ children: spec.CreateSuccessSnackbar(newRow as TDBModel), severity: 'success' });
             void refetch();

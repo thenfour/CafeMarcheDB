@@ -3,6 +3,9 @@
 // the selected item is transmitted back on onOK().
 // all datasource is dsecribed by the spec: ForeignSingleField<any, TDBModel>,
 
+// restrictions:
+// MUST be invoked from 
+
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
@@ -26,9 +29,9 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 // why is it important that this class knows about the local model? shouldn't we simply allow selecting from the list of foreign values alone?
 type CMSelectItemDialog2Props<TDBModel> = {
     value?: TDBModel | null,
-    onOK: (value?: TDBModel | null) => void,
-    onCancel: () => void,
     spec: ForeignSingleField<any, TDBModel>,
+    onOK: (value: TDBModel | null) => void,
+    onCancel: () => void,
 };
 
 export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: CMSelectItemDialog2Props<TDBModel>) {
@@ -149,7 +152,7 @@ export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: C
             </DialogContent>
             <DialogActions>
                 <Button onClick={onCancel}>Cancel</Button>
-                <Button onClick={() => { onOK(selectedObj) }}>OK</Button>
+                <Button onClick={() => { onOK(selectedObj || null) }}>OK</Button>
             </DialogActions>
         </Dialog>
     );

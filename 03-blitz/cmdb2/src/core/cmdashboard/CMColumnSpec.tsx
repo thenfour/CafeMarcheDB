@@ -1,12 +1,12 @@
-// validation errors break things (editing when not in edit mode?)
-// new item dlg foreign items
-
-// select item dialog is changing height all the time
-// select item dialog should have a clear filter x
-// hitting enter on select item dlg broken
 
 // multi foregin items selection dialog
 // multi foreign items on new
+
+// validation errors from select item dialog break things on grid (editing when not in edit mode?)
+// select item dialog is changing height all the time
+// select item dialog should have a clear filter x
+// select item dialog performs validation or not? (nullable)
+// hitting enter on select item dlg broken
 
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
@@ -62,10 +62,13 @@ export class ValidateAndComputeDiffResult implements ValidateAndComputeDiffResul
 export const EmptyValidateAndComputeDiffResult: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({});
 
 
+// export interface NewDialogAPIFieldValue {
+//     member: string;
+//     value: any;
+// }
 
-
-export interface NewDialogAPI<DBModel> {
-    setFieldValue: (member: string, value: any) => void,
+export interface NewDialogAPI {
+    setFieldValues: (fieldValues: { [key: string]: any }) => void,
 };
 
 export interface RenderForNewItemDialogArgs<DBModel> {
@@ -73,7 +76,7 @@ export interface RenderForNewItemDialogArgs<DBModel> {
     obj: DBModel,
     value: any;
     validationResult: ValidateAndComputeDiffResult;
-    api: NewDialogAPI<DBModel>,
+    api: NewDialogAPI,
 };
 
 export abstract class CMFieldSpecBase<DBModel> {
@@ -184,7 +187,7 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
             value={params.value}
             onChange={(e, val) => {
                 //return onChange(val);
-                params.api.setFieldValue(this.args.member, val);
+                params.api.setFieldValues({ [this.args.member]: val });
             }}
         />;
     };
@@ -251,30 +254,30 @@ interface ForeignSingleFieldArgs<ForeignModel> {
     insertFromStringSchema: any,
 
     // should render a <li {...props}> for autocomplete
-    //renderOption: (props: React.HTMLAttributes<HTMLLIElement>, option: ForeignModel, state: AutocompleteRenderOptionState) => React.ReactElement;
     renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: ForeignModel, selected: boolean) => React.ReactElement;
 
     // also for autocomplete
     renderAsChip: (args: RenderAsChipParams<ForeignModel>) => React.ReactElement;
 };
 
-
-export interface ForeignSingleFieldEditCellProps<DBModel, ForeignModel> {
+export interface ForeignSingleFieldInputProps<DBModel, ForeignModel> {
     field: ForeignSingleField<DBModel, ForeignModel>;
     value: ForeignModel | null;
-    params: GridRenderEditCellParams;
+    onChange: (value: ForeignModel | null) => void;
 };
 
-export const ForeignSingleFieldEditCell = <DBModel, ForeignModel,>(props: ForeignSingleFieldEditCellProps<DBModel, ForeignModel>) => {
-
+// general use "edit cell" for foreign single values
+export const ForeignSingleFieldInput = <DBModel, ForeignModel,>(props: ForeignSingleFieldInputProps<DBModel, ForeignModel>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
+    const [oldValue, setOldValue] = React.useState<ForeignModel | null>();
+    React.useEffect(() => {
+        setOldValue(props.value);
+    }, []);
 
     const chip = props.field.args.renderAsChip({
         value: props.value,
         onDelete: () => {
-            props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.member, value: null }).then(() => {
-                props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.fkidMember, value: null });
-            });
+            props.onChange(null);
         },
     });
 
@@ -284,19 +287,16 @@ export const ForeignSingleFieldEditCell = <DBModel, ForeignModel,>(props: Foreig
         {isOpen && <CMSelectItemDialog2
             value={props.value}
             spec={props.field}
-            onOK={(newValue: ForeignModel) => {
-                //console.log({ id: props.params.id, field: props.field.args.member, value: newValue });
-                props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.member, value: newValue }).then(() => {
-                    if (newValue === null || newValue === undefined) {
-                        props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.fkidMember, value: null });
-                        return;
-                    }
-                    props.params.api.setEditCellValue({ id: props.params.id, field: props.field.args.fkidMember, value: newValue[props.field.args.foreignPk] });
-                });
-
+            onOK={(newValue: ForeignModel | null) => {
+                props.onChange(newValue);
+                console.log(`ForeignSingleFieldInput: on ok -> on change`);
                 setIsOpen(false);
             }}
-            onCancel={() => { setIsOpen(false); }}
+            onCancel={() => {
+                props.onChange(oldValue || null);
+                console.log(`ForeignSingleFieldInput: on cancel -> change`);
+                setIsOpen(false);
+            }}
         />
         }
     </div>;
@@ -343,7 +343,7 @@ export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldS
         if (anull && bnull) return true;
         if (anull !== bnull) return false;
         // both non-null.
-        return a[this.args.foreignPk] === b[this.args.foreignPk]; // todo
+        return a[this.args.foreignPk] === b[this.args.foreignPk];
     };
 
     // child classes must implement:
@@ -355,24 +355,35 @@ export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldS
     renderForEditGridView = (params: GridRenderCellParams): React.ReactElement => {
         return this.args.renderAsChip({
             value: params.value,
-            //onDelete: null,
         });
     };
 
     // edit cell
     renderForEditGridEdit = (params: GridRenderEditCellParams): React.ReactElement => {
-        return <ForeignSingleFieldEditCell
+        return <ForeignSingleFieldInput
             field={this}
             value={params.value}
-            params={params}
-        />
+            onChange={(value) => {
+                params.api.setEditCellValue({ id: params.id, field: this.args.member, value }).then(() => {
+                    params.api.setEditCellValue({ id: params.id, field: this.args.fkidMember, value: ((value === null) ? null : (value![this.args.foreignPk])) });
+                });
+            }}
+        />;
     }
 
     // edit: render as single chip with "SELECT..." and a github style autocomplete.
     renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
-        //const chip = this.renderAsChip(params);
-        //return <>{chip}<GitHubLabel /></>;
-        return <>renderForNewDialog</>;
+        return <ForeignSingleFieldInput
+            field={this}
+            value={params.value}
+            onChange={(value: ForeignModel | null) => {
+                let pk = null;
+                params.api.setFieldValues({
+                    [this.member]: value,
+                    [this.args.fkidMember]: ((value === null) ? null : value![this.args.foreignPk]),
+                });
+            }}
+        />
     };
 };
 
