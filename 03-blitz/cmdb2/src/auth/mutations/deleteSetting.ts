@@ -2,13 +2,13 @@ import { paginate } from "blitz";
 import { resolver } from "@blitzjs/rpc"
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 import { DeleteByIdSchema } from "../schemas"
 import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(DeleteByIdSchema),
-    resolver.authorize("deleteSetting", Permission.admin_settings),
+    resolver.authorize("deleteSettingMutation", Permission.admin_settings),
     async ({ id }, ctx) => {
         try {
             const oldValues = await db.setting.findFirst({ where: { id } });
@@ -17,7 +17,7 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.delete,
-                context: "deleteSetting",
+                changeContext: CreateChangeContext("deleteSettingMutation"),
                 table: "setting",
                 pkid: id,
                 oldValues: oldValues,
@@ -26,7 +26,6 @@ export default resolver.pipe(
 
             return choice;
         } catch (e) {
-            console.error(`Exception while deleteSetting ${id}`);
             console.error(e);
             throw (e);
         }

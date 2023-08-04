@@ -6,11 +6,49 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
 import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
-import { SettingsEditGridSpec } from "src/core/CMDBSettings";
 import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { Prisma } from "db";
+import deleteSetting from "src/auth/mutations/deleteSetting";
+import insertSetting from "src/auth/mutations/insertSetting";
+import updateSettingById from "src/auth/mutations/updateSettingById";
+import { CreateSettingSchema, SettingNameSchema, SettingValueSchema, UpdateSettingByIdSchema } from "src/auth/schemas";
+import {
+    CMTableSpec,
+    PKIDField,
+    SimpleTextField
+} from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
+import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
+
+type DBSetting = Prisma.SettingGetPayload<{
+    //includes?
+}>;
+
+export const SettingTableSpec = new CMTableSpec<DBSetting>({
+    devName: "setting",
+    CreateMutation: insertSetting,
+    CreateSchema: CreateSettingSchema,
+    GetPaginatedItemsQuery: getPaginatedSettings,
+    UpdateMutation: updateSettingById,
+    UpdateSchema: UpdateSettingByIdSchema,
+    DeleteMutation: deleteSetting,
+    GetNameOfRow: (row: DBSetting) => { return row.name; },
+    // renderForListItemChild: ({ obj }) => {
+    //     return <>an item?</>;
+    // },
+    fields: [
+        new PKIDField({ member: "id" }),
+        new SimpleTextField({ label: "name", member: "name", initialNewItemValue: "", zodSchema: SettingNameSchema, cellWidth: 220 }),
+        new SimpleTextField({ label: "value", member: "value", initialNewItemValue: "", zodSchema: SettingValueSchema, cellWidth: 550 }),
+    ],
+});
+
+
+
+
+
 
 const SettingsControls = (props) => {
     if (!useAuthorization("settings page", Permission.admin_settings)) {
@@ -65,12 +103,19 @@ const SettingsControls = (props) => {
     );
 }
 
+const SettingsContent = () => {
+    return <>
+        <SettingMarkdown settingName="settings_markdown"></SettingMarkdown>
+        <SettingsControls></SettingsControls>
+        <CMEditGrid2 spec={SettingTableSpec} />
+    </>;
+};
+
 const SettingsPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Settings">
-            <SettingMarkdown settingName="settings_markdown"></SettingMarkdown>
-            <SettingsControls></SettingsControls>
-            <CMEditGrid spec={SettingsEditGridSpec} />
+            <SettingsContent />
+            {/* <CMEditGrid spec={SettingsEditGridSpec} /> */}
         </DashboardLayout>
     )
 }

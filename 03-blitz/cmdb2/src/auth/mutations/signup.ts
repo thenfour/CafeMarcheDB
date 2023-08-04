@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 
 type CreateInput = Prisma.UserCreateInput & {
   password?: string;
@@ -25,13 +25,12 @@ export default resolver.pipe(
 
       await utils.RegisterChange({
         action: ChangeAction.insert,
-        context: "Signup",
+        changeContext: CreateChangeContext("signupMutation"),
         table: "user",
         pkid: user.id,
         newValues: user,
         ctx,
       });
-
 
       await ctx.session.$create(CreatePublicData(user));
       return user;

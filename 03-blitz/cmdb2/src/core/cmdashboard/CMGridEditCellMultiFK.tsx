@@ -40,7 +40,7 @@ import {
     useGridApiContext
 } from '@mui/x-data-grid';
 import React from "react";
-import { CMGridEditCellMultiFKSpec, CMGridEditCellSpec } from "./CMColumnSpec";
+import { CMGridEditCellMultiFKSpec, CMGridEditCellSpec } from "./dbcomponents2/CMColumnSpec";
 import { CMSelectMultiDialog } from "./CMSelectManyDialog";
 
 type CMGridRenderEditCellMultiFKParams<TRow, TAssociation> = GridRenderEditCellParams & {

@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { formatZodError } from "blitz";
 import React from "react";
-import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, NewDialogAPIFieldValue, ValidateAndComputeDiffResult } from "src/core/cmdashboard/CMColumnSpec";
+import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, NewDialogAPIFieldValue, ValidateAndComputeDiffResult } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 
 type CMNewObject2DialogProps<TDBModel> = {
     onOK: (obj: TDBModel) => any;

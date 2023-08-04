@@ -2,9 +2,8 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db";
 import { UpdateSettingByIdSchema } from "../schemas"
 import { z } from "zod"
-import AU from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 
@@ -23,7 +22,8 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.update,
-                context: "updateSettingById",
+                //context: "updateSettingById",
+                changeContext: CreateChangeContext("updateSettingByIdMutation"),
                 table: "setting",
                 pkid: id,
                 oldValues,

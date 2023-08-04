@@ -19,7 +19,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { CMSelectMultiDialogSpec } from "src/core/cmdashboard/CMColumnSpec";
+import { CMSelectMultiDialogSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 
 type CMSelectMultiDialogProps<TRow, TAssociation> = {

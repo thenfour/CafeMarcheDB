@@ -1,5 +1,5 @@
 import { Prisma } from "db";
-import { CMNewItemDialogSpec, CMNewItemDialogFieldSpec, CMEditGridSpec, CreateEditGridColumnSpec, CMEditGridColumnType, CMEditGridColumnSpec, CMFieldSpec, CMTableSpec, SimpleTextField } from "src/core/cmdashboard/CMColumnSpec";
+import { CMNewItemDialogSpec, CMNewItemDialogFieldSpec, CMEditGridSpec, CreateEditGridColumnSpec, CMEditGridColumnType, CMEditGridColumnSpec, CMFieldSpec, CMTableSpec, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 //import { Signup as NewUserSchema } from "src/auth/schemas";
 import { CMTextField } from './cmdashboard/CMTextField';
 import { CMAutocompleteField } from './cmdashboard/CMAutocompleteField';

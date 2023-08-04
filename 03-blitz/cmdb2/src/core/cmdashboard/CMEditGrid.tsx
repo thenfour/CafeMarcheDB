@@ -24,7 +24,7 @@ import { useBeforeunload } from 'react-beforeunload';
 import { CMGridEditCell } from "src/core/cmdashboard/CMGridEditCell";
 import { CMNewObjectDialog } from "src/core/cmdashboard/CMNewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { CMEditGridColumnType, CMEditGridSpec } from "./CMColumnSpec";
+import { CMEditGridColumnType, CMEditGridSpec } from "./dbcomponents2/CMColumnSpec";
 import { CMGridEditCellMultiFK } from "./CMGridEditCellMultiFK";
 
 function CustomToolbar({ onNewClicked, spec }) {

@@ -10,7 +10,6 @@ import utils, { Action, ChangeAction } from "shared/utils"
 //     password?: string;
 //   };
 
-
 export default resolver.pipe(
     resolver.zod(RegisterActivitySchema),
     async (fields, ctx) => {

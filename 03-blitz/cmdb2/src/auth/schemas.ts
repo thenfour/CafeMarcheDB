@@ -8,7 +8,7 @@ export const GetObjectByNullableIdSchema = z.object({
 });
 export const GetObjectByIdSchema = z.object({
   // This accepts type of undefined, but is required at runtime
-  id: z.number().optional()/*.refine(Boolean, "Required")*/, // refine to ensure IDs are truthy. but that's only necessary when inserting?
+  id: z.number()/*.refine(Boolean, "Required")*/, // refine to ensure IDs are truthy. but that's only necessary when inserting?
 });
 export const DeleteByIdSchema = z.object({
   id: z.number(),

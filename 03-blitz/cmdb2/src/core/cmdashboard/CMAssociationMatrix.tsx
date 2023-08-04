@@ -12,7 +12,7 @@ import {
 } from '@mui/x-data-grid';
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { CMAssociationMatrixSpec, CMAssociationMatrixSpecColumnPropsParams } from "./CMColumnSpec";
+import { CMAssociationMatrixSpec, CMAssociationMatrixSpecColumnPropsParams } from "./dbcomponents2/CMColumnSpec";
 
 export type CM2DBooleanMatrixProps<Tx, TAssociation, Ty> = {
     spec: CMAssociationMatrixSpec<Tx, TAssociation, Ty>,

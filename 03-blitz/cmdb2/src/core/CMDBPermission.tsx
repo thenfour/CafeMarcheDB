@@ -23,11 +23,11 @@ import {
     RenderItemOfMultiParams,
     RenderItemParams,
     RenderMultiItemParams
-} from "src/core/cmdashboard/CMColumnSpec";
+} from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { RoleAutocompleteSpec } from "./CMDBRole";
 import { CMTextField } from './cmdashboard/CMTextField';
 import { Permission } from "../../shared/permissions";
-import AU from "shared/associationUtils";
+import { ComputeChangePlan } from "shared/associationUtils";
 
 type DBPermission = Prisma.PermissionGetPayload<{
     include: { roles: true }
@@ -99,7 +99,7 @@ export const ComputeDiff = (oldItem: DBPermission, newItem: DBPermission) => { /
     if (newItem.sortOrder !== oldItem.sortOrder) {
         return true;
     }
-    const x = AU.ComputeChangePlan(oldItem.roles, newItem.roles, IsEqualAssociation);
+    const x = ComputeChangePlan(oldItem.roles, newItem.roles, IsEqualAssociation);
     if (x.create.length || x.delete.length) {
         return true;
     }

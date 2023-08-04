@@ -9,11 +9,11 @@ import {
     GetObjectByIdSchema,
 } from "../schemas"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(DeleteRoleSchema),
-    resolver.authorize("deleteRole", Permission.admin_auth),
+    resolver.authorize("deleteRoleMutation", Permission.admin_auth),
     async ({ id }, ctx) => {
         try {
 
@@ -21,10 +21,9 @@ export default resolver.pipe(
 
             const choice = await db.role.deleteMany({ where: { id } });
 
-
             await utils.RegisterChange({
                 action: ChangeAction.delete,
-                context: "deleteRole",
+                changeContext: CreateChangeContext("deleteRoleMutation"),
                 table: "role",
                 pkid: id,
                 oldValues,

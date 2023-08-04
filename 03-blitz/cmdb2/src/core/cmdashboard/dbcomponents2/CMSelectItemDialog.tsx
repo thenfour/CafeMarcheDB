@@ -1,11 +1,3 @@
-// a modal dialog for selecting 1 item.
-// the show/hide logic is not here.
-// the selected item is transmitted back on onOK().
-// all datasource is dsecribed by the spec: ForeignSingleField<any, TDBModel>,
-
-// restrictions:
-// MUST be invoked from 
-
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
@@ -22,19 +14,20 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { ForeignSingleField } from "src/core/cmdashboard/CMColumnSpec";
+import { CMSelectItemDialogSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 
+// old version
+// a modal dialog for selecting 1 item.
 
-// why is it important that this class knows about the local model? shouldn't we simply allow selecting from the list of foreign values alone?
-type CMSelectItemDialog2Props<TDBModel> = {
+type CMSelectItemDialogProps<TDBModel> = {
     value?: TDBModel | null,
-    spec: ForeignSingleField<any, TDBModel>,
-    onOK: (value: TDBModel | null) => void,
+    onOK: (value?: TDBModel | null) => void,
     onCancel: () => void,
+    spec: CMSelectItemDialogSpec<TDBModel>,
 };
 
-export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: CMSelectItemDialog2Props<TDBModel>) {
+export function CMSelectItemDialog<TDBModel>({ value, onOK, onCancel, spec }: CMSelectItemDialogProps<TDBModel>) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedObj, setSelectedObj] = React.useState<TDBModel | undefined | null>(value);
@@ -44,29 +37,26 @@ export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: C
     if (filterText?.length) {
         const tokens = filterText.split(/\s+/).filter(token => token.length > 0);
         const quickFilterItems = tokens.map(q => {
-            const OR = spec.args.getForeignQuickFilterWhereClause(q);
-            if (!OR) return null;
             return {
-                OR,
+                OR: spec.GetQuickFilterWhereClauseExpression(q)
             };
         });
-        where.AND.push(...quickFilterItems.filter(i => i !== null));
-        console.log(where.AND);
+        where.AND.push(...quickFilterItems);
     }
 
-    const [items, { refetch }]: [TDBModel[], any] = useQuery(spec.args.getAllOptionsQuery, { where });
+    const [items, { refetch }] = useQuery(spec.GetAllItemsQuery, { where });
 
-    const [createItemMutation] = useMutation(spec.args.insertFromStringMutation);
+    const [createItemMutation] = useMutation(spec.CreateFromStringMutation);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onNewClicked = (e) => {
-        spec.args.insertFromString({ mutation: createItemMutation, input: filterText })
+        spec.CreateFromString({ mutation: createItemMutation, input: filterText })
             .then((updatedObj) => {
                 setSelectedObj(updatedObj);
-                showSnackbar({ children: "created new success", severity: 'success' });
+                showSnackbar({ children: spec.NewItemSuccessSnackbarText(updatedObj), severity: 'success' });
                 void refetch();
             }).catch((err => {
-                showSnackbar({ children: "create error", severity: 'error' });
+                showSnackbar({ children: spec.NewItemErrorSnackbarText(err), severity: 'error' });
                 void refetch(); // should revert the data.
             }));
     };
@@ -74,8 +64,6 @@ export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: C
     const handleItemClick = (value) => {
         setSelectedObj(value);
     };
-
-    const filterMatchesAnyItemsExactly = items.some(item => spec.args.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
 
     return (
         <Dialog
@@ -85,10 +73,10 @@ export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: C
             fullScreen={fullScreen}
         >
             <DialogTitle>
-                select {spec.member}
+                {spec.DialogTitleText()}
                 <Box sx={{ p: 0 }}>
-                    Selected: {spec.args.renderAsChip({
-                        value: selectedObj || null,
+                    Selected: {spec.RenderItem({
+                        value: selectedObj,
                         onDelete: () => {
                             setSelectedObj(null);
                         }
@@ -116,13 +104,13 @@ export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: C
                 </Box>
 
                 {
-                    !!filterText.length && !filterMatchesAnyItemsExactly && spec.args.allowInsertFromString && (
+                    !!filterText && (
                         <Box><Button
                             size="small"
                             startIcon={<AddIcon />}
                             onClick={onNewClicked}
                         >
-                            add {filterText}
+                            {spec.NewItemText(filterText)}
                         </Button>
                         </Box>
                     )
@@ -134,17 +122,14 @@ export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: C
                         :
                         <List>
                             {
-                                items.map(item => {
-                                    const selected = spec.isEqual(item, selectedObj);
-                                    return (
-                                        <React.Fragment key={item[spec.args.foreignPk]}>
-                                            <ListItemButton selected onClick={e => { handleItemClick(item) }}>
-                                                {spec.args.renderAsListItem({}, item, selected)}
-                                            </ListItemButton>
-                                            <Divider></Divider>
-                                        </React.Fragment>
-                                    );
-                                })
+                                items.map(item => (
+                                    <React.Fragment key={item.id}>
+                                        <ListItemButton selected={spec.IsEqual(item, selectedObj)} onClick={e => { handleItemClick(item) }}>
+                                            {spec.RenderListItemChild(item)}
+                                        </ListItemButton>
+                                        <Divider></Divider>
+                                    </React.Fragment>
+                                ))
                             }
                         </List>
                 }
@@ -152,7 +137,7 @@ export function CMSelectItemDialog2<TDBModel>({ value, onOK, onCancel, spec }: C
             </DialogContent>
             <DialogActions>
                 <Button onClick={onCancel}>Cancel</Button>
-                <Button onClick={() => { onOK(selectedObj || null) }}>OK</Button>
+                <Button onClick={() => { onOK(selectedObj) }}>OK</Button>
             </DialogActions>
         </Dialog>
     );

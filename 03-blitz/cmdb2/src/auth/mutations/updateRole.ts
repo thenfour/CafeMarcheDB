@@ -9,11 +9,13 @@ import {
     GetObjectByIdSchema,
 } from "../schemas"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+
+const contextDesc = "updateRoleMutation";
 
 export default resolver.pipe(
     resolver.zod(UpdateRoleSchema),
-    resolver.authorize("updateRole", Permission.admin_auth),
+    resolver.authorize(contextDesc, Permission.admin_auth),
     async ({ id, ...data }, ctx) => {
         try {
             const oldValues = await db.role.findFirst({ where: { id } });
@@ -27,7 +29,7 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.update,
-                context: "updateRole",
+                changeContext: CreateChangeContext(contextDesc),
                 table: "role",
                 pkid: id,
                 oldValues,

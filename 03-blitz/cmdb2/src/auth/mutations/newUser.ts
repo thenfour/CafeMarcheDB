@@ -5,7 +5,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 import { Permission } from "shared/permissions";
 
 type CreateInput = Prisma.UserCreateInput & {
@@ -14,7 +14,7 @@ type CreateInput = Prisma.UserCreateInput & {
 
 export default resolver.pipe(
     resolver.zod(Signup),
-    resolver.authorize("createUser", Permission.admin_users),
+    resolver.authorize("newUserMutation", Permission.admin_users),
     async (fields: CreateInput, ctx: any) => {
         fields.hashedPassword = await SecurePassword.hash(fields.password?.trim());
         delete fields.password;
@@ -26,10 +26,9 @@ export default resolver.pipe(
                 include: { role: { include: { permissions: { include: { permission: true } } } } }
             });
 
-
             await utils.RegisterChange({
                 action: ChangeAction.insert,
-                context: "AdminNewUser",
+                changeContext: CreateChangeContext("newUserMutation"),
                 table: "user",
                 pkid: user.id,
                 newValues: user,

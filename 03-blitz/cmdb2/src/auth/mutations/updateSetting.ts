@@ -4,7 +4,7 @@ import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
 import { UpdateSettingSchema } from "../schemas"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 
 // set a setting by name.
 // args is { name, value }
@@ -23,7 +23,7 @@ export default resolver.pipe(
                     // delete existing.
                     await utils.RegisterChange({
                         action: ChangeAction.delete,
-                        context: "deleteSetting",
+                        changeContext: CreateChangeContext("updateSetting:Delete"),
                         table: "setting",
                         pkid: oldValues.id,
                         oldValues,
@@ -45,7 +45,7 @@ export default resolver.pipe(
                 });
                 await utils.RegisterChange({
                     action: ChangeAction.update,
-                    context: "updateSetting",
+                    changeContext: CreateChangeContext("updateSetting:Update"),
                     table: "setting",
                     pkid: oldValues.id,
                     oldValues,
@@ -70,7 +70,7 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.insert,
-                context: "insertSetting",
+                changeContext: CreateChangeContext("updateSetting:insert"),
                 table: "setting",
                 pkid: newValues.id,
                 newValues,

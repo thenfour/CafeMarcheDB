@@ -8,7 +8,7 @@ import Chip from '@mui/material/Chip';
 import { Role as DBRole } from "db";
 import CreateRoleMutation from "src/auth/mutations/createRole";
 import GetAllRolesQuery from "src/auth/queries/getAllRoles";
-import { CMAutocompleteFieldSpec, CMGridEditCellSpec, CMSelectItemDialogSpec, CreateFromStringParams, RenderItemParams } from "src/core/cmdashboard/CMColumnSpec";
+import { CMAutocompleteFieldSpec, CMGridEditCellSpec, CMSelectItemDialogSpec, CreateFromStringParams, RenderItemParams } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 
 export const RoleAutocompleteSpec: CMAutocompleteFieldSpec<DBRole> = {
     GetAllItemsQuery: GetAllRolesQuery,

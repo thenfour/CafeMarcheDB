@@ -2,11 +2,11 @@ import { resolver } from "@blitzjs/rpc"
 import { GetObjectByIdSchema } from "../schemas"
 import db from "db";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(GetObjectByIdSchema),
-    resolver.authorize("SoftDeleteUser", Permission.admin_users),
+    resolver.authorize("SoftDeleteUserMutation", Permission.admin_users),
     async ({ id }, ctx) => {
         try {
 
@@ -21,7 +21,7 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.update,
-                context: "SoftDeleteUser",
+                changeContext: CreateChangeContext("SoftDeleteUserMutation"),
                 table: "user",
                 pkid: id!,
                 oldValues,

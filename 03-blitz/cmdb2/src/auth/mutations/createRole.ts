@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { CreateRole as CreateRoleSchema } from "../schemas";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 
 
 
@@ -17,7 +17,7 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.insert,
-                context: "insertRole",
+                changeContext: CreateChangeContext("createRoleMutation"),
                 table: "role",
                 pkid: obj.id,
                 newValues: obj,

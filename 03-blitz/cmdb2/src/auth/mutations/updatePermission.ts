@@ -4,11 +4,11 @@ import {
     UpdatePermission as UpdatePermissionSchema,
 } from "../schemas"
 import { z } from "zod"
-import AU from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
+import { ComputeChangePlan } from "shared/associationUtils";
 
 type InputType = z.infer<typeof UpdatePermissionSchema>;
 
@@ -19,8 +19,8 @@ export const IsEqualAssociation = (item1: any, item2: any) => {
 
 const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, ...fields }: InputType, ctx: AuthenticatedMiddlewareCtx) => {
     try {
-        const operationId = randomUUID();
-        const changedAt = new Date();
+
+        const changeContext = CreateChangeContext("updatePermissionMutation");
 
         const currentAssociations = await prisma.rolePermission.findMany({
             where: {
@@ -28,7 +28,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
             },
         });
 
-        const cp = AU.ComputeChangePlan(currentAssociations, roles, IsEqualAssociation);
+        const cp = ComputeChangePlan(currentAssociations, roles, IsEqualAssociation);
 
         await prisma.rolePermission.deleteMany({
             where: {
@@ -43,14 +43,12 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
             const oldValues = cp.delete[i];
             await utils.RegisterChange({
                 action: ChangeAction.delete,
-                context: "updatePermission",
+                changeContext,
                 table: "rolePermission",
 
                 pkid: oldValues.id,
                 oldValues,
 
-                operationId,
-                changedAt,
                 ctx,
             });
         }
@@ -66,14 +64,12 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
 
             await utils.RegisterChange({
                 action: ChangeAction.insert,
-                context: "updatePermission",
+                changeContext,
                 table: "rolePermission",
 
                 pkid: newAssoc.id,
                 newValues: newAssoc,
 
-                operationId,
-                changedAt,
                 ctx,
             });
         }
@@ -88,13 +84,11 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
 
         await utils.RegisterChange({
             action: ChangeAction.update,
-            context: "updatePermission",
+            changeContext,
             table: "permission",
             pkid: obj.id,
             newValues: fields,
             oldValues,
-            operationId,
-            changedAt,
             ctx,
         });
 

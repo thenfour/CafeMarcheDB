@@ -30,7 +30,7 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { CMTableSpec } from "./CMColumnSpec";
+import { CMTableSpec } from "./dbcomponents2/CMColumnSpec";
 import { CMNewObjectDialog2 } from "./CMNewObjectDialog2";
 
 const gViewingRowHeight = 40;

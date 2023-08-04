@@ -4,7 +4,6 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db";
 import { UpdateBulkSettingsSchema } from "../schemas"
 import { z } from "zod"
-import AU from "shared/associationUtils";
 import { Permission } from "shared/permissions";
 import utils, { ChangeAction } from "shared/utils"
 import { randomUUID } from "crypto";

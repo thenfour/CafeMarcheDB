@@ -81,7 +81,7 @@ model User {
   role           Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
   tokens         Token[]
   sessions       Session[]
-  changes        Change[] // yea don't include this
+  changes        Change[] // yea don't include this in queries
 
   taggedFiles    FileUserTag[]
   eventResponses EventUserResponse[]
@@ -273,6 +273,7 @@ model Instrument {
 model InstrumentTag {
   id           Int                        @id @default(autoincrement())
   text         String
+  sortOrder Int @default(0)
   color        String?
   significance String? // "uses electricity" for example?
   instruments  InstrumentTagAssociation[]

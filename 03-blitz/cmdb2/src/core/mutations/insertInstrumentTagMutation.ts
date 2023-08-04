@@ -1,22 +1,26 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
-import { CreateSettingSchema } from "../schemas";
 import { Permission } from "shared/permissions";
 import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { InsertInstrumentTagSchema } from "../schemas/instrumentSchemas";
+
+const contextDesc = "insertInstrumentTagMutation";
 
 export default resolver.pipe(
-    resolver.zod(CreateSettingSchema),
-    resolver.authorize("insertSettingMutation", Permission.admin_settings),
-    async (fields, ctx) => {
+    resolver.zod(InsertInstrumentTagSchema),
+    resolver.authorize(contextDesc, Permission.admin_general),
+    async ({ ...fields }, ctx) => {
         try {
-            const obj = await db.setting.create({
+            const changeContext = CreateChangeContext(contextDesc);
+
+            const obj = await db.instrumentTag.create({
                 data: fields,
             });
 
             await utils.RegisterChange({
                 action: ChangeAction.insert,
-                changeContext: CreateChangeContext("insertSettingMutation"),
-                table: "setting",
+                changeContext,
+                table: "instrumentTag",
                 pkid: obj.id,
                 newValues: fields,
                 ctx,
@@ -24,7 +28,6 @@ export default resolver.pipe(
 
             return obj;
         } catch (e) {
-            console.error(`Exception while creating setting ${fields?.name}`);
             console.error(e);
             throw (e);
         }

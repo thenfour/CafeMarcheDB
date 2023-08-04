@@ -26,11 +26,10 @@ import {
     RenderItemOfMultiParams,
     RenderItemParams,
     RenderMultiItemParams
-} from "src/core/cmdashboard/CMColumnSpec";
+} from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { RoleAutocompleteSpec } from "./CMDBRole";
 import { CMTextField } from './cmdashboard/CMTextField';
 import { Permission } from "../../shared/permissions";
-import AU from "shared/associationUtils";
 import getPaginatedRoles from "src/auth/queries/getPaginatedRoles";
 import getAllPermissions from "src/auth/queries/getAllPermissions";
 import getRolesForMatrix from "src/auth/queries/getRolePermissionsForMatrix";

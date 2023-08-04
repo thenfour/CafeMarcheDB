@@ -42,22 +42,26 @@
 // FILTERING
 //   stuff like freeform text + tag text or something may require custom
 import { BlitzPage } from "@blitzjs/next";
-import { UserEditGridSpec } from "src/core/CMDBUser";
-import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Permission } from "shared/permissions";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { UserTableSpec } from "src/core/CMDBUser";
+import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
+//import { CMEditGrid2 } from "src/core/cmdashboard/CMEditGrid2";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
+
+const UserListContent = () => {
+    if (!useAuthorization("users admin page", Permission.admin_users)) {
+        throw new Error(`unauthorized`);
+    }
+    return <CMEditGrid2 spec={UserTableSpec} />;
+};
 
 const UserListPage: BlitzPage = () => {
-    // const xxx = UserEditGridSpec;
-    // const yyy = Obj;
-    // console.log(`UserEditGridSpec check ${typeof xxx} and ${typeof yyy}`);
     return (
         <DashboardLayout title="Users">
-            <CMEditGrid spec={UserEditGridSpec} />
+            <UserListContent />
         </DashboardLayout>
     );
 };
-
-//UserListPage.authenticate = { role: [Permission.can_edit_users] };
 
 export default UserListPage;

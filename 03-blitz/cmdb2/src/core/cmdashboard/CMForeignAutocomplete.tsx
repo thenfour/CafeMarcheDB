@@ -20,7 +20,7 @@ import ButtonBase from '@mui/material/ButtonBase';
 import InputBase from '@mui/material/InputBase';
 import { styled, useTheme } from '@mui/material/styles';
 import React from "react";
-import { ForeignSingleField } from './CMColumnSpec';
+import { ForeignSingleField } from './dbcomponents2/CMColumnSpec';
 import { useMutation, useQuery } from '@blitzjs/rpc';
 import { SnackbarContext } from '../components/SnackbarContext';
 

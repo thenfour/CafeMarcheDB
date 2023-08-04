@@ -4,14 +4,15 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
-import { CMEditGrid2 } from "src/core/cmdashboard/CMEditGrid2";
+//import { CMEditGrid2 } from "src/core/cmdashboard/CMEditGrid2";
 import { SettingTableSpec } from "src/core/CMDBSettings";
 import { UserTableSpec } from "src/core/CMDBUser";
+import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
 
 const EditSongsContent = (props) => {
     return <>
         {/* <CMEditGrid2 spec={SettingTableSpec}></CMEditGrid2> */}
-        <CMEditGrid2 spec={UserTableSpec}></CMEditGrid2>
+        <CMEditGrid2 spec={UserTableSpec} />
     </>;
     //return <>aoeu</>;
 };

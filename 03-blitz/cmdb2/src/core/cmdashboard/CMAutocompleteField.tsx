@@ -9,7 +9,7 @@ import {
 import { createFilterOptions } from '@mui/material/Autocomplete';
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { CMAutocompleteFieldSpec } from "./CMColumnSpec";
+import { CMAutocompleteFieldSpec } from "./dbcomponents2/CMColumnSpec";
 
 const filterObjects = createFilterOptions();
 

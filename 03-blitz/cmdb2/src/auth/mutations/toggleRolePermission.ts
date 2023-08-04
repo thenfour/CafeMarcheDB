@@ -4,9 +4,8 @@ import {
     ToggleRolePermission as ToggleRolePermissionSchema,
 } from "../schemas"
 import { z } from "zod"
-import AU from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 
@@ -14,9 +13,10 @@ type InputArgs = z.infer<typeof ToggleRolePermissionSchema>;
 
 export default resolver.pipe(
     resolver.zod(ToggleRolePermissionSchema),
-    resolver.authorize("toggleRolePermission", Permission.admin_auth),
+    resolver.authorize("toggleRolePermissionMutation", Permission.admin_auth),
     async (data: InputArgs, ctx) => {
         try {
+            const changeContext = CreateChangeContext("toggleRolePermissionMutation");
             // non-transaction
             //let obj = await op(db, data, ctx);
             if (!data.association) {
@@ -31,7 +31,8 @@ export default resolver.pipe(
 
                 await utils.RegisterChange({
                     action: ChangeAction.insert,
-                    context: "toggleRolePermission",
+                    //context: "toggleRolePermission",
+                    changeContext,
                     table: "rolePermission",
                     pkid: newAssoc.id,
                     newValues: newAssoc,
@@ -61,7 +62,7 @@ export default resolver.pipe(
 
                 await utils.RegisterChange({
                     action: ChangeAction.delete,
-                    context: "toggleRolePermission",
+                    changeContext,
                     table: "rolePermission",
                     pkid: existingObj.id,
                     oldValues: existingObj,

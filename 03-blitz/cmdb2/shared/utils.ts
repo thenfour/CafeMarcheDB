@@ -10,11 +10,23 @@ export enum ChangeAction {
     delete = "delete",
 }
 
+export interface ChangeContext {
+    operationId: string, // when null, will be auto-populated
+    changedAt: Date,// when null, will be auto-populated
+    contextDescription: string,
+};
+
+export const CreateChangeContext = (contextDescription: string): ChangeContext => {
+    return {
+        operationId: randomUUID(),
+        changedAt: new Date(),
+        contextDescription,
+    };
+};
+
 type RegisterChangeArgs = {
     action: ChangeAction, // database operation
-    operationId?: string | null,
-    changedAt?: Date | null,
-    context: string,
+    changeContext: ChangeContext,
     table: string,
     pkid: number,
     oldValues?: any,
@@ -44,9 +56,6 @@ function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
 }
 
 async function RegisterChange(args: RegisterChangeArgs) {
-    const operationId = args.operationId || randomUUID();
-    const changedAt = args.changedAt || new Date();
-
     let oldValues: any = null;
     let newValues: any = null;
 
@@ -70,21 +79,28 @@ async function RegisterChange(args: RegisterChangeArgs) {
             throw new Error(`unknown change action ${args?.action || "<null>"}`);
     }
 
-    await db.change.create({
-        data: {
-            operationId,
-            sessionHandle: args.ctx?.session?.$handle || null,
-            changedAt,
-            context: args.context,
-            table: args.table,
-            recordId: args.pkid,
-            action: args.action,
-            userId: args.ctx?.session?.userId || null,
-            oldValues: JSON.stringify(oldValues),
-            newValues: JSON.stringify(newValues),
-        }
+    try {
 
-    });
+        await db.change.create({
+            data: {
+                operationId: args.changeContext.operationId,
+                sessionHandle: args.ctx?.session?.$handle || null,
+                changedAt: args.changeContext.changedAt,
+                context: args.changeContext.contextDescription,
+                table: args.table,
+                recordId: args.pkid,
+                action: args.action,
+                userId: args.ctx?.session?.userId || null,
+                oldValues: JSON.stringify(oldValues),
+                newValues: JSON.stringify(newValues),
+            }
+
+        });
+
+    } catch (e) {
+        debugger;
+        throw e;
+    }
 
 }
 
@@ -112,7 +128,7 @@ async function SetSetting(args: SetSettingArgs) {
         await RegisterChange({
             action: ChangeAction.delete,
             ctx: args.ctx,
-            context: "SetSetting",
+            changeContext: CreateChangeContext("SetSetting"),
             table: "setting",
             pkid: existing.id,
             oldValues: existing,
@@ -131,7 +147,7 @@ async function SetSetting(args: SetSettingArgs) {
     await RegisterChange({
         action: ChangeAction.delete,
         ctx: args.ctx,
-        context: "SetSetting",
+        changeContext: CreateChangeContext("SetSetting"),
         table: "setting",
         pkid: obj.id,
         newValues: obj,

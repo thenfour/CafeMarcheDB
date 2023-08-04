@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { formatZodError } from "blitz";
 import React from "react";
-import { CMNewItemDialogSpec } from "src/core/cmdashboard/CMColumnSpec";
+import { CMNewItemDialogSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 
 type CMNewObjectDialogProps<TDBModel> = {
     onOK: (obj: TDBModel) => any;

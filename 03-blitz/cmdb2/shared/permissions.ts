@@ -6,7 +6,7 @@ export enum Permission {
     view_permissions = "view_permissions",
     view_songs = "view_songs",
     admin_songs = "admin_songs",
-    view_general_info = "view_general_info",
+    view_general_info = "view_general_info", // instruments, ?
 
     view_events = "view_events",
     admin_events = "admin_events",
@@ -16,6 +16,8 @@ export enum Permission {
 
     admin_users = "admin_users",
     view_all_user_data = "view_all_user_data",
+
+    admin_general = "admin_general",
 
     change_own_password = "change_own_password",
 };

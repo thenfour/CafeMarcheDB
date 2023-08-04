@@ -16,7 +16,7 @@ import MailIcon from '@mui/icons-material/Mail';
 import SecurityIcon from '@mui/icons-material/Security';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
-import { AppBar, Badge, Box, Collapse, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Badge, Box, Collapse, Divider, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import UserAppBarIcon from "src/core/components/UserAppBarIcon";
 import { useRouter } from "next/router";
 import { styled, alpha } from '@mui/material/styles';
@@ -430,10 +430,6 @@ const Dashboard2 = ({ children }) => {
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
                         <ListItemText primary="Roles" />
                     </ListItemButton>
-                    <ListItemButton component={Link} href="/instrumentGroups" selected={router.pathname == "/instrumentGroups"}>
-                        <ListItemIcon><SecurityIcon /></ListItemIcon>
-                        <ListItemText primary="Instrument Groups" />
-                    </ListItemButton>
                     <ListItemButton component={Link} href="/permissions" selected={router.pathname == "/permissions"}>
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
                         <ListItemText primary="Permissions" />
@@ -442,6 +438,22 @@ const Dashboard2 = ({ children }) => {
                         <ListItemIcon><SecurityIcon /></ListItemIcon>
                         <ListItemText primary="Permission matrix" />
                     </ListItemButton>
+
+                    <Divider />
+                    <ListItemButton component={Link} href="/instruments" selected={router.pathname == "/instruments"}>
+                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
+                        <ListItemText primary="Instruments" />
+                    </ListItemButton>
+                    <ListItemButton component={Link} href="/instrumentTags" selected={router.pathname == "/instrumentTags"}>
+                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
+                        <ListItemText primary="Instrument Tags" />
+                    </ListItemButton>
+                    <ListItemButton component={Link} href="/instrumentGroups" selected={router.pathname == "/instrumentGroups"}>
+                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
+                        <ListItemText primary="Instrument Groups" />
+                    </ListItemButton>
+
+                    <Divider />
                     <ListItemButton component={Link} href="/settings" selected={router.pathname == "/settings"}>
                         <ListItemIcon><SettingsIcon /></ListItemIcon>
                         <ListItemText primary="Settings" />

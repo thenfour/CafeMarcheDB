@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { InsertUserSchema, Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 import { Permission } from "shared/permissions";
 import { z } from "zod"
 
@@ -15,7 +15,7 @@ type InputType = z.infer<typeof InsertUserSchema>;
 
 export default resolver.pipe(
     resolver.zod(InsertUserSchema),
-    resolver.authorize("createUser", Permission.admin_users),
+    resolver.authorize("insertUserMutation", Permission.admin_users),
     async (fields: InputType, ctx: any) => {
         try {
             const user = await db.user.create({
@@ -29,7 +29,7 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.insert,
-                context: "Insert user",
+                changeContext: CreateChangeContext("insertUserMutation"),
                 table: "user",
                 pkid: user.id,
                 newValues: user,

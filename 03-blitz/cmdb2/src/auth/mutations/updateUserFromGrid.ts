@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { UpdateUserFromGrid } from "../schemas"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(UpdateUserFromGrid),
@@ -17,7 +17,7 @@ export default resolver.pipe(
 
             await utils.RegisterChange({
                 action: ChangeAction.update,
-                context: "adminUpdateUser",
+                changeContext: CreateChangeContext("adminUpdateUser"),
                 table: "user",
                 pkid: id,
                 oldValues,
