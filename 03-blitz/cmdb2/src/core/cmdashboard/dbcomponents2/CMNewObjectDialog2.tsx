@@ -6,7 +6,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { formatZodError } from "blitz";
 import React from "react";
-import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, NewDialogAPIFieldValue, ValidateAndComputeDiffResult } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
+import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, ValidateAndComputeDiffResult } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 
 type CMNewObject2DialogProps<TDBModel> = {
     onOK: (obj: TDBModel) => any;
@@ -38,8 +38,8 @@ export function CMNewObjectDialog2<TDBModel>({ onOK, onCancel, spec }: CMNewObje
             // drawback is callers don't know when the change has been applied so can't do anything afterwards.
             const newObj = { ...obj, ...fieldValues };
             setObj(newObj);
-            console.log(`New object dlg set new object to:`);
-            console.log(newObj);
+            //console.log(`New object dlg set new object to:`);
+            //console.log(newObj);
         },
         // setFieldValues: (fieldValues: NewDialogAPIFieldValue[]) => {
         //     const newObj = { ...obj, }

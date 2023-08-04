@@ -273,7 +273,7 @@ model Instrument {
 model InstrumentTag {
   id           Int                        @id @default(autoincrement())
   text         String
-  sortOrder Int @default(0)
+  sortOrder    Int                        @default(0)
   color        String?
   significance String? // "uses electricity" for example?
   instruments  InstrumentTagAssociation[]

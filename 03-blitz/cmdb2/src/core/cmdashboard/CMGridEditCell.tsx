@@ -9,7 +9,7 @@ import {
     useGridApiContext
 } from '@mui/x-data-grid';
 import React, { ReactElement } from "react";
-import { CMSelectItemDialog } from "src/core/cmdashboard/dbcomponents2/CMSelectItemDialog";
+import { CMSelectItemDialog } from "src/core/cmdashboard/CMSelectItemDialog";
 import { CMGridEditCellSpec } from "./dbcomponents2/CMColumnSpec";
 
 

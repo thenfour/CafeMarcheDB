@@ -37,9 +37,13 @@ export class ValidateAndComputeDiffResult implements ValidateAndComputeDiffResul
         Object.assign(this, args);
     }
 
-    hasErrorForField = (key: string) => {
+    hasErrorForField = (key: string): boolean => {
         const ret = (!this.success && !!this.errors[key]);
         return ret;
+    };
+    getErrorForField = (key: string): (string | null) => {
+        if (this.success) return null;
+        return this.errors[key]!;
     };
 }
 
@@ -74,7 +78,24 @@ export abstract class CMFieldSpecBase<DBModel> {
     GridColProps!: Partial<GridColDef>;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    abstract ValidateAndParse: (val: any) => ValidateAndParseResult;
+    //abstract ValidateAndParse: (val: any) => ValidateAndParseResult;
+    ValidateAndParse = (val: any): ValidateAndParseResult => {
+        if (!this.zodSchema) {
+            // no schema = no validation
+            return {
+                parsedValue: val,
+                success: true,
+                errorMessage: "",
+            };
+        }
+        const parseResult = this.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
+        const ret: ValidateAndParseResult = {
+            success: parseResult.success,
+            errorMessage: parseResult.error && parseResult.error.flatten().formErrors.join(", "),
+            parsedValue: parseResult.data,
+        };
+        return ret;
+    }
 
     renderForEditGridView?: (params: GridRenderCellParams) => React.ReactElement;
     renderForEditGridEdit?: (params: GridRenderEditCellParams) => React.ReactElement;
@@ -83,7 +104,10 @@ export abstract class CMFieldSpecBase<DBModel> {
     // returns whether the two values are considered equal (and thus the row has been modified).
     // should use the schema to validate both sides. there is an assumption that the fields have passed validation, and the sanitized versions are passed in.
     // there is another assumption that the input values are not null-y. the caller checks that condition already.
-    abstract isEqual: (lhsRow: DBModel, rhsRow: DBModel/*, lhsFKID?: number, rhsFKID?: number*/) => boolean;
+    //abstract isEqual: (lhsRow: DBModel, rhsRow: DBModel/*, lhsFKID?: number, rhsFKID?: number*/) => boolean;
+    isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
+        return (lhsSanitizedFieldValue as number) === (rhsSanitizedFieldValue as number);
+    };
 
     // return either falsy, or an object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => any;
@@ -110,13 +134,13 @@ export class PKIDField<DBModel> extends CMFieldSpecBase<DBModel> {
         this.cellWidth = 40;
     }
 
-    ValidateAndParse = (val: any) => {
-        throw new Error(`pkid is not editable`);
-    }
+    // ValidateAndParse = (val: any) => {
+    //     throw new Error(`pkid is not editable`);
+    // }
 
-    isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
-        return (lhsSanitizedFieldValue as number) === (rhsSanitizedFieldValue as number);
-    };
+    // isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
+    //     return (lhsSanitizedFieldValue as number) === (rhsSanitizedFieldValue as number);
+    // };
 
     getQuickFilterWhereClause = (query: string) => {
         return false;
@@ -150,7 +174,7 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
 
     GridColProps = {
         type: "string",
-        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => {
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => { // this impl required showing validation result
             const parseResult = this.ValidateAndParse(params.props.value);
             return { ...params.props, error: !parseResult.success };
         }
@@ -161,35 +185,13 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
             key={params.key}
             autoFocus={false}
             label={this.args.label}
-            validationError={params.validationResult.hasErrorForField(this.args.member)}
+            validationError={params.validationResult.getErrorForField(this.args.member)}
             value={params.value}
             onChange={(e, val) => {
                 //return onChange(val);
                 params.api.setFieldValues({ [this.args.member]: val });
             }}
         />;
-    };
-
-    ValidateAndParse = (val: any): ValidateAndParseResult => {
-        if (!this.zodSchema) {
-            // no schema = no validation
-            return {
-                parsedValue: val,
-                success: true,
-                errorMessage: "",
-            };
-        }
-        const parseResult = this.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
-        const ret: ValidateAndParseResult = {
-            success: parseResult.success,
-            errorMessage: parseResult.error && parseResult.error.flatten().formErrors.join(", "),
-            parsedValue: parseResult.data,
-        };
-        return ret;
-    }
-
-    isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
-        return (lhsSanitizedFieldValue as string) === (rhsSanitizedFieldValue as string);
     };
 
     getQuickFilterWhereClause = (query: string) => {
@@ -200,6 +202,70 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
 
 };
 
+
+
+
+interface SimpleNumberFieldArgs {
+    member: string,
+    label: string,
+    cellWidth: number,
+    allowNull: boolean,
+    initialNewItemValue: number | null;
+    zodSchema: ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
+    // outside of null checks, constraints should be put in the zod schema.
+};
+
+export class SimpleNumberField<DBModel> extends CMFieldSpecBase<DBModel> {
+
+    args: SimpleNumberFieldArgs;
+
+    constructor(args: SimpleNumberFieldArgs) {
+        super();
+        this.args = args;
+        this.member = args.member;
+        this.fkidMember = undefined;
+        this.columnHeaderText = args.member;
+        this.isEditableInGrid = true;
+        this.cellWidth = args.cellWidth;
+        this.initialNewItemValue = args.initialNewItemValue;
+        this.zodSchema = args.zodSchema;
+    }
+
+    GridColProps = {
+        type: "number",
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => { // this impl required showing validation result
+            const parseResult = this.ValidateAndParse(params.props.value);
+            return { ...params.props, error: !parseResult.success };
+        }
+    };
+
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+        return <CMTextField
+            key={params.key}
+            autoFocus={false}
+            label={this.args.label}
+            validationError={params.validationResult.getErrorForField(this.args.member)}
+            value={params.value}
+            onChange={(e, val) => {
+                //return onChange(val);
+                params.api.setFieldValues({ [this.args.member]: val });
+            }}
+        />;
+    };
+
+    getQuickFilterWhereClause = (query: string) => {
+        const obj = {};
+        obj[this.member] = { equals: query };
+        return obj;
+    }; // return either falsy, or an object like { name: { contains: query } }
+
+};
+
+// static list
+
+// color
+
+// date
 
 
 export class CMTableSpecRequiredValues<DBModel> {

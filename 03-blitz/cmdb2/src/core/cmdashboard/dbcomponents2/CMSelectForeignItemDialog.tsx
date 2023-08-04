@@ -19,8 +19,8 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { ForeignSingleField } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { ForeignSingleField } from "./CMForeignSingleField";
 
 
 // why is it important that this class knows about the local model? shouldn't we simply allow selecting from the list of foreign values alone?

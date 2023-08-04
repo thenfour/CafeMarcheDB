@@ -2,11 +2,11 @@ import { Prisma } from "db";
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { CMTableSpec, PKIDField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
+import { CMTableSpec, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { InsertInstrumentTagSchema, InstrumentNameSchema, InstrumentTagColorSchema, InstrumentTagSignificanceSchema, InstrumentTagTextSchema, UpdateInstrumentTagSchema } from "src/core/schemas/instrumentSchemas";
+import { InsertInstrumentTagSchema, InstrumentNameSchema, InstrumentTagColorSchema, InstrumentTagSignificanceSchema, InstrumentTagSortOrderSchema, InstrumentTagTextSchema, UpdateInstrumentTagSchema } from "src/core/schemas/instrumentSchemas";
 import deleteInstrumentTagMutation from "src/core/mutations/deleteInstrumentTagMutation";
 import getPaginatedInstrumentTags from "src/core/queries/getPaginatedInstrumentTags";
 import insertInstrumentTagMutation from "src/core/mutations/insertInstrumentTagMutation";
@@ -43,8 +43,8 @@ export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag>({
         new PKIDField({ member: "id" }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Text", member: "text", zodSchema: InstrumentTagTextSchema }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", zodSchema: InstrumentTagColorSchema }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Significance", member: "significance", zodSchema: InstrumentTagSignificanceSchema }),
-        //new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Sort order", member: "sortOrder", zodSchema: InstrumentNameSchema }),
+        //new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Significance", member: "significance", zodSchema: InstrumentTagSignificanceSchema }),
+        new SimpleNumberField({ cellWidth: 220, initialNewItemValue: null, allowNull: false, label: "Sort order", member: "sortOrder", zodSchema: InstrumentTagSortOrderSchema }),
     ],
 });
 

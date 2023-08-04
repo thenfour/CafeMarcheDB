@@ -7,8 +7,16 @@ import {
 
 // callers controls the value
 
+interface CMTextFieldProps {
+    validationError: string | null;
+    label: string;
+    value: string;
+    onChange: (e, value) => void;
+    autoFocus: boolean;
+};
+
 // textfield for a string field on an object.
-export function CMTextField({ validationError, label, value, onChange, autoFocus }) {
+export function CMTextField({ validationError, label, value, onChange, autoFocus }: CMTextFieldProps) {
     return (
         <TextField
             //key={key}
@@ -17,7 +25,7 @@ export function CMTextField({ validationError, label, value, onChange, autoFocus
             error={!!validationError}
             helperText={validationError}
             onChange={(e) => { onChange(e, e.target.value); }}
-            value={value}
+            value={value || ""}
             margin="dense"
             type="text"
             fullWidth

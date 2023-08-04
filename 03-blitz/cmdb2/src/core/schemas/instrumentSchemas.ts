@@ -1,4 +1,5 @@
 import db, { Prisma } from "db";
+import { utils } from "shared/utils";
 import { z } from "zod"
 
 // name              String
@@ -42,15 +43,27 @@ export const UpdateInstrumentSchema = z.object({
 //     @@unique([instrumentId, tagId]) // 
 //   }
 
+// Custom transformation function
+const emptyStringToNull = (data: unknown): unknown => {
+    if (typeof data === "string" && data.trim() === "") {
+        return null;
+    }
+    return data;
+};
+
+
 export const InstrumentTagTextSchema = z.string().min(1);
 export const InstrumentTagColorSchema = z.string();
 export const InstrumentTagSignificanceSchema = z.string().optional().nullable();
+export const InstrumentTagSortOrderSchema = z.preprocess(utils.CoerceToNumberOrNull, z.number().refine(utils.ValidateInt));
+
+
 
 export const InsertInstrumentTagSchema = z.object({
     text: InstrumentTagTextSchema,
     color: InstrumentTagColorSchema,
     significance: InstrumentTagSignificanceSchema,
-    sortOrder: z.number(),
+    sortOrder: InstrumentTagSortOrderSchema,
 });
 
 export const UpdateInstrumentTagSchema = z.object({
@@ -58,5 +71,5 @@ export const UpdateInstrumentTagSchema = z.object({
     text: InstrumentTagTextSchema.optional(),
     color: InstrumentTagColorSchema.optional(),
     significance: InstrumentTagSignificanceSchema.optional(),
-    sortOrder: z.number().optional(),
+    sortOrder: InstrumentTagSortOrderSchema.optional(),
 });

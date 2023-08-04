@@ -188,13 +188,38 @@ async function RegisterActivity(args: RegisterActionArgs) {
 }
 
 
+// for use in Zod schemas like
+// export const InstrumentTagSortOrderSchema = z.preprocess(utils.CoerceToNumberOrNull, z.number().refine(utils.ValidateInt));
+const CoerceToNumberOrNull = (value) => {
+    if (typeof value === "string") {
+        if (value.trim() === "") {
+            return null;
+        }
+        const asNumber = parseFloat(value);
+        if (!isNaN(asNumber)) {
+            return asNumber;
+        }
+    }
+    return value;
+};
+
+const ValidateNullableInt = (arg) => {
+    return arg === null || Number.isInteger(arg);
+};
+const ValidateInt = (arg) => {
+    return Number.isInteger(arg);
+};
 
 
-export default {
+
+export const utils = {
     ChangeAction,
     RegisterChange,
     RegisterActivity,
     SetSetting,
     GetSetting,
+    CoerceToNumberOrNull,
+    ValidateNullableInt,
+    ValidateInt,
 };
 

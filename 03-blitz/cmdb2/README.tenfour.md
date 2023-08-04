@@ -69,6 +69,15 @@ resolver.authorize // for securing db queries on the server
   which eventually flows to CMDBRolesIsAuthorized -> CMAuthorize
 ````
 
+# db mutation mess
+
+yes each mutation for every model has a .ts file. ugh. well that's the nature of blitz; it's tempting to unify them
+into a single file, but `resolver.pipe` does the validation itself for typesafety, and disassembling that will be messy (not really the idea huh),
+plus it adds an additional layer of protocol on our grid code that everything will need to support... a layer of inflexibility that
+is probably not appropriate for all scenarios.
+
+all for combining 3 files into 1. so let's just not.
+
 ### Securing pages:
 ````
 import { Permission } from "shared/permissions";
