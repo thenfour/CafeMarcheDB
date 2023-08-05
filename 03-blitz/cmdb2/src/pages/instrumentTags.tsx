@@ -15,7 +15,7 @@ import getPaginatedInstrumentTags from "src/core/queries/getPaginatedInstrumentT
 import insertInstrumentTagMutation from "src/core/mutations/insertInstrumentTagMutation";
 import updateInstrumentTagMutation from "src/core/mutations/updateInstrumentTagMutation";
 import { InstrumentTagSignificance } from "shared/utils";
-import { EnumField, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
+import { ColorPalette, ColorPaletteField, EnumField, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
 //import { utils } from "shared/utils";
 
 type DBInstrumentTag = Prisma.InstrumentTagGetPayload<{
@@ -27,6 +27,19 @@ type DBInstrumentTag = Prisma.InstrumentTagGetPayload<{
         }
     }
 }>;
+
+export const gPalette = new ColorPalette({
+    columns: 4,
+    entries: [
+        { label: "(none)", value: null },
+        { label: "Red", value: "red" },
+        { label: "Green", value: "green" },
+        { label: "Blue", value: "blue" },
+        { label: "black", value: "black" },
+        { label: "white", value: "white" },
+        { label: "pink", value: "pink" },
+    ],
+});
 
 export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag>({
     devName: "instrument tag",
@@ -40,7 +53,7 @@ export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag>({
     fields: [
         new PKIDField({ member: "id" }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Text", member: "text", zodSchema: InstrumentTagTextSchema, allowNullAndTreatEmptyAsNull: false }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", zodSchema: InstrumentTagColorSchema, allowNullAndTreatEmptyAsNull: true }),
+        new ColorPaletteField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", allowNull: true, palette: gPalette }),
         new EnumField({ cellWidth: 220, allowNull: true, options: InstrumentTagSignificance, initialNewItemValue: null, label: "Significance", member: "significance", }),
         new SimpleNumberField({ cellWidth: 220, initialNewItemValue: null, allowNull: false, label: "Sort order", member: "sortOrder", zodSchema: InstrumentTagSortOrderSchema }),
     ],

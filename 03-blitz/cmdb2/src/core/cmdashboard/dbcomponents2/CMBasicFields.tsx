@@ -2,7 +2,7 @@ import { GridColDef, GridPreProcessEditCellProps, GridRenderCellParams, GridRend
 import React from "react";
 import { ZodSchema, z } from "zod";
 import { CMTextField } from "../CMTextField";
-import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
+import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, Select, Tooltip } from "@mui/material";
 import { CMFieldSpecBase, RenderForNewItemDialogArgs } from "./CMColumnSpec";
 
 
@@ -158,6 +158,10 @@ export class SimpleNumberField<DBModel> extends CMFieldSpecBase<DBModel> {
 };
 
 
+
+const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
+//const gInitialInvalidValue = "__initial_invalid_value__498b0049-f883-4c77-9613-c8712e49e183";
+
 interface EnumFieldArgs<TEnum extends Record<string, string>> {
     member: string,
     label: string,
@@ -167,9 +171,6 @@ interface EnumFieldArgs<TEnum extends Record<string, string>> {
     initialNewItemValue: TEnum | null;
 };
 
-const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
-//const gInitialInvalidValue = "__initial_invalid_value__498b0049-f883-4c77-9613-c8712e49e183";
-
 // static list / enum
 // for null support we add a fake value representing null.
 // when an incoming value is not a valid value, it will coerce to null.
@@ -177,7 +178,7 @@ export class EnumField<TEnum extends Record<string, string>, DBModel> extends CM
 
     args: EnumFieldArgs<TEnum>;
     gridOptions: { value: string | null, label: string }[];
-    initialInvalidValue?: string;
+    //initialInvalidValue?: string;
     convertGridValueToRowValue: (val: null | string) => null | string;
 
     constructor(args: EnumFieldArgs<TEnum>) {
@@ -268,7 +269,204 @@ export class EnumField<TEnum extends Record<string, string>, DBModel> extends CM
 };
 
 
-// color  https://mikbry.github.io/material-ui-color/?id=components-colorpalette--basic&viewMode=docs
+// i don't want to support like, ANY color. let's instead use a palette.
+
+interface ColorPaletteEntry {
+    label: string;
+    value: string | null;
+}
+
+class ColorPaletteArgs {
+    entries: ColorPaletteEntry[];
+    columns: number;
+};
+
+export class ColorPalette extends ColorPaletteArgs {
+    // entries: ColorPaletteEntry[];
+    // columns: number;
+    get count(): number {
+        return this.entries.length;
+    }
+    get rows(): number {
+        return Math.ceil(this.entries.length / this.columns);
+    }
+    getEntriesForRow = (row: number) => {
+        const firstEntry = row * this.columns;
+        return this.entries.slice(firstEntry, firstEntry + this.columns);
+    };
+    // return an array of rows
+    getAllRowsAndEntries(): ColorPaletteEntry[][] {
+        const rows: ColorPaletteEntry[][] = [];
+        for (let i = 0; i < this.rows; ++i) {
+            rows.push(this.getEntriesForRow(i));
+        }
+        return rows;
+    }
+
+    constructor(args: ColorPaletteArgs) {
+        super();
+        Object.assign(this, args);
+    }
+};
+
+interface ColorPaletteFieldArgs {
+    member: string,
+    label: string,
+    cellWidth: number,
+    allowNull: boolean,
+    palette: ColorPalette,
+    initialNewItemValue: string | null;
+};
+
+export interface ColorSwatchProps {
+    color: ColorPaletteEntry;
+    selected: boolean;
+};
+
+// props.color can never be null.
+export const ColorSwatch = (props: ColorSwatchProps) => {
+    const style = (props.color.value === null) ? "dotted" : "solid";
+    return <Tooltip title={props.color.label}>
+        <Box sx={{
+            width: 25,
+            height: 25,
+            backgroundColor: props.color.value,
+            border: props.selected ? `2px ${style} #888` : `2px ${style} #d8d8d8`,
+        }}>
+        </Box>
+    </Tooltip>;
+};
+
+export interface ColorPickProps {
+    value: ColorPaletteEntry;
+    palette: ColorPalette;
+    onChange: (value: ColorPaletteEntry) => void;
+};
+
+// props.color can never be null.
+export const ColorPick = (props: ColorPickProps) => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const isOpen = Boolean(anchorEl);
+
+    const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    return <>
+        {/* <Backdrop open={true}> */}
+        <Tooltip title={props.value.label}>
+            <Button onClick={handleOpen}><ColorSwatch selected={true} color={props.value} /></Button>
+        </Tooltip>
+        <Popover
+            anchorEl={anchorEl}
+            open={isOpen}
+            onClose={() => setAnchorEl(null)}
+        // i really want this but can't make it work.
+        //hideBackdrop={false}
+        //BackdropProps={{ invisible: false }}
+        //slotProps={{ backdrop: { className: "bleh" } }}
+        >
+            {
+                props.palette.getAllRowsAndEntries().map((row, rowIndex) => {
+                    return <Box key={rowIndex}>
+                        {row.map(e => {
+                            return <MenuItem sx={{ display: "inline-flex" }} key={e.value || gNullValue} onClick={() => {
+                                props.onChange(e);
+                                setAnchorEl(null);
+                            }}> <ColorSwatch selected={e.value === props.value.value} key={e.value || gNullValue} color={e} /></MenuItem>
+
+                        })}
+                    </Box>;
+                })
+            }
+        </Popover >
+        {/* </Backdrop> */}
+    </>;
+};
+
+// static list / enum
+// for null support we add a fake value representing null.
+// when an incoming value is not a valid value, it will coerce to null.
+export class ColorPaletteField<DBModel> extends CMFieldSpecBase<DBModel> {
+
+    args: ColorPaletteFieldArgs;
+
+    // undefined if doesn't exist
+    findColorPaletteEntry = (colorString: string | null): ColorPaletteEntry | undefined => {
+        let ret = this.args.palette.entries.find(i => i.value === colorString);
+        if (ret !== undefined) return ret;
+
+        // not found; treat as null?
+        ret = this.args.palette.entries.find(i => i.value === null);
+        if (ret !== undefined) return ret;
+
+        // still not found; use first entry.
+        return this.args.palette.entries[0];
+    }
+
+    constructor(args: ColorPaletteFieldArgs) {
+        super();
+        this.args = args;
+        this.member = args.member;
+        this.fkidMember = undefined;
+        this.columnHeaderText = args.member;
+        this.isEditableInGrid = true;
+        this.cellWidth = args.cellWidth;
+        this.initialNewItemValue = args.initialNewItemValue;
+
+        // create a zod schema to validate against enum values, case-insensitive, and null sensitivity.
+        this.zodSchema = z.string();
+
+        if (args.allowNull) {
+            this.zodSchema = this.zodSchema.nullable();
+        }
+
+        this.logParseResult = true;
+
+        this.GridColProps = {
+            // this impl required showing validation result
+            preProcessEditCellProps: (params: GridPreProcessEditCellProps) => {
+                const parseResult = this.ValidateAndParse(params.props.value);
+                return { ...params.props, error: !parseResult.success };
+            },
+        };
+    }
+
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+        const value = params.value === null ? gNullValue : params.value;
+        return <React.Fragment key={params.key}>
+            <InputLabel>{this.args.label}</InputLabel>
+        </React.Fragment>;
+
+    };
+
+    renderForEditGridView = (params: GridRenderCellParams) => {
+        const entry = this.findColorPaletteEntry(params.value);
+        console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
+        return <ColorSwatch selected={true} color={entry!} />;
+    };
+
+    renderForEditGridEdit = (params: GridRenderEditCellParams) => {
+        const entry = this.findColorPaletteEntry(params.value);
+        console.log(`rendering for edit, value=${params.value}; entry=${JSON.stringify(entry)}`);
+        console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
+        return <ColorPick
+            value={entry!}
+            palette={this.args.palette}
+            onChange={(value: ColorPaletteEntry) => {
+                console.log(`setting color to ${JSON.stringify(value)}`);
+                params.api.setEditCellValue({ id: params.id, field: this.args.member, value: value.value });
+            }}
+        />;
+    };
+
+    getQuickFilterWhereClause = (query: string) => {
+        return { [this.member]: { contains: query } };
+    }; // return either falsy, or an object like {name: {contains: query } }
+
+};
+
+
 // date
 // date-time
 // boolean
