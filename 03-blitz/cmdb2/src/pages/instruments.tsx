@@ -2,7 +2,7 @@ import { Prisma } from "db";
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { CMTableSpec, PKIDField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
+import { CMTableSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 //import { InstrumentTableSpec } from "src/core/CMDBInstrument";
 //import { UserTableSpec } from "src/core/CMDBUser";
 import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
@@ -14,6 +14,7 @@ import { InsertInstrumentSchema, InstrumentNameSchema, UpdateInstrumentSchema } 
 import getPaginatedInstruments from "src/core/queries/getPaginatedInstruments";
 import updateInstrumentMutation from "src/core/mutations/updateInstrumentMutation";
 import deleteInstrumentMutation from "src/core/mutations/deleteInstrumentMutation";
+import { PKIDField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
 
 type DBInstrument = Prisma.InstrumentGetPayload<{
     include: {

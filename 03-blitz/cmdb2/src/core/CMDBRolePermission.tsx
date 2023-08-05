@@ -52,64 +52,6 @@ const Role_GetQuickFilterWhereClauseExpression = (query: string) => { // takes a
     ];
 };
 
-// const RolePermissionEditGridSpec: CMEditGridSpec<DBRolePermission> = {
-//     PKIDMemberName: "id", // field name of the primary key ... almost always this should be "id"
-
-//     CreateMutation: insertPermission,
-//     GetPaginatedItemsQuery: getPaginatedPermissions,
-//     UpdateMutation: updatePermission, // support editing of grid columns
-//     DeleteMutation: deletePermission, // by pk alone
-
-//     PageSizeOptions: [3, 25, 100],
-//     PageSizeDefault: 25,
-
-//     CreateItemButtonText: () => `New permission`,
-//     CreateSuccessSnackbar: (item: DBRolePermission) => `role ${item.role.name} now associated with ${item.permission.name}`,
-//     CreateErrorSnackbar: (err: any) => `Server error while associating role-permission`,
-//     UpdateItemSuccessSnackbar: (updatedItem: DBRolePermission) => `role ${updatedItem.role.name} now associated with ${updatedItem.permission.name}`,
-//     UpdateItemErrorSnackbar: (err: any) => `Server error while updating permission`,
-//     DeleteItemSuccessSnackbar: (item: DBPermission) => `permission ${item.name} deleted.`,
-//     DeleteItemErrorSnackbar: (err: any) => `Server error while deleting permission`,
-//     NoChangesMadeSnackbar: (item: DBPermission) => "No changes were made",
-//     DeleteConfirmationMessage: (item: DBPermission) => `Pressing 'Yes' will delete '${item.name}'`,
-//     UpdateConfirmationMessage: (oldItem: DBPermission, newItem: DBPermission, mutation: any[]) => `Pressing 'Yes' will update permission ${oldItem.name}`,
-//     DefaultOrderBy: { id: "asc" },
-//     ComputeDiff,
-//     GetQuickFilterWhereClauseExpression,
-
-//     NewItemDialogSpec: NewPermissionDialogSpec,
-
-//     Columns: [
-//         CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.PK, MemberName: "id", Editable: false, }),
-//         CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.UInt16, MemberName: "sortOrder", Editable: true, }),
-//         CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.String, MemberName: "name", Editable: true, }),
-//         CreateEditGridColumnSpec({ Behavior: CMEditGridColumnType.String, MemberName: "description", Editable: true, }),
-//         CreateEditGridColumnSpec({
-//             Behavior: CMEditGridColumnType.Custom,
-//             MemberName: "status",
-//             Editable: false,
-//             GridColProps: {
-//                 renderCell: (params) => {
-//                     const dbname = params.row.name;
-//                     if (Object.values(Permission).find(p => p === dbname)) {
-//                         return (<Tooltip title="This permission is understood by internal code; all permissions should have this state."><Chip size="small" color="primary" label="Ok" variant="outlined" /></Tooltip>);
-//                     } else {
-//                         return (<Tooltip title="This permission is unknown by internal code. It won't be used by anything unless code changes are made. Is it obsolete? Typo in the name?"><Chip size="small" color="error" label="Unknown" variant="outlined" /></Tooltip>);
-//                     }
-//                 }
-//             }
-//         }),
-//         CreateEditGridColumnSpec({
-//             Behavior: CMEditGridColumnType.MultiForeignObjects,
-//             Width: 300,
-//             MemberName: "roles",
-//             Editable: true,
-//             FKEditCellMultiSpec: PermissionRoleSpec,
-//             FKRenderViewCell: RenderPermissionRoleList,
-//         }),
-//     ],
-// };
-
 
 // so i kinda want to support 2 different kind of association matrices:
 // 1. where you simply click to switch the cell value

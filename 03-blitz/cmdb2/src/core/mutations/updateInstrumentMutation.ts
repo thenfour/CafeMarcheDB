@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db";
 import { z } from "zod"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 import { UpdateInstrumentSchema } from "../schemas/instrumentSchemas";
@@ -40,7 +40,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, tagIds, 
             },
         });
 
-        await utils.RegisterChange({
+        await RegisterChange({
             action: ChangeAction.update,
             changeContext,
             table: "instrument",

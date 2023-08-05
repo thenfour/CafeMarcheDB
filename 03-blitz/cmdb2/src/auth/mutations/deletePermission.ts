@@ -2,7 +2,7 @@ import { paginate } from "blitz";
 import { resolver } from "@blitzjs/rpc"
 import { NotFoundError } from "blitz";
 import db, { Prisma } from "db";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { DeletePermission as DeletePermissionSchema, } from "../schemas"
 import { Permission } from "shared/permissions";
 
@@ -15,7 +15,7 @@ export default resolver.pipe(
 
             const choice = await db.permission.deleteMany({ where: { id } });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.delete,
                 changeContext: CreateChangeContext("deletePermissionMutation"),
                 table: "permission",

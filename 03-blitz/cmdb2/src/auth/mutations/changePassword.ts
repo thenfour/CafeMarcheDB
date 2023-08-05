@@ -5,7 +5,7 @@ import db from "db"
 import { authenticateUser } from "./login"
 import { ChangePassword } from "../schemas"
 import { Permission } from "shared/permissions"
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { randomUUID } from "crypto"
 //import { Prisma } from '@prisma/client';
 
@@ -35,7 +35,7 @@ export default resolver.pipe(
       data: { hashedPassword },
     })
 
-    await utils.RegisterChange({
+    await RegisterChange({
       action: ChangeAction.update,
       //context: "change password",
       changeContext: CreateChangeContext("changePasswordMutation"),

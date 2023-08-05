@@ -3,7 +3,7 @@ import db, { Prisma } from "db";
 import { UpdateSettingByIdSchema } from "../schemas"
 import { z } from "zod"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 
@@ -20,7 +20,7 @@ export default resolver.pipe(
                 data,
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.update,
                 //context: "updateSettingById",
                 changeContext: CreateChangeContext("updateSettingByIdMutation"),

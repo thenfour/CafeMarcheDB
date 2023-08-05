@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { InsertUserSchema, Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { Permission } from "shared/permissions";
 import { z } from "zod"
 
@@ -27,7 +27,7 @@ export default resolver.pipe(
             });
 
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.insert,
                 changeContext: CreateChangeContext("insertUserMutation"),
                 table: "user",

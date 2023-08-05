@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc"
 import { GetObjectByIdSchema } from "../schemas"
 import db from "db";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(GetObjectByIdSchema),
@@ -19,7 +19,7 @@ export default resolver.pipe(
                 }
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext("SoftDeleteUserMutation"),
                 table: "user",

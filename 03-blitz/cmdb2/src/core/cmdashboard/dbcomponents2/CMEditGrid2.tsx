@@ -30,8 +30,9 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { CMTableSpec } from "./dbcomponents2/CMColumnSpec";
+//import { CMTableSpec } from "./dbcomponents2/CMColumnSpec";
 import { CMNewObjectDialog2 } from "./CMNewObjectDialog2";
+import { CMTableSpec } from "./CMColumnSpec";
 
 const gViewingRowHeight = 40;
 const gEditingRowHeight = 55;
@@ -137,8 +138,11 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
 
     const [confirmDialogArgs, setConfirmDialogArgs] = React.useState<any>(null);
 
-    const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) =>
-        new Promise<GridRowModel>((resolve, reject) => {
+    const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
+        console.log(`edit grid 2 : processRowUpdate. newrow, oldrow:`);
+        console.log(newRow);
+        console.log(oldRow);
+        return new Promise<GridRowModel>((resolve, reject) => {
             const validateResult = spec.ValidateAndComputeDiff(oldRow as TDBModel, newRow as TDBModel);
             // there are 3 possible paths:
             // 1. validation errors
@@ -146,6 +150,8 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
             // 3. or, no changes
             if (!validateResult.success) {
                 // display validation error.
+                console.log(`validation error (validateResult):`);
+                console.log(validateResult);
                 alert(`validation error`);
             }
             else if (validateResult.hasChanges) {
@@ -156,6 +162,7 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
                 resolve(oldRow); // Nothing was changed
             }
         });
+    };
 
     const [showingNewDialog, setShowingNewDialog] = React.useState<boolean>(false);
 

@@ -11,6 +11,7 @@ import { GridColDef, GridPreProcessEditCellProps, GridRenderCellParams, GridRend
 import React from "react";
 import { ZodSchema, z } from "zod";
 import { CMTextField } from "../CMTextField";
+import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 
 // base specs for specifying db object behaviors //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -66,6 +67,8 @@ export abstract class CMFieldSpecBase<DBModel> {
     fkidMember?: string; // if this is a one-to-* foreign key, this is the id (e.g. userId). This is required in the generic base because validation supports FK.
     columnHeaderText: string;
 
+    logParseResult: boolean;
+
     initialNewItemValue: any;
     zodSchema: null | ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
 
@@ -89,6 +92,10 @@ export abstract class CMFieldSpecBase<DBModel> {
             };
         }
         const parseResult = this.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
+        if (this.logParseResult) {
+            console.log(`parse result for ${this.member}`);
+            console.log(parseResult);
+        }
         const ret: ValidateAndParseResult = {
             success: parseResult.success,
             errorMessage: parseResult.error && parseResult.error.flatten().formErrors.join(", "),
@@ -112,161 +119,6 @@ export abstract class CMFieldSpecBase<DBModel> {
     // return either falsy, or an object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => any;
 };
-
-// local fields //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-interface PKIDFieldArgs {
-    member: string,
-};
-
-export class PKIDField<DBModel> extends CMFieldSpecBase<DBModel> {
-
-    args: PKIDFieldArgs;
-
-    constructor(args: PKIDFieldArgs) {
-        super();
-        this.args = args;
-        this.member = args.member;
-        this.fkidMember = undefined;
-
-        this.columnHeaderText = args.member;
-        this.isEditableInGrid = false;
-        this.cellWidth = 40;
-    }
-
-    // ValidateAndParse = (val: any) => {
-    //     throw new Error(`pkid is not editable`);
-    // }
-
-    // isEqual = (lhsSanitizedFieldValue: any, rhsSanitizedFieldValue: any) => {
-    //     return (lhsSanitizedFieldValue as number) === (rhsSanitizedFieldValue as number);
-    // };
-
-    getQuickFilterWhereClause = (query: string) => {
-        return false;
-    }; // return either falsy, or an object like { name: { contains: query } }
-};
-
-interface SimpleTextFieldArgs {
-    member: string,
-    label: string,
-    cellWidth: number,
-    initialNewItemValue: string;
-    zodSchema: ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
-    // for things like treating empty as null, case sensitivity, trimming, do it in the zod schema via transform
-};
-
-export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
-
-    args: SimpleTextFieldArgs;
-
-    constructor(args: SimpleTextFieldArgs) {
-        super();
-        this.args = args;
-        this.member = args.member;
-        this.fkidMember = undefined;
-        this.columnHeaderText = args.member;
-        this.isEditableInGrid = true;
-        this.cellWidth = args.cellWidth;
-        this.initialNewItemValue = args.initialNewItemValue;
-        this.zodSchema = args.zodSchema;
-    }
-
-    GridColProps = {
-        type: "string",
-        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => { // this impl required showing validation result
-            const parseResult = this.ValidateAndParse(params.props.value);
-            return { ...params.props, error: !parseResult.success };
-        }
-    };
-
-    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
-        return <CMTextField
-            key={params.key}
-            autoFocus={false}
-            label={this.args.label}
-            validationError={params.validationResult.getErrorForField(this.args.member)}
-            value={params.value}
-            onChange={(e, val) => {
-                //return onChange(val);
-                params.api.setFieldValues({ [this.args.member]: val });
-            }}
-        />;
-    };
-
-    getQuickFilterWhereClause = (query: string) => {
-        const obj = {};
-        obj[this.member] = { contains: query };
-        return obj;
-    }; // return either falsy, or an object like { name: { contains: query } }
-
-};
-
-
-
-
-interface SimpleNumberFieldArgs {
-    member: string,
-    label: string,
-    cellWidth: number,
-    allowNull: boolean,
-    initialNewItemValue: number | null;
-    zodSchema: ZodSchema; // todo: possibly different schemas for different scenarios. in-grid editing vs. new item dialog etc.
-    // outside of null checks, constraints should be put in the zod schema.
-};
-
-export class SimpleNumberField<DBModel> extends CMFieldSpecBase<DBModel> {
-
-    args: SimpleNumberFieldArgs;
-
-    constructor(args: SimpleNumberFieldArgs) {
-        super();
-        this.args = args;
-        this.member = args.member;
-        this.fkidMember = undefined;
-        this.columnHeaderText = args.member;
-        this.isEditableInGrid = true;
-        this.cellWidth = args.cellWidth;
-        this.initialNewItemValue = args.initialNewItemValue;
-        this.zodSchema = args.zodSchema;
-    }
-
-    GridColProps = {
-        type: "number",
-        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => { // this impl required showing validation result
-            const parseResult = this.ValidateAndParse(params.props.value);
-            return { ...params.props, error: !parseResult.success };
-        }
-    };
-
-    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
-        return <CMTextField
-            key={params.key}
-            autoFocus={false}
-            label={this.args.label}
-            validationError={params.validationResult.getErrorForField(this.args.member)}
-            value={params.value}
-            onChange={(e, val) => {
-                //return onChange(val);
-                params.api.setFieldValues({ [this.args.member]: val });
-            }}
-        />;
-    };
-
-    getQuickFilterWhereClause = (query: string) => {
-        const obj = {};
-        obj[this.member] = { equals: query };
-        return obj;
-    }; // return either falsy, or an object like { name: { contains: query } }
-
-};
-
-// static list
-
-// color
-
-// date
-
 
 export class CMTableSpecRequiredValues<DBModel> {
     fields: CMFieldSpecBase<DBModel>[];

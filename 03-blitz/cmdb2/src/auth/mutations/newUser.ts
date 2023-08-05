@@ -5,7 +5,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { Permission } from "shared/permissions";
 
 type CreateInput = Prisma.UserCreateInput & {
@@ -26,7 +26,7 @@ export default resolver.pipe(
                 include: { role: { include: { permissions: { include: { permission: true } } } } }
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.insert,
                 changeContext: CreateChangeContext("newUserMutation"),
                 table: "user",

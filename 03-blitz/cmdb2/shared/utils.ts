@@ -24,7 +24,7 @@ export const CreateChangeContext = (contextDescription: string): ChangeContext =
     };
 };
 
-type RegisterChangeArgs = {
+export type RegisterChangeArgs = {
     action: ChangeAction, // database operation
     changeContext: ChangeContext,
     table: string,
@@ -34,13 +34,13 @@ type RegisterChangeArgs = {
     ctx: Ctx,
 }
 
-type CalculateChangesResult = {
+export type CalculateChangesResult = {
     oldValues: any,
     newValues: any,
 };
 
 // return an obj of fields which exist in both inputs, and are different.
-function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
+export function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
     const result: CalculateChangesResult = { oldValues: {}, newValues: {} };
 
     for (const prop in oldObj) {
@@ -55,7 +55,7 @@ function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
     return result;
 }
 
-async function RegisterChange(args: RegisterChangeArgs) {
+export async function RegisterChange(args: RegisterChangeArgs) {
     let oldValues: any = null;
     let newValues: any = null;
 
@@ -108,17 +108,17 @@ async function RegisterChange(args: RegisterChangeArgs) {
 // for use on the server only.
 // if you need to get / set settings on client, useQuery is required.
 
-enum Setting {
+export enum Setting {
     HomeDescription = "HomeDescription",
 };
 
-interface SetSettingArgs {
+export interface SetSettingArgs {
     ctx: Ctx,
     setting: Setting | string,
     value?: any,
 };
 
-async function SetSetting(args: SetSettingArgs) {
+export async function SetSetting(args: SetSettingArgs) {
     if (args.value === null || args.value === undefined) {
         const existing = await db.setting.findFirst({ where: { name: args.setting, } });
         if (!existing) return;
@@ -154,7 +154,7 @@ async function SetSetting(args: SetSettingArgs) {
     });
 }
 
-async function GetSetting(setting: Setting) {
+export async function GetSetting(setting: Setting) {
     const existing = await db.setting.findFirst({ where: { name: setting, } });
     if (!existing) return null;
     return JSON.parse(existing!.value);
@@ -169,13 +169,13 @@ export enum Action {
     VisitRoute = "VisitRoute",
 }
 
-type RegisterActionArgs = {
+export type RegisterActionArgs = {
     action: Action, // user operation
     data?: any, // additional data depending on action. will be serialized as JSON.
     ctx: Ctx,
 }
 
-async function RegisterActivity(args: RegisterActionArgs) {
+export async function RegisterActivity(args: RegisterActionArgs) {
     return await db.activity.create({
         data: {
             userId: args.ctx?.session?.userId || null,
@@ -190,7 +190,7 @@ async function RegisterActivity(args: RegisterActionArgs) {
 
 // for use in Zod schemas like
 // export const InstrumentTagSortOrderSchema = z.preprocess(utils.CoerceToNumberOrNull, z.number().refine(utils.ValidateInt));
-const CoerceToNumberOrNull = (value) => {
+export const CoerceToNumberOrNull = (value) => {
     if (typeof value === "string") {
         if (value.trim() === "") {
             return null;
@@ -203,23 +203,29 @@ const CoerceToNumberOrNull = (value) => {
     return value;
 };
 
-const ValidateNullableInt = (arg) => {
+export const ValidateNullableInt = (arg) => {
     return arg === null || Number.isInteger(arg);
 };
-const ValidateInt = (arg) => {
+export const ValidateInt = (arg) => {
     return Number.isInteger(arg);
 };
 
+// https://stackoverflow.com/questions/76518631/typescript-return-the-enum-values-in-parameter-using-a-generic-enum-type-method
+// interesting that const objects are preferred over enums. but yea for populating datagrid single select options i agree.
+export const InstrumentTagSignificance = {
+    PowerRequired: "PowerRequired",
+    Large: "Large",
+} as const satisfies Record<string, string>;
 
-
-export const utils = {
-    ChangeAction,
-    RegisterChange,
-    RegisterActivity,
-    SetSetting,
-    GetSetting,
-    CoerceToNumberOrNull,
-    ValidateNullableInt,
-    ValidateInt,
-};
+// export const utils = {
+//     ChangeAction,
+//     RegisterChange,
+//     RegisterActivity,
+//     SetSetting,
+//     GetSetting,
+//     CoerceToNumberOrNull,
+//     ValidateNullableInt,
+//     ValidateInt,
+//     InstrumentTagSignificance,
+// };
 

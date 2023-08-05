@@ -5,7 +5,7 @@ import {
 } from "../schemas"
 import { z } from "zod"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 
@@ -29,9 +29,8 @@ export default resolver.pipe(
                     include: { role: true, permission: true },
                 });
 
-                await utils.RegisterChange({
+                await RegisterChange({
                     action: ChangeAction.insert,
-                    //context: "toggleRolePermission",
                     changeContext,
                     table: "rolePermission",
                     pkid: newAssoc.id,
@@ -60,7 +59,7 @@ export default resolver.pipe(
                     }
                 });
 
-                await utils.RegisterChange({
+                await RegisterChange({
                     action: ChangeAction.delete,
                     changeContext,
                     table: "rolePermission",
@@ -70,13 +69,8 @@ export default resolver.pipe(
                 });
             }
 
-
             return null;
 
-            //console.assert();
-            //}
-            //debugger;
-            ///return data.association;
         } catch (e) {
             console.error(`Exception while toggleRolePermission`);
             console.error(e);

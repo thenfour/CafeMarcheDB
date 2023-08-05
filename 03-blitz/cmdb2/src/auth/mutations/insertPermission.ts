@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { CreatePermission as CreatePermissionSchema } from "../schemas";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(CreatePermissionSchema),
@@ -13,7 +13,7 @@ export default resolver.pipe(
                 data: fields,
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.insert,
                 //context: "insertPermission",
                 changeContext: CreateChangeContext("insertPermissionMutation"),

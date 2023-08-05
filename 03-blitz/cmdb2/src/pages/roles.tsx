@@ -1,5 +1,5 @@
 import { BlitzPage } from "@blitzjs/next";
-import { UserEditGridSpec } from "src/core/CMDBUser";
+//import { UserEditGridSpec } from "src/core/CMDBUser";
 import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Permission } from "shared/permissions";

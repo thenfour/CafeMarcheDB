@@ -1,5 +1,5 @@
 import db, { Prisma } from "db";
-import { utils } from "shared/utils";
+import { CoerceToNumberOrNull, ValidateInt } from "shared/utils";
 import { z } from "zod"
 
 // name              String
@@ -53,11 +53,9 @@ const emptyStringToNull = (data: unknown): unknown => {
 
 
 export const InstrumentTagTextSchema = z.string().min(1);
-export const InstrumentTagColorSchema = z.string();
-export const InstrumentTagSignificanceSchema = z.string().optional().nullable();
-export const InstrumentTagSortOrderSchema = z.preprocess(utils.CoerceToNumberOrNull, z.number().refine(utils.ValidateInt));
-
-
+export const InstrumentTagColorSchema = z.string().nullable();
+export const InstrumentTagSignificanceSchema = z.string().nullable();
+export const InstrumentTagSortOrderSchema = z.preprocess(CoerceToNumberOrNull, z.number().refine(ValidateInt));
 
 export const InsertInstrumentTagSchema = z.object({
     text: InstrumentTagTextSchema,

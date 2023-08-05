@@ -5,7 +5,7 @@ import {
 } from "../schemas"
 import { z } from "zod"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 import { ComputeChangePlan } from "shared/associationUtils";
@@ -41,7 +41,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
 
         for (let i = 0; i < cp.delete.length; ++i) {
             const oldValues = cp.delete[i];
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.delete,
                 changeContext,
                 table: "rolePermission",
@@ -62,7 +62,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
                 },
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.insert,
                 changeContext,
                 table: "rolePermission",
@@ -82,7 +82,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
             include: { roles: true },
         });
 
-        await utils.RegisterChange({
+        await RegisterChange({
             action: ChangeAction.update,
             changeContext,
             table: "permission",

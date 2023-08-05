@@ -1,10 +1,18 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
+import { Prisma } from "db";
+
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+//import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
 import { InsertInstrumentTagSchema } from "../schemas/instrumentSchemas";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+//import { ChangeAction, CreateChangeContext, utils } from "shared/utils";
 
 const contextDesc = "insertInstrumentTagMutation";
+
+// type x = Prisma.InstrumentTagCreateArgs;
+// const y : x;
+// y.data.sortOrder
 
 export default resolver.pipe(
     resolver.zod(InsertInstrumentTagSchema),
@@ -17,7 +25,7 @@ export default resolver.pipe(
                 data: fields,
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.insert,
                 changeContext,
                 table: "instrumentTag",

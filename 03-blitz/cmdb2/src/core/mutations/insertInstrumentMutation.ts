@@ -1,7 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
 import db from "db";
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 import { InsertInstrumentSchema } from "../schemas/instrumentSchemas";
 import { randomUUID } from "crypto";
 
@@ -25,7 +25,7 @@ export default resolver.pipe(
                 data: fields,
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.insert,
                 changeContext,
                 table: "instrument",
@@ -45,7 +45,7 @@ export default resolver.pipe(
                         data
                     });
 
-                    await utils.RegisterChange({
+                    await RegisterChange({
                         action: ChangeAction.insert,
                         changeContext,
                         table: "instrumentTagAssociation",

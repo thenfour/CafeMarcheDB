@@ -1,8 +1,11 @@
+// simple text field is setting null (only when incoming from db i guess)
+// simple text field should support nullable / not nullable
+
 import { Prisma } from "db";
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { CMTableSpec, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
+import { CMTableSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -11,6 +14,9 @@ import deleteInstrumentTagMutation from "src/core/mutations/deleteInstrumentTagM
 import getPaginatedInstrumentTags from "src/core/queries/getPaginatedInstrumentTags";
 import insertInstrumentTagMutation from "src/core/mutations/insertInstrumentTagMutation";
 import updateInstrumentTagMutation from "src/core/mutations/updateInstrumentTagMutation";
+import { InstrumentTagSignificance } from "shared/utils";
+import { EnumField, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
+//import { utils } from "shared/utils";
 
 type DBInstrumentTag = Prisma.InstrumentTagGetPayload<{
     include: {
@@ -21,14 +27,6 @@ type DBInstrumentTag = Prisma.InstrumentTagGetPayload<{
         }
     }
 }>;
-
-// export const UpdateInstrumentTagSchema = z.object({
-//     id: z.number(),
-//     text: InstrumentTagTextSchema.optional(),
-//     color: z.string().optional(),
-//     significance: z.string().optional(),
-//     sortOrder: z.number().optional(),
-// });
 
 export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag>({
     devName: "instrument tag",
@@ -41,9 +39,9 @@ export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag>({
     GetNameOfRow: (row: DBInstrumentTag) => { return row.text; },
     fields: [
         new PKIDField({ member: "id" }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Text", member: "text", zodSchema: InstrumentTagTextSchema }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", zodSchema: InstrumentTagColorSchema }),
-        //new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Significance", member: "significance", zodSchema: InstrumentTagSignificanceSchema }),
+        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Text", member: "text", zodSchema: InstrumentTagTextSchema, allowNullAndTreatEmptyAsNull: false }),
+        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", zodSchema: InstrumentTagColorSchema, allowNullAndTreatEmptyAsNull: true }),
+        new EnumField({ cellWidth: 220, allowNull: true, options: InstrumentTagSignificance, initialNewItemValue: null, label: "Significance", member: "significance", }),
         new SimpleNumberField({ cellWidth: 220, initialNewItemValue: null, allowNull: false, label: "Sort order", member: "sortOrder", zodSchema: InstrumentTagSortOrderSchema }),
     ],
 });

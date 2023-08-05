@@ -128,7 +128,7 @@ export const NewPermissionDialogSpec: CMNewItemDialogSpec<DBPermission> = {
                     autoFocus={true}
                     label="Name"
                     validationError={validationErrors["name"]}
-                    value={value}
+                    value={value || ""}
                     onChange={(e, val) => {
                         return onChange(val);
                     }}
@@ -146,7 +146,7 @@ export const NewPermissionDialogSpec: CMNewItemDialogSpec<DBPermission> = {
                     autoFocus={true}
                     label="description"
                     validationError={validationErrors["description"]}
-                    value={value}
+                    value={value || ""}
                     onChange={(e, val) => onChange(val)}
                 />);
             },

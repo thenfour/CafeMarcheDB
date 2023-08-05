@@ -4,7 +4,7 @@ import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { ResetPassword } from "../schemas"
 import login from "./login"
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export class ResetPasswordError extends Error {
   name = "ResetPasswordError"
@@ -46,7 +46,7 @@ export default resolver.pipe(
       data: { hashedPassword },
     })
 
-    await utils.RegisterChange({
+    await RegisterChange({
       action: ChangeAction.update,
       changeContext: CreateChangeContext("resetPasswordMutation"),
       table: "user",

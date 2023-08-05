@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { RegisterActivitySchema } from "../schemas";
 import { Permission } from "shared/permissions";
-import utils, { Action, ChangeAction } from "shared/utils"
+import { Action, ChangeAction, RegisterActivity } from "shared/utils"
 
 // btw, how will we prevent abuse of this API? is that a problem? maybe some kind of server-generated single-use token sent to the page that we can verify?
 
@@ -14,7 +14,7 @@ export default resolver.pipe(
     resolver.zod(RegisterActivitySchema),
     async (fields, ctx) => {
         try {
-            const obj = await utils.RegisterActivity({
+            const obj = await RegisterActivity({
                 ctx,
                 action: fields.action as Action,
                 data: fields.data,

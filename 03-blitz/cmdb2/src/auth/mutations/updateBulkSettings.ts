@@ -5,7 +5,7 @@ import db, { Prisma } from "db";
 import { UpdateBulkSettingsSchema } from "../schemas"
 import { z } from "zod"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction } from "shared/utils"
+import { ChangeAction, SetSetting } from "shared/utils"
 import { randomUUID } from "crypto";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 
@@ -19,7 +19,7 @@ export default resolver.pipe(
             for (let i = 0; i < items.length; ++i) {
                 const item = items[i];
                 try {
-                    await utils.SetSetting({ ctx, setting: item!.name, value: item!.value });
+                    await SetSetting({ ctx, setting: item!.name, value: item!.value });
                 } catch (e) {
                     console.error(`Exception while updating setting '${item?.name}'`);
                     console.error(e);

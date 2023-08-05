@@ -9,7 +9,7 @@ import {
     GetObjectByIdSchema,
 } from "../schemas"
 import { Permission } from "shared/permissions";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 const contextDesc = "updateRoleMutation";
 
@@ -27,7 +27,7 @@ export default resolver.pipe(
                 }
             });
 
-            await utils.RegisterChange({
+            await RegisterChange({
                 action: ChangeAction.update,
                 changeContext: CreateChangeContext(contextDesc),
                 table: "role",

@@ -1,4 +1,4 @@
-import { Button } from "@mui/material";
+import { Button, InputLabel } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React from "react";
 import { CMSelectItemDialog2 } from './CMSelectForeignItemDialog';
@@ -153,17 +153,20 @@ export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldS
 
     // edit: render as single chip with "SELECT..." and a github style autocomplete.
     renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
-        return <ForeignSingleFieldInput
-            field={this}
-            value={params.value}
-            onChange={(value: ForeignModel | null) => {
-                let pk = null;
-                params.api.setFieldValues({
-                    [this.member]: value,
-                    [this.args.fkidMember]: ((value === null) ? null : value![this.args.foreignPk]),
-                });
-            }}
-        />
+        return <React.Fragment key={params.key}>
+            <InputLabel>{this.args.label}</InputLabel>
+            <ForeignSingleFieldInput
+                field={this}
+                value={params.value}
+                onChange={(value: ForeignModel | null) => {
+                    let pk = null;
+                    params.api.setFieldValues({
+                        [this.member]: value,
+                        [this.args.fkidMember]: ((value === null) ? null : value![this.args.foreignPk]),
+                    });
+                }}
+            />
+        </React.Fragment>;
     };
 };
 
