@@ -73,13 +73,13 @@ export function CMNewObjectDialog2<TDBModel>({ onOK, onCancel, spec }: CMNewObje
                             if (!field.renderForNewDialog) {
                                 return null;
                             }
-                            return field.renderForNewDialog!({
+                            return <React.Fragment key={field.member}>{field.renderForNewDialog!({
                                 key: field.member,
                                 validationResult,
                                 obj,
                                 value: obj[field.member],
                                 api,
-                            });
+                            })}</React.Fragment>;
 
                         })
                     }

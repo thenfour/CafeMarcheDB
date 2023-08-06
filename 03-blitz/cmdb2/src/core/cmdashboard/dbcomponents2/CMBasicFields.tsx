@@ -4,13 +4,15 @@ import { ZodSchema, z } from "zod";
 import { CMTextField } from "../CMTextField";
 import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, Select, Tooltip } from "@mui/material";
 import { CMFieldSpecBase, RenderForNewItemDialogArgs } from "./CMColumnSpec";
+import { ColorPalette, ColorPaletteEntry } from "shared/color";
+import { CoerceNullableNumberToNullableString } from "shared/utils";
 
 
 interface PKIDFieldArgs {
     member: string,
 };
 
-export class PKIDField<DBModel> extends CMFieldSpecBase<DBModel> {
+export class PKIDField<DBModel, WhereInput> extends CMFieldSpecBase<DBModel, WhereInput, number> {
 
     args: PKIDFieldArgs;
 
@@ -40,7 +42,7 @@ interface SimpleTextFieldArgs {
     // for things like treating empty as null, case sensitivity, trimming, do it in the zod schema via transform
 };
 
-export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
+export class SimpleTextField<DBModel, WhereInput> extends CMFieldSpecBase<DBModel, WhereInput, string | null> {
 
     args: SimpleTextFieldArgs;
     convertGridValueToRowValue: (val: null | string) => null | string;
@@ -76,7 +78,7 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
         };
     }
 
-    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel, string | null>) => {
         return <CMTextField
             key={params.key}
             autoFocus={false}
@@ -91,7 +93,7 @@ export class SimpleTextField<DBModel> extends CMFieldSpecBase<DBModel> {
     };
 
     getQuickFilterWhereClause = (query: string) => {
-        const obj = {};
+        const obj = {} as WhereInput;
         obj[this.member] = { contains: query };
         return obj;
     }; // return either falsy, or an object like { name: { contains: query } }
@@ -111,7 +113,7 @@ interface SimpleNumberFieldArgs {
     // outside of null checks, constraints should be put in the zod schema.
 };
 
-export class SimpleNumberField<DBModel> extends CMFieldSpecBase<DBModel> {
+export class SimpleNumberField<DBModel, WhereInput> extends CMFieldSpecBase<DBModel, WhereInput, number | null> {
 
     args: SimpleNumberFieldArgs;
 
@@ -135,13 +137,13 @@ export class SimpleNumberField<DBModel> extends CMFieldSpecBase<DBModel> {
         }
     };
 
-    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel, number | null>) => {
         return <CMTextField
             key={params.key}
             autoFocus={false}
             label={this.args.label}
             validationError={params.validationResult.getErrorForField(this.args.member)}
-            value={params.value}
+            value={CoerceNullableNumberToNullableString(params.value)}
             onChange={(e, val) => {
                 //return onChange(val);
                 params.api.setFieldValues({ [this.args.member]: val });
@@ -150,7 +152,7 @@ export class SimpleNumberField<DBModel> extends CMFieldSpecBase<DBModel> {
     };
 
     getQuickFilterWhereClause = (query: string) => {
-        const obj = {};
+        const obj = {} as WhereInput;
         obj[this.member] = { equals: query };
         return obj;
     }; // return either falsy, or an object like { name: { contains: query } }
@@ -174,11 +176,10 @@ interface EnumFieldArgs<TEnum extends Record<string, string>> {
 // static list / enum
 // for null support we add a fake value representing null.
 // when an incoming value is not a valid value, it will coerce to null.
-export class EnumField<TEnum extends Record<string, string>, DBModel> extends CMFieldSpecBase<DBModel> {
+export class EnumField<TEnum extends Record<string, string>, DBModel, WhereInput> extends CMFieldSpecBase<DBModel, WhereInput, TEnum | null> {
 
     args: EnumFieldArgs<TEnum>;
     gridOptions: { value: string | null, label: string }[];
-    //initialInvalidValue?: string;
     convertGridValueToRowValue: (val: null | string) => null | string;
 
     constructor(args: EnumFieldArgs<TEnum>) {
@@ -212,7 +213,7 @@ export class EnumField<TEnum extends Record<string, string>, DBModel> extends CM
             this.gridOptions = [{ value: gNullValue, label: "--" }, ...this.gridOptions];
         }
 
-        this.logParseResult = true;
+        //this.logParseResult = true;
 
         this.GridColProps = {
             type: "singleSelect",
@@ -224,7 +225,7 @@ export class EnumField<TEnum extends Record<string, string>, DBModel> extends CM
             preProcessEditCellProps: (params: GridPreProcessEditCellProps) => {
                 //if (params.props.value === gNullValue) params.props.value = null; // don't do this. breaks the grid.
                 const val = this.convertGridValueToRowValue(params.props.value);
-                const parseResult = this.ValidateAndParse(val);
+                const parseResult = this.ValidateAndParse(val as TEnum | null);
                 return { ...params.props, error: !parseResult.success };
             },
             valueOptions: this.gridOptions,
@@ -238,7 +239,7 @@ export class EnumField<TEnum extends Record<string, string>, DBModel> extends CM
         };
     }
 
-    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel, TEnum | null>) => {
         const value = params.value === null ? gNullValue : params.value;
         //console.log(`render for new dlg isnull?${params.value === null} isundefined${params.value === undefined} params.value:${params.value}, sanitizedval:${value}`);
         return <React.Fragment key={params.key}>
@@ -263,51 +264,13 @@ export class EnumField<TEnum extends Record<string, string>, DBModel> extends CM
     };
 
     getQuickFilterWhereClause = (query: string) => {
-        return { [this.member]: { contains: query } };
+        return { [this.member]: { contains: query } } as WhereInput;
     }; // return either falsy, or an object like { name: { contains: query } }
 
 };
 
 
 // i don't want to support like, ANY color. let's instead use a palette.
-
-interface ColorPaletteEntry {
-    label: string;
-    value: string | null;
-}
-
-class ColorPaletteArgs {
-    entries: ColorPaletteEntry[];
-    columns: number;
-};
-
-export class ColorPalette extends ColorPaletteArgs {
-    // entries: ColorPaletteEntry[];
-    // columns: number;
-    get count(): number {
-        return this.entries.length;
-    }
-    get rows(): number {
-        return Math.ceil(this.entries.length / this.columns);
-    }
-    getEntriesForRow = (row: number) => {
-        const firstEntry = row * this.columns;
-        return this.entries.slice(firstEntry, firstEntry + this.columns);
-    };
-    // return an array of rows
-    getAllRowsAndEntries(): ColorPaletteEntry[][] {
-        const rows: ColorPaletteEntry[][] = [];
-        for (let i = 0; i < this.rows; ++i) {
-            rows.push(this.getEntriesForRow(i));
-        }
-        return rows;
-    }
-
-    constructor(args: ColorPaletteArgs) {
-        super();
-        Object.assign(this, args);
-    }
-};
 
 interface ColorPaletteFieldArgs {
     member: string,
@@ -387,22 +350,9 @@ export const ColorPick = (props: ColorPickProps) => {
 // static list / enum
 // for null support we add a fake value representing null.
 // when an incoming value is not a valid value, it will coerce to null.
-export class ColorPaletteField<DBModel> extends CMFieldSpecBase<DBModel> {
+export class ColorPaletteField<DBModel, WhereInput> extends CMFieldSpecBase<DBModel, WhereInput, string | null> {
 
     args: ColorPaletteFieldArgs;
-
-    // undefined if doesn't exist
-    findColorPaletteEntry = (colorString: string | null): ColorPaletteEntry | undefined => {
-        let ret = this.args.palette.entries.find(i => i.value === colorString);
-        if (ret !== undefined) return ret;
-
-        // not found; treat as null?
-        ret = this.args.palette.entries.find(i => i.value === null);
-        if (ret !== undefined) return ret;
-
-        // still not found; use first entry.
-        return this.args.palette.entries[0];
-    }
 
     constructor(args: ColorPaletteFieldArgs) {
         super();
@@ -432,7 +382,7 @@ export class ColorPaletteField<DBModel> extends CMFieldSpecBase<DBModel> {
         };
     }
 
-    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel, string | null>) => {
         const value = params.value === null ? gNullValue : params.value;
         return <React.Fragment key={params.key}>
             <InputLabel>{this.args.label}</InputLabel>
@@ -441,13 +391,13 @@ export class ColorPaletteField<DBModel> extends CMFieldSpecBase<DBModel> {
     };
 
     renderForEditGridView = (params: GridRenderCellParams) => {
-        const entry = this.findColorPaletteEntry(params.value);
+        const entry = this.args.palette.findColorPaletteEntry(params.value);
         console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
         return <ColorSwatch selected={true} color={entry!} />;
     };
 
     renderForEditGridEdit = (params: GridRenderEditCellParams) => {
-        const entry = this.findColorPaletteEntry(params.value);
+        const entry = this.args.palette.findColorPaletteEntry(params.value);
         console.log(`rendering for edit, value=${params.value}; entry=${JSON.stringify(entry)}`);
         console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
         return <ColorPick
@@ -461,7 +411,7 @@ export class ColorPaletteField<DBModel> extends CMFieldSpecBase<DBModel> {
     };
 
     getQuickFilterWhereClause = (query: string) => {
-        return { [this.member]: { contains: query } };
+        return { [this.member]: { contains: query } } as WhereInput;
     }; // return either falsy, or an object like {name: {contains: query } }
 
 };

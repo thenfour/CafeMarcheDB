@@ -279,6 +279,7 @@ model InstrumentTag {
   instruments  InstrumentTagAssociation[]
 }
 
+// association table
 model InstrumentTagAssociation {
   id           Int           @id @default(autoincrement())
   instrumentId Int

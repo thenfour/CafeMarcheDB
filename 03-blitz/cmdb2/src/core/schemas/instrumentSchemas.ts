@@ -71,3 +71,8 @@ export const UpdateInstrumentTagSchema = z.object({
     significance: InstrumentTagSignificanceSchema.optional(),
     sortOrder: InstrumentTagSortOrderSchema.optional(),
 });
+
+export const InsertInstrumentTagFromStringAsAssociationSchema = z.object({
+    localPk: z.number().nullable(),
+    text: InstrumentTagTextSchema,
+});

@@ -15,8 +15,8 @@ import getPaginatedInstrumentTags from "src/core/queries/getPaginatedInstrumentT
 import insertInstrumentTagMutation from "src/core/mutations/insertInstrumentTagMutation";
 import updateInstrumentTagMutation from "src/core/mutations/updateInstrumentTagMutation";
 import { InstrumentTagSignificance } from "shared/utils";
-import { ColorPalette, ColorPaletteField, EnumField, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
-//import { utils } from "shared/utils";
+import { ColorPaletteField, EnumField, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
+import { gGeneralPalette } from "shared/color";
 
 type DBInstrumentTag = Prisma.InstrumentTagGetPayload<{
     include: {
@@ -28,20 +28,7 @@ type DBInstrumentTag = Prisma.InstrumentTagGetPayload<{
     }
 }>;
 
-export const gPalette = new ColorPalette({
-    columns: 4,
-    entries: [
-        { label: "(none)", value: null },
-        { label: "Red", value: "red" },
-        { label: "Green", value: "green" },
-        { label: "Blue", value: "blue" },
-        { label: "black", value: "black" },
-        { label: "white", value: "white" },
-        { label: "pink", value: "pink" },
-    ],
-});
-
-export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag>({
+export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag, Prisma.InstrumentTagWhereInput>({
     devName: "instrument tag",
     CreateMutation: insertInstrumentTagMutation,
     CreateSchema: InsertInstrumentTagSchema,
@@ -53,7 +40,7 @@ export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag>({
     fields: [
         new PKIDField({ member: "id" }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Text", member: "text", zodSchema: InstrumentTagTextSchema, allowNullAndTreatEmptyAsNull: false }),
-        new ColorPaletteField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", allowNull: true, palette: gPalette }),
+        new ColorPaletteField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", allowNull: true, palette: gGeneralPalette }),
         new EnumField({ cellWidth: 220, allowNull: true, options: InstrumentTagSignificance, initialNewItemValue: null, label: "Significance", member: "significance", }),
         new SimpleNumberField({ cellWidth: 220, initialNewItemValue: null, allowNull: false, label: "Sort order", member: "sortOrder", zodSchema: InstrumentTagSortOrderSchema }),
     ],

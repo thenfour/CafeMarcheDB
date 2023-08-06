@@ -51,7 +51,7 @@ import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
 import { ForeignSingleField, InsertFromStringParams, RenderAsChipParams } from "src/core/cmdashboard/dbcomponents2/CMForeignSingleField";
 //import { CMEditGrid2 } from "src/core/cmdashboard/CMEditGrid2";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Role as DBRole, User as DBUser } from "db";
+import { Role as DBRole, User as DBUser, Prisma } from "db";
 //import getAllRoles from "src/auth/queries/getAllRoles";
 import CreateRoleMutation from "src/auth/mutations/createRole";
 import SoftDeleteUserMutation from "src/auth/mutations/deleteUser";
@@ -65,55 +65,60 @@ import { CMTableSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { PKIDField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
 import { InsertUserSchema, UserEmailSchema, UserNameSchema, UpdateUserFromGrid as UpdateUserFromGridSchema } from "src/auth/schemas";
 
-
-export class UserRoleField extends ForeignSingleField<DBUser, DBRole> {
+export class UserRoleField extends ForeignSingleField<DBUser, DBRole, Prisma.UserWhereInput, Prisma.RoleWhereInput> {
     constructor() {
         super({
-            getAllOptionsQuery: getAllRoles,
             allowNull: true,
             cellWidth: 220,
             fkidMember: "roleId",
             member: "role",
-            foreignPk: "id",
-            label: "Role",
-            allowInsertFromString: true,
-            insertFromStringMutation: CreateRoleMutation,
-            insertFromStringSchema: null,
-            insertFromString: async (params: InsertFromStringParams<DBRole>) => {
-                return await params.mutation({ name: params.input, description: "" });
-            },
-            getForeignQuickFilterWhereClause: (query: string) => {
-                return { name: { contains: query } };
-            },
-            doesItemExactlyMatchText: (item: DBRole, filterText: string) => {
-                return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
-            },
-            renderAsChip: (args: RenderAsChipParams<DBRole>) => {
-                if (!args.value) {
-                    return <>--</>;
-                }
-                return <Chip
-                    size="small"
-                    label={`${args.value.name}`}
-                    onDelete={args.onDelete}
-                />;
-            },
-            renderAsListItem: (props, value, selected) => {
-                return <li {...props}>
-                    {selected && <DoneIcon />}
-                    {value.name}
-                    {selected && <CloseIcon />}
-                </li>
-            },
+            foreignSpec: {
+                label: "Role",
+                pkMember: "id",
+
+                getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => {
+                    return { name: { contains: query } };
+                },
+                getAllOptionsQuery: getAllRoles,
+
+                allowInsertFromString: true,
+                insertFromStringMutation: CreateRoleMutation,
+                insertFromString: async (params: InsertFromStringParams) => {
+                    return await params.mutation({ name: params.input, description: "" });
+                },
+
+                doesItemExactlyMatchText: (item: DBRole, filterText: string) => {
+                    return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
+                },
+
+                renderAsChip: (args: RenderAsChipParams<DBRole>) => {
+                    if (!args.value) {
+                        return <>--</>;
+                    }
+                    return <Chip
+                        size="small"
+                        label={`${args.value.name}`}
+                        onDelete={args.onDelete}
+                    />;
+                },
+
+                renderAsListItem: (props, value, selected) => {
+                    return <li {...props}>
+                        {selected && <DoneIcon />}
+                        {value.name}
+                        {selected && <CloseIcon />}
+                    </li>
+                },
+            }
         });
     }
 
-    getQuickFilterWhereClause = (query: string) => {
+    getQuickFilterWhereClause = (query: string): Prisma.UserWhereInput => {
         return { role: { name: { contains: query } } };
     };
 };
 
-export const UserTableSpec = new CMTableSpec<DBUser>({
+export const UserTableSpec = new CMTableSpec<DBUser, Prisma.UserWhereInput>({
     devName: "user",
     CreateMutation: insertUserMutation,
     CreateSchema: InsertUserSchema,
@@ -124,8 +129,8 @@ export const UserTableSpec = new CMTableSpec<DBUser>({
     GetNameOfRow: (row: DBUser) => { return row.name; },
     fields: [
         new PKIDField({ member: "id" }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: UserNameSchema }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Email", member: "email", zodSchema: UserEmailSchema }),
+        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: UserNameSchema, allowNullAndTreatEmptyAsNull: false }),
+        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Email", member: "email", zodSchema: UserEmailSchema, allowNullAndTreatEmptyAsNull: false }),
         new UserRoleField(),
     ],
 });

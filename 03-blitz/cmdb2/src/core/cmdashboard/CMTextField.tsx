@@ -10,7 +10,7 @@ import {
 interface CMTextFieldProps {
     validationError: string | null;
     label: string;
-    value: string;
+    value: string | null;
     onChange: (e, value) => void;
     autoFocus: boolean;
 };

@@ -229,3 +229,10 @@ export const InstrumentTagSignificance = {
 //     InstrumentTagSignificance,
 // };
 
+export type Nullable<T> = { [K in keyof T]: T[K] | null };
+
+export const CoerceNullableNumberToNullableString = (inp: number | null): string | null => {
+    if (inp === null) return null;
+    return `${inp}`;
+};
+

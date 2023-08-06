@@ -4,8 +4,7 @@ import React from "react";
 import { CMSelectItemDialog2 } from './CMSelectForeignItemDialog';
 import { CMFieldSpecBase, RenderForNewItemDialogArgs, ValidateAndParseResult } from "./CMColumnSpec";
 
-
-export type InsertFromStringParams<T> = {
+export type InsertFromStringParams = {
     mutation: any,
     input: string,
 };
@@ -15,48 +14,49 @@ export interface RenderAsChipParams<T> {
     onDelete?: () => void;
 }
 
-interface ForeignSingleFieldArgs<ForeignModel> {
-    member: string,
-    fkidMember: string,
-    label: string,
-    cellWidth: number,
-    allowNull: boolean, // not sure if it's possible to infer this from a zod schema or not ... simple to put here anyway.
-    foreignPk: string, // i guess this is always "id".
+export interface CMSelectItemDialogSpec<ItemModel, ItemWhereInput> {
+    label: string;
+    pkMember: string, // i guess this is always "id".
+
+    getQuickFilterWhereClause: (query: string) => ItemWhereInput;
     getAllOptionsQuery: any,
-
-    // for filtering a list of the foreign items, fetched by getAllOptionsQuery
-    getForeignQuickFilterWhereClause: (query: string) => any,
-
-    // when filtering a list, we only show the "Add new item 'text'" when it doesn't match an existing item already. This is therefore required.
-    doesItemExactlyMatchText: (item: ForeignModel, filterText: string) => boolean,
 
     allowInsertFromString: boolean,
     insertFromStringMutation: any,
-    insertFromString: ((params: InsertFromStringParams<ForeignModel>) => Promise<ForeignModel>), // create an object from string asynchronously.
-    insertFromStringSchema: any,
+    insertFromString: ((params: InsertFromStringParams) => Promise<ItemModel>), // create an object from string asynchronously.
 
+    doesItemExactlyMatchText: (item: ItemModel, filterText: string) => boolean,
+
+    renderAsChip: (args: RenderAsChipParams<ItemModel>) => React.ReactElement;
     // should render a <li {...props}> for autocomplete
-    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: ForeignModel, selected: boolean) => React.ReactElement;
-
-    // also for autocomplete
-    renderAsChip: (args: RenderAsChipParams<ForeignModel>) => React.ReactElement;
+    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: ItemModel, selected: boolean) => React.ReactElement;
 };
 
-export interface ForeignSingleFieldInputProps<DBModel, ForeignModel> {
-    field: ForeignSingleField<DBModel, ForeignModel>;
+interface ForeignSingleFieldArgs<ForeignModel, ForeignWhereInput> {
+    foreignSpec: CMSelectItemDialogSpec<ForeignModel, ForeignWhereInput>;
+
+    member: string,
+    fkidMember: string,
+
+    cellWidth: number,
+    allowNull: boolean, // not sure if it's possible to infer this from a zod schema or not ... simple to put here anyway.
+};
+
+export interface ForeignSingleFieldInputProps<DBModel, ForeignModel, LocalWhereInput, ForeignWhereInput> {
+    field: ForeignSingleField<DBModel, ForeignModel, LocalWhereInput, ForeignWhereInput>;
     value: ForeignModel | null;
     onChange: (value: ForeignModel | null) => void;
 };
 
 // general use "edit cell" for foreign single values
-export const ForeignSingleFieldInput = <DBModel, ForeignModel,>(props: ForeignSingleFieldInputProps<DBModel, ForeignModel>) => {
+export const ForeignSingleFieldInput = <DBModel, ForeignModel, LocalWhereInput, ForeignWhereInput>(props: ForeignSingleFieldInputProps<DBModel, ForeignModel, LocalWhereInput, ForeignWhereInput>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [oldValue, setOldValue] = React.useState<ForeignModel | null>();
     React.useEffect(() => {
         setOldValue(props.value);
     }, []);
 
-    const chip = props.field.args.renderAsChip({
+    const chip = props.field.args.foreignSpec.renderAsChip({
         value: props.value,
         onDelete: () => {
             props.onChange(null);
@@ -65,10 +65,10 @@ export const ForeignSingleFieldInput = <DBModel, ForeignModel,>(props: ForeignSi
 
     return <div>
         {chip}
-        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.field.args.label}</Button>
+        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.field.args.foreignSpec.label}</Button>
         {isOpen && <CMSelectItemDialog2
             value={props.value}
-            spec={props.field}
+            spec={props.field.args.foreignSpec}
             onOK={(newValue: ForeignModel | null) => {
                 props.onChange(newValue);
                 setIsOpen(false);
@@ -83,16 +83,16 @@ export const ForeignSingleFieldInput = <DBModel, ForeignModel,>(props: ForeignSi
 };
 
 // a single-selection foreign object (one-to-one or one-to-many)
-export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldSpecBase<DBModel> {
+export abstract class ForeignSingleField<DBModel, ForeignModel, LocalWhereInput, ForeignWhereInput> extends CMFieldSpecBase<DBModel, LocalWhereInput, ForeignModel | null> {
 
-    args: ForeignSingleFieldArgs<ForeignModel>;
+    args: ForeignSingleFieldArgs<ForeignModel, ForeignWhereInput>;
 
-    constructor(args: ForeignSingleFieldArgs<ForeignModel>) {
+    constructor(args: ForeignSingleFieldArgs<ForeignModel, ForeignWhereInput>) {
         super();
         this.args = args;
         this.member = args.member;
         this.fkidMember = args.fkidMember;
-        this.columnHeaderText = args.member;
+        this.columnHeaderText = args.foreignSpec.label;
         this.isEditableInGrid = true;
         this.cellWidth = args.cellWidth;
         this.initialNewItemValue = null;
@@ -100,7 +100,7 @@ export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldS
     }
 
     // only validation is currently checking null.
-    ValidateAndParse = (val: any): ValidateAndParseResult => {
+    ValidateAndParse = (val: ForeignModel | null): ValidateAndParseResult<ForeignModel | null> => {
         if (val === null || val === undefined) {
             if (!this.args.allowNull) {
                 return {
@@ -117,23 +117,9 @@ export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldS
         };
     };
 
-    isEqual = (a: any, b: any) => {
-        const anull = (a === null || a === undefined);
-        const bnull = (b === null || b === undefined);
-        if (anull && bnull) return true;
-        if (anull !== bnull) return false;
-        // both non-null.
-        return a[this.args.foreignPk] === b[this.args.foreignPk];
-    };
-
-    // child classes must implement:
-    // getQuickFilterWhereClause = (query: string) => {
-    //     ...
-    // };
-
     // view: render as a single chip
     renderForEditGridView = (params: GridRenderCellParams): React.ReactElement => {
-        return this.args.renderAsChip({
+        return this.args.foreignSpec.renderAsChip({
             value: params.value,
         });
     };
@@ -145,16 +131,16 @@ export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldS
             value={params.value}
             onChange={(value) => {
                 params.api.setEditCellValue({ id: params.id, field: this.args.member, value }).then(() => {
-                    params.api.setEditCellValue({ id: params.id, field: this.args.fkidMember, value: ((value === null) ? null : (value![this.args.foreignPk])) });
+                    params.api.setEditCellValue({ id: params.id, field: this.args.fkidMember, value: ((value === null) ? null : (value![this.args.foreignSpec.pkMember])) });
                 });
             }}
         />;
     }
 
     // edit: render as single chip with "SELECT..." and a github style autocomplete.
-    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel>) => {
+    renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel, ForeignModel | null>) => {
         return <React.Fragment key={params.key}>
-            <InputLabel>{this.args.label}</InputLabel>
+            <InputLabel>{this.args.foreignSpec.label}</InputLabel>
             <ForeignSingleFieldInput
                 field={this}
                 value={params.value}
@@ -162,7 +148,7 @@ export abstract class ForeignSingleField<DBModel, ForeignModel> extends CMFieldS
                     let pk = null;
                     params.api.setFieldValues({
                         [this.member]: value,
-                        [this.args.fkidMember]: ((value === null) ? null : value![this.args.foreignPk]),
+                        [this.args.fkidMember]: ((value === null) ? null : value![this.args.foreignSpec.pkMember]),
                     });
                 }}
             />
