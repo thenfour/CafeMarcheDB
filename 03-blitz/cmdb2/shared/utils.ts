@@ -217,19 +217,14 @@ export const InstrumentTagSignificance = {
     Large: "Large",
 } as const satisfies Record<string, string>;
 
-// export const utils = {
-//     ChangeAction,
-//     RegisterChange,
-//     RegisterActivity,
-//     SetSetting,
-//     GetSetting,
-//     CoerceToNumberOrNull,
-//     ValidateNullableInt,
-//     ValidateInt,
-//     InstrumentTagSignificance,
-// };
+// utility type to allow strict selection of the keys of a const object
+export type KeysOf<T extends Record<string, unknown>> = keyof T;
 
+
+// utility type
+// to make all fields nullable
 export type Nullable<T> = { [K in keyof T]: T[K] | null };
+
 
 export const CoerceNullableNumberToNullableString = (inp: number | null): string | null => {
     if (inp === null) return null;

@@ -67,6 +67,7 @@ useAuthorization   // for client-side authorization
   which flows to CMAuthorize
 resolver.authorize // for securing db queries on the server
   which eventually flows to CMDBRolesIsAuthorized -> CMAuthorize
+CMDBAuthorizeOrThrow   // for other server side auth
 ````
 
 # db mutation mess

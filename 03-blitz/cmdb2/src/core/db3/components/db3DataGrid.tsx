@@ -1,12 +1,4 @@
-// using CMTableSpec now.
-
-// todo: 
-// - create item dialog
-// - select one dialog? it allows null, has a nice filter, has descriptive text. it's effectively an autocomplete
-// - select many dialog
-// - autocomplete field, useful for a simpler smaller field for when there's already a dialog on the screen.
-
-import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -23,6 +15,7 @@ import {
     GridActionsCellItem,
     GridColDef,
     GridFilterModel,
+    GridPaginationModel,
     GridRowHeightParams,
     GridRowModel, GridRowModes, GridRowModesModel, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
     GridToolbarQuickFilter
@@ -30,17 +23,20 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-//import { CMTableSpec } from "./dbcomponents2/CMColumnSpec";
-import { CMNewObjectDialog2 } from "./CMNewObjectDialog2";
-import { CMTableSpec } from "./CMColumnSpec";
+import * as db3 from "../db3";
+import db3mutations from "../mutations/db3mutations";
+import * as db3client from "./db3Client";
+import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 
 const gViewingRowHeight = 40;
 const gEditingRowHeight = 55;
+const gPageSizeOptions = [20, 50, 100] as number[];
+const gPageSizeDefault = 50 as number;
 
-function CustomToolbar({ onNewClicked, spec }) {
+function CustomToolbar<RowModel>({ onNewClicked, table }: { onNewClicked: any, table: db3.xTable<RowModel> }) {
     return (
         <GridToolbarContainer>
-            <Button startIcon={<AddIcon />} onClick={onNewClicked}>{spec.CreateItemButtonText()}</Button>
+            <Button startIcon={<AddIcon />} onClick={onNewClicked}>insert {table.tableName}</Button>
 
             {/* <GridToolbarColumnsButton /> */}
             <GridToolbarFilterButton />
@@ -61,52 +57,62 @@ function CustomToolbar({ onNewClicked, spec }) {
 //    and I'm not sure how to access that edit item.
 // so one solution is to create a new column in the datagrid for each object. so there are always column pairs for ID/object.
 
-export type CMEditGrid2Props<TDBModel> = {
-    spec: CMTableSpec<TDBModel>,
+
+export type DB3EditGridProps<RowModel> = {
+    table: db3.xTable<RowModel>,
 };
 
-export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
-    //useAuthorize();
+export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const [updateMutation] = useMutation(spec.UpdateMutation);
-    const [deleteMutation] = useMutation(spec.DeleteMutation) as any[];
-    const [createMutation] = useMutation(spec.CreateMutation);
+
+    // const [mutator] = useMutation(db3mutations);
+    // const [querier, {refetch}] = useQuery();
+    // const [paginatedQuerier, {refetch}] = usePaginatedQuery
+
+    // const [updateMutation] = useMutation(spec.UpdateMutation);
+    // const [deleteMutation] = useMutation(spec.DeleteMutation) as any[];
+    // const [createMutation] = useMutation(spec.CreateMutation);
 
     // set initial pagination values + get pagination state.
-    const [paginationModel, setPaginationModel] = React.useState({
+    const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
         page: 0,
-        pageSize: spec.PageSizeDefault,
+        pageSize: gPageSizeDefault,
     });
 
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
-    let orderBy = spec.DefaultOrderBy;//{ id: "asc" }; // default order
-    if (sortModel && sortModel.length > 0) {
-        orderBy = { [sortModel[0]!.field]: sortModel[0]!.sort }; // only support 1 ordering (grid does too afaik)
-    }
+    // let orderBy = table.DefaultOrderBy;//{ id: "asc" }; // default order
+    // if (sortModel && sortModel.length > 0) {
+    //     orderBy = { [sortModel[0]!.field]: sortModel[0]!.sort }; // only support 1 ordering (grid does too afaik)
+    // } else {
+    // }
 
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
-    const where = { AND: [] as any[] };
-    if (filterModel.quickFilterValues) {
-        const quickFilterItems = filterModel.quickFilterValues.map(q => {
-            return {
-                OR: spec.GetQuickFilterWhereClauseExpression(q)
-            };
-        });
-        where.AND.push(...quickFilterItems);
-    }
-    if (filterModel.items && filterModel.items.length > 0) {
-        // convert items to prisma filter
-        const filterItems = filterModel.items.map((i) => {
-            return { [i.field]: { [i.operator]: i.value } }
-        });
-        where.AND.push(...filterItems);
-    }
+    // const where = { AND: [] as any[] };
+    // if (filterModel.quickFilterValues) {
+    //     const quickFilterItems = filterModel.quickFilterValues.map(q => {
+    //         return {
+    //             OR: spec.GetQuickFilterWhereClauseExpression(q)
+    //         };
+    //     });
+    //     where.AND.push(...quickFilterItems);
+    // }
+    // if (filterModel.items && filterModel.items.length > 0) {
+    //     // convert items to prisma filter
+    //     const filterItems = filterModel.items.map((i) => {
+    //         return { [i.field]: { [i.operator]: i.value } }
+    //     });
+    //     where.AND.push(...filterItems);
+    // }
 
-    const [{ items, count }, { refetch }] = usePaginatedQuery(spec.GetPaginatedItemsQuery, {
-        orderBy,
-        where,
-        skip: paginationModel.pageSize * paginationModel.page,
-        take: paginationModel.pageSize,
+    // const [{ items, count }, { refetch }] = usePaginatedQuery(spec.GetPaginatedItemsQuery, {
+    //     orderBy,
+    //     where,
+    //     skip: paginationModel.pageSize * paginationModel.page,
+    //     take: paginationModel.pageSize,
+    // });
+
+    const tableClient = db3client.useTableRenderContext(table, {
+        filterModel, sortModel, paginationModel
     });
 
     const [rowModesModel, setRowModesModel] = React.useState({});
@@ -142,7 +148,7 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
         console.log(newRow);
         console.log(oldRow);
         return new Promise<GridRowModel>((resolve, reject) => {
-            const validateResult = spec.ValidateAndComputeDiff(oldRow as TDBModel, newRow as TDBModel);
+            const validateResult = table.ValidateAndComputeDiff(oldRow as RowModel, newRow as RowModel);
             // there are 3 possible paths:
             // 1. validation errors
             // 2. or, changes made
@@ -157,7 +163,7 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
                 // Save the arguments to resolve or reject the promise later
                 setConfirmDialogArgs({ resolve, reject, newRow, oldRow, validateResult });
             } else {
-                showSnackbar({ children: spec.NoChangesMadeSnackbar(oldRow as TDBModel), severity: 'success' });
+                showSnackbar({ children: "no changes made", severity: 'success' });
                 resolve(oldRow); // Nothing was changed
             }
         });
@@ -172,18 +178,18 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
     };
 
     const handleYes = () => {
-        const { newRow, oldRow, reject, resolve } = confirmDialogArgs;
+        const { newRow, oldRow, reject, resolve }: { newRow: RowModel, oldRow: RowModel, reject: any, resolve: any } = confirmDialogArgs;
         try {
-            updateMutation(newRow).then((updatedObj) => {
-                showSnackbar({ children: spec.UpdateItemSuccessSnackbar(updatedObj as TDBModel), severity: 'success' });
-                void refetch();
+            tableClient.doUpdateMutation(newRow).then((updatedObj) => {
+                showSnackbar({ children: "update success", severity: 'success' });
+                tableClient.refetch();
             }).catch((reason => {
-                showSnackbar({ children: spec.UpdateItemErrorSnackbar(reason), severity: 'error' });
-                void refetch(); // should revert the data.
+                showSnackbar({ children: "update error", severity: 'error' });
+                tableClient.refetch();
             }));
             resolve(newRow); // optimistic
         } catch (error) {
-            showSnackbar({ children: spec.UpdateItemErrorSnackbar(error), severity: 'error' });
+            showSnackbar({ children: "update exception", severity: 'error' });
             reject(oldRow);
         }
         setConfirmDialogArgs(null);
@@ -194,20 +200,20 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
             return null;
         }
         const handleYes = () => {
-            deleteMutation({ [spec.PKIDMemberName]: deleteRowId }).then(() => {
-                showSnackbar({ children: spec.DeleteItemSuccessSnackbar(row), severity: 'success' });
+            tableClient.doDelete(deleteRowId).then(() => {
+                showSnackbar({ children: "deleted successful", severity: 'success' });
                 setDeleteRowId(null);
-                void refetch();
+                tableClient.refetch();
             }).catch(e => {
-                showSnackbar({ children: spec.DeleteItemErrorSnackbar(e), severity: 'error' });
+                showSnackbar({ children: "delete error", severity: 'error' });
                 console.error(e);
             });
         };
-        const row = items.find(u => u[spec.PKIDMemberName] == deleteRowId);
-        if (!row) { // not found wut? maybe some weird async pagination or background refresh error
-            setDeleteRowId(null);
-            return null;
-        }
+        // const row = items.find(u => u[spec.PKIDMemberName] == deleteRowId);
+        // if (!row) { // not found wut? maybe some weird async pagination or background refresh error
+        //     setDeleteRowId(null);
+        //     return null;
+        // }
 
         const handleClose = () => setDeleteRowId(null);
 
@@ -218,7 +224,7 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
             >
                 <DialogTitle>Delete row?</DialogTitle>
                 <DialogContent dividers>
-                    {spec.DeleteConfirmationMessage(row)}
+                    confirm delete
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>No</Button>
@@ -242,7 +248,7 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
             >
                 <DialogTitle>{explicitSave ? "Are you sure?" : "Save your changes?"}</DialogTitle>
                 <DialogContent dividers>
-                    {spec.UpdateConfirmationMessage(oldRow, newRow, validateResult)}
+                    confirm update...
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleNo}>No</Button>
@@ -252,15 +258,13 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
         );
     };
 
-    const onAddOK = (obj) => {
-        console.log(`edit grid invoking create mutation with object:`);
-        console.log(obj);
-
-        createMutation(obj).then((newRow) => {
-            showSnackbar({ children: spec.CreateSuccessSnackbar(newRow as TDBModel), severity: 'success' });
-            void refetch();
+    const onAddOK = (obj: RowModel) => {
+        tableClient.doInsertMutation(obj).then((newRow) => {
+            showSnackbar({ children: "insert successful", severity: 'success' });
+            tableClient.refetch();
         }).catch(err => {
-            showSnackbar({ children: spec.CreateErrorSnackbar(err), severity: 'error' });
+            showSnackbar({ children: "insert error", severity: 'error' });
+            tableClient.refetch();
         });
         setShowingNewDialog(false);
     };
@@ -280,33 +284,19 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
 
     const fkidColumns: GridColDef[] = [];
     const columns: GridColDef[] = [];
-    for (let i = 0; i < spec.fields.length; ++i) {
-        const field = spec.fields[i]!;
 
-        // probably should do some validation of column spec consistency.
+    for (const [fieldName, field] of Object.entries(tableClient.columnClients)) {
         const c: GridColDef = {
             field: field.member,
-            headerName: field.columnHeaderText,
+            headerName: field.label,
             editable: field.isEditableInGrid,
             width: field.cellWidth,
         };
-        if (field.renderForEditGridEdit) {
-            c.renderEditCell = field.renderForEditGridEdit;
-        }
-        if (field.renderForEditGridView) {
-            c.renderCell = field.renderForEditGridView;
-        }
         if (field.GridColProps) {
             Object.assign(c, field.GridColProps);
         }
 
         columns.push(c);
-
-        // if fk, we have to add 2 columns; one for the "value", and one for the fkid
-        if (!!field.fkidMember) {
-            // todo: is editable:true correct?
-            fkidColumns.push({ field: field.fkidMember!, editable: true, filterable: false });
-        }
     }
 
     columns.push(...fkidColumns,
@@ -360,10 +350,10 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
         {renderConfirmDialog()}
         {renderDeleteConfirmation()}
 
-        {!!showingNewDialog && <CMNewObjectDialog2
+        {!!showingNewDialog && <DB3NewObjectDialog
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddOK}
-            spec={spec}
+            table={table}
         />}
         <DataGrid
             // basic config
@@ -378,7 +368,7 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
             slotProps={{
                 toolbar: {
                     onNewClicked: () => { setShowingNewDialog(true); },
-                    spec: spec,
+                    table: table,
                 }
             }}
             getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
@@ -392,8 +382,8 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
             columns={columns}
 
             // actual data
-            rows={items}
-            rowCount={count}
+            rows={tableClient.items}
+            rowCount={tableClient.rowCount}
 
             // initial state
             initialState={{
@@ -413,7 +403,7 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
             // pagination
             paginationMode="server"
             onPaginationModelChange={setPaginationModel}
-            pageSizeOptions={spec.PageSizeOptions}
+            pageSizeOptions={gPageSizeOptions}
 
             // sorting
             sortingMode="server"

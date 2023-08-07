@@ -1,5 +1,6 @@
 import { EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
 import { SessionContext } from "@blitzjs/auth";
+import { AuthenticatedMiddlewareCtx } from "blitz";
 import { User } from "db"
 import { Permission } from "shared/permissions";
 
@@ -29,6 +30,13 @@ export function CMDBRolesIsAuthorized(params: any) {
   const [reason, permission] = params.args;
 
   return CMAuthorize({ reason, permission, publicData });
+}
+
+// use instead of resolver.authorize
+export function CMDBAuthorizeOrThrow(reason: string, permission: Permission, ctx: AuthenticatedMiddlewareCtx) {
+  if (!CMAuthorize({ reason, permission, publicData: ctx.session.$publicData })) {
+    throw new Error(`Unauthorized: ${reason}`);
+  }
 }
 
 declare module "@blitzjs/auth" {
