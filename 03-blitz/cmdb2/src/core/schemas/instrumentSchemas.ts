@@ -2,18 +2,17 @@ import db, { Prisma } from "db";
 import { CoerceToNumberOrNull, ValidateInt } from "shared/utils";
 import { z } from "zod"
 
-// name              String
-// sortOrder         Int
-// functionalGroupId Int
-// instrumentTags    InstrumentTagAssociation[]
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const InstrumentNameSchema = z.string().min(1);
 
 export const InsertInstrumentSchema = z.object({
     name: InstrumentNameSchema,
     sortOrder: z.number(),
     functionalGroupId: z.number(),
-    tagIds: z.array(z.number()).optional(),
+    instrumentTags: z.array(z.object({
+        tagId: z.number()
+    })),
+    //tagIds: z.array(z.number()).optional(),
 });
 
 export const UpdateInstrumentSchema = z.object({
@@ -25,32 +24,7 @@ export const UpdateInstrumentSchema = z.object({
 });
 
 
-// model InstrumentTag {
-//     id           Int                        @id @default(autoincrement())
-//     text         String
-//     color        String?
-//     significance String? // "uses electricity" for example?
-//     instruments  InstrumentTagAssociation[]
-//   }
-
-//   model InstrumentTagAssociation {
-//     id           Int           @id @default(autoincrement())
-//     instrumentId Int
-//     instrument   Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
-//     tagId        Int
-//     tag          InstrumentTag @relation(fields: [tagId], references: [id], onDelete: Cascade) // cascade delete association
-
-//     @@unique([instrumentId, tagId]) // 
-//   }
-
-// Custom transformation function
-const emptyStringToNull = (data: unknown): unknown => {
-    if (typeof data === "string" && data.trim() === "") {
-        return null;
-    }
-    return data;
-};
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export const InstrumentTagTextSchema = z.string().min(1);
 export const InstrumentTagColorSchema = z.string().nullable();
@@ -75,4 +49,22 @@ export const UpdateInstrumentTagSchema = z.object({
 export const InsertInstrumentTagFromStringAsAssociationSchema = z.object({
     localPk: z.number().nullable(),
     text: InstrumentTagTextSchema,
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const InstrumentFunctionalGroupNameSchema = z.string().min(1);
+export const InstrumentFunctionalGroupDescriptionSchema = z.string();
+export const InstrumentFunctionalGroupSortOrderSchema = z.number();
+
+export const InsertInstrumentFunctionalGroupSchema = z.object({
+    name: InstrumentFunctionalGroupNameSchema,
+    description: InstrumentFunctionalGroupDescriptionSchema,
+    sortOrder: InstrumentFunctionalGroupSortOrderSchema,
+});
+
+export const UpdateInstrumentFunctionalGroupSchema = z.object({
+    id: z.number(),
+    name: InstrumentFunctionalGroupNameSchema.optional(),
+    description: InstrumentFunctionalGroupDescriptionSchema.optional(),
+    sortOrder: InstrumentFunctionalGroupSortOrderSchema.optional(),
 });

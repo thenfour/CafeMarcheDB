@@ -15,59 +15,62 @@ const contextDesc = "insertInstrumentMutation";
 export default resolver.pipe(
     resolver.zod(InsertInstrumentSchema),
     resolver.authorize("insertInstrumentMutation", Permission.admin_general),
-    async ({ tagIds, ...fields }, ctx) => {
+    async (fields, ctx) => {
         try {
+            console.log(fields);
+            debugger;
             const changeContext = CreateChangeContext(contextDesc);
+            return null;
             // const operationId = randomUUID(); // group multiple changes into 1
             // const changedAt = new Date();
 
-            const obj = await db.instrument.create({
-                data: fields,
-            });
+            // const obj = await db.instrument.create({
+            //     data: fields,
+            // });
 
-            await RegisterChange({
-                action: ChangeAction.insert,
-                changeContext,
-                table: "instrument",
-                pkid: obj.id,
-                newValues: fields,
-                ctx,
-            });
+            // await RegisterChange({
+            //     action: ChangeAction.insert,
+            //     changeContext,
+            //     table: "instrument",
+            //     pkid: obj.id,
+            //     newValues: fields,
+            //     ctx,
+            // });
 
-            // now register tag associations
-            if (tagIds) {
-                for (let i = 0; i < tagIds.length; ++i) {
-                    const data = {
-                        instrumentId: obj.id,
-                        tagId: tagIds[i]!,
-                    };
-                    const association = await db.instrumentTagAssociation.create({
-                        data
-                    });
+            // // now register tag associations
+            // if (tagIds) {
+            //     for (let i = 0; i < tagIds.length; ++i) {
+            //         const data = {
+            //             instrumentId: obj.id,
+            //             tagId: tagIds[i]!,
+            //         };
+            //         const association = await db.instrumentTagAssociation.create({
+            //             data
+            //         });
 
-                    await RegisterChange({
-                        action: ChangeAction.insert,
-                        changeContext,
-                        table: "instrumentTagAssociation",
-                        pkid: association.id,
-                        newValues: data,
-                        ctx,
-                    });
-                }
-            }
+            //         await RegisterChange({
+            //             action: ChangeAction.insert,
+            //             changeContext,
+            //             table: "instrumentTagAssociation",
+            //             pkid: association.id,
+            //             newValues: data,
+            //             ctx,
+            //         });
+            //     }
+            // }
 
             // now that associations have also been created, return the fully constructed object.
-            const obj2 = await db.instrument.findFirst({
-                where: { id: obj.id },
-                include: {
-                    functionalGroup: true,
-                    instrumentTags: {
-                        include: { instrument: true }
-                    },
-                }
-            });
+            // const obj2 = await db.instrument.findFirst({
+            //     where: { id: obj.id },
+            //     include: {
+            //         functionalGroup: true,
+            //         instrumentTags: {
+            //             include: { instrument: true }
+            //         },
+            //     }
+            // });
 
-            return obj2;
+            //return obj2;
         } catch (e) {
             console.error(e);
             throw (e);

@@ -5,7 +5,7 @@ import { CMSelectItemDialog2 } from './CMSelectForeignItemDialog';
 import { CMFieldSpecBase, RenderForNewItemDialogArgs, ValidateAndParseResult } from "./CMColumnSpec";
 
 export type InsertFromStringParams = {
-    mutation: any,
+    mutation: any, // async mutation(input)
     input: string,
 };
 

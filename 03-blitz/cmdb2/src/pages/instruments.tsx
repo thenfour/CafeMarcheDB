@@ -19,10 +19,10 @@ import deleteInstrumentMutation from "src/core/mutations/deleteInstrumentMutatio
 import { ColorSwatch, PKIDField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
 import { TagsField, TagsInsertFromStringParams, TagsRenderAsChipParams } from "src/core/cmdashboard/dbcomponents2/CMTagsField";
 import getAllInstrumentTags from "src/core/queries/getAllInstrumentTags";
-import insertInstrumentTagMutation from "src/core/mutations/insertInstrumentTagMutation";
 import { gGeneralPalette } from "shared/color";
 import { Chip } from "@mui/material";
 import insertInstrumentTagFromStringAsAssociationMutation from "src/core/mutations/insertInstrumentTagFromStringAsAssociationMutation";
+import { ForeignSingleField, InsertFromStringParams, RenderAsChipParams } from "src/core/cmdashboard/dbcomponents2/CMForeignSingleField";
 
 type I = Prisma.InstrumentGetPayload<{
     include: {
@@ -37,11 +37,7 @@ type A = Prisma.InstrumentTagAssociationGetPayload<{
     }
 }>;
 
-// type T = Prisma.InstrumentTagGetPayload<{
-//     include: { instruments: true },
-// }>;
-
-type WhereInput = Prisma.InstrumentWhereInput;
+type DBFunctionalGroup = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
 
 export class InstrumentTagsField extends TagsField<I, A, Prisma.InstrumentWhereInput, Prisma.InstrumentTagWhereInput> {
     constructor() {
@@ -51,16 +47,16 @@ export class InstrumentTagsField extends TagsField<I, A, Prisma.InstrumentWhereI
             member: "instrumentTags",
             associationSpec: {
                 label: "Tags",
+                getForeignPKOfAssociation: (a: A) => a.tagId, // in order to compare for equality
                 getAllAssociationOptionsQuery: getAllInstrumentTags, // returns Association[] where many may be mocked up.
                 getForeignQuickFilterWhereClause: (query: string): Prisma.InstrumentTagWhereInput => {
                     return { text: { contains: query } };
                 },
-
                 doesItemExactlyMatchText: (item: A, filterText: string) => {
                     return item.tag.text.trim().toLowerCase() === filterText.trim().toLowerCase();
                 },
-
                 allowInsertFromString: true,
+                insertFromStringSchema: null,
                 insertFromStringMutation: insertInstrumentTagFromStringAsAssociationMutation, // creates a foreign item, returns a MOCK association
                 insertFromString: async (params: TagsInsertFromStringParams) => {
                     const payload: (Prisma.InstrumentTagCreateInput & { localPk: number | null }) = {
@@ -70,9 +66,6 @@ export class InstrumentTagsField extends TagsField<I, A, Prisma.InstrumentWhereI
                     };
                     return await params.mutation(payload);
                 }, // create an object from string asynchronously.
-                insertFromStringSchema: null,
-
-                getForeignPKOfAssociation: (a: A) => a.tagId, // in order to compare for equality
 
                 renderAsChip: (args: TagsRenderAsChipParams<A>) => {
                     if (!args.value) {
@@ -104,7 +97,69 @@ export class InstrumentTagsField extends TagsField<I, A, Prisma.InstrumentWhereI
     };
 };
 
-export const InstrumentTableSpec = new CMTableSpec<I>({
+
+export class InstrumentFunctionalGroupField extends ForeignSingleField<I, DBFunctionalGroup, Prisma.InstrumentWhereInput, Prisma.InstrumentFunctionalGroupWhereInput> {
+    constructor() {
+        super({
+            allowNull: true,
+            cellWidth: 220,
+            fkidMember: "functionalGroupId",
+            member: "functionalGroup",
+            foreignSpec: {
+                label: "Functional group",
+                pkMember: "id",
+
+                getQuickFilterWhereClause: (query: string): Prisma.InstrumentFunctionalGroupWhereInput => {
+                    return { name: { contains: query } };
+                },
+                getAllOptionsQuery: getAllInstrumentFunctionalGroups,
+
+                allowInsertFromString: true,
+                insertFromStringMutation: insertInstrumentFunctionalGroupMutation,
+                insertFromString: async (params: InsertFromStringParams) => {
+                    return await params.mutation({
+                        name: params.input,
+                        description: "",
+                        sortOrder: 0,
+                    });
+                },
+
+                doesItemExactlyMatchText: (item: DBFunctionalGroup, filterText: string) => {
+                    return (item.name.trim().toLowerCase() === filterText.trim().toLowerCase()) ||
+                        (item.description.trim().toLowerCase() === filterText.trim().toLowerCase());
+                },
+
+                renderAsChip: (args: RenderAsChipParams<DBFunctionalGroup>) => {
+                    if (!args.value) {
+                        return <>--</>;
+                    }
+                    return <Chip
+                        size="small"
+                        label={`${args.value.name}`}
+                        onDelete={args.onDelete}
+                    />;
+                },
+
+                renderAsListItem: (props, value, selected) => {
+                    return <li {...props}>
+                        {selected && <DoneIcon />}
+                        {value.name}
+                        {value.description}
+                        {selected && <CloseIcon />}
+                    </li>
+                },
+            }
+        });
+    }
+
+    getQuickFilterWhereClause = (query: string): Prisma.InstrumentWhereInput => {
+        return { functionalGroup: { name: { contains: query } } };
+    };
+};
+
+
+
+export const InstrumentTableSpec = new CMTableSpec<I, Prisma.InstrumentWhereInput>({
     devName: "instrument",
     CreateMutation: insertInstrumentMutation,
     CreateSchema: InsertInstrumentSchema,
@@ -117,6 +172,7 @@ export const InstrumentTableSpec = new CMTableSpec<I>({
         new PKIDField({ member: "id" }),
         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: InstrumentNameSchema, allowNullAndTreatEmptyAsNull: false }),
         new InstrumentTagsField(),
+        new InstrumentFunctionalGroupField(),
     ],
 });
 

@@ -448,7 +448,7 @@ const Dashboard2 = ({ children }) => {
                         <ListItemIcon><MusicNoteIcon /></ListItemIcon>
                         <ListItemText primary="Instrument Tags" />
                     </ListItemButton>
-                    <ListItemButton component={Link} href="/instrumentGroups" selected={router.pathname == "/instrumentGroups"}>
+                    <ListItemButton component={Link} href="/instrumentFunctionalGroups" selected={router.pathname == "/instrumentFunctionalGroups"}>
                         <ListItemIcon><MusicNoteIcon /></ListItemIcon>
                         <ListItemText primary="Instrument Groups" />
                     </ListItemButton>
