@@ -7,15 +7,16 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
 import * as db3 from "../db3";
 import * as db3Client from "./db3Client";
+import { TAnyModel } from "shared/utils";
 //import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, ValidateAndComputeDiffResult } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 
-type db3NewObjectDialogProps<RowModel> = {
-    onOK: (obj: RowModel) => any;
+type db3NewObjectDialogProps = {
+    onOK: (obj: TAnyModel) => any;
     onCancel: () => any;
-    table: db3.xTable<RowModel>;
+    table: db3Client.xTableClientSpec;
 };
 
-export function DB3NewObjectDialog<RowModel>({ onOK, onCancel, table }: db3NewObjectDialogProps<RowModel>) {
+export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialogProps) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(table.defaultObject);

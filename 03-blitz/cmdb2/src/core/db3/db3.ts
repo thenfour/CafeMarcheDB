@@ -74,6 +74,12 @@ export const EmptyValidateAndComputeDiffResult: ValidateAndComputeDiffResult = n
 
 
 ////////////////////////////////////////////////////////////////
+export interface FieldBaseArgs<FieldDataType> {
+    fieldType: string;
+    member: string;
+    label: string;
+    defaultValue: FieldDataType | null;
+}
 
 export abstract class FieldBase<FieldDataType> {
     fieldType: string;
@@ -81,40 +87,19 @@ export abstract class FieldBase<FieldDataType> {
     label: string;
     defaultValue: FieldDataType | null;
 
-    constructor(fieldName: string, fieldType: string) {
-        this.fieldType = fieldType;
-        this.member = fieldName;
-        //console.assert(!gAllColumnTypes[fieldType]); // don't define a table multiple times. effectively singleton.
-        //gAllColumnTypes[fieldType] = this;
+    constructor(args: FieldBaseArgs<FieldDataType>) {
+        Object.assign(this, args);
     };
 
-    abstract initField: (table: xTable, fieldName: string) => void; // field child classes impl this to get established. for example pk fields will set the table's pk here.
+    abstract connectToTable: (table: xTable) => void; // field child classes impl this to get established. for example pk fields will set the table's pk here.
 
     // return either falsy, or an object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     abstract ValidateAndParse: (val: FieldDataType | null) => ValidateAndParseResult<FieldDataType | null>;// => {
-    // if (!this.zodSchema) {
-    //     // no schema = no validation
-    //     return {
-    //         parsedValue: val,
-    //         success: true,
-    //         errorMessage: "",
-    //     };
-    // }
-    // const parseResult = this.zodSchema.safeParse(val) as any; // for some reason some fields are missing from the type, so cast as any.
-    // if (this.logParseResult) {
-    //     console.log(`parse result for ${this.member}`);
-    //     console.log(parseResult);
-    // }
-    // const ret: ValidateAndParseResult<FieldType> = {
-    //     success: parseResult.success,
-    //     errorMessage: parseResult.error && parseResult.error.flatten().formErrors.join(", "),
-    //     parsedValue: parseResult.data,
-    // };
-    //return ret;
-    //};
+
+    abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
 }
 
 
@@ -151,13 +136,13 @@ export class xTable implements TableDesc {
 
         gAllTables[args.tableName] = this;
 
-        this.defaultObject = Object.fromEntries(Object.entries(args.columns).map(([fieldName, field]) => {
-            return [fieldName, field.defaultValue];
-        }));
-
-        for (const [fieldName, field] of Object.entries(args.columns)) {
-            field.initField(this, fieldName);
-        }
+        this.defaultObject = {};
+        args.columns.forEach(field => {
+            this.defaultObject[field.member] = field.defaultValue;
+        });
+        args.columns.forEach(field => {
+            field.connectToTable(this);
+        });
     }
 
     // returns an object describing changes and validation errors.
@@ -168,11 +153,9 @@ export class xTable implements TableDesc {
             success: true,
             hasChanges: false,
         });
+        console.log(`validate compute diff ...`);
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
-            // if (!field.isEditable) {
-            //     continue;
-            // }
             const a = oldItem[field.member];
             const b_raw = newItem[field.member];
             const b_parseResult = field.ValidateAndParse(b_raw); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
@@ -202,10 +185,10 @@ export class xTable implements TableDesc {
             //         ret.changes[field.fkidMember] = [a_fkid, b_fkid];
             //     }
             // } else {
-            //     if (!field.isEqual(a, b)) {
-            //         ret.hasChanges = true;
-            //         ret.changes[field.member] = [a, b];
-            //     }
+            if (!field.isEqual(a, b)) {
+                ret.hasChanges = true;
+                ret.changes[field.member] = [a, b];
+            }
             // }
         }
 
@@ -229,13 +212,8 @@ export class xTable implements TableDesc {
 
 ////////////////////////////////////////////////////////////////
 export const gAllTables: { [key: string]: xTable } = {
-    // populated at runtime
+    // populated at runtime. required in order for client to call an API, and the API able to access the same schema.
 };
-
-// export const gAllColumnTypes: { [key: string]: FieldBase<unknown> } = {
-//     // populated at runtime
-// };
-
 
 ////////////////////////////////////////////////////////////////
 // field types
@@ -246,13 +224,16 @@ export interface PKFieldArgs {
 
 export class PKField extends FieldBase<number> {
     constructor(args: PKFieldArgs) {
-        super(args.columnName, "PKField");
+        super({
+            member: args.columnName,
+            fieldType: "PKField",
+            defaultValue: null,
+            label: args.columnName,
+        });
     }
 
-    initField = (table: xTable, fieldName: string) => {
-        this.member = fieldName;
-        this.label = fieldName;
-        table.pkMember = fieldName;
+    connectToTable = (table: xTable) => {
+        table.pkMember = this.member;
     }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
@@ -261,28 +242,41 @@ export class PKField extends FieldBase<number> {
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    // for pk id fields, there should never be any changes. but it is required to pass into update/delete/whatever so just pass it always.
     ValidateAndParse = (val: number | null): ValidateAndParseResult<number | null> => {
         const ret: ValidateAndParseResult<number | null> = {
-            success: false,
+            success: true,
             parsedValue: val,
-            errorMessage: "pk fields are not editable",
+            errorMessage: "",
         };
         return ret;
+    };
+
+    isEqual = (a: number, b: number) => {
+        return a === b;
     };
 }
 
 export interface GenericStringFieldArgs {
     columnName: string;
     caseSensitive: boolean,
+    allowNull: boolean,
     minLength: number,
 };
 
 export class GenericStringField extends FieldBase<string> {
     constructor(args: GenericStringFieldArgs) {
-        super(args.columnName, "GenericStringField");
+        super({
+            member: args.columnName,
+            fieldType: "GenericStringField",
+            defaultValue: args.allowNull ? null : "",
+            label: args.columnName,
+        });
         this.defaultValue = null;
         Object.assign(this, args);
     }
+
+    connectToTable = (table: xTable) => { };
 
     initField = <RowModel,>(table: xTable, fieldName: string) => {
         this.member = fieldName;
@@ -303,6 +297,10 @@ export class GenericStringField extends FieldBase<string> {
         };
         return ret;
     };
+
+    isEqual = (a: string, b: string) => {
+        return a === b;
+    };
 };
 
 ////////////////////////////////////////////////////////////////
@@ -322,6 +320,7 @@ export const xInstrument = new xTable({
         new PKField({ columnName: "id" }),
         new GenericStringField({
             columnName: "name",
+            allowNull: false,
             caseSensitive: true,
             minLength: 1,
         }),
@@ -341,11 +340,13 @@ export const xInstrumentFunctionalGroup = new xTable({
         new PKField({ columnName: "id" }),
         new GenericStringField({
             columnName: "name",
+            allowNull: false,
             caseSensitive: true,
             minLength: 1,
         }),
         new GenericStringField({
             columnName: "description",
+            allowNull: false,
             caseSensitive: true,
             minLength: 1,
         }),

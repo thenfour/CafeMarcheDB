@@ -14,6 +14,7 @@ import db3mutations from "../mutations/db3mutations";
 //import db3queries from "../queries/db3queries";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
+import { TAnyModel } from "shared/utils";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
@@ -201,11 +202,32 @@ export class xTableRenderClient {
         this.items = items;
         this.rowCount = count;
         this.refetch = refetch;
+
+        for (let i = 0; i < this.clientColumns.length; ++i) {
+            this.clientColumns[i]?.connectColumn(args.tableSpec.args.table);
+        }
     }; // ctor
 
-    //     doUpdateMutation: (newRow: unknown) => Promise<unknown>,
-    //     doInsertMutation: (row: unknown) => Promise<unknown>,
-    //     doDeleteMutation: (pk: number) => Promise<void>,
+    doUpdateMutation = async (newRow: TAnyModel) => {
+        return await this.mutateFn({
+            tableName: this.tableSpec.args.table.tableName,
+            updateModel: newRow,
+        });
+    };
+
+    doInsertMutation = async (row: TAnyModel) => {
+        return await this.mutateFn({
+            tableName: this.tableSpec.args.table.tableName,
+            insertModel: row,
+        });
+    };
+
+    doDeleteMutation = async (pk: number) => {
+        return await this.mutateFn({
+            tableName: this.tableSpec.args.table.tableName,
+            deleteId: pk,
+        });
+    };
 };
 
 

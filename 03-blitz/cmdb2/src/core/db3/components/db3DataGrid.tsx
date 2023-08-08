@@ -305,8 +305,6 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
             },
         });
 
-    //console.log(columns);
-
     return (<>
         {renderConfirmDialog()}
         {renderDeleteConfirmation()}
