@@ -227,6 +227,14 @@ export type Nullable<T> = { [K in keyof T]: T[K] | null };
 
 export type TAnyModel = { [key: string]: any };
 
+// https://stackoverflow.com/questions/58278652/generic-enum-type-guard
+// export const isSomeEnum = <T>(e: T) => (token: any): token is T[keyof T] =>
+//     Object.values(e).includes(token as T[keyof T]);
+
+export const HasFlag = <T extends number,>(myvar: T, flag: T): boolean => {
+    return (myvar & flag) === flag;
+}
+
 export const CoerceNullableNumberToNullableString = (inp: number | null): string | null => {
     if (inp === null) return null;
     return `${inp}`;

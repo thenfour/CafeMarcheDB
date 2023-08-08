@@ -12,8 +12,9 @@ const tableSpec = new db3client.xTableClientSpec({
     table: db3.xInstrumentFunctionalGroup,
     columns: [
         new db3client.PKColumnClient({ columnName: "id" }),
-        new db3client.GenericStringColumnClient({ columnName: "name", cellWidth: 300 }),
+        new db3client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
         new db3client.GenericStringColumnClient({ columnName: "description", cellWidth: 300 }),
+        new db3client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
     ],
 });
 

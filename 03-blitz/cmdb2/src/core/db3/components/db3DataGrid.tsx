@@ -1,3 +1,9 @@
+// todo:
+// - number field
+// - new item dlg
+// - fk single
+// - fk multi
+
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -44,17 +50,6 @@ function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSp
     );
 }
 
-// there is a flow which justifies the use of column pairs in the datagrid to represent both the roleId and role members.
-// in short it all comes down to the fact that the temporary editing values of a row edit are managed by the datagrid (and not in the database),
-// and thus go through setEditGridCellValue(). And we need to make sure both roleId and role are always available and in sync.
-// 1. user is in EDIT mode (so values are not fetched from the DB; they're controlled by the datagrid)
-// 2. user selects a new role here
-// 3. the datagrid now has the updated roleId (because of setEditCellValue({ id, field, value });)
-//    BUT, the "edit cell"'s parent item doesn't have a corrected `role` object; it hasn't been updated.
-//    and I'm not sure how to access that edit item.
-// so one solution is to create a new column in the datagrid for each object. so there are always column pairs for ID/object.
-
-
 export type DB3EditGridProps = {
     //table: db3.xTable,
     tableSpec: db3client.xTableClientSpec,
@@ -73,8 +68,11 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
     const tableClient = db3client.useTableRenderContext({
+        requestedCaps: db3client.xTableClientCaps.Mutation | db3client.xTableClientCaps.PaginatedQuery,
         tableSpec,
-        filterModel, sortModel, paginationModel
+        filterModel,
+        sortModel,
+        paginationModel,
     });
 
     const [rowModesModel, setRowModesModel] = React.useState({});
@@ -312,7 +310,7 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
         {!!showingNewDialog && <DB3NewObjectDialog
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddOK}
-            table={table}
+            table={tableSpec}
         />}
         <DataGrid
             // basic config

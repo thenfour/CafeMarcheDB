@@ -15,8 +15,9 @@ import { KeysOf, TAnyModel } from "shared/utils";
 // validate etc.
 export interface MutatorInput {
     tableName: string;
-    deleteId?: number;
     insertModel?: TAnyModel;
+    deleteId?: number;
+    updateId?: number;
     updateModel?: TAnyModel;
 };
 
@@ -100,6 +101,8 @@ export abstract class FieldBase<FieldDataType> {
     abstract ValidateAndParse: (val: FieldDataType | null) => ValidateAndParseResult<FieldDataType | null>;// => {
 
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
+
+    abstract ApplyToMutationModel: (dataModel: TAnyModel, mutationModel: TAnyModel) => void;
 }
 
 
@@ -175,21 +178,10 @@ export class xTable implements TableDesc {
                 ret.changes[field.member] = [a, b];
             }
 
-            // // in order to support fk, we should also pass in the fkid members.
-            // if (field.fkidMember) {
-            //     if (!field.isEqual(a, b)) {
-            //         ret.hasChanges = true;
-            //         ret.changes[field.member] = [a, b];
-            //         const a_fkid = oldItem[field.fkidMember];
-            //         const b_fkid = newItem[field.fkidMember];
-            //         ret.changes[field.fkidMember] = [a_fkid, b_fkid];
-            //     }
-            // } else {
             if (!field.isEqual(a, b)) {
                 ret.hasChanges = true;
                 ret.changes[field.member] = [a, b];
             }
-            // }
         }
 
         return ret;
@@ -255,16 +247,24 @@ export class PKField extends FieldBase<number> {
     isEqual = (a: number, b: number) => {
         return a === b;
     };
+
+    ApplyToMutationModel = (dataModel: TAnyModel, mutationModel: TAnyModel) => {
+        // pkid is not present in the mutations. it's passed as a separate param automatically by client.
+    };
 }
 
 export interface GenericStringFieldArgs {
     columnName: string;
-    caseSensitive: boolean,
-    allowNull: boolean,
-    minLength: number,
+    caseSensitive: boolean;
+    allowNull: boolean;
+    minLength: number;
 };
 
 export class GenericStringField extends FieldBase<string> {
+
+    caseSensitive: boolean;
+    allowNull: boolean;
+
     constructor(args: GenericStringFieldArgs) {
         super({
             member: args.columnName,
@@ -272,13 +272,14 @@ export class GenericStringField extends FieldBase<string> {
             defaultValue: args.allowNull ? null : "",
             label: args.columnName,
         });
-        this.defaultValue = null;
-        Object.assign(this, args);
+        this.caseSensitive = args.caseSensitive;
+        this.allowNull = args.allowNull;
+        //Object.assign(this, args);
     }
 
     connectToTable = (table: xTable) => { };
 
-    initField = <RowModel,>(table: xTable, fieldName: string) => {
+    initField = (table: xTable, fieldName: string) => {
         this.member = fieldName;
         this.label = fieldName;
         table.pkMember = fieldName;
@@ -299,33 +300,118 @@ export class GenericStringField extends FieldBase<string> {
     };
 
     isEqual = (a: string, b: string) => {
+        if (this.caseSensitive) {
+            return a === b;
+        }
+        return a.toLowerCase() === b.toLowerCase();
+    };
+
+    ApplyToMutationModel = (dataModel: TAnyModel, mutationModel: TAnyModel) => {
+        mutationModel[this.member] = dataModel[this.member];
+    };
+};
+
+
+export interface GenericIntegerFieldArgs {
+    columnName: string;
+    allowNull: boolean;
+};
+
+export class GenericIntegerField extends FieldBase<number> {
+
+    allowNull: boolean;
+
+    constructor(args: GenericIntegerFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldType: "GenericIntegerField",
+            defaultValue: args.allowNull ? null : 0,
+            label: args.columnName,
+        });
+        this.allowNull = args.allowNull;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    initField = (table: xTable, fieldName: string) => {
+        this.member = fieldName;
+        this.label = fieldName;
+        table.pkMember = fieldName;
+    }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        return { [this.member]: { contains: query } };
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (val: number | null): ValidateAndParseResult<number | null> => {
+        // val should be coerced into number, convert to integer.
+        if (val == null) {
+            return {
+                parsedValue: null,
+                success: this.allowNull,
+                errorMessage: this.allowNull ? "" : "field is required; got null instead.",
+            };
+        }
+        if (typeof val === 'string') {
+            const s = (val as string).trim();
+            if (this.allowNull && s === '') {
+                return { // treat empty strings as null (maybe not always desirable?)
+                    parsedValue: null,
+                    success: true,
+                    errorMessage: "",
+                };
+            }
+            const i = parseInt(s, 10);
+            if (isNaN(i)) {
+                return {
+                    parsedValue: null,
+                    success: false,
+                    errorMessage: "Input string was not convertible to integer",
+                };
+            }
+            val = i;
+        }
+        // todo here check other constraints?
+        return {
+            parsedValue: val,
+            success: true,
+            errorMessage: "",
+        };
+    };
+
+    isEqual = (a: number, b: number) => {
         return a === b;
+    };
+
+    ApplyToMutationModel = (dataModel: TAnyModel, mutationModel: TAnyModel) => {
+        mutationModel[this.member] = dataModel[this.member];
     };
 };
 
 ////////////////////////////////////////////////////////////////
-const InstrumentLocalInclude: Prisma.InstrumentInclude = {
-    functionalGroup: true,
-    instrumentTags: {
-        include: { tag: true }
-    }
-};
+// const InstrumentLocalInclude: Prisma.InstrumentInclude = {
+//     functionalGroup: true,
+//     instrumentTags: {
+//         include: { tag: true }
+//     }
+// };
 
-export const xInstrument = new xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
-    localInclude: InstrumentLocalInclude,
-    tableName: "instrument",
-    columns: [
-        new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "name",
-            allowNull: false,
-            caseSensitive: true,
-            minLength: 1,
-        }),
-    ],
-});
+// export const xInstrument = new xTable({
+//     editPermission: Permission.admin_general,
+//     viewPermission: Permission.view_general_info,
+//     localInclude: InstrumentLocalInclude,
+//     tableName: "instrument",
+//     columns: [
+//         new PKField({ columnName: "id" }),
+//         new GenericStringField({
+//             columnName: "name",
+//             allowNull: false,
+//             caseSensitive: true,
+//             minLength: 1,
+//         }),
+//     ],
+// });
 
 const InstrumentFunctionalGroupInclude: Prisma.InstrumentFunctionalGroupInclude = {
     instruments: true,
@@ -350,8 +436,9 @@ export const xInstrumentFunctionalGroup = new xTable({
             caseSensitive: true,
             minLength: 1,
         }),
-        // sort order
+        new GenericIntegerField({
+            columnName: "sortOrder",
+            allowNull: false,
+        }),
     ]
 });
-
-// todo: assert that keys / tablenames are the same

@@ -8,7 +8,6 @@ import React from "react";
 import * as db3 from "../db3";
 import * as db3Client from "./db3Client";
 import { TAnyModel } from "shared/utils";
-//import { CMTableSpec, EmptyValidateAndComputeDiffResult, NewDialogAPI, ValidateAndComputeDiffResult } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 
 type db3NewObjectDialogProps = {
     onOK: (obj: TAnyModel) => any;
@@ -19,15 +18,18 @@ type db3NewObjectDialogProps = {
 export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialogProps) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [obj, setObj] = React.useState(table.defaultObject);
-    const [oldObj, setOldObj] = React.useState(table.defaultObject); // needed for tracking changes
+    const [obj, setObj] = React.useState(table.args.table.defaultObject);
+    const [oldObj, setOldObj] = React.useState(table.args.table.defaultObject); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
 
-    const tableClient = db3Client.useTableRenderContext(table, {});
+    const tableClient = db3Client.useTableRenderContext({
+        requestedCaps: db3Client.xTableClientCaps.Mutation,
+        tableSpec: table,
+    });
 
     // validate on change
     React.useEffect(() => {
-        setValidationResult(tableClient.ValidateAndComputeDiff(oldObj, obj));
+        setValidationResult(tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj));
         setOldObj(obj);
     }, [obj]);
 
@@ -42,20 +44,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
             // drawback is callers don't know when the change has been applied so can't do anything afterwards.
             const newObj = { ...obj, ...fieldValues };
             setObj(newObj);
-            //console.log(`New object dlg set new object to:`);
-            //console.log(newObj);
         },
-        // setFieldValues: (fieldValues: NewDialogAPIFieldValue[]) => {
-        //     const newObj = { ...obj, }
-        // },
-
-        // setFieldValues: (member: string, value: any) => {
-        //     // so i think the reason MUI datagrid's API makes this a promise, is that when you setState(), it doesn't update
-        //     // local variables; it's asynchronous.
-        //     const newObj = { ...obj };
-        //     newObj[member] = value;
-        //     setObj(newObj);
-        // },
     };
 
     return (
@@ -65,25 +54,26 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
             scroll="paper"
             fullScreen={fullScreen}
         >
-            <DialogTitle>new {table.tableName}</DialogTitle>
+            <DialogTitle>new {table.args.table.tableName}</DialogTitle>
             <DialogContent dividers>
                 <DialogContentText>
                     To subscribe to this website, please enter your email address here. We
                     will send updates occasionally.
                 </DialogContentText>
                 <FormControl>
-                    {Object.entries(tableClient.columnClients).map(([fieldName, field]) => {
-                        if (!field.renderForNewDialog) {
-                            return null;
-                        }
-                        return <React.Fragment key={field.member}>{field.renderForNewDialog!({
-                            key: field.member,
-                            validationResult,
-                            obj,
-                            value: obj[field.member],
-                            api,
-                        })}</React.Fragment>;
-                    })}
+
+                    {
+                        tableClient.clientColumns.map(column => {
+                            return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
+                                key: column.columnName,
+                                api,
+                                obj,
+                                value: obj[column.columnName],
+                                validationResult,
+                            })}</React.Fragment>;
+                        })
+                    }
+
                 </FormControl>
             </DialogContent>
             <DialogActions>

@@ -74,7 +74,7 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
 
 
 // UPDATE ////////////////////////////////////////////////
-const updateImpl = async (table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx): Promise<boolean> => {
+const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx): Promise<boolean> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
@@ -88,15 +88,15 @@ const updateImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
             throw new Error(`validation failed; log contains details.`);
         }
 
-        const pk = fields[table.pkMember];
+        //const pk = fields[table.pkMember];
 
-        const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pk } });
+        const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
 
-        const fieldsWithoutPk = Object.fromEntries(Object.entries(fields).filter(([k, v]) => k !== table.pkMember));
+        //const fieldsWithoutPk = Object.fromEntries(Object.entries(fields).filter(([k, v]) => k !== table.pkMember));
 
         const obj = await dbTableClient.update({
-            where: { [table.pkMember]: pk },
-            data: fieldsWithoutPk,
+            where: { [table.pkMember]: pkid },
+            data: fields,
             include: table.localInclude,
         });
 
@@ -104,7 +104,7 @@ const updateImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
             action: ChangeAction.update,
             changeContext: CreateChangeContext(contextDesc),
             table: "role",
-            pkid: pk,
+            pkid,
             oldValues,
             newValues: obj,
             ctx,
@@ -125,11 +125,11 @@ export default resolver.pipe(
         if (input.deleteId != null) {
             return await deleteImpl(table, input.deleteId, ctx);
         }
-        if (input.updateModel != null) {
-            return await insertImpl(table, input.updateModel, ctx);
+        if (input.insertModel != null) {
+            return await insertImpl(table, input.insertModel, ctx);
         }
         if (input.updateModel != null) {
-            return await updateImpl(table, input.updateModel, ctx);
+            return await updateImpl(table, input.updateId!, input.updateModel, ctx);
         }
     }
 );

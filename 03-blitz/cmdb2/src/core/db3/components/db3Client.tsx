@@ -14,7 +14,8 @@ import db3mutations from "../mutations/db3mutations";
 //import db3queries from "../queries/db3queries";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
-import { TAnyModel } from "shared/utils";
+import { HasFlag, TAnyModel } from "shared/utils";
+import { CMTextField } from "src/core/cmdashboard/CMTextField";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
@@ -47,8 +48,8 @@ export abstract class IColumnClient {
     GridColProps?: Partial<GridColDef>;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    abstract renderForEditGridView?: (params: GridRenderCellParams) => React.ReactElement;
-    abstract renderForEditGridEdit?: (params: GridRenderEditCellParams) => React.ReactElement;
+    // abstract renderForEditGridView?: (params: GridRenderCellParams) => React.ReactElement;
+    // abstract renderForEditGridEdit?: (params: GridRenderEditCellParams) => React.ReactElement;
 
     schemaTable: db3.xTable;
     schemaColumn: db3.FieldBase<unknown>;
@@ -85,8 +86,8 @@ export class PKColumnClient extends IColumnClient {
     }
 
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    renderForEditGridView = undefined;//: (params: GridRenderCellParams) => React.ReactElement;
-    renderForEditGridEdit = undefined;//?: (params: GridRenderEditCellParams) => React.ReactElement;
+    // renderForEditGridView = undefined;//: (params: GridRenderCellParams) => React.ReactElement;
+    // renderForEditGridEdit = undefined;//?: (params: GridRenderEditCellParams) => React.ReactElement;
 
 };
 
@@ -104,9 +105,44 @@ export class GenericStringColumnClient extends IColumnClient {
             width: 220,
         });
     }
-    renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+
+    renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
+        return <CMTextField
+            key={params.key}
+            autoFocus={false}
+            label={this.headerName}
+            validationError={params.validationResult.getErrorForField(this.columnName)}
+            value={params.value as string}
+            onChange={(e, val) => {
+                params.api.setFieldValues({ [this.columnName]: val });
+            }}
+        />;
+    };
+
     renderForEditGridView = undefined;//: (params: GridRenderCellParams) => React.ReactElement;
     renderForEditGridEdit = undefined;//?: (params: GridRenderEditCellParams) => React.ReactElement;
+};
+
+export interface GenericIntegerColumnArgs {
+    columnName: string;
+    cellWidth: number;
+};
+
+export class GenericIntegerColumnClient extends IColumnClient {
+    constructor(args: GenericIntegerColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: 220,
+            GridColProps: {
+                type: "number",
+            }
+        });
+    }
+    renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+    //renderForEditGridView = undefined;//: (params: GridRenderCellParams) => React.ReactElement;
+    //renderForEditGridEdit = undefined;//?: (params: GridRenderEditCellParams) => React.ReactElement;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,9 +166,19 @@ export class xTableClientSpec {
 
 type TMutateFn = (args: db3.MutatorInput) => Promise<unknown>;
 
+export enum xTableClientCaps {
+    None = 0,
+    PaginatedQuery = 1,
+    Query = 2,
+    Mutation = 4
+}
+
 export interface xTableClientArgs {
-    // optional for example for new item dialog which doesn't do any querying at all.
     tableSpec: xTableClientSpec,
+
+    requestedCaps: xTableClientCaps,
+
+    // optional for example for new item dialog which doesn't do any querying at all.
     sortModel?: GridSortModel,
     filterModel?: GridFilterModel,
     paginationModel?: GridPaginationModel,
@@ -156,12 +202,13 @@ export class xTableRenderClient {
 
     constructor(args: xTableClientArgs) {
 
-        console.log(`db3 client ctor`);
-
         //this.table = args.tableSpec;
         this.tableSpec = args.tableSpec;
         this.args = args;
-        this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
+
+        if (HasFlag(args.requestedCaps, xTableClientCaps.Mutation)) {
+            this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
+        }
 
         let orderBy: any = undefined;//{ id: "asc" }; // default order
         if (args.sortModel && args.sortModel.length > 0) {
@@ -197,28 +244,39 @@ export class xTableRenderClient {
             where,
         };
 
-        const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput);
+        if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
+            const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput);
 
-        this.items = items;
-        this.rowCount = count;
-        this.refetch = refetch;
+            this.items = items;
+            this.rowCount = count;
+            this.refetch = refetch;
+        }
 
         for (let i = 0; i < this.clientColumns.length; ++i) {
             this.clientColumns[i]?.connectColumn(args.tableSpec.args.table);
         }
     }; // ctor
 
-    doUpdateMutation = async (newRow: TAnyModel) => {
+    // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
+    // all the columns in our spec though represent logical values which can be passed into mutations.
+    // that is, all the columns comprise the updation model completely.
+    // for things like FK, 
+    doUpdateMutation = async (row: TAnyModel) => {
+        const updateModel = {};
+        this.clientColumns.forEach(col => col.schemaColumn.ApplyToMutationModel(row, updateModel));
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
-            updateModel: newRow,
+            updateModel,
+            updateId: row[this.schema.pkMember],
         });
     };
 
     doInsertMutation = async (row: TAnyModel) => {
+        const insertModel = {};
+        this.clientColumns.forEach(col => col.schemaColumn.ApplyToMutationModel(row, insertModel));
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
-            insertModel: row,
+            insertModel,
         });
     };
 
