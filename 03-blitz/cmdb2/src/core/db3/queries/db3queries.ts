@@ -6,12 +6,12 @@ import { AuthenticatedMiddlewareCtx } from "blitz";
 import { CMDBAuthorizeOrThrow } from "types";
 
 export default resolver.pipe(
-    resolver.authorize(),
-    async (input: db3.QueryInput<unknown, unknown>, ctx: AuthenticatedMiddlewareCtx) => {
+    resolver.authorize("db3query", Permission.login),
+    async (input: db3.QueryInput, ctx: AuthenticatedMiddlewareCtx) => {
         try {
             const table = db3.gAllTables[input.tableName]!;
             const contextDesc = `query:${table.tableName}`;
-            CMDBAuthorizeOrThrow(contextDesc, table.queryPermission, ctx);
+            CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
             const dbTableClient = db[table.tableName]; // the prisma interface
 
             const items = await dbTableClient.findMany({

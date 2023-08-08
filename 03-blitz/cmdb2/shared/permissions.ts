@@ -1,6 +1,8 @@
 
 
 export enum Permission {
+    login = "login", // basic permission to access the site at all.
+
     admin_auth = "admin_auth", // roles, permissions
     view_roles = "view_roles",
     view_permissions = "view_permissions",

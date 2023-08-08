@@ -3,14 +3,15 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
-    resolver.authorize(),
-    async (input: db3.PaginatedQueryInput<unknown, unknown>, ctx: AuthenticatedMiddlewareCtx) => {
+    resolver.authorize("db3paginatedQuery", Permission.login),
+    async (input: db3.PaginatedQueryInput, ctx: AuthenticatedMiddlewareCtx) => {
         try {
             const table = db3.gAllTables[input.tableName]!;
             const contextDesc = `paginatedQuery:${table.tableName}`;
-            CMDBAuthorizeOrThrow(contextDesc, table.queryPermission, ctx);
+            CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
             const dbTableClient = db[table.tableName]; // the prisma interface
 
             const {

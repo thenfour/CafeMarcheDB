@@ -1,4 +1,3 @@
-import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -23,8 +22,6 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import * as db3 from "../db3";
-import db3mutations from "../mutations/db3mutations";
 import * as db3client from "./db3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 
@@ -33,10 +30,10 @@ const gEditingRowHeight = 55;
 const gPageSizeOptions = [20, 50, 100] as number[];
 const gPageSizeDefault = 50 as number;
 
-function CustomToolbar<RowModel>({ onNewClicked, table }: { onNewClicked: any, table: db3.xTable<RowModel> }) {
+function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSpec: db3client.xTableClientSpec }) {
     return (
         <GridToolbarContainer>
-            <Button startIcon={<AddIcon />} onClick={onNewClicked}>insert {table.tableName}</Button>
+            <Button startIcon={<AddIcon />} onClick={onNewClicked}>insert {tableSpec.args.table.tableName}</Button>
 
             {/* <GridToolbarColumnsButton /> */}
             <GridToolbarFilterButton />
@@ -58,20 +55,13 @@ function CustomToolbar<RowModel>({ onNewClicked, table }: { onNewClicked: any, t
 // so one solution is to create a new column in the datagrid for each object. so there are always column pairs for ID/object.
 
 
-export type DB3EditGridProps<RowModel> = {
-    table: db3.xTable<RowModel>,
+export type DB3EditGridProps = {
+    //table: db3.xTable,
+    tableSpec: db3client.xTableClientSpec,
 };
 
-export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
+export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    // const [mutator] = useMutation(db3mutations);
-    // const [querier, {refetch}] = useQuery();
-    // const [paginatedQuerier, {refetch}] = usePaginatedQuery
-
-    // const [updateMutation] = useMutation(spec.UpdateMutation);
-    // const [deleteMutation] = useMutation(spec.DeleteMutation) as any[];
-    // const [createMutation] = useMutation(spec.CreateMutation);
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
@@ -80,46 +70,16 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
     });
 
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
-    // let orderBy = table.DefaultOrderBy;//{ id: "asc" }; // default order
-    // if (sortModel && sortModel.length > 0) {
-    //     orderBy = { [sortModel[0]!.field]: sortModel[0]!.sort }; // only support 1 ordering (grid does too afaik)
-    // } else {
-    // }
-
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
-    // const where = { AND: [] as any[] };
-    // if (filterModel.quickFilterValues) {
-    //     const quickFilterItems = filterModel.quickFilterValues.map(q => {
-    //         return {
-    //             OR: spec.GetQuickFilterWhereClauseExpression(q)
-    //         };
-    //     });
-    //     where.AND.push(...quickFilterItems);
-    // }
-    // if (filterModel.items && filterModel.items.length > 0) {
-    //     // convert items to prisma filter
-    //     const filterItems = filterModel.items.map((i) => {
-    //         return { [i.field]: { [i.operator]: i.value } }
-    //     });
-    //     where.AND.push(...filterItems);
-    // }
 
-    // const [{ items, count }, { refetch }] = usePaginatedQuery(spec.GetPaginatedItemsQuery, {
-    //     orderBy,
-    //     where,
-    //     skip: paginationModel.pageSize * paginationModel.page,
-    //     take: paginationModel.pageSize,
-    // });
-
-    const tableClient = db3client.useTableRenderContext(table, {
+    const tableClient = db3client.useTableRenderContext({
+        tableSpec,
         filterModel, sortModel, paginationModel
     });
 
     const [rowModesModel, setRowModesModel] = React.useState({});
     const [explicitSave, setExplicitSave] = React.useState(false); // flag to know if the user proactively clicked save, otherwise we consider it implied and requires stronger consent
     const [deleteRowId, setDeleteRowId] = React.useState(null); // needed to display a confirmation dlg
-
-    //console.log(rowModesModel);
 
     const handleEditClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
@@ -148,7 +108,7 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
         console.log(newRow);
         console.log(oldRow);
         return new Promise<GridRowModel>((resolve, reject) => {
-            const validateResult = table.ValidateAndComputeDiff(oldRow as RowModel, newRow as RowModel);
+            const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow);
             // there are 3 possible paths:
             // 1. validation errors
             // 2. or, changes made
@@ -178,7 +138,7 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
     };
 
     const handleYes = () => {
-        const { newRow, oldRow, reject, resolve }: { newRow: RowModel, oldRow: RowModel, reject: any, resolve: any } = confirmDialogArgs;
+        const { newRow, oldRow, reject, resolve }: { newRow, oldRow, reject: any, resolve: any } = confirmDialogArgs;
         try {
             tableClient.doUpdateMutation(newRow).then((updatedObj) => {
                 showSnackbar({ children: "update success", severity: 'success' });
@@ -200,7 +160,7 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
             return null;
         }
         const handleYes = () => {
-            tableClient.doDelete(deleteRowId).then(() => {
+            tableClient.doDeleteMutation(deleteRowId).then(() => {
                 showSnackbar({ children: "deleted successful", severity: 'success' });
                 setDeleteRowId(null);
                 tableClient.refetch();
@@ -258,7 +218,7 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
         );
     };
 
-    const onAddOK = (obj: RowModel) => {
+    const onAddOK = (obj) => {
         tableClient.doInsertMutation(obj).then((newRow) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             tableClient.refetch();
@@ -285,15 +245,16 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
     const fkidColumns: GridColDef[] = [];
     const columns: GridColDef[] = [];
 
-    for (const [fieldName, field] of Object.entries(tableClient.columnClients)) {
+    for (let i = 0; i < tableClient.clientColumns.length; ++i) {
+        const column = tableClient.clientColumns[i]!;
         const c: GridColDef = {
-            field: field.member,
-            headerName: field.label,
-            editable: field.isEditableInGrid,
-            width: field.cellWidth,
+            field: column.columnName,
+            headerName: column.headerName,
+            editable: column.editable,
+            width: column.width,
         };
-        if (field.GridColProps) {
-            Object.assign(c, field.GridColProps);
+        if (column.GridColProps) {
+            Object.assign(c, column.GridColProps);
         }
 
         columns.push(c);
@@ -368,7 +329,7 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
             slotProps={{
                 toolbar: {
                     onNewClicked: () => { setShowingNewDialog(true); },
-                    table: table,
+                    tableSpec: tableSpec,
                 }
             }}
             getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
@@ -382,7 +343,7 @@ export function DB3EditGrid<RowModel>({ table }: DB3EditGridProps<RowModel>) {
             columns={columns}
 
             // actual data
-            rows={tableClient.items}
+            rows={tableClient.items as any}
             rowCount={tableClient.rowCount}
 
             // initial state

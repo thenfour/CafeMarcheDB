@@ -225,6 +225,7 @@ export type KeysOf<T extends Record<string, unknown>> = keyof T;
 // to make all fields nullable
 export type Nullable<T> = { [K in keyof T]: T[K] | null };
 
+export type TAnyModel = { [key: string]: any };
 
 export const CoerceNullableNumberToNullableString = (inp: number | null): string | null => {
     if (inp === null) return null;
