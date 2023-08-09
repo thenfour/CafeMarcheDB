@@ -5,19 +5,28 @@ export interface ColorPaletteEntry {
     value: string | null;
 }
 
+// sentinel value for react components
+export const gNullColorPaletteEntry = {
+    label: "(none)",
+    value: null,
+};
+
 export class ColorPaletteArgs {
     entries: ColorPaletteEntry[];
     columns: number;
+    defaultIndex: number;
 };
 
 export class ColorPalette extends ColorPaletteArgs {
-    // entries: ColorPaletteEntry[];
-    // columns: number;
+
     get count(): number {
         return this.entries.length;
     }
     get rows(): number {
         return Math.ceil(this.entries.length / this.columns);
+    }
+    get defaultEntry(): ColorPaletteEntry {
+        return this.entries[this.defaultIndex]!;
     }
     getEntriesForRow = (row: number) => {
         const firstEntry = row * this.columns;
@@ -42,8 +51,8 @@ export class ColorPalette extends ColorPaletteArgs {
         if (ret !== undefined) return ret;
         if (this.entries.length < 1) throw new Error("palettes must have at least 1 entry or what's really the point rite??");
 
-        // still not found; use first entry.
-        return this.entries[0]!;
+        // still not found; use default entry.
+        return this.defaultEntry;
     }
 
     constructor(args: ColorPaletteArgs) {
@@ -56,6 +65,7 @@ export class ColorPalette extends ColorPaletteArgs {
 
 export const gGeneralPalette = new ColorPalette({
     columns: 4,
+    defaultIndex: 0,
     entries: [
         { label: "(none)", value: null },
         { label: "Red", value: "red" },

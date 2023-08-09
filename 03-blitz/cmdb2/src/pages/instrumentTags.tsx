@@ -17,32 +17,18 @@ import updateInstrumentTagMutation from "src/core/mutations/updateInstrumentTagM
 import { InstrumentTagSignificance } from "shared/utils";
 import { ColorPaletteField, EnumField, PKIDField, SimpleNumberField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
 import { gGeneralPalette } from "shared/color";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import * as db3client from "src/core/db3/components/db3Client";
+import * as db3 from "src/core/db3/db3";
 
-type DBInstrumentTag = Prisma.InstrumentTagGetPayload<{
-    include: {
-        instruments: {
-            include: {
-                instrument: true,
-            }
-        }
-    }
-}>;
-
-export const InstrumentTagTableSpec = new CMTableSpec<DBInstrumentTag, Prisma.InstrumentTagWhereInput>({
-    devName: "instrument tag",
-    CreateMutation: insertInstrumentTagMutation,
-    CreateSchema: InsertInstrumentTagSchema,
-    GetPaginatedItemsQuery: getPaginatedInstrumentTags,
-    UpdateMutation: updateInstrumentTagMutation,
-    UpdateSchema: UpdateInstrumentTagSchema,
-    DeleteMutation: deleteInstrumentTagMutation,
-    GetNameOfRow: (row: DBInstrumentTag) => { return row.text; },
-    fields: [
-        new PKIDField({ member: "id" }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Text", member: "text", zodSchema: InstrumentTagTextSchema, allowNullAndTreatEmptyAsNull: false }),
-        new ColorPaletteField({ cellWidth: 220, initialNewItemValue: "", label: "Color", member: "color", allowNull: true, palette: gGeneralPalette }),
-        new EnumField({ cellWidth: 220, allowNull: true, options: InstrumentTagSignificance, initialNewItemValue: null, label: "Significance", member: "significance", }),
-        new SimpleNumberField({ cellWidth: 220, initialNewItemValue: null, allowNull: false, label: "Sort order", member: "sortOrder", zodSchema: InstrumentTagSortOrderSchema }),
+const tableSpec = new db3client.xTableClientSpec({
+    table: db3.xInstrumentTag,
+    columns: [
+        new db3client.PKColumnClient({ columnName: "id" }),
+        new db3client.GenericStringColumnClient({ columnName: "text", cellWidth: 200 }),
+        new db3client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
+        new db3client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+        // significance
     ],
 });
 
@@ -52,7 +38,8 @@ const InstrumentTagListContent = () => {
     }
     return <>
         <SettingMarkdown settingName="instrumentTagList_markdown"></SettingMarkdown>
-        <CMEditGrid2 spec={InstrumentTagTableSpec} />
+        {/* <CMEditGrid2 spec={InstrumentTagTableSpec} /> */}
+        <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };
 

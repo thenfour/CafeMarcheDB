@@ -1,4 +1,5 @@
 import db, { Prisma } from "db";
+import { ColorPalette, ColorPaletteEntry, gGeneralPalette } from "shared/color";
 import { Permission } from "shared/permissions";
 import { KeysOf, TAnyModel } from "shared/utils";
 
@@ -92,7 +93,8 @@ export abstract class FieldBase<FieldDataType> {
         Object.assign(this, args);
     };
 
-    abstract connectToTable: (table: xTable) => void; // field child classes impl this to get established. for example pk fields will set the table's pk here.
+    // field child classes impl this to get established. for example pk fields will set the table's pk here.
+    abstract connectToTable: (table: xTable) => void;
 
     // return either falsy, or an object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
@@ -102,7 +104,8 @@ export abstract class FieldBase<FieldDataType> {
 
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
 
-    abstract ApplyToMutationModel: (dataModel: TAnyModel, mutationModel: TAnyModel) => void;
+    abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel) => void;
+    abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel) => void; // apply the value from db to client.
 }
 
 
@@ -172,15 +175,21 @@ export class xTable implements TableDesc {
 
             const a_isNully = ((a === null) || (a === undefined));
             const b_isNully = ((b === null) || (b === undefined));
+            if (a_isNully === b_isNully) {
+                // they are both null, therefore equal.
+                continue;
+            }
             if (a_isNully !== b_isNully) {
-                // one is null, other is not. guaranteed 
+                // one is null, other is not. guaranteed change.
                 ret.hasChanges = true;
                 ret.changes[field.member] = [a, b];
+                continue;
             }
 
             if (!field.isEqual(a, b)) {
                 ret.hasChanges = true;
                 ret.changes[field.member] = [a, b];
+                continue;
             }
         }
 
@@ -224,13 +233,13 @@ export class PKField extends FieldBase<number> {
         });
     }
 
+    // field child classes impl this to get established. for example pk fields will set the table's pk here.
     connectToTable = (table: xTable) => {
         table.pkMember = this.member;
-    }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
+    };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        // return { [this.member]: { contains: query } } as WhereInput;
-        return { [this.member]: { equals: query } };
+        return { [this.member]: { contains: query } };
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -248,9 +257,12 @@ export class PKField extends FieldBase<number> {
         return a === b;
     };
 
-    ApplyToMutationModel = (dataModel: TAnyModel, mutationModel: TAnyModel) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
         // pkid is not present in the mutations. it's passed as a separate param automatically by client.
     };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        clientModel[this.member] = dbModel[this.member];
+    }
 }
 
 export interface GenericStringFieldArgs {
@@ -274,16 +286,15 @@ export class GenericStringField extends FieldBase<string> {
         });
         this.caseSensitive = args.caseSensitive;
         this.allowNull = args.allowNull;
-        //Object.assign(this, args);
     }
 
     connectToTable = (table: xTable) => { };
 
-    initField = (table: xTable, fieldName: string) => {
-        this.member = fieldName;
-        this.label = fieldName;
-        table.pkMember = fieldName;
-    }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
+    // initField = (table: xTable, fieldName: string) => {
+    //     this.member = fieldName;
+    //     this.label = fieldName;
+    //     table.pkMember = fieldName;
+    // }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return { [this.member]: { contains: query } };
@@ -306,9 +317,12 @@ export class GenericStringField extends FieldBase<string> {
         return a.toLowerCase() === b.toLowerCase();
     };
 
-    ApplyToMutationModel = (dataModel: TAnyModel, mutationModel: TAnyModel) => {
-        mutationModel[this.member] = dataModel[this.member];
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        mutationModel[this.member] = clientModel[this.member];
     };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        clientModel[this.member] = dbModel[this.member];
+    }
 };
 
 
@@ -333,11 +347,11 @@ export class GenericIntegerField extends FieldBase<number> {
 
     connectToTable = (table: xTable) => { };
 
-    initField = (table: xTable, fieldName: string) => {
-        this.member = fieldName;
-        this.label = fieldName;
-        table.pkMember = fieldName;
-    }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
+    // initField = (table: xTable, fieldName: string) => {
+    //     this.member = fieldName;
+    //     this.label = fieldName;
+    //     table.pkMember = fieldName;
+    // }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return { [this.member]: { contains: query } };
@@ -384,35 +398,92 @@ export class GenericIntegerField extends FieldBase<number> {
         return a === b;
     };
 
-    ApplyToMutationModel = (dataModel: TAnyModel, mutationModel: TAnyModel) => {
-        mutationModel[this.member] = dataModel[this.member];
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        mutationModel[this.member] = clientModel[this.member];
     };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        clientModel[this.member] = dbModel[this.member];
+    }
 };
 
+
+// this field demonstrates the ability to expose raw db values as structures.
+// here the db value is a string, but the exposed value is a ColorPaletteEntry.
+// 
+// this means the datagrid row model has a ColorPaletteEntry, NOT a string. not both.
+// this is the gateway to doing foreign key items.
+export interface ColorFieldArgs {
+    columnName: string;
+    allowNull: boolean;
+    palette: ColorPalette;
+};
+
+export class ColorField extends FieldBase<ColorPaletteEntry> {
+    allowNull: boolean;
+    palette: ColorPalette;
+
+    constructor(args: ColorFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldType: "ColorField",
+            defaultValue: args.allowNull ? null : args.palette.defaultEntry,
+            label: args.columnName,
+        });
+        this.allowNull = args.allowNull;
+        this.palette = args.palette;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    isEqual = (a: ColorPaletteEntry, b: ColorPaletteEntry) => {
+        if (!a || !b) {
+            console.log(`yo null`);
+        }
+        return a.value === b.value;
+    };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        return { [this.member]: { contains: query } };
+    };
+
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        const dbVal: string | null = dbModel[this.member];
+        clientModel[this.member] = this.palette.findColorPaletteEntry(dbVal);
+    }
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        const dbVal: ColorPaletteEntry | null = clientModel[this.member];
+        mutationModel[this.member] = (dbVal?.value) || null;
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (val: ColorPaletteEntry | null): ValidateAndParseResult<ColorPaletteEntry | null> => {
+        if (val == null) {
+            return {
+                parsedValue: null,
+                success: this.allowNull,
+                errorMessage: this.allowNull ? "" : "field is required; got null instead.",
+            };
+        }
+        if (this.palette.findColorPaletteEntry(val.value) == null) {
+            // not found in the palette.
+            return {
+                parsedValue: null,
+                success: false,
+                errorMessage: "Not found in palette.",
+            };
+        }
+        return {
+            parsedValue: val,
+            success: true,
+            errorMessage: "",
+        };
+    };
+
+};
+
+
 ////////////////////////////////////////////////////////////////
-// const InstrumentLocalInclude: Prisma.InstrumentInclude = {
-//     functionalGroup: true,
-//     instrumentTags: {
-//         include: { tag: true }
-//     }
-// };
-
-// export const xInstrument = new xTable({
-//     editPermission: Permission.admin_general,
-//     viewPermission: Permission.view_general_info,
-//     localInclude: InstrumentLocalInclude,
-//     tableName: "instrument",
-//     columns: [
-//         new PKField({ columnName: "id" }),
-//         new GenericStringField({
-//             columnName: "name",
-//             allowNull: false,
-//             caseSensitive: true,
-//             minLength: 1,
-//         }),
-//     ],
-// });
-
 const InstrumentFunctionalGroupInclude: Prisma.InstrumentFunctionalGroupInclude = {
     instruments: true,
 };
@@ -440,5 +511,38 @@ export const xInstrumentFunctionalGroup = new xTable({
             columnName: "sortOrder",
             allowNull: false,
         }),
+    ]
+});
+
+const InstrumentTagInclude: Prisma.InstrumentTagInclude = {
+    instruments: true,
+};
+
+export const xInstrumentTag = new xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    localInclude: InstrumentTagInclude,
+    tableName: "instrumentTag",
+    columns: [
+        new PKField({ columnName: "id" }),
+        new GenericStringField({
+            columnName: "text",
+            allowNull: false,
+            caseSensitive: true,
+            minLength: 1,
+        }),
+        new GenericIntegerField({
+            columnName: "sortOrder",
+            allowNull: false,
+        }),
+        new ColorField({
+            columnName: "color",
+            allowNull: true,
+            palette: gGeneralPalette,
+        }),
+        // new ConstEnumField({
+        //     columnName: "significance",
+        //     allowNull: true,
+        // }),
     ]
 });

@@ -6,6 +6,7 @@ import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, S
 import { CMFieldSpecBase, RenderForNewItemDialogArgs } from "./CMColumnSpec";
 import { ColorPalette, ColorPaletteEntry } from "shared/color";
 import { CoerceNullableNumberToNullableString } from "shared/utils";
+import { ColorPick, ColorSwatch } from "src/core/components/Color";
 
 
 interface PKIDFieldArgs {
@@ -161,7 +162,6 @@ export class SimpleNumberField<DBModel, WhereInput> extends CMFieldSpecBase<DBMo
 
 
 
-const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
 //const gInitialInvalidValue = "__initial_invalid_value__498b0049-f883-4c77-9613-c8712e49e183";
 
 interface EnumFieldArgs<TEnum extends Record<string, string>> {
@@ -270,82 +270,6 @@ export class EnumField<TEnum extends Record<string, string>, DBModel, WhereInput
 };
 
 
-// i don't want to support like, ANY color. let's instead use a palette.
-
-interface ColorPaletteFieldArgs {
-    member: string,
-    label: string,
-    cellWidth: number,
-    allowNull: boolean,
-    palette: ColorPalette,
-    initialNewItemValue: string | null;
-};
-
-export interface ColorSwatchProps {
-    color: ColorPaletteEntry;
-    selected: boolean;
-};
-
-// props.color can never be null.
-export const ColorSwatch = (props: ColorSwatchProps) => {
-    const style = (props.color.value === null) ? "dotted" : "solid";
-    return <Tooltip title={props.color.label}>
-        <Box sx={{
-            width: 25,
-            height: 25,
-            backgroundColor: props.color.value,
-            border: props.selected ? `2px ${style} #888` : `2px ${style} #d8d8d8`,
-        }}>
-        </Box>
-    </Tooltip>;
-};
-
-export interface ColorPickProps {
-    value: ColorPaletteEntry;
-    palette: ColorPalette;
-    onChange: (value: ColorPaletteEntry) => void;
-};
-
-// props.color can never be null.
-export const ColorPick = (props: ColorPickProps) => {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const isOpen = Boolean(anchorEl);
-
-    const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    return <>
-        {/* <Backdrop open={true}> */}
-        <Tooltip title={props.value.label}>
-            <Button onClick={handleOpen}><ColorSwatch selected={true} color={props.value} /></Button>
-        </Tooltip>
-        <Popover
-            anchorEl={anchorEl}
-            open={isOpen}
-            onClose={() => setAnchorEl(null)}
-        // i really want this but can't make it work.
-        //hideBackdrop={false}
-        //BackdropProps={{ invisible: false }}
-        //slotProps={{ backdrop: { className: "bleh" } }}
-        >
-            {
-                props.palette.getAllRowsAndEntries().map((row, rowIndex) => {
-                    return <Box key={rowIndex}>
-                        {row.map(e => {
-                            return <MenuItem sx={{ display: "inline-flex" }} key={e.value || gNullValue} onClick={() => {
-                                props.onChange(e);
-                                setAnchorEl(null);
-                            }}> <ColorSwatch selected={e.value === props.value.value} key={e.value || gNullValue} color={e} /></MenuItem>
-
-                        })}
-                    </Box>;
-                })
-            }
-        </Popover >
-        {/* </Backdrop> */}
-    </>;
-};
 
 // static list / enum
 // for null support we add a fake value representing null.
@@ -383,29 +307,29 @@ export class ColorPaletteField<DBModel, WhereInput> extends CMFieldSpecBase<DBMo
     }
 
     renderForNewDialog = (params: RenderForNewItemDialogArgs<DBModel, string | null>) => {
-        const value = params.value === null ? gNullValue : params.value;
-        return <React.Fragment key={params.key}>
-            <InputLabel>{this.args.label}</InputLabel>
-        </React.Fragment>;
-
+        // const value = params.value === null ? gNullValue : params.value;
+        // return <React.Fragment key={params.key}>
+        //     <InputLabel>{this.args.label}</InputLabel>
+        // </React.Fragment>;
+        return <>noew</>;
     };
 
     renderForEditGridView = (params: GridRenderCellParams) => {
-        const entry = this.args.palette.findColorPaletteEntry(params.value);
-        console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
-        return <ColorSwatch selected={true} color={entry!} />;
+        //const entry = this.args.palette.findColorPaletteEntry(params.value);
+        //console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
+        return <ColorSwatch selected={true} color={params.value} />; // colorswatch must be aware of null values.
     };
 
     renderForEditGridEdit = (params: GridRenderEditCellParams) => {
-        const entry = this.args.palette.findColorPaletteEntry(params.value);
-        console.log(`rendering for edit, value=${params.value}; entry=${JSON.stringify(entry)}`);
-        console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
-        return <ColorPick
-            value={entry!}
-            palette={this.args.palette}
+        //const entry = this.args.palette.findColorPaletteEntry(params.value);
+        //console.log(`rendering for edit, value=${params.value}; entry=${JSON.stringify(entry)}`);
+        //console.assert(entry !== undefined); // if this is undefined it means the value wasn't found in the palette.
+        return <ColorPick // colorpick must be able to handle incoming nulls
+            value={params.value}
+            palette={this.}
             onChange={(value: ColorPaletteEntry) => {
-                console.log(`setting color to ${JSON.stringify(value)}`);
-                params.api.setEditCellValue({ id: params.id, field: this.args.member, value: value.value });
+                //console.log(`setting color to ${JSON.stringify(value)}`);
+                params.api.setEditCellValue({ id: params.id, field: this.args.member, value });
             }}
         />;
     };

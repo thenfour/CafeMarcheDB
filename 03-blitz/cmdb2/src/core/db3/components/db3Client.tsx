@@ -14,11 +14,14 @@ import db3mutations from "../mutations/db3mutations";
 //import db3queries from "../queries/db3queries";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
-import { HasFlag, TAnyModel } from "shared/utils";
+import { HasFlag, TAnyModel, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/cmdashboard/CMTextField";
+import { ColorPick, ColorSwatch } from "src/core/components/Color";
+import { ColorPaletteEntry } from "shared/color";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
+    // call like, params.api.setFieldValues({ [this.columnName]: val });
     setFieldValues: (fieldValues: { [key: string]: any }) => void,
 };
 
@@ -48,8 +51,6 @@ export abstract class IColumnClient {
     GridColProps?: Partial<GridColDef>;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    // abstract renderForEditGridView?: (params: GridRenderCellParams) => React.ReactElement;
-    // abstract renderForEditGridEdit?: (params: GridRenderEditCellParams) => React.ReactElement;
 
     schemaTable: db3.xTable;
     schemaColumn: db3.FieldBase<unknown>;
@@ -86,9 +87,6 @@ export class PKColumnClient extends IColumnClient {
     }
 
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    // renderForEditGridView = undefined;//: (params: GridRenderCellParams) => React.ReactElement;
-    // renderForEditGridEdit = undefined;//?: (params: GridRenderEditCellParams) => React.ReactElement;
-
 };
 
 export interface GenericStringColumnArgs {
@@ -118,9 +116,6 @@ export class GenericStringColumnClient extends IColumnClient {
             }}
         />;
     };
-
-    renderForEditGridView = undefined;//: (params: GridRenderCellParams) => React.ReactElement;
-    renderForEditGridEdit = undefined;//?: (params: GridRenderEditCellParams) => React.ReactElement;
 };
 
 export interface GenericIntegerColumnArgs {
@@ -134,15 +129,57 @@ export class GenericIntegerColumnClient extends IColumnClient {
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
-            width: 220,
+            width: args.cellWidth,
             GridColProps: {
                 type: "number",
             }
         });
     }
+
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    //renderForEditGridView = undefined;//: (params: GridRenderCellParams) => React.ReactElement;
-    //renderForEditGridEdit = undefined;//?: (params: GridRenderEditCellParams) => React.ReactElement;
+};
+
+export interface ColorColumnArgs {
+    columnName: string;
+    cellWidth: number;
+};
+
+export class ColorColumnClient extends IColumnClient {
+    constructor(args: ColorColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: args.cellWidth,
+            GridColProps: {
+                renderCell: (args: GridRenderCellParams) => {
+                    return <ColorSwatch selected={true} color={args.value} />; // colorswatch must be aware of null values.
+                },
+                renderEditCell: (args: GridRenderEditCellParams) => {
+                    return <ColorPick
+                        value={args.value}
+                        palette={(this.schemaColumn as db3.ColorField).palette}
+                        onChange={(value: ColorPaletteEntry) => {
+                            args.api.setEditCellValue({ id: args.id, field: this.schemaColumn.member, value: value });
+                        }}
+                    />;
+
+                },
+            }
+        });
+    }
+
+    // will render as a child of <FormControl>
+    renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
+        return <ColorPick
+            value={params.value as ColorPaletteEntry | null}
+            palette={(this.schemaColumn as db3.ColorField).palette}
+            onChange={(value: ColorPaletteEntry) => {
+                params.api.setFieldValues({ [this.schemaColumn.member]: value }); // params.api.setFieldValues({ [this.columnName]: val });
+                //args.api.setEditCellValue({ id: args.id, field: this.schemaColumn.member, value: value });
+            }}
+        />;
+    };
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -244,16 +281,28 @@ export class xTableRenderClient {
             where,
         };
 
+        for (let i = 0; i < this.clientColumns.length; ++i) {
+            this.clientColumns[i]?.connectColumn(args.tableSpec.args.table);
+        }
+
         if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
             const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput);
 
-            this.items = items;
+            if (items.length) {
+                console.log(`have items.`);
+            }
+            // convert items from a database result to a client-side object.
+            this.items = items.map(dbitem => {
+                const ret = {};
+                this.clientColumns.forEach(col => {
+                    console.assert(!!col.schemaColumn.ApplyDbToClient);
+                    col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret);
+                })
+                return ret;
+            });
+
             this.rowCount = count;
             this.refetch = refetch;
-        }
-
-        for (let i = 0; i < this.clientColumns.length; ++i) {
-            this.clientColumns[i]?.connectColumn(args.tableSpec.args.table);
         }
     }; // ctor
 
@@ -263,7 +312,7 @@ export class xTableRenderClient {
     // for things like FK, 
     doUpdateMutation = async (row: TAnyModel) => {
         const updateModel = {};
-        this.clientColumns.forEach(col => col.schemaColumn.ApplyToMutationModel(row, updateModel));
+        this.clientColumns.forEach(col => col.schemaColumn.ApplyClientToDb(row, updateModel));
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             updateModel,
@@ -273,7 +322,7 @@ export class xTableRenderClient {
 
     doInsertMutation = async (row: TAnyModel) => {
         const insertModel = {};
-        this.clientColumns.forEach(col => col.schemaColumn.ApplyToMutationModel(row, insertModel));
+        this.clientColumns.forEach(col => col.schemaColumn.ApplyClientToDb(row, insertModel));
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             insertModel,

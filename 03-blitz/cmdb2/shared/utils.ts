@@ -240,3 +240,5 @@ export const CoerceNullableNumberToNullableString = (inp: number | null): string
     return `${inp}`;
 };
 
+
+export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";

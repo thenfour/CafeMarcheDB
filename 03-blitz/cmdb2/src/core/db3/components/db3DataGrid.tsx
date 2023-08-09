@@ -1,8 +1,10 @@
 // todo:
-// - number field
+// x number field
+// - const enum field type
+// - color field
 // - new item dlg
-// - fk single
-// - fk multi
+// - fk single field type
+// - fk multi field type
 
 import {
     Add as AddIcon,
