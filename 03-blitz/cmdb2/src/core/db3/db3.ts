@@ -1,7 +1,7 @@
 import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPalette } from "shared/color";
 import { Permission } from "shared/permissions";
-import { KeysOf, TAnyModel } from "shared/utils";
+import { CoerceToNumberOrNull, InstrumentTagSignificance, KeysOf, TAnyModel } from "shared/utils";
 
 // server-side code for db schema expression.
 // this is meant to describe behaviors of the schema that we need from code but can't get from Prisma.* directly.
@@ -42,7 +42,22 @@ export interface QueryInput {
 export interface ValidateAndParseResult<FieldType> {
     success: boolean;
     errorMessage?: string;
-    parsedValue: FieldType; // implementer should set this to the value to be actually used (after zod parse)
+    parsedValue: FieldType; // when success, this is the "parsed" sanitized value. when error, this is the original value. for convenience so in every case this value can be used after the call.
+};
+
+export const SuccessfulValidateAndParseResult = <FieldType>(parsedValue: FieldType): ValidateAndParseResult<FieldType> => {
+    return {
+        success: true,
+        parsedValue,
+    };
+};
+
+export const ErrorValidateAndParseResult = <FieldType>(errorMessage: string, inputValue: FieldType): ValidateAndParseResult<FieldType> => {
+    return {
+        success: false,
+        errorMessage,
+        parsedValue: inputValue,
+    };
 };
 
 export interface ValidateAndComputeDiffResultFields {
@@ -72,8 +87,12 @@ export class ValidateAndComputeDiffResult implements ValidateAndComputeDiffResul
     };
 }
 
-export const EmptyValidateAndComputeDiffResult: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({});
+export const SuccessfulValidateAndComputeDiffResult: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({
+    success: true,
+    hasChanges: false,
+});
 
+export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDiffResult;
 
 ////////////////////////////////////////////////////////////////
 export interface FieldBaseArgs<FieldDataType> {
@@ -102,6 +121,7 @@ export abstract class FieldBase<FieldDataType> {
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     abstract ValidateAndParse: (val: FieldDataType | null) => ValidateAndParseResult<FieldDataType | null>;// => {
 
+    // SANITIZED values are passed in. That means no nulls, and ValidateAndParse has already been called.
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
 
     abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel) => void;
@@ -245,12 +265,7 @@ export class PKField extends FieldBase<number> {
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     // for pk id fields, there should never be any changes. but it is required to pass into update/delete/whatever so just pass it always.
     ValidateAndParse = (val: number | null): ValidateAndParseResult<number | null> => {
-        const ret: ValidateAndParseResult<number | null> = {
-            success: true,
-            parsedValue: val,
-            errorMessage: "",
-        };
-        return ret;
+        return SuccessfulValidateAndParseResult(val);
     };
 
     isEqual = (a: number, b: number) => {
@@ -270,12 +285,14 @@ export interface GenericStringFieldArgs {
     caseSensitive: boolean;
     allowNull: boolean;
     minLength: number;
+    doTrim: boolean;
 };
 
 export class GenericStringField extends FieldBase<string> {
-
     caseSensitive: boolean;
     allowNull: boolean;
+    minLength: number;
+    doTrim: boolean;
 
     constructor(args: GenericStringFieldArgs) {
         super({
@@ -286,28 +303,31 @@ export class GenericStringField extends FieldBase<string> {
         });
         this.caseSensitive = args.caseSensitive;
         this.allowNull = args.allowNull;
+        this.minLength = args.minLength;
+        this.doTrim = args.doTrim;
     }
 
     connectToTable = (table: xTable) => { };
-
-    // initField = (table: xTable, fieldName: string) => {
-    //     this.member = fieldName;
-    //     this.label = fieldName;
-    //     table.pkMember = fieldName;
-    // }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return { [this.member]: { contains: query } };
     };
 
-    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (val: string | null): ValidateAndParseResult<string | null> => {
-        const ret: ValidateAndParseResult<string | null> = {
-            success: true,
-            parsedValue: val,
-            errorMessage: "",
-        };
-        return ret;
+        if (val === null) {
+            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
+            return ErrorValidateAndParseResult("field must be non-null", val);
+        }
+        if (typeof val !== 'string') {
+            return ErrorValidateAndParseResult("field is of unknown type", val);
+        }
+        if (this.doTrim) {
+            val = val.trim();
+        }
+        if (val.length < this.minLength) {
+            return ErrorValidateAndParseResult("minimum length not satisfied", val);
+        }
+        return SuccessfulValidateAndParseResult(val);
     };
 
     isEqual = (a: string, b: string) => {
@@ -347,51 +367,30 @@ export class GenericIntegerField extends FieldBase<number> {
 
     connectToTable = (table: xTable) => { };
 
-    // initField = (table: xTable, fieldName: string) => {
-    //     this.member = fieldName;
-    //     this.label = fieldName;
-    //     table.pkMember = fieldName;
-    // }; // field child classes impl this to get established. for example pk fields will set the table's pk here.
-
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return { [this.member]: { contains: query } };
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (val: number | null): ValidateAndParseResult<number | null> => {
-        // val should be coerced into number, convert to integer.
-        if (val == null) {
-            return {
-                parsedValue: null,
-                success: this.allowNull,
-                errorMessage: this.allowNull ? "" : "field is required; got null instead.",
-            };
+        if (val === null) {
+            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
+            return ErrorValidateAndParseResult("field must be non-null", val);
         }
+        // val should be coerced into number, convert to integer.
         if (typeof val === 'string') {
             const s = (val as string).trim();
             if (this.allowNull && s === '') {
-                return { // treat empty strings as null (maybe not always desirable?)
-                    parsedValue: null,
-                    success: true,
-                    errorMessage: "",
-                };
+                return SuccessfulValidateAndParseResult(null);
             }
             const i = parseInt(s, 10);
             if (isNaN(i)) {
-                return {
-                    parsedValue: null,
-                    success: false,
-                    errorMessage: "Input string was not convertible to integer",
-                };
+                return ErrorValidateAndParseResult("Input string was not convertible to integer", val);
             }
             val = i;
         }
         // todo here check other constraints?
-        return {
-            parsedValue: val,
-            success: true,
-            errorMessage: "",
-        };
+        return SuccessfulValidateAndParseResult(val);
     };
 
     isEqual = (a: number, b: number) => {
@@ -436,9 +435,6 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
     connectToTable = (table: xTable) => { };
 
     isEqual = (a: ColorPaletteEntry, b: ColorPaletteEntry) => {
-        if (!a || !b) {
-            console.log(`yo null`);
-        }
         return a.value === b.value;
     };
 
@@ -458,29 +454,83 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (val: ColorPaletteEntry | null): ValidateAndParseResult<ColorPaletteEntry | null> => {
-        if (val == null) {
-            return {
-                parsedValue: null,
-                success: this.allowNull,
-                errorMessage: this.allowNull ? "" : "field is required; got null instead.",
-            };
+        if (val === null && !this.allowNull) {
+            return ErrorValidateAndParseResult("field must be non-null", val);
         }
-        if (this.palette.findColorPaletteEntry(val.value) == null) {
-            // not found in the palette.
-            return {
-                parsedValue: null,
-                success: false,
-                errorMessage: "Not found in palette.",
-            };
+        if (this.palette.findColorPaletteEntry(val?.value || null) == null) {
+            return ErrorValidateAndParseResult("Not found in palette.", val);
         }
-        return {
-            parsedValue: val,
-            success: true,
-            errorMessage: "",
-        };
+        return SuccessfulValidateAndParseResult(val);
     };
 
 };
+
+
+// a single select field where
+// - the db value is a string (no relationship enforced)
+// - the enum value is a const typescript key val object (not an 'enum' type, but rather a const MyEnum { val1: "val1", val2: "val2" })
+export interface ConstEnumStringFieldArgs {
+    columnName: string,
+    options: TAnyModel,
+    defaultValue: string | null;
+    allowNull: boolean,
+};
+
+export class ConstEnumStringField extends FieldBase<string> {
+    options: TAnyModel;
+    defaultValue: string | null;
+    allowNull: boolean;
+
+    constructor(args: ConstEnumStringFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldType: "ConstEnumStringField",
+            defaultValue: args.defaultValue,
+            label: args.columnName,
+        });
+        this.options = args.options;
+        this.defaultValue = args.defaultValue;
+        this.allowNull = args.allowNull;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    isEqual = (a: string, b: string) => {
+        return a === b;
+    };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        return { [this.member]: { contains: query } };
+    };
+
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        clientModel[this.member] = dbModel[this.member];
+    }
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        mutationModel[this.member] = clientModel[this.member];
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (val: string | null): ValidateAndParseResult<string | null> => {
+        if (val === null) {
+            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
+            return ErrorValidateAndParseResult("field must be non-null", val);
+        }
+        // make sure val is actually a member of the enum.
+        val = val!.trim();
+        if (!Object.values(this.options).some(op => op === val)) {
+            return ErrorValidateAndParseResult("unrecognized option", val);
+        }
+        return SuccessfulValidateAndParseResult(val);
+    };
+
+};
+
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -500,12 +550,14 @@ export const xInstrumentFunctionalGroup = new xTable({
             allowNull: false,
             caseSensitive: true,
             minLength: 1,
+            doTrim: true,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             caseSensitive: true,
             minLength: 1,
+            doTrim: true,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -530,6 +582,7 @@ export const xInstrumentTag = new xTable({
             allowNull: false,
             caseSensitive: true,
             minLength: 1,
+            doTrim: true,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -540,9 +593,11 @@ export const xInstrumentTag = new xTable({
             allowNull: true,
             palette: gGeneralPalette,
         }),
-        // new ConstEnumField({
-        //     columnName: "significance",
-        //     allowNull: true,
-        // }),
+        new ConstEnumStringField({
+            columnName: "significance",
+            allowNull: true,
+            defaultValue: null,
+            options: InstrumentTagSignificance,
+        }),
     ]
 });

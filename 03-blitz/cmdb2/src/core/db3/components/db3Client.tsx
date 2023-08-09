@@ -8,6 +8,7 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
+import React from "react";
 import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
@@ -18,6 +19,7 @@ import { HasFlag, TAnyModel, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/cmdashboard/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
+import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
@@ -51,6 +53,7 @@ export abstract class IColumnClient {
     GridColProps?: Partial<GridColDef>;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+    abstract onSchemaConnected?: () => void;
 
     schemaTable: db3.xTable;
     schemaColumn: db3.FieldBase<unknown>;
@@ -65,6 +68,7 @@ export abstract class IColumnClient {
         this.schemaTable = schemaTable;
         this.schemaColumn = schemaTable.columns.find(c => c.member === this.columnName)!;
         console.assert(!!this.schemaColumn);
+        this.onSchemaConnected && this.onSchemaConnected();
     };
 };
 
@@ -87,6 +91,7 @@ export class PKColumnClient extends IColumnClient {
     }
 
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+    onSchemaConnected = undefined;
 };
 
 export interface GenericStringColumnArgs {
@@ -103,6 +108,7 @@ export class GenericStringColumnClient extends IColumnClient {
             width: 220,
         });
     }
+    onSchemaConnected = undefined;
 
     renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
         return <CMTextField
@@ -136,6 +142,7 @@ export class GenericIntegerColumnClient extends IColumnClient {
         });
     }
 
+    onSchemaConnected = undefined;
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
 };
 
@@ -169,6 +176,8 @@ export class ColorColumnClient extends IColumnClient {
         });
     }
 
+    onSchemaConnected = undefined;
+
     // will render as a child of <FormControl>
     renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
         return <ColorPick
@@ -179,6 +188,75 @@ export class ColorColumnClient extends IColumnClient {
                 //args.api.setEditCellValue({ id: args.id, field: this.schemaColumn.member, value: value });
             }}
         />;
+    };
+};
+
+
+export interface ConstEnumStringFieldClientArgs {
+    columnName: string;
+    cellWidth: number;
+};
+
+export class ConstEnumStringFieldClient extends IColumnClient {
+    gridOptions: { value: string, label: string }[];
+    enumSchemaColumn: db3.ConstEnumStringField;
+
+    constructor(args: ConstEnumStringFieldClientArgs) {
+        super({
+            columnName: args.columnName,
+            headerName: args.columnName,
+            editable: true,
+            width: args.cellWidth,
+        });
+    }
+
+    onSchemaConnected = () => {
+        this.enumSchemaColumn = this.schemaColumn as db3.ConstEnumStringField;
+
+        this.gridOptions = Object.entries(this.enumSchemaColumn.options).map(([k, v]) => {
+            return { value: k, label: v };
+        });
+
+        // if we use datagrid's builtin singleselect column, it doesn't support null. so use a sentinel value.
+        this.gridOptions = [{ value: gNullValue, label: "--" }, ...this.gridOptions];
+
+        this.GridColProps = {
+            type: "singleSelect",
+            valueOptions: this.gridOptions,
+            valueGetter: (params) => params.value === null ? gNullValue : params.value, // transform underlying value to the value the grid will use in the selection.
+            valueSetter: (params) => {
+                const val = params.value === null ? gNullValue : params.value;
+                return { ...params.row, [this.schemaColumn.member]: val };
+            },
+            getOptionValue: (value: any) => value.value,
+            getOptionLabel: (value: any) => value.label,
+        };
+    };
+
+    renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
+        const value = params.value === null ? gNullValue : params.value;
+        return <React.Fragment key={params.key}>
+            <InputLabel>{this.schemaColumn.label}</InputLabel>
+            <Select
+                value={value}
+                error={!!params.validationResult.hasErrorForField(this.schemaColumn.member)}
+                onChange={e => {
+                    let userInputValue: (string | null) = e.target.value as string;
+                    if (userInputValue === gNullValue) {
+                        userInputValue = null;
+                    }
+                    return params.api.setFieldValues({ [this.schemaColumn.member]: userInputValue });
+                }}
+            >
+                {
+                    this.gridOptions.map(option => {
+                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>;
+                    })
+                }
+            </Select>
+            <FormHelperText>Here's my helper text</FormHelperText>
+        </React.Fragment>;
+
     };
 };
 
@@ -199,7 +277,7 @@ export class xTableClientSpec {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// xTableRenderClient is an object that React components use to access functionality.
+// xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
 
 type TMutateFn = (args: db3.MutatorInput) => Promise<unknown>;
 

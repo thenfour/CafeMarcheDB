@@ -190,7 +190,7 @@ export async function RegisterActivity(args: RegisterActionArgs) {
 
 // for use in Zod schemas like
 // export const InstrumentTagSortOrderSchema = z.preprocess(utils.CoerceToNumberOrNull, z.number().refine(utils.ValidateInt));
-export const CoerceToNumberOrNull = (value) => {
+export const CoerceToNumberOrNull = (value): number | null => {
     if (typeof value === "string") {
         if (value.trim() === "") {
             return null;
