@@ -143,7 +143,21 @@ export class GenericIntegerColumnClient extends IColumnClient {
     }
 
     onSchemaConnected = undefined;
-    renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+
+    renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
+        return <CMTextField
+            key={params.key}
+            autoFocus={false}
+            label={this.headerName}
+            validationError={params.validationResult.getErrorForField(this.columnName)}
+            value={params.value as string}
+            onChange={(e, val) => {
+                // so this sets the row model value to a string. that's OK because the value gets parsed later.
+                // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
+                params.api.setFieldValues({ [this.columnName]: val });
+            }}
+        />;
+    };
 };
 
 export interface ColorColumnArgs {
@@ -223,9 +237,9 @@ export class ConstEnumStringFieldClient extends IColumnClient {
         this.GridColProps = {
             type: "singleSelect",
             valueOptions: this.gridOptions,
-            valueGetter: (params) => params.value === null ? gNullValue : params.value, // transform underlying value to the value the grid will use in the selection.
-            valueSetter: (params) => {
-                const val = params.value === null ? gNullValue : params.value;
+            valueGetter: (params) => params.value === null ? gNullValue : params.value, // transform underlying row model value to the value the grid will use in the selection box.
+            valueSetter: (params) => { // transform select value to grid value.
+                const val = params.value === gNullValue ? null : params.value;
                 return { ...params.row, [this.schemaColumn.member]: val };
             },
             getOptionValue: (value: any) => value.value,
@@ -366,9 +380,6 @@ export class xTableRenderClient {
         if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
             const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput);
 
-            if (items.length) {
-                console.log(`have items.`);
-            }
             // convert items from a database result to a client-side object.
             this.items = items.map(dbitem => {
                 const ret = {};
@@ -390,7 +401,9 @@ export class xTableRenderClient {
     // for things like FK, 
     doUpdateMutation = async (row: TAnyModel) => {
         const updateModel = {};
-        this.clientColumns.forEach(col => col.schemaColumn.ApplyClientToDb(row, updateModel));
+        this.clientColumns.forEach(col => {
+            col.schemaColumn.ApplyClientToDb(row, updateModel);
+        });
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             updateModel,
@@ -400,7 +413,9 @@ export class xTableRenderClient {
 
     doInsertMutation = async (row: TAnyModel) => {
         const insertModel = {};
-        this.clientColumns.forEach(col => col.schemaColumn.ApplyClientToDb(row, insertModel));
+        this.clientColumns.forEach(col => {
+            col.schemaColumn.ApplyClientToDb(row, insertModel);
+        });
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             insertModel,

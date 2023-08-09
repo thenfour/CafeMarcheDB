@@ -179,7 +179,6 @@ export class xTable implements TableDesc {
             success: true,
             hasChanges: false,
         });
-        console.log(`validate compute diff ...`);
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
             const a = oldItem[field.member];
@@ -374,7 +373,9 @@ export class GenericIntegerField extends FieldBase<number> {
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (val: number | null): ValidateAndParseResult<number | null> => {
         if (val === null) {
-            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
+            if (this.allowNull) {
+                return SuccessfulValidateAndParseResult(val);
+            }
             return ErrorValidateAndParseResult("field must be non-null", val);
         }
         // val should be coerced into number, convert to integer.
@@ -389,7 +390,7 @@ export class GenericIntegerField extends FieldBase<number> {
             }
             val = i;
         }
-        // todo here check other constraints?
+        // todo here check other constraints like min/max whatever
         return SuccessfulValidateAndParseResult(val);
     };
 
@@ -398,7 +399,8 @@ export class GenericIntegerField extends FieldBase<number> {
     };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
-        mutationModel[this.member] = clientModel[this.member];
+        const vr = this.ValidateAndParse(clientModel[this.member]);
+        mutationModel[this.member] = vr.parsedValue;
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
         clientModel[this.member] = dbModel[this.member];
