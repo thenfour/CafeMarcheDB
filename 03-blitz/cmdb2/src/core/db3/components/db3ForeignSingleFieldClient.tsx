@@ -109,7 +109,7 @@ export class ForeignSingleFieldFieldClient<TForeign> extends db3client.IColumnCl
 
     renderForNewDialog = (params: db3client.RenderForNewItemDialogArgs) => {
         return <React.Fragment key={params.key}>
-            <InputLabel>{this.schemaColumn.label}</InputLabel>
+            {/* <InputLabel>{this.schemaColumn.label}</InputLabel> */}
             <ForeignSingleFieldInput
                 foreignSpec={this}
                 value={params.value}
@@ -154,7 +154,8 @@ export class ForeignSingleFieldRenderContext<TForeign> {
                 };
             });
             where.AND.push(...quickFilterItems.filter(i => i !== null));
-            console.log(where.AND);
+
+            console.log(`-> where clause: ${JSON.stringify(where)}`);
         }
 
         const [items, { refetch }]: [TForeign[], any] = useQuery(db3queries, {

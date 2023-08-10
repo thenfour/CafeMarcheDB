@@ -36,6 +36,8 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
     const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
     const [filterText, setFilterText] = React.useState("");
 
+    console.log(`filtertext: ${filterText}`);
+
     const db3Context = useForeignSingleFieldRenderContext({
         filterText,
         spec: props.spec,
@@ -56,13 +58,6 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
             }));
     };
 
-    const handleItemClick = (value) => {
-        setSelectedObj(value);
-    };
-
-
-    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
-
     const isEqual = (a: TForeign | null, b: TForeign | null) => {
         const anull = (a === null || a === undefined);
         const bnull = (b === null || b === undefined);
@@ -71,6 +66,16 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
         // both non-null.
         return a![props.spec.typedSchemaColumn.foreignTableSpec.pkMember] === b![props.spec.typedSchemaColumn.foreignTableSpec.pkMember];
     };
+
+    const handleItemClick = (value) => {
+        if (isEqual(value, selectedObj)) {
+            setSelectedObj(null);
+            return;
+        }
+        setSelectedObj(value);
+    };
+
+    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
 
     return (
         <Dialog

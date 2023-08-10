@@ -1,9 +1,9 @@
 // todo:
 // x number field
-// - const enum field type
-// - color field
-// - new item dlg
-// - fk single field type
+// x const enum field type
+// x color field
+// x new item dlg
+// x fk single field type
 // - fk multi field type
 
 import {
@@ -104,9 +104,9 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const [confirmDialogArgs, setConfirmDialogArgs] = React.useState<any>(null);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
-        console.log(`edit grid 2 : processRowUpdate. newrow, oldrow:`);
-        console.log(newRow);
-        console.log(oldRow);
+        // console.log(`edit grid 2 : processRowUpdate. newrow, oldrow:`);
+        // console.log(newRow);
+        // console.log(oldRow);
         return new Promise<GridRowModel>((resolve, reject) => {
             const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow);
             // there are 3 possible paths:

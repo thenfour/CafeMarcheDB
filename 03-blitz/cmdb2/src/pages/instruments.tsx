@@ -206,7 +206,6 @@ const InstrumentListContent = () => {
     }
     return <>
         <SettingMarkdown settingName="instrumentList_markdown"></SettingMarkdown>
-        {/* <CMEditGrid2 spec={InstrumentTableSpec} /> */}
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };

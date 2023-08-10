@@ -85,7 +85,6 @@ export function CMSelectTagsDialog<AssociationModel, ForeignWhereInput>(props: C
             };
         });
         where.AND.push(...quickFilterItems.filter(i => i !== null));
-        console.log(where.AND);
     }
 
     const [items, { refetch }]: [AssociationModel[], any] = useQuery(props.spec.getAllAssociationOptionsQuery, { where });

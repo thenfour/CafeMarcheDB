@@ -42,17 +42,19 @@ export interface QueryInput {
 export interface ValidateAndParseResult<FieldType> {
     success: boolean;
     errorMessage?: string;
-    parsedValue: FieldType; // when success, this is the "parsed" sanitized value. when error, this is the original value. for convenience so in every case this value can be used after the call.
+    // when success, this is the "parsed" sanitized value. when error, this is the original value. for convenience so in every case this value can be used after the call.
+    // therefore it must also support string and null (possibly invalid values)
+    parsedValue: string | FieldType;
 };
 
-export const SuccessfulValidateAndParseResult = <FieldType>(parsedValue: FieldType): ValidateAndParseResult<FieldType> => {
+export const SuccessfulValidateAndParseResult = <FieldType>(parsedValue: FieldType | string): ValidateAndParseResult<FieldType> => {
     return {
         success: true,
         parsedValue,
     };
 };
 
-export const ErrorValidateAndParseResult = <FieldType>(errorMessage: string, inputValue: FieldType): ValidateAndParseResult<FieldType> => {
+export const ErrorValidateAndParseResult = <FieldType>(errorMessage: string, inputValue: FieldType | string): ValidateAndParseResult<FieldType> => {
     return {
         success: false,
         errorMessage,
@@ -119,7 +121,7 @@ export abstract class FieldBase<FieldDataType> {
     abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    abstract ValidateAndParse: (val: FieldDataType | null) => ValidateAndParseResult<FieldDataType | null>;// => {
+    abstract ValidateAndParse: (val: FieldDataType | string | null) => ValidateAndParseResult<FieldDataType | null>;// => {
 
     // SANITIZED values are passed in. That means no nulls, and ValidateAndParse has already been called.
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
@@ -194,7 +196,7 @@ export class xTable implements TableDesc {
 
             const a_isNully = ((a === null) || (a === undefined));
             const b_isNully = ((b === null) || (b === undefined));
-            if (a_isNully === b_isNully) {
+            if (a_isNully && b_isNully) {
                 // they are both null, therefore equal.
                 continue;
             }
@@ -221,6 +223,7 @@ export class xTable implements TableDesc {
             const field = this.columns[i]!;
             const clause = field.getQuickFilterWhereClause(query);
             if (clause) {
+                console.log(`qf where field:${field.label} : ${JSON.stringify(clause)}`);
                 ret.push(clause);
             }
         }
@@ -258,12 +261,12 @@ export class PKField extends FieldBase<number> {
     };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        return { [this.member]: { contains: query } };
+        return false;// don't filter on pk id. { [this.member]: { contains: query } };
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     // for pk id fields, there should never be any changes. but it is required to pass into update/delete/whatever so just pass it always.
-    ValidateAndParse = (val: number | null): ValidateAndParseResult<number | null> => {
+    ValidateAndParse = (val: string | number | null): ValidateAndParseResult<number | null> => {
         return SuccessfulValidateAndParseResult(val);
     };
 
@@ -367,11 +370,13 @@ export class GenericIntegerField extends FieldBase<number> {
     connectToTable = (table: xTable) => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        return { [this.member]: { contains: query } };
+        const r = this.ValidateAndParse(query);
+        if (!r.success) return false;
+        return { [this.member]: { equals: r.parsedValue } };
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: number | null): ValidateAndParseResult<number | null> => {
+    ValidateAndParse = (val: string | number | null): ValidateAndParseResult<number | null> => {
         if (val === null) {
             if (this.allowNull) {
                 return SuccessfulValidateAndParseResult(val);
@@ -386,7 +391,7 @@ export class GenericIntegerField extends FieldBase<number> {
             }
             const i = parseInt(s, 10);
             if (isNaN(i)) {
-                return ErrorValidateAndParseResult("Input string was not convertible to integer", val);
+                return ErrorValidateAndParseResult("Input string was not convertible to integer", val as (string | number));
             }
             val = i;
         }
@@ -723,16 +728,16 @@ export const xInstrument = new xTable({
             doesItemExactlyMatchText: (item: InstrumentFunctionalGroupForeignModel, filterText: string) => {
                 return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
             },
-            getQuickFilterWhereClause: (query : string) : Prisma.InstrumentWhereInput => ({
+            getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
-                    name : { contains: query }
+                    name: { contains: query }
                 }
             }),
-            getForeignQuickFilterWhereClause: (query : string) : Prisma.InstrumentFunctionalGroupWhereInput => ({
-                name : { contains: query },
-                description: {contains: query},
-            }),
-            createInsertModelFromString: (input: string) : Partial<InstrumentFunctionalGroupForeignModel> => ({
+            getForeignQuickFilterWhereClause: (query: string): Prisma.Enumerable<Prisma.InstrumentFunctionalGroupWhereInput> => ([
+                { name: { contains: query } },
+                { description: { contains: query } },
+            ]),
+            createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupForeignModel> => ({
                 description: "auto-created from selection dlg",
                 name: input,
                 sortOrder: 0,
@@ -741,39 +746,3 @@ export const xInstrument = new xTable({
         // instrument tags associations
     ]
 });
-
-// model Instrument {
-//     id                Int                        @id @default(autoincrement())
-//     name              String
-//     sortOrder         Int
-
-//     functionalGroupId Int
-//     functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Restrict) // if you want to delete a functional group, you need to manually reassign
-//     instrumentTags    InstrumentTagAssociation[]
-  
-//     fileTags FileInstrumentTag[]
-//     users    UserInstrument[]
-//   }
-  
-//   model InstrumentTag {
-//     id           Int                        @id @default(autoincrement())
-//     text         String
-//     sortOrder    Int                        @default(0)
-//     color        String?
-//     significance String? // "uses electricity" for example?
-//     instruments  InstrumentTagAssociation[]
-//   }
-  
-//   // association table
-//   model InstrumentTagAssociation {
-//     id           Int           @id @default(autoincrement())
-//     instrumentId Int
-//     instrument   Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
-//     tagId        Int
-//     tag          InstrumentTag @relation(fields: [tagId], references: [id], onDelete: Cascade) // cascade delete association
-  
-//     @@unique([instrumentId, tagId]) // 
-//   }
-
-  
-

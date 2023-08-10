@@ -46,7 +46,6 @@ export function CMSelectItemDialog2<ItemModel, ItemWhereInput>({ value, onOK, on
             };
         });
         where.AND.push(...quickFilterItems.filter(i => i !== null));
-        console.log(where.AND);
     }
 
     const [items, { refetch }]: [ItemModel[], any] = useQuery(spec.getAllOptionsQuery, { where });

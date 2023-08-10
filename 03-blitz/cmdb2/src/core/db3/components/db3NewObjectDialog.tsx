@@ -34,6 +34,10 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
     }, [obj]);
 
     const handleOK = () => {
+        // check validation and disallow
+        if (!validationResult.success) {
+            return;
+        }
         onOK(obj);
     };
 
