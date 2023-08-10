@@ -293,7 +293,7 @@ export class xTableClientSpec {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
 
-type TMutateFn = (args: db3.MutatorInput) => Promise<unknown>;
+export type TMutateFn = (args: db3.MutatorInput) => Promise<unknown>;
 
 export enum xTableClientCaps {
     None = 0,
@@ -330,8 +330,6 @@ export class xTableRenderClient {
     }
 
     constructor(args: xTableClientArgs) {
-
-        //this.table = args.tableSpec;
         this.tableSpec = args.tableSpec;
         this.args = args;
 

@@ -1,30 +1,18 @@
-import { Prisma } from "db";
 import { BlitzPage } from "@blitzjs/next";
+import { Chip } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { CMTableSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 //import { InstrumentTableSpec } from "src/core/CMDBInstrument";
 //import { UserTableSpec } from "src/core/CMDBUser";
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 //import { CMEditGrid2 } from "src/core/cmdashboard/CMEditGrid2";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import insertInstrumentMutation from "src/core/mutations/insertInstrumentMutation";
-import { InsertInstrumentSchema, InstrumentNameSchema, UpdateInstrumentSchema } from "src/core/schemas/instrumentSchemas";
-import getPaginatedInstruments from "src/core/queries/getPaginatedInstruments";
-import updateInstrumentMutation from "src/core/mutations/updateInstrumentMutation";
-import deleteInstrumentMutation from "src/core/mutations/deleteInstrumentMutation";
-import { ColorSwatch, PKIDField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
-import { TagsField, TagsInsertFromStringParams, TagsRenderAsChipParams } from "src/core/cmdashboard/dbcomponents2/CMTagsField";
-import getAllInstrumentTags from "src/core/queries/getAllInstrumentTags";
-import { gGeneralPalette } from "shared/color";
-import { Chip } from "@mui/material";
-import insertInstrumentTagFromStringAsAssociationMutation from "src/core/mutations/insertInstrumentTagFromStringAsAssociationMutation";
-import { ForeignSingleField, InsertFromStringParams, RenderAsChipParams } from "src/core/cmdashboard/dbcomponents2/CMForeignSingleField";
-import { xInstrument } from "src/core/db3/db3";
+import * as db3client from "src/core/db3/components/db3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import * as db3fsclient from "src/core/db3/components/db3ForeignSingleFieldClient";
+import * as db3 from "src/core/db3/db3";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
+import CloseIcon from '@mui/icons-material/Close';
+import DoneIcon from '@mui/icons-material/Done';
 
 // type I = Prisma.InstrumentGetPayload<{
 //     include: {
@@ -178,6 +166,40 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 //     ],
 // });
 
+
+const tableSpec = new db3client.xTableClientSpec({
+    table: db3.xInstrument,
+    columns: [
+        new db3client.PKColumnClient({ columnName: "id" }),
+        new db3client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
+        new db3client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+        new db3fsclient.ForeignSingleFieldFieldClient<db3.InstrumentFunctionalGroupForeignModel>({
+            columnName: "functionalGroup",
+            cellWidth: 200,
+            renderAsChip: (args) => {
+                if (!args.value) {
+                    return <>--</>;
+                }
+                return <Chip
+                    size="small"
+                    label={`${args.value.name}`}
+                    onDelete={args.onDelete}
+                />;
+            },
+            renderAsListItem: (props, value, selected) => {
+                return <li {...props}>
+                    {selected && <DoneIcon />}
+                    {value.name}
+                    {value.description}
+                    {selected && <CloseIcon />}
+                </li>
+            },
+        }),
+        // tags
+    ],
+});
+
+
 const InstrumentListContent = () => {
     if (!useAuthorization("admin instruments page", Permission.admin_general)) {
         throw new Error(`unauthorized`);
@@ -185,7 +207,7 @@ const InstrumentListContent = () => {
     return <>
         <SettingMarkdown settingName="instrumentList_markdown"></SettingMarkdown>
         {/* <CMEditGrid2 spec={InstrumentTableSpec} /> */}
-        <DB3EditGrid table={xInstrument} />
+        <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };
 

@@ -34,8 +34,8 @@ export interface PaginatedQueryInput {
 ////////////////////////////////////////////////////////////////
 export interface QueryInput {
     tableName: string;
-    where: TAnyModel;
-    orderBy: TAnyModel;
+    where: TAnyModel | undefined;
+    orderBy: TAnyModel | undefined;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -529,6 +529,83 @@ export class ConstEnumStringField extends FieldBase<string> {
 
 };
 
+////////////////////////////////////////////////////////////////
+// a single select field where the items are a db table with relation
+// on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
+export interface ForeignSingleFieldArgs<TForeign> {
+    columnName: string; // "instrumentType"
+    fkMember: string; // "instrumentTypeId"
+    foreignTableSpec: xTable;
+    //foreignPkMember: string; // "id" on instrumentType table.
+    allowNull: boolean;
+    defaultValue: TForeign | null;
+    getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
+    getForeignQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // quick filter but only for foreign object queries.
+    doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean,
+    createInsertModelFromString: (input: string) => Partial<TForeign>,
+    allowInsertFromString: boolean;
+};
+
+export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
+    fkMember: string;
+    foreignTableSpec: xTable;
+    //foreignPkMember: string;
+    allowNull: boolean;
+    defaultValue: TForeign | null;
+    getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
+    getForeignQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // quick filter but only for foreign object queries.
+    doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean;
+    createInsertModelFromString: (input: string) => Partial<TForeign>;
+    allowInsertFromString: boolean;
+
+    constructor(args: ForeignSingleFieldArgs<TForeign>) {
+        super({
+            member: args.columnName,
+            fieldType: "ForeignSingleField",
+            defaultValue: args.defaultValue,
+            label: args.columnName,
+        });
+        this.fkMember = args.fkMember;
+        this.allowNull = args.allowNull;
+        this.defaultValue = args.defaultValue;
+        this.foreignTableSpec = args.foreignTableSpec;
+        this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
+        this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
+        this.doesItemExactlyMatchText = args.doesItemExactlyMatchText;
+        this.createInsertModelFromString = args.createInsertModelFromString;
+        this.allowInsertFromString = args.allowInsertFromString;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    isEqual = (a: TForeign, b: TForeign) => {
+        return a[this.foreignTableSpec.pkMember] === b[this.foreignTableSpec.pkMember];
+    };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
+
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        // leaves behind the fk id.
+        clientModel[this.member] = dbModel[this.member];
+    }
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        // mutations want ONLY the id, not the object.
+        mutationModel[this.fkMember] = clientModel[this.member][this.foreignTableSpec.pkMember];
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (val: TForeign | null): ValidateAndParseResult<TForeign | null> => {
+        if (val === null) {
+            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
+            return ErrorValidateAndParseResult("field must be non-null", val);
+        }
+        // there's really nothing else to validate here.
+        return SuccessfulValidateAndParseResult(val);
+    };
+
+};
+
 
 
 
@@ -603,3 +680,100 @@ export const xInstrumentTag = new xTable({
         }),
     ]
 });
+
+
+
+
+const InstrumentInclude: Prisma.InstrumentInclude = {
+    functionalGroup: true,
+    instrumentTags: {
+        include: {
+            tag: true,
+        }
+    }
+};
+
+export type InstrumentFunctionalGroupForeignModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
+
+export const xInstrument = new xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    localInclude: InstrumentInclude,
+    tableName: "instrument",
+    columns: [
+        new PKField({ columnName: "id" }),
+        new GenericStringField({
+            columnName: "name",
+            allowNull: false,
+            caseSensitive: true,
+            minLength: 1,
+            doTrim: true,
+        }),
+        new GenericIntegerField({
+            columnName: "sortOrder",
+            allowNull: false,
+        }),
+        new ForeignSingleField<InstrumentFunctionalGroupForeignModel>({
+            columnName: "functionalGroup",
+            fkMember: "functionalGroupId",
+            foreignTableSpec: xInstrumentFunctionalGroup,
+            allowNull: false,
+            defaultValue: null,
+            allowInsertFromString: true,
+            doesItemExactlyMatchText: (item: InstrumentFunctionalGroupForeignModel, filterText: string) => {
+                return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
+            },
+            getQuickFilterWhereClause: (query : string) : Prisma.InstrumentWhereInput => ({
+                functionalGroup: {
+                    name : { contains: query }
+                }
+            }),
+            getForeignQuickFilterWhereClause: (query : string) : Prisma.InstrumentFunctionalGroupWhereInput => ({
+                name : { contains: query },
+                description: {contains: query},
+            }),
+            createInsertModelFromString: (input: string) : Partial<InstrumentFunctionalGroupForeignModel> => ({
+                description: "auto-created from selection dlg",
+                name: input,
+                sortOrder: 0,
+            }),
+        }),
+        // instrument tags associations
+    ]
+});
+
+// model Instrument {
+//     id                Int                        @id @default(autoincrement())
+//     name              String
+//     sortOrder         Int
+
+//     functionalGroupId Int
+//     functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Restrict) // if you want to delete a functional group, you need to manually reassign
+//     instrumentTags    InstrumentTagAssociation[]
+  
+//     fileTags FileInstrumentTag[]
+//     users    UserInstrument[]
+//   }
+  
+//   model InstrumentTag {
+//     id           Int                        @id @default(autoincrement())
+//     text         String
+//     sortOrder    Int                        @default(0)
+//     color        String?
+//     significance String? // "uses electricity" for example?
+//     instruments  InstrumentTagAssociation[]
+//   }
+  
+//   // association table
+//   model InstrumentTagAssociation {
+//     id           Int           @id @default(autoincrement())
+//     instrumentId Int
+//     instrument   Instrument    @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
+//     tagId        Int
+//     tag          InstrumentTag @relation(fields: [tagId], references: [id], onDelete: Cascade) // cascade delete association
+  
+//     @@unique([instrumentId, tagId]) // 
+//   }
+
+  
+

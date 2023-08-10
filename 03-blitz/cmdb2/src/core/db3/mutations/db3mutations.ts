@@ -88,11 +88,7 @@ const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ct
             throw new Error(`validation failed; log contains details.`);
         }
 
-        //const pk = fields[table.pkMember];
-
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
-
-        //const fieldsWithoutPk = Object.fromEntries(Object.entries(fields).filter(([k, v]) => k !== table.pkMember));
 
         const obj = await dbTableClient.update({
             where: { [table.pkMember]: pkid },
