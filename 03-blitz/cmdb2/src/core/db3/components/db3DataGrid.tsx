@@ -30,7 +30,7 @@ import {
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import * as db3client from "./db3Client";
+import * as DB3Client from "../DB3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 
 const gViewingRowHeight = 40;
@@ -38,7 +38,7 @@ const gEditingRowHeight = 55;
 const gPageSizeOptions = [20, 50, 100] as number[];
 const gPageSizeDefault = 50 as number;
 
-function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSpec: db3client.xTableClientSpec }) {
+function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSpec: DB3Client.xTableClientSpec }) {
     return (
         <GridToolbarContainer>
             <Button startIcon={<AddIcon />} onClick={onNewClicked}>insert {tableSpec.args.table.tableName}</Button>
@@ -54,7 +54,7 @@ function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSp
 
 export type DB3EditGridProps = {
     //table: db3.xTable,
-    tableSpec: db3client.xTableClientSpec,
+    tableSpec: DB3Client.xTableClientSpec,
 };
 
 export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
@@ -69,8 +69,8 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
-    const tableClient = db3client.useTableRenderContext({
-        requestedCaps: db3client.xTableClientCaps.Mutation | db3client.xTableClientCaps.PaginatedQuery,
+    const tableClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
         tableSpec,
         filterModel,
         sortModel,

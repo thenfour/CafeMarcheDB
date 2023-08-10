@@ -6,10 +6,12 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 //import { UserTableSpec } from "src/core/CMDBUser";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 //import { CMEditGrid2 } from "src/core/cmdashboard/CMEditGrid2";
-import * as db3client from "src/core/db3/components/db3Client";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3fsclient from "src/core/db3/components/db3ForeignSingleFieldClient";
+//import * as db3client from "src/core/db3/components/DB3ClientCore";
 import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+//import * as db3fsclient from "src/core/db3/components/db3ForeignSingleFieldClient";
+//import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
@@ -167,13 +169,13 @@ import DoneIcon from '@mui/icons-material/Done';
 // });
 
 
-const tableSpec = new db3client.xTableClientSpec({
+const tableSpec = new DB3Client.xTableClientSpec({
     table: db3.xInstrument,
     columns: [
-        new db3client.PKColumnClient({ columnName: "id" }),
-        new db3client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-        new db3client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new db3fsclient.ForeignSingleFieldFieldClient<db3.InstrumentFunctionalGroupForeignModel>({
+        new DB3Client.PKColumnClient({ columnName: "id" }),
+        new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
+        new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+        new DB3Client.ForeignSingleFieldFieldClient<db3.InstrumentFunctionalGroupForeignModel>({
             columnName: "functionalGroup",
             cellWidth: 200,
             renderAsChip: (args) => {

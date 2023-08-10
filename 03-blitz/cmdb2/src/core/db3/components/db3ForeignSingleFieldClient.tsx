@@ -2,10 +2,9 @@
 
 import React from "react";
 import * as db3 from "../db3";
-//import db3queries from "../queries/db3queries";
+import * as DB3Client from "../DB3Client";
 import { Button, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import { gNullValue } from "shared/utils";
-import * as db3client from "./db3Client";
 import { GridFilterModel, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { SelectSingleForeignDialog } from "./db3SelectSingleForeignDialog";
 import { useMutation, useQuery } from "@blitzjs/rpc";
@@ -46,7 +45,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 
     return <div>
         {chip}
-        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.schemaColumn.label}</Button>
+        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.label}</Button>
         {isOpen && <SelectSingleForeignDialog
             value={props.value}
             spec={props.foreignSpec}
@@ -74,7 +73,7 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
 };
 
 // the client-side description of the field, used in xTableClient construction.
-export class ForeignSingleFieldFieldClient<TForeign> extends db3client.IColumnClient {
+export class ForeignSingleFieldFieldClient<TForeign> extends DB3Client.IColumnClient {
     typedSchemaColumn: db3.ForeignSingleField<TForeign>;
     args: ForeignSingleFieldClientArgs<TForeign>;
 
@@ -107,7 +106,7 @@ export class ForeignSingleFieldFieldClient<TForeign> extends db3client.IColumnCl
         };
     };
 
-    renderForNewDialog = (params: db3client.RenderForNewItemDialogArgs) => {
+    renderForNewDialog = (params: DB3Client.RenderForNewItemDialogArgs) => {
         return <React.Fragment key={params.key}>
             {/* <InputLabel>{this.schemaColumn.label}</InputLabel> */}
             <ForeignSingleFieldInput
@@ -131,7 +130,7 @@ export interface ForeignSingleFieldRenderContextArgs<TForeign> {
 // the "live" adapter handling server-side comms.
 export class ForeignSingleFieldRenderContext<TForeign> {
     args: ForeignSingleFieldRenderContextArgs<TForeign>;
-    mutateFn: db3client.TMutateFn;
+    mutateFn: DB3Client.TMutateFn;
 
     items: TForeign[];
     refetch: () => void;
@@ -140,7 +139,7 @@ export class ForeignSingleFieldRenderContext<TForeign> {
         this.args = args;
 
         if (this.args.spec.typedSchemaColumn.allowInsertFromString) {
-            this.mutateFn = useMutation(db3mutations)[0] as db3client.TMutateFn;
+            this.mutateFn = useMutation(db3mutations)[0] as DB3Client.TMutateFn;
         }
 
         const where = { AND: [] as any[] };

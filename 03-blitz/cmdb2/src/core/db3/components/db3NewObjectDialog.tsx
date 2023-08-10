@@ -6,13 +6,13 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
 import * as db3 from "../db3";
-import * as db3Client from "./db3Client";
+import * as DB3ClientCore from "./DB3ClientCore";
 import { TAnyModel } from "shared/utils";
 
 type db3NewObjectDialogProps = {
     onOK: (obj: TAnyModel) => any;
     onCancel: () => any;
-    table: db3Client.xTableClientSpec;
+    table: DB3ClientCore.xTableClientSpec;
 };
 
 export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialogProps) {
@@ -22,8 +22,8 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
     const [oldObj, setOldObj] = React.useState(table.args.table.defaultObject); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
 
-    const tableClient = db3Client.useTableRenderContext({
-        requestedCaps: db3Client.xTableClientCaps.Mutation,
+    const tableClient = DB3ClientCore.useTableRenderContext({
+        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
         tableSpec: table,
     });
 
@@ -41,7 +41,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
         onOK(obj);
     };
 
-    const api: db3Client.NewDialogAPI = {
+    const api: DB3ClientCore.NewDialogAPI = {
         setFieldValues: (fieldValues: { [key: string]: any }) => {
             // so i think the reason MUI datagrid's API makes this a promise, is that when you setState(), it doesn't update
             // local variables; it's asynchronous. either we go that model which is more complex, or this where you can set multiple fields at once.
