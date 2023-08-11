@@ -13,8 +13,6 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 //import * as db3fsclient from "src/core/db3/components/db3ForeignSingleFieldClient";
 //import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
 
 // type I = Prisma.InstrumentGetPayload<{
 //     include: {
@@ -168,36 +166,14 @@ import DoneIcon from '@mui/icons-material/Done';
 //     ],
 // });
 
-
 const tableSpec = new DB3Client.xTableClientSpec({
     table: db3.xInstrument,
     columns: [
         new DB3Client.PKColumnClient({ columnName: "id" }),
         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new DB3Client.ForeignSingleFieldFieldClient<db3.InstrumentFunctionalGroupForeignModel>({
-            columnName: "functionalGroup",
-            cellWidth: 200,
-            renderAsChip: (args) => {
-                if (!args.value) {
-                    return <>--</>;
-                }
-                return <Chip
-                    size="small"
-                    label={`${args.value.name}`}
-                    onDelete={args.onDelete}
-                />;
-            },
-            renderAsListItem: (props, value, selected) => {
-                return <li {...props}>
-                    {selected && <DoneIcon />}
-                    {value.name}
-                    {value.description}
-                    {selected && <CloseIcon />}
-                </li>
-            },
-        }),
-        // tags
+        new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupForeignModel>({ columnName: "functionalGroup", cellWidth: 200 }),
+        new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationModel>({ columnName: "instrumentTags", cellWidth: 220 }),
     ],
 });
 

@@ -20,11 +20,11 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { ForeignSingleFieldFieldClient, useForeignSingleFieldRenderContext } from "./db3ForeignSingleFieldClient";
+import { ForeignSingleFieldClient, useForeignSingleFieldRenderContext } from "./db3ForeignSingleFieldClient";
 
 export interface SelectSingleForeignDialogProps<TForeign> {
     value: TForeign | null;
-    spec: ForeignSingleFieldFieldClient<TForeign>;
+    spec: ForeignSingleFieldClient<TForeign>;
 
     onOK: (value: TForeign | null) => void;
     onCancel: () => void;
@@ -35,8 +35,6 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
     const [filterText, setFilterText] = React.useState("");
-
-    console.log(`filtertext: ${filterText}`);
 
     const db3Context = useForeignSingleFieldRenderContext({
         filterText,
@@ -87,7 +85,7 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
             <DialogTitle>
                 select {props.spec.schemaColumn.label}
                 <Box sx={{ p: 0 }}>
-                    Selected: {props.spec.args.renderAsChip({
+                    Selected: {props.spec.args.renderAsChip!({
                         value: selectedObj || null,
                         onDelete: () => {
                             setSelectedObj(null);
@@ -139,7 +137,7 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
                                     return (
                                         <React.Fragment key={item[props.spec.typedSchemaColumn.foreignTableSpec.pkMember]}>
                                             <ListItemButton selected onClick={e => { handleItemClick(item) }}>
-                                                {props.spec.args.renderAsListItem({}, item, selected)}
+                                                {props.spec.args.renderAsListItem!({}, item, selected)}
                                             </ListItemButton>
                                             <Divider></Divider>
                                         </React.Fragment>

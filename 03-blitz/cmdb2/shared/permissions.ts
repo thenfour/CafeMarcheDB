@@ -22,5 +22,7 @@ export enum Permission {
     admin_general = "admin_general",
 
     change_own_password = "change_own_password",
+
+    associate_instrument_tags = "associate_instrument_tags",
 };
 

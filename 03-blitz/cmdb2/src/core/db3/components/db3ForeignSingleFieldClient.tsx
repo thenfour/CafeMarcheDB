@@ -3,13 +3,15 @@
 import React from "react";
 import * as db3 from "../db3";
 import * as DB3Client from "../DB3Client";
-import { Button, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
+import { Button, Chip, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import { gNullValue } from "shared/utils";
 import { GridFilterModel, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { SelectSingleForeignDialog } from "./db3SelectSingleForeignDialog";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
+import CloseIcon from '@mui/icons-material/Close';
+import DoneIcon from '@mui/icons-material/Done';
 
 
 export type InsertFromStringParams = {
@@ -20,10 +22,11 @@ export type InsertFromStringParams = {
 export interface RenderAsChipParams<T> {
     value: T | null;
     onDelete?: () => void;
+    onClick?: () => void;
 }
 
 export interface ForeignSingleFieldInputProps<TForeign> {
-    foreignSpec: ForeignSingleFieldFieldClient<TForeign>;
+    foreignSpec: ForeignSingleFieldClient<TForeign>;
     value: TForeign | null;
     onChange: (value: TForeign | null) => void;
 };
@@ -36,7 +39,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
         setOldValue(props.value);
     }, []);
 
-    const chip = props.foreignSpec.args.renderAsChip({
+    const chip = props.foreignSpec.args.renderAsChip!({
         value: props.value,
         onDelete: () => {
             props.onChange(null);
@@ -66,14 +69,17 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
     columnName: string;
     cellWidth: number;
 
-    renderAsChip: (args: RenderAsChipParams<TForeign>) => React.ReactElement;
+    // getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    // getChipDescription?: (value: TForeign) => string;
+
+    renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactElement;
 
     // should render a <li {...props}> for autocomplete
-    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactElement;
+    renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactElement;
 };
 
 // the client-side description of the field, used in xTableClient construction.
-export class ForeignSingleFieldFieldClient<TForeign> extends DB3Client.IColumnClient {
+export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient {
     typedSchemaColumn: db3.ForeignSingleField<TForeign>;
     args: ForeignSingleFieldClientArgs<TForeign>;
 
@@ -87,12 +93,50 @@ export class ForeignSingleFieldFieldClient<TForeign> extends DB3Client.IColumnCl
         this.args = args;
     }
 
+    defaultRenderAsChip = (args: RenderAsChipParams<TForeign>) => {
+        if (!args.value) {
+            return <>--</>;
+        }
+
+        //console.assert(!!this.args.getChipCaption); // this relies on caller specifying a chip caption.
+        if (!this.typedSchemaColumn.getChipCaption) {
+            throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleFieldClient ${this.schemaTable.tableName}.${this.args.columnName}`);
+        }
+
+        //console.assert(!!this.args.getChipCaption);
+        return <Chip
+            size="small"
+            label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
+            onDelete={args.onDelete}
+        />;
+    };
+
+    defaultRenderAsListItem = (props, value, selected) => {
+        console.assert(!!this.typedSchemaColumn.getChipCaption);
+        console.assert(value != null);
+        return <li {...props}>
+            {selected && <DoneIcon />}
+            {this.typedSchemaColumn.getChipCaption!(value)}
+            {this.typedSchemaColumn.getChipDescription && this.typedSchemaColumn.getChipDescription!(value)}
+            {selected && <CloseIcon />}
+        </li>
+    };
+
     onSchemaConnected = () => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
 
+        if (!this.args.renderAsChip) {
+            // create a default renderer.
+            this.args.renderAsChip = (args: RenderAsChipParams<TForeign>) => this.defaultRenderAsChip(args);
+        }
+        if (!this.args.renderAsListItem) {
+            // create a default renderer.
+            this.args.renderAsListItem = (props, value, selected) => this.defaultRenderAsListItem(props, value, selected);
+        }
+
         this.GridColProps = {
             renderCell: (args: GridRenderCellParams) => {
-                return this.args.renderAsChip({ value: args.value });
+                return this.args.renderAsChip!({ value: args.value });
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 return <ForeignSingleFieldInput
@@ -123,7 +167,7 @@ export class ForeignSingleFieldFieldClient<TForeign> extends DB3Client.IColumnCl
 };
 
 export interface ForeignSingleFieldRenderContextArgs<TForeign> {
-    spec: ForeignSingleFieldFieldClient<TForeign>;
+    spec: ForeignSingleFieldClient<TForeign>;
     filterText: string;
 };
 
@@ -146,15 +190,14 @@ export class ForeignSingleFieldRenderContext<TForeign> {
         if (args.filterText) {
             const tokens = args.filterText.split(/\s+/).filter(token => token.length > 0);
             const quickFilterItems = tokens.map(q => {
-                const OR = args.spec.typedSchemaColumn.getForeignQuickFilterWhereClause(q);
+                //const OR = args.spec.typedSchemaColumn.getForeignQuickFilterWhereClause(q);
+                const OR = args.spec.typedSchemaColumn.foreignTableSpec.GetQuickFilterWhereClauseExpression(q);
                 if (!OR) return null;
                 return {
                     OR,
                 };
             });
             where.AND.push(...quickFilterItems.filter(i => i !== null));
-
-            console.log(`-> where clause: ${JSON.stringify(where)}`);
         }
 
         const [items, { refetch }]: [TForeign[], any] = useQuery(db3queries, {
@@ -167,8 +210,8 @@ export class ForeignSingleFieldRenderContext<TForeign> {
     }
 
     doInsertFromString = async (userInput: string): Promise<TForeign> => {
-        //console.assert(!`todo`);
-        const insertModel = this.args.spec.typedSchemaColumn.createInsertModelFromString(userInput);
+        console.assert(!!this.args.spec.typedSchemaColumn.foreignTableSpec.createInsertModelFromString);
+        const insertModel = this.args.spec.typedSchemaColumn.foreignTableSpec.createInsertModelFromString!(userInput);
         try {
             return await this.mutateFn({
                 tableName: this.args.spec.typedSchemaColumn.foreignTableSpec.tableName,

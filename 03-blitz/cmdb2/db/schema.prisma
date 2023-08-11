@@ -254,7 +254,7 @@ model SongTagAssociation {
 model InstrumentFunctionalGroup {
   id          Int          @id @default(autoincrement())
   name        String
-  description        String @default("")
+  description String       @default("")
   sortOrder   Int
   instruments Instrument[]
 }
@@ -262,6 +262,7 @@ model InstrumentFunctionalGroup {
 model Instrument {
   id                Int                        @id @default(autoincrement())
   name              String
+  description       String                     @default("")
   sortOrder         Int
   functionalGroupId Int
   functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Restrict) // if you want to delete a functional group, you need to manually reassign
@@ -274,6 +275,7 @@ model Instrument {
 model InstrumentTag {
   id           Int                        @id @default(autoincrement())
   text         String
+  description  String                     @default("")
   sortOrder    Int                        @default(0)
   color        String?
   significance String? // "uses electricity" for example?
@@ -341,6 +343,7 @@ model Event {
 model EventTag {
   id           Int                  @id @default(autoincrement())
   text         String
+  description  String               @default("")
   color        String?
   significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
   events       EventTagAssignment[]
@@ -390,9 +393,10 @@ model EventSongListSong {
 
 // tech rider, invoice, contract, event media, other, what is the usage? the point is to find similar things
 model FileSignificance {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  Files File[]
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+  Files       File[]
 }
 
 model File {

@@ -71,7 +71,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
                             return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
                                 key: column.columnName,
                                 api,
-                                obj,
+                                row: obj,
                                 value: obj[column.columnName],
                                 validationResult,
                             })}</React.Fragment>;

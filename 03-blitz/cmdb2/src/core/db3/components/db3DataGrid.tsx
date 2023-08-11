@@ -104,9 +104,6 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const [confirmDialogArgs, setConfirmDialogArgs] = React.useState<any>(null);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
-        // console.log(`edit grid 2 : processRowUpdate. newrow, oldrow:`);
-        // console.log(newRow);
-        // console.log(oldRow);
         return new Promise<GridRowModel>((resolve, reject) => {
             const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow);
             // there are 3 possible paths:
@@ -331,7 +328,6 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
                 }
             }}
             getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
-                //console.log();
                 if (rowModesModel[id] && rowModesModel[id].mode === 'edit') {
                     return gEditingRowHeight;
                 }

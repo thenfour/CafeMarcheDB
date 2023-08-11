@@ -51,8 +51,20 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
             throw new Error(`validation failed; log contains details.`);
         }
 
+        // separate association arrays from the local columns.
+        const associationFields: TAnyModel = {};
+        const localFields: TAnyModel = {};
+        table.columns.forEach(column => {
+            if (fields[column.member] === undefined) {
+                return;
+            }
+            const dest = (column.fieldTableAssociation === "associationRecord") ? associationFields : localFields;
+            dest[column.member] = fields[column.member];
+        });
+        // at this point `fields` should not be used.
+
         const obj = await dbTableClient.create({
-            data: fields,
+            data: localFields,
             include: table.localInclude,
         });
 
@@ -61,9 +73,14 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
             changeContext,
             table: "instrumentTag",
             pkid: obj.id,
-            newValues: fields,
+            newValues: localFields,
             ctx,
         });
+
+        // now update any associations
+        for (const [fieldName, associations] of Object.entries(associationFields)) {
+            console.log(`todo: insert association.... ${JSON.stringify(fieldName)}: ${associations.length}`);
+        }
 
         return obj;
     } catch (e) {
@@ -88,23 +105,40 @@ const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ct
             throw new Error(`validation failed; log contains details.`);
         }
 
+        // separate association arrays from the local columns.
+        const associationFields: TAnyModel = {};
+        const localFields: TAnyModel = {};
+        table.columns.forEach(column => {
+            if (fields[column.member] === undefined) {
+                return;
+            }
+            const dest = (column.fieldTableAssociation === "associationRecord") ? associationFields : localFields;
+            dest[column.member] = fields[column.member];
+        });
+        // at this point `fields` should not be used.
+
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
 
         const obj = await dbTableClient.update({
             where: { [table.pkMember]: pkid },
-            data: fields,
+            data: localFields,
             include: table.localInclude,
         });
 
         await RegisterChange({
             action: ChangeAction.update,
-            changeContext: CreateChangeContext(contextDesc),
+            changeContext,
             table: "role",
             pkid,
             oldValues,
             newValues: obj,
             ctx,
         });
+
+        // now update any associations
+        for (const [fieldName, associations] of Object.entries(associationFields)) {
+            console.log(`todo: update association.... ${JSON.stringify(fieldName)}: ${associations.length}`);
+        }
 
         return obj;
     } catch (e) {

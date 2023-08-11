@@ -3,7 +3,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPalette } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, InstrumentTagSignificance, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "./db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, PKField } from "./db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, PKField, TagsField } from "./db3basicFields";
 
 
 ////////////////////////////////////////////////////////////////
@@ -11,11 +11,18 @@ const InstrumentFunctionalGroupInclude: Prisma.InstrumentFunctionalGroupInclude 
     instruments: true,
 };
 
+export type InstrumentFunctionalGroupForeignModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
+
 export const xInstrumentFunctionalGroup = new xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentFunctionalGroupInclude,
     tableName: "instrumentFunctionalGroup",
+    createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupForeignModel> => ({
+        description: "auto-created from selection dlg",
+        name: input,
+        sortOrder: 0,
+    }),
     columns: [
         new PKField({ columnName: "id" }),
         new GenericStringField({
@@ -75,8 +82,46 @@ export const xInstrumentTag = new xTable({
     ]
 });
 
+export type InstrumentTagForeignModel = Prisma.InstrumentTagGetPayload<{}>;
 
+export type InstrumentTagAssociationModel = Prisma.InstrumentTagAssociationGetPayload<{
+    include: {
+        instrument: true,
+        tag: true,
+    }
+}>;
 
+// not sure this is needed or used at all.
+const InstrumentTagAssociationInclude: Prisma.InstrumentTagAssociationInclude = {
+    instrument: true,
+    tag: true,
+};
+
+export const xInstrumentTagAssociation = new xTable({
+    tableName: "InstrumentTagAssociation",
+    editPermission: Permission.associate_instrument_tags,
+    viewPermission: Permission.view_general_info,
+    localInclude: InstrumentTagAssociationInclude,
+    columns: [
+        new PKField({ columnName: "id" }),
+        // do not add the `instrument` column here; this is used only as an association FROM the instrument table; excluding it
+        // 1. enforces this purpose (minor)
+        // 2. avoids a circular reference to xInstrument (major)
+        new ForeignSingleField<Prisma.InstrumentTagGetPayload<{}>>({
+            columnName: "tag",
+            fkMember: "tagId",
+            allowNull: false,
+            foreignTableSpec: xInstrumentTag,
+            getChipCaption: (value) => value.text,
+            getChipDescription: (value) => value.description,
+            getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
+                functionalGroup: {
+                    name: { contains: query }
+                }
+            }),
+        }),
+    ]
+});
 
 const InstrumentInclude: Prisma.InstrumentInclude = {
     functionalGroup: true,
@@ -86,8 +131,6 @@ const InstrumentInclude: Prisma.InstrumentInclude = {
         }
     }
 };
-
-export type InstrumentFunctionalGroupForeignModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
 
 export const xInstrument = new xTable({
     editPermission: Permission.admin_general,
@@ -112,26 +155,43 @@ export const xInstrument = new xTable({
             fkMember: "functionalGroupId",
             foreignTableSpec: xInstrumentFunctionalGroup,
             allowNull: false,
-            defaultValue: null,
-            allowInsertFromString: true,
-            doesItemExactlyMatchText: (item: InstrumentFunctionalGroupForeignModel, filterText: string) => {
-                return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
-            },
+            getChipCaption: (value) => value.name,
+            getChipDescription: (value) => value.description,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
                 }
             }),
-            getForeignQuickFilterWhereClause: (query: string): Prisma.Enumerable<Prisma.InstrumentFunctionalGroupWhereInput> => ([
-                { name: { contains: query } },
-                { description: { contains: query } },
-            ]),
-            createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupForeignModel> => ({
-                description: "auto-created from selection dlg",
-                name: input,
-                sortOrder: 0,
+        }),
+        new TagsField<InstrumentTagAssociationModel>({
+            columnName: "instrumentTags",
+            associationTableSpec: xInstrumentTagAssociation,
+            foreignTableSpec: xInstrumentTag,
+            getChipCaption: (value) => value.tag.text,
+            getChipDescription: (value) => value.tag.description,
+            getForeignID: (association) => association.tagId,
+            createMockAssociation: (instrument, tag) => ({
+                id: -1,
+                instrument: instrument as any,
+                instrumentId: instrument.id,
+                tag: tag as any,
+                tagId: tag.id,
+            }),
+            sanitizeAssociationForMutation: (a: InstrumentTagAssociationModel) => ({
+                instrumentId: a.instrumentId,
+                tagId: a.tagId,
+            }),
+            getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
+                instrumentTags: {
+                    some: {
+                        tag: {
+                            text: {
+                                contains: query
+                            }
+                        }
+                    }
+                }
             }),
         }),
-        // instrument tags associations
     ]
 });

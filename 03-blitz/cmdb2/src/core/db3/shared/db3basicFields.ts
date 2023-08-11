@@ -15,7 +15,7 @@ export class PKField extends FieldBase<number> {
     constructor(args: PKFieldArgs) {
         super({
             member: args.columnName,
-            fieldType: "PKField",
+            fieldTableAssociation: "tableColumn",
             defaultValue: null,
             label: args.columnName,
         });
@@ -65,7 +65,7 @@ export class GenericStringField extends FieldBase<string> {
     constructor(args: GenericStringFieldArgs) {
         super({
             member: args.columnName,
-            fieldType: "GenericStringField",
+            fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : "",
             label: args.columnName,
         });
@@ -126,7 +126,7 @@ export class GenericIntegerField extends FieldBase<number> {
     constructor(args: GenericIntegerFieldArgs) {
         super({
             member: args.columnName,
-            fieldType: "GenericIntegerField",
+            fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : 0,
             label: args.columnName,
         });
@@ -197,7 +197,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
     constructor(args: ColorFieldArgs) {
         super({
             member: args.columnName,
-            fieldType: "ColorField",
+            fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : args.palette.defaultEntry,
             label: args.columnName,
         });
@@ -257,7 +257,7 @@ export class ConstEnumStringField extends FieldBase<string> {
     constructor(args: ConstEnumStringFieldArgs) {
         super({
             member: args.columnName,
-            fieldType: "ConstEnumStringField",
+            fieldTableAssociation: "tableColumn",
             defaultValue: args.defaultValue,
             label: args.columnName,
         });
@@ -309,12 +309,14 @@ export interface ForeignSingleFieldArgs<TForeign> {
     foreignTableSpec: xTable;
     //foreignPkMember: string; // "id" on instrumentType table.
     allowNull: boolean;
-    defaultValue: TForeign | null;
+    defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    getForeignQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // quick filter but only for foreign object queries.
-    doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean,
-    createInsertModelFromString: (input: string) => Partial<TForeign>,
-    allowInsertFromString: boolean;
+    //getForeignQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // quick filter but only for foreign object queries.
+    doesItemExactlyMatchText?: (item: TForeign, filterText: string) => boolean,
+    //createInsertModelFromString: (input: string) => Partial<TForeign>,
+    //allowInsertFromString: boolean;
+    getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    getChipDescription?: (value: TForeign) => string;
 };
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
@@ -324,27 +326,48 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     allowNull: boolean;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    getForeignQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // quick filter but only for foreign object queries.
+    //getForeignQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // quick filter but only for foreign object queries.
     doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean;
-    createInsertModelFromString: (input: string) => Partial<TForeign>;
-    allowInsertFromString: boolean;
+    //createInsertModelFromString: (input: string) => Partial<TForeign>;
+    //allowInsertFromString: boolean;
+    getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    getChipDescription?: (value: TForeign) => string;
 
     constructor(args: ForeignSingleFieldArgs<TForeign>) {
         super({
             member: args.columnName,
-            fieldType: "ForeignSingleField",
-            defaultValue: args.defaultValue,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: args.defaultValue || null,
             label: args.columnName,
         });
+
+        // does default behavior of case-insensitive, trimmed compare.
+        const itemExactlyMatches_defaultImpl = (value: TForeign, filterText: string): boolean => {
+            //console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
+            if (!this.getChipCaption) {
+                throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleField ${args.columnName}`);
+            }
+            return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+        }
+
         this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
-        this.defaultValue = args.defaultValue;
+        this.defaultValue = args.defaultValue || null;
         this.foreignTableSpec = args.foreignTableSpec;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
-        this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
-        this.doesItemExactlyMatchText = args.doesItemExactlyMatchText;
-        this.createInsertModelFromString = args.createInsertModelFromString;
-        this.allowInsertFromString = args.allowInsertFromString;
+        //this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
+        this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
+        this.getChipCaption = args.getChipCaption;
+        if (!args.doesItemExactlyMatchText && !this.getChipCaption) {
+            throw new Error(`here.,`);
+        }
+        this.getChipDescription = args.getChipDescription;
+        //this.createInsertModelFromString = args.createInsertModelFromString;
+        //this.allowInsertFromString = args.allowInsertFromString;
+    }
+
+    get allowInsertFromString() {
+        return !!this.foreignTableSpec.createInsertModelFromString;
     }
 
     connectToTable = (table: xTable) => { };
@@ -376,6 +399,116 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     };
 
 };
+
+
+
+////////////////////////////////////////////////////////////////
+// tags fields are arrays of associations
+// on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
+export interface TagsFieldArgs<TAssociation> {
+    columnName: string; // "instrumentType"
+    associationTableSpec: xTable;
+    foreignTableSpec: xTable;
+    getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
+    doesItemExactlyMatchText?: (item: TAssociation, filterText: string) => boolean;
+
+    // when we get a list of tag options, they're foreign models (tags).
+    // but we need our list to be association objects (itemTagAssocitaion)
+    createMockAssociation: (row: TAnyModel, item: TAnyModel) => TAssociation;
+    sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
+
+    getForeignID: (value: TAssociation) => any; // return a unique key for the given association. this sorta feels redundant (with all this metadata can't core deduce this?) but we don't have enough info for this. (which field of association represents the foreign object?)
+    getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    getChipDescription?: (value: TAssociation) => string;
+};
+
+export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
+    associationTableSpec: xTable;
+    foreignTableSpec: xTable;
+    getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
+
+    createMockAssociation: (row: TAnyModel, foreignObject: TAnyModel) => TAssociation;
+    sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
+    getForeignID: (value: TAssociation) => any; // return a unique key for the given association.
+    doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
+    getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    getChipDescription?: (value: TAssociation) => string;
+
+    get allowInsertFromString() {
+        return !!this.foreignTableSpec.createInsertModelFromString;
+    }
+
+    constructor(args: TagsFieldArgs<TAssociation>) {
+        super({
+            member: args.columnName,
+            fieldTableAssociation: "associationRecord",
+            defaultValue: [],
+            label: args.columnName,
+        });
+
+        // does default behavior of case-insensitive, trimmed compare.
+        const itemExactlyMatches_defaultImpl = (value: TAssociation, filterText: string): boolean => {
+            //console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
+            console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
+            if (!this.getChipCaption) {
+                throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On TagsField ${args.columnName}`);
+            }
+            return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+        }
+
+        this.associationTableSpec = args.associationTableSpec;
+        this.foreignTableSpec = args.foreignTableSpec;
+        this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
+        this.createMockAssociation = args.createMockAssociation;
+        this.sanitizeAssociationForMutation = args.sanitizeAssociationForMutation;
+        this.getForeignID = args.getForeignID;
+        this.getChipCaption = args.getChipCaption;
+        this.getChipDescription = args.getChipDescription;
+        this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    isEqual = (a: TAssociation[], b: TAssociation[]) => {
+        console.assert(Array.isArray(a));
+        console.assert(Array.isArray(b));
+        if (a.length != b.length) {
+            return false; // shortcut
+        }
+        // ok they are equal length arrays; check all items
+        const avalues = a.map(x => x[this.associationTableSpec.pkMember]);
+        const bvalues = b.map(x => x[this.associationTableSpec.pkMember]);
+        avalues.sort();
+        bvalues.sort();
+        for (let i = 0; i < avalues.length; ++i) {
+            if (avalues[i] !== bvalues[i]) return false;
+        }
+        return true;
+    };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
+
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        // the "includes" clause already returns the correct structure for clients.
+        clientModel[this.member] = dbModel[this.member];
+    }
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        // clients work with associations, even mock associations (where id is empty).
+        // mutations don't require any of this info; associations are always with existing local & foreign items.
+        // so basically we just need to reduce associations down to an update/mutate model.
+        mutationModel[this.member] = clientModel[this.member].map(a => this.sanitizeAssociationForMutation(a));
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (val: TAssociation[] | null): ValidateAndParseResult<TAssociation[] | null> => {
+        // there's really nothing else to validate here. in theory you can make sure the IDs are valid but it should never be possible plus enforced by the db relationship.
+        // therefore not worth the overhead / roundtrip / complexity.
+        return SuccessfulValidateAndParseResult(val);
+    };
+};
+
+
 
 
 

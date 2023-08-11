@@ -12,6 +12,17 @@ import { CoerceToNumberOrNull, InstrumentTagSignificance, KeysOf, TAnyModel } fr
 // - default values
 
 ////////////////////////////////////////////////////////////////
+// in order for mutations to understand how to handle each field; this could be a boolean but this is more expressive.
+// associations must be inserted / updated very differently from the local row.
+// export const FieldAssociationWithTableOptions = {
+//     tableColumn: "tableColumn", // normal table column
+//     associationRecord: "associationRecord", // for many-to-many relations
+// } as const;
+
+//export type FieldAssociationWithTable = typeof FieldAssociationWithTable[keyof typeof FieldAssociationWithTable];
+export type FieldAssociationWithTable = "tableColumn" | "associationRecord";
+
+////////////////////////////////////////////////////////////////
 // the mutation needs to be able to access the xtable in order to
 // validate etc.
 export interface MutatorInput {
@@ -98,14 +109,16 @@ export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDif
 
 ////////////////////////////////////////////////////////////////
 export interface FieldBaseArgs<FieldDataType> {
-    fieldType: string;
+    //fieldType: string;
+    fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     label: string;
     defaultValue: FieldDataType | null;
 }
 
 export abstract class FieldBase<FieldDataType> {
-    fieldType: string;
+    //fieldType: string;
+    fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     label: string;
     defaultValue: FieldDataType | null;
@@ -142,6 +155,7 @@ export interface TableDesc {
     localInclude: unknown, // the includes:{} clause for local items. generally returns some of the foreign members
     viewPermission: Permission;
     editPermission: Permission;
+    createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
 };
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
@@ -156,6 +170,8 @@ export class xTable implements TableDesc {
 
     defaultObject: TAnyModel;
     pkMember: string;
+
+    createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
@@ -223,7 +239,6 @@ export class xTable implements TableDesc {
             const field = this.columns[i]!;
             const clause = field.getQuickFilterWhereClause(query);
             if (clause) {
-                console.log(`qf where field:${field.label} : ${JSON.stringify(clause)}`);
                 ret.push(clause);
             }
         }
