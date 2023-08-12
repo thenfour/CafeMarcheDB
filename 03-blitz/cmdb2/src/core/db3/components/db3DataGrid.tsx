@@ -33,8 +33,8 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 
-const gViewingRowHeight = 40;
-const gEditingRowHeight = 55;
+// const gViewingRowHeight = 40;
+// const gEditingRowHeight = 55;
 const gPageSizeOptions = [20, 50, 100] as number[];
 const gPageSizeDefault = 50 as number;
 
@@ -327,12 +327,13 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
                     tableSpec: tableSpec,
                 }
             }}
-            getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
-                if (rowModesModel[id] && rowModesModel[id].mode === 'edit') {
-                    return gEditingRowHeight;
-                }
-                return gViewingRowHeight;
-            }}
+            getRowHeight={() => 'auto'}
+            // getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
+            //     if (rowModesModel[id] && rowModesModel[id].mode === 'edit') {
+            //         return gEditingRowHeight;
+            //     }
+            //     return gViewingRowHeight;
+            // }}
             // schema
             columns={columns}
 

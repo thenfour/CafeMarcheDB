@@ -336,7 +336,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     constructor(args: ForeignSingleFieldArgs<TForeign>) {
         super({
             member: args.columnName,
-            fieldTableAssociation: "tableColumn",
+            fieldTableAssociation: "foreignObject",
             defaultValue: args.defaultValue || null,
             label: args.columnName,
         });

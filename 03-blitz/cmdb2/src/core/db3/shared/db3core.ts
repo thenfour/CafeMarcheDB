@@ -19,8 +19,7 @@ import { CoerceToNumberOrNull, InstrumentTagSignificance, KeysOf, TAnyModel } fr
 //     associationRecord: "associationRecord", // for many-to-many relations
 // } as const;
 
-//export type FieldAssociationWithTable = typeof FieldAssociationWithTable[keyof typeof FieldAssociationWithTable];
-export type FieldAssociationWithTable = "tableColumn" | "associationRecord";
+export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject";
 
 ////////////////////////////////////////////////////////////////
 // the mutation needs to be able to access the xtable in order to

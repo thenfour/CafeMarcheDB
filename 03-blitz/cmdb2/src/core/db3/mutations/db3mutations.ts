@@ -1,12 +1,49 @@
 import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db";
-import { ComputeChangePlan, DeleteByIdMutationImplementation } from "shared/associationUtils";
+import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel } from "shared/utils"
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 
+interface separateMutationValuesArgs {
+    table: db3.xTable;
+    fields: TAnyModel;
+};
+interface separateMutationValuesResult {
+    associationFields: TAnyModel;
+    localFields: TAnyModel;
+};
+const separateMutationValues = ({ table, fields }: separateMutationValuesArgs) => {
+    const ret: separateMutationValuesResult = {
+        associationFields: {},
+        localFields: {},
+    };
+
+    table.columns.forEach(column => {
+        switch (column.fieldTableAssociation) {
+            case "tableColumn":
+                if (fields[column.member]) {
+                    ret.localFields[column.member] = fields[column.member];
+                }
+                break;
+            case "foreignObject":
+                // foreign objects come in with a different member than column.member (FK member, not object member)
+                const typedColumn = column as db3.ForeignSingleField<TAnyModel>;
+                if (fields[typedColumn.fkMember] !== undefined) {
+                    ret.localFields[typedColumn.fkMember] = fields[typedColumn.fkMember];
+                }
+                break;
+            case "associationRecord":
+                if (fields[column.member]) {
+                    ret.associationFields[column.member] = fields[column.member];
+                }
+                break;
+        }
+    });
+    return ret;
+};
 
 export interface UpdateAssociationsArgs {
     ctx: AuthenticatedMiddlewareCtx;
@@ -123,6 +160,9 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
+        console.log(`insertImpl for ${table.tableName}. fields:`);
+        console.log(JSON.stringify(fields));
+
         const validateResult = table.ValidateAndComputeDiff(fields, fields);
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
@@ -130,17 +170,13 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
             throw new Error(`validation failed; log contains details.`);
         }
 
-        // separate association arrays from the local columns.
-        const associationFields: TAnyModel = {};
-        const localFields: TAnyModel = {};
-        table.columns.forEach(column => {
-            if (fields[column.member] === undefined) {
-                return;
-            }
-            const dest = (column.fieldTableAssociation === "associationRecord") ? associationFields : localFields;
-            dest[column.member] = fields[column.member];
-        });
+        const { localFields, associationFields } = separateMutationValues({ table, fields });
+
         // at this point `fields` should not be used because it mixes foreign associations with local values
+        console.log(`Separated local & associations. LOCAL:`);
+        console.log(JSON.stringify(localFields));
+        console.log(`ASSOCIATIONS:`);
+        console.log(JSON.stringify(associationFields));
 
         const obj = await dbTableClient.create({
             data: localFields,
@@ -193,16 +229,7 @@ const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ct
             throw new Error(`validation failed; log contains details.`);
         }
 
-        // separate association arrays from the local columns.
-        const associationFields: TAnyModel = {};
-        const localFields: TAnyModel = {};
-        table.columns.forEach(column => {
-            if (fields[column.member] === undefined) {
-                return;
-            }
-            const dest = (column.fieldTableAssociation === "associationRecord") ? associationFields : localFields;
-            dest[column.member] = fields[column.member];
-        });
+        const { localFields, associationFields } = separateMutationValues({ table, fields });
         // at this point `fields` should not be used.
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });

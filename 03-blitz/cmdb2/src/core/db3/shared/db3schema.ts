@@ -146,6 +146,13 @@ export const xInstrument = new xTable({
             minLength: 1,
             doTrim: true,
         }),
+        new GenericStringField({
+            columnName: "description",
+            allowNull: false,
+            caseSensitive: true,
+            minLength: 0,
+            doTrim: true,
+        }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
@@ -165,13 +172,12 @@ export const xInstrument = new xTable({
         }),
         new TagsField<InstrumentTagAssociationModel>({
             columnName: "instrumentTags",
+            associationForeignIDMember: "tagId",
+            associationLocalIDMember: "instrumentId",
             associationTableSpec: xInstrumentTagAssociation,
             foreignTableSpec: xInstrumentTag,
             getChipCaption: (value) => value.tag.text,
             getChipDescription: (value) => value.tag.description,
-            //getForeignID: (association) => association.tagId,
-            associationForeignIDMember: "tagId",
-            associationLocalIDMember: "instrumentId",
             createMockAssociation: (instrument, tag) => ({
                 id: -1,
                 instrument: instrument as any,
@@ -179,10 +185,6 @@ export const xInstrument = new xTable({
                 tag: tag as any,
                 tagId: tag.id,
             }),
-            // sanitizeAssociationForMutation: (a: InstrumentTagAssociationModel) => ({
-            //     instrumentId: a.instrumentId,
-            //     tagId: a.tagId,
-            // }),
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 instrumentTags: {
                     some: {
