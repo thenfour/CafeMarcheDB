@@ -39,7 +39,7 @@ export interface DB3TagsValueComponentProps<TAssociation> {
 
 };
 export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponentProps<TAssociation>) => {
-    return <>{props.value.map(c => <React.Fragment key={props.spec.typedSchemaColumn.getForeignID(c)}>
+    return <>{props.value.map(c => <React.Fragment key={c[props.spec.associationForeignIDMember]}>
         {props.spec.args.renderAsChip!({
             value: c,
             onDelete: props.onDelete && (() => props.onDelete!(c)),
@@ -93,12 +93,12 @@ export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProp
     };
 
     const handleItemRemove = (x: TAssociation) => {
-        const newValue = props.value.filter(v => props.spec.typedSchemaColumn.getForeignID(v) !== props.spec.typedSchemaColumn.getForeignID(x));
+        const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== x[props.spec.associationForeignIDMember]);
         props.onChange(newValue);
     };
 
     const itemIsSelected = (x: TAssociation) => {
-        return props.value.some(v => props.spec.typedSchemaColumn.getForeignID(v) === props.spec.typedSchemaColumn.getForeignID(x));
+        return props.value.some(v => v[props.spec.associationForeignIDMember] === x[props.spec.associationForeignIDMember]);
     }
 
     const handleItemToggle = (value: TAssociation) => {
@@ -172,7 +172,7 @@ export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProp
                                 dbctx.options.map(item => {
                                     const selected = itemIsSelected(item);
                                     return (
-                                        <React.Fragment key={props.spec.typedSchemaColumn.getForeignID(item)}>
+                                        <React.Fragment key={item[props.spec.associationForeignIDMember]}>
                                             <ListItemButton selected onClick={e => { handleItemToggle(item) }}>
                                                 {props.spec.args.renderAsListItem!({}, item, selected)}
                                             </ListItemButton>
@@ -218,7 +218,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
     }, []);
 
     return <div>
-        {props.value.map(value => <React.Fragment key={props.spec.typedSchemaColumn.getForeignID(value)}>{props.spec.args.renderAsChip!({
+        {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.args.renderAsChip!({
             value,
             onDelete: () => {
                 console.log(`todo: remove this item from selection`);
@@ -258,6 +258,14 @@ export interface TagsFieldClientArgs<TAssociation> {
 export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     typedSchemaColumn: db3.TagsField<TAssociation>;
     args: TagsFieldClientArgs<TAssociation>;
+
+    // convenience
+    get associationLocalIDMember() {
+        return this.typedSchemaColumn.associationLocalIDMember;
+    }
+    get associationForeignIDMember() {
+        return this.typedSchemaColumn.associationForeignIDMember;
+    }
 
     constructor(args: TagsFieldClientArgs<TAssociation>) {
         super({
@@ -316,7 +324,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
                 const value: TAssociation[] = params.value;
                 return <>{
                     value.map(a => {
-                        return <React.Fragment key={this.typedSchemaColumn.getForeignID(a)}>
+                        return <React.Fragment key={a[this.typedSchemaColumn.associationForeignIDMember]}>
                             {this.args.renderAsChip!({ value: a, })}
                         </React.Fragment>;
                     })

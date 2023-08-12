@@ -1,19 +1,98 @@
 import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db";
-import { DeleteByIdMutationImplementation } from "shared/associationUtils";
+import { ComputeChangePlan, DeleteByIdMutationImplementation } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange, TAnyModel } from "shared/utils"
-import { GetObjectByIdSchema } from "src/auth/schemas";
+import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel } from "shared/utils"
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
 import { AuthenticatedMiddlewareCtx } from "blitz";
+
+
+export interface UpdateAssociationsArgs {
+    ctx: AuthenticatedMiddlewareCtx;
+    changeContext: ChangeContext;
+
+    localTable: db3.xTable;
+    column: db3.TagsField<TAnyModel>;
+
+    desiredTagIds: number[];
+    localId: number;
+};
+
+// creates/deletes associations. does not update any other data in associations table; this is only for making/breaking associations.
+export const UpdateAssociations = async ({ changeContext, ctx, ...args }: UpdateAssociationsArgs) => {
+    const associationTableName = args.column.associationTableSpec.tableName;
+    const currentAssociations = await db[associationTableName].findMany({
+        where: { [args.column.associationLocalIDMember]: args.localId },
+    });
+
+    const cp = ComputeChangePlan(currentAssociations.map(a => a.tagId), args.desiredTagIds, (a, b) => a === b);
+
+    // remove associations which exist but aren't in the new array
+    await db[associationTableName].deleteMany({
+        where: {
+            [args.column.associationLocalIDMember]: args.localId,
+            [args.column.associationForeignIDMember]: {
+                in: cp.delete,
+            },
+        },
+    });
+
+    // register those deletions
+    for (let i = 0; i < cp.delete.length; ++i) {
+        const oldValues = currentAssociations.find(a => a[args.column.associationForeignIDMember] === cp.delete[i])!;
+        await RegisterChange({
+            action: ChangeAction.delete,
+            changeContext,
+            table: associationTableName,
+            pkid: oldValues.id,
+            oldValues,
+            ctx,
+        });
+    }
+
+    // create new associations
+    for (let i = 0; i < cp.create.length; ++i) {
+        const tagId = cp.create[i]!;
+        const newAssoc = await db[associationTableName].create({
+            data: {
+                [args.column.associationLocalIDMember]: args.localId,
+                [args.column.associationForeignIDMember]: tagId,
+            },
+        });
+
+        await RegisterChange({
+            action: ChangeAction.insert,
+            changeContext,
+            table: associationTableName,
+            pkid: newAssoc.id,
+            newValues: newAssoc,
+            ctx,
+        });
+    }
+};
+
 
 // DELETE ////////////////////////////////////////////////
 const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedMiddlewareCtx): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
+        const changeContext = CreateChangeContext(contextDesc);
         CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
         const dbTableClient = db[table.tableName]; // the prisma interface
+
+        // delete any associations for this item first.
+        table.columns.forEach(column => {
+            if (column.fieldTableAssociation !== "associationRecord") { return; }
+            UpdateAssociations({
+                changeContext,
+                ctx,
+                localId: id,
+                localTable: table,
+                column: column as db3.TagsField<TAnyModel>,
+                desiredTagIds: [],
+            });
+        });
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: id } });
         if (!oldValues) {
@@ -23,7 +102,7 @@ const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedMiddl
 
         await RegisterChange({
             action: ChangeAction.delete,
-            changeContext: CreateChangeContext(contextDesc),
+            changeContext,
             table: table.tableName,
             pkid: id,
             oldValues: oldValues,
@@ -61,7 +140,7 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
             const dest = (column.fieldTableAssociation === "associationRecord") ? associationFields : localFields;
             dest[column.member] = fields[column.member];
         });
-        // at this point `fields` should not be used.
+        // at this point `fields` should not be used because it mixes foreign associations with local values
 
         const obj = await dbTableClient.create({
             data: localFields,
@@ -71,16 +150,25 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
         await RegisterChange({
             action: ChangeAction.insert,
             changeContext,
-            table: "instrumentTag",
-            pkid: obj.id,
+            table: table.tableName,
+            pkid: obj[table.pkMember],
             newValues: localFields,
             ctx,
         });
 
         // now update any associations
-        for (const [fieldName, associations] of Object.entries(associationFields)) {
-            console.log(`todo: insert association.... ${JSON.stringify(fieldName)}: ${associations.length}`);
-        }
+        table.columns.forEach(column => {
+            if (column.fieldTableAssociation !== "associationRecord") { return; }
+            if (!associationFields[column.member]) { return; }
+            UpdateAssociations({
+                changeContext,
+                ctx,
+                localId: obj[table.pkMember],
+                localTable: table,
+                column: column as db3.TagsField<TAnyModel>,
+                desiredTagIds: associationFields[column.member],
+            });
+        });
 
         return obj;
     } catch (e) {
@@ -128,7 +216,7 @@ const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ct
         await RegisterChange({
             action: ChangeAction.update,
             changeContext,
-            table: "role",
+            table: table.tableName,
             pkid,
             oldValues,
             newValues: obj,
@@ -136,9 +224,18 @@ const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ct
         });
 
         // now update any associations
-        for (const [fieldName, associations] of Object.entries(associationFields)) {
-            console.log(`todo: update association.... ${JSON.stringify(fieldName)}: ${associations.length}`);
-        }
+        table.columns.forEach(column => {
+            if (column.fieldTableAssociation !== "associationRecord") { return; }
+            if (!associationFields[column.member]) { return; }
+            UpdateAssociations({
+                changeContext,
+                ctx,
+                localId: obj[table.pkMember],
+                localTable: table,
+                column: column as db3.TagsField<TAnyModel>,
+                desiredTagIds: associationFields[column.member],
+            });
+        });
 
         return obj;
     } catch (e) {

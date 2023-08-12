@@ -415,9 +415,15 @@ export interface TagsFieldArgs<TAssociation> {
     // when we get a list of tag options, they're foreign models (tags).
     // but we need our list to be association objects (itemTagAssocitaion)
     createMockAssociation: (row: TAnyModel, item: TAnyModel) => TAssociation;
-    sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
+    //sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
 
-    getForeignID: (value: TAssociation) => any; // return a unique key for the given association. this sorta feels redundant (with all this metadata can't core deduce this?) but we don't have enough info for this. (which field of association represents the foreign object?)
+    // mutations needs to where:{} to find associations for local rows. so "getForeignID()" is not going to work.
+    // better to 
+    //getForeignID: (value: TAssociation) => any; // return a unique key for the given association. this sorta feels redundant (with all this metadata can't core deduce this?) but we don't have enough info for this. (which field of association represents the foreign object?)
+    //getLocalID:
+    associationLocalIDMember: string;
+    associationForeignIDMember: string;
+
     getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
     getChipDescription?: (value: TAssociation) => string;
 };
@@ -428,11 +434,14 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
 
     createMockAssociation: (row: TAnyModel, foreignObject: TAnyModel) => TAssociation;
-    sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
-    getForeignID: (value: TAssociation) => any; // return a unique key for the given association.
+    //sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
+    //getForeignID: (value: TAssociation) => any; // return a unique key for the given association.
     doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
     getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
     getChipDescription?: (value: TAssociation) => string;
+
+    associationLocalIDMember: string;
+    associationForeignIDMember: string;
 
     get allowInsertFromString() {
         return !!this.foreignTableSpec.createInsertModelFromString;
@@ -460,8 +469,10 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         this.foreignTableSpec = args.foreignTableSpec;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         this.createMockAssociation = args.createMockAssociation;
-        this.sanitizeAssociationForMutation = args.sanitizeAssociationForMutation;
-        this.getForeignID = args.getForeignID;
+        //this.sanitizeAssociationForMutation = args.sanitizeAssociationForMutation;
+        //this.getForeignID = args.getForeignID;
+        this.associationForeignIDMember = args.associationForeignIDMember;
+        this.associationLocalIDMember = args.associationLocalIDMember;
         this.getChipCaption = args.getChipCaption;
         this.getChipDescription = args.getChipDescription;
         this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
@@ -497,7 +508,8 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         // clients work with associations, even mock associations (where id is empty).
         // mutations don't require any of this info; associations are always with existing local & foreign items.
         // so basically we just need to reduce associations down to an update/mutate model.
-        mutationModel[this.member] = clientModel[this.member].map(a => this.sanitizeAssociationForMutation(a));
+        //mutationModel[this.member] = clientModel[this.member].map(a => this.sanitizeAssociationForMutation(a));
+        mutationModel[this.member] = clientModel[this.member].map(a => a[this.associationForeignIDMember]);
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
