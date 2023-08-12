@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
-import React from "react";
+import React, { Suspense } from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { ForeignSingleFieldClient, useForeignSingleFieldRenderContext } from "./db3ForeignSingleFieldClient";
 
@@ -76,82 +76,84 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
     const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
 
     return (
-        <Dialog
-            open={true}
-            onClose={props.onCancel}
-            scroll="paper"
-            fullScreen={fullScreen}
-        >
-            <DialogTitle>
-                select {props.spec.schemaColumn.label}
-                <Box sx={{ p: 0 }}>
-                    Selected: {props.spec.args.renderAsChip!({
-                        value: selectedObj || null,
-                        onDelete: () => {
-                            setSelectedObj(null);
-                        }
-                    })}
-                </Box>
-            </DialogTitle>
-            <DialogContent dividers>
-                <DialogContentText>
-                    To subscribe to this website, please enter your email address here. We
-                    will send updates occasionally.
-                </DialogContentText>
-
-                <Box>
-                    <InputBase
-                        size="small"
-                        placeholder="Filter"
-                        sx={{
-                            backgroundColor: "#f0f0f0",
-                            borderRadius: 3,
-                        }}
-                        value={filterText}
-                        onChange={(e) => setFilterText(e.target.value)}
-                        startAdornment={<SearchIcon />}
-                    />
-                </Box>
-
-                {
-                    !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
-                        <Box><Button
-                            size="small"
-                            startIcon={<AddIcon />}
-                            onClick={onNewClicked}
-                        >
-                            add {filterText}
-                        </Button>
-                        </Box>
-                    )
-                }
-
-                {
-                    (items.length == 0) ?
-                        <Box>Nothing here</Box>
-                        :
-                        <List>
-                            {
-                                items.map(item => {
-                                    const selected = isEqual(item, selectedObj);
-                                    return (
-                                        <React.Fragment key={item[props.spec.typedSchemaColumn.foreignTableSpec.pkMember]}>
-                                            <ListItemButton selected onClick={e => { handleItemClick(item) }}>
-                                                {props.spec.args.renderAsListItem!({}, item, selected)}
-                                            </ListItemButton>
-                                            <Divider></Divider>
-                                        </React.Fragment>
-                                    );
-                                })
+        <Suspense>
+            <Dialog
+                open={true}
+                onClose={props.onCancel}
+                scroll="paper"
+                fullScreen={fullScreen}
+            >
+                <DialogTitle>
+                    select {props.spec.schemaColumn.label}
+                    <Box sx={{ p: 0 }}>
+                        Selected: {props.spec.args.renderAsChip!({
+                            value: selectedObj || null,
+                            onDelete: () => {
+                                setSelectedObj(null);
                             }
-                        </List>
-                }
+                        })}
+                    </Box>
+                </DialogTitle>
+                <DialogContent dividers>
+                    <DialogContentText>
+                        To subscribe to this website, please enter your email address here. We
+                        will send updates occasionally.
+                    </DialogContentText>
 
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={props.onCancel}>Cancel</Button>
-                <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
-            </DialogActions>
-        </Dialog>
+                    <Box>
+                        <InputBase
+                            size="small"
+                            placeholder="Filter"
+                            sx={{
+                                backgroundColor: "#f0f0f0",
+                                borderRadius: 3,
+                            }}
+                            value={filterText}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            startAdornment={<SearchIcon />}
+                        />
+                    </Box>
+
+                    {
+                        !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
+                            <Box><Button
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={onNewClicked}
+                            >
+                                add {filterText}
+                            </Button>
+                            </Box>
+                        )
+                    }
+
+                    {
+                        (items.length == 0) ?
+                            <Box>Nothing here</Box>
+                            :
+                            <List>
+                                {
+                                    items.map(item => {
+                                        const selected = isEqual(item, selectedObj);
+                                        return (
+                                            <React.Fragment key={item[props.spec.typedSchemaColumn.foreignTableSpec.pkMember]}>
+                                                <ListItemButton selected onClick={e => { handleItemClick(item) }}>
+                                                    {props.spec.args.renderAsListItem!({}, item, selected)}
+                                                </ListItemButton>
+                                                <Divider></Divider>
+                                            </React.Fragment>
+                                        );
+                                    })
+                                }
+                            </List>
+                    }
+
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={props.onCancel}>Cancel</Button>
+                    <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
+                </DialogActions>
+            </Dialog>
+        </Suspense>
     );
 }

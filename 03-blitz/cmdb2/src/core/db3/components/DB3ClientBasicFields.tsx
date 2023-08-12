@@ -9,9 +9,6 @@
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
 import React from "react";
-//import db3mutations from "../mutations/db3mutations";
-//import db3queries from "../queries/db3queries";
-//import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/cmdashboard/CMTextField";
@@ -43,6 +40,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected = undefined;
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GenericStringColumnArgs {
     columnName: string;
     cellWidth: number;
@@ -57,7 +55,25 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             width: 220,
         });
     }
-    onSchemaConnected = undefined;
+
+    onSchemaConnected = () => {
+        this.GridColProps = {
+            type: "string",
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                return <CMTextField
+                    key={params.key}
+                    autoFocus={false}
+                    label={this.headerName}
+                    validationError={vr.success ? null : (vr.errorMessage || null)}
+                    value={params.value as string}
+                    onChange={(e, value) => {
+                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                    }}
+                />;
+            },
+        };
+    };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <CMTextField
@@ -73,6 +89,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     };
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GenericIntegerColumnArgs {
     columnName: string;
     cellWidth: number;
@@ -109,6 +126,7 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
     };
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface ColorColumnArgs {
     columnName: string;
     cellWidth: number;
@@ -155,6 +173,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
 };
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface ConstEnumStringFieldClientArgs {
     columnName: string;
     cellWidth: number;

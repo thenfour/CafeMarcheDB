@@ -2,7 +2,7 @@
 
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
-import { Button, Chip } from "@mui/material";
+import { Button, Chip, FormHelperText } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React from "react";
 import * as DB3Client from "../DB3Client";
@@ -207,6 +207,7 @@ export interface TagsFieldInputProps<TAssociation> {
 
     // for creating new associations
     row: TAnyModel;
+    validationError: string | null;
 };
 
 // general use "edit cell" for foreign single values
@@ -217,7 +218,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         setOldValue(props.value);
     }, []);
 
-    return <div>
+    return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
         {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.args.renderAsChip!({
             value,
             onDelete: () => {
@@ -240,6 +241,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
             }}
         />
         }
+        {props.validationError && <FormHelperText children={props.validationError} />}
     </div>;
 };
 
@@ -287,6 +289,8 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         }
 
         return <Chip
+            className="cmdbChip"
+            style={{ backgroundColor: "#dfd" }}
             size="small"
             label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
             onDelete={args.onDelete}
@@ -331,8 +335,10 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
                 }</>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.typedSchemaColumn.ValidateAndParse(params.value);
                 const value: TAssociation[] = params.value;
                 return <TagsFieldInput
+                    validationError={vr.success ? null : vr.errorMessage || null}
                     spec={this}
                     value={value}
                     row={params.row as TAnyModel}
@@ -347,6 +353,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     renderForNewDialog = (params: DB3Client.RenderForNewItemDialogArgs) => {
         return <TagsFieldInput
             spec={this}
+            validationError={params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null}
             row={params.row as TAnyModel}
             value={params.value as TAssociation[]}
             onChange={(value: TAssociation[]) => {

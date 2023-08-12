@@ -38,14 +38,37 @@ nav>* {
   user-select: none;
 }
 
-
-
-.CMEditGrid2 .MuiDataGrid-cell {
-  align-items: flex-start;
+.CMEditGrid2 {
+  /* for some reason by default grids are 100% height; there's 0 reason to want that. */
+  height: auto;
 }
 
+.CMEditGrid2 .MuiDataGrid-cell {
+  /* align-items: flex-start; */
+  /* allow things like tag chips to wrap */
+  flex-wrap: wrap;
+  /* and they look very ugly by default they fill space; this makes look more like text flow */
+  align-content: baseline;
+}
 
 div.Mui-error {
   background-color: #fee;
   border: 1px solid red;
+}
+
+div.chipContainer {
+  padding: 4px;
+}
+
+div.chipContainer.validationError {
+  background-color: #fee;
+  border: 1px solid red;
+}
+
+div.chipContainer.validationSuccess {
+  border: 1px solid green;
+}
+
+.cmdbChip {
+  margin: 2px;
 }

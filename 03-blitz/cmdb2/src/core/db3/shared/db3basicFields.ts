@@ -415,7 +415,6 @@ export interface TagsFieldArgs<TAssociation> {
     // when we get a list of tag options, they're foreign models (tags).
     // but we need our list to be association objects (itemTagAssocitaion)
     createMockAssociation: (row: TAnyModel, item: TAnyModel) => TAssociation;
-    //sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
 
     // mutations needs to where:{} to find associations for local rows. so "getForeignID()" is not going to work.
     // better to 
@@ -434,8 +433,6 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
 
     createMockAssociation: (row: TAnyModel, foreignObject: TAnyModel) => TAssociation;
-    //sanitizeAssociationForMutation: (a: TAssociation) => TAnyModel;
-    //getForeignID: (value: TAssociation) => any; // return a unique key for the given association.
     doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
     getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
     getChipDescription?: (value: TAssociation) => string;
@@ -457,7 +454,6 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
 
         // does default behavior of case-insensitive, trimmed compare.
         const itemExactlyMatches_defaultImpl = (value: TAssociation, filterText: string): boolean => {
-            //console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
             console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
             if (!this.getChipCaption) {
                 throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On TagsField ${args.columnName}`);
@@ -469,8 +465,6 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         this.foreignTableSpec = args.foreignTableSpec;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         this.createMockAssociation = args.createMockAssociation;
-        //this.sanitizeAssociationForMutation = args.sanitizeAssociationForMutation;
-        //this.getForeignID = args.getForeignID;
         this.associationForeignIDMember = args.associationForeignIDMember;
         this.associationLocalIDMember = args.associationLocalIDMember;
         this.getChipCaption = args.getChipCaption;
@@ -508,7 +502,6 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         // clients work with associations, even mock associations (where id is empty).
         // mutations don't require any of this info; associations are always with existing local & foreign items.
         // so basically we just need to reduce associations down to an update/mutate model.
-        //mutationModel[this.member] = clientModel[this.member].map(a => this.sanitizeAssociationForMutation(a));
         mutationModel[this.member] = clientModel[this.member].map(a => a[this.associationForeignIDMember]);
     };
 

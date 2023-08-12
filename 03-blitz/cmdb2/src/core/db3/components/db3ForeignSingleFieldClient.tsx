@@ -3,7 +3,7 @@
 import React from "react";
 import * as db3 from "../db3";
 import * as DB3Client from "../DB3Client";
-import { Button, Chip, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
+import { Button, Chip, FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import { gNullValue } from "shared/utils";
 import { GridFilterModel, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { SelectSingleForeignDialog } from "./db3SelectSingleForeignDialog";
@@ -29,6 +29,7 @@ export interface ForeignSingleFieldInputProps<TForeign> {
     foreignSpec: ForeignSingleFieldClient<TForeign>;
     value: TForeign | null;
     onChange: (value: TForeign | null) => void;
+    validationError: string | null;
 };
 
 // general use "edit cell" for foreign single values
@@ -46,7 +47,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
         },
     });
 
-    return <div>
+    return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
         {chip}
         <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.label}</Button>
         {isOpen && <SelectSingleForeignDialog
@@ -62,6 +63,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
             }}
         />
         }
+        {props.validationError && <FormHelperText children={props.validationError} />}
     </div>;
 };
 
@@ -105,6 +107,8 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
 
         //console.assert(!!this.args.getChipCaption);
         return <Chip
+            className="cmdbChip"
+            style={{ backgroundColor: "#fdd" }}
             size="small"
             label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
             onDelete={args.onDelete}
@@ -139,7 +143,9 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
                 return this.args.renderAsChip!({ value: args.value });
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.typedSchemaColumn.ValidateAndParse(params.value);
                 return <ForeignSingleFieldInput
+                    validationError={vr.success ? null : vr.errorMessage || null}
                     foreignSpec={this}
                     value={params.value}
                     onChange={(value) => {
@@ -155,6 +161,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             {/* <InputLabel>{this.schemaColumn.label}</InputLabel> */}
             <ForeignSingleFieldInput
                 foreignSpec={this}
+                validationError={params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null}
                 value={params.value}
                 onChange={(value: TForeign | null) => {
                     params.api.setFieldValues({

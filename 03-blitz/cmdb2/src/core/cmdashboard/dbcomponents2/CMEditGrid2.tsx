@@ -27,7 +27,7 @@ import {
     GridRowModel, GridRowModes, GridRowModesModel, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
     GridToolbarQuickFilter
 } from '@mui/x-data-grid';
-import React from "react";
+import React, { Suspense } from "react";
 import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 //import { CMTableSpec } from "./dbcomponents2/CMColumnSpec";
@@ -357,86 +357,89 @@ export function CMEditGrid2<TDBModel>({ spec }: CMEditGrid2Props<TDBModel>) {
     //console.log(columns);
 
     return (<>
-        {renderConfirmDialog()}
-        {renderDeleteConfirmation()}
+        <Suspense>
+            {renderConfirmDialog()}
+            {renderDeleteConfirmation()}
 
-        {!!showingNewDialog && <CMNewObjectDialog2
-            onCancel={() => { setShowingNewDialog(false); }}
-            onOK={onAddOK}
-            spec={spec}
-        />}
-        <DataGrid
-            // basic config
-            editMode="row"
-            density="compact"
-            checkboxSelection
-            className="CMEditGrid2"
-            disableRowSelectionOnClick
-            slots={{
-                toolbar: CustomToolbar,
-            }}
-            slotProps={{
-                toolbar: {
-                    onNewClicked: () => { setShowingNewDialog(true); },
-                    spec: spec,
-                }
-            }}
-            getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
-                //console.log();
-                if (rowModesModel[id] && rowModesModel[id].mode === 'edit') {
-                    return gEditingRowHeight;
-                }
-                return gViewingRowHeight;
-            }}
-            // schema
-            columns={columns}
+            {!!showingNewDialog && <CMNewObjectDialog2
+                onCancel={() => { setShowingNewDialog(false); }}
+                onOK={onAddOK}
+                spec={spec}
+            />}
+            <DataGrid
+                // basic config
+                editMode="row"
+                density="compact"
+                checkboxSelection
+                className="CMEditGrid2"
+                disableRowSelectionOnClick
+                slots={{
+                    toolbar: CustomToolbar,
+                }}
+                slotProps={{
+                    toolbar: {
+                        onNewClicked: () => { setShowingNewDialog(true); },
+                        spec: spec,
+                    }
+                }}
+                getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
+                    //console.log();
+                    if (rowModesModel[id] && rowModesModel[id].mode === 'edit') {
+                        return gEditingRowHeight;
+                    }
+                    return gViewingRowHeight;
+                }}
+                // schema
+                columns={columns}
 
-            // actual data
-            rows={items}
-            rowCount={count}
+                // actual data
+                rows={items}
+                rowCount={count}
 
-            // initial state
-            initialState={{
-                pagination: {
-                    paginationModel
-                },
-                sorting: {
-                    sortModel,//: [{ field: 'rating', sort: 'desc' }],
-                },
-                filter: {
-                    filterModel: {
-                        items: [],
+                // initial state
+                initialState={{
+                    pagination: {
+                        paginationModel
                     },
-                },
-            }}
+                    sorting: {
+                        sortModel,//: [{ field: 'rating', sort: 'desc' }],
+                    },
+                    filter: {
+                        filterModel: {
+                            items: [],
+                        },
+                    },
+                }}
 
-            // pagination
-            paginationMode="server"
-            onPaginationModelChange={setPaginationModel}
-            pageSizeOptions={spec.PageSizeOptions}
+                // pagination
+                paginationMode="server"
+                onPaginationModelChange={setPaginationModel}
+                pageSizeOptions={spec.PageSizeOptions}
 
-            // sorting
-            sortingMode="server"
-            onSortModelChange={(model) => {
-                setSortModel(model);
-            }}
+                // sorting
+                sortingMode="server"
+                onSortModelChange={(model) => {
+                    setSortModel(model);
+                }}
 
-            // filtering
-            filterMode="server"
-            onFilterModelChange={(model) => {
-                setFilterModel(model);
-            }}
+                // filtering
+                filterMode="server"
+                onFilterModelChange={(model) => {
+                    setFilterModel(model);
+                }}
 
-            // editing
-            rowModesModel={rowModesModel}
-            onRowModesModelChange={newRowModesModel => {
-                setExplicitSave(false); // this is called before editing, or after saving. so it's safe to reset explicit save flag always here.
-                setRowModesModel(newRowModesModel);
-            }}
-            onProcessRowUpdateError={(error) => { console.error(error) }}
-            processRowUpdate={processRowUpdate}
-        />
+                // editing
+                rowModesModel={rowModesModel}
+                onRowModesModelChange={newRowModesModel => {
+                    setExplicitSave(false); // this is called before editing, or after saving. so it's safe to reset explicit save flag always here.
+                    setRowModesModel(newRowModesModel);
+                }}
+                onProcessRowUpdateError={(error) => { console.error(error) }}
+                processRowUpdate={processRowUpdate}
+            />
+        </Suspense>
     </>
+
     );
 };
 
