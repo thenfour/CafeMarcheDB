@@ -85,7 +85,6 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const [rowModesModel, setRowModesModel] = React.useState({});
     const [explicitSave, setExplicitSave] = React.useState(false); // flag to know if the user proactively clicked save, otherwise we consider it implied and requires stronger consent
     const [deleteRowId, setDeleteRowId] = React.useState(null); // needed to display a confirmation dlg
-    const [fieldToFocus, setFieldToFocus] = React.useState<string | null>(null);
 
     const handleEditClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
@@ -380,12 +379,6 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
             // editing
             rowModesModel={rowModesModel}
             onRowModesModelChange={(newRowModesModel: GridRowModesModel) => {
-                Object.entries(newRowModesModel).find(([rowId, data]) => {
-                    if (data.mode === 'edit') {
-                        setFieldToFocus(data.fieldToFocus || null);
-                    }
-                });
-
                 setExplicitSave(false); // this is called before editing, or after saving. so it's safe to reset explicit save flag always here.
                 setRowModesModel(newRowModesModel);
             }}
