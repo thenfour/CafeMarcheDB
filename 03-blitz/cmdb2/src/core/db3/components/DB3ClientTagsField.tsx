@@ -222,7 +222,8 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.args.renderAsChip!({
             value,
             onDelete: () => {
-                console.log(`todo: remove this item from selection`);
+                const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
+                props.onChange(newValue);
             }
         })
         }</React.Fragment>)}
@@ -288,9 +289,16 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
             throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleFieldClient ${this.schemaTable.tableName}.${this.args.columnName}`);
         }
 
+        const style: React.CSSProperties = {};
+        const color = this.typedSchemaColumn.getChipColor!(args.value);
+        if (color.value != null) {
+            style.backgroundColor = color.value!;
+            style.color = color.contrastColor!;
+        }
+
         return <Chip
             className="cmdbChip"
-            style={{ backgroundColor: "#dfd" }}
+            style={style}
             size="small"
             label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
             onDelete={args.onDelete}

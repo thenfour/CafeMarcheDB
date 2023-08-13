@@ -1,5 +1,5 @@
 import db, { Prisma } from "db";
-import { ColorPalette, ColorPaletteEntry, gGeneralPalette } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, gGeneralPalette, gNullColorPaletteEntry } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, InstrumentTagSignificance, KeysOf, TAnyModel } from "shared/utils";
 import { ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseResult, xTable } from "./db3core";
@@ -317,6 +317,7 @@ export interface ForeignSingleFieldArgs<TForeign> {
     //allowInsertFromString: boolean;
     getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
     getChipDescription?: (value: TForeign) => string;
+    getChipColor?: (value: TForeign) => ColorPaletteEntry;
 };
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
@@ -332,6 +333,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     //allowInsertFromString: boolean;
     getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
     getChipDescription?: (value: TForeign) => string;
+    getChipColor?: (value: TForeign) => ColorPaletteEntry;
 
     constructor(args: ForeignSingleFieldArgs<TForeign>) {
         super({
@@ -361,6 +363,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         if (!args.doesItemExactlyMatchText && !this.getChipCaption) {
             throw new Error(`here.,`);
         }
+        this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
         this.getChipDescription = args.getChipDescription;
         //this.createInsertModelFromString = args.createInsertModelFromString;
         //this.allowInsertFromString = args.allowInsertFromString;
@@ -425,6 +428,7 @@ export interface TagsFieldArgs<TAssociation> {
 
     getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
     getChipDescription?: (value: TAssociation) => string;
+    getChipColor?: (value: TAssociation) => ColorPaletteEntry;
 };
 
 export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
@@ -435,6 +439,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     createMockAssociation: (row: TAnyModel, foreignObject: TAnyModel) => TAssociation;
     doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
     getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    getChipColor?: (value: TAssociation) => ColorPaletteEntry;
     getChipDescription?: (value: TAssociation) => string;
 
     associationLocalIDMember: string;
@@ -469,6 +474,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         this.associationLocalIDMember = args.associationLocalIDMember;
         this.getChipCaption = args.getChipCaption;
         this.getChipDescription = args.getChipDescription;
+        this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
         this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
     }
 

@@ -3,12 +3,16 @@
 export interface ColorPaletteEntry {
     label: string;
     value: string | null;
+    contrastColor: string | null; // for text mostly
+    outline: boolean;
 }
 
 // sentinel value for react components
-export const gNullColorPaletteEntry = {
+export const gNullColorPaletteEntry: ColorPaletteEntry = {
     label: "(none)",
     value: null,
+    contrastColor: null,
+    outline: false,
 };
 
 export class ColorPaletteArgs {
@@ -67,12 +71,11 @@ export const gGeneralPalette = new ColorPalette({
     columns: 4,
     defaultIndex: 0,
     entries: [
-        { label: "(none)", value: null },
-        { label: "Red", value: "red" },
-        { label: "Green", value: "green" },
-        { label: "Blue", value: "blue" },
-        { label: "black", value: "black" },
-        { label: "white", value: "white" },
-        { label: "pink", value: "pink" },
+        { label: "(none)", value: null, contrastColor: null, outline: false, },
+        { label: "Red", value: "#fdd", contrastColor: "black", outline: false, },
+        { label: "Green", value: "#dfd", contrastColor: "black", outline: false, },
+        { label: "Blue", value: "#ddf", contrastColor: "black", outline: false, },
+        { label: "black", value: "black", contrastColor: "white", outline: true, },
+        { label: "white", value: "white", contrastColor: "black", outline: true, },
     ],
 });

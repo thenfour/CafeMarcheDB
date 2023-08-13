@@ -105,10 +105,18 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleFieldClient ${this.schemaTable.tableName}.${this.args.columnName}`);
         }
 
+        const style: React.CSSProperties = {};
+        const color = this.typedSchemaColumn.getChipColor!(args.value);
+        if (color.value != null) {
+            style.backgroundColor = color.value!;
+            style.color = color.contrastColor!;
+            style.border = `1px solid ${color.outline ? color.contrastColor! : color.value!}`;
+        }
+
         //console.assert(!!this.args.getChipCaption);
         return <Chip
             className="cmdbChip"
-            style={{ backgroundColor: "#fdd" }}
+            style={style}
             size="small"
             label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
             onDelete={args.onDelete}

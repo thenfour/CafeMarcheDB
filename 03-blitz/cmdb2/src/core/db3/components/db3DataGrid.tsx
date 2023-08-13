@@ -4,7 +4,10 @@
 // x color field
 // x new item dlg
 // x fk single field type
-// - fk multi field type
+// x fk multi field type
+// x when clicking outside to exit edit mode, check validation before allowing this.
+// x when clicking save, don't bother confirming.
+// x respect onRowModesModelChange "fieldToFocus" to focus a field upon entering edit.
 
 import {
     Add as AddIcon,
@@ -23,9 +26,11 @@ import {
     GridColDef,
     GridFilterModel,
     GridPaginationModel,
+    GridRowEditStopParams,
     GridRowHeightParams,
     GridRowModel, GridRowModes, GridRowModesModel, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
-    GridToolbarQuickFilter
+    GridToolbarQuickFilter,
+    MuiEvent
 } from '@mui/x-data-grid';
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
@@ -80,6 +85,7 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const [rowModesModel, setRowModesModel] = React.useState({});
     const [explicitSave, setExplicitSave] = React.useState(false); // flag to know if the user proactively clicked save, otherwise we consider it implied and requires stronger consent
     const [deleteRowId, setDeleteRowId] = React.useState(null); // needed to display a confirmation dlg
+    const [fieldToFocus, setFieldToFocus] = React.useState<string | null>(null);
 
     const handleEditClick = (id) => () => {
         setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
@@ -104,6 +110,7 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
     const [confirmDialogArgs, setConfirmDialogArgs] = React.useState<any>(null);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
+        //console.log(`processRowUpdate ${JSON.stringify(newRow)}`);
         return new Promise<GridRowModel>((resolve, reject) => {
             const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow);
             // there are 3 possible paths:
@@ -112,9 +119,10 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
             // 3. or, no changes
             if (!validateResult.success) {
                 // display validation error.
-                console.log(`validation error (validateResult):`);
-                console.log(validateResult);
-                alert(`validation error`);
+                console.log(`processRowUpdate: validation error (validateResult):`);
+                //console.log(validateResult);
+                //alert(`validation error`);
+                reject(validateResult.errors);
             }
             else if (validateResult.hasChanges) {
                 // Save the arguments to resolve or reject the promise later
@@ -200,6 +208,7 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
 
         return (
             <Dialog
+                disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 open={true}
                 onClose={handleNo}
             >
@@ -209,7 +218,8 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleNo}>No</Button>
-                    <Button onClick={handleYes}>Yes</Button>
+                    {/* type=submit doesn't seem to work. why? */}
+                    <Button autoFocus={true} type="submit" onClick={handleYes}>Yes</Button>
                 </DialogActions>
             </Dialog>
         );
@@ -328,13 +338,7 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
                 }
             }}
             getRowHeight={() => 'auto'}
-            // getRowHeight={({ id, densityFactor, ...params }: GridRowHeightParams) => {
-            //     if (rowModesModel[id] && rowModesModel[id].mode === 'edit') {
-            //         return gEditingRowHeight;
-            //     }
-            //     return gViewingRowHeight;
-            // }}
-            // schema
+
             columns={columns}
 
             // actual data
@@ -375,7 +379,13 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
 
             // editing
             rowModesModel={rowModesModel}
-            onRowModesModelChange={newRowModesModel => {
+            onRowModesModelChange={(newRowModesModel: GridRowModesModel) => {
+                Object.entries(newRowModesModel).find(([rowId, data]) => {
+                    if (data.mode === 'edit') {
+                        setFieldToFocus(data.fieldToFocus || null);
+                    }
+                });
+
                 setExplicitSave(false); // this is called before editing, or after saving. so it's safe to reset explicit save flag always here.
                 setRowModesModel(newRowModesModel);
             }}

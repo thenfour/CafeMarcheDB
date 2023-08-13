@@ -60,10 +60,13 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string",
             renderEditCell: (params: GridRenderEditCellParams) => {
+                // if (params.hasFocus) {
+                //     console.log(`focus on ${this.columnName}`);
+                // }
                 const vr = this.schemaColumn.ValidateAndParse(params.value);
                 return <CMTextField
                     key={params.key}
-                    autoFocus={false}
+                    autoFocus={params.hasFocus}
                     label={this.headerName}
                     validationError={vr.success ? null : (vr.errorMessage || null)}
                     value={params.value as string}
@@ -102,13 +105,27 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
-            GridColProps: {
-                type: "number",
-            }
         });
     }
 
-    onSchemaConnected = undefined;
+    onSchemaConnected = () => {
+        this.GridColProps = {
+            type: "string", // we will do our own number conversion
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                return <CMTextField
+                    key={params.key}
+                    autoFocus={params.hasFocus}
+                    label={this.headerName}
+                    validationError={vr.success ? null : (vr.errorMessage || null)}
+                    value={params.value as string}
+                    onChange={(e, value) => {
+                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                    }}
+                />;
+            },
+        };
+    };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <CMTextField

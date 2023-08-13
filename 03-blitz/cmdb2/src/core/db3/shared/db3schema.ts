@@ -39,6 +39,11 @@ export const xInstrumentFunctionalGroup = new xTable({
             minLength: 1,
             doTrim: true,
         }),
+        new ColorField({
+            columnName: "color",
+            allowNull: true,
+            palette: gGeneralPalette,
+        }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
@@ -164,6 +169,7 @@ export const xInstrument = new xTable({
             allowNull: false,
             getChipCaption: (value) => value.name,
             getChipDescription: (value) => value.description,
+            getChipColor: (value) => gGeneralPalette.findColorPaletteEntry(value.color),
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
@@ -178,6 +184,7 @@ export const xInstrument = new xTable({
             foreignTableSpec: xInstrumentTag,
             getChipCaption: (value) => value.tag.text,
             getChipDescription: (value) => value.tag.description,
+            getChipColor: (value) => gGeneralPalette.findColorPaletteEntry(value.tag.color),
             createMockAssociation: (instrument, tag) => ({
                 id: -1,
                 instrument: instrument as any,

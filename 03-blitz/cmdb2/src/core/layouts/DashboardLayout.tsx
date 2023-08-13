@@ -59,7 +59,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode 
     return (
         <>
             <Head>
-                <title>CM</title>
+                <title>{`CM: ${title}`}</title>
                 <meta charSet="utf-8" /> { /* needed for Draft.js */}
             </Head>
 

@@ -256,6 +256,7 @@ model InstrumentFunctionalGroup {
   name        String
   description String       @default("")
   sortOrder   Int
+  color       String?
   instruments Instrument[]
 }
 
