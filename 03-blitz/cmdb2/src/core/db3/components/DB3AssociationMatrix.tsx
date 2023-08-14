@@ -32,9 +32,6 @@ export type DB3BooleanMatrixProps<TLocal, TAssociation> = {
 
 export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatrixProps<TLocal, TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    //const [toggleMutation] = useMutation(spec.ToggleMutation);
-
-    // const tagsFieldCtx = DB3Client.useTagsFieldRenderContext({
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState({
@@ -43,74 +40,7 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
     });
 
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
-    // let orderBy = spec.DefaultOrderBy;//{ id: "asc" }; // default order
-    // if (sortModel && sortModel.length > 0) {
-    //     orderBy = { [sortModel[0]!.field]: sortModel[0]!.sort }; // only support 1 ordering (grid does too afaik)
-    // }
-
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
-    // const where = { AND: [] as any[] };
-    // if (filterModel.quickFilterValues) {
-    //     const quickFilterItems = filterModel.quickFilterValues.map(q => {
-    //         return {
-    //             OR: spec.GetQuickFilterWhereClauseExpression(q)
-    //         };
-    //     });
-    //     where.AND.push(...quickFilterItems);
-    // }
-    // if (filterModel.items && filterModel.items.length > 0) {
-    //     // convert items to prisma filter
-    //     const filterItems = filterModel.items.map((i) => {
-    //         return { [i.field]: { [i.operator]: i.value } }
-    //     });
-    //     where.AND.push(...filterItems);
-    // }
-
-    // const [{ rows, count, columns: dbColumns }, { refetch: refetchRows }] = usePaginatedQuery(spec.GetPaginatedRowsIncludingAssociationsQuery, {
-    //     orderBy,
-    //     where,
-    //     skip: paginationModel.pageSize * paginationModel.page,
-    //     take: paginationModel.pageSize,
-    // });
-
-    // we need to reshape items into something with fields per column.
-
-    //console.log(`${typeof rows}, ${typeof dbColumns}`);
-
-    // const columns: GridColDef[] = [{
-    //     field: spec.RowPKField,
-    // }, {
-    //     field: spec.RowNameField,
-    // }];
-
-    // // when single-click toggling a state.
-    // const handleClick_simpleToggle = (params: GridRenderCellParams) => {
-    //     const existingAssociation = params.row[params.colDef.field] as TAssociation | null;
-    //     toggleMutation({ association: existingAssociation, xId: +params.colDef.field, yId: params.row.id } as any).then((result) => {
-    //         showSnackbar({ children: spec.ToggleSuccessSnackbar(existingAssociation, result as TAssociation | null), severity: 'success' });
-    //         refetchRows();
-    //     }).catch(e => {
-    //         showSnackbar({ children: spec.ToggleErrorSnackbar(e), severity: 'error' });
-    //     });
-    // };
-
-    // columns.push(...dbColumns.map(c => {
-    //     const args: CMAssociationMatrixSpecColumnPropsParams<Tx, TAssociation, Ty> = {
-    //         handleClick_simpleToggle,
-    //     };
-    //     return {
-    //         field: spec.GetRowFieldForColumn(c),
-    //         headerName: spec.GetColumnHeading(c),
-    //         ...spec.GetGridColumnProps(c, args),
-    //     } as GridColDef;
-    // }));
-
-    //const rowsTableSpec = props.localTableSpec;
-    //const columnsTableSpec = props.localTableSpec.args.table.columns.find(c => c.member === props.localMember);
-
-    // DB3Client.useTagsFieldRenderContext({
-
-    // });
 
     const dbRows = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery | DB3Client.xTableClientCaps.Mutation,
@@ -126,43 +56,6 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         filterModel, // quick filter will apply to both rows & columns
         sortModel, // todo: there needs to be some kind of "natural sort"
     });
-
-    //console.log(dbColumns.items);
-
-    // the db data must be transformed. each row should get a field for every possible column.
-    // const gridRows: TAnyModel[] = dbRows.items.map((dbRow) => {
-    //     const ret: TAnyModel = {};
-    //     ret[gIDValue] = dbRow[props.rowTable.args.table.pkMember];
-    //     ret[gNameValue] = dbRow[props.getRowName(dbRow[props.rowTableMember])];
-    //     dbColumns.items.forEach(dbColumn => {
-    //         //ret[dbColumn[props.columnTable.args.table.pkMember]] = 
-    //     });
-    //     return ret;
-    // });
-
-    //console.log(`grid rows : `);
-    //console.log(gridRows);
-    // const columns: GridColDef[] = [{
-    //     field: "rowID__",
-    // }, {
-    //     field: "rowName__",
-    // }];
-
-    // when single-click toggling a state.
-    // const handleClick_simpleToggle = (params: GridRenderCellParams) => {
-    // };
-
-    // columns.push(...dbColumns.items.map(c => {
-    //     // const args: CMAssociationMatrixSpecColumnPropsParams<Tx, TAssociation, Ty> = {
-    //     //     handleClick_simpleToggle,
-    //     // };
-    //     return {
-    //         //
-    //         //field: spec.GetRowFieldForColumn(c),
-    //         //headerName: spec.GetColumnHeading(c),
-    //         //...spec.GetGridColumnProps(c, args),
-    //     } as GridColDef;
-    // }));
 
     const columns: GridColDef[] = [{
         field: "id",

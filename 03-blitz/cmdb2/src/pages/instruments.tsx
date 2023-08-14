@@ -2,16 +2,10 @@ import { BlitzPage } from "@blitzjs/next";
 import { Chip } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-//import { InstrumentTableSpec } from "src/core/CMDBInstrument";
-//import { UserTableSpec } from "src/core/CMDBUser";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-//import { CMEditGrid2 } from "src/core/cmdashboard/CMEditGrid2";
-//import * as db3client from "src/core/db3/components/DB3ClientCore";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-//import * as db3fsclient from "src/core/db3/components/db3ForeignSingleFieldClient";
-//import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const tableSpec = new DB3Client.xTableClientSpec({

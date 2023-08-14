@@ -74,8 +74,9 @@ export class GenericStringField extends FieldBase<string> {
             defaultValue: args.allowNull ? null : "",
             label: args.columnName,
         });
-        //this.caseSensitive = args.caseSensitive || true;
+
         this.format = args.format;
+        this.allowNull = args.allowNull;
 
         switch (args.format) {
             case "email":
@@ -93,6 +94,8 @@ export class GenericStringField extends FieldBase<string> {
                 this.doTrim = true;
                 this.caseSensitive = args.caseSensitive || false;
                 break;
+            default:
+                throw new Error(`unknown string field format; columnname: ${args.columnName}`);
         }
     }
 
