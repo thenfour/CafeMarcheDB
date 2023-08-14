@@ -23,8 +23,9 @@ const MainContent = () => {
         <SettingMarkdown settingName="rolePermissionsMatrixPage_markdown"></SettingMarkdown>
         <DB3AssociationMatrix
             localTableSpec={RoleClientSchema}
+            foreignTableSpec={PermissionClientSchema}
             //localMember="permissions"
-            tagsField={new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 200 })}
+            tagsField={RoleClientSchema.getColumn("permissions") as DB3Client.TagsFieldClient<db3.RolePermissionAssociationModel>}
         //getRowName={(a: db3.RoleLocalPayload) => a.name}
         //getTagName={(a: db3.RolePermissionAssociationModel) => a.permission.name}
         />

@@ -41,18 +41,12 @@ export const xInstrumentFunctionalGroup = new xTable({
         new GenericStringField({
             columnName: "name",
             allowNull: false,
-            minLength: 1,
             format: "plain",
-            caseSensitive: true,
-            doTrim: true,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
-            minLength: 1,
             format: "markdown",
-            caseSensitive: true,
-            doTrim: true,
         }),
         new ColorField({
             columnName: "color",
@@ -88,17 +82,11 @@ export const xInstrumentTag = new xTable({
             columnName: "text",
             allowNull: false,
             format: "plain",
-            caseSensitive: true,
-            minLength: 1,
-            doTrim: true,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            caseSensitive: true,
-            minLength: 0,
-            doTrim: true,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -200,17 +188,11 @@ export const xInstrument = new xTable({
             columnName: "name",
             allowNull: false,
             format: "plain",
-            caseSensitive: true,
-            minLength: 1,
-            doTrim: true,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            caseSensitive: true,
-            minLength: 0,
-            doTrim: true,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -221,9 +203,6 @@ export const xInstrument = new xTable({
             fkMember: "functionalGroupId",
             foreignTableSpec: xInstrumentFunctionalGroup,
             allowNull: false,
-            // getChipCaption: (value) => value.name,
-            // getChipDescription: (value) => value.description,
-            // getChipColor: (value) => gGeneralPalette.findColorPaletteEntry(value.color),
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
@@ -238,16 +217,6 @@ export const xInstrument = new xTable({
             associationLocalObjectMember: "instrument",
             associationTableSpec: xInstrumentTagAssociation,
             foreignTableSpec: xInstrumentTag,
-            // getChipCaption: (value) => value.tag.text,
-            // getChipDescription: (value) => value.tag.description,
-            // getChipColor: (value) => gGeneralPalette.findColorPaletteEntry(value.tag.color),
-            // createMockAssociation: (instrument, tag) => ({
-            //     id: -1,
-            //     instrument: instrument as any,
-            //     instrumentId: instrument.id,
-            //     tag: tag as any,
-            //     tagId: tag.id,
-            // }),
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 instrumentTags: {
                     some: {
@@ -308,13 +277,11 @@ export const xPermission = new xTable({
             columnName: "name",
             allowNull: false,
             format: "plain",
-            minLength: 1,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            minLength: 1,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -412,13 +379,11 @@ export const xRole = new xTable({
             columnName: "name",
             allowNull: false,
             format: "plain",
-            minLength: 1,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            minLength: 1,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -474,19 +439,16 @@ export const xUser = new xTable({
             columnName: "name",
             allowNull: false,
             format: "plain",
-            minLength: 1,
         }),
         new GenericStringField({
             columnName: "email",
             allowNull: false,
             format: "email",
-            minLength: 1,
         }),
         new GenericStringField({
             columnName: "phone",
             allowNull: true,
             format: "plain",
-            minLength: 1,
         }),
         new BoolField({
             columnName: "isSysAdmin",
@@ -511,13 +473,11 @@ export const xUser = new xTable({
             columnName: "hashedPassword",
             allowNull: true,
             format: "plain",
-            minLength: 0,
         }),
         new GenericStringField({
             columnName: "googleId",
             format: "plain",
             allowNull: true,
-            minLength: 0,
         }),
     ]
 });
@@ -538,13 +498,11 @@ export const xSetting = new xTable({
             columnName: "name",
             allowNull: false,
             format: "plain",
-            minLength: 1,
         }),
         new GenericStringField({
             columnName: "value",
             allowNull: false,
             format: "plain",
-            minLength: 0,
         }),
     ]
 });

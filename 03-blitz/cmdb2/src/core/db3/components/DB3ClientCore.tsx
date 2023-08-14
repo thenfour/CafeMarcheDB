@@ -9,7 +9,7 @@
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
 import React from "react";
-import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
+import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 //import * as db3 from "../db3";
 import * as db3 from "../db3"
 import db3mutations from "../mutations/db3mutations";
@@ -21,6 +21,7 @@ import { CMTextField } from "src/core/cmdashboard/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
 import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
+import db3queries from "../queries/db3queries";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
@@ -88,7 +89,9 @@ export class xTableClientSpec {
     args: xTableClientSpecArgs;
     constructor(args: xTableClientSpecArgs) {
         this.args = args;
-    }
+    };
+
+    getColumn = (name: string): IColumnClient => this.args.columns.find(c => c.columnName === name)!;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -164,34 +167,51 @@ export class xTableRenderClient {
         const skip = !!args.paginationModel ? (args.paginationModel.pageSize * args.paginationModel.page) : undefined;
         const take = !!args.paginationModel ? (args.paginationModel.pageSize) : undefined;
 
-        const paginatedQueryInput: db3.PaginatedQueryInput = {
-            tableName: this.args.tableSpec.args.table.tableName,
-            orderBy,
-            skip,
-            take,
-            where,
-        };
-
         for (let i = 0; i < this.clientColumns.length; ++i) {
             this.clientColumns[i]?.connectColumn(args.tableSpec.args.table);
         }
 
+        let items_: TAnyModel[] = [];
+
         if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
+            console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.Query)); // don't do both. why would you do both types of queries.??
+            const paginatedQueryInput: db3.PaginatedQueryInput = {
+                tableName: this.args.tableSpec.args.table.tableName,
+                orderBy,
+                skip,
+                take,
+                where,
+            };
+
             const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput);
-
-            // convert items from a database result to a client-side object.
-            this.items = items.map(dbitem => {
-                const ret = {};
-                this.clientColumns.forEach(col => {
-                    console.assert(!!col.schemaColumn.ApplyDbToClient);
-                    col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret);
-                })
-                return ret;
-            });
-
+            items_ = items as TAnyModel[];
             this.rowCount = count;
             this.refetch = refetch;
         }
+
+        if (HasFlag(args.requestedCaps, xTableClientCaps.Query)) {
+            console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)); // don't do both. why would you do both types of queries.??
+            const queryInput: db3.QueryInput = {
+                tableName: this.args.tableSpec.args.table.tableName,
+                orderBy,
+                where,
+            };
+            const [items, { refetch }] = useQuery(db3queries, queryInput);
+            items_ = items;
+            this.rowCount = items.length;
+            this.refetch = refetch;
+        }
+
+        // convert items from a database result to a client-side object.
+        this.items = items_.map(dbitem => {
+            const ret = {};
+            this.clientColumns.forEach(col => {
+                console.assert(!!col.schemaColumn.ApplyDbToClient);
+                col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret);
+            })
+            return ret;
+        });
+
     }; // ctor
 
     // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
@@ -199,6 +219,7 @@ export class xTableRenderClient {
     // that is, all the columns comprise the updation model completely.
     // for things like FK, 
     doUpdateMutation = async (row: TAnyModel) => {
+        console.assert(!!this.mutateFn); // make sure you request this capability!
         const updateModel = {};
         this.clientColumns.forEach(col => {
             col.schemaColumn.ApplyClientToDb(row, updateModel);

@@ -53,11 +53,11 @@ export type StringFieldFormatOptions = "plain" | "email" | "markdown";
 
 export interface GenericStringFieldArgs {
     columnName: string;
-    allowNull: boolean;
-    minLength: number;
     format: StringFieldFormatOptions;
+    allowNull: boolean;
+    // minLength?: number;
     caseSensitive?: boolean;
-    doTrim?: boolean;
+    // doTrim?: boolean;
 };
 
 export class GenericStringField extends FieldBase<string> {
@@ -74,14 +74,25 @@ export class GenericStringField extends FieldBase<string> {
             defaultValue: args.allowNull ? null : "",
             label: args.columnName,
         });
-        this.caseSensitive = args.caseSensitive || true;
-        this.allowNull = args.allowNull;
-        this.minLength = args.minLength;
-        this.doTrim = args.doTrim || true;
+        //this.caseSensitive = args.caseSensitive || true;
         this.format = args.format;
-        if (args.format === "email") {
-            this.caseSensitive = false;
-            this.doTrim = true;
+
+        switch (args.format) {
+            case "email":
+                this.minLength = 1;
+                this.doTrim = true;
+                this.caseSensitive = args.caseSensitive || false;
+                break;
+            case "markdown":
+                this.minLength = 1;
+                this.doTrim = false; // trailing whitespace is normal on long text entries.
+                this.caseSensitive = args.caseSensitive || true;
+                break;
+            case "plain":
+                this.minLength = 0;
+                this.doTrim = true;
+                this.caseSensitive = args.caseSensitive || false;
+                break;
         }
     }
 

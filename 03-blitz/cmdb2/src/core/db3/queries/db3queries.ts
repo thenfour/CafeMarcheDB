@@ -9,7 +9,6 @@ export default resolver.pipe(
     resolver.authorize("db3query", Permission.login),
     async (input: db3.QueryInput, ctx: AuthenticatedMiddlewareCtx) => {
         try {
-            //debugger;
             const table = db3.gAllTables[input.tableName]!;
             console.assert(!!table);
             const contextDesc = `query:${table.tableName}`;

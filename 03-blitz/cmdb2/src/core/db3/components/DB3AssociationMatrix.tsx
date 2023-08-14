@@ -19,16 +19,15 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from '../db3';
 import * as DB3Client from "../DB3Client";
 import { TAnyModel, gIDValue, gNameValue, gNullValue } from 'shared/utils';
+import { Checkbox } from '@mui/material';
 
-const gPageSizeOptions = [30, 60, 90, 120, 240] as number[];
-const gPageSizeDefault = 30 as number;
+const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
+const gPageSizeDefault = 25 as number;
 
 export type DB3BooleanMatrixProps<TLocal, TAssociation> = {
     localTableSpec: DB3Client.xTableClientSpec,
-    //localMember: string,
+    foreignTableSpec: DB3Client.xTableClientSpec,
     tagsField: DB3Client.TagsFieldClient<TAssociation>,
-    //getRowName: (a: TLocal) => string;
-    //getTagName: (a: TAssociation) => string;
 };
 
 export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatrixProps<TLocal, TAssociation>) {
@@ -114,20 +113,21 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
     // });
 
     const dbRows = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery | DB3Client.xTableClientCaps.Mutation,
         tableSpec: props.localTableSpec,
-        filterModel,
+        filterModel,// quick filter will apply to both rows & columns
         sortModel,
         paginationModel,
     });
 
-    // const dbColumns = DB3Client.useTableRenderContext({
-    //     requestedCaps: DB3Client.xTableClientCaps.Query,
-    //     tableSpec: columnsTableSpec,
-    //     filterModel,
-    //     sortModel,
-    //     paginationModel,
-    // });
+    const dbColumns = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        tableSpec: props.foreignTableSpec,
+        filterModel, // quick filter will apply to both rows & columns
+        sortModel, // todo: there needs to be some kind of "natural sort"
+    });
+
+    //console.log(dbColumns.items);
 
     // the db data must be transformed. each row should get a field for every possible column.
     // const gridRows: TAnyModel[] = dbRows.items.map((dbRow) => {
@@ -148,15 +148,8 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
     //     field: "rowName__",
     // }];
 
-    // // when single-click toggling a state.
+    // when single-click toggling a state.
     // const handleClick_simpleToggle = (params: GridRenderCellParams) => {
-    //     const existingAssociation = params.row[params.colDef.field] as TAssociation | null;
-    //     toggleMutation({ association: existingAssociation, xId: +params.colDef.field, yId: params.row.id } as any).then((result) => {
-    //         showSnackbar({ children: spec.ToggleSuccessSnackbar(existingAssociation, result as TAssociation | null), severity: 'success' });
-    //         refetchRows();
-    //     }).catch(e => {
-    //         showSnackbar({ children: spec.ToggleErrorSnackbar(e), severity: 'error' });
-    //     });
     // };
 
     // columns.push(...dbColumns.items.map(c => {
@@ -181,9 +174,50 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         field: "name",
         editable: false,
         valueGetter: (params) => {
-            return "";//params.row[prop];
+            const info = props.localTableSpec.args.table.getRowInfo(params.row);
+            return info.name;
         }
-    }];
+    },
+    ...dbColumns.items.map((tag): GridColDef => ({
+        field: `id:${tag[props.foreignTableSpec.args.table.pkMember]}`,
+        editable: false,
+        headerName: props.foreignTableSpec.args.table.getRowInfo(tag).name,
+        width: 60,
+        renderCell: (params) => {
+            const tagId = tag[props.foreignTableSpec.args.table.pkMember];
+            const fieldVal = params.row[props.tagsField.columnName] as TAssociation[];
+            const association = fieldVal.find(a => a[props.tagsField.associationForeignIDMember] === tagId); // find the association for this tag.
+            return <Checkbox
+                checked={!!association}
+                onChange={(event, value) => {
+                    let newFieldVal = fieldVal;
+                    if (!association) {
+                        // add a mock association
+                        newFieldVal.push(props.tagsField.typedSchemaColumn.createMockAssociation(params.row, tag));
+                    } else {
+                        // remove this association.
+                        newFieldVal = fieldVal.filter(a => a[props.tagsField.associationForeignIDMember] !== tagId);
+                    }
+
+                    // create an update obj with just the id & the tags field.
+                    console.log(`doing update mutation`);
+                    dbRows.doUpdateMutation({
+                        [props.localTableSpec.args.table.pkMember]: params.row[props.localTableSpec.args.table.pkMember],
+                        [props.tagsField.columnName]: newFieldVal,
+                    }).then((result) => {
+                        showSnackbar({ children: "change successful", severity: 'success' });
+                        dbRows.refetch();
+                    }).catch(e => {
+                        showSnackbar({ children: "change failed", severity: 'error' });
+                    });
+                }}
+            />;
+        }
+    }))
+    ];
+
+    // now add a column for each tag.
+
 
     return (<>
         <DataGrid
@@ -205,7 +239,7 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
                     paginationModel
                 },
                 sorting: {
-                    sortModel,//: [{ field: 'rating', sort: 'desc' }],
+                    sortModel,
                 },
                 filter: {
                     filterModel: {

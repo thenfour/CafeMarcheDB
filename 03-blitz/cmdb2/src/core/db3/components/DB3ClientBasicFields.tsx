@@ -30,7 +30,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: false,
             headerName: args.columnName,
-            width: 50,
+            width: 40,
             GridColProps: {
                 type: "number",
             }

@@ -38,8 +38,8 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 
-const gPageSizeOptions = [30, 60, 90, 120, 240] as number[];
-const gPageSizeDefault = 30 as number;
+const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
+const gPageSizeDefault = 25 as number;
 
 function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSpec: DB3Client.xTableClientSpec }) {
     return (
