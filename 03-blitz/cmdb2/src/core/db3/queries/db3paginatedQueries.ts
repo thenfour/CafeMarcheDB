@@ -28,7 +28,7 @@ export default resolver.pipe(
                         ...paginateArgs,
                         where: input.where,
                         orderBy: input.orderBy,
-                        include: table.localInclude,
+                        include: table.localInclude || undefined,
                     }),
             });
 

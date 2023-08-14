@@ -14,9 +14,10 @@ import { gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/cmdashboard/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
-import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
+import { Button, Checkbox, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
 import * as DB3ClientCore from "./DB3ClientCore";
 import * as db3fields from "../shared/db3basicFields";
+import RichTextEditor from "src/core/components/RichTextEditor";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -47,6 +48,8 @@ export interface GenericStringColumnArgs {
 };
 
 export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
+    typedSchemaColumn: db3fields.GenericStringField;
+
     constructor(args: GenericStringColumnArgs) {
         super({
             columnName: args.columnName,
@@ -57,12 +60,13 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     }
 
     onSchemaConnected = () => {
+        this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
+
+        console.assert(this.typedSchemaColumn.format === "plain" || this.typedSchemaColumn.format === "email");
+
         this.GridColProps = {
             type: "string",
             renderEditCell: (params: GridRenderEditCellParams) => {
-                // if (params.hasFocus) {
-                //     console.log(`focus on ${this.columnName}`);
-                // }
                 const vr = this.schemaColumn.ValidateAndParse(params.value);
                 return <CMTextField
                     key={params.key}
@@ -91,6 +95,66 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         />;
     };
 };
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface MarkdownStringColumnArgs {
+    columnName: string;
+    cellWidth: number;
+};
+
+export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
+    typedSchemaColumn: db3fields.GenericStringField;
+
+    constructor(args: MarkdownStringColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: 220,
+        });
+    }
+
+    onSchemaConnected = () => {
+        this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
+
+        console.assert(this.typedSchemaColumn.format === "markdown");
+
+        this.GridColProps = {
+            type: "string",
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                return <Stack><CMTextField
+                    key={params.key}
+                    autoFocus={params.hasFocus}
+                    label={this.headerName}
+                    validationError={vr.success ? null : (vr.errorMessage || null)}
+                    value={params.value as string}
+                    onChange={(e, value) => {
+                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                    }}
+                />
+                    <Button>edit</Button>
+                </Stack>;
+            },
+        };
+    };
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        return <Stack><CMTextField
+            key={params.key}
+            autoFocus={false}
+            label={this.headerName}
+            validationError={params.validationResult.getErrorForField(this.columnName)}
+            value={params.value as string}
+            onChange={(e, val) => {
+                params.api.setFieldValues({ [this.columnName]: val });
+            }}
+        />
+            <Button>edit</Button>
+        </Stack >;
+    };
+};
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GenericIntegerColumnArgs {
@@ -134,6 +198,50 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
             label={this.headerName}
             validationError={params.validationResult.getErrorForField(this.columnName)}
             value={params.value as string}
+            onChange={(e, val) => {
+                // so this sets the row model value to a string. that's OK because the value gets parsed later.
+                // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
+                params.api.setFieldValues({ [this.columnName]: val });
+            }}
+        />;
+    };
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface BoolColumnArgs {
+    columnName: string;
+    cellWidth: number;
+};
+
+export class BoolColumnClient extends DB3ClientCore.IColumnClient {
+    constructor(args: BoolColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: args.cellWidth,
+        });
+    }
+
+    onSchemaConnected = () => {
+        this.GridColProps = {
+            renderCell: (params: GridRenderCellParams) => {
+                return <Checkbox checked={params.value} disabled />
+            },
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                return <Checkbox
+                    checked={params.value}
+                    onChange={(e, value) => {
+                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                    }}
+                />
+            },
+        };
+    };
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        return <Checkbox
+            checked={!!params.value}
             onChange={(e, val) => {
                 // so this sets the row model value to a string. that's OK because the value gets parsed later.
                 // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.

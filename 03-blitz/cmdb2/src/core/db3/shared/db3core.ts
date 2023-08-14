@@ -107,12 +107,15 @@ export const SuccessfulValidateAndComputeDiffResult: ValidateAndComputeDiffResul
 export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDiffResult;
 
 ////////////////////////////////////////////////////////////////
+//export type FieldSignificanceOptions = "name" | "description" | "none" | "color";
+
 export interface FieldBaseArgs<FieldDataType> {
     //fieldType: string;
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
     label: string;
     defaultValue: FieldDataType | null;
+    //fieldSignificance: FieldSignificanceOptions;
 }
 
 export abstract class FieldBase<FieldDataType> {
@@ -148,6 +151,12 @@ export interface SortModel {
     order: "asc" | "desc",
 };
 
+export interface RowInfo {
+    name: string;
+    description?: string;
+    color?: ColorPaletteEntry;
+};
+
 export interface TableDesc {
     tableName: string;
     columns: FieldBase<unknown>[];
@@ -155,6 +164,7 @@ export interface TableDesc {
     viewPermission: Permission;
     editPermission: Permission;
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
+    getRowInfo: (row: TAnyModel) => RowInfo;
 };
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
@@ -170,12 +180,17 @@ export class xTable implements TableDesc {
     defaultObject: TAnyModel;
     pkMember: string;
 
+    rowNameMember?: string;
+    rowDescriptionMember?: string;
+
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
+    getRowInfo: (row: TAnyModel) => RowInfo;
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
 
-        console.assert(!gAllTables[args.tableName]); // don't define a table multiple times. effectively singleton.
+        // this CAN safely happen when clients refresh data
+        //console.assert(!gAllTables[args.tableName]); // don't define a table multiple times. effectively singleton.
 
         gAllTables[args.tableName] = this;
 
@@ -198,8 +213,15 @@ export class xTable implements TableDesc {
         });
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
+
+            // clients are not required to provide values for all values. only care about fields which are in a or b.
             const a = oldItem[field.member];
             const b_raw = newItem[field.member];
+
+            if (a === undefined && b_raw === undefined) {
+                continue;
+            }
+
             const b_parseResult = field.ValidateAndParse(b_raw); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
 
             if (!b_parseResult.success) {

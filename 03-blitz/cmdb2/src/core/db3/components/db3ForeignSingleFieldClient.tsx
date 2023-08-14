@@ -12,6 +12,7 @@ import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
+import { gNullColorPaletteEntry } from "shared/color";
 
 
 export type InsertFromStringParams = {
@@ -71,9 +72,6 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
     columnName: string;
     cellWidth: number;
 
-    // getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
-    // getChipDescription?: (value: TForeign) => string;
-
     renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactElement;
 
     // should render a <li {...props}> for autocomplete
@@ -100,36 +98,36 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             return <>--</>;
         }
 
-        //console.assert(!!this.args.getChipCaption); // this relies on caller specifying a chip caption.
-        if (!this.typedSchemaColumn.getChipCaption) {
-            throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleFieldClient ${this.schemaTable.tableName}.${this.args.columnName}`);
-        }
+        const rowInfo = this.typedSchemaColumn.foreignTableSpec.getRowInfo(args.value);
 
         const style: React.CSSProperties = {};
-        const color = this.typedSchemaColumn.getChipColor!(args.value);
+        const color = rowInfo.color || gNullColorPaletteEntry;// this.typedSchemaColumn.getChipColor!(args.value);
         if (color.value != null) {
             style.backgroundColor = color.value!;
             style.color = color.contrastColor!;
             style.border = `1px solid ${color.outline ? color.contrastColor! : color.value!}`;
         }
 
-        //console.assert(!!this.args.getChipCaption);
         return <Chip
             className="cmdbChip"
             style={style}
             size="small"
-            label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
+            //label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
+            label={rowInfo.name}
             onDelete={args.onDelete}
         />;
     };
 
     defaultRenderAsListItem = (props, value, selected) => {
-        console.assert(!!this.typedSchemaColumn.getChipCaption);
         console.assert(value != null);
+        //const rowInfo = this.typedSchemaColumn.foreignTableSpec.getRowInfo(value);
+        //console.assert(!!this.typedSchemaColumn.getChipCaption);
+        const chip = this.defaultRenderAsChip({ value });
         return <li {...props}>
             {selected && <DoneIcon />}
-            {this.typedSchemaColumn.getChipCaption!(value)}
-            {this.typedSchemaColumn.getChipDescription && this.typedSchemaColumn.getChipDescription!(value)}
+            {chip}
+            {/* {this.typedSchemaColumn.getChipCaption!(value)} */}
+            {/* {this.typedSchemaColumn.getChipDescription && this.typedSchemaColumn.getChipDescription!(value)} */}
             {selected && <CloseIcon />}
         </li>
     };

@@ -6,48 +6,12 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
 import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
-import { CMEditGrid } from "src/core/cmdashboard/CMEditGrid";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Prisma } from "db";
-import deleteSetting from "src/auth/mutations/deleteSetting";
-import insertSetting from "src/auth/mutations/insertSetting";
-import updateSettingById from "src/auth/mutations/updateSettingById";
-import { CreateSettingSchema, SettingNameSchema, SettingValueSchema, UpdateSettingByIdSchema } from "src/auth/schemas";
-import {
-    CMTableSpec,
-    PKIDField,
-    SimpleTextField
-} from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
-import { CMEditGrid2 } from "src/core/cmdashboard/dbcomponents2/CMEditGrid2";
-
-type DBSetting = Prisma.SettingGetPayload<{
-    //includes?
-}>;
-
-export const SettingTableSpec = new CMTableSpec<DBSetting>({
-    devName: "setting",
-    CreateMutation: insertSetting,
-    CreateSchema: CreateSettingSchema,
-    GetPaginatedItemsQuery: getPaginatedSettings,
-    UpdateMutation: updateSettingById,
-    UpdateSchema: UpdateSettingByIdSchema,
-    DeleteMutation: deleteSetting,
-    GetNameOfRow: (row: DBSetting) => { return row.name; },
-    // renderForListItemChild: ({ obj }) => {
-    //     return <>an item?</>;
-    // },
-    fields: [
-        new PKIDField({ member: "id" }),
-        new SimpleTextField({ label: "name", member: "name", initialNewItemValue: "", zodSchema: SettingNameSchema, cellWidth: 220 }),
-        new SimpleTextField({ label: "value", member: "value", initialNewItemValue: "", zodSchema: SettingValueSchema, cellWidth: 550 }),
-    ],
-});
-
-
-
-
 
 
 const SettingsControls = (props) => {
@@ -103,11 +67,23 @@ const SettingsControls = (props) => {
     );
 }
 
+
+
+const tableSpec = new DB3Client.xTableClientSpec({
+    table: db3.xSetting,
+    columns: [
+        new DB3Client.PKColumnClient({ columnName: "id" }),
+        new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "value", cellWidth: 200 }),
+    ],
+});
+
+
 const SettingsContent = () => {
     return <>
         <SettingMarkdown settingName="settings_markdown"></SettingMarkdown>
         <SettingsControls></SettingsControls>
-        <CMEditGrid2 spec={SettingTableSpec} />
+        <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };
 
@@ -115,7 +91,6 @@ const SettingsPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Settings">
             <SettingsContent />
-            {/* <CMEditGrid spec={SettingsEditGridSpec} /> */}
         </DashboardLayout>
     )
 }

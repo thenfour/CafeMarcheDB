@@ -48,12 +48,16 @@ export class PKField extends FieldBase<number> {
     }
 }
 
+// for validation and client UI behavior.
+export type StringFieldFormatOptions = "plain" | "email" | "markdown";
+
 export interface GenericStringFieldArgs {
     columnName: string;
-    caseSensitive: boolean;
     allowNull: boolean;
     minLength: number;
-    doTrim: boolean;
+    format: StringFieldFormatOptions;
+    caseSensitive?: boolean;
+    doTrim?: boolean;
 };
 
 export class GenericStringField extends FieldBase<string> {
@@ -61,6 +65,7 @@ export class GenericStringField extends FieldBase<string> {
     allowNull: boolean;
     minLength: number;
     doTrim: boolean;
+    format: StringFieldFormatOptions;
 
     constructor(args: GenericStringFieldArgs) {
         super({
@@ -69,10 +74,15 @@ export class GenericStringField extends FieldBase<string> {
             defaultValue: args.allowNull ? null : "",
             label: args.columnName,
         });
-        this.caseSensitive = args.caseSensitive;
+        this.caseSensitive = args.caseSensitive || true;
         this.allowNull = args.allowNull;
         this.minLength = args.minLength;
-        this.doTrim = args.doTrim;
+        this.doTrim = args.doTrim || true;
+        this.format = args.format;
+        if (args.format === "email") {
+            this.caseSensitive = false;
+            this.doTrim = true;
+        }
     }
 
     connectToTable = (table: xTable) => { };
@@ -94,6 +104,19 @@ export class GenericStringField extends FieldBase<string> {
         }
         if (val.length < this.minLength) {
             return ErrorValidateAndParseResult("minimum length not satisfied", val);
+        }
+        if (this.format === "email") {
+            // https://stackoverflow.com/questions/46155/how-can-i-validate-an-email-address-in-javascript
+            const validateEmail = (email) => {
+                return String(email)
+                    .toLowerCase()
+                    .match(
+                        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+                    );
+            };
+            if (!validateEmail(val)) {
+                return ErrorValidateAndParseResult("email not in the correct format", val);
+            }
         }
         return SuccessfulValidateAndParseResult(val);
     };
@@ -238,6 +261,49 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
 };
 
+// booleans are simple checkboxes; therefore null is not supported.
+// for null support use a radio / multi select style field.
+export interface BoolFieldArgs {
+    columnName: string;
+    defaultValue: boolean;
+};
+
+export class BoolField extends FieldBase<boolean> {
+    constructor(args: BoolFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: args.defaultValue,
+            label: args.columnName,
+        });
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    isEqual = (a: boolean, b: boolean) => {
+        return a === b;
+    };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        return { [this.member]: { equals: query } };
+    };
+
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        const dbVal: boolean | null = dbModel[this.member]; // db may have null values so need to coalesce
+        clientModel[this.member] = dbVal || this.defaultValue;
+    }
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        mutationModel[this.member] = clientModel[this.member];
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (val: boolean | null): ValidateAndParseResult<boolean | null> => {
+        return SuccessfulValidateAndParseResult(val);
+    };
+};
+
+
 
 // a single select field where
 // - the db value is a string (no relationship enforced)
@@ -315,9 +381,9 @@ export interface ForeignSingleFieldArgs<TForeign> {
     doesItemExactlyMatchText?: (item: TForeign, filterText: string) => boolean,
     //createInsertModelFromString: (input: string) => Partial<TForeign>,
     //allowInsertFromString: boolean;
-    getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
-    getChipDescription?: (value: TForeign) => string;
-    getChipColor?: (value: TForeign) => ColorPaletteEntry;
+    // getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    // getChipDescription?: (value: TForeign) => string;
+    // getChipColor?: (value: TForeign) => ColorPaletteEntry;
 };
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
@@ -331,9 +397,9 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean;
     //createInsertModelFromString: (input: string) => Partial<TForeign>;
     //allowInsertFromString: boolean;
-    getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
-    getChipDescription?: (value: TForeign) => string;
-    getChipColor?: (value: TForeign) => ColorPaletteEntry;
+    // getChipCaption?: (value: TForeign) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    // getChipDescription?: (value: TForeign) => string;
+    // getChipColor?: (value: TForeign) => ColorPaletteEntry;
 
     constructor(args: ForeignSingleFieldArgs<TForeign>) {
         super({
@@ -346,10 +412,12 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         // does default behavior of case-insensitive, trimmed compare.
         const itemExactlyMatches_defaultImpl = (value: TForeign, filterText: string): boolean => {
             //console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
-            if (!this.getChipCaption) {
-                throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleField ${args.columnName}`);
-            }
-            return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+            // if (!this.getChipCaption) {
+            //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleField ${args.columnName}`);
+            // }
+            //return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+            const rowInfo = this.foreignTableSpec.getRowInfo(value as TAnyModel);
+            return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
         }
 
         this.fkMember = args.fkMember;
@@ -359,12 +427,12 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         //this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
         this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
-        this.getChipCaption = args.getChipCaption;
-        if (!args.doesItemExactlyMatchText && !this.getChipCaption) {
-            throw new Error(`here.,`);
-        }
-        this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
-        this.getChipDescription = args.getChipDescription;
+        // this.getChipCaption = args.getChipCaption;
+        // if (!args.doesItemExactlyMatchText && !this.getChipCaption) {
+        //     throw new Error(`here.,`);
+        // }
+        // this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
+        // this.getChipDescription = args.getChipDescription;
         //this.createInsertModelFromString = args.createInsertModelFromString;
         //this.allowInsertFromString = args.allowInsertFromString;
     }
@@ -417,7 +485,7 @@ export interface TagsFieldArgs<TAssociation> {
 
     // when we get a list of tag options, they're foreign models (tags).
     // but we need our list to be association objects (itemTagAssocitaion)
-    createMockAssociation: (row: TAnyModel, item: TAnyModel) => TAssociation;
+    createMockAssociation?: (row: TAnyModel, item: TAnyModel) => TAssociation;
 
     // mutations needs to where:{} to find associations for local rows. so "getForeignID()" is not going to work.
     // better to 
@@ -425,25 +493,30 @@ export interface TagsFieldArgs<TAssociation> {
     //getLocalID:
     associationLocalIDMember: string;
     associationForeignIDMember: string;
+    associationLocalObjectMember: string;
+    associationForeignObjectMember: string;
 
-    getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
-    getChipDescription?: (value: TAssociation) => string;
-    getChipColor?: (value: TAssociation) => ColorPaletteEntry;
+    // getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    // getChipDescription?: (value: TAssociation) => string;
+    // getChipColor?: (value: TAssociation) => ColorPaletteEntry;
 };
 
 export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
+    localTableSpec: xTable;
     associationTableSpec: xTable;
     foreignTableSpec: xTable;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
 
     createMockAssociation: (row: TAnyModel, foreignObject: TAnyModel) => TAssociation;
     doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
-    getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
-    getChipColor?: (value: TAssociation) => ColorPaletteEntry;
-    getChipDescription?: (value: TAssociation) => string;
+    // getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
+    // getChipColor?: (value: TAssociation) => ColorPaletteEntry;
+    // getChipDescription?: (value: TAssociation) => string;
 
     associationLocalIDMember: string;
     associationForeignIDMember: string;
+    associationLocalObjectMember: string;
+    associationForeignObjectMember: string;
 
     get allowInsertFromString() {
         return !!this.foreignTableSpec.createInsertModelFromString;
@@ -459,26 +532,42 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
 
         // does default behavior of case-insensitive, trimmed compare.
         const itemExactlyMatches_defaultImpl = (value: TAssociation, filterText: string): boolean => {
-            console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
-            if (!this.getChipCaption) {
-                throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On TagsField ${args.columnName}`);
-            }
-            return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+            // console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
+            // if (!this.getChipCaption) {
+            //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On TagsField ${args.columnName}`);
+            // }
+            // return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+            const rowInfo = this.associationTableSpec.getRowInfo(value as TAnyModel);
+            return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
         }
 
         this.associationTableSpec = args.associationTableSpec;
         this.foreignTableSpec = args.foreignTableSpec;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
-        this.createMockAssociation = args.createMockAssociation;
+        this.createMockAssociation = args.createMockAssociation || this.createMockAssociation_DefaultImpl;
         this.associationForeignIDMember = args.associationForeignIDMember;
         this.associationLocalIDMember = args.associationLocalIDMember;
-        this.getChipCaption = args.getChipCaption;
-        this.getChipDescription = args.getChipDescription;
-        this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
+        this.associationLocalObjectMember = args.associationLocalObjectMember;
+        this.associationForeignObjectMember = args.associationForeignObjectMember;
+        // this.getChipCaption = args.getChipCaption;
+        // this.getChipDescription = args.getChipDescription;
+        // this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
         this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
     }
 
-    connectToTable = (table: xTable) => { };
+    connectToTable = (table: xTable) => {
+        this.localTableSpec = table;
+    };
+
+    createMockAssociation_DefaultImpl = (row: TAnyModel, foreignObject: TAnyModel): TAssociation => {
+        return {
+            [this.associationTableSpec.pkMember]: -1, // an ID that we can assume is never valid or going to match an existing. we could also put null which may be more accurate but less safe in terms of query compatibiliy.
+            [this.associationLocalObjectMember]: row, // local object
+            [this.associationLocalIDMember]: row[this.localTableSpec.pkMember], // local ID
+            [this.associationForeignObjectMember]: foreignObject, // local object
+            [this.associationForeignIDMember]: foreignObject[this.foreignTableSpec.pkMember], // foreign ID
+        } as TAssociation /* trust me */;
+    };
 
     isEqual = (a: TAssociation[], b: TAssociation[]) => {
         console.assert(Array.isArray(a));

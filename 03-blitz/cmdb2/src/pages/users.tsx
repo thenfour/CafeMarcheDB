@@ -64,87 +64,105 @@ import { Chip } from "@mui/material";
 import { CMTableSpec } from "src/core/cmdashboard/dbcomponents2/CMColumnSpec";
 import { PKIDField, SimpleTextField } from "src/core/cmdashboard/dbcomponents2/CMBasicFields";
 import { InsertUserSchema, UserEmailSchema, UserNameSchema, UpdateUserFromGrid as UpdateUserFromGridSchema } from "src/auth/schemas";
+import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 
-export class UserRoleField extends ForeignSingleField<DBUser, DBRole, Prisma.UserWhereInput, Prisma.RoleWhereInput> {
-    constructor() {
-        super({
-            allowNull: true,
-            cellWidth: 220,
-            fkidMember: "roleId",
-            member: "role",
-            foreignSpec: {
-                label: "Role",
-                pkMember: "id",
+// export class UserRoleField extends ForeignSingleField<DBUser, DBRole, Prisma.UserWhereInput, Prisma.RoleWhereInput> {
+//     constructor() {
+//         super({
+//             allowNull: true,
+//             cellWidth: 220,
+//             fkidMember: "roleId",
+//             member: "role",
+//             foreignSpec: {
+//                 label: "Role",
+//                 pkMember: "id",
 
-                getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => {
-                    return { name: { contains: query } };
-                },
-                getAllOptionsQuery: getAllRoles,
+//                 getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => {
+//                     return { name: { contains: query } };
+//                 },
+//                 getAllOptionsQuery: getAllRoles,
 
-                allowInsertFromString: true,
-                insertFromStringMutation: CreateRoleMutation,
-                insertFromString: async (params: InsertFromStringParams) => {
-                    return await params.mutation({ name: params.input, description: "" });
-                },
+//                 allowInsertFromString: true,
+//                 insertFromStringMutation: CreateRoleMutation,
+//                 insertFromString: async (params: InsertFromStringParams) => {
+//                     return await params.mutation({ name: params.input, description: "" });
+//                 },
 
-                doesItemExactlyMatchText: (item: DBRole, filterText: string) => {
-                    return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
-                },
+//                 doesItemExactlyMatchText: (item: DBRole, filterText: string) => {
+//                     return item.name.trim().toLowerCase() === filterText.trim().toLowerCase();
+//                 },
 
-                renderAsChip: (args: RenderAsChipParams<DBRole>) => {
-                    if (!args.value) {
-                        return <>--</>;
-                    }
-                    return <Chip
-                        size="small"
-                        label={`${args.value.name}`}
-                        onDelete={args.onDelete}
-                    />;
-                },
+//                 renderAsChip: (args: RenderAsChipParams<DBRole>) => {
+//                     if (!args.value) {
+//                         return <>--</>;
+//                     }
+//                     return <Chip
+//                         size="small"
+//                         label={`${args.value.name}`}
+//                         onDelete={args.onDelete}
+//                     />;
+//                 },
 
-                renderAsListItem: (props, value, selected) => {
-                    return <li {...props}>
-                        {selected && <DoneIcon />}
-                        {value.name}
-                        {selected && <CloseIcon />}
-                    </li>
-                },
-            }
-        });
-    }
+//                 renderAsListItem: (props, value, selected) => {
+//                     return <li {...props}>
+//                         {selected && <DoneIcon />}
+//                         {value.name}
+//                         {selected && <CloseIcon />}
+//                     </li>
+//                 },
+//             }
+//         });
+//     }
 
-    getQuickFilterWhereClause = (query: string): Prisma.UserWhereInput => {
-        return { role: { name: { contains: query } } };
-    };
-};
+//     getQuickFilterWhereClause = (query: string): Prisma.UserWhereInput => {
+//         return { role: { name: { contains: query } } };
+//     };
+// };
 
-export const UserTableSpec = new CMTableSpec<DBUser, Prisma.UserWhereInput>({
-    devName: "user",
-    CreateMutation: insertUserMutation,
-    CreateSchema: InsertUserSchema,
-    GetPaginatedItemsQuery: getUsers,
-    UpdateMutation: updateUserFromGrid,
-    UpdateSchema: UpdateUserFromGridSchema,
-    DeleteMutation: SoftDeleteUserMutation,
-    GetNameOfRow: (row: DBUser) => { return row.name; },
-    fields: [
-        new PKIDField({ member: "id" }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: UserNameSchema, allowNullAndTreatEmptyAsNull: false }),
-        new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Email", member: "email", zodSchema: UserEmailSchema, allowNullAndTreatEmptyAsNull: false }),
-        new UserRoleField(),
+// export const UserTableSpec = new CMTableSpec<DBUser, Prisma.UserWhereInput>({
+//     devName: "user",
+//     CreateMutation: insertUserMutation,
+//     CreateSchema: InsertUserSchema,
+//     GetPaginatedItemsQuery: getUsers,
+//     UpdateMutation: updateUserFromGrid,
+//     UpdateSchema: UpdateUserFromGridSchema,
+//     DeleteMutation: SoftDeleteUserMutation,
+//     GetNameOfRow: (row: DBUser) => { return row.name; },
+//     fields: [
+//         new PKIDField({ member: "id" }),
+//         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Name", member: "name", zodSchema: UserNameSchema, allowNullAndTreatEmptyAsNull: false }),
+//         new SimpleTextField({ cellWidth: 220, initialNewItemValue: "", label: "Email", member: "email", zodSchema: UserEmailSchema, allowNullAndTreatEmptyAsNull: false }),
+//         new UserRoleField(),
+//     ],
+// });
+
+
+
+const tableSpec = new DB3Client.xTableClientSpec({
+    table: db3.xUser,
+    columns: [
+        new DB3Client.PKColumnClient({ columnName: "id" }),
+        new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 200 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 200 }),
+        new DB3Client.BoolColumnClient({ columnName: "isSysAdmin", cellWidth: 80 }),
+        // isDeleted
+        new DB3Client.ForeignSingleFieldClient({
+            columnName: "role",
+            cellWidth: 180,
+        }),
     ],
 });
-
-
-
-
 
 
 const UserListContent = () => {
     if (!useAuthorization("users admin page", Permission.admin_users)) {
         throw new Error(`unauthorized`);
     }
-    return <CMEditGrid2 spec={UserTableSpec} />;
+    return <DB3EditGrid tableSpec={tableSpec} />;
+    // return <CMEditGrid2 spec={UserTableSpec} />;
 };
 
 const UserListPage: BlitzPage = () => {

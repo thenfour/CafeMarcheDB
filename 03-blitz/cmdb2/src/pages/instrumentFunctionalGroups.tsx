@@ -13,7 +13,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
     columns: [
         new DB3Client.PKColumnClient({ columnName: "id" }),
         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-        new DB3Client.GenericStringColumnClient({ columnName: "description", cellWidth: 300 }),
+        new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 300 }),
         new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
     ],

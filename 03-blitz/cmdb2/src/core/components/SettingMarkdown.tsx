@@ -5,9 +5,6 @@ import getSetting from "src/auth/queries/getSetting";
 import RichTextEditor from "src/core/components/RichTextEditor";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 
-//const settingName = "profile_markdown";
-
-
 interface SettingMarkdownProps {
     settingName: string,
 };
@@ -19,7 +16,6 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onValueChanged = (newValue: string) => {
-        //console.log(`set "info_text" to ${newValue}`);
         setIsSaving(true);
         updateSetting({ name: props.settingName, value: newValue }).then(x => {
             showSnackbar({ severity: "success", children: `should be saved...` });

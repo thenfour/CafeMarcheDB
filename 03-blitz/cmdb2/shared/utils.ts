@@ -242,3 +242,5 @@ export const CoerceNullableNumberToNullableString = (inp: number | null): string
 
 
 export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
+export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
+export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";

@@ -68,7 +68,9 @@ export abstract class IColumnClient {
         console.assert(this.columnName.length > 0);
         this.schemaTable = schemaTable;
         this.schemaColumn = schemaTable.columns.find(c => c.member === this.columnName)!;
-        console.assert(!!this.schemaColumn);
+        if (!this.schemaColumn) {
+            console.error(`column '${schemaTable.tableName}'.'${this.columnName}' doesn't have a corresponding field in the core schema.`);
+        }
         this.onSchemaConnected && this.onSchemaConnected();
     };
 };
@@ -117,7 +119,7 @@ export class xTableRenderClient {
     args: xTableClientArgs;
     mutateFn: TMutateFn;
 
-    items: unknown[];
+    items: TAnyModel[];
     rowCount: number;
     refetch: () => void;
 

@@ -51,6 +51,13 @@ nav>* {
   align-content: baseline;
 }
 
+/* some datagrid values can be like, huge markdown pages or something. don't allow that to make the grid unreadable.*/
+.MuiDataGrid-cellContent {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 140px;
+}
+
 div.Mui-error {
   background-color: #fee;
   border: 1px solid red;

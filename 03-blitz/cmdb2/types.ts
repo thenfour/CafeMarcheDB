@@ -21,7 +21,7 @@ export function CMAuthorize(args: CMAuthorizeArgs) {
   console.assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
   const ret = (!!args.publicData?.userId) && (args.publicData?.isSysAdmin || args.publicData?.permissions?.some(p => p === args.permission));
   console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] perm:${args.permission} for user ${args.publicData?.userId || "<null>"} with perms ${JSON.stringify(args.publicData?.permissions || [])}`);
-  return ret;
+  return ret || false;
 };
 
 // intended only for use via resolver.authorize("reason", "an arg PermissionFindManyArgs"),

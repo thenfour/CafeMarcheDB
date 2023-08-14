@@ -26,6 +26,7 @@ import { TAnyModel } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
+import { gNullColorPaletteEntry } from 'shared/color';
 
 
 
@@ -284,23 +285,31 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         if (!args.value) {
             return <>--</>;
         }
-        //console.assert(!!this.typedSchemaColumn.getChipCaption);
-        if (!this.typedSchemaColumn.getChipCaption) {
-            throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleFieldClient ${this.schemaTable.tableName}.${this.args.columnName}`);
-        }
+        const rowInfo = this.typedSchemaColumn.associationTableSpec.getRowInfo(args.value);
+        // //console.assert(!!this.typedSchemaColumn.getChipCaption);
+        // if (!this.typedSchemaColumn.getChipCaption) {
+        //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleFieldClient ${this.schemaTable.tableName}.${this.args.columnName}`);
+        // }
 
+        // const style: React.CSSProperties = {};
+        // const color = this.typedSchemaColumn.getChipColor!(args.value);
+        // if (color.value != null) {
+        //     style.backgroundColor = color.value!;
+        //     style.color = color.contrastColor!;
+        // }
         const style: React.CSSProperties = {};
-        const color = this.typedSchemaColumn.getChipColor!(args.value);
+        const color = rowInfo.color || gNullColorPaletteEntry;// this.typedSchemaColumn.getChipColor!(args.value);
         if (color.value != null) {
             style.backgroundColor = color.value!;
             style.color = color.contrastColor!;
+            style.border = `1px solid ${color.outline ? color.contrastColor! : color.value!}`;
         }
 
         return <Chip
             className="cmdbChip"
             style={style}
             size="small"
-            label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
+            label={rowInfo.name}
             onDelete={args.onDelete}
             clickable={!!args.onClick}
             onClick={(e) => args.onClick!}
@@ -308,12 +317,14 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     };
 
     defaultRenderAsListItem = (props, value, selected) => {
-        console.assert(!!this.typedSchemaColumn.getChipCaption);
+        //console.assert(!!this.typedSchemaColumn.getChipCaption);
         console.assert(value != null);
+        const chip = this.defaultRenderAsChip({ value });
         return <li {...props}>
             {selected && <DoneIcon />}
-            {this.typedSchemaColumn.getChipCaption!(value)}
-            {this.typedSchemaColumn.getChipDescription && this.typedSchemaColumn.getChipDescription!(value)}
+            {chip}
+            {/* {this.typedSchemaColumn.getChipCaption!(value)}
+            {this.typedSchemaColumn.getChipDescription && this.typedSchemaColumn.getChipDescription!(value)} */}
             {selected && <CloseIcon />}
         </li>
     };

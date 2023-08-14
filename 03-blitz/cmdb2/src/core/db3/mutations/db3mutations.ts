@@ -24,7 +24,7 @@ const separateMutationValues = ({ table, fields }: separateMutationValuesArgs) =
     table.columns.forEach(column => {
         switch (column.fieldTableAssociation) {
             case "tableColumn":
-                if (fields[column.member]) {
+                if (fields[column.member] !== undefined) {
                     ret.localFields[column.member] = fields[column.member];
                 }
                 break;
@@ -36,9 +36,12 @@ const separateMutationValues = ({ table, fields }: separateMutationValuesArgs) =
                 }
                 break;
             case "associationRecord":
-                if (fields[column.member]) {
+                if (fields[column.member] !== undefined) {
                     ret.associationFields[column.member] = fields[column.member];
                 }
+                break;
+            default:
+                throw new Error(`unknown field table association; field:${column.member}`);
                 break;
         }
     });
@@ -63,7 +66,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
         where: { [args.column.associationLocalIDMember]: args.localId },
     });
 
-    const cp = ComputeChangePlan(currentAssociations.map(a => a.tagId), args.desiredTagIds, (a, b) => a === b);
+    const cp = ComputeChangePlan(currentAssociations.map(a => a[args.column.associationForeignIDMember]), args.desiredTagIds, (a, b) => a === b);
 
     // remove associations which exist but aren't in the new array
     await db[associationTableName].deleteMany({
