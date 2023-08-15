@@ -421,8 +421,8 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                 // regarding validation, the date picker kinda has its own way of doing validation and maybe i'll work with that in the future.
                 const granularity = this.typedSchemaColumn.granularity;
                 switch (granularity) {
-                    case "year":
-                    case "day":
+                    case "year": // todo
+                    case "day": // todo
                     case "minute":
                         return <DatePicker
                             autoFocus={params.hasFocus}
@@ -446,17 +446,30 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        return <CMTextField
-            key={params.key}
-            autoFocus={false}
-            label={this.headerName}
-            validationError={params.validationResult.getErrorForField(this.columnName)}
-            value={params.value as string}
-            onChange={(e, val) => {
-                // so this sets the row model value to a string. that's OK because the value gets parsed later.
-                // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
-                params.api.setFieldValues({ [this.columnName]: val });
-            }}
-        />;
+        const vr = this.schemaColumn.ValidateAndParse(params.value);
+        // regarding validation, the date picker kinda has its own way of doing validation and maybe i'll work with that in the future.
+        const granularity = this.typedSchemaColumn.granularity;
+        switch (granularity) {
+            case "year": // todo
+            case "day": // todo
+            case "minute":
+                return <DatePicker
+                    autoFocus={false}
+                    label={this.typedSchemaColumn.label}
+                    value={dayjs(params.value)}
+                    onChange={(value: Dayjs, context) => {
+                        let d: Date | null = (value?.toDate()) || null;
+                        if (d instanceof Date) {
+                            if (isNaN(d.valueOf())) {
+                                d = null;
+                            }
+                        }
+                        params.api.setFieldValues({ [this.columnName]: d });
+                        //params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value: d });
+                    }}
+                />;
+            default:
+                throw new Error(`unknown granularity`);
+        }
     };
 };
