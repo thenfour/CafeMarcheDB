@@ -114,3 +114,8 @@ seems like it happens often when I add `useQuery()` or `useMutation()` or other 
 # how: deployment?
 
 
+# special URLs:
+
+  * http://localhost:3000/auth/stopImpersonating
+  * http://localhost:3000/auth/logout
+

@@ -16,10 +16,13 @@ import MailIcon from '@mui/icons-material/Mail';
 import SecurityIcon from '@mui/icons-material/Security';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MoreIcon from '@mui/icons-material/MoreVert';
-import { AppBar, Badge, Box, Collapse, Divider, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Badge, Box, Button, Collapse, Divider, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import UserAppBarIcon from "src/core/components/UserAppBarIcon";
 import { useRouter } from "next/router";
 import { styled, alpha } from '@mui/material/styles';
+import { useSession } from "@blitzjs/auth";
+import stopImpersonating from "src/auth/mutations/stopImpersonating";
+import { useMutation } from "@blitzjs/rpc";
 
 const drawerWidth = 200;
 
@@ -171,9 +174,21 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
         </Menu>
     );
 
+    const session = useSession();
+    let backgroundColor: string | undefined = undefined;
+    if (session.impersonatingFromUserId != null) {
+        backgroundColor = "#844";
+    }
+
+    const [stopImpersonatingMutation] = useMutation(stopImpersonating);
+
+    const onClickStopImpersonating = () => {
+        stopImpersonatingMutation();
+    };
+
     return (
         <>
-            <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
+            <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1, backgroundColor: backgroundColor }}>
                 <Toolbar>
                     <IconButton
                         size="large"
@@ -202,6 +217,9 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             inputProps={{ 'aria-label': 'search' }}
                         />
                     </Search>
+                    {(session.impersonatingFromUserId != null) && (
+                        <Button size="small" variant="contained" onClick={onClickStopImpersonating}>Stop impersonating</Button>
+                    )}
                     <Box sx={{ flexGrow: 1 }} />
                     <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
                         {/* <IconButton size="large" aria-label="show 4 new mails" color="inherit">
@@ -349,7 +367,6 @@ const Dashboard2 = ({ children }) => {
         <Box sx={{ display: "flex" }}>
 
             <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
-            {/* <OtherAppBar></OtherAppBar> */}
 
             <Drawer
                 sx={{

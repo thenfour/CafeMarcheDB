@@ -6,6 +6,7 @@ import { Permission } from "shared/permissions";
 
 type PublicDataType = {
   userId: User["id"],
+  impersonatingFromUserId?: User["id"],
   isSysAdmin: boolean,
   permissions: string[],
 };
@@ -46,18 +47,20 @@ declare module "@blitzjs/auth" {
   }
 }
 
-export function CreatePublicData(user: any): PublicDataType {
+export function CreatePublicData(user: any, impersonatingFromUserId?: number): PublicDataType {
   if (!user) {
     return {
       userId: 0, // numeric & falsy
       isSysAdmin: false,
-      permissions: []
+      permissions: [],
+      impersonatingFromUserId,
     };
   }
   return {
     userId: user.id,
     isSysAdmin: user.isSysAdmin,
     permissions: (user.role?.permissions)?.map(p => p.permission?.name) || [],
+    impersonatingFromUserId,
   };
 };
 

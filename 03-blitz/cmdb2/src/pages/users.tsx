@@ -46,8 +46,13 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
+import { Button } from "@mui/material";
+import impersonateUser from "src/auth/mutations/impersonateUser";
+import { useMutation } from "@blitzjs/rpc";
+import { useRouter } from "next/router";
+import { Routes } from "@blitzjs/next"
 
 
 const tableSpec = new DB3Client.xTableClientSpec({
@@ -70,8 +75,22 @@ const UserListContent = () => {
     if (!useAuthorization("users admin page", Permission.admin_users)) {
         throw new Error(`unauthorized`);
     }
-    return <DB3EditGrid tableSpec={tableSpec} />;
-    // return <CMEditGrid2 spec={UserTableSpec} />;
+    const router = useRouter()
+
+    const [impersonateUserMutation] = useMutation(impersonateUser);
+
+    const extraActions = (args: DB3EditGridExtraActionsArgs) => {
+        return (<Button onClick={() => {
+            impersonateUserMutation({
+                userId: args.row.id,
+            }).then(() => {
+                // navigate to home page
+                router.push(Routes.Home());
+            });
+        }}>Impersonate</Button>);
+    }
+
+    return <DB3EditGrid tableSpec={tableSpec} renderExtraActions={extraActions} />;
 };
 
 const UserListPage: BlitzPage = () => {

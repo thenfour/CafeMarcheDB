@@ -4,6 +4,7 @@ export enum Permission {
     login = "login", // basic permission to access the site at all.
 
     admin_auth = "admin_auth", // roles, permissions
+    impersonate_user = "impersonate_user",
     view_roles = "view_roles",
     view_permissions = "view_permissions",
     view_songs = "view_songs",
@@ -13,7 +14,7 @@ export enum Permission {
     view_events = "view_events",
     admin_events = "admin_events",
 
-    view_settings = "view_settings",
+    view_settings = "view_settings", // basically everyone should have this
     admin_settings = "admin_settings",
 
     admin_users = "admin_users",

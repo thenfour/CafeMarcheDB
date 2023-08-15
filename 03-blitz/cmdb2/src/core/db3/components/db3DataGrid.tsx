@@ -37,6 +37,7 @@ import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
+import { TAnyModel } from 'shared/utils';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -55,12 +56,16 @@ function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSp
     );
 }
 
-export type DB3EditGridProps = {
-    //table: db3.xTable,
-    tableSpec: DB3Client.xTableClientSpec,
+export interface DB3EditGridExtraActionsArgs {
+    row: TAnyModel,
 };
 
-export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
+export type DB3EditGridProps = {
+    tableSpec: DB3Client.xTableClientSpec,
+    renderExtraActions: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
+};
+
+export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     // set initial pagination values + get pagination state.
@@ -269,7 +274,7 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
             field: 'actions',
             type: 'actions',
             headerName: 'Actions',
-            getActions: ({ id }) => {
+            getActions: ({ id, ...args }) => {
                 const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
 
                 if (isInEditMode) {
@@ -305,6 +310,11 @@ export function DB3EditGrid({ tableSpec }: DB3EditGridProps) {
                         onClick={handleDeleteClick(id)}
                         color="inherit"
                     />,
+                    <React.Fragment key="extra">
+                        {props.renderExtraActions({
+                            row: args.row,
+                        })}
+                    </React.Fragment>,
                 ];
             },
         });
