@@ -146,7 +146,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
 
         this.GridColProps = {
             renderCell: (args: GridRenderCellParams) => {
-                return this.args.renderAsChip!({ value: args.value });
+                return <div className='MuiDataGrid-cellContent'>{this.args.renderAsChip!({ value: args.value })}</div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.typedSchemaColumn.ValidateAndParse(params.value);

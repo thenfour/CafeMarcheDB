@@ -17,7 +17,7 @@ import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
 import { HasFlag, TAnyModel, gNullValue } from "shared/utils";
-import { CMTextField } from "src/core/cmdashboard/CMTextField";
+import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
 import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";

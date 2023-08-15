@@ -29,7 +29,7 @@ import db3queries from "../queries/db3queries";
 import { gNullColorPaletteEntry } from 'shared/color';
 
 
-
+const gMaxVisibleTags = 6;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DB3TagsValueComponentProps<TAssociation> {
@@ -248,6 +248,29 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface TagsViewProps<TAssociation> {
+    value: TAssociation[],
+    associationForeignIDMember: string,
+    renderAsChip: (args: DB3Client.RenderAsChipParams<TAssociation>) => React.ReactElement;
+};
+export const TagsView = <TAssociation,>(props: TagsViewProps<TAssociation>) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    const value: TAssociation[] = open ? props.value : props.value.slice(0, gMaxVisibleTags);
+
+    return (<div className='MuiDataGrid-cellContent NoMaxHeight'>
+        {
+            value.map(a => {
+                return <React.Fragment key={a[props.associationForeignIDMember]}>
+                    {props.renderAsChip({ value: a, })}
+                </React.Fragment>;
+            })
+        }
+        {(!open && (props.value.length > gMaxVisibleTags)) && <Button size='small' style={{ display: 'inline' }} onClick={() => setOpen(!open)}>+{props.value.length - gMaxVisibleTags}</Button>}
+        {(open && (props.value.length > gMaxVisibleTags)) && <Button size='small' style={{ display: 'inline' }} onClick={() => setOpen(!open)}>-</Button>}
+    </div>);
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface TagsFieldClientArgs<TAssociation> {
     columnName: string;
     cellWidth: number;
@@ -344,14 +367,21 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
 
         this.GridColProps = {
             renderCell: (params: GridRenderCellParams) => {
-                const value: TAssociation[] = params.value;
-                return <>{
-                    value.map(a => {
-                        return <React.Fragment key={a[this.typedSchemaColumn.associationForeignIDMember]}>
-                            {this.args.renderAsChip!({ value: a, })}
-                        </React.Fragment>;
-                    })
-                }</>;
+                return <TagsView
+                    associationForeignIDMember={this.typedSchemaColumn.associationForeignIDMember}
+                    renderAsChip={this.args.renderAsChip!}
+                    value={params.value}
+                />;
+                // const value: TAssociation[] = params.value;
+                // return <div className='MuiDataGrid-cellContent NoMaxHeight'>{
+                //     value.slice(0, gMaxVisibleTags).map(a => {
+                //         return <React.Fragment key={a[this.typedSchemaColumn.associationForeignIDMember]}>
+                //             {this.args.renderAsChip!({ value: a, })}
+                //         </React.Fragment>;
+                //     })
+                // }
+                //     {(value.length >= gMaxVisibleTags) && <div></div>}
+                // </div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.typedSchemaColumn.ValidateAndParse(params.value);

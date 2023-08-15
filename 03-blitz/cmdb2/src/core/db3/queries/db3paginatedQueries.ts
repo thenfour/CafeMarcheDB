@@ -14,6 +14,8 @@ export default resolver.pipe(
             CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
             const dbTableClient = db[table.tableName]; // the prisma interface
 
+            const orderBy = input.orderBy || table.naturalOrderBy;
+
             const {
                 items,
                 hasMore,
@@ -27,7 +29,7 @@ export default resolver.pipe(
                     dbTableClient.findMany({
                         ...paginateArgs,
                         where: input.where,
-                        orderBy: input.orderBy,
+                        orderBy,
                         include: table.localInclude || undefined,
                     }),
             });

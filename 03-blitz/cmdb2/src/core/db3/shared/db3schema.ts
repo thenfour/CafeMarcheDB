@@ -18,20 +18,25 @@ const InstrumentFunctionalGroupInclude: Prisma.InstrumentFunctionalGroupInclude 
     instruments: true,
 };
 
-export type InstrumentFunctionalGroupLocalModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
-export type InstrumentFunctionalGroupForeignModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
+export type InstrumentFunctionalGroupModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
+export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { name: 'asc' },
+    { id: 'asc' },
+];
 
 export const xInstrumentFunctionalGroup = new xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentFunctionalGroupInclude,
     tableName: "instrumentFunctionalGroup",
-    getRowInfo: (row: InstrumentFunctionalGroupLocalModel) => ({
+    naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
+    getRowInfo: (row: InstrumentFunctionalGroupModel) => ({
         name: row.name,
         description: row.description,
         color: gGeneralPalette.findColorPaletteEntry(row.color),
     }),
-    createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupLocalModel> => ({
+    createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupModel> => ({
         description: "auto-created from selection dlg",
         name: input,
         sortOrder: 0,
@@ -66,11 +71,18 @@ const InstrumentTagInclude: Prisma.InstrumentTagInclude = {
 
 export type InstrumentTagPayload = Prisma.InstrumentTagGetPayload<{}>;
 
+export const InstrumentTagNaturalOrderBy: Prisma.InstrumentTagOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { text: 'asc' },
+    { id: 'asc' },
+];
+
 export const xInstrumentTag = new xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentTagInclude,
     tableName: "instrumentTag",
+    naturalOrderBy: InstrumentTagNaturalOrderBy,
     getRowInfo: (row: InstrumentTagPayload) => ({
         name: row.text,
         description: row.description,
@@ -121,13 +133,20 @@ const InstrumentTagAssociationInclude: Prisma.InstrumentTagAssociationInclude = 
     tag: true,
 };
 
+const InstrumentTagAssociationNaturalOrderBy: Prisma.InstrumentTagAssociationOrderByWithRelationInput[] = [
+    { tag: { sortOrder: 'desc' } },
+    { tag: { text: 'asc' } },
+    { tag: { id: 'asc' } },
+];
+
 export const xInstrumentTagAssociation = new xTable({
     tableName: "InstrumentTagAssociation",
     editPermission: Permission.associate_instrument_tags,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentTagAssociationInclude,
+    naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
     getRowInfo: (row: InstrumentTagAssociationModel) => ({
-        name: row.tag.text, // generally don't use this directly.
+        name: row.tag.text,
         description: row.tag.description,
         color: gGeneralPalette.findColorPaletteEntry(row.tag.color),
     }),
@@ -141,8 +160,6 @@ export const xInstrumentTagAssociation = new xTable({
             fkMember: "tagId",
             allowNull: false,
             foreignTableSpec: xInstrumentTag,
-            // getChipCaption: (value) => value.text,
-            // getChipDescription: (value) => value.description,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
@@ -157,7 +174,8 @@ const InstrumentInclude: Prisma.InstrumentInclude = {
     instrumentTags: {
         include: {
             tag: true,
-        }
+        },
+        orderBy: InstrumentTagAssociationNaturalOrderBy
     }
 };
 
@@ -172,11 +190,24 @@ export type InstrumentPayload = Prisma.InstrumentGetPayload<{
     }
 }>;
 
+// order by functional group, then by instrument.
+export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput[] = [
+    {
+        functionalGroup: {
+            sortOrder: 'desc',
+        }
+    },
+    { sortOrder: 'desc' },
+    { name: 'asc' },
+    { id: 'asc' },
+];
+
 export const xInstrument = new xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentInclude,
     tableName: "instrument",
+    naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({
         name: row.name,
         description: row.description,
@@ -198,7 +229,7 @@ export const xInstrument = new xTable({
             columnName: "sortOrder",
             allowNull: false,
         }),
-        new ForeignSingleField<InstrumentFunctionalGroupForeignModel>({
+        new ForeignSingleField<InstrumentFunctionalGroupModel>({
             columnName: "functionalGroup",
             fkMember: "functionalGroupId",
             foreignTableSpec: xInstrumentFunctionalGroup,
@@ -261,12 +292,18 @@ export type PermissionPayload = Prisma.PermissionGetPayload<{
         },
     }
 }>;
+export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { name: 'asc' },
+    { id: 'asc' },
+];
 
 export const xPermission = new xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: PermissionLocalInclude,
     tableName: "permission",
+    naturalOrderBy: PermissionNaturalOrderBy,
     getRowInfo: (row: PermissionPayload) => ({
         name: row.name,
         description: row.description || "",
@@ -314,12 +351,19 @@ export type RolePermissionAssociationModel = Prisma.RolePermissionGetPayload<{
     }
 }>;
 
+const RolePermissionNaturalOrderBy: Prisma.RolePermissionOrderByWithRelationInput[] = [
+    { permission: { sortOrder: 'desc' } },
+    { permission: { name: 'asc' } },
+    { permission: { id: 'asc' } },
+];
+
 // this schema is required for tags selection dlg.
 export const xRolePermissionAssociation = new xTable({
     tableName: "RolePermission",
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: RolePermissionInclude,
+    naturalOrderBy: RolePermissionNaturalOrderBy,
     getRowInfo: (row: RolePermissionAssociationModel) => ({
         name: row.permission.name,
         description: row.permission.description || "",
@@ -331,8 +375,6 @@ export const xRolePermissionAssociation = new xTable({
             fkMember: "permissionId",
             allowNull: false,
             foreignTableSpec: xPermission,
-            // getChipCaption: (value) => value.permission.name,
-            // getChipDescription: (value) => value.permission.description || "",
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
@@ -342,14 +384,12 @@ export const xRolePermissionAssociation = new xTable({
     ]
 });
 
-
-
-
 const RoleLocalInclude: Prisma.RoleInclude = {
     permissions: {
         include: {
             permission: true,
-        }
+        },
+        orderBy: RolePermissionNaturalOrderBy,
     },
 };
 
@@ -359,16 +399,21 @@ export type RolePayload = Prisma.RoleGetPayload<{
         permissions: {
             include: {
                 permission: true,
-            }
+            },
         },
     }
 }>;
+
+const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' }, { name: 'asc' }, { id: 'asc' }
+];
 
 export const xRole = new xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: RoleLocalInclude,
     tableName: "role",
+    naturalOrderBy: RoleNaturalOrderBy,
     getRowInfo: (row: RolePayload) => ({
         name: row.name,
         description: row.description || "",
@@ -397,10 +442,6 @@ export const xRole = new xTable({
             associationLocalIDMember: "roleId",
             associationLocalObjectMember: "role",
             foreignTableSpec: xPermission,
-            // getChipCaption: (value) => {
-            //     return value.permission.name;
-            // },
-            // getChipDescription: (value) => (value.permission.description || ""),
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
                     some: {
@@ -425,11 +466,17 @@ export type UserPayload = Prisma.UserGetPayload<{
     }
 }>;
 
+export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
+    { name: 'asc' },
+    { id: 'asc' },
+];
+
 export const xUser = new xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: UserLocalInclude,
     tableName: "user",
+    naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
         name: row.name,
     }),
@@ -459,8 +506,6 @@ export const xUser = new xTable({
             allowNull: false,
             fkMember: "roleId",
             foreignTableSpec: xRole,
-            // getChipCaption: (value) => value.name,
-            // getChipDescription: (value) => value.description || "",
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 OR: [
                     { name: { contains: query } },
@@ -483,12 +528,17 @@ export const xUser = new xTable({
 });
 
 export type SettingPayload = Prisma.SettingGetPayload<{}>;
+export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
+    { name: 'asc' },
+    { id: 'asc' },
+];
 
 export const xSetting = new xTable({
     editPermission: Permission.admin_settings,
     viewPermission: Permission.admin_settings,
     localInclude: null,
     tableName: "setting",
+    naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({
         name: row.name
     }),

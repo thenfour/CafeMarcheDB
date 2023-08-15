@@ -85,7 +85,7 @@ export class GenericStringField extends FieldBase<string> {
                 this.caseSensitive = args.caseSensitive || false;
                 break;
             case "markdown":
-                this.minLength = 1;
+                this.minLength = 0;
                 this.doTrim = false; // trailing whitespace is normal on long text entries.
                 this.caseSensitive = args.caseSensitive || true;
                 break;

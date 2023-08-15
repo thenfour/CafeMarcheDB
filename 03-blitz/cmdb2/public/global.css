@@ -58,6 +58,11 @@ nav>* {
   max-height: 140px;
 }
 
+/* some datagrid values can be like, huge markdown pages or something. don't allow that to make the grid unreadable.*/
+.MuiDataGrid-cellContent.NoMaxHeight {
+  max-height: none;
+}
+
 div.Mui-error {
   background-color: #fee;
   border: 1px solid red;

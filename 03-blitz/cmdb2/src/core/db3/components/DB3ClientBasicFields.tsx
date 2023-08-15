@@ -11,7 +11,7 @@
 import React from "react";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { gNullValue } from "shared/utils";
-import { CMTextField } from "src/core/cmdashboard/CMTextField";
+import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
 import { Button, Checkbox, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
@@ -226,7 +226,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected = () => {
         this.GridColProps = {
             renderCell: (params: GridRenderCellParams) => {
-                return <Checkbox checked={params.value} disabled />
+                return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 return <Checkbox
@@ -266,7 +266,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
             width: args.cellWidth,
             GridColProps: {
                 renderCell: (args: GridRenderCellParams) => {
-                    return <ColorSwatch selected={true} color={args.value} />; // colorswatch must be aware of null values.
+                    return <div className='MuiDataGrid-cellContent'><ColorSwatch selected={true} color={args.value} /></div>; // colorswatch must be aware of null values.
                 },
                 renderEditCell: (args: GridRenderEditCellParams) => {
                     return <ColorPick

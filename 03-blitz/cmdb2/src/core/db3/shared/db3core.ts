@@ -165,6 +165,7 @@ export interface TableDesc {
     editPermission: Permission;
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
+    naturalOrderBy?: TAnyModel;
 };
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
@@ -182,6 +183,7 @@ export class xTable implements TableDesc {
 
     rowNameMember?: string;
     rowDescriptionMember?: string;
+    naturalOrderBy?: TAnyModel;
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;

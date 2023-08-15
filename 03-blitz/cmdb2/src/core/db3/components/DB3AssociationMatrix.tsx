@@ -54,7 +54,7 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         requestedCaps: DB3Client.xTableClientCaps.Query,
         tableSpec: props.foreignTableSpec,
         filterModel, // quick filter will apply to both rows & columns
-        sortModel, // todo: there needs to be some kind of "natural sort"
+        // use the table's natural sort
     });
 
     const columns: GridColDef[] = [{
@@ -75,12 +75,14 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         field: `id:${tag[props.foreignTableSpec.args.table.pkMember]}`,
         editable: false,
         headerName: props.foreignTableSpec.args.table.getRowInfo(tag).name,
-        width: 60,
+        width: 80,
+        sortable: false,
+        disableColumnMenu: true,
         renderCell: (params) => {
             const tagId = tag[props.foreignTableSpec.args.table.pkMember];
             const fieldVal = params.row[props.tagsField.columnName] as TAssociation[];
             const association = fieldVal.find(a => a[props.tagsField.associationForeignIDMember] === tagId); // find the association for this tag.
-            return <Checkbox
+            return <div className='MuiDataGrid-cellContent'><Checkbox
                 checked={!!association}
                 onChange={(event, value) => {
                     let newFieldVal = fieldVal;
@@ -99,12 +101,13 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
                         [props.tagsField.columnName]: newFieldVal,
                     }).then((result) => {
                         showSnackbar({ children: "change successful", severity: 'success' });
-                        dbRows.refetch();
                     }).catch(e => {
                         showSnackbar({ children: "change failed", severity: 'error' });
+                    }).finally(() => {
+                        dbRows.refetch();
                     });
                 }}
-            />;
+            /></div>;
         }
     }))
     ];
