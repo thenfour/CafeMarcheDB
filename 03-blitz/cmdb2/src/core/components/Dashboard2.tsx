@@ -1,28 +1,30 @@
 //  https://codesandbox.io/s/material-ui-responsive-drawer-skqdw?resolutionWidth=1292&resolutionHeight=758&file=/src/App.js
 // https://mui.com/material-ui/react-app-bar/#app-bar-with-a-primary-search-field
-import { useTheme } from "@mui/material/styles";
-import Link from "next/link";
-import * as React from 'react';
+import { useSession } from "@blitzjs/auth";
+import { useMutation } from "@blitzjs/rpc";
 import {
-    Info as InfoIcon, CalendarMonth as CalendarIcon, ExpandLess, ExpandMore, MusicNote as MusicNoteIcon, AccountCircle,
-    Settings as SettingsIcon,
+    CalendarMonthOutlined as CalendarMonthOutlinedIcon,
+    Info as InfoIcon,
+    MusicNote as MusicNoteIcon,
+    MusicNoteOutlined as MusicNoteOutlinedIcon,
+    Settings as SettingsIcon
 } from '@mui/icons-material';
-import { CalendarMonthOutlined as CalendarMonthOutlinedIcon, MusicNoteOutlined as MusicNoteOutlinedIcon } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
+import MoreIcon from '@mui/icons-material/MoreVert';
 import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
-import MailIcon from '@mui/icons-material/Mail';
 import SecurityIcon from '@mui/icons-material/Security';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import MoreIcon from '@mui/icons-material/MoreVert';
-import { AppBar, Badge, Box, Button, Collapse, Divider, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
-import UserAppBarIcon from "src/core/components/UserAppBarIcon";
+import { AppBar, Avatar, Badge, Box, Button, Divider, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { alpha, styled, useTheme } from "@mui/material/styles";
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import Link from "next/link";
 import { useRouter } from "next/router";
-import { styled, alpha } from '@mui/material/styles';
-import { useSession } from "@blitzjs/auth";
+import * as React from 'react';
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
-import { useMutation } from "@blitzjs/rpc";
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
 const drawerWidth = 200;
 
@@ -67,6 +69,93 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
     },
 }));
 
+const AppBarUserIcon_MenuItems = () => {
+    const [logoutMutation] = useMutation(logout);
+    return <>
+        <MenuItem component={Link} href='/backstage/profile'>Your profile</MenuItem>
+        <MenuItem onClick={async () => {
+            await logoutMutation();
+        }}>Log out</MenuItem>
+    </>;
+};
+
+const AppBarUserIcon_Desktop = () => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const currentUser = useCurrentUser();
+
+    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    return (
+        <Box>
+            <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+                sx={{ padding: 0 }}
+            >
+                <Badge badgeContent={4} color="error">
+                    <Avatar alt={currentUser?.name || ""}>CC</Avatar>
+                </Badge>
+                <Typography sx={{ p: 2 }}>{currentUser?.name}</Typography>
+            </IconButton>
+            <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                keepMounted
+                open={Boolean(anchorEl)}
+                onClose={() => {
+                    setAnchorEl(null)
+                }}
+            >
+                <AppBarUserIcon_MenuItems />
+            </Menu>
+        </Box>
+    );
+};
+
+const AppBarUserIcon_Mobile = () => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
+    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    return (
+        <Box>
+            <IconButton
+                size="large"
+                aria-label="show more"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+            >
+                <MoreIcon /> { /* three dots icon */}
+            </IconButton>
+            <Menu
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'right',
+                }}
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
+            >
+                <AppBarUserIcon_MenuItems />
+            </Menu>
+        </Box>
+    );
+};
+
 
 
 interface PrimarySearchAppBarProps {
@@ -74,105 +163,7 @@ interface PrimarySearchAppBarProps {
 }
 
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const [mobileMoreAnchorEl, setMobileMoreAnchorEl] =
-        React.useState<null | HTMLElement>(null);
-
     const theme = useTheme();
-
-    const isMenuOpen = Boolean(anchorEl);
-    const isMobileMenuOpen = Boolean(mobileMoreAnchorEl);
-
-    const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
-
-    const handleMobileMenuClose = () => {
-        setMobileMoreAnchorEl(null);
-    };
-
-    const handleMenuClose = () => {
-        setAnchorEl(null);
-        handleMobileMenuClose();
-    };
-
-    const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-        setMobileMoreAnchorEl(event.currentTarget);
-    };
-
-    const menuId = 'primary-search-account-menu';
-    const renderMenu = (
-        <Menu
-            anchorEl={anchorEl}
-            anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
-            id={menuId}
-            keepMounted
-            transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
-            open={isMenuOpen}
-            onClose={handleMenuClose}
-        >
-            <MenuItem onClick={handleMenuClose}>Profile</MenuItem>
-            <MenuItem onClick={handleMenuClose}>My account</MenuItem>
-        </Menu>
-    );
-
-    const mobileMenuId = 'primary-search-account-menu-mobile';
-    const renderMobileMenu = (
-        <Menu
-            anchorEl={mobileMoreAnchorEl}
-            anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
-            id={mobileMenuId}
-            keepMounted
-            transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
-            open={isMobileMenuOpen}
-            onClose={handleMobileMenuClose}
-        >
-            <MenuItem>
-                <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-                    <Badge badgeContent={4} color="error">
-                        <MailIcon />
-                    </Badge>
-                </IconButton>
-                <p>Messages</p>
-            </MenuItem>
-            <MenuItem>
-                <IconButton
-                    size="large"
-                    aria-label="show 17 new notifications"
-                    color="inherit"
-                >
-                    <Badge badgeContent={17} color="error">
-                        <NotificationsIcon />
-                    </Badge>
-                </IconButton>
-                <p>Notifications</p>
-            </MenuItem>
-            <MenuItem onClick={handleProfileMenuOpen}>
-                <IconButton
-                    size="large"
-                    aria-label="account of current user"
-                    aria-controls="primary-search-account-menu"
-                    aria-haspopup="true"
-                    color="inherit"
-                >
-                    <AccountCircle />
-                </IconButton>
-                <p>Profile</p>
-            </MenuItem>
-        </Menu>
-    );
 
     const session = useSession();
     let backgroundColor: string | undefined = undefined;
@@ -220,105 +211,84 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     {(session.impersonatingFromUserId != null) && (
                         <Button size="small" variant="contained" onClick={onClickStopImpersonating}>Stop impersonating</Button>
                     )}
-                    <Box sx={{ flexGrow: 1 }} />
+                    <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
                     <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                        {/* <IconButton size="large" aria-label="show 4 new mails" color="inherit">
-                            <Badge badgeContent={4} color="error">
-                                <MailIcon />
-                            </Badge>
-                        </IconButton> */}
-                        {/* <IconButton
-                            size="large"
-                            aria-label="show 17 new notifications"
-                            color="inherit"
-                        >
-                            <Badge badgeContent={17} color="error">
-                                <NotificationsIcon />
-                            </Badge>
-                        </IconButton> */}
-                        <UserAppBarIcon></UserAppBarIcon>
-                        {/* <IconButton
-                            size="large"
-                            edge="end"
-                            aria-label="account of current user"
-                            aria-controls={menuId}
-                            aria-haspopup="true"
-                            onClick={handleProfileMenuOpen}
-                            color="inherit"
-                        >
-                            <AccountCircle />
-                        </IconButton> */}
+                        <AppBarUserIcon_Desktop />
                     </Box>
                     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-                        <IconButton
-                            size="large"
-                            aria-label="show more"
-                            aria-controls={mobileMenuId}
-                            aria-haspopup="true"
-                            onClick={handleMobileMenuOpen}
-                            color="inherit"
-                        >
-                            <MoreIcon />
-                        </IconButton>
+                        <AppBarUserIcon_Mobile />
                     </Box>
                 </Toolbar>
             </AppBar>
-            {renderMobileMenu}
-            {renderMenu}
         </>
     );
 }; // PrimarySearchAppBar
 
-
-
-
-const OtherAppBar = () => {
-    const theme = useTheme();
-
-    const toggleDrawer = event => {
-        // if (
-        //     event.type === "keydown" &&
-        //     (event.key === "Tab" || event.key === "Shift")
-        // ) {
-        //     return;
-        // }
-
-        // setOpen(!open);
-    };
-
-    const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-
-    const menuButtonSX = {
-        marginRight: theme.spacing(2),
-        display: isMdUp ? "none" : "inline-flex" // don't show menu button for small screens
-    };
-
-
-    return (
-        <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
-            <Toolbar>
-                <IconButton
-                    color="inherit"
-                    aria-label="open drawer"
-                    edge="start"
-                    onClick={toggleDrawer}
-                    sx={menuButtonSX}
-                >
-                    <MenuIcon />
-                </IconButton>
-                <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6" noWrap>
-                        Café Marché Backstage 2
-                    </Typography>
-
-                </Box>
-
-                <UserAppBarIcon></UserAppBarIcon>
-            </Toolbar>
-        </AppBar>);
-
+interface MenuItemDivider {
+    type: "divider";
+};
+interface MenuItemSectionHeader {
+    type: "sectionHeader";
+    sectionName: string;
+};
+interface MenuItemLink {
+    type: "link";
+    linkCaption: string;
+    path: string;
+    renderIcon: () => React.ReactElement;
 };
 
+type MenuItem = MenuItemDivider | MenuItemSectionHeader | MenuItemLink;
+
+interface MenuItemComponentProps {
+    item: MenuItem
+};
+
+const MenuItemComponent = (props: MenuItemComponentProps) => {
+    const router = useRouter();
+    if (props.item.type === "divider") {
+        return <Divider />;
+    }
+    if (props.item.type === "sectionHeader") {
+        return (<ListSubheader component="div">
+            <Typography variant="button" noWrap>{props.item.sectionName}</Typography>
+        </ListSubheader>);
+    }
+    if (props.item.type === "link") {
+        return (<ListItemButton component={Link} href={props.item.path!} selected={router.pathname == props.item.path}>
+            {props.item.renderIcon && <ListItemIcon>{props.item.renderIcon()}</ListItemIcon>}
+            <ListItemText primary={props.item.linkCaption} />
+        </ListItemButton>);
+    }
+    return <>??</>;
+};
+
+const gMenuItems: MenuItem[] = [
+    { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon /> },
+    { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
+    { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
+    { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon /> },
+    // { type: "link", path: "/backstage/editSongs", linkCaption: "Manage Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
+    // { type: "link", path: "/backstage/editEvents", linkCaption: "Manage Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+
+    { type: "divider" },
+    { type: "sectionHeader", sectionName: "Admin Auth" },
+    { type: "link", path: "/backstage/users", linkCaption: "Users", renderIcon: () => <PersonIcon /> },
+    { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon /> },
+    { type: "link", path: "/backstage/permissions", linkCaption: "Permissions", renderIcon: () => <SecurityIcon /> },
+    { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon /> },
+
+    { type: "divider" },
+    { type: "sectionHeader", sectionName: "Admin Instruments" },
+    { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon /> },
+    { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon /> },
+    { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => <MusicNoteIcon /> },
+
+    { type: "divider" },
+    { type: "sectionHeader", sectionName: "Admin Settings" },
+    { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon /> },
+]
 
 const Dashboard2 = ({ children }) => {
 
@@ -343,155 +313,37 @@ const Dashboard2 = ({ children }) => {
         setOpen(!open);
     };
 
-    const menuButtonSX = {
-        marginRight: theme.spacing(2),
-        display: isMdUp ? "none" : "inline-flex" // don't show menu button for small screens
-    };
-
-
-    const [editorsOpen, setEditorsOpen] = React.useState(true);
-
-    const handleEditorsClick = () => {
-        setEditorsOpen(!editorsOpen);
-    };
-
-
-    const [adminOpen, setAdminOpen] = React.useState(true);
-
-    const handleAdminClick = () => {
-        setAdminOpen(!adminOpen);
-    };
-
-
     return (
-        <Box sx={{ display: "flex" }}>
-
-            <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
-
-            <Drawer
-                sx={{
-                    flexShrink: 0,
-                    width: drawerWidth
-                }}
-                variant={isMdUp ? "permanent" : "temporary"}
-                anchor="left"
-                open={open}
-                onClose={toggleDrawer}
-            >
-                <Box sx={{ ...theme.mixins.toolbar }} />
-                <List component="nav">
-                    <ListItemButton component={Link} href="/" selected={router.pathname == "/"}>
-                        <ListItemIcon><HomeIcon /></ListItemIcon>
-                        <ListItemText primary="Home" />
-                    </ListItemButton>
-
-                    <ListItemButton component={Link} href="/songs" selected={router.pathname == "/songs"}>
-                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
-                        <ListItemText primary="Songs" />
-                    </ListItemButton>
-
-                    <ListItemButton component={Link} href="/events" selected={router.pathname == "/events"}>
-                        <ListItemIcon><CalendarIcon /></ListItemIcon>
-                        <ListItemText primary="Agenda" />
-                    </ListItemButton>
-
-                    <ListItemButton component={Link} href="/info" selected={router.pathname == "/info"}>
-                        <ListItemIcon><InfoIcon /></ListItemIcon>
-                        <ListItemText primary="General Info" />
-                    </ListItemButton>
-
-                    <ListSubheader component="div" id="nested-list-subheader">
-                        <Typography variant="button" noWrap>editing</Typography>
-                    </ListSubheader>
-
-                    <ListItemButton component={Link} href="/editSongs" selected={router.pathname == "/editSongs"}>
-                        <ListItemIcon><MusicNoteOutlinedIcon /></ListItemIcon>
-                        <ListItemText primary="Edit Songs" />
-                    </ListItemButton>
-
-                    <ListItemButton component={Link} href="/editEvents" selected={router.pathname == "/editEvents"}>
-                        <ListItemIcon><CalendarMonthOutlinedIcon /></ListItemIcon>
-                        <ListItemText primary="Edit Events" />
-                    </ListItemButton>
-
-                    <ListSubheader component="div" id="nested-list-subheader">
-                        <Typography variant="button" noWrap>Admin</Typography>
-                    </ListSubheader>
-
-                    {/* <ListItemButton onClick={() => { setAdminOpen(!adminOpen) }}>
-                        <ListItemIcon>
-                            <SecurityIcon />
-                        </ListItemIcon>
-                        <ListItemText primary="Admin" />
-                        {adminOpen ? <ExpandMore /> : <ExpandLess />}
-                    </ListItemButton> */}
-                    {/* 
-                    <ListSubheader component="div" onClick={() => { setAdminOpen(!adminOpen) }}>
-                        <ListItemButton onClick={() => { setAdminOpen(!adminOpen) }}>
-                            <ListItemIcon>
-                                <SecurityIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Admin" />
-                            {adminOpen ? <ExpandMore /> : <ExpandLess />}
-                        </ListItemButton>
-                    </ListSubheader>
- */}
-
-                    {/* <Collapse in={adminOpen} unmountOnExit>
-                        <List component="nav" disablePadding> */}
-                    <ListItemButton component={Link} href="/users" selected={router.pathname == "/users"}>
-                        <ListItemIcon><PersonIcon /></ListItemIcon>
-                        <ListItemText primary="Users" />
-                    </ListItemButton>
-                    <ListItemButton component={Link} href="/roles" selected={router.pathname == "/roles"}>
-                        <ListItemIcon><SecurityIcon /></ListItemIcon>
-                        <ListItemText primary="Roles" />
-                    </ListItemButton>
-                    <ListItemButton component={Link} href="/permissions" selected={router.pathname == "/permissions"}>
-                        <ListItemIcon><SecurityIcon /></ListItemIcon>
-                        <ListItemText primary="Permissions" />
-                    </ListItemButton>
-                    <ListItemButton component={Link} href="/rolePermissions" selected={router.pathname == "/rolePermissions"}>
-                        <ListItemIcon><SecurityIcon /></ListItemIcon>
-                        <ListItemText primary="Permission matrix" />
-                    </ListItemButton>
-
-                    <Divider />
-                    <ListItemButton component={Link} href="/instruments" selected={router.pathname == "/instruments"}>
-                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
-                        <ListItemText primary="Instruments" />
-                    </ListItemButton>
-                    <ListItemButton component={Link} href="/instrumentTags" selected={router.pathname == "/instrumentTags"}>
-                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
-                        <ListItemText primary="Instrument Tags" />
-                    </ListItemButton>
-                    <ListItemButton component={Link} href="/instrumentFunctionalGroups" selected={router.pathname == "/instrumentFunctionalGroups"}>
-                        <ListItemIcon><MusicNoteIcon /></ListItemIcon>
-                        <ListItemText primary="Instrument Groups" />
-                    </ListItemButton>
-
-                    <Divider />
-                    <ListItemButton component={Link} href="/settings" selected={router.pathname == "/settings"}>
-                        <ListItemIcon><SettingsIcon /></ListItemIcon>
-                        <ListItemText primary="Settings" />
-                    </ListItemButton>
-                    {/* </List>
-                    </Collapse> */}
-
-
-
-                </List>
-            </Drawer>
-            <Box sx={{
-                flexGrow: 1,
-                backgroundColor: theme.palette.background.default,
-                padding: theme.spacing(3)
-
-            }}>
-                <Toolbar />
-                {children}
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Box sx={{ display: "flex" }}>
+                <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
+                <Drawer
+                    sx={{
+                        flexShrink: 0,
+                        width: drawerWidth
+                    }}
+                    variant={isMdUp ? "permanent" : "temporary"}
+                    anchor="left"
+                    open={open}
+                    onClose={toggleDrawer}
+                >
+                    <Box sx={{ ...theme.mixins.toolbar }} />
+                    <List component="nav">
+                        {
+                            gMenuItems.map((item, index) => <MenuItemComponent key={index} item={item} />)
+                        }
+                    </List>
+                </Drawer>
+                <Box sx={{
+                    flexGrow: 1,
+                    backgroundColor: theme.palette.background.default,
+                    padding: theme.spacing(3)
+                }}>
+                    <Toolbar />
+                    {children}
+                </Box>
             </Box>
-        </Box>
+        </LocalizationProvider>
     );
 }
 

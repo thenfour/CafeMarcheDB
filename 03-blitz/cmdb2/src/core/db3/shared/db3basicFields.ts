@@ -622,8 +622,88 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     };
 };
 
+export type DateTimeFieldGranularity = "year" | "day" | "minute";
 
+// this is specifically for fields which care about date + time, OR date-only.
+// for date-only, the idea is that 2 fields are considered the same even if the time is different.
+export interface DateTimeFieldArgs {
+    columnName: string;
+    allowNull: boolean;
+    granularity: DateTimeFieldGranularity;
+};
 
+export class DateTimeField extends FieldBase<Date> {
 
+    allowNull: boolean;
+    granularity: DateTimeFieldGranularity;
+
+    constructor(args: DateTimeFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: args.allowNull ? null : new Date(),
+            label: args.columnName,
+        });
+        this.allowNull = args.allowNull;
+        this.granularity = args.granularity;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    // don't support quick filter on date fields
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        return false;
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (val: string | Date | null): ValidateAndParseResult<Date | null> => {
+        if (val === null) {
+            if (this.allowNull) {
+                return SuccessfulValidateAndParseResult(val);
+            }
+            return ErrorValidateAndParseResult("field must be non-null", val);
+        }
+        if (typeof (val) === 'string') {
+            // string to date conv.
+            //const parseResult = Date.parse(val);
+            const parsedDate = new Date(val);
+            //  If called with an invalid date string, or if the date to be constructed will have a timestamp less than -8,640,000,000,000,000
+            // or greater than 8,640,000,000,000,000 milliseconds, it returns an invalid date (a Date object whose toString() method
+            // returns "Invalid Date" and valueOf() method returns NaN).
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date
+            if (isNaN(parsedDate.valueOf())) {
+                return ErrorValidateAndParseResult("Not a valid date", val as unknown as (Date | null));
+            }
+            val = parsedDate;
+        }
+        return SuccessfulValidateAndParseResult(val);
+    };
+
+    isEqual = (a: Date, b: Date) => {
+        switch (this.granularity) {
+            case "year":
+                // y[mdhmsm]
+                return a.getFullYear() === b.getFullYear();
+            case "day":
+                // ymd[hmsm]
+                return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDay() === b.getDay();
+            case "minute":
+                // ymdhm[sm]
+                return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDay() === b.getDay() && a.getHours() === b.getHours() && a.getMinutes() === b.getMinutes();
+            default:
+                throw new Error(`unknown granularity specified for column '${this.member}': ${this.granularity}`);
+        }
+    };
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        console.assert(clientModel[this.member] instanceof Date);
+        const vr = this.ValidateAndParse(clientModel[this.member]);
+        mutationModel[this.member] = vr.parsedValue;
+    };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        console.assert(dbModel[this.member] instanceof Date);
+        clientModel[this.member] = dbModel[this.member];
+    }
+};
 
 

@@ -311,7 +311,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                         color="inherit"
                     />,
                     <React.Fragment key="extra">
-                        {props.renderExtraActions({
+                        {props.renderExtraActions && props.renderExtraActions({
                             row: args.row,
                         })}
                     </React.Fragment>,

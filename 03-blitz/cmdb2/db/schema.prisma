@@ -77,6 +77,8 @@ model User {
   phone          String?
   hashedPassword String?
   googleId       String?
+  createdAt     DateTime @default(now())
+
   roleId         Int? // nullable for new users a role should be assigned by an admin. null = public
   role           Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
   tokens         Token[]

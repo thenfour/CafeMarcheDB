@@ -18,6 +18,8 @@ import { Button, Checkbox, FormHelperText, InputLabel, MenuItem, Select, Stack }
 import * as DB3ClientCore from "./DB3ClientCore";
 import * as db3fields from "../shared/db3basicFields";
 import RichTextEditor from "src/core/components/RichTextEditor";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs, { Dayjs } from "dayjs";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -364,5 +366,77 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             <FormHelperText>Here's my helper text</FormHelperText>
         </React.Fragment>;
 
+    };
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface DateTimeColumnArgs {
+    columnName: string;
+    cellWidth: number;
+};
+
+export class DateTimeColumn extends DB3ClientCore.IColumnClient {
+    typedSchemaColumn: db3fields.DateTimeField;
+
+    constructor(args: DateTimeColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: args.cellWidth,
+        });
+    }
+
+    onSchemaConnected = () => {
+        this.typedSchemaColumn = this.schemaColumn as db3fields.DateTimeField;
+        this.GridColProps = {
+            type: "dateTime",
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                const granularity = this.typedSchemaColumn.granularity;
+                switch (granularity) {
+                    case "year":
+                    case "day":
+                    case "minute":
+                        return <DatePicker
+                            autoFocus={params.hasFocus}
+                            label={this.typedSchemaColumn.label}
+                            value={dayjs(params.value)}
+                            onChange={(value: Dayjs, context) => {
+                                const d = value.toDate();
+                                //console.log(`date value: ${value}}`);
+                                params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value: d });
+                            }}
+                        />;
+                    default:
+                        throw new Error(`unknown granularity`);
+                }
+                // return <CMTextField
+                //     key={params.key}
+                //     autoFocus={params.hasFocus}
+                //     label={this.headerName}
+                //     validationError={vr.success ? null : (vr.errorMessage || null)}
+                //     value={params.value as string}
+                //     onChange={(e, value) => {
+                //         params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                //     }}
+                // />;
+            },
+        };
+    };
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        return <CMTextField
+            key={params.key}
+            autoFocus={false}
+            label={this.headerName}
+            validationError={params.validationResult.getErrorForField(this.columnName)}
+            value={params.value as string}
+            onChange={(e, val) => {
+                // so this sets the row model value to a string. that's OK because the value gets parsed later.
+                // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
+                params.api.setFieldValues({ [this.columnName]: val });
+            }}
+        />;
     };
 };

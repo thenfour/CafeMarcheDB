@@ -10,7 +10,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPalette } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, InstrumentTagSignificance, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "./db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField } from "./db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField } from "./db3basicFields";
 
 
 ////////////////////////////////////////////////////////////////
@@ -525,6 +525,11 @@ export const xUser = new xTable({
             columnName: "googleId",
             format: "plain",
             allowNull: true,
+        }),
+        new DateTimeField({
+            columnName: "createdAt",
+            allowNull: true,
+            granularity: "day",
         }),
     ]
 });
