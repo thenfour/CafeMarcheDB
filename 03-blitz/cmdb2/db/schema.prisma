@@ -400,6 +400,7 @@ model FileSignificance {
   Files       File[]
 }
 
+// files can also just be floating uploads for example dropped into a markdown field
 model File {
   id             Int     @id @default(autoincrement())
   fileLeafName   String // the name of the file as it was uploaded, visible to users. IMG20113.jpg for example.

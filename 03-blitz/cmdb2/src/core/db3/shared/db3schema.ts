@@ -405,7 +405,9 @@ export type RolePayload = Prisma.RoleGetPayload<{
 }>;
 
 const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' }, { name: 'asc' }, { id: 'asc' }
+    { sortOrder: 'desc' },
+    { name: 'asc' },
+    { id: 'asc' },
 ];
 
 export const xRole = new xTable({
