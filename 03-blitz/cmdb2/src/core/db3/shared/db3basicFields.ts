@@ -676,6 +676,11 @@ export class DateTimeField extends FieldBase<Date> {
             }
             val = parsedDate;
         }
+        if (val instanceof Date) {
+            if (isNaN(val.valueOf())) {
+                return ErrorValidateAndParseResult("Date is invalid", val as unknown as (Date | null));
+            }
+        }
         return SuccessfulValidateAndParseResult(val);
     };
 

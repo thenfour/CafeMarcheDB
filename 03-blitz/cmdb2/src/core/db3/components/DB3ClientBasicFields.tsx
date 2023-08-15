@@ -10,7 +10,7 @@
 
 import React from "react";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { gNullValue } from "shared/utils";
+import { TimeSpan, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
@@ -57,7 +57,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
-            width: 220,
+            width: args.cellWidth,
         });
     }
 
@@ -112,7 +112,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
-            width: 220,
+            width: args.cellWidth,
         });
     }
 
@@ -369,6 +369,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     };
 };
 
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeColumnArgs {
     columnName: string;
@@ -391,8 +392,33 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
         this.typedSchemaColumn = this.schemaColumn as db3fields.DateTimeField;
         this.GridColProps = {
             type: "dateTime",
+            renderCell: (params: GridRenderCellParams) => {
+                if (params.value == null) {
+                    return <>--</>;
+                }
+                const value = params.value as Date;
+                if (isNaN(value.valueOf())) {
+                    return <>---</>; // treat as null.
+                }
+                console.log(`value: ${value}`);
+                const granularity = this.typedSchemaColumn.granularity;
+                const now = new Date();
+                const age = new TimeSpan(now.valueOf() - value.valueOf());
+                const ageStr = `(${age.shortString} ago)`;
+                switch (granularity) {
+                    case "year":
+                        return <>{value.getFullYear()} {ageStr}</>;
+                    case "day":
+                        return <>{value.toISOString().split('T')[0]} {ageStr}</>;
+                    case "minute":
+                        return <>{value.toTimeString()} {ageStr}</>;
+                    default:
+                        throw new Error(`unknown granularity`);
+                }
+            },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.schemaColumn.ValidateAndParse(params.value);
+                // regarding validation, the date picker kinda has its own way of doing validation and maybe i'll work with that in the future.
                 const granularity = this.typedSchemaColumn.granularity;
                 switch (granularity) {
                     case "year":
@@ -403,24 +429,18 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                             label={this.typedSchemaColumn.label}
                             value={dayjs(params.value)}
                             onChange={(value: Dayjs, context) => {
-                                const d = value.toDate();
-                                //console.log(`date value: ${value}}`);
+                                let d: Date | null = (value?.toDate()) || null;
+                                if (d instanceof Date) {
+                                    if (isNaN(d.valueOf())) {
+                                        d = null;
+                                    }
+                                }
                                 params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value: d });
                             }}
                         />;
                     default:
                         throw new Error(`unknown granularity`);
                 }
-                // return <CMTextField
-                //     key={params.key}
-                //     autoFocus={params.hasFocus}
-                //     label={this.headerName}
-                //     validationError={vr.success ? null : (vr.errorMessage || null)}
-                //     value={params.value as string}
-                //     onChange={(e, value) => {
-                //         params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
-                //     }}
-                // />;
             },
         };
     };
