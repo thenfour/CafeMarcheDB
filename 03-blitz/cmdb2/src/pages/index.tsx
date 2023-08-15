@@ -1,20 +1,17 @@
-import { BlitzPage } from "@blitzjs/next";
-import React from "react";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { BlitzPage, Routes } from "@blitzjs/next";
+import { useRouter } from "next/router";
+import React, { FC, Suspense } from "react"
 
-const Home: BlitzPage = () => {
-  const [txt, setTxt] = React.useState("");
-  return (
-    <DashboardLayout title="Home">
-      <SettingMarkdown settingName="root_markdown"></SettingMarkdown>
+const MainContent = () => {
+    const router = useRouter();
+    return <div>
+        <div>public</div>
+        <a href="/backstage">go backstage...</a>
+    </div>;
+};
 
-    </DashboardLayout>
-  )
+const PublicIndex: BlitzPage = () => {
+    return <Suspense><MainContent /></Suspense>;
 }
 
-// authenticate only works when boolean.
-// https://github.com/blitz-js/blitz/issues/4155
-// Home.authenticate = true;// { role: [Permission.can_edit_users] };
-
-export default Home;
+export default PublicIndex;
