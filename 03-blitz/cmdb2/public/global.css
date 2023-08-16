@@ -117,13 +117,16 @@ div.chipContainer.validationSuccess {
   display: flex;
 }
 
+/* 
 .richTextContainer .editorContainer .input {
   flex: 1;
-}
+} */
 
 .richTextContainer .editorContainer textarea {
+  min-height: 400px;
   font-family: monospace;
   background-color: white;
+  flex: 1;
 }
 
 .richTextContainer .renderedContent {

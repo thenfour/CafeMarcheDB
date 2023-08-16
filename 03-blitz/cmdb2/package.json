@@ -36,6 +36,7 @@
     "@mui/x-data-grid": "6.9.0",
     "@mui/x-date-pickers": "6.11.1",
     "@prisma/client": "4.6.1",
+    "@webscopeio/react-textarea-autocomplete": "4.9.2",
     "blitz": "2.0.0-beta.29",
     "dayjs": "1.11.9",
     "final-form": "4.20.9",

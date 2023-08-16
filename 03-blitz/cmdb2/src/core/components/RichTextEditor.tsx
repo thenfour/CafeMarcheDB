@@ -6,6 +6,11 @@
 // so there needs to be many intermediate steps, between both the text editor and the caller.
 // better to just make it uncontrolled, so what the user sees is ALWAYS correct.
 
+// todo: autocomplete routes (events, songs) [[]]
+// todo: autocomplete mentions
+// todo: paste attachments
+// todo: drop attachments
+
 import {
     DeleteOutlined as DeleteIcon,
     Edit as EditIcon
@@ -16,6 +21,8 @@ import React from "react";
 import useDebounce from "shared/useDebounce";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
+import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
+import "@webscopeio/react-textarea-autocomplete/style.css";
 
 interface RichTextEditorProps {
     initialValue: string, // value which may be coming from the database.
@@ -78,6 +85,11 @@ export default function RichTextEditor(props: RichTextEditorProps) {
 
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
 
+    const [rta, setRta] = React.useState();
+    const [ta, setTa] = React.useState();
+    const Item = ({ entity: { name, char } }) => <div>{`${name}: ${char}`}</div>;
+    const Loading = ({ data }) => <div>Loading</div>;
+
     return (
         <div className={`richTextContainer ${showingEditor ? "editMode" : ""}`}>
 
@@ -95,9 +107,38 @@ export default function RichTextEditor(props: RichTextEditorProps) {
             <div className='richTextContentContainer'>
 
                 {showingEditor && (<>
-                    <div className='editorContainer'>
-                        <TextField className='input' multiline={true} value={valueState.markdown} onChange={onChange}></TextField>
-                    </div>
+                    {/* <div className='editorContainer'> */}
+                    {/* <TextField className='input' multiline={true} value={valueState.markdown} onChange={onChange}></TextField> */}
+                    <ReactTextareaAutocomplete
+                        containerClassName="editorContainer"
+                        loadingComponent={Loading}
+                        ref={rta => setRta(rta)}
+                        //innerRef={textarea => setTa(textarea)}
+                        containerStyle={{
+                            marginTop: 20,
+                            width: 400,
+                            height: 100,
+                            margin: "20px auto"
+                        }}
+                        //movePopupAsYouType={true}
+                        value={valueState.markdown}
+                        onChange={onChange}
+                        minChar={0} // how many chars AFTER the trigger char you need to type before the popup arrives
+                        trigger={{
+                            "@": {
+                                dataProvider: token => {
+                                    return [
+                                        { name: "smile", char: "🙂" },
+                                        { name: "heart", char: "❤️" }
+                                    ];
+                                },
+                                component: Item,
+                                output: (item, trigger) => item.char
+                            }
+                        }}
+                    />
+
+                    {/* </div> */}
                 </>
                 )}
                 <div className='renderedContent'>

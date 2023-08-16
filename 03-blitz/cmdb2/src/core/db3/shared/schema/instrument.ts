@@ -122,6 +122,11 @@ export const xInstrumentTag = new xTable({
             defaultValue: null,
             options: InstrumentTagSignificance,
         }),
+        new GenericStringField({
+            columnName: "classification",
+            allowNull: true,
+            format: "plain",
+        }),
     ]
 });
 

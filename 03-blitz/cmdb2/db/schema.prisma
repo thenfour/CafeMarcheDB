@@ -9,7 +9,7 @@
 // they look similar, and in a way they are. but more like,
 // significance is for specific app-understood behavior. typically for statistics gathering.
 // classification is a grouping of items, like song tags "reggae" or "ska" would be grouped as genres.
-// classification will be freeform text, maybe or maybe not understood by the app.
+// classification will be freeform text, maybe or maybe not understood by the app. i guess for future use; not really necessary.
 
 // do not try to change site behavior based on signifacance or classification; then use a dedicated field like eventType rather than tagging as rehearsal / concert.
 
@@ -235,12 +235,12 @@ model SongCredit {
 }
 
 model SongTag {
-  id           Int                  @id @default(autoincrement())
-  text         String
-  color        String?
-  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-     classification         String?
-  songs        SongTagAssociation[]
+  id             Int                  @id @default(autoincrement())
+  text           String
+  color          String?
+  significance   String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  classification String?
+  songs          SongTagAssociation[]
 }
 
 model SongTagAssociation {
@@ -286,14 +286,14 @@ model Instrument {
 }
 
 model InstrumentTag {
-  id           Int                        @id @default(autoincrement())
-  text         String
-  description  String                     @default("")
-  sortOrder    Int                        @default(0)
-  color        String?
-  significance String? // "uses electricity" for example?
-     classification         String?
-  instruments  InstrumentTagAssociation[]
+  id             Int                        @id @default(autoincrement())
+  text           String
+  description    String                     @default("")
+  sortOrder      Int                        @default(0)
+  color          String?
+  significance   String? // "uses electricity" for example?
+  classification String?
+  instruments    InstrumentTagAssociation[]
 }
 
 // association table
@@ -327,23 +327,23 @@ model UserInstrument {
 // they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 model Event {
-  id                  Int      @id @default(autoincrement())
-  name                String
-  slug                String
-  description         String // what's the diff between a description & comment? description is the pinned general description in markdown.
-  typeId Int?
-  type         EventType?      @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+  id          Int        @id @default(autoincrement())
+  name        String
+  slug        String
+  description String // what's the diff between a description & comment? description is the pinned general description in markdown.
+  typeId      Int?
+  type        EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
   startsAt            DateTime? // date null means TBD
   endsAt              DateTime?
-  locationDescription String   @default("")
-  locationURL         String   @default("")
-  isDeleted           Boolean  @default(false)
+  locationDescription String    @default("")
+  locationURL         String    @default("")
+  isDeleted           Boolean   @default(false)
   // status - new -> request responses -> confirmed with organizer  -> confirmed
   //                                      confirmed with group
   //                                      confirmed with directors
   // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
-  isCancelled         Boolean  @default(false) // used as an input for calculating status
+  isCancelled         Boolean   @default(false) // used as an input for calculating status
 
   createdAt DateTime
 
@@ -358,21 +358,21 @@ model Event {
 }
 
 model EventType {
-  id           Int                  @id @default(autoincrement())
-  text         String
-  description  String
-  color        String?
-  events       Event[]
+  id          Int     @id @default(autoincrement())
+  text        String
+  description String
+  color       String?
+  events      Event[]
 }
 
 model EventTag {
-  id           Int                  @id @default(autoincrement())
-  text         String
-  description  String               @default("")
-  color        String?
-  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-     classification         String?
-  events       EventTagAssignment[]
+  id             Int                  @id @default(autoincrement())
+  text           String
+  description    String               @default("")
+  color          String?
+  significance   String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  classification String?
+  events         EventTagAssignment[]
 }
 
 model EventTagAssignment {
@@ -448,12 +448,12 @@ model EventUserResponse {
   expectApproval   Boolean @default(false)
   expectAttendance Boolean @default(false)
 
-  attendanceId   Int?
-  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
+  attendanceId      Int?
+  attendance        EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
   attendanceComment String? // comment
 
-  approvalId   Int?
-  approval     EventApproval? @relation(fields: [approvalId], references: [id], onDelete: SetDefault)
+  approvalId      Int?
+  approval        EventApproval? @relation(fields: [approvalId], references: [id], onDelete: SetDefault)
   approvalComment String?
 
   @@unique([userId, eventId]) // 
