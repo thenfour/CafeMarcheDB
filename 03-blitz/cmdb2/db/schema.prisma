@@ -5,6 +5,14 @@
 // significance String? // for tags
 // isPublished Boolean @default(false)
 
+// tags have both significance and classification
+// they look similar, and in a way they are. but more like,
+// significance is for specific app-understood behavior. typically for statistics gathering.
+// classification is a grouping of items, like song tags "reggae" or "ska" would be grouped as genres.
+// classification will be freeform text, maybe or maybe not understood by the app.
+
+// do not try to change site behavior based on signifacance or classification; then use a dedicated field like eventType rather than tagging as rehearsal / concert.
+
 // TODO:
 // website integration (fields for events, image editing, whether it's published etc)
 
@@ -69,21 +77,21 @@ model RolePermission {
 }
 
 model User {
-  id             Int       @id @default(autoincrement())
-  name           String    @default("")
-  isSysAdmin     Boolean   @default(false)
-  isDeleted      Boolean   @default(false)
-  email          String    @unique
+  id             Int      @id @default(autoincrement())
+  name           String   @default("")
+  isSysAdmin     Boolean  @default(false)
+  isDeleted      Boolean  @default(false)
+  email          String   @unique
   phone          String?
   hashedPassword String?
   googleId       String?
-  createdAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
 
-  roleId         Int? // nullable for new users a role should be assigned by an admin. null = public
-  role           Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
-  tokens         Token[]
-  sessions       Session[]
-  changes        Change[] // yea don't include this in queries
+  roleId   Int? // nullable for new users a role should be assigned by an admin. null = public
+  role     Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
+  tokens   Token[]
+  sessions Session[]
+  changes  Change[] // yea don't include this in queries
 
   taggedFiles    FileUserTag[]
   eventResponses EventUserResponse[]
@@ -231,6 +239,7 @@ model SongTag {
   text         String
   color        String?
   significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+     classification         String?
   songs        SongTagAssociation[]
 }
 
@@ -265,6 +274,7 @@ model InstrumentFunctionalGroup {
 model Instrument {
   id                Int                        @id @default(autoincrement())
   name              String
+  slug              String                     @default("")
   description       String                     @default("")
   sortOrder         Int
   functionalGroupId Int
@@ -282,6 +292,7 @@ model InstrumentTag {
   sortOrder    Int                        @default(0)
   color        String?
   significance String? // "uses electricity" for example?
+     classification         String?
   instruments  InstrumentTagAssociation[]
 }
 
@@ -320,8 +331,11 @@ model Event {
   name                String
   slug                String
   description         String // what's the diff between a description & comment? description is the pinned general description in markdown.
-  startsAt            DateTime
-  endsAt              DateTime
+  typeId Int?
+  type         EventType?      @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+
+  startsAt            DateTime? // date null means TBD
+  endsAt              DateTime?
   locationDescription String   @default("")
   locationURL         String   @default("")
   isDeleted           Boolean  @default(false)
@@ -343,12 +357,21 @@ model Event {
   songLists EventSongList[]
 }
 
+model EventType {
+  id           Int                  @id @default(autoincrement())
+  text         String
+  description  String
+  color        String?
+  events       Event[]
+}
+
 model EventTag {
   id           Int                  @id @default(autoincrement())
   text         String
   description  String               @default("")
   color        String?
   significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+     classification         String?
   events       EventTagAssignment[]
 }
 
@@ -392,6 +415,48 @@ model EventSongListSong {
   subtitle String? // could be a small comment like "short version"
 
   song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
+}
+
+// things like yes no maybe
+model EventAttendance {
+  id        Int     @id @default(autoincrement())
+  text      String
+  color     String?
+  strength  Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
+  isDeleted Boolean @default(false)
+
+  responses EventUserResponse[]
+}
+
+model EventApproval {
+  id        Int     @id @default(autoincrement())
+  text      String
+  color     String?
+  strength  Int // similar to EventAttendance.strength
+  isDeleted Boolean @default(false)
+
+  responses EventUserResponse[]
+}
+
+model EventUserResponse {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  eventId Int
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  expectApproval   Boolean @default(false)
+  expectAttendance Boolean @default(false)
+
+  attendanceId   Int?
+  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
+  attendanceComment String? // comment
+
+  approvalId   Int?
+  approval     EventApproval? @relation(fields: [approvalId], references: [id], onDelete: SetDefault)
+  approvalComment String?
+
+  @@unique([userId, eventId]) // 
 }
 
 // tech rider, invoice, contract, event media, other, what is the usage? the point is to find similar things
@@ -465,46 +530,4 @@ model FileInstrumentTag {
   instrumentId Int?
 
   @@unique([fileId, instrumentId]) // 
-}
-
-// things like yes no maybe
-model EventAttendance {
-  id        Int     @id @default(autoincrement())
-  text      String
-  color     String?
-  strength  Int // in order to be able to filter people who aren't coming.
-  isDeleted Boolean @default(false)
-
-  responses EventUserResponse[]
-}
-
-model EventApproval {
-  id        Int     @id @default(autoincrement())
-  text      String
-  color     String?
-  strength  Int // in order to be able to filter people who aren't coming.
-  isDeleted Boolean @default(false)
-
-  responses EventUserResponse[]
-}
-
-model EventUserResponse {
-  id      Int   @id @default(autoincrement())
-  userId  Int
-  user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
-  eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
-
-  expectApproval   Boolean @default(false)
-  expectAttendance Boolean @default(false)
-
-  attendanceId   Int?
-  attendance     EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
-  attendanceText String?
-
-  approvalId   Int?
-  approval     EventApproval? @relation(fields: [approvalId], references: [id], onDelete: SetDefault)
-  approvalText String?
-
-  @@unique([userId, eventId]) // 
 }

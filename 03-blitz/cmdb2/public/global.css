@@ -84,3 +84,49 @@ div.chipContainer.validationSuccess {
 .cmdbChip {
   margin: 2px;
 }
+
+
+/* rich text editor */
+.richTextContainer {
+  display: flex;
+  min-height: 50px;
+  background-color: rgba(0, 0, 0, 0.03);
+  max-width: 1100px;
+  flex-direction: column;
+}
+
+.richTextContainer.editMode {
+  max-width: none;
+  width: 100%;
+}
+
+.richTextContainer .richTextContentContainer {
+  display: flex;
+}
+
+.richTextContainer.editMode .richTextContentContainer {}
+
+.richTextContainer .editControlsContainer {
+  opacity: 80%;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.richTextContainer .editorContainer {
+  /* more comfy leaving some space for the edit ctrls*/
+  flex: 1;
+  display: flex;
+}
+
+.richTextContainer .editorContainer .input {
+  flex: 1;
+}
+
+.richTextContainer .editorContainer textarea {
+  font-family: monospace;
+  background-color: white;
+}
+
+.richTextContainer .renderedContent {
+  margin: 15px;
+  flex: 1;
+}

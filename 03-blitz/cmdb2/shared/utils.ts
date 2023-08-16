@@ -210,13 +210,6 @@ export const ValidateInt = (arg) => {
     return Number.isInteger(arg);
 };
 
-// https://stackoverflow.com/questions/76518631/typescript-return-the-enum-values-in-parameter-using-a-generic-enum-type-method
-// interesting that const objects are preferred over enums. but yea for populating datagrid single select options i agree.
-export const InstrumentTagSignificance = {
-    PowerRequired: "PowerRequired",
-    Large: "Large",
-} as const satisfies Record<string, string>;
-
 // utility type to allow strict selection of the keys of a const object
 export type KeysOf<T extends Record<string, unknown>> = keyof T;
 

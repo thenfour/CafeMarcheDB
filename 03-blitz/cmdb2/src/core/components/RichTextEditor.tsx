@@ -14,6 +14,8 @@ import { Box, Button, ButtonGroup, CircularProgress, TextField } from "@mui/mate
 import MarkdownIt from 'markdown-it';
 import React from "react";
 import useDebounce from "shared/useDebounce";
+import CloseIcon from '@mui/icons-material/Close';
+import DoneIcon from '@mui/icons-material/Done';
 
 interface RichTextEditorProps {
     initialValue: string, // value which may be coming from the database.
@@ -77,31 +79,35 @@ export default function RichTextEditor(props: RichTextEditorProps) {
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
 
     return (
-        <Box>
+        <div className={`richTextContainer ${showingEditor ? "editMode" : ""}`}>
 
-            <ButtonGroup size="small" variant='text'>
-                <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>
-                <Button startIcon={<DeleteIcon />}>Delete</Button>
-            </ButtonGroup>
-            {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
-                isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
-                    <></>
-                )
-            )}
+            <div className='editControlsContainer'>
+                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
+                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Close</Button>}
+                {/* <Button startIcon={<DeleteIcon />}>Delete</Button> */}
+                {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+                    isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
+                        <></>
+                    )
+                )}
+            </div>
 
-            {showingEditor && (<>
-                <Box sx={{ p: 1 }}>
-                    <TextField sx={{ width: "100%" }} multiline={true} value={valueState.markdown} onChange={onChange} variant="filled"></TextField>
-                </Box>
-            </>
-            )}
-            <Box sx={{ p: 0 }}>
-                <div dangerouslySetInnerHTML={{ __html: valueState.html }}></div>
+            <div className='richTextContentContainer'>
+
+                {showingEditor && (<>
+                    <div className='editorContainer'>
+                        <TextField className='input' multiline={true} value={valueState.markdown} onChange={onChange}></TextField>
+                    </div>
+                </>
+                )}
+                <div className='renderedContent'>
+                    <div dangerouslySetInnerHTML={{ __html: valueState.html }}></div>
 
 
-            </Box >
+                </div >
+            </div>
 
-        </Box>
+        </div>
     );
 }
 

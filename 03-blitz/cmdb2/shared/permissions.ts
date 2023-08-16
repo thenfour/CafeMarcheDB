@@ -21,6 +21,7 @@ export enum Permission {
     view_all_user_data = "view_all_user_data",
 
     admin_general = "admin_general",
+    view_instruments = "view_instruments",
 
     change_own_password = "change_own_password",
 

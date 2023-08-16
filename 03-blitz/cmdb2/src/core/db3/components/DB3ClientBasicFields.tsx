@@ -456,7 +456,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                 return <DatePicker
                     autoFocus={false}
                     label={this.typedSchemaColumn.label}
-                    value={dayjs(params.value)}
+                    value={dayjs(params.value as (Date | null))}
                     onChange={(value: Dayjs, context) => {
                         let d: Date | null = (value?.toDate()) || null;
                         if (d instanceof Date) {

@@ -62,7 +62,7 @@ export interface DB3EditGridExtraActionsArgs {
 
 export type DB3EditGridProps = {
     tableSpec: DB3Client.xTableClientSpec,
-    renderExtraActions: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
+    renderExtraActions?: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
 };
 
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {

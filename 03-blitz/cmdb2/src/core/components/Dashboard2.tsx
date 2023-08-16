@@ -26,7 +26,7 @@ import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
-const drawerWidth = 200;
+const drawerWidth = 260;
 
 
 const Search = styled('div')(({ theme }) => ({
@@ -265,10 +265,10 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
 
 const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon /> },
-    { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
     { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
     { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
     { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon /> },
+    { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
     // { type: "link", path: "/backstage/editSongs", linkCaption: "Manage Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
     // { type: "link", path: "/backstage/editEvents", linkCaption: "Manage Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
 
