@@ -90,7 +90,8 @@ div.chipContainer.validationSuccess {
 .richTextContainer {
   display: flex;
   min-height: 50px;
-  background-color: rgba(0, 0, 0, 0.03);
+  /* it's tempting to do this, to highlight where the text is, but all the various widths on the page are ugly af */
+  /* background-color: rgba(0, 0, 0, 0.03); */
   max-width: 1100px;
   flex-direction: column;
 }
@@ -109,6 +110,11 @@ div.chipContainer.validationSuccess {
 .richTextContainer .editControlsContainer {
   opacity: 80%;
   background-color: rgba(0, 0, 0, 0.06);
+}
+
+.richTextContainer .editControlsContainer button {
+  margin: 0;
+  padding: 0;
 }
 
 .richTextContainer .editorContainer {
@@ -131,5 +137,261 @@ div.chipContainer.validationSuccess {
 
 .richTextContainer .renderedContent {
   margin: 15px;
+  margin-top: 0;
   flex: 1;
+}
+
+.richTextContainer .renderedContent>*,
+.richTextContainer .renderedContent h1 {
+  margin-top: 0;
+  /* there's an edit bar so reduce the amount of space at the top; it's unnecessary. */
+}
+
+.homeCalendars {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.homeCalendars>* {
+  flex-grow: 0;
+}
+
+.homeCalendars .filler {
+  flex-grow: 1;
+}
+
+
+.cmcard {
+  width: fit-content;
+  min-width: 580px;
+  /* --card-height: 150px; */
+  /* height: var(--card-height); */
+  /* width: 580px; */
+  /* border: 2px solid #888; */
+  border: 0;
+  margin: 10px 0 17px 38px;
+}
+
+.cmcard .cardContent {
+  display: flex;
+  /* height: 100%; */
+  /* helps distinguish borders when the photo makes it unclear */
+  /* border-left: solid 12px var(--primary-color); */
+  background-image: url(/images/card.jpg);
+  background-position: 25% 40%;
+  background-size: 250%;
+}
+
+.cmcard .left {
+  /* height: 100%; */
+  /* width: 20px; */
+  background-color: var(--primary-color);
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+}
+
+.cmcard .left .leftVertText {
+  -webkit-text-orientation: upright;
+  text-orientation: sideways;
+  color: #fffc;
+  writing-mode: vertical-rl;
+  font-family: monospace;
+  font-size: 33px;
+  letter-spacing: 13px;
+  font-weight: bolder;
+}
+
+.cmcard .image {
+  background-color: rgba(0, 0, 0, 0);
+  /* height: 100%; */
+  /* width: var(--card-height); */
+  width: 150px;
+}
+
+.cmcard .hcontent {
+  border-left: dotted 4px black;
+  background-color: white;
+  flex: 2;
+  /* height: 100%; */
+  /* border-right: dotted 4px black; */
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(130deg, #f1f1fc, #fffffff0);
+  padding: 0px 60px;
+}
+
+.cmcard .chipContainer {
+  /* margin: 6px; */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  align-content: center;
+}
+
+
+
+.cmcard .chip {
+  background-color: #ccc;
+  color: white;
+  margin: 4px;
+}
+
+
+.cmcard .date {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+  font-size: 12px;
+  padding: 4px;
+  color: #666;
+  border-bottom: 1px dashed #888;
+}
+
+.cmcard .name {
+  text-align: center;
+  padding: 12px;
+  font-size: 30px;
+  font-weight: bold;
+  flex-grow: 1;
+  /* let confirmed status hug*/
+  padding-bottom: 0;
+}
+
+.cmcard .status {
+  font-size: 14px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.cmcard .status.confirmed {
+  color: green;
+}
+
+.cmcard .attendance,
+.attendanceResponseInput .selectedValue {
+  font-size: 14px;
+  padding-bottom: 15px;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.cmcard .attendance .chip,
+.attendanceResponseInput .selectedValue {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 10px;
+  color: white;
+}
+
+.attendanceResponseInput .selectedValue {
+  flex-direction: column;
+  display: flex;
+  width: max-content;
+  align-items: flex-start;
+}
+
+.cmcard .attendance.yes .chip {
+  background-color: green;
+}
+
+
+
+.cmcard .info {
+  text-align: center;
+  padding: 1px;
+  font-size: 14px;
+  color: blue;
+  border-top: 1px dashed #888;
+}
+
+
+.attendanceResponseInput {
+  border: solid 2px #0008;
+  padding: 15px;
+}
+
+.attendanceResponseInput .segmentName {
+  font-size: 18px;
+}
+
+.attendanceResponseInput .segment {
+  margin-bottom: 12px;
+}
+
+.attendanceResponseInput .yes.noSelection,
+.attendanceResponseInput .yes.selected {
+  color: white;
+  background-color: green;
+}
+
+.attendanceResponseInput .yes_maybe.selectedValue {
+  color: white;
+  background-color: #cca;
+}
+
+.textWithIcon,
+.flexVerticalCenter {
+  display: flex;
+  /* align-content: center; */
+  align-items: center;
+}
+
+.attendanceResponseInput .yes_maybe.noSelection,
+.attendanceResponseInput .yes_maybe.selected {
+  color: white;
+  background-color: yellowgreen;
+}
+
+.attendanceResponseInput .no_maybe.noSelection,
+.attendanceResponseInput .no_maybe.selected {
+  color: white;
+  background-color: orange;
+}
+
+.attendanceResponseInput .no.noSelection,
+.attendanceResponseInput .no.selected {
+  color: white;
+  background-color: red;
+}
+
+.attendanceResponseInput .some.noSelection {
+  color: white;
+  background-color: red;
+}
+
+.attendanceResponseInput .some.selected {
+  color: white;
+  background-color: #675;
+}
+
+.attendanceResponseInput .yes.notSelected,
+.attendanceResponseInput .yes_maybe.notSelected,
+.attendanceResponseInput .no_maybe.notSelected,
+.attendanceResponseInput .no.notSelected {
+  color: #666;
+  background-color: #ccc;
+  opacity: 50%;
+}
+
+.attendanceResponseInput input.add_comment {
+  font-size: 16px;
+  background-color: transparent;
+  border: 1px solid #0002;
+  border-radius: 7px;
+  padding: 4px;
+  margin: 0 13px;
+  width: 400px;
 }

@@ -94,7 +94,7 @@ model User {
   changes  Change[] // yea don't include this in queries
 
   taggedFiles    FileUserTag[]
-  eventResponses EventUserResponse[]
+  eventSegmentResponses EventSegmentUserResponse[]
   activity       Activity[]
   songCredits    SongCredit[]
   eventComments  EventComment[]
@@ -352,9 +352,25 @@ model Event {
   // workflow confirmation etc.
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
-  responses EventUserResponse[]
   comments  EventComment[]
-  songLists EventSongList[]
+  segments  EventSegment[]
+}
+
+// events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
+// concerts may have one or more multiple sets
+model EventSegment {
+  id          Int        @id @default(autoincrement())
+  eventId    Int
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
+
+  name        String
+  description String // short description, like 
+
+  startsAt            DateTime? // date null means TBD
+  endsAt              DateTime?
+
+  responses EventSegmentUserResponse[]
+  songLists EventSegmentSongList[]
 }
 
 model EventType {
@@ -400,13 +416,14 @@ model EventComment {
   isPublished Boolean @default(false)
 }
 
-model EventSongList {
+model EventSegmentSongList {
   id          Int    @id @default(autoincrement())
-  eventId     Int
   sortOrder   Int    @default(0)
   name        String
   description String @default("")
-  event       Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
+
+  eventSegmentId     Int
+  eventSegment       EventSegment  @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
 }
 
 model EventSongListSong {
@@ -417,7 +434,7 @@ model EventSongListSong {
   song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
 }
 
-// things like yes no maybe
+// things like yes, no, not-sure-yes, not-sure-no, partially
 model EventAttendance {
   id        Int     @id @default(autoincrement())
   text      String
@@ -425,25 +442,16 @@ model EventAttendance {
   strength  Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
   isDeleted Boolean @default(false)
 
-  responses EventUserResponse[]
+  responses EventSegmentUserResponse[]
 }
 
-model EventApproval {
-  id        Int     @id @default(autoincrement())
-  text      String
-  color     String?
-  strength  Int // similar to EventAttendance.strength
-  isDeleted Boolean @default(false)
-
-  responses EventUserResponse[]
-}
-
-model EventUserResponse {
+model EventSegmentUserResponse {
   id      Int   @id @default(autoincrement())
   userId  Int
   user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
-  eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  eventSegmentId Int
+  eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict)
 
   expectApproval   Boolean @default(false)
   expectAttendance Boolean @default(false)
@@ -453,13 +461,15 @@ model EventUserResponse {
   attendanceComment String? // comment
 
   approvalId      Int?
-  approval        EventApproval? @relation(fields: [approvalId], references: [id], onDelete: SetDefault)
+  approved        Boolean?
   approvalComment String?
 
-  @@unique([userId, eventId]) // 
+  @@unique([userId, eventSegmentId]) // 
 }
 
-// tech rider, invoice, contract, event media, other, what is the usage? the point is to find similar things
+// tech rider, partition, invoice, contract, event media, other, what is the usage? needed to:
+// - find similar things at an application level like finding partitions
+// - display relevant info for context
 model FileSignificance {
   id          Int     @id @default(autoincrement())
   name        String  @unique
@@ -470,6 +480,7 @@ model FileSignificance {
 // files can also just be floating uploads for example dropped into a markdown field
 model File {
   id             Int     @id @default(autoincrement())
+  subtitle String? // could be a small comment like "short version"
   fileLeafName   String // the name of the file as it was uploaded, visible to users. IMG20113.jpg for example.
   storedLeafName String // a unique filename used in server storage; a guid probably.
   uri            String // if this is a link, then here's the URI
@@ -477,8 +488,6 @@ model File {
   type           String // enum (video, photo, link, partition)
   significanceId Int?
   isDeleted      Boolean @default(false)
-
-  subtitle String? // could be a small comment like "short version"
 
   significance      FileSignificance?   @relation(fields: [significanceId], references: [id], onDelete: SetNull) // when you delete a significance, set null.
   taggedUsers       FileUserTag[]
