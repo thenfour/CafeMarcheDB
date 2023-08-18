@@ -265,8 +265,8 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
 
 const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon /> },
-    { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
     { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
     { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon /> },
     { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
     // { type: "link", path: "/backstage/editSongs", linkCaption: "Manage Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
@@ -338,7 +338,9 @@ const Dashboard2 = ({ children }) => {
                     flexGrow: 1,
                     backgroundColor: theme.palette.background.default,
                     padding: theme.spacing(3)
-                }}>
+                }}
+                    className="mainContentBackdrop"
+                >
                     <Toolbar />
                     {children}
                 </Box>

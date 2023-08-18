@@ -79,6 +79,7 @@ model RolePermission {
 model User {
   id             Int      @id @default(autoincrement())
   name           String   @default("")
+  compactName      String   @default("") // for displaying in compact areas and less formal
   isSysAdmin     Boolean  @default(false)
   isDeleted      Boolean  @default(false)
   email          String   @unique
@@ -95,6 +96,7 @@ model User {
 
   taggedFiles    FileUserTag[]
   eventSegmentResponses EventSegmentUserResponse[]
+  eventResponses EventUserResponse[]
   activity       Activity[]
   songCredits    SongCredit[]
   eventComments  EventComment[]
@@ -334,8 +336,6 @@ model Event {
   typeId      Int?
   type        EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
-  startsAt            DateTime? // date null means TBD
-  endsAt              DateTime?
   locationDescription String    @default("")
   locationURL         String    @default("")
   isDeleted           Boolean   @default(false)
@@ -344,6 +344,7 @@ model Event {
   //                                      confirmed with directors
   // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
   isCancelled         Boolean   @default(false) // used as an input for calculating status
+  cancelledAt DateTime?
 
   createdAt DateTime
 
@@ -354,6 +355,8 @@ model Event {
   tags      EventTagAssignment[]
   comments  EventComment[]
   segments  EventSegment[]
+  songLists EventSegmentSongList[]
+  responses EventUserResponse[]
 }
 
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
@@ -370,7 +373,6 @@ model EventSegment {
   endsAt              DateTime?
 
   responses EventSegmentUserResponse[]
-  songLists EventSegmentSongList[]
 }
 
 model EventType {
@@ -422,8 +424,8 @@ model EventSegmentSongList {
   name        String
   description String @default("")
 
-  eventSegmentId     Int
-  eventSegment       EventSegment  @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
+  eventId     Int
+  event       Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
 }
 
 model EventSongListSong {
@@ -453,18 +455,31 @@ model EventSegmentUserResponse {
   eventSegmentId Int
   eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict)
 
-  expectApproval   Boolean @default(false)
   expectAttendance Boolean @default(false)
-
   attendanceId      Int?
   attendance        EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
   attendanceComment String? // comment
 
-  approvalId      Int?
-  approved        Boolean?
-  approvalComment String?
-
   @@unique([userId, eventSegmentId]) // 
+}
+
+model EventUserResponse {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  eventId Int
+  event  Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  expectAgreement   Boolean @default(false)
+  agreementAnswer        Boolean?
+  agreementComment String?
+
+  expectFinalize   Boolean @default(false)
+  finalizeAnswer        Boolean?
+  finalizeComment String?
+
+  @@unique([userId, eventId]) // 
 }
 
 // tech rider, partition, invoice, contract, event media, other, what is the usage? needed to:

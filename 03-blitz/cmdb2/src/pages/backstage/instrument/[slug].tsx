@@ -36,7 +36,7 @@ const MyComponent = () => {
 };
 
 
-const SongPage: BlitzPage = () => {
+const InstrumentPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Instrument">
             <MyComponent></MyComponent>
@@ -44,4 +44,4 @@ const SongPage: BlitzPage = () => {
     )
 }
 
-export default SongPage;
+export default InstrumentPage;

@@ -2,6 +2,8 @@
   --drawer-paper-width: 1000px;
   --data-grid-column-header-background-color: #f0f0f0;
   --primary-color: red;
+
+  --subtle-elevation: 2px 2px 5px 2px rgba(0, 0, 0, 0.2);
 }
 
 a,
@@ -9,6 +11,17 @@ a:link,
 a:hover,
 a:visited {
   text-decoration: none;
+}
+
+
+/* typically h1 at the top of a section doesn't need any padding or it looks awkwardly pushed down */
+h1:first-child {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.smallIconButton {
+  display: flex;
 }
 
 .MuiDrawer-paper {
@@ -99,7 +112,7 @@ div.chipContainer.validationSuccess {
   min-height: 50px;
   /* it's tempting to do this, to highlight where the text is, but all the various widths on the page are ugly af */
   /* background-color: rgba(0, 0, 0, 0.03); */
-  max-width: 1100px;
+  max-width: 800px;
   flex-direction: column;
 }
 
@@ -116,7 +129,8 @@ div.chipContainer.validationSuccess {
 
 .richTextContainer .editControlsContainer {
   opacity: 80%;
-  background-color: rgba(0, 0, 0, 0.06);
+  /* background-color: rgba(0, 0, 0, 0.06); */
+  background: linear-gradient(89deg, #0001, transparent);
 }
 
 .richTextContainer .editControlsContainer button {
@@ -170,7 +184,7 @@ div.chipContainer.validationSuccess {
 
 .cmcard {
   width: fit-content;
-  min-width: 580px;
+  min-width: 640px;
   /* --card-height: 150px; */
   /* height: var(--card-height); */
   /* width: 580px; */
@@ -192,11 +206,19 @@ div.chipContainer.validationSuccess {
 .cmcard .left {
   /* height: 100%; */
   /* width: 20px; */
-  background-color: var(--primary-color);
+  /* background-color: var(--primary-color); */
   display: flex;
   align-content: center;
   justify-content: center;
   align-items: center;
+}
+
+.cmcard.concert .left {
+  background-color: var(--primary-color);
+}
+
+.cmcard.rehearsal .left {
+  background-color: #800;
 }
 
 .cmcard .left .leftVertText {
@@ -206,7 +228,9 @@ div.chipContainer.validationSuccess {
   writing-mode: vertical-rl;
   font-family: monospace;
   font-size: 33px;
-  letter-spacing: 13px;
+  letter-spacing: 10px;
+  /* for short cards, keep some margin around the text */
+  margin: 13px 0px;
   font-weight: bolder;
 }
 
@@ -227,6 +251,10 @@ div.chipContainer.validationSuccess {
   flex-direction: column;
   background: linear-gradient(130deg, #f1f1fc, #fffffff0);
   padding: 0px 60px;
+}
+
+.cmcard.rehearsal .hcontent {
+  border-left: solid 1px black;
 }
 
 .cmcard .chipContainer {
@@ -259,12 +287,16 @@ div.chipContainer.validationSuccess {
 
 .cmcard .name {
   text-align: center;
-  padding: 12px;
+  padding: 0;
   font-size: 30px;
   font-weight: bold;
   flex-grow: 1;
   /* let confirmed status hug*/
   padding-bottom: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .cmcard .status {
@@ -308,10 +340,13 @@ div.chipContainer.validationSuccess {
   display: flex;
   width: max-content;
   align-items: flex-start;
+  background-color: #9acd3229;
+  color: yellowgreen;
 }
 
 .cmcard .attendance.yes .chip {
-  background-color: green;
+  background-color: #9acd3229;
+  color: yellowgreen;
 }
 
 
@@ -331,15 +366,30 @@ div.chipContainer.validationSuccess {
 }
 
 .attendanceResponseInput .segmentName {
-  font-size: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 2px;
+  border-bottom: 1px dotted #0004;
+  padding-bottom: 10px;
 }
 
 .attendanceResponseInput .segment {
   margin-bottom: 12px;
+  margin-right: 19px;
+  /* without left margin the shadow is chopped off sometimes (alerts) */
+  margin-left: 4px;
   background-color: white;
-  border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0px 3px 5px -1px rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: var(--subtle-elevation);
+  border-left: 6px solid #88f6;
+}
+
+
+.attendanceResponseInput .segmentList {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .attendanceResponseInput .yes.noSelection,
@@ -408,7 +458,7 @@ div.chipContainer.validationSuccess {
 }
 
 .attendanceResponseInput .placeholderText {
-  color: #0008;
+  color: #0006;
   letter-spacing: normal;
   text-decoration: none;
   text-transform: none;
@@ -422,4 +472,158 @@ div.chipContainer.validationSuccess {
 .attendanceResponseInput .selectedValue .placeholderText .icon {
   color: #0008;
   height: 19px;
+}
+
+
+.mainContentBackdrop {
+  background-color: #eee;
+}
+
+.contentSection {
+  /* spacing is already provided by parent layout*/
+  /* margin: 20px; */
+  padding: 20px;
+  border-radius: 6px;
+  background-color: white;
+  margin-bottom: 40px;
+  box-shadow: var(--subtle-elevation);
+}
+
+.contentSection .sectionTitle {
+  padding-bottom: 12px;
+  /* border-bottom: 2px dotted #0003; */
+  margin-bottom: 12px;
+  /* display: flex;
+  align-items: center; */
+}
+
+.contentSection .sectionTitle .topLine {
+  display: flex;
+  align-items: center;
+}
+
+.contentSection .sectionTitle .infoLine {
+  display: flex;
+  align-items: flex-start;
+  /* margin-bottom: 12px; */
+}
+
+.contentSection .sectionTitle .titleText {
+  font-size: 38px;
+  font-weight: bold;
+  margin-right: 20px;
+}
+
+.contentSection .sectionTitle .statusIndicator {
+  display: flex;
+  align-items: center;
+  text-transform: uppercase;
+  color: green;
+  background-color: #0a02;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.contentSection .sectionTitle .statusIndicator .statusIcon {}
+
+.contentSection .sectionTitle .statusIndicator .statusText {}
+
+.contentSection .sectionTitle .titleTagsContainer {}
+
+.contentSection .sectionTitle .smallInfoBox {
+  /* background-color: #eee; */
+  margin-right: 20px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  opacity: 50%;
+  font-size: 19px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.contentSection .sectionTitle .smallInfoBox .icon {
+  opacity: 50%;
+}
+
+.contentSection .sectionTitle .titleTagsContainer .MuiChip-root {
+  margin-right: 10px;
+  text-transform: uppercase;
+}
+
+.contentSection .approvalSummaryLine {
+  display: flex;
+  align-items: center;
+}
+
+.contentSection .approvalSummaryLine .approvalItem {
+  /* background-color: #eee; */
+  margin-right: 20px;
+  padding: 1px 13px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.contentSection .approvalSummaryLine .approvalItem .prompt {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.contentSection .approvalSummaryLine .approvalItem .icon {
+  height: 20px;
+  width: 20px;
+  margin-right: 8px;
+}
+
+.contentSection .approvalSummaryLine .approvalItem.approved {
+  background-color: #0802;
+  color: green;
+}
+
+.contentSection .approvalSummaryLine .approvalItem.rejected {
+  background-color: #8002;
+  color: red;
+}
+
+.contentSection .approvalSummaryLine .approvalItem.noResponse {
+  background-color: #ffa50026;
+  color: orange;
+}
+
+/* when an approval is sorta not relevant anymore, de-emphasize it. */
+.approvalSummaryLine.weaker {
+  opacity: 40%;
+}
+
+.approvalButtonGroup {
+  margin: 8px;
+}
+
+.approvalButtonGroup .yes {
+  color: white;
+  background-color: green;
+}
+
+.approvalButtonGroup .no {
+  color: white;
+  background-color: red;
+}
+
+.approvalButtonGroup .null {
+  /* color: white;
+  background-color: green; */
+}
+
+.approvalItem .responseChip {
+  display: flex;
+  align-items: center;
+}
+
+.seeMoreButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }

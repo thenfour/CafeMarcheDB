@@ -1,18 +1,28 @@
 
 
 export interface ColorPaletteEntry {
+    id: string | null; // used for database match
     label: string;
-    value: string | null;
-    contrastColor: string | null; // for text mostly
-    outline: boolean;
-}
+    outline: boolean; // for black / white, this is useful
+
+    // normal filled chip type
+    strongValue: string | null;
+    strongContrastColor: string | null; // for text mostly
+
+    //  for de-emphasized we need an inverted value
+    weakValue: string | null;
+    weakContrastColor: string | null; // for text mostly
+};
 
 // sentinel value for react components
 export const gNullColorPaletteEntry: ColorPaletteEntry = {
+    id: null, // used for database match
     label: "(none)",
-    value: null,
-    contrastColor: null,
     outline: false,
+    strongValue: null,
+    strongContrastColor: null,
+    weakValue: null,
+    weakContrastColor: null,
 };
 
 export class ColorPaletteArgs {
@@ -47,11 +57,11 @@ export class ColorPalette extends ColorPaletteArgs {
 
     // undefined if doesn't exist
     findColorPaletteEntry(colorString: string | null): ColorPaletteEntry {
-        let ret = this.entries.find(i => i.value === colorString);
+        let ret = this.entries.find(i => i.id === colorString);
         if (ret !== undefined) return ret;
 
         // not found; treat as null?
-        ret = this.entries.find(i => i.value === null);
+        ret = this.entries.find(i => i.id === null);
         if (ret !== undefined) return ret;
         if (this.entries.length < 1) throw new Error("palettes must have at least 1 entry or what's really the point rite??");
 
@@ -71,11 +81,11 @@ export const gGeneralPalette = new ColorPalette({
     columns: 4,
     defaultIndex: 0,
     entries: [
-        { label: "(none)", value: null, contrastColor: null, outline: false, },
-        { label: "Red", value: "#fdd", contrastColor: "black", outline: false, },
-        { label: "Green", value: "#dfd", contrastColor: "black", outline: false, },
-        { label: "Blue", value: "#ddf", contrastColor: "black", outline: false, },
-        { label: "black", value: "black", contrastColor: "white", outline: true, },
-        { label: "white", value: "white", contrastColor: "black", outline: true, },
+        gNullColorPaletteEntry,
+        { id: "Red", label: "Red", strongValue: "#fdd", strongContrastColor: "black", outline: false, weakValue: "#fee", weakContrastColor: "#c88", },
+        { id: "Green", label: "Green", strongValue: "#dfd", strongContrastColor: "black", outline: false, weakValue: "#fee", weakContrastColor: "#c88", },
+        { id: "Blue", label: "Blue", strongValue: "#ddf", strongContrastColor: "black", outline: false, weakValue: "#fee", weakContrastColor: "#c88", },
+        { id: "black", label: "black", strongValue: "black", strongContrastColor: "white", outline: true, weakValue: "#fee", weakContrastColor: "#c88", },
+        { id: "white", label: "white", strongValue: "white", strongContrastColor: "black", outline: true, weakValue: "#fee", weakContrastColor: "#c88", },
     ],
 });
