@@ -29,18 +29,22 @@ const EventAttendanceResponseInput = () => {
         {/* </ButtonGroup> */}
         <div className="selectedValue yes_maybe">
           <div className="textWithIcon">
-            <ThumbUpIcon />
-            You are probably going
+            <ThumbUpIcon className="icon" />
+            <span className="text">You are probably going</span>
             <Button startIcon={<EditIcon />}></Button>
           </div>
           <div className="flexVerticalCenter">
-            <input type="text" className="add_comment" placeholder="Add a comment..." />
+            {/* <input type="text" className="add_comment" placeholder="Add a comment..." /> */}
+            <div className="placeholderText">
+              <EditIcon className="icon" />
+              <span>Add a comment...</span>
+            </div>
           </div>
         </div>
       </div>
       <div className="segment">
         <div className="segmentName">Sunday (24 Sept 14-16u)</div>
-        <ButtonGroup size="small">
+        <ButtonGroup >
           <Button endIcon={<ThumbUpIcon />} className="yes noSelection">yep!</Button>
           <Button endIcon={<ThumbUpIcon />} className="yes_maybe noSelection">probably</Button>
           <Button endIcon={<ThumbDownIcon />} className="no_maybe noSelection">probably not</Button>
@@ -143,8 +147,8 @@ const Home: BlitzPage = () => {
       </div>
 
       <Alert severity="error">
-        <h1>Are you coming to Esperanzah 2023?</h1>
-        <Link>View event details...</Link>
+        <h1>Are you coming to <a href="#">Esperanzah 2023</a>?</h1>
+        {/* <Link>View event details...</Link> */}
         <EventAttendanceResponseInput />
       </Alert>
 
