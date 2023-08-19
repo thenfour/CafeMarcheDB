@@ -177,7 +177,7 @@ const Home: BlitzPage = () => {
         <Alert severity="error">
           <h1>Are you coming to <a href="#">Esperanzah 2023</a>?</h1>
           {/* <Link>View event details...</Link> */}
-          <EventAttendanceResponseInput />
+          <EventAttendanceResponseInput finalized={false} past={false} />
         </Alert>
 
         <div className="homeCalendars">

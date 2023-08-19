@@ -190,6 +190,7 @@ div.chipContainer.validationSuccess {
   /* width: 580px; */
   /* border: 2px solid #888; */
   border: 0;
+  border-radius: 2px;
   margin: 10px 0 17px 38px;
 }
 
@@ -242,7 +243,7 @@ div.chipContainer.validationSuccess {
 }
 
 .cmcard .hcontent {
-  border-left: dotted 4px black;
+  border-left: dotted 4px #0008;
   background-color: white;
   flex: 2;
   /* height: 100%; */
@@ -286,6 +287,7 @@ div.chipContainer.validationSuccess {
 }
 
 .cmcard .name {
+  text-transform: uppercase;
   text-align: center;
   padding: 0;
   font-size: 30px;
@@ -368,9 +370,9 @@ div.chipContainer.validationSuccess {
 .attendanceResponseInput .segmentName {
   font-size: 18px;
   font-weight: bold;
-  margin-bottom: 2px;
+  /* margin-bottom: 2px;
   border-bottom: 1px dotted #0004;
-  padding-bottom: 10px;
+  padding-bottom: 10px; */
 }
 
 .attendanceResponseInput .segment {
@@ -466,12 +468,13 @@ div.chipContainer.validationSuccess {
   font-weight: normal;
   display: flex;
   align-items: center;
-  font-size: 19px;
+  font-size: 14px;
 }
 
 .attendanceResponseInput .selectedValue .placeholderText .icon {
   color: #0008;
-  height: 19px;
+  width: 14px;
+  height: 14px;
 }
 
 
@@ -482,19 +485,12 @@ div.chipContainer.validationSuccess {
 .contentSection {
   /* spacing is already provided by parent layout*/
   /* margin: 20px; */
-  padding: 20px;
+  padding: 0px 20px;
   border-radius: 6px;
   background-color: white;
   margin-bottom: 40px;
   box-shadow: var(--subtle-elevation);
-}
-
-.contentSection .sectionTitle {
-  padding-bottom: 12px;
-  /* border-bottom: 2px dotted #0003; */
-  margin-bottom: 12px;
-  /* display: flex;
-  align-items: center; */
+  max-width: 1500px;
 }
 
 .contentSection .sectionTitle .topLine {
@@ -567,31 +563,34 @@ div.chipContainer.validationSuccess {
   margin-bottom: 10px;
 }
 
-.contentSection .approvalSummaryLine .approvalItem .prompt {
+.approvalSummaryLine .approvalItem .prompt {
   font-weight: bold;
   font-size: 18px;
 }
 
-.contentSection .approvalSummaryLine .approvalItem .icon {
+.approvalSummaryLine .approvalItem .icon {
   height: 20px;
   width: 20px;
   margin-right: 8px;
 }
 
-.contentSection .approvalSummaryLine .approvalItem.approved {
+.approvalSummaryLine .approvalItem.approved {
   background-color: #0802;
   color: green;
 }
 
-.contentSection .approvalSummaryLine .approvalItem.rejected {
+.approvalSummaryLine .approvalItem.rejected {
   background-color: #8002;
   color: red;
 }
 
-.contentSection .approvalSummaryLine .approvalItem.noResponse {
+/* user is prompted */
+.approvalSummaryLine .approvalItem.noResponse {
   background-color: #ffa50026;
   color: orange;
+  padding: 10px;
 }
+
 
 /* when an approval is sorta not relevant anymore, de-emphasize it. */
 .approvalSummaryLine.weaker {

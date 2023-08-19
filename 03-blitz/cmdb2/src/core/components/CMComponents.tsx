@@ -1,22 +1,21 @@
-import { BlitzPage } from "@blitzjs/next";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React, { FC, Suspense } from "react"
-import { DateCalendar, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
-import dayjs, { Dayjs } from "dayjs";
-import { Alert, Button, ButtonGroup, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Link, Paper, Stack, TextField, Typography } from "@mui/material";
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
-import styled from "@emotion/styled";
 import {
-    DeleteOutlined as DeleteIcon,
     Edit as EditIcon
 } from '@mui/icons-material';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckIcon from '@mui/icons-material/Check';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import PlaceIcon from '@mui/icons-material/Place';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import { Button, ButtonGroup, Card, CardActionArea, Chip } from "@mui/material";
 
-export const EventAttendanceResponseInput = () => {
+export interface EventAttendanceResponseInputProps {
+    finalized: boolean;
+    past: boolean;
+};
+
+export const EventAttendanceResponseInput = (props: EventAttendanceResponseInputProps) => {
 
     return <div className="attendanceResponseInput">
         <div className="segmentList">
@@ -32,31 +31,60 @@ export const EventAttendanceResponseInput = () => {
                     <div className="textWithIcon">
                         <ThumbUpIcon className="icon" />
                         <span className="text">You are probably going</span>
-                        <Button startIcon={<EditIcon />}></Button>
+                        {!props.past && <Button startIcon={<EditIcon />}></Button>}
                     </div>
-                    <div className="flexVerticalCenter">
-                        {/* <input type="text" className="add_comment" placeholder="Add a comment..." /> */}
+                    {/* <div className="flexVerticalCenter">
                         <div className="placeholderText">
                             <EditIcon className="icon" />
                             <span>Add a comment...</span>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
             <div className="segment">
                 <div className="segmentName">Sunday (24 Sept 14-16u)</div>
-                <div className="prompt">Are you going?</div>
-                <ButtonGroup >
-                    <Button endIcon={<ThumbUpIcon />} className="yes noSelection">yep!</Button>
-                    <Button endIcon={<ThumbUpIcon />} className="yes_maybe noSelection">probably</Button>
-                    <Button endIcon={<ThumbDownIcon />} className="no_maybe noSelection">probably not</Button>
-                    <Button endIcon={<ThumbDownIcon />} className="no noSelection">nope</Button>
-                    <Button className="null noSelection">no answer</Button>
-                </ButtonGroup>
+                {props.finalized ? <>
+                    <div className="selectedValue yes_maybe">
+                        <div className="textWithIcon">
+                            <ThumbUpIcon className="icon" />
+                            <span className="text">You are probably going</span>
+                            {!props.past && <Button startIcon={<EditIcon />}></Button>}
+                        </div>
+                    </div>
+                </> : <>
+                    <div className="prompt">Are you going?</div>
+                    <ButtonGroup >
+                        <Button endIcon={<ThumbUpIcon />} className="yes noSelection">yep!</Button>
+                        <Button endIcon={<ThumbUpIcon />} className="yes_maybe noSelection">probably</Button>
+                        <Button endIcon={<ThumbDownIcon />} className="no_maybe noSelection">probably not</Button>
+                        <Button endIcon={<ThumbDownIcon />} className="no noSelection">nope</Button>
+                        <Button className="null noSelection">no answer</Button>
+                    </ButtonGroup>
+                </>}
             </div>
         </div>
     </div>;
 };
+
+
+export const EventAttendanceResponseInput2 = () => {
+
+    return <div className="attendanceResponseInput">
+        <div className="segmentList">
+            <div className="segment">
+                <div className="segmentName">Saturday (23 Sept 14-16u)</div>
+                <div className="selectedValue yes_maybe">
+                    <div className="textWithIcon">
+                        <ThumbUpIcon className="icon" />
+                        <span className="text">You are probably going</span>
+                        <Button startIcon={<EditIcon />}></Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>;
+};
+
 
 export const EventCard = () => {
 
@@ -121,6 +149,107 @@ export const RehearsalCard = () => {
 
 
 
+};
+
+
+
+export interface EventDetailProps {
+    asDirector: boolean;
+    asArnold: boolean;
+    finalized: boolean;
+    past: boolean;
+};
+
+export const EventDetail = (props: EventDetailProps) => {
+    return <div className="contentSection">
+        <div className="sectionTitle">
+            <Button className="topLine">
+                <div className="titleText">Esperanzah 2023</div>
+                <div className="statusIndicator confirmed">
+                    <CheckIcon className="statusIcon" />
+                    <span className="statusText">Confirmed</span>
+                </div>
+            </Button>
+
+            <div className="infoLine">
+                <div className="date smallInfoBox">
+                    <CalendarMonthIcon className="icon" />
+                    <span className="text">24 August 2023</span>
+                </div>
+
+                <div className="location smallInfoBox">
+                    <PlaceIcon className="icon" />
+                    <span className="text">24 lombardstraat, 1050 brussel</span>
+                </div>
+
+                <div className="titleTagsContainer">
+                    <Chip size="small" label="concert" />
+                    <Chip size="small" label="majorettes" />
+                    <Chip size="small" label="festival" />
+                </div>
+            </div>
+
+            {props.asArnold && <>
+                <div className="approvalSummaryLine weaker">
+                    {/* <div className="approvalItem approved">
+                    <div className="responseChip">
+                        <CheckCircleOutlineIcon className="icon" />
+                        <div className="name">Carl agrees</div>
+                        <div className="smallIconButton">
+                            <EditIcon />
+                        </div>
+                    </div>
+                </div> */}
+                    <div className="approvalItem approved">
+                        <div className="responseChip">
+                            <CheckCircleOutlineIcon className="icon" />
+                            <CheckCircleOutlineIcon className="icon" />
+                            <CheckCircleOutlineIcon className="icon" />
+                            <div className="name">You, Guido & Peter have agreed to this event</div>
+                            <div className="smallIconButton">
+                                <EditIcon />
+                            </div>
+                        </div>
+                    </div>
+                </div>{/* approvalSummaryLine */}
+
+
+                <div className="approvalSummaryLine">
+                    {props.finalized && <div className="approvalItem noResponse">
+                        {/* <div className="responseChip">
+                        <HelpOutlineIcon className="icon" />
+                        <div className="name">Carl</div>
+                    </div> */}
+                        <div className="inputContainer">
+                            <div className="prompt">Do we have enough musicians; are we OK for final confirmation?</div>
+                            <ButtonGroup className="approvalButtonGroup">
+                                <Button endIcon={<CheckCircleOutlineIcon className="icon" />} className="yes">yes</Button>
+                                <Button endIcon={<HighlightOffIcon />} className="no">no</Button>
+                                <Button className="null">no answer</Button>
+                            </ButtonGroup>
+                        </div>
+                    </div>}
+                    <div className="approvalItem approved">
+                        <div className="responseChip">
+                            <CheckCircleOutlineIcon className="icon" />
+                            <div className="name">Peter</div>
+                        </div>
+                    </div>
+
+                </div>{/* approvalSummaryLine */}
+            </>
+            }
+            <EventAttendanceResponseInput finalized={props.finalized} past={props.past} />
+
+        </div>
+        {/* <SettingMarkdown settingName="event_description_mockup_markdown"></SettingMarkdown> */}
+        <div className="seeMoreButtonContainer">
+            <Button className="seeMoreButton">
+                <div>14 musicians going</div>
+                {/* <div>18 photos, 1 tech rider, 2 recordings have been uploaded</div> */}
+                Click to see details...
+            </Button></div>
+    </div>;
 };
 
 

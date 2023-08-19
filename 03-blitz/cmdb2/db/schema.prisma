@@ -96,7 +96,7 @@ model User {
 
   taggedFiles    FileUserTag[]
   eventSegmentResponses EventSegmentUserResponse[]
-  eventResponses EventUserResponse[]
+  //eventResponses EventUserResponse[]
   activity       Activity[]
   songCredits    SongCredit[]
   eventComments  EventComment[]
@@ -356,7 +356,7 @@ model Event {
   comments  EventComment[]
   segments  EventSegment[]
   songLists EventSegmentSongList[]
-  responses EventUserResponse[]
+  //responses EventUserResponse[]
 }
 
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
@@ -463,24 +463,24 @@ model EventSegmentUserResponse {
   @@unique([userId, eventSegmentId]) // 
 }
 
-model EventUserResponse {
-  id      Int   @id @default(autoincrement())
-  userId  Int
-  user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+// model EventUserResponse {
+//   id      Int   @id @default(autoincrement())
+//   userId  Int
+//   user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  eventId Int
-  event  Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+//   eventId Int
+//   event  Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
 
-  expectAgreement   Boolean @default(false)
-  agreementAnswer        Boolean?
-  agreementComment String?
+//   expectAgreement   Boolean @default(false)
+//   agreementAnswer        Boolean?
+//   agreementComment String?
 
-  expectFinalize   Boolean @default(false)
-  finalizeAnswer        Boolean?
-  finalizeComment String?
+//   expectFinalize   Boolean @default(false)
+//   finalizeAnswer        Boolean?
+//   finalizeComment String?
 
-  @@unique([userId, eventId]) // 
-}
+//   @@unique([userId, eventId]) // 
+// }
 
 // tech rider, partition, invoice, contract, event media, other, what is the usage? needed to:
 // - find similar things at an application level like finding partitions
