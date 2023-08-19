@@ -4,7 +4,7 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Alert, Button, ButtonGroup, Chip } from "@mui/material";
-import { EventAttendanceResponseInput, EventAttendanceResponseInput2, EventDetail } from "src/core/components/CMComponents";
+import { EventAttendanceResponseInput, EventAttendanceResponseInput2, EventCalendarMonth, EventDetail } from "src/core/components/CMComponents";
 import CheckIcon from '@mui/icons-material/Check';
 import PlaceIcon from '@mui/icons-material/Place';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -37,141 +37,12 @@ import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
 // 1. agreement to pursue the event
 // 2. 
 
-// rehearsals are also events but have different defaults. no approvals etc.
-
-// const Event2 = () => {
-//     return <div className="contentSection">
-//         <div className="sectionTitle">
-//             <Button className="topLine">
-//                 <div className="titleText">Esperanzah 2023</div>
-//                 <div className="statusIndicator confirmed">
-//                     <CheckIcon className="statusIcon" />
-//                     <span className="statusText">Confirmed</span>
-//                 </div>
-//             </Button>
-
-//             <div className="infoLine">
-//                 <div className="date smallInfoBox">
-//                     <CalendarMonthIcon className="icon" />
-//                     <span className="text">24 August 2023</span>
-//                 </div>
-
-//                 <div className="location smallInfoBox">
-//                     <PlaceIcon className="icon" />
-//                     <span className="text">24 lombardstraat, 1050 brussel</span>
-//                 </div>
-
-//                 <div className="titleTagsContainer">
-//                     <Chip size="small" label="concert" />
-//                     <Chip size="small" label="majorettes" />
-//                     <Chip size="small" label="festival" />
-//                 </div>
-//             </div>
-
-//             <div className="approvalSummaryLine weaker">
-//                 {/* <div className="approvalItem approved">
-//                     <div className="responseChip">
-//                         <CheckCircleOutlineIcon className="icon" />
-//                         <div className="name">Carl agrees</div>
-//                         <div className="smallIconButton">
-//                             <EditIcon />
-//                         </div>
-//                     </div>
-//                 </div> */}
-//                 <div className="approvalItem approved">
-//                     <div className="responseChip">
-//                         <CheckCircleOutlineIcon className="icon" />
-//                         <CheckCircleOutlineIcon className="icon" />
-//                         <CheckCircleOutlineIcon className="icon" />
-//                         <div className="name">You, Guido & Peter have agreed to this event</div>
-//                         <div className="smallIconButton">
-//                             <EditIcon />
-//                         </div>
-//                     </div>
-//                 </div>
-//             </div>{/* approvalSummaryLine */}
-
-
-//             <div className="approvalSummaryLine">
-//                 <div className="approvalItem noResponse">
-//                     {/* <div className="responseChip">
-//                         <HelpOutlineIcon className="icon" />
-//                         <div className="name">Carl</div>
-//                     </div> */}
-//                     <div className="inputContainer">
-//                         <div className="prompt">Do we have enough musicians; are we OK for final confirmation?</div>
-//                         <ButtonGroup className="approvalButtonGroup">
-//                             <Button endIcon={<CheckCircleOutlineIcon className="icon" />} className="yes">yes</Button>
-//                             <Button endIcon={<HighlightOffIcon />} className="no">no</Button>
-//                             <Button className="null">no answer</Button>
-//                         </ButtonGroup>
-//                     </div>
-//                 </div>
-//                 <div className="approvalItem approved">
-//                     <div className="responseChip">
-//                         <CheckCircleOutlineIcon className="icon" />
-//                         <div className="name">Peter</div>
-//                     </div>
-//                 </div>
-
-//             </div>{/* approvalSummaryLine */}
-
-//             <EventAttendanceResponseInput />
-
-//         </div>
-//         {/* <SettingMarkdown settingName="event_description_mockup_markdown"></SettingMarkdown> */}
-//         <div className="seeMoreButtonContainer">
-//             <Button className="seeMoreButton">
-//                 <div>14 musicians going</div>
-//                 {/* <div>18 photos, 1 tech rider, 2 recordings have been uploaded</div> */}
-//                 Click to see details...
-//             </Button></div>
-//     </div>;
-// };
-
-
-// const Event3 = () => {
-//     return <div className="contentSection">
-//         <div className="sectionTitle">
-//             <Button className="topLine">
-//                 <div className="titleText">Esperanzah 2023</div>
-//                 <div className="statusIndicator confirmed">
-//                     <CheckIcon className="statusIcon" />
-//                     <span className="statusText">Confirmed</span>
-//                 </div>
-//             </Button>
-
-//             <div className="infoLine">
-//                 <div className="date smallInfoBox">
-//                     <CalendarMonthIcon className="icon" />
-//                     <span className="text">24 August 2023</span>
-//                 </div>
-
-//                 <div className="location smallInfoBox">
-//                     <PlaceIcon className="icon" />
-//                     <span className="text">24 lombardstraat, 1050 brussel</span>
-//                 </div>
-
-//                 <div className="titleTagsContainer">
-//                     <Chip size="small" label="concert" />
-//                     <Chip size="small" label="majorettes" />
-//                     <Chip size="small" label="festival" />
-//                 </div>
-//             </div>
-
-
-//             <EventAttendanceResponseInput2 />
-
-//         </div>
-//         {/* <SettingMarkdown settingName="event_description_mockup_markdown"></SettingMarkdown> */}
-//         <div className="seeMoreButtonContainer">
-//             <Button className="seeMoreButton">
-//                 <div>14 musicians going</div>
-//                 {/* <div>18 photos, 1 tech rider, 2 recordings have been uploaded</div> */}
-//                 Click to see details...
-//             </Button></div>
-//     </div>;
-// };
+// NO approvals, because
+// 1. it clogs up the GUI
+// 2. only 3 people use it, and requires everyone to be diligent
+// 3. adoption uncertain
+// 4. small impact overall
+// therefore: too much investment
 
 const MainContent = () => {
     if (!useAuthorization("events page", Permission.view_events)) {
@@ -180,6 +51,13 @@ const MainContent = () => {
     return (
         <div className="eventsMainContent">
             <SettingMarkdown settingName="events_markdown"></SettingMarkdown>
+            <div className="homeCalendars">
+                <EventCalendarMonth />
+                <EventCalendarMonth />
+                <EventCalendarMonth />
+                <div className="filler"></div>
+            </div>
+
             <EventDetail asArnold={true} asDirector={false} finalized={true} past={false} />
             <EventDetail asArnold={true} asDirector={true} finalized={true} past={false} />
             <EventDetail asArnold={false} asDirector={false} finalized={false} past={false} />

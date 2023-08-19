@@ -14,7 +14,7 @@ import {
   Edit as EditIcon
 } from '@mui/icons-material';
 import CheckIcon from '@mui/icons-material/Check';
-import { EventAttendanceResponseInput, EventCard, RehearsalCard } from "src/core/components/CMComponents";
+import { EventAttendanceResponseInput, EventCalendarMonth, EventCard, RehearsalCard } from "src/core/components/CMComponents";
 
 // const EventAttendanceResponseInput = () => {
 
@@ -123,45 +123,6 @@ import { EventAttendanceResponseInput, EventCard, RehearsalCard } from "src/core
 
 
 
-interface CustomPickerDayProps extends PickersDayProps<Dayjs> {
-  dayIsBetween: boolean;
-  isFirstDay: boolean;
-  isLastDay: boolean;
-}
-
-function Day(props: PickersDayProps<Dayjs> & { selectedDay?: Dayjs | null }) {
-  const { day, selectedDay, ...other } = props;
-
-  // empty default stuff
-  if (selectedDay == null) {
-    return <PickersDay style={{ backgroundColor: "#eff" }} day={day} {...other} />;
-  }
-  if (selectedDay.valueOf() === day.valueOf()) {
-    return <PickersDay style={{ backgroundColor: "#400" }} day={day} {...other} />;
-  }
-
-  if ((day.day() & 1) === 0) {
-    return <PickersDay style={{ backgroundColor: "#fee" }} day={day} {...other} />;
-  }
-  return <PickersDay style={{ backgroundColor: "#efe" }} day={day} {...other} />;
-}
-
-
-
-const EventCalendarMonth = () => {
-  const [value, setValue] = React.useState<Dayjs | null>(dayjs('2022-04-17'));
-  return <DateCalendar
-    defaultValue={dayjs('2022-04-17')} views={['day']}
-    value={value}
-    onChange={(newValue) => setValue(newValue)}
-    slots={{ day: Day }}
-    slotProps={{
-      day: {
-        selectedDay: value,
-      } as any,
-    }}
-  />;
-};
 
 const Home: BlitzPage = () => {
   const [txt, setTxt] = React.useState("");
@@ -180,12 +141,6 @@ const Home: BlitzPage = () => {
           <EventAttendanceResponseInput finalized={false} past={false} />
         </Alert>
 
-        <div className="homeCalendars">
-          <EventCalendarMonth />
-          <EventCalendarMonth />
-          <EventCalendarMonth />
-          <div className="filler"></div>
-        </div>
         <EventCard /><EventCard />
         <div>
           <h1>Recent Events</h1>

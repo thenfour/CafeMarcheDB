@@ -339,10 +339,12 @@ model Event {
   locationDescription String    @default("")
   locationURL         String    @default("")
   isDeleted           Boolean   @default(false)
-  // status - new -> request responses -> confirmed with organizer  -> confirmed
-  //                                      confirmed with group
-  //                                      confirmed with directors
   // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
+  // so ideally status is calculated based off approvals & other things. but that locks us into designing for ideal scenarios where everyone is diligent.
+  // more practical to just have an enum status.
+  statusId      Int?
+  status        EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+
   isCancelled         Boolean   @default(false) // used as an input for calculating status
   cancelledAt DateTime?
 
@@ -380,6 +382,15 @@ model EventType {
   text        String
   description String
   color       String?
+  events      Event[]
+}
+
+model EventStatus {
+  id          Int     @id @default(autoincrement())
+  label        String
+  description String
+  color       String?
+  significance   String?
   events      Event[]
 }
 

@@ -9,6 +9,12 @@ import PlaceIcon from '@mui/icons-material/Place';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import { Button, ButtonGroup, Card, CardActionArea, Chip } from "@mui/material";
+import ErrorIcon from '@mui/icons-material/Error';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import React, { FC, Suspense } from "react"
+import dayjs, { Dayjs } from "dayjs";
+import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
+
 
 export interface EventAttendanceResponseInputProps {
     finalized: boolean;
@@ -20,30 +26,22 @@ export const EventAttendanceResponseInput = (props: EventAttendanceResponseInput
     return <div className="attendanceResponseInput">
         <div className="segmentList">
             <div className="segment">
-                <div className="segmentName">Saturday (23 Sept 14-16u)</div>
-                {/* <ButtonGroup size="small"> */}
-                {/* <Button endIcon={<ThumbUpIcon />} className="yes notSelected">yep!</Button>
-          <Button endIcon={<ThumbUpIcon />} className="yes_maybe notSelected">probably</Button> */}
-                {/* <Button variant="text" endIcon={<ThumbDownIcon />} className="no_maybe selected">probably not</Button> */}
-                {/* <Button endIcon={<ThumbDownIcon />} className="no notSelected">nope</Button> */}
-                {/* </ButtonGroup> */}
+                <div className='header'>
+                    <div className="segmentName">Saturday (23 Sept 14-16u)</div>
+                </div>
                 <div className="selectedValue yes_maybe">
                     <div className="textWithIcon">
                         <ThumbUpIcon className="icon" />
                         <span className="text">You are probably going</span>
                         {!props.past && <Button startIcon={<EditIcon />}></Button>}
                     </div>
-                    {/* <div className="flexVerticalCenter">
-                        <div className="placeholderText">
-                            <EditIcon className="icon" />
-                            <span>Add a comment...</span>
-                        </div>
-                    </div> */}
                 </div>
             </div>
-            <div className="segment">
-                <div className="segmentName">Sunday (24 Sept 14-16u)</div>
+            <div className={props.finalized ? "segment " : "segment alert"}>
                 {props.finalized ? <>
+                    <div className='header'>
+                        <div className="segmentName">Sunday (24 Sept 14-16u)</div>
+                    </div>
                     <div className="selectedValue yes_maybe">
                         <div className="textWithIcon">
                             <ThumbUpIcon className="icon" />
@@ -52,7 +50,13 @@ export const EventAttendanceResponseInput = (props: EventAttendanceResponseInput
                         </div>
                     </div>
                 </> : <>
-                    <div className="prompt">Are you going?</div>
+                    <div className='header'>
+                        <ErrorOutlineIcon className='icon' />
+                        <div>
+                            <div className="segmentName">Sunday (24 Sept 14-16u)</div>
+                            <div className="prompt">Are you going?</div>
+                        </div>
+                    </div>
                     <ButtonGroup >
                         <Button endIcon={<ThumbUpIcon />} className="yes noSelection">yep!</Button>
                         <Button endIcon={<ThumbUpIcon />} className="yes_maybe noSelection">probably</Button>
@@ -189,56 +193,6 @@ export const EventDetail = (props: EventDetailProps) => {
                 </div>
             </div>
 
-            {props.asArnold && <>
-                <div className="approvalSummaryLine weaker">
-                    {/* <div className="approvalItem approved">
-                    <div className="responseChip">
-                        <CheckCircleOutlineIcon className="icon" />
-                        <div className="name">Carl agrees</div>
-                        <div className="smallIconButton">
-                            <EditIcon />
-                        </div>
-                    </div>
-                </div> */}
-                    <div className="approvalItem approved">
-                        <div className="responseChip">
-                            <CheckCircleOutlineIcon className="icon" />
-                            <CheckCircleOutlineIcon className="icon" />
-                            <CheckCircleOutlineIcon className="icon" />
-                            <div className="name">You, Guido & Peter have agreed to this event</div>
-                            <div className="smallIconButton">
-                                <EditIcon />
-                            </div>
-                        </div>
-                    </div>
-                </div>{/* approvalSummaryLine */}
-
-
-                <div className="approvalSummaryLine">
-                    {props.finalized && <div className="approvalItem noResponse">
-                        {/* <div className="responseChip">
-                        <HelpOutlineIcon className="icon" />
-                        <div className="name">Carl</div>
-                    </div> */}
-                        <div className="inputContainer">
-                            <div className="prompt">Do we have enough musicians; are we OK for final confirmation?</div>
-                            <ButtonGroup className="approvalButtonGroup">
-                                <Button endIcon={<CheckCircleOutlineIcon className="icon" />} className="yes">yes</Button>
-                                <Button endIcon={<HighlightOffIcon />} className="no">no</Button>
-                                <Button className="null">no answer</Button>
-                            </ButtonGroup>
-                        </div>
-                    </div>}
-                    <div className="approvalItem approved">
-                        <div className="responseChip">
-                            <CheckCircleOutlineIcon className="icon" />
-                            <div className="name">Peter</div>
-                        </div>
-                    </div>
-
-                </div>{/* approvalSummaryLine */}
-            </>
-            }
             <EventAttendanceResponseInput finalized={props.finalized} past={props.past} />
 
         </div>
@@ -253,3 +207,44 @@ export const EventDetail = (props: EventDetailProps) => {
 };
 
 
+
+interface CustomPickerDayProps extends PickersDayProps<Dayjs> {
+    dayIsBetween: boolean;
+    isFirstDay: boolean;
+    isLastDay: boolean;
+}
+
+function Day(props: PickersDayProps<Dayjs> & { selectedDay?: Dayjs | null }) {
+    const { day, selectedDay, ...other } = props;
+
+    // empty default stuff
+    // if (selectedDay == null) {
+    //     return <PickersDay style={{ backgroundColor: "#eff" }} day={day} {...other} />;
+    // }
+    if ((selectedDay != null) && (selectedDay.valueOf() === day.valueOf())) {
+        // selected day
+        return <PickersDay className='selected' day={day} {...other} />;
+    }
+
+    if (Math.random() < 0.05) {
+        return <PickersDay className='event' day={day} {...other} />;
+    }
+
+    return <PickersDay className='day' day={day} {...other} />;
+}
+
+
+export const EventCalendarMonth = () => {
+    const [value, setValue] = React.useState<Dayjs | null>(dayjs('2022-04-17'));
+    return <DateCalendar
+        defaultValue={dayjs('2022-04-17')} views={['day']}
+        value={value}
+        onChange={(newValue) => setValue(newValue)}
+        slots={{ day: Day }}
+        slotProps={{
+            day: {
+                selectedDay: value,
+            } as any,
+        }}
+    />;
+};

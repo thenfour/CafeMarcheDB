@@ -128,7 +128,6 @@ div.chipContainer.validationSuccess {
 .richTextContainer.editMode .richTextContentContainer {}
 
 .richTextContainer .editControlsContainer {
-  opacity: 80%;
   /* background-color: rgba(0, 0, 0, 0.06); */
   background: linear-gradient(89deg, #0001, transparent);
 }
@@ -169,6 +168,7 @@ div.chipContainer.validationSuccess {
 }
 
 .homeCalendars {
+  /* scale: 80%; */
   display: flex;
   flex-wrap: wrap;
 }
@@ -387,6 +387,22 @@ div.chipContainer.validationSuccess {
   border-left: 6px solid #88f6;
 }
 
+.attendanceResponseInput .segment.alert {
+  background-color: #fc75;
+  border-left: 6px solid orange;
+}
+
+.segment .header {
+  display: flex;
+}
+
+.segment .header .icon {
+  height: 30px;
+  width: 30px;
+  color: red;
+}
+
+
 
 .attendanceResponseInput .segmentList {
   display: flex;
@@ -501,11 +517,12 @@ div.chipContainer.validationSuccess {
 .contentSection .sectionTitle .infoLine {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   /* margin-bottom: 12px; */
 }
 
 .contentSection .sectionTitle .titleText {
-  font-size: 38px;
+  font-size: 28px;
   font-weight: bold;
   margin-right: 20px;
 }
@@ -537,6 +554,7 @@ div.chipContainer.validationSuccess {
   font-size: 19px;
   text-transform: uppercase;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 .contentSection .sectionTitle .smallInfoBox .icon {
@@ -626,3 +644,15 @@ div.chipContainer.validationSuccess {
   flex-direction: column;
   align-items: flex-start;
 }
+
+
+.selected {
+  background-color: red;
+}
+
+.event {
+  background-color: green;
+}
+
+
+.day {}
