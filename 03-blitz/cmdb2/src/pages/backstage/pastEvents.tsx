@@ -4,7 +4,7 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Alert, Button, ButtonGroup, Chip } from "@mui/material";
-import { EventAttendanceResponseInput, EventAttendanceResponseInput2, EventCalendarMonth, EventDetail } from "src/core/components/CMComponents";
+import { EventAttendanceResponseInput, EventAttendanceResponseInput2, EventSummary, RehearsalSummary } from "src/core/components/CMComponents";
 import CheckIcon from '@mui/icons-material/Check';
 import PlaceIcon from '@mui/icons-material/Place';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -44,6 +44,12 @@ import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
 // 4. small impact overall
 // therefore: too much investment
 
+/// there's a problem with showing calendars.
+// while it does show a cool overview, interactivity is a problem.
+// 1. how many months? each month is very awkward on screen space.
+// 2. interactivity? you can't actually display any info per-day, so interactivity is important but then it massively complicates things.
+// therefore: no calendars for the moment.
+
 const MainContent = () => {
     if (!useAuthorization("events page", Permission.view_events)) {
         throw new Error(`unauthorized`);
@@ -51,22 +57,25 @@ const MainContent = () => {
     return (
         <div className="eventsMainContent">
             <SettingMarkdown settingName="events_markdown"></SettingMarkdown>
-            <div className="homeCalendars">
+            + new event
+            {/* <div className="homeCalendars">
                 <EventCalendarMonth />
-                <EventCalendarMonth />
-                <EventCalendarMonth />
-                <div className="filler"></div>
-            </div>
+                <EventCalendarMonth /> */}
+            {/* <EventCalendarMonth /> */}
+            {/* <div className="filler"></div> */}
+            {/* </div> */}
 
-            <EventDetail asArnold={true} asDirector={false} finalized={true} past={false} />
-            <EventDetail asArnold={true} asDirector={true} finalized={true} past={false} />
-            <EventDetail asArnold={false} asDirector={false} finalized={false} past={false} />
-            <EventDetail asArnold={false} asDirector={false} finalized={true} past={false} />
+            <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
+            <EventSummary asArnold={true} asDirector={true} finalized={true} past={true} />
+            <EventSummary asArnold={false} asDirector={false} finalized={false} past={true} />
+            <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
+            <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
+            <EventSummary asArnold={false} asDirector={false} finalized={true} past={true} />
         </div>
     )
 };
 
-const ViewEventsPage: BlitzPage = () => {
+const PastEventsPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Events">
             <MainContent />
@@ -74,4 +83,4 @@ const ViewEventsPage: BlitzPage = () => {
     )
 }
 
-export default ViewEventsPage;
+export default PastEventsPage;

@@ -171,6 +171,7 @@ div.chipContainer.validationSuccess {
   /* scale: 80%; */
   display: flex;
   flex-wrap: wrap;
+  width: fit-content;
 }
 
 .homeCalendars>* {
@@ -509,25 +510,39 @@ div.chipContainer.validationSuccess {
   max-width: 1500px;
 }
 
-.contentSection .sectionTitle .topLine {
+.contentSection .titleLine {
   display: flex;
   align-items: center;
 }
 
-.contentSection .sectionTitle .infoLine {
+.contentSection .infoLine {
   display: flex;
   align-items: flex-start;
   flex-wrap: wrap;
   /* margin-bottom: 12px; */
 }
 
-.contentSection .sectionTitle .titleText {
+.contentSection .titleText {
   font-size: 28px;
   font-weight: bold;
   margin-right: 20px;
+  color: var(--primary-color);
+  text-transform: uppercase;
 }
 
-.contentSection .sectionTitle .statusIndicator {
+.contentSection.rehearsal .titleText {
+  color: #800;
+}
+
+.contentSection.event {
+  border-left: solid 16px var(--primary-color);
+}
+
+.contentSection.event.rehearsal {
+  border-left: solid 16px #800;
+}
+
+.contentSection .statusIndicator {
   display: flex;
   align-items: center;
   text-transform: uppercase;
@@ -538,16 +553,14 @@ div.chipContainer.validationSuccess {
   font-size: 12px;
 }
 
-.contentSection .sectionTitle .statusIndicator .statusIcon {}
+.contentSection .tagsLine {
+  margin: 0 0 12px 0;
+}
 
-.contentSection .sectionTitle .statusIndicator .statusText {}
-
-.contentSection .sectionTitle .titleTagsContainer {}
-
-.contentSection .sectionTitle .smallInfoBox {
+.contentSection .smallInfoBox {
   /* background-color: #eee; */
   margin-right: 20px;
-  margin-bottom: 10px;
+  /* margin-bottom: 10px; */
   display: flex;
   align-items: center;
   opacity: 50%;
@@ -557,11 +570,11 @@ div.chipContainer.validationSuccess {
   white-space: nowrap;
 }
 
-.contentSection .sectionTitle .smallInfoBox .icon {
+.contentSection .smallInfoBox .icon {
   opacity: 50%;
 }
 
-.contentSection .sectionTitle .titleTagsContainer .MuiChip-root {
+.contentSection .titleTagsContainer .MuiChip-root {
   margin-right: 10px;
   text-transform: uppercase;
 }
@@ -645,14 +658,34 @@ div.chipContainer.validationSuccess {
   align-items: flex-start;
 }
 
-
-.selected {
-  background-color: red;
+.attendanceDetailGrid {
+  display: flex;
+  flex-direction: column;
 }
 
-.event {
-  background-color: green;
+.attendanceDetailGrid .row {
+  display: flex;
 }
 
+.attendanceDetailGrid .row .cell {
+  width: 100px;
+}
 
-.day {}
+.attendanceResponseChip {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.attendanceResponseChip.yes_maybe {
+  display: flex;
+  align-items: center;
+  color: yellowgreen;
+  background-color: #ffc;
+}
+
+.attendanceResponseChip .icon {}
+
+.attendanceResponseChip .responseText {}
+
+.attendanceResponseChip .userComment {}

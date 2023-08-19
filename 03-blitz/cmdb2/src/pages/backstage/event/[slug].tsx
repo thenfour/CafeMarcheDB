@@ -5,6 +5,7 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Breadcrumbs, Link, Typography } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
+import { EventDetail } from "src/core/components/CMComponents";
 
 
 const MyComponent = () => {
@@ -13,7 +14,7 @@ const MyComponent = () => {
         throw new Error(`unauthorized`);
     }
     //return <div>{params.slug} - todo: show breadcrumbs of some sort</div>;
-    return <Breadcrumbs aria-label="breadcrumb">
+    return <div><Breadcrumbs aria-label="breadcrumb">
         <Link
             underline="hover"
             color="inherit"
@@ -32,7 +33,10 @@ const MyComponent = () => {
             Instruments
         </Link>
         <Typography color="text.primary">{params.slug}</Typography>
-    </Breadcrumbs>;
+    </Breadcrumbs>
+        <EventDetail />
+    </div>
+        ;
 };
 
 

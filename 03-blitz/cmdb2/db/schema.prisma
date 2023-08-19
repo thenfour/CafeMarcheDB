@@ -87,6 +87,7 @@ model User {
   hashedPassword String?
   googleId       String?
   createdAt      DateTime @default(now())
+  activelyParticipating Boolean @default(false)
 
   roleId   Int? // nullable for new users a role should be assigned by an admin. null = public
   role     Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
@@ -96,7 +97,6 @@ model User {
 
   taggedFiles    FileUserTag[]
   eventSegmentResponses EventSegmentUserResponse[]
-  //eventResponses EventUserResponse[]
   activity       Activity[]
   songCredits    SongCredit[]
   eventComments  EventComment[]

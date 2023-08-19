@@ -265,7 +265,8 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
 
 const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon /> },
-    { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/comingEvents", linkCaption: "Coming events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/pastEvents", linkCaption: "Past events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
     { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
     { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon /> },
     { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
