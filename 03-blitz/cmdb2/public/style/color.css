@@ -35,7 +35,7 @@
     background-color: var(--strong-color);
     color: var(--strong-contrast-color);
     border: 2px var(--border-style) var(--strong-contrast-color);
-    border-bottom: none;
+    /* border-bottom: none; */
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 }
@@ -44,7 +44,7 @@
     background-color: var(--weak-color);
     color: var(--weak-contrast-color);
     border: 2px var(--border-style) var(--weak-contrast-color);
-    border-top: none;
+    /* border-top: none; */
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
@@ -76,8 +76,25 @@
 
 .paletteeditor .MuiButton-root {
     border: 1px solid #8888;
+    padding: 0;
+    min-width: 40px;
 }
 
 .paletteeditor .MuiButton-root.selected {
     border: 2px solid #f00;
+}
+
+.paletteGenRoot {}
+
+.paletteGenRoot>.controlSection {
+    border: 2px solid #0008;
+    margin: 8px 0;
+    display: flex;
+
+}
+
+.paletteGenRoot>.controlSection>.caption {
+    background-color: #0002;
+    font-size: 18px;
+    width: min-content;
 }

@@ -301,11 +301,17 @@ export class TimeSpan {
 }; // TimeSpan
 
 export function lerp(a, b, alpha) {
-    if ((b - a) < 0.0001) return alpha;
+    if (Math.abs(b - a) < 0.0001) return a;
     return a + alpha * (b - a);
 }
 
 let gSequenceId = 0;
 export const getNextSequenceId = () => {
     return gSequenceId++;
+}
+
+export const clamp01 = (x) => {
+    if (x < 0) return 0;
+    if (x > 1) return 1;
+    return x;
 }

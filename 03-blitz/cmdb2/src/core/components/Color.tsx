@@ -34,12 +34,12 @@ export const ColorSwatch = (props: ColorSwatchProps) => {
         "--border-style": (props.color == null) ? "dotted" : "solid",
     };
     return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""}`} style={style as React.CSSProperties}>
-        <div className="strong">
+        <Tooltip title={`${entry.strongValue}\r\n${entry.strongContrastColor}`}><div className="strong">
             {entry.label}
-        </div>
-        <div className="weak">
+        </div></Tooltip>
+        <Tooltip title={`${entry.weakValue}\r\n${entry.weakContrastColor}`}><div className="weak">
             {entry.label}
-        </div>
+        </div></Tooltip>
     </div>;
 };
 
