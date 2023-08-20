@@ -1,6 +1,6 @@
 import React from "react";
 import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, Select, Tooltip } from "@mui/material";
-import { ColorPalette, ColorPaletteEntry, CreateColorPaletteEntry, CreateNullPaletteEntry } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateColorPaletteEntry } from "shared/color";
 import { gNullValue, getNextSequenceId } from "shared/utils";
 //import "../../../public/style/color.css"
 
@@ -20,18 +20,58 @@ export interface ColorSwatchProps {
 };
 
 
+// export const CreateNullPaletteEntry = () => {
+//     const ret: ColorPaletteEntry = {
+//         id: `${getNextSequenceId()}`,
+//         label: "(none)",
+//         strongOutline: false,
+//         weakOutline: false,
+//         strongValue: "#0002",
+//         strongContrastColor: "black",
+//         weakValue: "#0002",
+//         weakContrastColor: "black",
+//     };
+//     return ret;
+// };
+
+export const NullColorSwatch = (props: ColorSwatchProps) => {
+
+    const style = {
+        "--strong-color": "#fff8",
+        "--strong-contrast-color": "#0008",
+        "--strong-border-color": "#0008",
+        "--strong-border-style": "dotted",
+        "--weak-color": "#fff8",
+        "--weak-contrast-color": "#0008",
+        "--weak-border-color": "#0008",
+        "--weak-border-style": "dotted",
+    };
+    return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot nullValue `} style={style as React.CSSProperties}>
+        <Tooltip title={`(none)`}><div className="strong">
+            (none)
+        </div></Tooltip>
+        <Tooltip title={`(none)`}><div className="weak">
+            (none)
+        </div></Tooltip>
+    </div>;
+}
+
 // props.color can never be null.
 export const ColorSwatch = (props: ColorSwatchProps) => {
-    const entry = props.color || CreateNullPaletteEntry();
+    if (props.color == null) {
+        return <NullColorSwatch {...props} />;
+    }
+    const entry = props.color;// || CreateNullPaletteEntry();
 
     const style = {
         "--strong-color": entry.strongValue,
         "--strong-contrast-color": entry.strongContrastColor,
-        "--strong-border-color": entry.outline ? entry.strongContrastColor : "#d8d8d8",
+        "--strong-border-color": entry.strongOutline ? entry.strongContrastColor : "#d8d8d8",
+        "--strong-border-style": (props.color == null) ? "dotted" : (props.color.strongOutline ? "solid" : "hidden"),
         "--weak-color": entry.weakValue,
         "--weak-contrast-color": entry.weakContrastColor,
-        "--weak-border-color": entry.outline ? entry.weakContrastColor : "#d8d8d8",
-        "--border-style": (props.color == null) ? "dotted" : "solid",
+        "--weak-border-color": entry.weakOutline ? entry.weakContrastColor : "#d8d8d8",
+        "--weak-border-style": (props.color == null) ? "dotted" : (props.color.weakOutline ? "solid" : "hidden"),
     };
     return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""}`} style={style as React.CSSProperties}>
         <Tooltip title={`${entry.strongValue}\r\n${entry.strongContrastColor}`}><div className="strong">
@@ -46,7 +86,7 @@ export const ColorSwatch = (props: ColorSwatchProps) => {
 export interface ColorPaletteGridProps {
     palette: ColorPalette;
     showNull: boolean;
-    onClick: (value: ColorPaletteEntry) => void;
+    onClick: (value: ColorPaletteEntry | null) => void;
 };
 
 export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
@@ -56,12 +96,12 @@ export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
                 return <div className="row" key={rowIndex}>
                     {
                         props.showNull && (
-                            (rowIndex === 0) ? (<ColorSwatch selected={false} color={null} isSpacer={true} />)
+                            (rowIndex === 0) ? (<div onClick={() => { props.onClick(null) }}><ColorSwatch selected={false} color={null} isSpacer={true} /></div>)
                                 : (<ColorSwatch selected={false} color={null} isSpacer={true} />)
                         )
                     }
                     {row.map(e => {
-                        return <ColorSwatch selected={false} key={e.id || gNullValue} color={e} />;
+                        return <div onClick={() => { props.onClick(e) }}><ColorSwatch selected={false} key={e.id} color={e} /></div>;
 
                     })}
                 </div>;
@@ -70,50 +110,53 @@ export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
     </div>;
 };
 
+export interface ColorPaletteListComponentProps {
+    palettes: ColorPaletteList;
+    onClick: (value: ColorPaletteEntry | null) => void;
+    allowNull: boolean;
+};
+
+export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps) => {
+    return <div className="colorPaletteListRoot">
+        {
+            props.palettes.palettes.map((palette, index) => {
+                return <ColorPaletteGrid onClick={props.onClick} key={index} palette={palette} showNull={index === 0 && props.allowNull} />;
+            })
+        }
+    </div>;
+};
+
 export interface ColorPickProps {
     value: ColorPaletteEntry | null;
-    palette: ColorPalette;
-    onChange: (value: ColorPaletteEntry) => void;
+    allowNull: boolean;
+    palettes: ColorPaletteList;
+    onChange: (value: ColorPaletteEntry | null) => void;
 };
 
 // props.color can never be null.
 export const ColorPick = (props: ColorPickProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const isOpen = Boolean(anchorEl);
-    const entry = props.value || props.palette.defaultEntry;
+    const entry = props.value;
 
     const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
     };
 
     return <>
-        {/* <Backdrop open={true}> */}
-        <Tooltip title={entry.label}>
-            <Button onClick={handleOpen}><ColorSwatch selected={true} color={entry} /></Button>
-        </Tooltip>
+        <div onClick={handleOpen}>
+            <ColorSwatch selected={true} color={entry} />
+        </div>
         <Popover
             anchorEl={anchorEl}
             open={isOpen}
             onClose={() => setAnchorEl(null)}
-        // i really want this but can't make it work.
-        //hideBackdrop={false}
-        //BackdropProps={{ invisible: false }}
-        //slotProps={{ backdrop: { className: "bleh" } }}
         >
-            {
-                props.palette.getAllRowsAndEntries().map((row, rowIndex) => {
-                    return <Box key={rowIndex}>
-                        {row.map(e => {
-                            return <MenuItem sx={{ display: "inline-flex" }} key={e.value || gNullValue} onClick={() => {
-                                props.onChange(e);
-                                setAnchorEl(null);
-                            }}> <ColorSwatch selected={e.value === entry.value} key={e.value || gNullValue} color={e} /></MenuItem>
-
-                        })}
-                    </Box>;
-                })
-            }
+            <ColorPaletteListComponent allowNull={props.allowNull} palettes={props.palettes} onClick={(e: ColorPaletteEntry | null) => {
+                props.onChange(e);
+                setAnchorEl(null);
+            }}
+            />
         </Popover >
-        {/* </Backdrop> */}
     </>;
 };

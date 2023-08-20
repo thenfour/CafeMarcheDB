@@ -7,8 +7,8 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Breadcrumbs, Button, Checkbox, Link, List, ListItem, Radio, Typography } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
 import { EventDetail } from "src/core/components/CMComponents";
-import { ColorPalette, ColorPaletteEntry, CreateColorPaletteEntry, PaletteGenParamGroup, PaletteGenParams, PaletteGenValue } from "shared/color";
-import { ColorPaletteGrid, ColorSwatch } from "src/core/components/Color";
+import { ColorPalette, ColorPaletteArgs, ColorPaletteEntry, CreateColorPaletteEntry, PaletteGenParamGroup, PaletteGenParams, PaletteGenValue, gGeneralPaletteList } from "shared/color";
+import { ColorPaletteGrid, ColorPaletteListComponent, ColorPick, ColorSwatch } from "src/core/components/Color";
 import { TAnyModel, clamp01, gNullValue, lerp } from "shared/utils";
 
 // hue 0-360
@@ -252,6 +252,18 @@ const MyComponent = () => {
         });
     };
 
+    const onCopyPalette = async () => {
+        const exp: ColorPaletteArgs = {
+            entries: palette.entries,
+            columns: palette.columns,
+            defaultIndex: 0,
+        }
+        const txt = JSON.stringify(exp);
+        navigator.clipboard.writeText(txt).then(() => {
+            alert(`copied ${txt.length} chars`);
+        });
+    };
+
     const onPaste = async () => {
         try {
             const txt = await navigator.clipboard.readText();
@@ -266,8 +278,9 @@ const MyComponent = () => {
     };
 
     return <div className="paletteeditor">
-        <Button onClick={onCopy}>Copy to clipboard</Button>
-        <Button onClick={onPaste}>Paste from clipboard</Button>
+        <Button onClick={onCopy}>Copy GEN to clipboard</Button>
+        <Button onClick={onPaste}>Paste GEN from clipboard</Button>
+        <Button onClick={onCopyPalette}>Copy PALETTE to clipboard</Button>
         <div className="">palette has {palette.entries.length} entries.</div>
         {
             numberOptions.map(i => <EntryCountSelect key={i} value={i} selectedValue={genParams.entryCount} />)
@@ -287,10 +300,17 @@ const MyComponent = () => {
 };
 
 
+const ColorSelTest = () => {
+    const [sel, setSel] = React.useState<ColorPaletteEntry | null>(null);
+    return <ColorPick allowNull={true} palettes={gGeneralPaletteList} value={sel} onChange={(e) => { setSel(e) }} />;
+}
+
 const ColorEditPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Instrument">
             <MyComponent></MyComponent>
+            <ColorPaletteListComponent allowNull={true} palettes={gGeneralPaletteList} onClick={(v) => { }} />
+            <ColorSelTest />
         </DashboardLayout>
     )
 }
