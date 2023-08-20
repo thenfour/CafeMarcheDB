@@ -299,3 +299,13 @@ export class TimeSpan {
     get longString() { return this.__longString; }
 
 }; // TimeSpan
+
+export function lerp(a, b, alpha) {
+    if ((b - a) < 0.0001) return alpha;
+    return a + alpha * (b - a);
+}
+
+let gSequenceId = 0;
+export const getNextSequenceId = () => {
+    return gSequenceId++;
+}

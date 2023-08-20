@@ -12,7 +12,6 @@ import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
-import { gNullColorPaletteEntry } from "shared/color";
 
 
 export type InsertFromStringParams = {

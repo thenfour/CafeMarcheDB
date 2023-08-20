@@ -1,7 +1,8 @@
 import React from "react";
 import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, Select, Tooltip } from "@mui/material";
-import { ColorPalette, ColorPaletteEntry, gNullColorPaletteEntry } from "shared/color";
-import { gNullValue } from "shared/utils";
+import { ColorPalette, ColorPaletteEntry, CreateColorPaletteEntry, CreateNullPaletteEntry } from "shared/color";
+import { gNullValue, getNextSequenceId } from "shared/utils";
+//import "../../../public/style/color.css"
 
 interface ColorPaletteFieldArgs {
     member: string,
@@ -15,22 +16,58 @@ interface ColorPaletteFieldArgs {
 export interface ColorSwatchProps {
     color: ColorPaletteEntry | null;
     selected: boolean;
+    isSpacer?: boolean;
 };
 
 
 // props.color can never be null.
 export const ColorSwatch = (props: ColorSwatchProps) => {
-    const entry = props.color || gNullColorPaletteEntry;
-    const style = (entry.value === null) ? "dotted" : "solid";
-    return <Tooltip title={entry.label}>
-        <Box sx={{
-            width: 25,
-            height: 25,
-            backgroundColor: entry.value,
-            border: props.selected ? `2px ${style} #888` : `2px ${style} #d8d8d8`,
-        }}>
-        </Box>
-    </Tooltip>;
+    const entry = props.color || CreateNullPaletteEntry();
+
+    const style = {
+        "--strong-color": entry.strongValue,
+        "--strong-contrast-color": entry.strongContrastColor,
+        "--strong-border-color": entry.outline ? entry.strongContrastColor : "#d8d8d8",
+        "--weak-color": entry.weakValue,
+        "--weak-contrast-color": entry.weakContrastColor,
+        "--weak-border-color": entry.outline ? entry.weakContrastColor : "#d8d8d8",
+        "--border-style": (props.color == null) ? "dotted" : "solid",
+    };
+    return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""}`} style={style as React.CSSProperties}>
+        <div className="strong">
+            {entry.label}
+        </div>
+        <div className="weak">
+            {entry.label}
+        </div>
+    </div>;
+};
+
+export interface ColorPaletteGridProps {
+    palette: ColorPalette;
+    showNull: boolean;
+    onClick: (value: ColorPaletteEntry) => void;
+};
+
+export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
+    return <div className="colorPaletteGridRoot">
+        {
+            props.palette.getAllRowsAndEntries().map((row, rowIndex) => {
+                return <div className="row" key={rowIndex}>
+                    {
+                        props.showNull && (
+                            (rowIndex === 0) ? (<ColorSwatch selected={false} color={null} isSpacer={true} />)
+                                : (<ColorSwatch selected={false} color={null} isSpacer={true} />)
+                        )
+                    }
+                    {row.map(e => {
+                        return <ColorSwatch selected={false} key={e.id || gNullValue} color={e} />;
+
+                    })}
+                </div>;
+            })
+        }
+    </div>;
 };
 
 export interface ColorPickProps {
@@ -43,7 +80,7 @@ export interface ColorPickProps {
 export const ColorPick = (props: ColorPickProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const isOpen = Boolean(anchorEl);
-    const entry = props.value || gNullColorPaletteEntry;
+    const entry = props.value || props.palette.defaultEntry;
 
     const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -52,7 +89,7 @@ export const ColorPick = (props: ColorPickProps) => {
     return <>
         {/* <Backdrop open={true}> */}
         <Tooltip title={entry.label}>
-            <Button onClick={handleOpen}><ColorSwatch selected={true} color={props.value} /></Button>
+            <Button onClick={handleOpen}><ColorSwatch selected={true} color={entry} /></Button>
         </Tooltip>
         <Popover
             anchorEl={anchorEl}

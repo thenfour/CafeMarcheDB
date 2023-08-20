@@ -439,14 +439,6 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         //this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
         this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
-        // this.getChipCaption = args.getChipCaption;
-        // if (!args.doesItemExactlyMatchText && !this.getChipCaption) {
-        //     throw new Error(`here.,`);
-        // }
-        // this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
-        // this.getChipDescription = args.getChipDescription;
-        //this.createInsertModelFromString = args.createInsertModelFromString;
-        //this.allowInsertFromString = args.allowInsertFromString;
     }
 
     get allowInsertFromString() {
@@ -561,9 +553,6 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         this.associationLocalIDMember = args.associationLocalIDMember;
         this.associationLocalObjectMember = args.associationLocalObjectMember;
         this.associationForeignObjectMember = args.associationForeignObjectMember;
-        // this.getChipCaption = args.getChipCaption;
-        // this.getChipDescription = args.getChipDescription;
-        // this.getChipColor = args.getChipColor || ((val) => gNullColorPaletteEntry);
         this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
     }
 

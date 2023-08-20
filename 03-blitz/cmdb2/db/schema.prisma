@@ -335,6 +335,7 @@ model Event {
   description String // what's the diff between a description & comment? description is the pinned general description in markdown.
   typeId      Int?
   type        EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+  isPublished Boolean @default(false) // is it visible to non-editors?
 
   locationDescription String    @default("")
   locationURL         String    @default("")

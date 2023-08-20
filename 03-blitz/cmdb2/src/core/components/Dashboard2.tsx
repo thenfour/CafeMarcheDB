@@ -288,7 +288,9 @@ const gMenuItems: MenuItem[] = [
 
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Settings" },
+
     { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon /> },
+    { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon /> },
 ]
 
 const Dashboard2 = ({ children }) => {

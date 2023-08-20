@@ -8,6 +8,7 @@ import Head from "next/head";
 import { withBlitz } from "src/blitz-client";
 import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
+import "../../public/style/color.css";
 import '../../public/global.css';
 import React from "react";
 import { useTheme } from "@mui/material/styles";

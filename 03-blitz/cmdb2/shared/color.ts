@@ -1,28 +1,65 @@
+import { getNextSequenceId } from "./utils";
 
 
 export interface ColorPaletteEntry {
-    id: string | null; // used for database match
+    id: string; // used for database match
     label: string;
     outline: boolean; // for black / white, this is useful
 
     // normal filled chip type
-    strongValue: string | null;
-    strongContrastColor: string | null; // for text mostly
+    strongValue: string;
+    strongContrastColor: string; // for text mostly
 
     //  for de-emphasized we need an inverted value
-    weakValue: string | null;
-    weakContrastColor: string | null; // for text mostly
+    weakValue: string;
+    weakContrastColor: string; // for text mostly
 };
 
+// // sentinel value for react components
+// export const gNullColorPaletteEntry: ColorPaletteEntry = {
+//     id: null, // used for database match
+//     label: "(none)",
+//     outline: false,
+//     strongValue: null,
+//     strongContrastColor: null,
+//     weakValue: null,
+//     weakContrastColor: null,
+// };
+
 // sentinel value for react components
-export const gNullColorPaletteEntry: ColorPaletteEntry = {
-    id: null, // used for database match
-    label: "(none)",
-    outline: false,
-    strongValue: null,
-    strongContrastColor: null,
-    weakValue: null,
-    weakContrastColor: null,
+// export const gDefaultColorPaletteEntry: ColorPaletteEntry = {
+//     id: "", // used for database match
+//     label: "(none)",
+//     outline: false,
+//     strongValue: null,
+//     strongContrastColor: null,
+//     weakValue: null,
+//     weakContrastColor: null,
+// } as const;
+
+export const CreateColorPaletteEntry = () => {
+    const ret: ColorPaletteEntry = {
+        id: `${getNextSequenceId()}`,
+        label: "sample",
+        outline: false,
+        strongValue: "#f00",
+        strongContrastColor: "white",
+        weakValue: "#f002",
+        weakContrastColor: "#f008",
+    };
+    return ret;
+}
+export const CreateNullPaletteEntry = () => {
+    const ret: ColorPaletteEntry = {
+        id: `${getNextSequenceId()}`,
+        label: "(none)",
+        outline: false,
+        strongValue: "#0002",
+        strongContrastColor: "black",
+        weakValue: "#0002",
+        weakContrastColor: "black",
+    };
+    return ret;
 };
 
 export class ColorPaletteArgs {
@@ -76,12 +113,10 @@ export class ColorPalette extends ColorPaletteArgs {
 };
 
 
-
 export const gGeneralPalette = new ColorPalette({
     columns: 4,
     defaultIndex: 0,
     entries: [
-        gNullColorPaletteEntry,
         { id: "Red", label: "Red", strongValue: "#fdd", strongContrastColor: "black", outline: false, weakValue: "#fee", weakContrastColor: "#c88", },
         { id: "Green", label: "Green", strongValue: "#dfd", strongContrastColor: "black", outline: false, weakValue: "#fee", weakContrastColor: "#c88", },
         { id: "Blue", label: "Blue", strongValue: "#ddf", strongContrastColor: "black", outline: false, weakValue: "#fee", weakContrastColor: "#c88", },

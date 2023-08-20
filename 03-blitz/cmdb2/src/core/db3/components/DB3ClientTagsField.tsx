@@ -26,7 +26,6 @@ import { TAnyModel } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { gNullColorPaletteEntry } from 'shared/color';
 
 
 const gMaxVisibleTags = 6;
