@@ -221,15 +221,26 @@ model SongComment {
   //@@unique([songId, commentId])
 }
 
+// composer / arranger / whatever
+model SongCreditType {
+  id          Int     @id @default(autoincrement())
+  text        String
+  description String  @default("")
+  color       String?
+  sortOrder   Int     @default(0)
+
+  songCredits SongCredit[]
+}
+
 model SongCredit {
-  id         Int     @id @default(autoincrement())
-  type       String // composer / arranger / whatever
-  userId     Int?
-  user       User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  userString String? // in case there's no user for this, type-in.
-  songId     Int
-  song       Song    @relation(fields: [songId], references: [id], onDelete: Restrict)
-  sortOrder  Int     @default(0)
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  songId Int
+  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict)
+
+  typeId Int
+  type   SongCreditType @relation(fields: [typeId], references: [id], onDelete: Restrict)
 
   @@unique([userId, songId])
 }

@@ -10,6 +10,7 @@ export enum Permission {
     view_songs = "view_songs",
     admin_songs = "admin_songs",
     view_general_info = "view_general_info", // instruments, instrument tags,
+    edit_song_credit_types = "edit_song_credit_types",
 
     view_events = "view_events",
     admin_events = "admin_events",
@@ -27,5 +28,6 @@ export enum Permission {
 
     associate_instrument_tags = "associate_instrument_tags",
     associate_song_tags = "associate_song_tags",
+    edit_song_credits = "edit_song_credits",
 };
 

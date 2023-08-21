@@ -110,7 +110,7 @@ export const xSongTagAssociation = new xTable({
             fkMember: "tagId",
             allowNull: false,
             foreignTableSpec: xSongTag,
-            getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput|false => false,
+            getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput | false => false,
         }),
     ]
 });
@@ -275,18 +275,98 @@ export const xSongComment = new xTable({
 
 
 
+////////////////////////////////////////////////////////////////
+const SongCreditTypeInclude: Prisma.SongCreditTypeInclude = {
+    songCredits: true,
+};
 
-//   model SongCredit {
-//     id         Int     @id @default(autoincrement())
-//     type       String // composer / arranger / whatever
-//     userId     Int?
-//     user       User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
-//     userString String? // in case there's no user for this, type-in.
-//     songId     Int
-//     song       Song    @relation(fields: [songId], references: [id], onDelete: Restrict)
-//     sortOrder  Int     @default(0)
-  
-//     @@unique([userId, songId])
-//   }
-  
+export type SongCreditTypePayload = Prisma.SongCreditTypeGetPayload<{}>;
 
+export const SongCreditTypeNaturalOrderBy: Prisma.SongCreditTypeOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { text: 'asc' },
+    { id: 'asc' },
+];
+
+export const xSongCreditType = new xTable({
+    editPermission: Permission.edit_song_credit_types,
+    viewPermission: Permission.view_general_info,
+    localInclude: SongCreditTypeInclude,
+    tableName: "songCreditType",
+    naturalOrderBy: SongCreditTypeNaturalOrderBy,
+    getRowInfo: (row: SongCreditTypePayload) => ({
+        name: "<not supported>",
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        new GenericStringField({
+            columnName: "text",
+            allowNull: false,
+            format: "plain",
+        }),
+        new GenericStringField({
+            columnName: "description",
+            allowNull: false,
+            format: "markdown",
+        }),
+        new GenericIntegerField({
+            columnName: "sortOrder",
+            allowNull: false,
+        }),
+        new ColorField({
+            columnName: "color",
+            allowNull: true,
+            palette: gGeneralPaletteList,
+        }),
+    ]
+});
+
+
+
+////////////////////////////////////////////////////////////////
+const SongCreditInclude: Prisma.SongCreditInclude = {
+    song: true,
+    user: true,
+    type: true,
+};
+
+export type SongCreditPayload = Prisma.SongCreditGetPayload<{}>;
+
+export const SongCreditNaturalOrderBy: Prisma.SongCreditOrderByWithRelationInput[] = [
+    { id: 'asc' },
+];
+
+export const xSongCredit = new xTable({
+    editPermission: Permission.edit_song_credits,
+    viewPermission: Permission.view_general_info,
+    localInclude: SongCreditInclude,
+    tableName: "songCredit",
+    naturalOrderBy: SongCreditNaturalOrderBy,
+    getRowInfo: (row: SongCreditPayload) => ({
+        name: "<not supported>",
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName: "user",
+            fkMember: "userId",
+            allowNull: false,
+            foreignTableSpec: xUser,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.SongGetPayload<{}>>({
+            columnName: "song",
+            fkMember: "songId",
+            allowNull: false,
+            foreignTableSpec: xSong,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.SongCreditTypeGetPayload<{}>>({
+            columnName: "type",
+            fkMember: "typeId",
+            allowNull: false,
+            foreignTableSpec: xSongCreditType,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
