@@ -119,18 +119,10 @@ export class ColorPalette extends ColorPaletteArgs {
         return { x01, y01 };
     };
 
-    // undefined if doesn't exist
-    findColorPaletteEntry(colorString: string | null): ColorPaletteEntry {
-        let ret = this.entries.find(i => i.id === colorString);
-        if (ret !== undefined) return ret;
-
-        // not found; treat as null?
-        ret = this.entries.find(i => i.id === null);
-        if (ret !== undefined) return ret;
-        if (this.entries.length < 1) throw new Error("palettes must have at least 1 entry or what's really the point rite??");
-
-        // still not found; use default entry.
-        return this.defaultEntry;
+    // this must return undefined in order for palettelist to know if a match was found. don't fallback to default entry.
+    findEntry(id: string | null): ColorPaletteEntry | null | undefined {
+        if (id == null) return null;
+        return this.entries.find(i => i.id === id);
     }
 };
 
@@ -367,6 +359,19 @@ export class ColorPaletteList {
     palettes: ColorPalette[];
     constructor(palettes: ColorPalette[]) {
         this.palettes = palettes;
+    }
+
+    get defaultEntry(): ColorPaletteEntry {
+        return this.palettes[0]!.defaultEntry;
+    }
+
+    findEntry(id: string | null): ColorPaletteEntry | null {
+        if (id == null) return null;
+        for (let i = 0; i < this.palettes.length; ++i) {
+            const found = this.palettes[i]?.findEntry(id);
+            if (found) return found;
+        }
+        return null;
     }
 };
 

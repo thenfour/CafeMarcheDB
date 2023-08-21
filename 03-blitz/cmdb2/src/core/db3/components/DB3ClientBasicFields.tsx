@@ -268,15 +268,16 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
             width: args.cellWidth,
             GridColProps: {
                 renderCell: (args: GridRenderCellParams) => {
-                    return <div className='MuiDataGrid-cellContent'><ColorSwatch selected={true} color={args.value} /></div>; // colorswatch must be aware of null values.
+                    return <div className='MuiDataGrid-cellContent'><ColorSwatch selected={true} color={args.value} showStrong={true} showWeak={true} /></div>; // colorswatch must be aware of null values.
                 },
                 renderEditCell: (args: GridRenderEditCellParams) => {
                     return <ColorPick
                         value={args.value}
-                        palette={(this.schemaColumn as db3fields.ColorField).palette}
+                        palettes={(this.schemaColumn as db3fields.ColorField).palette}
                         onChange={(value: ColorPaletteEntry) => {
                             args.api.setEditCellValue({ id: args.id, field: this.schemaColumn.member, value: value });
                         }}
+                        allowNull={(this.schemaColumn as db3fields.ColorField).allowNull}
                     />;
 
                 },
@@ -290,7 +291,8 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <ColorPick
             value={params.value as ColorPaletteEntry | null}
-            palette={(this.schemaColumn as db3fields.ColorField).palette}
+            palettes={(this.schemaColumn as db3fields.ColorField).palette}
+            allowNull={(this.schemaColumn as db3fields.ColorField).allowNull}
             onChange={(value: ColorPaletteEntry) => {
                 params.api.setFieldValues({ [this.schemaColumn.member]: value }); // params.api.setFieldValues({ [this.columnName]: val });
                 //args.api.setEditCellValue({ id: args.id, field: this.schemaColumn.member, value: value });

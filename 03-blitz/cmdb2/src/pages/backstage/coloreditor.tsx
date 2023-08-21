@@ -278,8 +278,8 @@ const MyComponent = () => {
     };
 
     return <div className="paletteeditor">
-        <Button onClick={onCopy}>Copy GEN to clipboard</Button>
         <Button onClick={onPaste}>Paste GEN from clipboard</Button>
+        <Button onClick={onCopy}>Copy GEN to clipboard</Button>
         <Button onClick={onCopyPalette}>Copy PALETTE to clipboard</Button>
         <div className="">palette has {palette.entries.length} entries.</div>
         {

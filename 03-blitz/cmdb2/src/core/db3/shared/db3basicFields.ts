@@ -1,4 +1,4 @@
-import { ColorPalette, ColorPaletteEntry } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
 import { ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseResult, xTable } from "./db3core";
 
@@ -42,6 +42,7 @@ export class PKField extends FieldBase<number> {
         // pkid is not present in the mutations. it's passed as a separate param automatically by client.
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
 }
@@ -144,6 +145,7 @@ export class GenericStringField extends FieldBase<string> {
         mutationModel[this.member] = clientModel[this.member];
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
 };
@@ -209,6 +211,7 @@ export class GenericIntegerField extends FieldBase<number> {
         mutationModel[this.member] = vr.parsedValue;
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
 };
@@ -222,12 +225,12 @@ export class GenericIntegerField extends FieldBase<number> {
 export interface ColorFieldArgs {
     columnName: string;
     allowNull: boolean;
-    palette: ColorPalette;
+    palette: ColorPaletteList;
 };
 
 export class ColorField extends FieldBase<ColorPaletteEntry> {
     allowNull: boolean;
-    palette: ColorPalette;
+    palette: ColorPaletteList;
 
     constructor(args: ColorFieldArgs) {
         super({
@@ -243,21 +246,22 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
     connectToTable = (table: xTable) => { };
 
     isEqual = (a: ColorPaletteEntry, b: ColorPaletteEntry) => {
-        return a.value === b.value;
+        return a.id === b.id;
     };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        return { [this.member]: { contains: query } };
+        return false;// { [this.member]: { contains: query } };
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         const dbVal: string | null = dbModel[this.member];
-        clientModel[this.member] = this.palette.findColorPaletteEntry(dbVal);
+        clientModel[this.member] = this.palette.findEntry(dbVal);
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
-        const dbVal: ColorPaletteEntry | null = clientModel[this.member];
-        mutationModel[this.member] = (dbVal?.value) || null;
+        const val: ColorPaletteEntry | null = clientModel[this.member];
+        mutationModel[this.member] = (val?.id) || null;
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -265,7 +269,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
         if (val === null && !this.allowNull) {
             return ErrorValidateAndParseResult("field must be non-null", val);
         }
-        if (this.palette.findColorPaletteEntry(val?.value || null) == null) {
+        if (this.palette.findEntry(val?.id || null) == null) {
             return ErrorValidateAndParseResult("Not found in palette.", val);
         }
         return SuccessfulValidateAndParseResult(val);
@@ -301,6 +305,7 @@ export class BoolField extends FieldBase<boolean> {
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         const dbVal: boolean | null = dbModel[this.member]; // db may have null values so need to coalesce
         clientModel[this.member] = dbVal || this.defaultValue;
     }
@@ -355,6 +360,7 @@ export class ConstEnumStringField extends FieldBase<string> {
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
 
@@ -454,6 +460,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         // leaves behind the fk id.
         clientModel[this.member] = dbModel[this.member];
     }
@@ -590,6 +597,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         // the "includes" clause already returns the correct structure for clients.
         clientModel[this.member] = dbModel[this.member];
     }
@@ -693,6 +701,7 @@ export class DateTimeField extends FieldBase<Date> {
         mutationModel[this.member] = vr.parsedValue;
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
         console.assert(dbModel[this.member] instanceof Date);
         clientModel[this.member] = dbModel[this.member];
     }

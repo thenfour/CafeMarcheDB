@@ -163,10 +163,11 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
-        console.log(`insertImpl for ${table.tableName}. fields:`);
-        console.log(JSON.stringify(fields));
+        // console.log(`insertImpl for ${table.tableName}. fields:`);
+        // console.log(JSON.stringify(fields));
 
-        const validateResult = table.ValidateAndComputeDiff(fields, fields);
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields);
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation);
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);
@@ -225,7 +226,9 @@ const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ct
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
-        const validateResult = table.ValidateAndComputeDiff(fields, fields);
+        // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields);
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation);
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);

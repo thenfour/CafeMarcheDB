@@ -15,6 +15,8 @@
     height: 70px;
     overflow: hidden;
     text-align: center;
+    /* selection obscures the color*/
+    user-select: none;
 }
 
 .colorSwatchRoot:hover {
@@ -106,5 +108,25 @@
 }
 
 .colorPaletteListRoot {
-    /* background-color: none; */
+    --background-color: white;
+    background-color: var(--background-color);
+}
+
+.colorPaletteListRoot .buttonGroup {
+    display: flex;
+}
+
+.colorPaletteListRoot .smallButton {
+    cursor: pointer;
+    /* selection obscures the color*/
+    user-select: none;
+    padding: 2px 5px;
+    border-radius: 3px;
+    background-color: #ccc8;
+    margin: 2px 5px;
+}
+
+
+.colorPaletteListRoot .smallButton:hover {
+    background-color: #ccc;
 }

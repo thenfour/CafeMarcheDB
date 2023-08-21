@@ -6,7 +6,7 @@
 // the "name" of an association model will be the tag. not the local object.
 
 import db, { Prisma } from "db";
-import { ColorPalette, ColorPaletteEntry, gGeneralPalette } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
@@ -34,7 +34,7 @@ export const xInstrumentFunctionalGroup = new xTable({
     getRowInfo: (row: InstrumentFunctionalGroupModel) => ({
         name: row.name,
         description: row.description,
-        color: gGeneralPalette.findColorPaletteEntry(row.color),
+        color: gGeneralPaletteList.findEntry(row.color),
     }),
     createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupModel> => ({
         description: "auto-created from selection dlg",
@@ -56,7 +56,7 @@ export const xInstrumentFunctionalGroup = new xTable({
         new ColorField({
             columnName: "color",
             allowNull: true,
-            palette: gGeneralPalette,
+            palette: gGeneralPaletteList,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -93,7 +93,7 @@ export const xInstrumentTag = new xTable({
     getRowInfo: (row: InstrumentTagPayload) => ({
         name: row.text,
         description: row.description,
-        color: gGeneralPalette.findColorPaletteEntry(row.color),
+        color: gGeneralPaletteList.findEntry(row.color),
     }),
     columns: [
         new PKField({ columnName: "id" }),
@@ -114,7 +114,7 @@ export const xInstrumentTag = new xTable({
         new ColorField({
             columnName: "color",
             allowNull: true,
-            palette: gGeneralPalette,
+            palette: gGeneralPaletteList,
         }),
         new ConstEnumStringField({
             columnName: "significance",
@@ -160,7 +160,7 @@ export const xInstrumentTagAssociation = new xTable({
     getRowInfo: (row: InstrumentTagAssociationModel) => ({
         name: row.tag.text,
         description: row.tag.description,
-        color: gGeneralPalette.findColorPaletteEntry(row.tag.color),
+        color: gGeneralPaletteList.findEntry(row.tag.color),
     }),
     columns: [
         new PKField({ columnName: "id" }),
@@ -223,7 +223,7 @@ export const xInstrument = new xTable({
     getRowInfo: (row: InstrumentPayload) => ({
         name: row.name,
         description: row.description,
-        color: gGeneralPalette.findColorPaletteEntry(row.functionalGroup.color),
+        color: gGeneralPaletteList.findEntry(row.functionalGroup.color),
     }),
     columns: [
         new PKField({ columnName: "id" }),

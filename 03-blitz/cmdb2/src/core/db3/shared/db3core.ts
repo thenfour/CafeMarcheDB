@@ -153,7 +153,7 @@ export interface SortModel {
 export interface RowInfo {
     name: string;
     description?: string;
-    color?: ColorPaletteEntry;
+    color?: ColorPaletteEntry | null;
 };
 
 export interface TableDesc {
@@ -266,6 +266,15 @@ export class xTable implements TableDesc {
         }
         return ret;
     };
+
+    getClientModel = (dbModel: TAnyModel) => {
+        const ret: TAnyModel = {};
+        for (let i = 0; i < this.columns.length; ++i) {
+            const field = this.columns[i]!;
+            field.ApplyDbToClient(dbModel, ret);
+        }
+        return ret;
+    }
 }
 
 ////////////////////////////////////////////////////////////////

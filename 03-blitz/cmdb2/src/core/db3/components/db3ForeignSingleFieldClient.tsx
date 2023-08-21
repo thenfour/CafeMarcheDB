@@ -100,11 +100,14 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
         const rowInfo = this.typedSchemaColumn.foreignTableSpec.getRowInfo(args.value);
 
         const style: React.CSSProperties = {};
-        const color = rowInfo.color || gNullColorPaletteEntry;// this.typedSchemaColumn.getChipColor!(args.value);
-        if (color.value != null) {
-            style.backgroundColor = color.value!;
-            style.color = color.contrastColor!;
-            style.border = `1px solid ${color.outline ? color.contrastColor! : color.value!}`;
+        const color = rowInfo.color;// this.typedSchemaColumn.getChipColor!(args.value);
+        if (color != null) {
+            style.backgroundColor = color.strongValue;
+            style.color = color.strongContrastColor;
+            style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
+            // style.backgroundColor = color.value!;
+            // style.color = color.contrastColor!;
+            // style.border = `1px solid ${color.outline ? color.contrastColor! : color.value!}`;
         }
 
         return <Chip

@@ -17,22 +17,10 @@ export interface ColorSwatchProps {
     color: ColorPaletteEntry | null;
     selected: boolean;
     isSpacer?: boolean;
+    showStrong: boolean;
+    showWeak: boolean;
 };
 
-
-// export const CreateNullPaletteEntry = () => {
-//     const ret: ColorPaletteEntry = {
-//         id: `${getNextSequenceId()}`,
-//         label: "(none)",
-//         strongOutline: false,
-//         weakOutline: false,
-//         strongValue: "#0002",
-//         strongContrastColor: "black",
-//         weakValue: "#0002",
-//         weakContrastColor: "black",
-//     };
-//     return ret;
-// };
 
 export const NullColorSwatch = (props: ColorSwatchProps) => {
 
@@ -47,12 +35,20 @@ export const NullColorSwatch = (props: ColorSwatchProps) => {
         "--weak-border-style": "dotted",
     };
     return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot nullValue `} style={style as React.CSSProperties}>
-        <Tooltip title={`(none)`}><div className="strong">
-            (none)
-        </div></Tooltip>
-        <Tooltip title={`(none)`}><div className="weak">
-            (none)
-        </div></Tooltip>
+        {props.showStrong &&
+            //<Tooltip title={`(none)`}>
+            <div className="strong">
+                (none)
+            </div>
+            //</Tooltip>
+        }
+        {props.showWeak &&
+            //<Tooltip title={`(none)`}>
+            <div className="weak">
+                (none)
+            </div>
+            //</Tooltip>
+        }
     </div>;
 }
 
@@ -61,7 +57,7 @@ export const ColorSwatch = (props: ColorSwatchProps) => {
     if (props.color == null) {
         return <NullColorSwatch {...props} />;
     }
-    const entry = props.color;// || CreateNullPaletteEntry();
+    const entry = props.color;
 
     const style = {
         "--strong-color": entry.strongValue,
@@ -74,12 +70,20 @@ export const ColorSwatch = (props: ColorSwatchProps) => {
         "--weak-border-style": (props.color == null) ? "dotted" : (props.color.weakOutline ? "solid" : "hidden"),
     };
     return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""}`} style={style as React.CSSProperties}>
-        <Tooltip title={`${entry.strongValue}\r\n${entry.strongContrastColor}`}><div className="strong">
-            {entry.label}
-        </div></Tooltip>
-        <Tooltip title={`${entry.weakValue}\r\n${entry.weakContrastColor}`}><div className="weak">
-            {entry.label}
-        </div></Tooltip>
+        {props.showStrong &&
+            //<Tooltip title={`${entry.strongValue}\r\n${entry.strongContrastColor}`}>
+            <div className="strong">
+                {entry.label}
+            </div>
+            //</Tooltip>
+        }
+        {props.showWeak &&
+            // <Tooltip title={`${entry.weakValue}\r\n${entry.weakContrastColor}`}>
+            <div className="weak">
+                {entry.label}
+            </div>
+            // </Tooltip>
+        }
     </div>;
 };
 
@@ -87,21 +91,23 @@ export interface ColorPaletteGridProps {
     palette: ColorPalette;
     showNull: boolean;
     onClick: (value: ColorPaletteEntry | null) => void;
+    showStrong: boolean;
+    showWeak: boolean;
 };
 
-export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
+export const ColorPaletteGrid = ({ showStrong, showWeak, ...props }: ColorPaletteGridProps) => {
     return <div className="colorPaletteGridRoot">
         {
             props.palette.getAllRowsAndEntries().map((row, rowIndex) => {
                 return <div className="row" key={rowIndex}>
                     {
                         props.showNull && (
-                            (rowIndex === 0) ? (<div onClick={() => { props.onClick(null) }}><ColorSwatch selected={false} color={null} isSpacer={true} /></div>)
-                                : (<ColorSwatch selected={false} color={null} isSpacer={true} />)
+                            (rowIndex === 0) ? (<div onClick={() => { props.onClick(null) }}><ColorSwatch selected={false} color={null} isSpacer={true} showStrong={showStrong} showWeak={showWeak} /></div>)
+                                : (<ColorSwatch selected={false} color={null} isSpacer={true} showStrong={showStrong} showWeak={showWeak} />)
                         )
                     }
-                    {row.map(e => {
-                        return <div onClick={() => { props.onClick(e) }}><ColorSwatch selected={false} key={e.id} color={e} /></div>;
+                    {row.map((e, i) => {
+                        return <div onClick={() => { props.onClick(e) }} key={i} ><ColorSwatch selected={false} color={e} showStrong={showStrong} showWeak={showWeak} /></div>;
 
                     })}
                 </div>;
@@ -117,10 +123,27 @@ export interface ColorPaletteListComponentProps {
 };
 
 export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps) => {
-    return <div className="colorPaletteListRoot">
+    const [bgColor, setBgColor] = React.useState<string>("black");
+    const [swatchWidth, setSwatchWidth] = React.useState<number>(70);
+    const [swatchHeight, setSwatchHeight] = React.useState<number>(80);
+    const [showStrong, setShowStrong] = React.useState<boolean>(true);
+    const [showWeak, setShowWeak] = React.useState<boolean>(true);
+    const style = {
+        "--background-color": bgColor,
+        "--swatch-width": `${swatchWidth}px`,
+        "--swatch-height": `${swatchHeight}px`,
+    } as React.CSSProperties;
+    return <div className="colorPaletteListRoot" style={style}>
+        <div className="buttonGroup">
+            <div className="smallButton" onClick={() => { setBgColor("black") }}>black</div>
+            <div className="smallButton" onClick={() => { setBgColor("#eee") }}>gray</div>
+            <div className="smallButton" onClick={() => { setBgColor("white") }}>white</div>
+            <div className="smallButton" onClick={() => { setShowStrong(!showStrong) }}>strong</div>
+            <div className="smallButton" onClick={() => { setShowWeak(!showWeak) }}>weak</div>
+        </div>
         {
             props.palettes.palettes.map((palette, index) => {
-                return <ColorPaletteGrid onClick={props.onClick} key={index} palette={palette} showNull={index === 0 && props.allowNull} />;
+                return <ColorPaletteGrid onClick={props.onClick} key={index} palette={palette} showNull={index === 0 && props.allowNull} showStrong={showStrong} showWeak={showWeak} />;
             })
         }
     </div>;
@@ -145,7 +168,7 @@ export const ColorPick = (props: ColorPickProps) => {
 
     return <>
         <div onClick={handleOpen}>
-            <ColorSwatch selected={true} color={entry} />
+            <ColorSwatch selected={true} color={entry} showStrong={true} showWeak={true} />
         </div>
         <Popover
             anchorEl={anchorEl}

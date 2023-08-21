@@ -308,23 +308,12 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
             return <>--</>;
         }
         const rowInfo = this.typedSchemaColumn.associationTableSpec.getRowInfo(args.value);
-        // //console.assert(!!this.typedSchemaColumn.getChipCaption);
-        // if (!this.typedSchemaColumn.getChipCaption) {
-        //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleFieldClient ${this.schemaTable.tableName}.${this.args.columnName}`);
-        // }
-
-        // const style: React.CSSProperties = {};
-        // const color = this.typedSchemaColumn.getChipColor!(args.value);
-        // if (color.value != null) {
-        //     style.backgroundColor = color.value!;
-        //     style.color = color.contrastColor!;
-        // }
         const style: React.CSSProperties = {};
-        const color = rowInfo.color || gNullColorPaletteEntry;// this.typedSchemaColumn.getChipColor!(args.value);
-        if (color.value != null) {
-            style.backgroundColor = color.value!;
-            style.color = color.contrastColor!;
-            style.border = `1px solid ${color.outline ? color.contrastColor! : color.value!}`;
+        const color = rowInfo.color;
+        if (color != null) {
+            style.backgroundColor = color.strongValue;
+            style.color = color.strongContrastColor;
+            style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
         }
 
         return <Chip
