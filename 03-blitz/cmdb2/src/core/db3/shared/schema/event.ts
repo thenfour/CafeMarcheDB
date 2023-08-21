@@ -1,18 +1,18 @@
 
+import db, { Prisma } from "db";
+import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
+import { Permission } from "shared/permissions";
+import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
+import { xTable } from "../db3core";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField } from "../db3basicFields";
+
+
 
 /*
 
-- EventTag / EventTagAssignment
-- EventAttendance (yes, no, count me in, probably not)
-- EventApproval - not sure if this is necessary. shouldn't it be a boolean? maybe the idea is that the options may change in the future and i want to preserve the naming etc.
-    suggests the need for "significance" in attendance & approvals to know what means "YES"
 
-- Event
-- EventComment
-- EventSongList
-- EventSongListSong
 
-- EventUserResponse
+
 
 let's think workflow for events.
 someone creates the event as a vague option.
@@ -41,24 +41,30 @@ leave all that for later.
 // advantages of dropdown:
 // - field is required, structured, queryable, and obvious
 
-// // to go further i could make events & rehearsals separate tables. but i don't think that's a good idea; the idea would be that
-// // they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
-// // nothing here is specific to any type of event. should that be the case it can be attached somehow.
+// to go further i could make events & rehearsals separate tables. but i don't think that's a good idea; the idea would be that
+// they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
+// nothing here is specific to any type of event. should that be the case it can be attached somehow.
+
 // model Event {
-//     id                  Int      @id @default(autoincrement())
-//     name                String
-//     slug                String
-//     description         String // what's the diff between a description & comment? description is the pinned general description in markdown.
-//     startsAt            DateTime?
-//     endsAt              DateTime?
-//     locationDescription String   @default("")
-//     locationURL         String   @default("")
-//     isDeleted           Boolean  @default(false)
-//     // status - new -> request responses -> confirmed with organizer  -> confirmed
-//     //                                      confirmed with group
-//     //                                      confirmed with directors
+//     id          Int        @id @default(autoincrement())
+//     name        String
+//     slug        String
+//     description String // what's the diff between a description & comment? description is the pinned general description in markdown.
+//     typeId      Int?
+//     type        EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+//     isPublished Boolean @default(false) // is it visible to non-editors?
+  
+//     locationDescription String    @default("")
+//     locationURL         String    @default("")
+//     isDeleted           Boolean   @default(false)
 //     // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
-//     isCancelled         Boolean  @default(false) // used as an input for calculating status
+//     // so ideally status is calculated based off approvals & other things. but that locks us into designing for ideal scenarios where everyone is diligent.
+//     // more practical to just have an enum status.
+//     statusId      Int?
+//     status        EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+  
+//     isCancelled         Boolean   @default(false) // used as an input for calculating status
+//     cancelledAt DateTime?
   
 //     createdAt DateTime
   
@@ -67,19 +73,53 @@ leave all that for later.
 //     // workflow confirmation etc.
 //     fileTags  FileEventTag[]
 //     tags      EventTagAssignment[]
-//     responses EventUserResponse[]
 //     comments  EventComment[]
-//     songLists EventSongList[]
+//     segments  EventSegment[]
+//     songLists EventSegmentSongList[]
+//     //responses EventUserResponse[]
+//   }
+  
+//   // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
+//   // concerts may have one or more multiple sets
+//   model EventSegment {
+//     id          Int        @id @default(autoincrement())
+//     eventId    Int
+//     event      Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
+  
+//     name        String
+//     description String // short description, like 
+  
+//     startsAt            DateTime? // date null means TBD
+//     endsAt              DateTime?
+  
+//     responses EventSegmentUserResponse[]
+//   }
+  
+//   model EventType {
+//     id          Int     @id @default(autoincrement())
+//     text        String
+//     description String
+//     color       String?
+//     events      Event[]
+//   }
+  
+//   model EventStatus {
+//     id          Int     @id @default(autoincrement())
+//     label        String
+//     description String
+//     color       String?
+//     significance   String?
+//     events      Event[]
 //   }
   
 //   model EventTag {
-//     id           Int                  @id @default(autoincrement())
-//     text         String
-//     description  String               @default("")
-//     color        String?
-//     significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-//     classification         String?
-//     events       EventTagAssignment[]
+//     id             Int                  @id @default(autoincrement())
+//     text           String
+//     description    String               @default("")
+//     color          String?
+//     significance   String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+//     classification String?
+//     events         EventTagAssignment[]
 //   }
   
 //   model EventTagAssignment {
@@ -107,12 +147,13 @@ leave all that for later.
 //     isPublished Boolean @default(false)
 //   }
   
-//   model EventSongList {
+//   model EventSegmentSongList {
 //     id          Int    @id @default(autoincrement())
-//     eventId     Int
 //     sortOrder   Int    @default(0)
 //     name        String
 //     description String @default("")
+  
+//     eventId     Int
 //     event       Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
 //   }
   
@@ -123,46 +164,30 @@ leave all that for later.
   
 //     song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
 //   }
-
-//   // things like yes no maybe
-// model EventAttendance {
+  
+//   // things like yes, no, not-sure-yes, not-sure-no, partially
+//   model EventAttendance {
 //     id        Int     @id @default(autoincrement())
 //     text      String
 //     color     String?
-//     strength  Int // in order to be able to filter people who aren't coming.
+//     strength  Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
 //     isDeleted Boolean @default(false)
   
-//     responses EventUserResponse[]
+//     responses EventSegmentUserResponse[]
 //   }
   
-//   model EventApproval {
-//     id        Int     @id @default(autoincrement())
-//     text      String
-//     color     String?
-//     strength  Int // in order to be able to filter people who aren't coming.
-//     isDeleted Boolean @default(false)
-  
-//     responses EventUserResponse[]
-//   }
-  
-//   model EventUserResponse {
+//   model EventSegmentUserResponse {
 //     id      Int   @id @default(autoincrement())
 //     userId  Int
 //     user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
-//     eventId Int
-//     event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
   
-//     expectApproval   Boolean @default(false)
+//     eventSegmentId Int
+//     eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict)
+  
 //     expectAttendance Boolean @default(false)
+//     attendanceId      Int?
+//     attendance        EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
+//     attendanceComment String? // comment
   
-//     attendanceId   Int?
-//     attendance     EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
-//     attendanceComment String?
-  
-//     approvalId   Int?
-//     approval     EventApproval? @relation(fields: [approvalId], references: [id], onDelete: SetDefault)
-//     approvalComment String?
-  
-//     @@unique([userId, eventId]) // 
+//     @@unique([userId, eventSegmentId]) // 
 //   }
-  

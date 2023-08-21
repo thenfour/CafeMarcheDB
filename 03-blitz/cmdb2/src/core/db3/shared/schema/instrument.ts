@@ -65,6 +65,7 @@ export const xInstrumentFunctionalGroup = new xTable({
     ]
 });
 
+////////////////////////////////////////////////////////////////
 const InstrumentTagInclude: Prisma.InstrumentTagInclude = {
     instruments: true,
 };
@@ -81,7 +82,7 @@ export const InstrumentTagNaturalOrderBy: Prisma.InstrumentTagOrderByWithRelatio
 // interesting that const objects are preferred over enums. but yea for populating datagrid single select options i agree.
 export const InstrumentTagSignificance = {
     PowerRequired: "PowerRequired",
-    Large: "Large",
+    Big: "Big",
 } as const satisfies Record<string, string>;
 
 export const xInstrumentTag = new xTable({
@@ -130,8 +131,7 @@ export const xInstrumentTag = new xTable({
     ]
 });
 
-export type InstrumentTagForeignModel = Prisma.InstrumentTagGetPayload<{}>;
-
+////////////////////////////////////////////////////////////////
 export type InstrumentTagAssociationModel = Prisma.InstrumentTagAssociationGetPayload<{
     include: {
         instrument: true,
@@ -151,6 +151,7 @@ const InstrumentTagAssociationNaturalOrderBy: Prisma.InstrumentTagAssociationOrd
     { tag: { id: 'asc' } },
 ];
 
+// this is mostly only in order to define the tags field in xInstruments.
 export const xInstrumentTagAssociation = new xTable({
     tableName: "InstrumentTagAssociation",
     editPermission: Permission.associate_instrument_tags,
@@ -172,15 +173,12 @@ export const xInstrumentTagAssociation = new xTable({
             fkMember: "tagId",
             allowNull: false,
             foreignTableSpec: xInstrumentTag,
-            getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
-                functionalGroup: {
-                    name: { contains: query }
-                }
-            }),
+            getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
 });
 
+////////////////////////////////////////////////////////////////
 const InstrumentInclude: Prisma.InstrumentInclude = {
     functionalGroup: true,
     instrumentTags: {

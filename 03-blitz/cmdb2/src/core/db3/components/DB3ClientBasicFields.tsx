@@ -212,7 +212,7 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface BoolColumnArgs {
     columnName: string;
-    cellWidth: number;
+    //cellWidth: number;
 };
 
 export class BoolColumnClient extends DB3ClientCore.IColumnClient {
@@ -221,7 +221,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
-            width: args.cellWidth,
+            width: 80,//args.cellWidth,
         });
     }
 

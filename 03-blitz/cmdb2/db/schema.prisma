@@ -79,7 +79,7 @@ model RolePermission {
 model User {
   id             Int      @id @default(autoincrement())
   name           String   @default("")
-  compactName      String   @default("") // for displaying in compact areas and less formal
+  compactName    String   @default("") // for displaying in compact areas and less formal
   isSysAdmin     Boolean  @default(false)
   isDeleted      Boolean  @default(false)
   email          String   @unique
@@ -87,7 +87,7 @@ model User {
   hashedPassword String?
   googleId       String?
   createdAt      DateTime @default(now())
-  activelyParticipating Boolean @default(false)
+  isActive       Boolean  @default(false)
 
   roleId   Int? // nullable for new users a role should be assigned by an admin. null = public
   role     Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
@@ -95,13 +95,13 @@ model User {
   sessions Session[]
   changes  Change[] // yea don't include this in queries
 
-  taggedFiles    FileUserTag[]
+  taggedFiles           FileUserTag[]
   eventSegmentResponses EventSegmentUserResponse[]
-  activity       Activity[]
-  songCredits    SongCredit[]
-  eventComments  EventComment[]
-  songComments   SongComment[]
-  instruments    UserInstrument[]
+  activity              Activity[]
+  songCredits           SongCredit[]
+  eventComments         EventComment[]
+  songComments          SongComment[]
+  instruments           UserInstrument[]
 }
 
 model Setting {
@@ -183,11 +183,10 @@ model Token {
 // }
 
 model Song {
-  id             Int     @id @default(autoincrement())
+  id             Int    @id @default(autoincrement())
   name           String
   slug           String
-  startKey       String?
-  endKey         String?
+  description    String @default("")
   startBPM       Int?
   endBPM         Int?
   introducedYear Int? // purposely fuzzy
@@ -205,10 +204,9 @@ model Song {
 }
 
 model SongComment {
-  id        Int  @id @default(autoincrement())
-  songId    Int
-  song      Song @relation(fields: [songId], references: [id], onDelete: Restrict) // song deleted = comments too. songs are soft-delete.
-  sortOrder Int  @default(0)
+  id     Int  @id @default(autoincrement())
+  songId Int
+  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict) // song deleted = comments too. songs are soft-delete.
 
   userId    Int
   createdAt DateTime
@@ -239,9 +237,11 @@ model SongCredit {
 model SongTag {
   id             Int                  @id @default(autoincrement())
   text           String
+  description    String               @default("")
   color          String?
   significance   String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
   classification String?
+  sortOrder      Int                  @default(0)
   songs          SongTagAssociation[]
 }
 
@@ -335,18 +335,18 @@ model Event {
   description String // what's the diff between a description & comment? description is the pinned general description in markdown.
   typeId      Int?
   type        EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
-  isPublished Boolean @default(false) // is it visible to non-editors?
+  isPublished Boolean    @default(false) // is it visible to non-editors?
 
-  locationDescription String    @default("")
-  locationURL         String    @default("")
-  isDeleted           Boolean   @default(false)
+  locationDescription String       @default("")
+  locationURL         String       @default("")
+  isDeleted           Boolean      @default(false)
   // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
   // so ideally status is calculated based off approvals & other things. but that locks us into designing for ideal scenarios where everyone is diligent.
   // more practical to just have an enum status.
-  statusId      Int?
-  status        EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
+  statusId            Int?
+  status              EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
-  isCancelled         Boolean   @default(false) // used as an input for calculating status
+  isCancelled Boolean   @default(false) // used as an input for calculating status
   cancelledAt DateTime?
 
   createdAt DateTime
@@ -365,15 +365,15 @@ model Event {
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
 // concerts may have one or more multiple sets
 model EventSegment {
-  id          Int        @id @default(autoincrement())
-  eventId    Int
-  event      Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
+  id      Int   @id @default(autoincrement())
+  eventId Int
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
 
   name        String
   description String // short description, like 
 
-  startsAt            DateTime? // date null means TBD
-  endsAt              DateTime?
+  startsAt DateTime? // date null means TBD
+  endsAt   DateTime?
 
   responses EventSegmentUserResponse[]
 }
@@ -387,12 +387,12 @@ model EventType {
 }
 
 model EventStatus {
-  id          Int     @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   label        String
-  description String
-  color       String?
-  significance   String?
-  events      Event[]
+  description  String
+  color        String?
+  significance String?
+  events       Event[]
 }
 
 model EventTag {
@@ -402,6 +402,7 @@ model EventTag {
   color          String?
   significance   String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
   classification String?
+  sortOrder      Int                  @default(0)
   events         EventTagAssignment[]
 }
 
@@ -436,8 +437,8 @@ model EventSegmentSongList {
   name        String
   description String @default("")
 
-  eventId     Int
-  event       Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
+  eventId Int
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
 }
 
 model EventSongListSong {
@@ -460,14 +461,14 @@ model EventAttendance {
 }
 
 model EventSegmentUserResponse {
-  id      Int   @id @default(autoincrement())
-  userId  Int
-  user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   eventSegmentId Int
   eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict)
 
-  expectAttendance Boolean @default(false)
+  expectAttendance  Boolean          @default(false)
   attendanceId      Int?
   attendance        EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
   attendanceComment String? // comment
@@ -507,7 +508,7 @@ model FileSignificance {
 // files can also just be floating uploads for example dropped into a markdown field
 model File {
   id             Int     @id @default(autoincrement())
-  subtitle String? // could be a small comment like "short version"
+  subtitle       String? // could be a small comment like "short version"
   fileLeafName   String // the name of the file as it was uploaded, visible to users. IMG20113.jpg for example.
   storedLeafName String // a unique filename used in server storage; a guid probably.
   uri            String // if this is a link, then here's the URI

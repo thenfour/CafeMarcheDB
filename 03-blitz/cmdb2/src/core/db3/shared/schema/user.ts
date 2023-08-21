@@ -231,6 +231,11 @@ export const xUser = new xTable({
             format: "plain",
         }),
         new GenericStringField({
+            columnName: "compactName",
+            allowNull: false,
+            format: "plain",
+        }),
+        new GenericStringField({
             columnName: "email",
             allowNull: false,
             format: "email",
@@ -239,6 +244,10 @@ export const xUser = new xTable({
             columnName: "phone",
             allowNull: true,
             format: "plain",
+        }),
+        new BoolField({
+            columnName: "isActive",
+            defaultValue: false,
         }),
         new BoolField({
             columnName: "isSysAdmin",

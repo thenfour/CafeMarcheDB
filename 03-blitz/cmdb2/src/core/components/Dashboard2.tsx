@@ -287,8 +287,12 @@ const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => <MusicNoteIcon /> },
 
     { type: "divider" },
-    { type: "sectionHeader", sectionName: "Admin Settings" },
+    { type: "sectionHeader", sectionName: "Admin Songs" },
+    { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon /> },
+    { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => <MusicNoteIcon /> },
 
+    { type: "divider" },
+    { type: "sectionHeader", sectionName: "Admin Settings" },
     { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon /> },
     { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon /> },
 ]

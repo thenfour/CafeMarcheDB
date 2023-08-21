@@ -1,11 +1,46 @@
+
 import { BlitzPage } from "@blitzjs/next";
+import { Permission } from "shared/permissions";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+
+
+const songTableSpec = new DB3Client.xTableClientSpec({
+    table: db3.xSong,
+    columns: [
+        new DB3Client.PKColumnClient({ columnName: "id" }),
+        new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "slug", cellWidth: 120 }),
+        new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+        new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
+        new DB3Client.GenericIntegerColumnClient({ columnName: "startBPM", cellWidth: 100 }),
+        new DB3Client.GenericIntegerColumnClient({ columnName: "endBPM", cellWidth: 100 }),
+        new DB3Client.GenericIntegerColumnClient({ columnName: "introducedYear", cellWidth: 100 }),
+        new DB3Client.GenericIntegerColumnClient({ columnName: "lengthSeconds", cellWidth: 100 }),
+        new DB3Client.TagsFieldClient({ columnName: "tags", cellWidth: 200, }),
+    ],
+});
+
+
+const MainContent = () => {
+    if (!useAuthorization("admin songs page", Permission.admin_general)) {
+        throw new Error(`unauthorized`);
+    }
+    return <>
+        <SettingMarkdown settingName="editSongs_markdown"></SettingMarkdown>
+        <DB3EditGrid tableSpec={songTableSpec} />
+    </>;
+};
+
 
 const EditSongsPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Songs">
-            <SettingMarkdown settingName="editSongs_markdown"></SettingMarkdown>
+            <MainContent />
         </DashboardLayout>
     )
 }
