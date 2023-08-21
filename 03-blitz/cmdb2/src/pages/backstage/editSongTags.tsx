@@ -18,7 +18,6 @@ const songTagsTableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
         new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 200 }),
-        new DB3Client.GenericStringColumnClient({ columnName: "classification", cellWidth: 200 }),
     ],
 });
 
@@ -34,7 +33,7 @@ const MainContent = () => {
 };
 
 
-const EditSongsPage: BlitzPage = () => {
+const EditSongTagsPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Songs">
             <MainContent />
@@ -42,4 +41,4 @@ const EditSongsPage: BlitzPage = () => {
     )
 }
 
-export default EditSongsPage;
+export default EditSongTagsPage;

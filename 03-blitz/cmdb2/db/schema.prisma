@@ -246,14 +246,13 @@ model SongCredit {
 }
 
 model SongTag {
-  id             Int                  @id @default(autoincrement())
-  text           String
-  description    String               @default("")
-  color          String?
-  significance   String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  classification String?
-  sortOrder      Int                  @default(0)
-  songs          SongTagAssociation[]
+  id           Int                  @id @default(autoincrement())
+  text         String
+  description  String               @default("")
+  color        String?
+  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  sortOrder    Int                  @default(0)
+  songs        SongTagAssociation[]
 }
 
 model SongTagAssociation {
@@ -299,14 +298,13 @@ model Instrument {
 }
 
 model InstrumentTag {
-  id             Int                        @id @default(autoincrement())
-  text           String
-  description    String                     @default("")
-  sortOrder      Int                        @default(0)
-  color          String?
-  significance   String? // "uses electricity" for example?
-  classification String?
-  instruments    InstrumentTagAssociation[]
+  id           Int                        @id @default(autoincrement())
+  text         String
+  description  String                     @default("")
+  sortOrder    Int                        @default(0)
+  color        String?
+  significance String? // "uses electricity" for example?
+  instruments  InstrumentTagAssociation[]
 }
 
 // association table
@@ -407,14 +405,13 @@ model EventStatus {
 }
 
 model EventTag {
-  id             Int                  @id @default(autoincrement())
-  text           String
-  description    String               @default("")
-  color          String?
-  significance   String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  classification String?
-  sortOrder      Int                  @default(0)
-  events         EventTagAssignment[]
+  id           Int                  @id @default(autoincrement())
+  text         String
+  description  String               @default("")
+  color        String?
+  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  sortOrder    Int                  @default(0)
+  events       EventTagAssignment[]
 }
 
 model EventTagAssignment {
@@ -462,11 +459,13 @@ model EventSongListSong {
 
 // things like yes, no, not-sure-yes, not-sure-no, partially
 model EventAttendance {
-  id        Int     @id @default(autoincrement())
-  text      String
-  color     String?
-  strength  Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
-  isDeleted Boolean @default(false)
+  id          Int     @id @default(autoincrement())
+  sortOrder   Int     @default(0)
+  text        String
+  description String  @default("")
+  color       String?
+  strength    Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
+  isDeleted   Boolean @default(false)
 
   responses EventSegmentUserResponse[]
 }

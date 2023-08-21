@@ -14,6 +14,7 @@ export enum Permission {
 
     view_events = "view_events",
     admin_events = "admin_events",
+    edit_events = "edit_events",
 
     view_settings = "view_settings", // basically everyone should have this
     admin_settings = "admin_settings",

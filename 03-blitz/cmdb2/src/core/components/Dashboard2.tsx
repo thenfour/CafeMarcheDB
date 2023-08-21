@@ -294,6 +294,14 @@ const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Credit Types", renderIcon: () => <MusicNoteIcon /> },
 
     { type: "divider" },
+    { type: "sectionHeader", sectionName: "Admin Events" },
+    { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Event Response Options", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+
+    { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Settings" },
     { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon /> },
     { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon /> },

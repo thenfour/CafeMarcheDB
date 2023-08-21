@@ -413,7 +413,9 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                     case "day":
                         return <>{value.toISOString().split('T')[0]} {ageStr}</>;
                     case "minute":
-                        return <>{value.toTimeString()} {ageStr}</>;
+                        return <>{value.toTimeString()} {ageStr}</>; // todo
+                    case "second":
+                        return <>{value.toTimeString()} {ageStr}</>; // todo
                     default:
                         throw new Error(`unknown granularity`);
                 }
@@ -426,6 +428,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                     case "year": // todo
                     case "day": // todo
                     case "minute":
+                    case "second":
                         return <DatePicker
                             autoFocus={params.hasFocus}
                             label={this.typedSchemaColumn.label}
@@ -455,6 +458,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
             case "year": // todo
             case "day": // todo
             case "minute":
+            case "second":
                 return <DatePicker
                     autoFocus={false}
                     label={this.typedSchemaColumn.label}

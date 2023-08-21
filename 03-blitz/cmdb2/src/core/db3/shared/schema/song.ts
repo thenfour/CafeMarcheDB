@@ -1,4 +1,8 @@
 
+// no admin page:
+// - song comments
+// - song credits
+
 import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
@@ -62,11 +66,6 @@ export const xSongTag = new xTable({
             allowNull: true,
             defaultValue: null,
             options: SongTagSignificance,
-        }),
-        new GenericStringField({
-            columnName: "classification",
-            allowNull: true,
-            format: "plain",
         }),
     ]
 });

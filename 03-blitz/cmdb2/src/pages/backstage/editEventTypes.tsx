@@ -1,4 +1,3 @@
-
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
@@ -10,7 +9,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const tableSpec = new DB3Client.xTableClientSpec({
-    table: db3.xSongCreditType,
+    table: db3.xEventType,
     columns: [
         new DB3Client.PKColumnClient({ columnName: "id" }),
         new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
@@ -22,17 +21,17 @@ const tableSpec = new DB3Client.xTableClientSpec({
 
 
 const MainContent = () => {
-    if (!useAuthorization("admin song tags page", Permission.admin_general)) {
+    if (!useAuthorization("EditEventTypesPage", Permission.admin_general)) {
         throw new Error(`unauthorized`);
     }
     return <>
-        <SettingMarkdown settingName="editSongCreditTypes_markdown"></SettingMarkdown>
+        <SettingMarkdown settingName="EditEventTypesPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };
 
 
-const EditSongCreditTypesPage: BlitzPage = () => {
+const EditEventTypesPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Songs">
             <MainContent />
@@ -40,4 +39,4 @@ const EditSongCreditTypesPage: BlitzPage = () => {
     )
 }
 
-export default EditSongCreditTypesPage;
+export default EditEventTypesPage;

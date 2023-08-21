@@ -1,4 +1,4 @@
-import { ColorPalette, ColorPaletteEntry, ColorPaletteList } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
 import { ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseResult, xTable } from "./db3core";
 
@@ -617,7 +617,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     };
 };
 
-export type DateTimeFieldGranularity = "year" | "day" | "minute";
+export type DateTimeFieldGranularity = "year" | "day" | "minute" | "second";
 
 // this is specifically for fields which care about date + time, OR date-only.
 // for date-only, the idea is that 2 fields are considered the same even if the time is different.
@@ -688,6 +688,7 @@ export class DateTimeField extends FieldBase<Date> {
                 // ymd[hmsm]
                 return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDay() === b.getDay();
             case "minute":
+            case "second": // TODO
                 // ymdhm[sm]
                 return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDay() === b.getDay() && a.getHours() === b.getHours() && a.getMinutes() === b.getMinutes();
             default:
@@ -707,4 +708,47 @@ export class DateTimeField extends FieldBase<Date> {
     }
 };
 
+
+
+
+// higher-level conveniences
+export const MakePlainTextField = (columnName: string) => (
+    new GenericStringField({
+        columnName: columnName,
+        allowNull: false,
+        format: "plain",
+    }));
+export const MakeMarkdownTextField = (columnName: string) => (
+    new GenericStringField({
+        columnName,
+        allowNull: false,
+        format: "markdown",
+    }));
+
+export const MakeIntegerField = (columnName: string) => (
+    new GenericIntegerField({
+        columnName,
+        allowNull: false,
+    }));
+
+export const MakeColorField = (columnName: string) => (
+    new ColorField({
+        columnName,
+        allowNull: true,
+        palette: gGeneralPaletteList,
+    }));
+
+export const MakeSortOrderField = (columnName: string) => (
+    new GenericIntegerField({
+        columnName,
+        allowNull: false,
+    }));
+
+export const MakeSignificanceField = (columnName: string, options: TAnyModel) => (
+    new ConstEnumStringField({
+        columnName,
+        allowNull: true,
+        defaultValue: null,
+        options,
+    }));
 

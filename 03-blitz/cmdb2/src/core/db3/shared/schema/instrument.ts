@@ -123,11 +123,6 @@ export const xInstrumentTag = new xTable({
             defaultValue: null,
             options: InstrumentTagSignificance,
         }),
-        new GenericStringField({
-            columnName: "classification",
-            allowNull: true,
-            format: "plain",
-        }),
     ]
 });
 
@@ -194,7 +189,7 @@ export type InstrumentPayload = Prisma.InstrumentGetPayload<{
         functionalGroup: true,
         instrumentTags: {
             include: {
-                tag: true,
+                tag: true, // todo: sort
             }
         }
     }
