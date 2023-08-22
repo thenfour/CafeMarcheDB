@@ -266,7 +266,9 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = (val: ColorPaletteEntry | null): ValidateAndParseResult<ColorPaletteEntry | null> => {
-        if (val === null && !this.allowNull) {
+        if (val === null) {//&& !this.allowNull) {
+            if (this.allowNull)
+                return SuccessfulValidateAndParseResult(val);
             return ErrorValidateAndParseResult("field must be non-null", val);
         }
         if (this.palette.findEntry(val?.id || null) == null) {

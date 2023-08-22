@@ -25,6 +25,8 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
+import CommentIcon from '@mui/icons-material/Comment';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 
 const drawerWidth = 260;
 
@@ -296,10 +298,18 @@ const gMenuItems: MenuItem[] = [
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Events" },
     { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Event Response Options", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/editEventSegments", linkCaption: "Event Segments", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "divider" },
+    { type: "link", path: "/backstage/editEventUserResponses", linkCaption: "Event User Responses", renderIcon: () => <CommentIcon /> },
+    { type: "link", path: "/backstage/editEventComments", linkCaption: "Event comments", renderIcon: () => <CommentIcon /> },
+    { type: "divider" },
+    { type: "link", path: "/backstage/editEventSongLists", linkCaption: "Event Song Lists", renderIcon: () => <FormatListNumberedIcon /> },
+    { type: "link", path: "/backstage/editEventSongListSongs", linkCaption: "Event Song List Songs", renderIcon: () => <FormatListNumberedIcon /> },
+    { type: "divider" },
+    { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon /> },
+    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => <SettingsIcon /> },
+    { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon /> },
+    { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon /> },
 
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Settings" },

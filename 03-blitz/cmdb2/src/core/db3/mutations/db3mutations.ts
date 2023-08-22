@@ -163,9 +163,6 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
-        // console.log(`insertImpl for ${table.tableName}. fields:`);
-        // console.log(JSON.stringify(fields));
-
         const clientModelForValidation: TAnyModel = table.getClientModel(fields);
         const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation);
         if (!validateResult.success) {

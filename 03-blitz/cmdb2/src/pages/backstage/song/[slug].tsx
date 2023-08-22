@@ -18,7 +18,7 @@ const SongPage: BlitzPage = () => {
     // }
     //const params = useParams();
     return (
-        <DashboardLayout title="Songs">
+        <DashboardLayout title="Song">
             <MyComponent></MyComponent>
         </DashboardLayout>
     )

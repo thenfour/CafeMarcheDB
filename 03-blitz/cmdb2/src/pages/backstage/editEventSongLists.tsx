@@ -9,34 +9,33 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const tableSpec = new DB3Client.xTableClientSpec({
-    table: db3.xEventType,
+    table: db3.xEventSongList,
     columns: [
         new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-        new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 180 }),
     ],
 });
 
-
 const MainContent = () => {
-    if (!useAuthorization("EditEventTypesPage", Permission.admin_general)) {
+    if (!useAuthorization("EditEventSongListsPage", Permission.admin_general)) {
         throw new Error(`unauthorized`);
     }
     return <>
-        <SettingMarkdown settingName="EditEventTypesPage_markdown"></SettingMarkdown>
+        <SettingMarkdown settingName="EditEventSongListsPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };
 
 
-const EditEventTypesPage: BlitzPage = () => {
+const EditEventSongListsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event Types">
+        <DashboardLayout title="Song Lists">
             <MainContent />
         </DashboardLayout>
     )
 }
 
-export default EditEventTypesPage;
+export default EditEventSongListsPage;

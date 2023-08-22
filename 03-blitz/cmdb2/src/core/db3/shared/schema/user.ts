@@ -157,6 +157,13 @@ export const xRole = new xTable({
     localInclude: RoleLocalInclude,
     tableName: "role",
     naturalOrderBy: RoleNaturalOrderBy,
+    createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
+        return {
+            name: input,
+            description: "auto-created",
+            sortOrder: 0,
+        };
+    },
     getRowInfo: (row: RolePayload) => ({
         name: row.name,
         description: row.description || "",

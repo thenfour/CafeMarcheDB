@@ -91,6 +91,15 @@ export const xInstrumentTag = new xTable({
     localInclude: InstrumentTagInclude,
     tableName: "instrumentTag",
     naturalOrderBy: InstrumentTagNaturalOrderBy,
+    createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
+        return {
+            text: input,
+            description: "auto-created",
+            sortOrder: 0,
+            color: null,
+            significance: null,
+        };
+    },
     getRowInfo: (row: InstrumentTagPayload) => ({
         name: row.text,
         description: row.description,

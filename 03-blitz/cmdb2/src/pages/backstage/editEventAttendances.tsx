@@ -35,7 +35,7 @@ const MainContent = () => {
 
 const EditEventAttendancesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Songs">
+        <DashboardLayout title="Event Attendances">
             <MainContent />
         </DashboardLayout>
     )

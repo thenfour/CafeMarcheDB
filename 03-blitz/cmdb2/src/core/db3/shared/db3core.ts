@@ -2,6 +2,7 @@ import { ColorPaletteEntry } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/utils";
 
+
 // server-side code for db schema expression.
 // this is meant to describe behaviors of the schema that we need from code but can't get from Prisma.* directly.
 // for example:
@@ -9,6 +10,36 @@ import { TAnyModel } from "shared/utils";
 // - which items get included in queries (include clause)
 // - permissions required
 // - default values
+
+
+// ok parameterization.
+// in order to drill down to stuff there needs to be parameters given for a table view.
+// so far i have avoided this by showing ALL rows for a given table view, and any filtering is done by the user and has no impact on the data.
+// but for example i need to be able to see comments for an event.
+// i should see a link in the event row to see comments.
+// when i view the comments table then (on a new page), it will have the eventId as a parameter.
+// easy right? just add like a "parameters" thing which gets added to the where clause.
+// then when i create new, we also need that parameter to be used to populate a field in the new object.
+// and that field should probably not be editable in the edit page. or for admins maybe yes? not sure there.
+
+// ok special / common field handling...
+// createdAt
+// updatedAt
+// isDeleted - soft delete
+// these types of fields are not really editable by users and get intercepted by actions.
+// what is the best way to generalize these fields' behaviors'?
+// 1. column flag
+// benefits: very clear in column defs
+// potential issue where the core may not always do the right thing. the backend now will need
+// to understand the user action rather than the db action. maybe that's not a bad idea too.
+// so like, all mutations should specify what type of symbolic user action it is.
+//
+// 2. just let clients do it.
+// benefits: avoids complexifying the design, in many ways a more direct design.
+// already possible.
+// so for soft delete, the client will just send an update with isDeleted=true.
+
+// considering #2 is already possible and potentially a step towards #1, just go #2.
 
 ////////////////////////////////////////////////////////////////
 // in order for mutations to understand how to handle each field; this could be a boolean but this is more expressive.

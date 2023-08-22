@@ -35,6 +35,15 @@ export const xSongTag = new xTable({
     localInclude: SongTagInclude,
     tableName: "songTag",
     naturalOrderBy: SongTagNaturalOrderBy,
+    createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
+        return {
+            text: input,
+            description: "auto-created",
+            sortOrder: 0,
+            color: null,
+            significance: null,
+        };
+    },
     getRowInfo: (row: SongTagPayload) => ({
         name: row.text,
         description: row.description,
@@ -293,6 +302,14 @@ export const xSongCreditType = new xTable({
     localInclude: SongCreditTypeInclude,
     tableName: "songCreditType",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
+    createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
+        return {
+            text: input,
+            description: "auto-created",
+            sortOrder: 0,
+            color: null,
+        };
+    },
     getRowInfo: (row: SongCreditTypePayload) => ({
         name: "<not supported>",
     }),

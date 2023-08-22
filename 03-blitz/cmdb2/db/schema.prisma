@@ -367,7 +367,7 @@ model Event {
   tags      EventTagAssignment[]
   comments  EventComment[]
   segments  EventSegment[]
-  songLists EventSegmentSongList[]
+  songLists EventSongList[]
   //responses EventUserResponse[]
 }
 
@@ -392,6 +392,7 @@ model EventType {
   text        String
   description String
   color       String?
+  sortOrder   Int     @default(0)
   events      Event[]
 }
 
@@ -400,6 +401,7 @@ model EventStatus {
   label        String
   description  String
   color        String?
+  sortOrder    Int     @default(0)
   significance String?
   events       Event[]
 }
@@ -439,7 +441,7 @@ model EventComment {
   isPublished Boolean @default(false)
 }
 
-model EventSegmentSongList {
+model EventSongList {
   id          Int    @id @default(autoincrement())
   sortOrder   Int    @default(0)
   name        String
@@ -450,9 +452,10 @@ model EventSegmentSongList {
 }
 
 model EventSongListSong {
-  id       Int     @id @default(autoincrement())
-  songId   Int
-  subtitle String? // could be a small comment like "short version"
+  id        Int     @id @default(autoincrement())
+  songId    Int
+  subtitle  String? // could be a small comment like "short version"
+  sortOrder Int     @default(0)
 
   song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
 }

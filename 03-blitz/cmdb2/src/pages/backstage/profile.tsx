@@ -12,7 +12,7 @@ const ProfilePage: BlitzPage = () => {
     //     throw new Error(`unauthorized`);
     // }
     return (
-        <DashboardLayout title="Songs">
+        <DashboardLayout title="Your profile">
             <SettingMarkdown settingName="profile_markdown"></SettingMarkdown>
         </DashboardLayout>
     )

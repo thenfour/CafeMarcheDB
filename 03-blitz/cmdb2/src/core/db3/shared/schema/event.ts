@@ -1,3 +1,5 @@
+// TODO: permissions for actions like these needs to be done in a different way.
+// for example i should be able to edit my own posts but not others. etc.
 
 import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
@@ -5,6 +7,8 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField } from "../db3basicFields";
+import { xUser } from "./user";
+import { xSong } from "./song";
 /*
 
 let's think workflow for events.
@@ -43,12 +47,13 @@ leave all that for later.
 // x event status
 // x event tags / EventTagAssignment
 // x EventAttendance
-// - events
+// x events
 
-// event segment
-//   model EventSegmentSongList {
-//   model EventSongListSong {
-//   model EventSegmentUserResponse {
+// xEventComment
+// EventSegment
+// EventSongList {
+// EventSongListSong {
+// EventSegmentUserResponse {
 
 ////////////////////////////////////////////////////////////////
 const EventTypeInclude: Prisma.EventTypeInclude = {
@@ -68,6 +73,14 @@ export const xEventType = new xTable({
     localInclude: EventTypeInclude,
     tableName: "eventType",
     naturalOrderBy: EventTypeNaturalOrderBy,
+    createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
+        return {
+            text: input,
+            description: "auto-created",
+            sortOrder: 0,
+            color: null,
+        };
+    },
     getRowInfo: (row: EventTypePayload) => ({
         name: row.text,
         description: row.description,
@@ -91,7 +104,8 @@ const EventStatusInclude: Prisma.EventStatusInclude = {
 export type EventStatusPayload = Prisma.EventStatusGetPayload<{}>;
 
 export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInput[] = [
-    { label: 'desc' },
+    { sortOrder: 'desc' },
+    { label: 'asc' },
     { id: 'asc' },
 ];
 
@@ -105,6 +119,15 @@ export const xEventStatus = new xTable({
     localInclude: EventStatusInclude,
     tableName: "eventStatus",
     naturalOrderBy: EventStatusNaturalOrderBy,
+    createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
+        return {
+            label: input,
+            description: "auto-created",
+            sortOrder: 0,
+            color: null,
+            significance: null,
+        };
+    },
     getRowInfo: (row: EventStatusPayload) => ({
         name: row.label,
         description: row.description,
@@ -144,6 +167,15 @@ export const xEventTag = new xTable({
     localInclude: EventTagInclude,
     tableName: "eventTag",
     naturalOrderBy: EventTagNaturalOrderBy,
+    createInsertModelFromString: (input: string): Prisma.EventTagCreateInput => {
+        return {
+            text: input,
+            description: "auto-created",
+            sortOrder: 0,
+            color: null,
+            significance: null,
+        };
+    },
     getRowInfo: (row: EventTagPayload) => ({
         name: row.text,
         description: row.description,
@@ -217,7 +249,7 @@ const EventInclude: Prisma.EventInclude = {
         orderBy: EventTagAssignmentNaturalOrderBy,
     },
     type: true,
-    segments: { orderBy: { startsAt: "desc" }},
+    segments: { orderBy: { startsAt: "desc" } },
 };
 
 export type EventPayload = Prisma.EventGetPayload<{
@@ -225,7 +257,7 @@ export type EventPayload = Prisma.EventGetPayload<{
         status: true,
         tags: true, // todo: order by
         type: true,
-        }
+    }
 }>;
 
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
@@ -248,9 +280,9 @@ export const xEvent = new xTable({
         MakePlainTextField("name"),
         MakePlainTextField("slug"),
         MakeMarkdownTextField("description"),
-        new BoolField({columnName: "isPublished", defaultValue: false }),
-        new BoolField({columnName: "isDeleted", defaultValue: false }),
-        new BoolField({columnName: "isCancelled", defaultValue: false }),
+        new BoolField({ columnName: "isPublished", defaultValue: false }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false }),
+        new BoolField({ columnName: "isCancelled", defaultValue: false }),
         MakePlainTextField("locationDescription"),
         MakePlainTextField("locationURL"),
         new DateTimeField({
@@ -301,38 +333,112 @@ export const xEvent = new xTable({
 });
 
 
+////////////////////////////////////////////////////////////////
+const EventSegmentInclude: Prisma.EventSegmentInclude = {
+    event: true,
+    responses: true,
+};
 
-//   // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
-//   // concerts may have one or more multiple sets
-//   model EventSegment {
-//     id          Int        @id @default(autoincrement())
-//     eventId    Int
-//     event      Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
-  
-//     name        String
-//     description String // short description, like 
-  
-//     startsAt            DateTime? // date null means TBD
-//     endsAt              DateTime?
-  
-//     responses EventSegmentUserResponse[]
-//   }
+export type EventSegmentPayload = Prisma.EventSegmentGetPayload<{
+    include: {
+        event: true,
+        responses: true,
+    }
+}>;
 
-//   model EventComment {
-//     id        Int      @id @default(autoincrement())
-//     eventId   Int
-//     event     Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // cascade delete association
-//     userId    Int
-//     createdAt DateTime
-//     updatedAt DateTime
-//     text      String
-//     user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  
-//     // we want users to be able to unpublish things they edit.
-//     // deletes are always hard.
-//     isPublished Boolean @default(false)
-//   }
-  
+export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
+    { startsAt: "asc" },
+    { id: "asc" },
+];
+
+export const xEventSegment = new xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    localInclude: EventSegmentInclude,
+    tableName: "eventSegment",
+    naturalOrderBy: EventSegmentNaturalOrderBy,
+    getRowInfo: (row: EventSegmentPayload) => ({
+        name: row.name,
+        description: row.description,
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakePlainTextField("name"),
+        MakeMarkdownTextField("description"),
+        new DateTimeField({
+            allowNull: true,
+            columnName: "startsAt",
+            granularity: "minute",
+        }),
+        new DateTimeField({
+            allowNull: true,
+            columnName: "endsAt",
+            granularity: "minute",
+        }),
+        new ForeignSingleField<Prisma.EventGetPayload<{}>>({
+            columnName: "event",
+            fkMember: "eventId",
+            allowNull: false,
+            foreignTableSpec: xEvent,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
+
+
+
+
+
+////////////////////////////////////////////////////////////////
+const EventCommentInclude: Prisma.EventCommentInclude = {
+    event: true,
+    user: true,
+};
+
+export type EventCommentPayload = Prisma.EventCommentGetPayload<{
+    include: {
+        event: true,
+        user: true,
+    }
+}>;
+
+export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationInput[] = [
+    { createdAt: "asc" },
+    { id: "asc" },
+];
+
+export const xEventComment = new xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    localInclude: EventCommentInclude,
+    tableName: "eventComment",
+    naturalOrderBy: EventCommentNaturalOrderBy,
+    getRowInfo: (row: EventCommentPayload) => ({
+        name: "<not supported>",
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakeMarkdownTextField("text"),
+        new BoolField({ columnName: "isPublished", defaultValue: true }),
+        new DateTimeField({ allowNull: false, columnName: "createdAt", granularity: "minute", }),
+        new DateTimeField({ allowNull: false, columnName: "updatedAt", granularity: "minute", }),
+        new ForeignSingleField<Prisma.EventGetPayload<{}>>({
+            columnName: "event",
+            fkMember: "eventId",
+            allowNull: false,
+            foreignTableSpec: xEvent,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName: "user",
+            fkMember: "userId",
+            allowNull: false,
+            foreignTableSpec: xUser,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
+
 
 
 
@@ -345,7 +451,11 @@ const EventAttendanceInclude: Prisma.EventAttendanceInclude = {
     responses: true,
 };
 
-export type EventAttendancePayload = Prisma.EventAttendanceGetPayload<{}>;
+export type EventAttendancePayload = Prisma.EventAttendanceGetPayload<{
+    include: {
+        responses: true,
+    }
+}>;
 
 export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -375,42 +485,185 @@ export const xEventAttendance = new xTable({
 });
 
 
-  
-//   model EventSegmentUserResponse {
-//     id      Int   @id @default(autoincrement())
-//     userId  Int
-//     user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
-  
-//     eventSegmentId Int
-//     eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict)
-  
-//     expectAttendance Boolean @default(false)
-//     attendanceId      Int?
-//     attendance        EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
-//     attendanceComment String? // comment
-  
-//     @@unique([userId, eventSegmentId]) // 
-//   }
+
+
+////////////////////////////////////////////////////////////////
+const EventSegmentUserResponseArgs: Prisma.EventSegmentUserResponseArgs = {
+    include: {
+        attendance: true,
+        eventSegment: true,
+        user: {
+            include: {
+                instruments: {
+                    include: {
+                        instrument: {
+                            include: {
+                                functionalGroup: true,
+                            }
+                        },
+                    }
+                }
+            }
+        },
+    }
+}
+
+//export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGetPayload<typeof EventSegmentUserResponseArgs>;
+export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGetPayload<{
+    include: {
+        attendance: true,
+        eventSegment: true,
+        user: {
+            include: {
+                instruments: {
+                    include: {
+                        instrument: {
+                            include: {
+                                functionalGroup: true,
+                            }
+                        },
+                    }
+                }
+            }
+        },
+    }
+}>;
+
+export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
+    // todo: sort by something else?
+    { id: 'asc' },
+];
+
+export const xEventSegmentUserResponse = new xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    localInclude: EventSegmentUserResponseArgs.include,
+    tableName: "eventSegmentUserResponse",
+    naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
+    getRowInfo: (row: EventSegmentUserResponsePayload) => ({
+        name: row.user.compactName,
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakeMarkdownTextField("attendanceComment"),
+        new BoolField({ columnName: "expectAttendance", defaultValue: false }),
+        new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
+            columnName: "eventSegment",
+            fkMember: "eventSegmentId",
+            allowNull: false,
+            foreignTableSpec: xEventSegment,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName: "user",
+            fkMember: "userId",
+            allowNull: false,
+            foreignTableSpec: xUser,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
+            columnName: "attendance",
+            fkMember: "attendanceId",
+            allowNull: false,
+            foreignTableSpec: xEventAttendance,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
 
 
 
 
 
-//   model EventSegmentSongList {
-//     id          Int    @id @default(autoincrement())
-//     sortOrder   Int    @default(0)
-//     name        String
-//     description String @default("")
-  
-//     eventId     Int
-//     event       Event  @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
-//   }
-  
-//   model EventSongListSong {
-//     id       Int     @id @default(autoincrement())
-//     songId   Int
-//     subtitle String? // could be a small comment like "short version"
-  
-//     song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
-//   }
-  
+
+
+
+////////////////////////////////////////////////////////////////
+const EventSongListArgs: Prisma.EventSongListArgs = {
+    include: {
+        event: true,
+    }
+}
+
+//export type EventSongListPayload = Prisma.EventSongListGetPayload<typeof EventSongListArgs>;
+export type EventSongListPayload = Prisma.EventSongListGetPayload<{
+    include: {
+        event: true,
+    }
+}>;
+
+export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { id: 'asc' },
+];
+
+export const xEventSongList = new xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    localInclude: EventSongListArgs.include,
+    tableName: "eventSongList",
+    naturalOrderBy: EventSongListNaturalOrderBy,
+    getRowInfo: (row: EventSongListPayload) => ({
+        name: row.name,
+        description: row.description,
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakePlainTextField("name"),
+        MakeMarkdownTextField("description"),
+        MakeSortOrderField("sortOrder"),
+        new ForeignSingleField<Prisma.EventGetPayload<{}>>({
+            columnName: "event",
+            fkMember: "eventId",
+            allowNull: false,
+            foreignTableSpec: xEvent,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
+
+
+
+
+////////////////////////////////////////////////////////////////
+const EventSongListSongArgs: Prisma.EventSongListSongArgs = {
+    include: {
+        song: true,
+    }
+}
+
+//export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof EventSongListSongArgs>;
+export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<{
+    include: {
+        song: true,
+    }
+}>;
+
+export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { id: 'asc' },
+];
+
+export const xEventSongListSong = new xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    localInclude: EventSongListSongArgs.include,
+    tableName: "eventSongListSong",
+    naturalOrderBy: EventSongListSongNaturalOrderBy,
+    getRowInfo: (row: EventSongListSongPayload) => ({
+        name: row.song.name,
+        description: row.subtitle || "",
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakePlainTextField("subtitle"),
+        MakeSortOrderField("sortOrder"),
+        new ForeignSingleField<Prisma.SongGetPayload<{}>>({
+            columnName: "song",
+            fkMember: "songId",
+            allowNull: false,
+            foreignTableSpec: xSong,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
