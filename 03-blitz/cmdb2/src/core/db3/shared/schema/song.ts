@@ -8,7 +8,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField } from "../db3basicFields";
 import { xUser } from "./user";
 
 ////////////////////////////////////////////////////////////////
@@ -51,11 +51,7 @@ export const xSongTag = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "text",
-            allowNull: false,
-            format: "plain",
-        }),
+        MakeTitleField("text"),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
@@ -157,11 +153,7 @@ export const xSong = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "name",
-            allowNull: false,
-            format: "plain",
-        }),
+        MakeTitleField("name"),
         new GenericStringField({
             columnName: "slug",
             allowNull: false,
@@ -315,11 +307,7 @@ export const xSongCreditType = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "text",
-            allowNull: false,
-            format: "plain",
-        }),
+        MakeTitleField("text"),
         new GenericStringField({
             columnName: "description",
             allowNull: false,

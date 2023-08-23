@@ -29,13 +29,18 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
 
     // validate on change
     React.useEffect(() => {
-        setValidationResult(tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj));
+        const vr = tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new");
+        setValidationResult(vr);
+        //console.log(`obj changed & validation result: `);
+        //console.log(obj);
+       // console.log(vr);
         setOldObj(obj);
     }, [obj]);
 
     const handleOK = () => {
         // check validation and disallow
         if (!validationResult.success) {
+            console.log(`DB3NewObjectDialog handleOK validation error`);
             return;
         }
         onOK(obj);

@@ -31,7 +31,7 @@ export interface NewDialogAPI {
 
 export interface RenderForNewItemDialogArgs {
     key: any;
-    row: unknown; // row
+    row: TAnyModel; // row
     value: unknown;
     validationResult: db3.ValidateAndComputeDiffResult;
     api: NewDialogAPI,

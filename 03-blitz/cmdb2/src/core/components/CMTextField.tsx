@@ -13,13 +13,15 @@ interface CMTextFieldProps {
     value: string | null;
     onChange: (e, value) => void;
     autoFocus: boolean;
+    readOnly?: boolean;
 };
 
 // textfield for a string field on an object.
-export function CMTextField({ validationError, label, value, onChange, autoFocus }: CMTextFieldProps) {
+export function CMTextField({ validationError, label, value, onChange, autoFocus, readOnly }: CMTextFieldProps) {
     return (
         <TextField
             //key={key}
+            disabled={!!readOnly}
             autoFocus={autoFocus}
             label={label}
             error={!!validationError}

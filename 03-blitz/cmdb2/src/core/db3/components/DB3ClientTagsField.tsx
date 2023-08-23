@@ -372,7 +372,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
                 // </div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.typedSchemaColumn.ValidateAndParse(params.value);
+                const vr = this.typedSchemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 const value: TAssociation[] = params.value;
                 return <TagsFieldInput
                     validationError={vr.success ? null : vr.errorMessage || null}

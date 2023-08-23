@@ -163,8 +163,8 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
-        const clientModelForValidation: TAnyModel = table.getClientModel(fields);
-        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation);
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "new");
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "new");
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);
@@ -174,10 +174,10 @@ const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Authenticat
         const { localFields, associationFields } = separateMutationValues({ table, fields });
 
         // at this point `fields` should not be used because it mixes foreign associations with local values
-        console.log(`Separated local & associations. LOCAL:`);
-        console.log(JSON.stringify(localFields));
-        console.log(`ASSOCIATIONS:`);
-        console.log(JSON.stringify(associationFields));
+        // console.log(`Separated local & associations. LOCAL:`);
+        // console.log(JSON.stringify(localFields));
+        // console.log(`ASSOCIATIONS:`);
+        // console.log(JSON.stringify(associationFields));
 
         const obj = await dbTableClient.create({
             data: localFields,
@@ -224,8 +224,8 @@ const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ct
         const dbTableClient = db[table.tableName]; // the prisma interface
 
         // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
-        const clientModelForValidation: TAnyModel = table.getClientModel(fields);
-        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation);
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "update");
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "update");
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);

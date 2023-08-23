@@ -10,7 +10,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField } from "../db3basicFields";
 
 
 ////////////////////////////////////////////////////////////////
@@ -43,11 +43,7 @@ export const xInstrumentFunctionalGroup = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "name",
-            allowNull: false,
-            format: "plain",
-        }),
+        MakeTitleField("name"),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
@@ -107,11 +103,7 @@ export const xInstrumentTag = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "text",
-            allowNull: false,
-            format: "plain",
-        }),
+        MakeTitleField("text"),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
@@ -229,11 +221,7 @@ export const xInstrument = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "name",
-            allowNull: false,
-            format: "plain",
-        }),
+        MakeTitleField("name"),
         new GenericStringField({
             columnName: "slug",
             allowNull: false,

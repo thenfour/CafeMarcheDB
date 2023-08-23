@@ -64,12 +64,12 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected = () => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
 
-        console.assert(this.typedSchemaColumn.format === "plain" || this.typedSchemaColumn.format === "email");
+        console.assert(this.typedSchemaColumn.format === "plain" || this.typedSchemaColumn.format === "email" || this.typedSchemaColumn.format === "title");
 
         this.GridColProps = {
             type: "string",
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 return <CMTextField
                     key={params.key}
                     autoFocus={params.hasFocus}
@@ -98,6 +98,64 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     };
 };
 
+
+
+export class SlugColumnClient extends DB3ClientCore.IColumnClient {
+    typedSchemaColumn: db3fields.SlugField;
+
+    constructor(args: GenericStringColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: args.cellWidth,
+        });
+    }
+
+    onSchemaConnected = () => {
+        this.typedSchemaColumn = this.schemaColumn as db3fields.SlugField;
+
+        this.GridColProps = {
+            type: "string",
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+                return <CMTextField
+                    key={params.key}
+                    autoFocus={params.hasFocus}
+                    label={this.headerName}
+                    validationError={vr.success ? null : (vr.errorMessage || null)}
+                    value={params.value as string}
+                    onChange={(e, value) => {
+                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                    }}
+                />;
+            },
+        };
+    };
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
+
+        // set the calculated value in the object.
+        if (params.value !== vr.parsedValue) {
+            params.api.setFieldValues({ [this.schemaColumn.member]: vr.parsedValue });
+        }
+        return <CMTextField
+            readOnly={true}
+            key={params.key}
+            autoFocus={false}
+            label={this.headerName}
+            validationError={null} // don't show validation errors for fields you can't edit.
+            //validationError={vr.errorMessage || null}
+            value={vr.parsedValue as string}
+            onChange={(e, val) => {
+                //params.api.setFieldValues({ [this.columnName]: val });
+            }}
+        />;
+    };
+};
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface MarkdownStringColumnArgs {
     columnName: string;
@@ -124,7 +182,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string",
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 return <Stack><CMTextField
                     key={params.key}
                     autoFocus={params.hasFocus}
@@ -178,7 +236,7 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string", // we will do our own number conversion
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 return <CMTextField
                     key={params.key}
                     autoFocus={params.hasFocus}
@@ -486,7 +544,6 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                 if (isNaN(value.valueOf())) {
                     return <>---</>; // treat as null.
                 }
-                console.log(`value: ${value}`);
                 const granularity = this.typedSchemaColumn.granularity;
                 const now = new Date();
                 const age = new TimeSpan(now.valueOf() - value.valueOf());
@@ -505,7 +562,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                 }
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse(params.value);
+                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 // regarding validation, the date picker kinda has its own way of doing validation and maybe i'll work with that in the future.
                 const granularity = this.typedSchemaColumn.granularity;
                 switch (granularity) {
@@ -530,7 +587,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        const vr = this.schemaColumn.ValidateAndParse(params.value);
+        const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
         // regarding validation, the date picker kinda has its own way of doing validation and maybe i'll work with that in the future.
         const granularity = this.typedSchemaColumn.granularity;
         switch (granularity) {

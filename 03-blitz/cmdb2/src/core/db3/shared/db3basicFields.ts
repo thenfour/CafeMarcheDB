@@ -1,6 +1,6 @@
 import { ColorPalette, ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
-import { ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseResult, xTable } from "./db3core";
+import { DB3RowMode, ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable } from "./db3core";
 
 ////////////////////////////////////////////////////////////////
 // field types
@@ -30,8 +30,8 @@ export class PKField extends FieldBase<number> {
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     // for pk id fields, there should never be any changes. but it is required to pass into update/delete/whatever so just pass it always.
-    ValidateAndParse = (val: string | number | null): ValidateAndParseResult<number | null> => {
-        return SuccessfulValidateAndParseResult(val);
+    ValidateAndParse = (val: ValidateAndParseArgs<number>): ValidateAndParseResult<number | null> => {
+        return SuccessfulValidateAndParseResult(val.value);
     };
 
     isEqual = (a: number, b: number) => {
@@ -48,7 +48,7 @@ export class PKField extends FieldBase<number> {
 }
 
 // for validation and client UI behavior.
-export type StringFieldFormatOptions = "plain" | "email" | "markdown";
+export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title";
 
 export interface GenericStringFieldArgs {
     columnName: string;
@@ -93,6 +93,11 @@ export class GenericStringField extends FieldBase<string> {
                 this.doTrim = true;
                 this.caseSensitive = args.caseSensitive || false;
                 break;
+            case "title":
+                this.minLength = 1;
+                this.doTrim = true;
+                this.caseSensitive = args.caseSensitive || false;
+                break;
             default:
                 throw new Error(`unknown string field format; columnname: ${args.columnName}`);
         }
@@ -104,19 +109,19 @@ export class GenericStringField extends FieldBase<string> {
         return { [this.member]: { contains: query } };
     };
 
-    ValidateAndParse = (val: string | null): ValidateAndParseResult<string | null> => {
-        if (val === null) {
-            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
-            return ErrorValidateAndParseResult("field must be non-null", val);
+    ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+        if (value === null) {
+            if (this.allowNull) return SuccessfulValidateAndParseResult(value);
+            return ErrorValidateAndParseResult("field must be non-null", value);
         }
-        if (typeof val !== 'string') {
-            return ErrorValidateAndParseResult("field is of unknown type", val);
+        if (typeof value !== 'string') {
+            return ErrorValidateAndParseResult("field is of unknown type", value);
         }
         if (this.doTrim) {
-            val = val.trim();
+            value = value.trim();
         }
-        if (val.length < this.minLength) {
-            return ErrorValidateAndParseResult("minimum length not satisfied", val);
+        if (value.length < this.minLength) {
+            return ErrorValidateAndParseResult("minimum length not satisfied", value);
         }
         if (this.format === "email") {
             // https://stackoverflow.com/questions/46155/how-can-i-validate-an-email-address-in-javascript
@@ -127,11 +132,11 @@ export class GenericStringField extends FieldBase<string> {
                         /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
                     );
             };
-            if (!validateEmail(val)) {
-                return ErrorValidateAndParseResult("email not in the correct format", val);
+            if (!validateEmail(value)) {
+                return ErrorValidateAndParseResult("email not in the correct format", value);
             }
         }
-        return SuccessfulValidateAndParseResult(val);
+        return SuccessfulValidateAndParseResult(value);
     };
 
     isEqual = (a: string, b: string) => {
@@ -173,44 +178,44 @@ export class GenericIntegerField extends FieldBase<number> {
     connectToTable = (table: xTable) => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        const r = this.ValidateAndParse(query);
+        const r = this.ValidateAndParse({ value: query, row: {}, mode: "view" }); // passing empty row because it's not used by this class.
         if (!r.success) return false;
         return { [this.member]: { equals: r.parsedValue } };
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: string | number | null): ValidateAndParseResult<number | null> => {
-        if (val === null) {
+    ValidateAndParse = ({ value }: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
+        if (value === null) {
             if (this.allowNull) {
-                return SuccessfulValidateAndParseResult(val);
+                return SuccessfulValidateAndParseResult(value);
             }
-            return ErrorValidateAndParseResult("field must be non-null", val);
+            return ErrorValidateAndParseResult("field must be non-null", value);
         }
         // val should be coerced into number, convert to integer.
-        if (typeof val === 'string') {
-            const s = (val as string).trim();
+        if (typeof value === 'string') {
+            const s = (value as string).trim();
             if (this.allowNull && s === '') {
                 return SuccessfulValidateAndParseResult(null);
             }
             const i = parseInt(s, 10);
             if (isNaN(i)) {
-                return ErrorValidateAndParseResult("Input string was not convertible to integer", val as (string | number));
+                return ErrorValidateAndParseResult("Input string was not convertible to integer", value as (string | number));
             }
-            val = i;
+            value = i;
         }
         // todo here check other constraints like min/max whatever
-        return SuccessfulValidateAndParseResult(val);
+        return SuccessfulValidateAndParseResult(value);
     };
 
     isEqual = (a: number, b: number) => {
         return a === b;
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
-        const vr = this.ValidateAndParse(clientModel[this.member]);
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
         mutationModel[this.member] = vr.parsedValue;
     };
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
@@ -253,28 +258,28 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
         return false;// { [this.member]: { contains: query } };
     };
 
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: string | null = dbModel[this.member];
         clientModel[this.member] = this.palette.findEntry(dbVal);
     }
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         const val: ColorPaletteEntry | null = clientModel[this.member];
         mutationModel[this.member] = (val?.id) || null;
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: ColorPaletteEntry | null): ValidateAndParseResult<ColorPaletteEntry | null> => {
-        if (val === null) {//&& !this.allowNull) {
+    ValidateAndParse = ({ value }: ValidateAndParseArgs<ColorPaletteEntry>): ValidateAndParseResult<ColorPaletteEntry | null> => {
+        if (value === null) {//&& !this.allowNull) {
             if (this.allowNull)
-                return SuccessfulValidateAndParseResult(val);
-            return ErrorValidateAndParseResult("field must be non-null", val);
+                return SuccessfulValidateAndParseResult(value);
+            return ErrorValidateAndParseResult("field must be non-null", value);
         }
-        if (this.palette.findEntry(val?.id || null) == null) {
-            return ErrorValidateAndParseResult("Not found in palette.", val);
+        if (this.palette.findEntry(value?.id || null) == null) {
+            return ErrorValidateAndParseResult("Not found in palette.", value);
         }
-        return SuccessfulValidateAndParseResult(val);
+        return SuccessfulValidateAndParseResult(value);
     };
 
 };
@@ -306,19 +311,19 @@ export class BoolField extends FieldBase<boolean> {
         return { [this.member]: { equals: query } };
     };
 
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: boolean | null = dbModel[this.member]; // db may have null values so need to coalesce
         clientModel[this.member] = dbVal || this.defaultValue;
     }
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         mutationModel[this.member] = clientModel[this.member];
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: boolean | null): ValidateAndParseResult<boolean | null> => {
-        return SuccessfulValidateAndParseResult(val);
+    ValidateAndParse = (val: ValidateAndParseArgs<boolean>): ValidateAndParseResult<boolean | null> => {
+        return SuccessfulValidateAndParseResult(val.value);
     };
 };
 
@@ -361,27 +366,27 @@ export class ConstEnumStringField extends FieldBase<string> {
         return { [this.member]: { contains: query } };
     };
 
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         mutationModel[this.member] = clientModel[this.member];
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: string | null): ValidateAndParseResult<string | null> => {
-        if (val === null) {
-            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
-            return ErrorValidateAndParseResult("field must be non-null", val);
+    ValidateAndParse = ({ value }: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+        if (value === null) {
+            if (this.allowNull) return SuccessfulValidateAndParseResult(value);
+            return ErrorValidateAndParseResult("field must be non-null", value);
         }
         // make sure val is actually a member of the enum.
-        val = val!.trim();
-        if (!Object.values(this.options).some(op => op === val)) {
-            return ErrorValidateAndParseResult("unrecognized option", val);
+        value = value!.trim();
+        if (!Object.values(this.options).some(op => op === value)) {
+            return ErrorValidateAndParseResult("unrecognized option", value);
         }
-        return SuccessfulValidateAndParseResult(val);
+        return SuccessfulValidateAndParseResult(value);
     };
 
 };
@@ -461,25 +466,30 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
 
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         // leaves behind the fk id.
         clientModel[this.member] = dbModel[this.member];
     }
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         // mutations want ONLY the id, not the object.
-        mutationModel[this.fkMember] = clientModel[this.member][this.foreignTableSpec.pkMember];
+        const foreign = clientModel[this.member];
+        if (foreign == null) {
+            mutationModel[this.fkMember] = null;
+            return;
+        }
+        mutationModel[this.fkMember] = foreign[this.foreignTableSpec.pkMember];
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: TForeign | null): ValidateAndParseResult<TForeign | null> => {
-        if (val === null) {
-            if (this.allowNull) return SuccessfulValidateAndParseResult(val);
-            return ErrorValidateAndParseResult("field must be non-null", val);
+    ValidateAndParse = ({ value }: ValidateAndParseArgs<TForeign>): ValidateAndParseResult<TForeign | null> => {
+        if (value === null) {
+            if (this.allowNull) return SuccessfulValidateAndParseResult(value);
+            return ErrorValidateAndParseResult("field must be non-null", value);
         }
         // there's really nothing else to validate here.
-        return SuccessfulValidateAndParseResult(val);
+        return SuccessfulValidateAndParseResult(value);
     };
 
 };
@@ -598,13 +608,13 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
 
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         // the "includes" clause already returns the correct structure for clients.
         clientModel[this.member] = dbModel[this.member];
     }
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         // clients work with associations, even mock associations (where id is empty).
         // mutations don't require any of this info; associations are always with existing local & foreign items.
         // so basically we just need to reduce associations down to an update/mutate model.
@@ -612,10 +622,10 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: TAssociation[] | null): ValidateAndParseResult<TAssociation[] | null> => {
+    ValidateAndParse = (val: ValidateAndParseArgs<TAssociation[]>): ValidateAndParseResult<TAssociation[] | null> => {
         // there's really nothing else to validate here. in theory you can make sure the IDs are valid but it should never be possible plus enforced by the db relationship.
         // therefore not worth the overhead / roundtrip / complexity.
-        return SuccessfulValidateAndParseResult(val);
+        return SuccessfulValidateAndParseResult(val.value);
     };
 };
 
@@ -653,32 +663,32 @@ export class DateTimeField extends FieldBase<Date> {
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: string | Date | null): ValidateAndParseResult<Date | null> => {
-        if (val === null) {
+    ValidateAndParse = ({ value }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
+        if (value === null) {
             if (this.allowNull) {
-                return SuccessfulValidateAndParseResult(val);
+                return SuccessfulValidateAndParseResult(value);
             }
-            return ErrorValidateAndParseResult("field must be non-null", val);
+            return ErrorValidateAndParseResult("field must be non-null", value);
         }
-        if (typeof (val) === 'string') {
+        if (typeof (value) === 'string') {
             // string to date conv.
             //const parseResult = Date.parse(val);
-            const parsedDate = new Date(val);
+            const parsedDate = new Date(value);
             //  If called with an invalid date string, or if the date to be constructed will have a timestamp less than -8,640,000,000,000,000
             // or greater than 8,640,000,000,000,000 milliseconds, it returns an invalid date (a Date object whose toString() method
             // returns "Invalid Date" and valueOf() method returns NaN).
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date
             if (isNaN(parsedDate.valueOf())) {
-                return ErrorValidateAndParseResult("Not a valid date", val as unknown as (Date | null));
+                return ErrorValidateAndParseResult("Not a valid date", value as unknown as (Date | null));
             }
-            val = parsedDate;
+            value = parsedDate;
         }
-        if (val instanceof Date) {
-            if (isNaN(val.valueOf())) {
-                return ErrorValidateAndParseResult("Date is invalid", val as unknown as (Date | null));
+        if (value instanceof Date) {
+            if (isNaN(value.valueOf())) {
+                return ErrorValidateAndParseResult("Date is invalid", value as unknown as (Date | null));
             }
         }
-        return SuccessfulValidateAndParseResult(val);
+        return SuccessfulValidateAndParseResult(value);
     };
 
     isEqual = (a: Date, b: Date) => {
@@ -698,20 +708,98 @@ export class DateTimeField extends FieldBase<Date> {
         }
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
-        console.assert(clientModel[this.member] instanceof Date);
-        const vr = this.ValidateAndParse(clientModel[this.member]);
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        //console.assert(clientModel[this.member] instanceof Date);
+        const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
         mutationModel[this.member] = vr.parsedValue;
     };
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
+        const v = dbModel[this.member];
+        if (v === null) {
+            clientModel[this.member] = null;
+            return;
+        }
         console.assert(dbModel[this.member] instanceof Date);
+        clientModel[this.member] = dbModel[this.member];
+    }
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// slug field is calculated from another field.
+// it is calculated live during creation, but afterwards it's user-editable.
+
+// https://gist.github.com/codeguy/6684588
+export const slugify = (...args: (string | number)[]): string => {
+    const value = args.join(' ')
+
+    return value
+        .normalize('NFD') // split an accented letter in the base letter and the acent
+        .replace(/[\u0300-\u036f]/g, '') // remove all previously split accents
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9 ]/g, '') // remove all chars not letters, numbers and spaces (to be replaced)
+        .replace(/\s+/g, '-') // separator
+}
+
+export interface SlugFieldFieldArgs {
+    columnName: string;
+    sourceColumnName: string;
+};
+
+export class SlugField extends FieldBase<string> {
+    sourceColumnName: string;
+
+    constructor(args: SlugFieldFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: "",
+            label: args.columnName,
+        });
+        this.sourceColumnName = args.sourceColumnName;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        return { [this.member]: { contains: query } };
+    };
+
+    ValidateAndParse = (val: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+        let slugValue = val.value; // by default, for editing, allow users to enter a custom value.
+        if (val.mode === "new") {
+            // calculate the slug value
+            const src = val.row[this.sourceColumnName];
+            if (src == null) return ErrorValidateAndParseResult("required", "");
+            if (typeof src !== 'string') return ErrorValidateAndParseResult("unknown type", "");
+            slugValue = slugify(src);
+        }
+
+        if (slugValue == null) return ErrorValidateAndParseResult("required", "");
+        if (typeof slugValue !== 'string') return ErrorValidateAndParseResult("unknown type", "");
+        if (slugValue.length < 1) return ErrorValidateAndParseResult("required", "");
+        return SuccessfulValidateAndParseResult(slugValue);
+    };
+
+    isEqual = (a: string, b: string) => {
+        return a.toLowerCase() === b.toLowerCase();
+    };
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        mutationModel[this.member] = clientModel[this.member];
+    };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
+        if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
 };
 
 
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // higher-level conveniences
 export const MakePlainTextField = (columnName: string) => (
@@ -725,6 +813,12 @@ export const MakeMarkdownTextField = (columnName: string) => (
         columnName,
         allowNull: false,
         format: "markdown",
+    }));
+export const MakeTitleField = (columnName: string) => (
+    new GenericStringField({
+        columnName: columnName,
+        allowNull: false,
+        format: "title",
     }));
 
 export const MakeIntegerField = (columnName: string) => (
@@ -753,4 +847,13 @@ export const MakeSignificanceField = (columnName: string, options: TAnyModel) =>
         defaultValue: null,
         options,
     }));
+
+export const MakeSlugField = (columnName: string, sourceColumnName: string) => (
+    new SlugField({
+        columnName,
+        sourceColumnName,
+    })
+);
+
+
 

@@ -138,6 +138,7 @@ export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDif
 
 ////////////////////////////////////////////////////////////////
 //export type FieldSignificanceOptions = "name" | "description" | "none" | "color";
+export type DB3RowMode = "new" | "view" | "update";
 
 export interface FieldBaseArgs<FieldDataType> {
     //fieldType: string;
@@ -147,6 +148,12 @@ export interface FieldBaseArgs<FieldDataType> {
     defaultValue: FieldDataType | null;
     //fieldSignificance: FieldSignificanceOptions;
 }
+
+export interface ValidateAndParseArgs<FieldDataType> {
+    value: FieldDataType | null;
+    row: TAnyModel;
+    mode: DB3RowMode;
+};
 
 export abstract class FieldBase<FieldDataType> {
     //fieldType: string;
@@ -166,13 +173,13 @@ export abstract class FieldBase<FieldDataType> {
     abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    abstract ValidateAndParse: (val: FieldDataType | string | null) => ValidateAndParseResult<FieldDataType | null>;// => {
+    abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null>;// => {
 
     // SANITIZED values are passed in. That means no nulls, and ValidateAndParse has already been called.
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
 
-    abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel) => void;
-    abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel) => void; // apply the value from db to client.
+    abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => void;
+    abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => void; // apply the value from db to client.
 }
 
 
@@ -236,7 +243,7 @@ export class xTable implements TableDesc {
     }
 
     // returns an object describing changes and validation errors.
-    ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel): ValidateAndComputeDiffResult {
+    ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel, mode: DB3RowMode): ValidateAndComputeDiffResult {
         const ret: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({
             changes: {},
             errors: {},
@@ -254,7 +261,7 @@ export class xTable implements TableDesc {
                 continue;
             }
 
-            const b_parseResult = field.ValidateAndParse(b_raw); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
+            const b_parseResult = field.ValidateAndParse({ value: b_raw, row: newItem, mode }); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
 
             if (!b_parseResult.success) {
                 ret.success = false;
@@ -298,11 +305,11 @@ export class xTable implements TableDesc {
         return ret;
     };
 
-    getClientModel = (dbModel: TAnyModel) => {
+    getClientModel = (dbModel: TAnyModel, mode: DB3RowMode) => {
         const ret: TAnyModel = {};
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
-            field.ApplyDbToClient(dbModel, ret);
+            field.ApplyDbToClient(dbModel, ret, mode);
         }
         return ret;
     }

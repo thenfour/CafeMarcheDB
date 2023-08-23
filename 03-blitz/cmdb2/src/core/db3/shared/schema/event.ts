@@ -6,7 +6,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField } from "../db3basicFields";
 import { xUser } from "./user";
 import { xSong } from "./song";
 /*
@@ -88,7 +88,7 @@ export const xEventType = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("text"),
+        MakeTitleField("text"),
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
         MakeColorField("color"),
@@ -135,7 +135,7 @@ export const xEventStatus = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("label"),
+        MakeTitleField("label"),
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
         MakeColorField("color"),
@@ -183,7 +183,7 @@ export const xEventTag = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("text"),
+        MakeTitleField("text"),
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
         MakeColorField("color"),
@@ -280,8 +280,8 @@ export const xEvent = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("name"),
-        MakePlainTextField("slug"),
+        MakeTitleField("name"),
+        MakeSlugField("slug", "name"),
         MakeMarkdownTextField("description"),
         new BoolField({ columnName: "isPublished", defaultValue: false }),
         new BoolField({ columnName: "isDeleted", defaultValue: false }),
@@ -366,7 +366,7 @@ export const xEventSegment = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("name"),
+        MakeTitleField("name"),
         MakeMarkdownTextField("description"),
         new DateTimeField({
             allowNull: true,
@@ -479,7 +479,7 @@ export const xEventAttendance = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("text"),
+        MakeTitleField("text"),
         MakeMarkdownTextField("description"),
         MakeColorField("color"),
         MakeIntegerField("strength"),
@@ -612,7 +612,7 @@ export const xEventSongList = new xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("name"),
+        MakeTitleField("name"),
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
