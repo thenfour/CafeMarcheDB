@@ -14,7 +14,7 @@ import { TimeSpan, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
-import { Button, Checkbox, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
+import { Button, Checkbox, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
 import * as DB3ClientCore from "./DB3ClientCore";
 import * as db3fields from "../shared/db3basicFields";
 import RichTextEditor from "src/core/components/RichTextEditor";
@@ -228,27 +228,31 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected = () => {
         this.GridColProps = {
             renderCell: (params: GridRenderCellParams) => {
-                return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>
+                return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                return <Checkbox
-                    checked={params.value}
-                    onChange={(e, value) => {
-                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
-                    }}
-                />
+                return <FormControlLabel label={this.schemaColumn.label} control={
+                    <Checkbox
+                        checked={params.value}
+                        onChange={(e, value) => {
+                            params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                        }}
+                    />
+                } />
             },
         };
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        return <Checkbox
-            checked={!!params.value}
-            onChange={(e, val) => {
-                // so this sets the row model value to a string. that's OK because the value gets parsed later.
-                // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
-                params.api.setFieldValues({ [this.columnName]: val });
-            }}
+        return <FormControlLabel label={this.schemaColumn.label} control={
+            <Checkbox
+                checked={!!params.value}
+                onChange={(e, val) => {
+                    // so this sets the row model value to a string. that's OK because the value gets parsed later.
+                    // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
+                    params.api.setFieldValues({ [this.columnName]: val });
+                }}
+            />}
         />;
     };
 };
@@ -373,10 +377,90 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CMDatePickerProps {
+    autoFocus: boolean,
+    label: string,
+    value: Date | null,
+    onChange: (value: Date | null) => void,
+    allowNull: boolean,
+};
+
+export const CMDatePicker = (props: CMDatePickerProps) => {
+    const [datePickerValue, setDatePickerValue] = React.useState<Date | null>(props.value);
+    const [noDateChecked, setNoDateChecked] = React.useState<boolean>(props.value == null);
+
+    // the moment you uncheck the box is the moment we want to set focus. but the control is disabled at that point.
+    // so we queue up the setfocus.
+    // but then, MUI has some animation or something that delays enabled state further. so a timeout is the hack for now.
+    const [queueFocus, setQueueFocus] = React.useState<boolean>(false);
+
+    const datePickerRef = React.useRef(null); // Ref to the TextField
+
+    const datePickerValueField = noDateChecked ? null : (datePickerValue == null ? null : dayjs(datePickerValue));
+
+    const invokeOnChange = () => {
+        const extVal = noDateChecked ? null : datePickerValue;
+        props.onChange(extVal);
+    };
+
+    if (queueFocus && datePickerRef.current && !noDateChecked) {
+        setQueueFocus(false);
+        setTimeout(() => {
+            datePickerRef.current.focus();
+            //datePickerRef.current.querySelector('input').focus();
+        }, 100);
+    }
+
+    // when the user is typing a date, it will be an invalid date in the middle of typing.
+    // during that intermediate state, the date picker acts as uncontrolled so setting value does'nt set anything.
+    // 
+
+    return <>
+        <DatePicker
+            autoFocus={props.autoFocus}
+            inputRef={datePickerRef}
+            label={props.label}
+            disabled={noDateChecked}
+            value={datePickerValueField}
+            onChange={(value: Dayjs, context) => {
+                let d: Date | null = (value?.toDate()) || null;
+                if (d instanceof Date) {
+                    if (isNaN(d.valueOf())) {
+                        d = null;
+                    }
+                }
+                //console.log(`date picker onChange: ${value} => ${d}`);
+                setDatePickerValue(d);
+                invokeOnChange();
+            }}
+            className={noDateChecked ? "CMDatePicker CMDisabled" : "CMDatePicker CMEnabled"}
+
+        />
+        {props.allowNull &&
+            <FormControlLabel control={<Checkbox
+                checked={noDateChecked}
+                onChange={(e) => {
+                    //console.log(`checkbox change checked=${e.target.checked}, changing to ${e.target.checked ? null : datePickerValue} `);
+                    setNoDateChecked(e.target.checked);
+                    if (!e.target.checked) {
+                        setQueueFocus(true);
+                    }
+                    invokeOnChange();
+                }}
+            />} label="Don't specify a date" />
+
+        }
+    </>
+        ;
+
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeColumnArgs {
     columnName: string;
     cellWidth: number;
 };
+
 
 export class DateTimeColumn extends DB3ClientCore.IColumnClient {
     typedSchemaColumn: db3fields.DateTimeField;
@@ -429,18 +513,13 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                     case "day": // todo
                     case "minute":
                     case "second":
-                        return <DatePicker
+                        return <CMDatePicker
+                            allowNull={this.typedSchemaColumn.allowNull}
                             autoFocus={params.hasFocus}
                             label={this.typedSchemaColumn.label}
-                            value={dayjs(params.value)}
-                            onChange={(value: Dayjs, context) => {
-                                let d: Date | null = (value?.toDate()) || null;
-                                if (d instanceof Date) {
-                                    if (isNaN(d.valueOf())) {
-                                        d = null;
-                                    }
-                                }
-                                params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value: d });
+                            value={params.value}
+                            onChange={(value: Date | null) => {
+                                params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                             }}
                         />;
                     default:
@@ -459,19 +538,13 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
             case "day": // todo
             case "minute":
             case "second":
-                return <DatePicker
+                return <CMDatePicker
+                    allowNull={this.typedSchemaColumn.allowNull}
                     autoFocus={false}
                     label={this.typedSchemaColumn.label}
-                    value={dayjs(params.value as (Date | null))}
-                    onChange={(value: Dayjs, context) => {
-                        let d: Date | null = (value?.toDate()) || null;
-                        if (d instanceof Date) {
-                            if (isNaN(d.valueOf())) {
-                                d = null;
-                            }
-                        }
-                        params.api.setFieldValues({ [this.columnName]: d });
-                        //params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value: d });
+                    value={params.value as Date | null}
+                    onChange={(value: Date | null) => {
+                        params.api.setFieldValues({ [this.columnName]: value });
                     }}
                 />;
             default:

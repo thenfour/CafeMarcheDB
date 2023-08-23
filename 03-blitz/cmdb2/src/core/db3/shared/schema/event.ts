@@ -217,11 +217,14 @@ export const xEventTagAssignment = new xTable({
     viewPermission: Permission.view_events,
     localInclude: EventTagAssignmentInclude,
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
-    getRowInfo: (row: EventTagAssignmentModel) => ({
-        name: row.eventTag.text,
-        description: row.eventTag.description,
-        color: gGeneralPaletteList.findEntry(row.eventTag.color),
-    }),
+    getRowInfo: (row: EventTagAssignmentModel) => {
+        return {
+            name: row.eventTag.text,
+            description: row.eventTag.description,
+            color: gGeneralPaletteList.findEntry(row.eventTag.color),
+        };
+    }
+    ,
     columns: [
         new PKField({ columnName: "id" }),
         new ForeignSingleField<Prisma.EventTagGetPayload<{}>>({
@@ -311,8 +314,8 @@ export const xEvent = new xTable({
         }),
         new TagsField<EventTagAssignmentModel>({
             columnName: "tags",
-            associationForeignIDMember: "tagId",
-            associationForeignObjectMember: "tag",
+            associationForeignIDMember: "eventTagId",
+            associationForeignObjectMember: "eventTag",
             associationLocalIDMember: "eventId",
             associationLocalObjectMember: "event",
             associationTableSpec: xEventTagAssignment,

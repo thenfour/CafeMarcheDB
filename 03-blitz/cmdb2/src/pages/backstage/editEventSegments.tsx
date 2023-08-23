@@ -21,16 +21,6 @@ const tableSpec = new DB3Client.xTableClientSpec({
 });
 
 
-// new ForeignSingleField<Prisma.EventGetPayload<{}>>({
-//     columnName: "event",
-//     fkMember: "eventId",
-//     allowNull: false,
-//     foreignTableSpec: xEvent,
-//     getQuickFilterWhereClause: (query: string) => false,
-// }),
-
-
-
 const MainContent = () => {
     if (!useAuthorization("EditEventSegmentsPage", Permission.admin_general)) {
         throw new Error(`unauthorized`);

@@ -689,3 +689,14 @@ div.chipContainer.validationSuccess {
 .attendanceResponseChip .responseText {}
 
 .attendanceResponseChip .userComment {}
+
+
+/* when datepicker is in an intermediate invalid date state, it will display an error. we don't want that error to be shown if the control is disabled */
+.CMDatePicker.CMDisabled .Mui-error {
+  color: #8888;
+}
+
+.CMDatePicker.CMDisabled div.Mui-error {
+  border: 1px solid #8888;
+  background-color: #eee;
+}
