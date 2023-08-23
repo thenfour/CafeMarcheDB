@@ -290,6 +290,11 @@ export class xTable implements TableDesc {
             }
         }
 
+        // console.log(`ValidateAndComputeDiff. old, new, result:`);
+        // console.log(oldItem);
+        // console.log(newItem);
+        // console.log(ret);
+
         return ret;
     };
 

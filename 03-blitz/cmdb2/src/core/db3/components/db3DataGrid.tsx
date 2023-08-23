@@ -122,8 +122,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             if (!validateResult.success) {
                 // display validation error.
                 console.log(`processRowUpdate: validation error (validateResult):`);
-                //console.log(validateResult);
-                //alert(`validation error`);
+                console.log(validateResult);
                 reject(validateResult.errors);
             }
             else if (validateResult.hasChanges) {
@@ -207,7 +206,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         }
 
         const { oldRow, newRow, validateResult } = confirmDialogArgs;
-        console.log(validateResult);
+        //console.log(validateResult);
 
         return (
             <Dialog

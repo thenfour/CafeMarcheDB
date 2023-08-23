@@ -140,10 +140,15 @@ export class GenericStringField extends FieldBase<string> {
     };
 
     isEqual = (a: string, b: string) => {
-        if (this.caseSensitive) {
-            return a === b;
+        if (this.doTrim) {
+            a = a.trim();
+            b = b.trim();
         }
-        return a.toLowerCase() === b.toLowerCase();
+        if (!this.caseSensitive) {
+            a = a.toLowerCase();
+            b = b.toLowerCase();
+        }
+        return a === b;
     };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
