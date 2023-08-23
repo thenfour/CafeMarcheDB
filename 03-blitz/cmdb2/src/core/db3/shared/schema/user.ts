@@ -1,7 +1,7 @@
 
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeCreatedAtField, PKField, TagsField } from "../db3basicFields";
 import { xTable } from "../db3core";
 
 
@@ -283,10 +283,6 @@ export const xUser = new xTable({
             format: "plain",
             allowNull: true,
         }),
-        new DateTimeField({
-            columnName: "createdAt",
-            allowNull: true,
-            granularity: "day",
-        }),
+        MakeCreatedAtField("createdAt"),
     ]
 });

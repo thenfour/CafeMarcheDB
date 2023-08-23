@@ -14,7 +14,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.PKColumnClient({ columnName: "id" }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "text", cellWidth: 200 }),
         new DB3Client.BoolColumnClient({ columnName: "isPublished" }),
-        new DB3Client.DateTimeColumn({ columnName: "createdAt", cellWidth: 180 }),
+        new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 180 }),
         new DB3Client.DateTimeColumn({ columnName: "updatedAt", cellWidth: 180 }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120 }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120 }),

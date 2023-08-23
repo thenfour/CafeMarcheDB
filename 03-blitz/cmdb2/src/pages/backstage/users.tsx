@@ -63,7 +63,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
         new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
         new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
-        new DB3Client.DateTimeColumn({ columnName: "createdAt", cellWidth: 200 }),
+        new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
         new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
         new DB3Client.BoolColumnClient({ columnName: "isActive" }),
         new DB3Client.ForeignSingleFieldClient({

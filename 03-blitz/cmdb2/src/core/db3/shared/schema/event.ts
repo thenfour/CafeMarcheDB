@@ -6,7 +6,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
 import { xUser } from "./user";
 import { xSong } from "./song";
 /*
@@ -293,11 +293,7 @@ export const xEvent = new xTable({
             columnName: "cancelledAt",
             granularity: "second",
         }),
-        new DateTimeField({
-            allowNull: false,
-            columnName: "createdAt",
-            granularity: "second",
-        }),
+        MakeCreatedAtField("createdAt"),
         new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
             columnName: "type",
             fkMember: "typeId",
@@ -423,7 +419,7 @@ export const xEventComment = new xTable({
         new PKField({ columnName: "id" }),
         MakeMarkdownTextField("text"),
         new BoolField({ columnName: "isPublished", defaultValue: true }),
-        new DateTimeField({ allowNull: false, columnName: "createdAt", granularity: "minute", }),
+        MakeCreatedAtField("createdAt"),
         new DateTimeField({ allowNull: false, columnName: "updatedAt", granularity: "minute", }),
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",

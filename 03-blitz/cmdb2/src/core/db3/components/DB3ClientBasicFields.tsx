@@ -609,3 +609,61 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
         }
     };
 };
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CreatedAtColumnArgs {
+    columnName: string;
+    cellWidth: number;
+};
+
+
+export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
+    typedSchemaColumn: db3fields.CreatedAtField;
+
+    constructor(args: CreatedAtColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: args.cellWidth,
+        });
+    }
+
+    onSchemaConnected = () => {
+        this.typedSchemaColumn = this.schemaColumn as db3fields.CreatedAtField;
+        this.GridColProps = {
+            type: "dateTime",
+            renderCell: (params: GridRenderCellParams) => {
+                const value = params.value as Date;
+                const now = new Date();
+                const age = new TimeSpan(now.valueOf() - value.valueOf());
+                const ageStr = `(${age.shortString} ago)`;
+                return <>{value.toTimeString()} {ageStr}</>; // todo
+            },
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const value = params.value as Date;
+                const now = new Date();
+                const age = new TimeSpan(now.valueOf() - value.valueOf());
+                const ageStr = `(${age.shortString} ago)`;
+                return <>{value.toTimeString()} {ageStr}</>; // todo
+            },
+        };
+    };
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
+
+        // set the calculated value in the object.
+        if (params.value === undefined && vr.parsedValue) {
+            params.api.setFieldValues({ [this.schemaColumn.member]: vr.parsedValue });
+        }
+
+        const value = vr.parsedValue as Date;
+        const now = new Date();
+        const age = new TimeSpan(now.valueOf() - value.valueOf());
+        const ageStr = `(${age.shortString} ago)`;
+        return <>{value.toTimeString()} {ageStr}</>; // todo
+    };
+};

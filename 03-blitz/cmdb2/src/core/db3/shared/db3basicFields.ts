@@ -725,6 +725,54 @@ export class DateTimeField extends FieldBase<Date> {
     }
 };
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CreatedAtFieldArgs {
+    columnName: string;
+};
+
+export class CreatedAtField extends FieldBase<Date> {
+    constructor(args: CreatedAtFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: new Date(),
+            label: args.columnName,
+        });
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    // don't support quick filter on date fields
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        return false;
+    };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
+        // we don't care about the input; for creations just generate a new date always.
+        if (args.mode === "new") {
+            return SuccessfulValidateAndParseResult(new Date());
+        }
+        console.assert(value instanceof Date);
+        return SuccessfulValidateAndParseResult(value);
+    };
+
+    isEqual = (a: Date, b: Date) => {
+        return a === b;
+    };
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
+        mutationModel[this.member] = vr.parsedValue;
+    };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
+        console.assert(dbModel[this.member] instanceof Date);
+        clientModel[this.member] = dbModel[this.member];
+    }
+};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // slug field is calculated from another field.
 // it is calculated live during creation, but afterwards it's user-editable.
@@ -854,6 +902,14 @@ export const MakeSlugField = (columnName: string, sourceColumnName: string) => (
         sourceColumnName,
     })
 );
+
+export const MakeCreatedAtField = (columnName: string) => (
+    new CreatedAtField({
+        columnName
+    })
+);
+
+
 
 
 

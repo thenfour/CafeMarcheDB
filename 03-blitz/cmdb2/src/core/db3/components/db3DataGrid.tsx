@@ -207,6 +207,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         }
 
         const { oldRow, newRow, validateResult } = confirmDialogArgs;
+        console.log(validateResult);
 
         return (
             <Dialog

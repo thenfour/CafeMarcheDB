@@ -8,7 +8,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
 import { xUser } from "./user";
 
 ////////////////////////////////////////////////////////////////
@@ -258,11 +258,7 @@ export const xSongComment = new xTable({
             foreignTableSpec: xSong,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new DateTimeField({
-            columnName: "createdAt",
-            allowNull: true,
-            granularity: "minute",
-        }),
+        MakeCreatedAtField("createdAt"),
         new DateTimeField({
             columnName: "updatedAt",
             allowNull: true,
