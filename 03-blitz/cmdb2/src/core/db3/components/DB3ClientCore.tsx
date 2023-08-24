@@ -55,7 +55,7 @@ export abstract class IColumnClient {
     GridColProps?: Partial<GridColDef>;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    abstract onSchemaConnected?: () => void;
+    abstract onSchemaConnected?: (tableClient: xTableRenderClient) => void;
 
     schemaTable: db3.xTable;
     schemaColumn: db3.FieldBase<unknown>;
@@ -65,14 +65,14 @@ export abstract class IColumnClient {
     }
 
     // called when the table client is initialized to make sure this column object knows about its sibling column in the schema.
-    connectColumn = (schemaTable: db3.xTable) => {
+    connectColumn = (schemaTable: db3.xTable, tableClient: xTableRenderClient) => {
         console.assert(this.columnName.length > 0);
         this.schemaTable = schemaTable;
         this.schemaColumn = schemaTable.columns.find(c => c.member === this.columnName)!;
         if (!this.schemaColumn) {
             console.error(`column '${schemaTable.tableName}'.'${this.columnName}' doesn't have a corresponding field in the core schema.`);
         }
-        this.onSchemaConnected && this.onSchemaConnected();
+        this.onSchemaConnected && this.onSchemaConnected(tableClient);
     };
 };
 
@@ -115,6 +115,7 @@ export interface xTableClientArgs {
     sortModel?: GridSortModel,
     filterModel?: GridFilterModel,
     paginationModel?: GridPaginationModel,
+    tableParams?: TAnyModel,
 };
 
 export class xTableRenderClient {
@@ -164,11 +165,18 @@ export class xTableRenderClient {
             where.AND.push(...filterItems);
         }
 
+        if (args.tableParams && args.tableSpec.args.table.getParameterizedWhereClause) {
+            const filterItems = args.tableSpec.args.table.getParameterizedWhereClause(args.tableParams);
+            if (filterItems) {
+                where.AND.push(...filterItems);
+            }
+        }
+
         const skip = !!args.paginationModel ? (args.paginationModel.pageSize * args.paginationModel.page) : undefined;
         const take = !!args.paginationModel ? (args.paginationModel.pageSize) : undefined;
 
         for (let i = 0; i < this.clientColumns.length; ++i) {
-            this.clientColumns[i]?.connectColumn(args.tableSpec.args.table);
+            this.clientColumns[i]?.connectColumn(args.tableSpec.args.table, this);
         }
 
         let items_: TAnyModel[] = [];
@@ -207,7 +215,7 @@ export class xTableRenderClient {
             const ret = {};
             this.clientColumns.forEach(col => {
                 console.assert(!!col.schemaColumn.ApplyDbToClient);
-                col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret);
+                col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret, "view");
             })
             return ret;
         });
@@ -222,7 +230,7 @@ export class xTableRenderClient {
         console.assert(!!this.mutateFn); // make sure you request this capability!
         const updateModel = {};
         this.clientColumns.forEach(col => {
-            col.schemaColumn.ApplyClientToDb(row, updateModel);
+            col.schemaColumn.ApplyClientToDb(row, updateModel, "update");
         });
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
@@ -234,7 +242,7 @@ export class xTableRenderClient {
     doInsertMutation = async (row: TAnyModel) => {
         const insertModel = {};
         this.clientColumns.forEach(col => {
-            col.schemaColumn.ApplyClientToDb(row, insertModel);
+            col.schemaColumn.ApplyClientToDb(row, insertModel, "new");
         });
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,

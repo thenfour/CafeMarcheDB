@@ -63,6 +63,7 @@ export interface DB3EditGridExtraActionsArgs {
 export type DB3EditGridProps = {
     tableSpec: DB3Client.xTableClientSpec,
     renderExtraActions?: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
+    tableParams?: TAnyModel,
 };
 
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
@@ -83,6 +84,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         filterModel,
         sortModel,
         paginationModel,
+        tableParams: props.tableParams || {},
     });
 
     const [rowModesModel, setRowModesModel] = React.useState({});

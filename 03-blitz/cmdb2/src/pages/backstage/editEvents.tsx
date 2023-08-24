@@ -1,12 +1,13 @@
 import { BlitzPage } from "@blitzjs/next";
+import { Button } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-
+import { useRouter } from "next/router";
 
 const tableSpec = new DB3Client.xTableClientSpec({
     table: db3.xEvent,
@@ -28,6 +29,23 @@ const tableSpec = new DB3Client.xTableClientSpec({
     ],
 });
 
+const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
+    const router = useRouter();
+    return <>
+        <Button onClick={() => {
+            router.push({
+                pathname: '/backstage/editEventSegments',
+                query: { eventId: gridArgs.row.id },
+            });
+        }}>Segments</Button>
+        <Button onClick={() => {
+            router.push({
+                pathname: '/backstage/editEventSongLists',
+                query: { eventId: gridArgs.row.id },
+            });
+        }}>Song lists</Button>
+    </>;
+};
 
 const MainContent = () => {
     if (!useAuthorization("EditEventsPage", Permission.admin_general)) {
@@ -35,7 +53,12 @@ const MainContent = () => {
     }
     return <>
         <SettingMarkdown settingName="editEvents_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid
+            tableSpec={tableSpec}
+            renderExtraActions={(args) => {
+                return <ExtraActions gridArgs={args} />
+            }}
+        />
     </>;
 };
 

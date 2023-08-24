@@ -315,3 +315,10 @@ export const clamp01 = (x) => {
     if (x > 1) return 1;
     return x;
 }
+
+export const parseIntOrNull = (s): (number | null) => {
+    if (typeof s === 'number') return s;
+    const i = parseInt(s, 10);
+    return isNaN(i) ? null : i;
+
+}

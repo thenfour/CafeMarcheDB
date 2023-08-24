@@ -230,9 +230,17 @@ export const xSongComment = new xTable({
     localInclude: SongCommentInclude,
     tableName: "songComment",
     naturalOrderBy: SongTagNaturalOrderBy,
-    getRowInfo: (row: SongTagPayload) => ({
+    getRowInfo: (row: SongCommentPayload) => ({
         name: "<not supported>",
     }),
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.SongCommentWhereInput[] | false) => {
+        if (params.songId != null) {
+            return [{
+                songId: { equals: params.songId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         new GenericStringField({
@@ -345,6 +353,14 @@ export const xSongCredit = new xTable({
     getRowInfo: (row: SongCreditPayload) => ({
         name: "<not supported>",
     }),
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.SongCreditWhereInput[] | false) => {
+        if (params.songId != null) {
+            return [{
+                songId: { equals: params.songId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({

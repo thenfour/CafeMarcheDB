@@ -360,6 +360,14 @@ export const xEventSegment = new xTable({
         name: row.name,
         description: row.description,
     }),
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSegmentWhereInput[] | false) => {
+        if (params.eventId != null) {
+            return [{
+                eventId: { equals: params.eventId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name"),
@@ -415,6 +423,14 @@ export const xEventComment = new xTable({
     getRowInfo: (row: EventCommentPayload) => ({
         name: "<not supported>",
     }),
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventCommentWhereInput[] | false) => {
+        if (params.eventId != null) {
+            return [{
+                eventId: { equals: params.eventId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeMarkdownTextField("text"),
@@ -542,6 +558,14 @@ export const xEventSegmentUserResponse = new xTable({
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
         name: row.user.compactName,
     }),
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSegmentUserResponseWhereInput[] | false) => {
+        if (params.eventSegmentId != null) {
+            return [{
+                eventSegmentId: { equals: params.eventSegmentId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeMarkdownTextField("attendanceComment"),
@@ -606,6 +630,14 @@ export const xEventSongList = new xTable({
         name: row.name,
         description: row.description,
     }),
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSongListWhereInput[] | false) => {
+        if (params.eventId != null) {
+            return [{
+                eventId: { equals: params.eventId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name"),
@@ -653,6 +685,14 @@ export const xEventSongListSong = new xTable({
         name: row.song.name,
         description: row.subtitle || "",
     }),
+    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSongListSongWhereInput[] | false) => {
+        if (params.eventSongListId != null) {
+            return [{
+                eventSongListId: { equals: params.eventSongListId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakePlainTextField("subtitle"),
@@ -662,6 +702,13 @@ export const xEventSongListSong = new xTable({
             fkMember: "songId",
             allowNull: false,
             foreignTableSpec: xSong,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
+            columnName: "eventSongList",
+            fkMember: "eventSongListId",
+            allowNull: false,
+            foreignTableSpec: xEventSongList,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]

@@ -340,7 +340,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         </li>
     };
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3Client.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.TagsField<TAssociation>;
 
         if (!this.args.renderAsChip) {

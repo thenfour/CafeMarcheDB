@@ -4,7 +4,7 @@ import React from "react";
 import * as db3 from "../db3";
 import * as DB3Client from "../DB3Client";
 import { Button, Chip, FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
-import { gNullValue } from "shared/utils";
+import { TAnyModel, gNullValue, parseIntOrNull } from "shared/utils";
 import { GridFilterModel, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { SelectSingleForeignDialog } from "./db3SelectSingleForeignDialog";
 import { useMutation, useQuery } from "@blitzjs/rpc";
@@ -30,6 +30,7 @@ export interface ForeignSingleFieldInputProps<TForeign> {
     value: TForeign | null;
     onChange: (value: TForeign | null) => void;
     validationError: string | null;
+    readOnly: boolean;
 };
 
 // general use "edit cell" for foreign single values
@@ -42,15 +43,16 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 
     const chip = props.foreignSpec.args.renderAsChip!({
         value: props.value,
-        onDelete: () => {
+        onDelete: props.readOnly ? undefined : (() => {
             props.onChange(null);
-        },
+        }),
     });
 
     return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
         {chip}
-        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.label}</Button>
+        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.label}</Button>
         {isOpen && <SelectSingleForeignDialog
+            closeOnSelect={true}
             value={props.value}
             spec={props.foreignSpec}
             onOK={(newValue: TForeign | null) => {
@@ -82,6 +84,8 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
     typedSchemaColumn: db3.ForeignSingleField<TForeign>;
     args: ForeignSingleFieldClientArgs<TForeign>;
 
+    fixedValue: TForeign | null | undefined;
+
     constructor(args: ForeignSingleFieldClientArgs<TForeign>) {
         super({
             columnName: args.columnName,
@@ -90,6 +94,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             width: args.cellWidth,
         });
         this.args = args;
+        this.fixedValue = undefined; // for the moment it's not known.
     }
 
     defaultRenderAsChip = (args: RenderAsChipParams<TForeign>) => {
@@ -100,21 +105,17 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
         const rowInfo = this.typedSchemaColumn.foreignTableSpec.getRowInfo(args.value);
 
         const style: React.CSSProperties = {};
-        const color = rowInfo.color;// this.typedSchemaColumn.getChipColor!(args.value);
+        const color = rowInfo.color;
         if (color != null) {
             style.backgroundColor = color.strongValue;
             style.color = color.strongContrastColor;
             style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
-            // style.backgroundColor = color.value!;
-            // style.color = color.contrastColor!;
-            // style.border = `1px solid ${color.outline ? color.contrastColor! : color.value!}`;
         }
 
         return <Chip
             className="cmdbChip"
             style={style}
             size="small"
-            //label={`${this.typedSchemaColumn.getChipCaption!(args.value)}`}
             label={rowInfo.name}
             onDelete={args.onDelete}
         />;
@@ -122,20 +123,39 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
 
     defaultRenderAsListItem = (props, value, selected) => {
         console.assert(value != null);
-        //const rowInfo = this.typedSchemaColumn.foreignTableSpec.getRowInfo(value);
-        //console.assert(!!this.typedSchemaColumn.getChipCaption);
         const chip = this.defaultRenderAsChip({ value });
         return <li {...props}>
             {selected && <DoneIcon />}
             {chip}
-            {/* {this.typedSchemaColumn.getChipCaption!(value)} */}
-            {/* {this.typedSchemaColumn.getChipDescription && this.typedSchemaColumn.getChipDescription!(value)} */}
             {selected && <CloseIcon />}
         </li>
     };
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3Client.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
+
+        if (tableClient.args.tableParams && tableClient.args.tableParams[this.typedSchemaColumn.fkMember] != null) {
+            const fkid = parseIntOrNull(tableClient.args.tableParams[this.typedSchemaColumn.fkMember]);
+
+            const queryInput: db3.QueryInput = {
+                tableName: this.typedSchemaColumn.foreignTableSpec.tableName,
+                orderBy: undefined,
+                where: {
+                    [this.typedSchemaColumn.foreignTableSpec.pkMember]: { equals: fkid }
+                },
+            };
+
+            const [items, { refetch }] = useQuery(db3queries, queryInput);
+            if (items.length !== 1) {
+                console.error(`table params ${JSON.stringify(tableClient.args.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
+            }
+            else {
+                this.fixedValue = items[0];
+                //items_ = items;
+                //this.rowCount = items.length;
+                //this.refetch = refetch;
+            }
+        }
 
         if (!this.args.renderAsChip) {
             // create a default renderer.
@@ -148,13 +168,16 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
 
         this.GridColProps = {
             renderCell: (args: GridRenderCellParams) => {
-                return <div className='MuiDataGrid-cellContent'>{this.args.renderAsChip!({ value: args.value })}</div>;
+                return <div className='MuiDataGrid-cellContent'>
+                    {this.args.renderAsChip!({ value: args.value })}
+                </div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.typedSchemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 return <ForeignSingleFieldInput
                     validationError={vr.success ? null : vr.errorMessage || null}
                     foreignSpec={this}
+                    readOnly={false} // always allow switching this; for admin purposes makes sense
                     value={params.value}
                     onChange={(value) => {
                         params.api.setEditCellValue({ id: params.id, field: this.args.columnName, value });//.then(() => {
@@ -165,15 +188,33 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
     };
 
     renderForNewDialog = (params: DB3Client.RenderForNewItemDialogArgs) => {
+
+        let value = params.value;
+
+        // for NEW items, use the fixed value passed in as table params.
+        // so when you filter by some master object (editing event segments for event XYZ), the master object is a fixed and pre-selected.
+        if (this.fixedValue != null) {
+            const foreignPkMember = this.typedSchemaColumn.foreignTableSpec.pkMember;
+            //console.log(`rendering new dlg for foreign single`);
+            const currentVal = params.row[this.typedSchemaColumn.member];
+            if (currentVal === null || (this.fixedValue[foreignPkMember] !== currentVal[foreignPkMember])) {
+                value = this.fixedValue;
+                params.api.setFieldValues({
+                    [this.args.columnName]: value,
+                });
+            }
+        }
+
         return <React.Fragment key={params.key}>
             {/* <InputLabel>{this.schemaColumn.label}</InputLabel> */}
             <ForeignSingleFieldInput
                 foreignSpec={this}
+                readOnly={!!this.fixedValue}
                 validationError={params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null}
-                value={params.value}
-                onChange={(value: TForeign | null) => {
+                value={value}
+                onChange={(newValue: TForeign | null) => {
                     params.api.setFieldValues({
-                        [this.args.columnName]: value,
+                        [this.args.columnName]: newValue,
                     });
                 }}
             />

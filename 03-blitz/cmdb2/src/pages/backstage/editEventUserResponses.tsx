@@ -1,5 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
+import { parseIntOrNull } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -25,9 +26,14 @@ const MainContent = () => {
     if (!useAuthorization("EventSegmentUserResponsePage", Permission.admin_general)) {
         throw new Error(`unauthorized`);
     }
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventSegmentId: number | null = parseIntOrNull(urlParams.get('eventSegmentId'));
     return <>
         <SettingMarkdown settingName="EventSegmentUserResponsePage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid
+            tableSpec={tableSpec}
+            tableParams={{ eventSegmentId }}
+        />
     </>;
 };
 

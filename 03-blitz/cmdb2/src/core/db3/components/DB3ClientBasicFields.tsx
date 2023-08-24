@@ -10,7 +10,7 @@
 
 import React from "react";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { TimeSpan, gNullValue } from "shared/utils";
+import { TAnyModel, TimeSpan, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
@@ -61,7 +61,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
 
         console.assert(this.typedSchemaColumn.format === "plain" || this.typedSchemaColumn.format === "email" || this.typedSchemaColumn.format === "title");
@@ -112,7 +112,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.SlugField;
 
         this.GridColProps = {
@@ -174,7 +174,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
 
         console.assert(this.typedSchemaColumn.format === "markdown");
@@ -232,7 +232,7 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.GridColProps = {
             type: "string", // we will do our own number conversion
             renderEditCell: (params: GridRenderEditCellParams) => {
@@ -283,7 +283,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.GridColProps = {
             renderCell: (params: GridRenderCellParams) => {
                 return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>;
@@ -383,7 +383,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
 
         this.gridOptions = Object.entries(this.enumSchemaColumn.options).map(([k, v]) => {
@@ -532,7 +532,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.DateTimeField;
         this.GridColProps = {
             type: "dateTime",
@@ -631,7 +631,7 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = () => {
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.CreatedAtField;
         this.GridColProps = {
             type: "dateTime",

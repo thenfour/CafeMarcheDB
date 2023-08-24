@@ -449,15 +449,20 @@ model EventSongList {
 
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
+
+  songs EventSongListSong[]
 }
 
 model EventSongListSong {
   id        Int     @id @default(autoincrement())
-  songId    Int
   subtitle  String? // could be a small comment like "short version"
   sortOrder Int     @default(0)
 
-  song Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
+  songId Int
+  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
+
+  eventSongListId Int
+  eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
 }
 
 // things like yes, no, not-sure-yes, not-sure-no, partially

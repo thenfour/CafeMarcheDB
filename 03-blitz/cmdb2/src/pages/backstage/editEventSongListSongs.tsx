@@ -1,5 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
+import { parseIntOrNull } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -14,6 +15,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "subtitle", cellWidth: 180 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 100 }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120 }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "eventSongList", cellWidth: 120 }),
     ],
 });
 
@@ -23,9 +25,14 @@ const MainContent = () => {
     if (!useAuthorization("EditEventSongListSongsPage", Permission.admin_general)) {
         throw new Error(`unauthorized`);
     }
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventSongListId: number | null = parseIntOrNull(urlParams.get('eventSongListId'));
     return <>
         <SettingMarkdown settingName="EditEventSongListSongsPage_markdown"></SettingMarkdown>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <DB3EditGrid
+            tableSpec={tableSpec}
+            tableParams={{ eventSongListId }}
+        />
     </>;
 };
 

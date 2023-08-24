@@ -28,6 +28,7 @@ export interface SelectSingleForeignDialogProps<TForeign> {
 
     onOK: (value: TForeign | null) => void;
     onCancel: () => void;
+    closeOnSelect: boolean;
 };
 
 export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
@@ -71,6 +72,9 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
             return;
         }
         setSelectedObj(value);
+        if (props.closeOnSelect) {
+            props.onOK(value);
+        }
     };
 
     const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.

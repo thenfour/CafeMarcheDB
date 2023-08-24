@@ -285,14 +285,16 @@ const gMenuItems: MenuItem[] = [
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Instruments" },
     { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon /> },
+    { type: "divider" },
     { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon /> },
     { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => <MusicNoteIcon /> },
 
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Songs" },
     { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon /> },
+    { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon /> },
+    { type: "divider" },
     { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => <MusicNoteIcon /> },
-    //{ type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon /> },
     { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Credit Types", renderIcon: () => <MusicNoteIcon /> },
 
     { type: "divider" },
