@@ -456,10 +456,10 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
 
     const datePickerValueField = noDateChecked ? null : (datePickerValue == null ? null : dayjs(datePickerValue));
 
-    const invokeOnChange = () => {
+    React.useEffect(() => {
         const extVal = noDateChecked ? null : datePickerValue;
         props.onChange(extVal);
-    };
+    }, [noDateChecked, datePickerValue]);
 
     if (queueFocus && datePickerRef.current && !noDateChecked) {
         setQueueFocus(false);
@@ -489,7 +489,7 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
                 }
                 //console.log(`date picker onChange: ${value} => ${d}`);
                 setDatePickerValue(d);
-                invokeOnChange();
+                //invokeOnChange();
             }}
             className={noDateChecked ? "CMDatePicker CMDisabled" : "CMDatePicker CMEnabled"}
 
@@ -503,7 +503,7 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
                     if (!e.target.checked) {
                         setQueueFocus(true);
                     }
-                    invokeOnChange();
+                    //invokeOnChange();
                 }}
             />} label="Don't specify a date" />
 
@@ -544,22 +544,8 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                 if (isNaN(value.valueOf())) {
                     return <>---</>; // treat as null.
                 }
-                const granularity = this.typedSchemaColumn.granularity;
-                const now = new Date();
-                const age = new TimeSpan(now.valueOf() - value.valueOf());
-                const ageStr = `(${age.shortString} ago)`;
-                switch (granularity) {
-                    case "year":
-                        return <>{value.getFullYear()} {ageStr}</>;
-                    case "day":
-                        return <>{value.toISOString().split('T')[0]} {ageStr}</>;
-                    case "minute":
-                        return <>{value.toTimeString()} {ageStr}</>; // todo
-                    case "second":
-                        return <>{value.toTimeString()} {ageStr}</>; // todo
-                    default:
-                        throw new Error(`unknown granularity`);
-                }
+                const d = dayjs(value);
+                return <>{d.toString()}</>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
