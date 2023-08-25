@@ -6,7 +6,7 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Breadcrumbs, Button, Checkbox, Link, List, ListItem, Radio, Typography } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
-import { EventDetail } from "src/core/components/CMComponents";
+import { EventDetail } from "src/core/components/CMMockupComponents";
 import { ColorPalette, ColorPaletteArgs, ColorPaletteEntry, CreateColorPaletteEntry, PaletteGenParamGroup, PaletteGenParams, PaletteGenValue, gGeneralPaletteList } from "shared/color";
 import { ColorPaletteGrid, ColorPaletteListComponent, ColorPick, ColorSwatch } from "src/core/components/Color";
 import { TAnyModel, clamp01, gNullValue, lerp } from "shared/utils";

@@ -5,7 +5,7 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Breadcrumbs, Link, Typography } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
-import { EventDetail } from "src/core/components/CMComponents";
+import { EventDetail } from "src/core/components/CMMockupComponents";
 
 
 const MyComponent = () => {

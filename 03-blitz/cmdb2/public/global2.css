@@ -1,0 +1,49 @@
+html,
+.mainContentBackdrop {
+    /* if we need different bg color for different areas (public/backstage), then */
+    background-color: #eee;
+}
+
+.CMDashboard2 {}
+
+
+.singlePageSurface {
+    /* spacing is already provided by parent layout*/
+    /* margin: 20px; */
+    padding: 0px 20px;
+    border-radius: 6px;
+    background-color: white;
+    margin-bottom: 40px;
+    box-shadow: var(--subtle-elevation);
+    max-width: 1500px;
+}
+
+.cmbigchip {
+    font-size: 14px;
+    padding-bottom: 15px;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    letter-spacing: 2px;
+    font-weight: bold;
+
+}
+
+.cmbigchip .content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+
+.cmbigchip.strong .content {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+}
+
+.cmbigchip.weak .content {
+    background-color: var(--weak-color);
+    color: var(--weak-contrast-color);
+}

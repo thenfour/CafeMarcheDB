@@ -6,6 +6,7 @@ export interface ColorPaletteEntry {
     label: string;
     strongOutline: boolean; // for black / white, this is useful
     weakOutline: boolean; // for black / white, this is useful
+    isNullEntry?: boolean; // plenty of cases when null color needs to be an object. set this if so for convenience.
 
     // normal filled chip type
     strongValue: string;
@@ -30,19 +31,20 @@ export const CreateColorPaletteEntry = () => {
     return ret;
 }
 
-// export const CreateNullPaletteEntry = () => {
-//     const ret: ColorPaletteEntry = {
-//         id: `${getNextSequenceId()}`,
-//         label: "(none)",
-//         strongOutline: false,
-//         weakOutline: false,
-//         strongValue: "#0002",
-//         strongContrastColor: "black",
-//         weakValue: "#0002",
-//         weakContrastColor: "black",
-//     };
-//     return ret;
-// };
+export const CreateNullPaletteEntry = () => {
+    const ret: ColorPaletteEntry = {
+        isNullEntry: true,
+        id: `${getNextSequenceId()}`,
+        label: "(none)",
+        strongOutline: true,
+        weakOutline: true,
+        strongValue: "#fff8",
+        strongContrastColor: "#0008",
+        weakValue: "#fff8",
+        weakContrastColor: "#0008",
+    };
+    return ret;
+};
 
 export interface ColorPaletteCorrection {
     id?: string;

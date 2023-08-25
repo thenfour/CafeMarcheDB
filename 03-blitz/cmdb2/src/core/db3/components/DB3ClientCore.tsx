@@ -212,12 +212,15 @@ export class xTableRenderClient {
 
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
-            const ret = {};
-            this.clientColumns.forEach(col => {
-                console.assert(!!col.schemaColumn.ApplyDbToClient);
-                col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret, "view");
-            })
-            return ret;
+            return this.schema.getClientModel(dbitem as TAnyModel, "view");
+            // const ret =  {};
+            // this.clientColumns.forEach(col => {
+            //     console.assert(!!col.schemaColumn.ApplyDbToClient);
+            //     col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret, "view");
+            // })
+
+            // // retain database fields even if you didn't specify in the client table spec. they were transferred; no need to hide them.
+            // return { ...dbitem, ...ret };
         });
 
     }; // ctor

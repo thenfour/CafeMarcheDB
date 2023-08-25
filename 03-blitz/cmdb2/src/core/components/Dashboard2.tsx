@@ -344,7 +344,7 @@ const Dashboard2 = ({ children }) => {
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box sx={{ display: "flex" }}>
+            <Box sx={{ display: "flex" }} className="CMDashboard2">
                 <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
                 <Drawer
                     sx={{

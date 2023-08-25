@@ -29,6 +29,12 @@ export interface EventAttendanceResponseInputProps {
 // user chip - meant as chips in a list / pool
 // user label - meant as a de-emphasized caption with a link
 
+// db objects get a few different display methods:
+// - as chip, for compact tag-like display, very small interaction (click, delete)
+// - as list item, for multi selection; no interaction just selection
+// - as non-interactive card, pretty, for search results, front page gateway
+// - as a summary with limited interaction (an event on the events page) - quick actions and ability to drill into...
+// - detail page
 
 
 export const EventAttendanceResponseInputPast = (props: EventAttendanceResponseInputProps) => {
@@ -149,7 +155,7 @@ export const EventAttendanceResponseInput2 = () => {
 };
 
 
-export const EventCard = () => {
+export const MockupEventCard = () => {
 
     const maxRotation = 2;
     const rotate = `${((Math.random() * maxRotation)) - (maxRotation * .5)}deg`;
@@ -187,7 +193,7 @@ export const EventCard = () => {
 };
 
 
-export const RehearsalCard = () => {
+export const MockupRehearsalCard = () => {
 
     const maxRotation = 2;
     const rotate = `${((Math.random() * maxRotation)) - (maxRotation * .5)}deg`;
@@ -202,7 +208,7 @@ export const RehearsalCard = () => {
                 <div className="hcontent">
                     <div className="date">17 August 2023</div>
                     <div className="name">Rehearsal</div>
-                    <div className="info">Recording available!</div>
+                    <div className="info">1 photo uploaded</div>
                     <div className="chipContainer">
                     </div>
                 </div>

@@ -40,6 +40,9 @@ const separateMutationValues = ({ table, fields }: separateMutationValuesArgs) =
                     ret.associationFields[column.member] = fields[column.member];
                 }
                 break;
+            case "calculated":
+                // strip calculated values from any mutation
+                break;
             default:
                 throw new Error(`unknown field table association; field:${column.member}`);
                 break;

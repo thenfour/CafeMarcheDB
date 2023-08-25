@@ -10,6 +10,7 @@ import createEmotionCache from "src/core/createEmotionCache";
 import { themeOptions } from "src/core/theme";
 import "../../public/style/color.css";
 import '../../public/global.css';
+import '../../public/global2.css';
 import React from "react";
 import { useTheme } from "@mui/material/styles";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";

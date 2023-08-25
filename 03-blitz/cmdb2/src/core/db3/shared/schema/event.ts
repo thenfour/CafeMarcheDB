@@ -5,7 +5,7 @@ import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
-import { xTable } from "../db3core";
+import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
 import { xUser } from "./user";
 import { xSong } from "./song";
@@ -67,7 +67,7 @@ export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[]
     { id: 'asc' },
 ];
 
-export const xEventType = new xTable({
+export const xEventType = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventTypeInclude,
@@ -113,7 +113,7 @@ export const EventStatusSignificance = {
     New: "New",
 } as const satisfies Record<string, string>;
 
-export const xEventStatus = new xTable({
+export const xEventStatus = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventStatusInclude,
@@ -161,7 +161,7 @@ export const EventTagSignificance = {
     Majorettes: "Majorettes",
 } as const satisfies Record<string, string>;
 
-export const xEventTag = new xTable({
+export const xEventTag = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventTagInclude,
@@ -211,7 +211,7 @@ const EventTagAssignmentNaturalOrderBy: Prisma.EventTagAssignmentOrderByWithRela
     { eventTag: { text: 'asc' } },
     { eventTag: { id: 'asc' } },
 ];
-export const xEventTagAssignment = new xTable({
+export const xEventTagAssignment = new db3.xTable({
     tableName: "EventTagAssignment",
     editPermission: Permission.edit_events,
     viewPermission: Permission.view_events,
@@ -250,24 +250,132 @@ const EventInclude: Prisma.EventInclude = {
     status: true,
     tags: {
         orderBy: EventTagAssignmentNaturalOrderBy,
+        include: {
+            eventTag: true,
+        }
     },
     type: true,
-    segments: { orderBy: { startsAt: "desc" } },
+    segments: {
+        orderBy: { startsAt: "desc" },
+        include: {
+            responses: {
+                include: {
+                    attendance: true,
+                    user: true,
+                }
+            }
+        }
+    },
 };
 
 export type EventPayload = Prisma.EventGetPayload<{
     include: {
         status: true,
-        tags: true, // todo: order by
+        tags: {
+            include: {
+                eventTag: true,
+            }
+        }, // todo: orderby
         type: true,
+        segments: {
+            include: {
+                responses: {
+                    include: {
+                        attendance: true,
+                        user: true,
+                    }
+                }
+            }
+        }
     }
 }>;
 
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
-    { id: 'desc' }, // TODO: we should find a way to order by segment! can be done in SQL but not prisma afaik
+    { id: 'desc' }, // TODO: we should find a way to order by segment! can be done in SQL but not prisma afaik. ordering can just be done in code.
 ];
 
-export const xEvent = new xTable({
+
+export interface DateRange {
+    startsAt: Date | null,
+    endsAt: Date | null,
+}
+
+function formatDate(date: Date): string {
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    return date.toLocaleDateString(undefined, options);
+}
+
+function formatDateRange(dateRange: DateRange): string {
+    if (!dateRange.startsAt && !dateRange.endsAt) {
+        return "Date TBD";
+    }
+    if (!dateRange.startsAt) {
+        return `Until ${formatDate(dateRange.endsAt!)}`;
+    }
+    if (!dateRange.endsAt) {
+        return `From ${formatDate(dateRange.startsAt)}`;
+    }
+    if (dateRange.startsAt.toDateString() === dateRange.endsAt.toDateString()) {
+        return formatDate(dateRange.startsAt);
+    }
+
+    // todo: when components are the same, unify.
+    // so instead of 
+    // 11 July 2023 - 12 July 2023
+    // just do 11-12 July 2023.
+    return `${formatDate(dateRange.startsAt)} - ${formatDate(dateRange.endsAt)}`;
+}
+
+export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
+    constructor() {
+        super({
+            member: "dateRange",
+            fieldTableAssociation: "calculated",
+            defaultValue: { startsAt: null, endsAt: null },
+            label: "Date range",
+        });
+    }
+
+    connectToTable = (table: db3.xTable) => { };
+
+    // prevent from sending to mutations by saying it's always the same.
+    isEqual = (a: DateRange, b: DateRange) => {
+        return true;
+    };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: db3.DB3RowMode) => { };
+
+    ValidateAndParse = (val: db3.ValidateAndParseArgs<DateRange>): db3.ValidateAndParseResult<DateRange | null> => {
+        return db3.SuccessfulValidateAndParseResult(val.value);
+    };
+
+    ApplyDbToClient = (dbModel: EventPayload, clientModel: TAnyModel, mode: db3.DB3RowMode) => {
+        const ret: DateRange = { startsAt: null, endsAt: null };
+        if (!dbModel.segments) return;
+        dbModel.segments.forEach(seg => {
+            console.assert(seg.startsAt !== undefined);
+            console.assert(seg.endsAt !== undefined);
+            if (seg.startsAt !== null) {
+                if (ret.startsAt === null || (seg.startsAt < ret.startsAt)) {
+                    ret.startsAt = seg.startsAt;
+                }
+            }
+            if (seg.endsAt !== null) {
+                if (ret.endsAt === null || (seg.endsAt > ret.endsAt)) {
+                    ret.endsAt = seg.endsAt;
+                }
+            }
+        });
+        clientModel[this.member] = ret;
+        clientModel["formattedDateRange"] = formatDateRange(ret);
+    }
+};
+
+
+
+export const xEvent = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventInclude,
@@ -288,6 +396,7 @@ export const xEvent = new xTable({
         new BoolField({ columnName: "isCancelled", defaultValue: false }),
         MakePlainTextField("locationDescription"),
         MakePlainTextField("locationURL"),
+        new CalculatedEventDateRangeField(),
         new DateTimeField({
             allowNull: true,
             columnName: "cancelledAt",
@@ -350,7 +459,7 @@ export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationI
     { id: "asc" },
 ];
 
-export const xEventSegment = new xTable({
+export const xEventSegment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventSegmentInclude,
@@ -414,7 +523,7 @@ export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationI
     { id: "asc" },
 ];
 
-export const xEventComment = new xTable({
+export const xEventComment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventCommentInclude,
@@ -478,7 +587,7 @@ export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRel
     { id: 'asc' },
 ];
 
-export const xEventAttendance = new xTable({
+export const xEventAttendance = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventAttendanceInclude,
@@ -549,7 +658,7 @@ export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResp
     { id: 'asc' },
 ];
 
-export const xEventSegmentUserResponse = new xTable({
+export const xEventSegmentUserResponse = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventSegmentUserResponseArgs.include,
@@ -620,7 +729,7 @@ export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelatio
     { id: 'asc' },
 ];
 
-export const xEventSongList = new xTable({
+export const xEventSongList = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventSongListArgs.include,
@@ -675,7 +784,7 @@ export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWit
     { id: 'asc' },
 ];
 
-export const xEventSongListSong = new xTable({
+export const xEventSongListSong = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: EventSongListSongArgs.include,

@@ -205,6 +205,12 @@ div.chipContainer.validationSuccess {
   background-size: 250%;
 }
 
+.cmcard.rehearsal .cardContent {
+  background-image: url(/images/8team.jpg);
+  background-position: 0% 25%;
+  background-size: 50%;
+}
+
 .cmcard .left {
   /* height: 100%; */
   /* width: 20px; */
@@ -223,6 +229,7 @@ div.chipContainer.validationSuccess {
   background-color: #800;
 }
 
+
 .cmcard .left .leftVertText {
   -webkit-text-orientation: upright;
   text-orientation: sideways;
@@ -234,6 +241,10 @@ div.chipContainer.validationSuccess {
   /* for short cards, keep some margin around the text */
   margin: 13px 0px;
   font-weight: bolder;
+}
+
+.cmcard.rehearsal .left .leftVertText {
+  font-size: 23px;
 }
 
 .cmcard .image {
@@ -285,6 +296,10 @@ div.chipContainer.validationSuccess {
   padding: 4px;
   color: #666;
   border-bottom: 1px dashed #888;
+}
+
+.cmcard.rehearsal .date {
+  border: none;
 }
 
 .cmcard .name {
@@ -360,6 +375,11 @@ div.chipContainer.validationSuccess {
   font-size: 14px;
   color: blue;
   border-top: 1px dashed #888;
+}
+
+.cmcard.rehearsal .info {
+  color: black;
+  border: none;
 }
 
 
@@ -494,10 +514,6 @@ div.chipContainer.validationSuccess {
   height: 14px;
 }
 
-
-.mainContentBackdrop {
-  background-color: #eee;
-}
 
 .contentSection {
   /* spacing is already provided by parent layout*/

@@ -1,4 +1,5 @@
 // some common patterns:
+// todo: i think almost all tables should have a random seed column
 
 // sortOrder   Int              @default(0)
 // isDeleted      Boolean             @default(false)

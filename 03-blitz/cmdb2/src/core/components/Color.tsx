@@ -1,17 +1,17 @@
 import React from "react";
 import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, Select, Tooltip } from "@mui/material";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateColorPaletteEntry } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateColorPaletteEntry, CreateNullPaletteEntry } from "shared/color";
 import { gNullValue, getNextSequenceId } from "shared/utils";
 //import "../../../public/style/color.css"
 
-interface ColorPaletteFieldArgs {
-    member: string,
-    label: string,
-    cellWidth: number,
-    allowNull: boolean,
-    palette: ColorPalette,
-    initialNewItemValue: string | null;
-};
+// interface ColorPaletteFieldArgs {
+//     member: string,
+//     label: string,
+//     cellWidth: number,
+//     allowNull: boolean,
+//     palette: ColorPalette,
+//     initialNewItemValue: string | null;
+// };
 
 export interface ColorSwatchProps {
     color: ColorPaletteEntry | null;
@@ -21,55 +21,55 @@ export interface ColorSwatchProps {
     showWeak: boolean;
 };
 
+// set this in an element to establish hierarchical color point.
+// to apply them, components should just use these vars as needed.
+// why not just have "color" var instead of "strong color" & "weak color"? so components can
+// access both. might as well support both methods tbh.
+export const GetStyleVariablesForColor = (color: ColorPaletteEntry | null) => {
+    const entry = !!color ? color : CreateNullPaletteEntry();
 
-export const NullColorSwatch = (props: ColorSwatchProps) => {
-
-    const style = {
-        "--strong-color": "#fff8",
-        "--strong-contrast-color": "#0008",
-        "--strong-border-color": "#0008",
-        "--strong-border-style": "dotted",
-        "--weak-color": "#fff8",
-        "--weak-contrast-color": "#0008",
-        "--weak-border-color": "#0008",
-        "--weak-border-style": "dotted",
-    };
-    return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot nullValue `} style={style as React.CSSProperties}>
-        {props.showStrong &&
-            //<Tooltip title={`(none)`}>
-            <div className="strong">
-                (none)
-            </div>
-            //</Tooltip>
-        }
-        {props.showWeak &&
-            //<Tooltip title={`(none)`}>
-            <div className="weak">
-                (none)
-            </div>
-            //</Tooltip>
-        }
-    </div>;
-}
-
-// props.color can never be null.
-export const ColorSwatch = (props: ColorSwatchProps) => {
-    if (props.color == null) {
-        return <NullColorSwatch {...props} />;
-    }
-    const entry = props.color;
-
-    const style = {
+    return {
         "--strong-color": entry.strongValue,
         "--strong-contrast-color": entry.strongContrastColor,
         "--strong-border-color": entry.strongOutline ? entry.strongContrastColor : "#d8d8d8",
-        "--strong-border-style": (props.color == null) ? "dotted" : (props.color.strongOutline ? "solid" : "hidden"),
+        "--strong-border-style": (color == null) ? "dotted" : (color.strongOutline ? "solid" : "hidden"),
         "--weak-color": entry.weakValue,
         "--weak-contrast-color": entry.weakContrastColor,
         "--weak-border-color": entry.weakOutline ? entry.weakContrastColor : "#d8d8d8",
-        "--weak-border-style": (props.color == null) ? "dotted" : (props.color.weakOutline ? "solid" : "hidden"),
-    };
-    return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""}`} style={style as React.CSSProperties}>
+        "--weak-border-style": (color == null) ? "dotted" : (color.weakOutline ? "solid" : "hidden"),
+    } as React.CSSProperties;
+}
+
+// export const NullColorSwatch = (props: ColorSwatchProps) => {
+//     const entry = !!color ? color : CreateNullPaletteEntry();
+
+//     const style = GetStyleVariablesForColor(null);
+//     return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot nullValue `} style={style as React.CSSProperties}>
+//         {props.showStrong &&
+//             //<Tooltip title={`(none)`}>
+//             <div className="strong">
+//                 (none)
+//             </div>
+//             //</Tooltip>
+//         }
+//         {props.showWeak &&
+//             //<Tooltip title={`(none)`}>
+//             <div className="weak">
+//                 (none)
+//             </div>
+//             //</Tooltip>
+//         }
+//     </div>;
+// }
+
+// props.color can never be null.
+export const ColorSwatch = (props: ColorSwatchProps) => {
+    const entry = !!props.color ? props.color : CreateNullPaletteEntry();
+    // if (props.color == null) {
+    //     return <NullColorSwatch {...props} />;
+    // }
+    const style = GetStyleVariablesForColor(props.color);
+    return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""} ${entry.isNullEntry ? "nullValue" : ""}`} style={style as React.CSSProperties}>
         {props.showStrong &&
             //<Tooltip title={`${entry.strongValue}\r\n${entry.strongContrastColor}`}>
             <div className="strong">

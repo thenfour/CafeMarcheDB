@@ -49,7 +49,7 @@ import { TAnyModel } from "shared/utils";
 //     associationRecord: "associationRecord", // for many-to-many relations
 // } as const;
 
-export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject";
+export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "foreignObject" | "calculated";
 
 ////////////////////////////////////////////////////////////////
 // the mutation needs to be able to access the xtable in order to
@@ -318,7 +318,8 @@ export class xTable implements TableDesc {
             const field = this.columns[i]!;
             field.ApplyDbToClient(dbModel, ret, mode);
         }
-        return ret;
+        return { ...dbModel, ...ret };
+        //return ret;
     }
 }
 

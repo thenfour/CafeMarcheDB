@@ -27,6 +27,7 @@ blitz install material-ui
   1. modify `schema.prisma`
   1. `blitz prisma db push`       // for intermediate prototyping
   1. `blitz prisma format` // for generating schemas and formatting the .schema file.
+  1. `blitz prisma format && blitz prisma generate && blitz prisma db push` // dev environment when schema changes to do everything.
   1. `blitz prisma migrate dev --name <migration_name>` for committing schema change as a migration on dev. clobbers data.
 
 # how: reset db and start fresh
@@ -111,11 +112,11 @@ this is a very weird error because thingsn appear fine, then you hit F5 and this
 seems like it happens often when I add `useQuery()` or `useMutation()` or other server calls to a component. You need the correct hierarchy of `<Suspense>`. Similar with other things like `<ThemeProvider>`, you can't put `useQuery()` in the same component as the `<Suspense>`.
 
 
-# how: deployment?
-
-
 # special URLs:
 
   * http://localhost:3000/auth/stopImpersonating
   * http://localhost:3000/auth/logout
+
+
+# how: deployment?
 
