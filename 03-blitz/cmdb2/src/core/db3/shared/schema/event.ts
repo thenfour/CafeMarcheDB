@@ -290,6 +290,14 @@ export type EventPayload = Prisma.EventGetPayload<{
     }
 }>;
 
+export interface DateRangeInfo {
+    formattedDateRange: string;
+    formattedYear: string;
+};
+export type EventPayloadClient = EventPayload & {
+    dateRangeInfo: DateRangeInfo;
+};
+
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
     { id: 'desc' }, // TODO: we should find a way to order by segment! can be done in SQL but not prisma afaik. ordering can just be done in code.
 ];
@@ -301,29 +309,30 @@ export interface DateRange {
 }
 
 function formatDate(date: Date): string {
-    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
     return date.toLocaleDateString(undefined, options);
 }
 
-function formatDateRange(dateRange: DateRange): string {
-    if (!dateRange.startsAt && !dateRange.endsAt) {
-        return "Date TBD";
-    }
+
+function getDateRangeInfo(dateRange: DateRange): DateRangeInfo {
     if (!dateRange.startsAt) {
-        return `Until ${formatDate(dateRange.endsAt!)}`;
+        if (!dateRange.endsAt) {
+            return { formattedDateRange: "Date TBD", formattedYear: "TBD" };
+        }
+        return { formattedDateRange: `Until ${formatDate(dateRange.endsAt!)}`, formattedYear: `${dateRange.endsAt!.getFullYear()}` };
     }
     if (!dateRange.endsAt) {
-        return `From ${formatDate(dateRange.startsAt)}`;
+        return { formattedDateRange: `From ${formatDate(dateRange.startsAt!)}`, formattedYear: `${dateRange.startsAt!.getFullYear()}` };
     }
     if (dateRange.startsAt.toDateString() === dateRange.endsAt.toDateString()) {
-        return formatDate(dateRange.startsAt);
+        return { formattedDateRange: formatDate(dateRange.startsAt), formattedYear: `${dateRange.startsAt.getFullYear()}` };
     }
 
     // todo: when components are the same, unify.
     // so instead of 
     // 11 July 2023 - 12 July 2023
     // just do 11-12 July 2023.
-    return `${formatDate(dateRange.startsAt)} - ${formatDate(dateRange.endsAt)}`;
+    return { formattedDateRange: `${formatDate(dateRange.startsAt)} - ${formatDate(dateRange.endsAt)}`, formattedYear: `${dateRange.startsAt.getFullYear()}` };
 }
 
 export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
@@ -369,7 +378,9 @@ export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
             }
         });
         clientModel[this.member] = ret;
-        clientModel["formattedDateRange"] = formatDateRange(ret);
+        clientModel.dateRangeInfo = getDateRangeInfo(ret);
+        // clientModel["formattedDateRange"] = formatDateRange(ret);
+        // clientModel["formattedYear"] = formatYear(ret);
     }
 };
 
@@ -381,7 +392,7 @@ export const xEvent = new db3.xTable({
     localInclude: EventInclude,
     tableName: "event",
     naturalOrderBy: EventNaturalOrderBy,
-    getRowInfo: (row: EventPayload) => ({
+    getRowInfo: (row: EventPayloadClient) => ({
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),

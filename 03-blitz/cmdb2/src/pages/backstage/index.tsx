@@ -42,7 +42,7 @@ const DynamicContent = () => {
       //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
       // new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150 }),
       // new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150 }),
-      // new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150 }),
+      new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150 }),
     ],
   });
 
@@ -75,7 +75,7 @@ const DynamicContent = () => {
       </Alert>
       <MockupEventCard />
       {
-        tableClient.items.map((row, index) => <NoninteractiveCardEvent key={index} event={row as any} />)
+        tableClient.items.map((row, index) => <NoninteractiveCardEvent key={index} event={row as any} tableClient={tableClient} />)
       }
       {/* 
         
