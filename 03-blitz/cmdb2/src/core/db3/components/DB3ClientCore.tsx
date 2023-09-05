@@ -55,7 +55,7 @@ export abstract class IColumnClient {
     GridColProps?: Partial<GridColDef>;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    abstract onSchemaConnected?: (tableClient: xTableRenderClient) => void;
+    abstract onSchemaConnected(tableClient: xTableRenderClient): void;
 
     schemaTable: db3.xTable;
     schemaColumn: db3.FieldBase<unknown>;

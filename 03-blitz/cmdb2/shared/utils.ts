@@ -322,3 +322,24 @@ export const parseIntOrNull = (s): (number | null) => {
     return isNaN(i) ? null : i;
 
 }
+
+export const gIconOptions = {
+    Add: "Add",
+    CalendarMonth: "CalendarMonth",
+    Check: "Check",
+    CheckCircleOutline: "CheckCircleOutline",
+    Close: "Close",
+    Done: "Done",
+    Edit: "Edit",
+    Error: "Error",
+    ErrorOutline: "ErrorOutline",
+    HighlightOff: "HighlightOff",
+    Place: "Place",
+    Search: "Search",
+    ThumbDown: "ThumbDown",
+    ThumbUp: "ThumbUp",
+} as const;
+
+export type TIconOptions = keyof typeof gIconOptions;
+
+

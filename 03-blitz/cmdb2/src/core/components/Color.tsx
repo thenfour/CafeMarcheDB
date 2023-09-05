@@ -4,6 +4,8 @@ import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateColorPaletteEn
 import { gNullValue, getNextSequenceId } from "shared/utils";
 //import "../../../public/style/color.css"
 
+export type ColorVariationOptions = "strong" | "weak";
+
 // interface ColorPaletteFieldArgs {
 //     member: string,
 //     label: string,

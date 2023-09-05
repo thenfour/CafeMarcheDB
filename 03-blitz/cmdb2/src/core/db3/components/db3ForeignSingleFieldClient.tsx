@@ -12,6 +12,7 @@ import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
+import { ColorVariationOptions } from "src/core/components/Color";
 
 
 export type InsertFromStringParams = {
@@ -21,6 +22,7 @@ export type InsertFromStringParams = {
 
 export interface RenderAsChipParams<T> {
     value: T | null;
+    colorVariant: ColorVariationOptions;
     onDelete?: () => void;
     onClick?: () => void;
 }
@@ -43,6 +45,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 
     const chip = props.foreignSpec.args.renderAsChip!({
         value: props.value,
+        colorVariant: "strong",
         onDelete: props.readOnly ? undefined : (() => {
             props.onChange(null);
         }),
@@ -123,7 +126,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
 
     defaultRenderAsListItem = (props, value, selected) => {
         console.assert(value != null);
-        const chip = this.defaultRenderAsChip({ value });
+        const chip = this.defaultRenderAsChip({ value, colorVariant: "strong" });
         return <li {...props}>
             {selected && <DoneIcon />}
             {chip}
@@ -169,7 +172,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
         this.GridColProps = {
             renderCell: (args: GridRenderCellParams) => {
                 return <div className='MuiDataGrid-cellContent'>
-                    {this.args.renderAsChip!({ value: args.value })}
+                    {this.args.renderAsChip!({ value: args.value, colorVariant: "strong" })}
                 </div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {

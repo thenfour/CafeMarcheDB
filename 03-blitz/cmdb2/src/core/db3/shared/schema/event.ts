@@ -4,9 +4,9 @@
 import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
+import { CoerceToNumberOrNull, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { xUser } from "./user";
 import { xSong } from "./song";
 /*
@@ -124,8 +124,6 @@ export const xEventStatus = new db3.xTable({
             label: input,
             description: "auto-created",
             sortOrder: 0,
-            color: null,
-            significance: null,
         };
     },
     getRowInfo: (row: EventStatusPayload) => ({
@@ -140,6 +138,7 @@ export const xEventStatus = new db3.xTable({
         MakeSortOrderField("sortOrder"),
         MakeColorField("color"),
         MakeSignificanceField("significance", EventStatusSignificance),
+        MakeIconField("iconName", gIconOptions),
     ]
 });
 

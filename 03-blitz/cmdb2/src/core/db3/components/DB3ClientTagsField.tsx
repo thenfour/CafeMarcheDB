@@ -42,6 +42,7 @@ export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponen
     return <>{props.value.map(c => <React.Fragment key={c[props.spec.associationForeignIDMember]}>
         {props.spec.args.renderAsChip!({
             value: c,
+            colorVariant: "strong",
             onDelete: props.onDelete && (() => props.onDelete!(c)),
             onClick: props.onItemClick && (() => props.onItemClick!(c)),
         })}
@@ -221,6 +222,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
     return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
         {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.args.renderAsChip!({
             value,
+            colorVariant: "strong",
             onDelete: () => {
                 const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
                 props.onChange(newValue);
@@ -260,7 +262,7 @@ export const TagsView = <TAssociation,>(props: TagsViewProps<TAssociation>) => {
         {
             value.map(a => {
                 return <React.Fragment key={a[props.associationForeignIDMember]}>
-                    {props.renderAsChip({ value: a, })}
+                    {props.renderAsChip({ value: a, colorVariant: "strong" })}
                 </React.Fragment>;
             })
         }
@@ -330,7 +332,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     defaultRenderAsListItem = (props, value, selected) => {
         //console.assert(!!this.typedSchemaColumn.getChipCaption);
         console.assert(value != null);
-        const chip = this.defaultRenderAsChip({ value });
+        const chip = this.defaultRenderAsChip({ value, colorVariant: "strong" });
         return <li {...props}>
             {selected && <DoneIcon />}
             {chip}

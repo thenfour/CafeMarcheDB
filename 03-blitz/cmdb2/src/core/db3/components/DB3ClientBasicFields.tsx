@@ -10,7 +10,7 @@
 
 import React from "react";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { TAnyModel, TimeSpan, gNullValue } from "shared/utils";
+import { TAnyModel, TIconOptions, TimeSpan, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
@@ -20,6 +20,9 @@ import * as db3fields from "../shared/db3basicFields";
 import RichTextEditor from "src/core/components/RichTextEditor";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from "dayjs";
+import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -40,7 +43,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
     }
 
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    onSchemaConnected = undefined;
+    onSchemaConnected() { };
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -347,7 +350,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = undefined;
+    onSchemaConnected() { };
 
     // will render as a child of <FormControl>
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
@@ -383,7 +386,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
         });
     }
 
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+    onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
 
         this.gridOptions = Object.entries(this.enumSchemaColumn.options).map(([k, v]) => {
@@ -403,6 +406,61 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             },
             getOptionValue: (value: any) => value.value,
             getOptionLabel: (value: any) => value.label,
+        };
+    };
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        const value = params.value === null ? gNullValue : params.value;
+        return <React.Fragment key={params.key}>
+            <InputLabel>{this.schemaColumn.label}</InputLabel>
+            <Select
+                value={value}
+                error={!!params.validationResult.hasErrorForField(this.schemaColumn.member)}
+                onChange={e => {
+                    let userInputValue: (string | null) = e.target.value as string;
+                    if (userInputValue === gNullValue) {
+                        userInputValue = null;
+                    }
+                    return params.api.setFieldValues({ [this.schemaColumn.member]: userInputValue });
+                }}
+            >
+                {
+                    this.gridOptions.map(option => {
+                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>;
+                    })
+                }
+            </Select>
+            <FormHelperText>Here's my helper text</FormHelperText>
+        </React.Fragment>;
+
+    };
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export class IconFieldClient extends ConstEnumStringFieldClient {
+
+    constructor(args: ConstEnumStringFieldClientArgs) {
+        super(args);
+    }
+
+    onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
+        super.onSchemaConnected(tableClient);
+        this.GridColProps!.renderCell = (params) => {
+            return RenderMuiIcon(params.value);
+        };
+        this.GridColProps!.renderEditCell = (params) => {
+            const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+            return <IconEditCell
+                validationError={vr.success ? null : (vr.errorMessage || null)}
+                value={params.value}
+                //allowNull={true}
+                onOK={(value) => {
+                    params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                }}
+            />;
         };
     };
 
@@ -464,7 +522,7 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
     if (queueFocus && datePickerRef.current && !noDateChecked) {
         setQueueFocus(false);
         setTimeout(() => {
-            datePickerRef.current.focus();
+            (datePickerRef.current as any).focus();
             //datePickerRef.current.querySelector('input').focus();
         }, 100);
     }

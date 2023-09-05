@@ -14,9 +14,9 @@ import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import PlaceIcon from '@mui/icons-material/Place';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import { Button, ButtonGroup, Card, CardActionArea, Chip, Link } from "@mui/material";
 import ErrorIcon from '@mui/icons-material/Error';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { Button, ButtonGroup, Card, CardActionArea, Chip, Link } from "@mui/material";
 import React, { FC, Suspense } from "react"
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
@@ -25,7 +25,7 @@ import db, { Prisma } from "db";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { ColorPaletteEntry, gGeneralPaletteList } from 'shared/color';
-import { GetStyleVariablesForColor } from './Color';
+import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { TAnyModel } from 'shared/utils';
 
@@ -41,7 +41,7 @@ export const CMSinglePageSurface = (props: React.PropsWithChildren) => {
 // big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
 export interface CMBigChipProps {
     color: ColorPaletteEntry | null;
-    variant: "strong" | "weak";
+    variant: ColorVariationOptions;
     // put icons & text in children
 };
 
@@ -53,14 +53,39 @@ export const CMBigChip = (props: React.PropsWithChildren<CMBigChipProps>) => {
 };
 
 ////////////////////////////////////////////////////////////////
-// TODO: non-interactive status of something.
-// different than "big chip" because it implies that it's not interactive, or more global, less contained.
-
-////////////////////////////////////////////////////////////////
 // TODO: specific big chip for event attendance.
 
 ////////////////////////////////////////////////////////////////
+// non-interactive status of something.
+// different than "big chip" because it implies that it's not interactive, or more global, less contained.
+export interface CMBigStatusProps {
+};
+
+export const CMBigStatus = (props: React.PropsWithChildren<CMBigStatusProps>) => {
+    return <div className="bigstatus">{props.children}</div>;
+    //     <CheckIcon />
+    //     Confirmed
+    // </div>;
+};
+
+
+////////////////////////////////////////////////////////////////
 // TODO: specific non-interactive status for event status
+export interface CMEventBigStatusProps {
+    event: db3.EventPayloadClient,
+    tableClient: DB3Client.xTableRenderClient,
+};
+
+export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
+    if (!props.event.status) {
+        return null;
+    }
+    const status: db3.EventStatusPayload = props.event.status;
+    return <div className="status confirmed">
+        <CheckIcon />
+        Confirmed
+    </div>;
+};
 
 ////////////////////////////////////////////////////////////////
 // little tag chip
@@ -71,24 +96,27 @@ export interface ITagAssociation {
 export interface CMTagProps<TagAssignmentModel> {
     tagAssociation: ITagAssociation;
     tagsFieldClient: DB3Client.TagsFieldClient<TagAssignmentModel>,
+    colorVariant: ColorVariationOptions;
 };
 
 export const CMTag = (props: CMTagProps<TAnyModel>) => {
     return props.tagsFieldClient.defaultRenderAsChip({
-        value: props.tagAssociation
+        value: props.tagAssociation,
+        colorVariant: props.colorVariant,
     });
 };
 
 export interface CMTagListProps<TagAssignmentModel> {
     tagAssociations: ITagAssociation[],
     tagsFieldClient: DB3Client.TagsFieldClient<TagAssignmentModel>,
+    colorVariant: ColorVariationOptions;
 };
 
 
 export const CMTagList = (props: CMTagListProps<TAnyModel>) => {
     //console.log(props.tagAssociations);
     return <div className="chipContainer">
-        {props.tagAssociations.map(tagAssociation => <CMTag key={tagAssociation.id} tagAssociation={tagAssociation} tagsFieldClient={props.tagsFieldClient} />)}
+        {props.tagAssociations.map(tagAssociation => <CMTag key={tagAssociation.id} tagAssociation={tagAssociation} tagsFieldClient={props.tagsFieldClient} colorVariant={props.colorVariant} />)}
     </div>
 };
 
@@ -128,20 +156,25 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
                 <div className="hcontent">
                     <div className="date">{props.event.dateRangeInfo.formattedDateRange}</div>
                     <div className="name">{props.event.name}</div>
-                    <div className="status confirmed">
-                        <CheckIcon />
-                        Confirmed
-                    </div>
+
+                    <CMEventBigStatus event={props.event} tableClient={props.tableClient} />
+
                     <CMBigChip color={sampleColor} variant='strong'>
                         <ThumbUpIcon />
                         You are coming!
                     </CMBigChip>
+
                     <div className="attendance yes">
                         <div className="chip">
                         </div>
                     </div>
+
                     <div className="info">43 photos uploaded</div>
-                    <CMTagList tagAssociations={props.event.tags} tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>} />
+                    <CMTagList
+                        tagAssociations={props.event.tags}
+                        tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}
+                        colorVariant="weak"
+                    />
                 </div>
             </div>
         </CardActionArea>

@@ -404,7 +404,9 @@ model EventStatus {
   color        String?
   sortOrder    Int     @default(0)
   significance String?
-  events       Event[]
+  iconName     String?
+
+  events Event[]
 }
 
 model EventTag {

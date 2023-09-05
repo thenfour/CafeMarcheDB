@@ -389,7 +389,7 @@ export class ConstEnumStringField extends FieldBase<string> {
         // make sure val is actually a member of the enum.
         value = value!.trim();
         if (!Object.values(this.options).some(op => op === value)) {
-            return ErrorValidateAndParseResult("unrecognized option", value);
+            return ErrorValidateAndParseResult(`unrecognized option '${value}'`, value);
         }
         return SuccessfulValidateAndParseResult(value);
     };
@@ -894,6 +894,14 @@ export const MakeSortOrderField = (columnName: string) => (
     }));
 
 export const MakeSignificanceField = (columnName: string, options: TAnyModel) => (
+    new ConstEnumStringField({
+        columnName,
+        allowNull: true,
+        defaultValue: null,
+        options,
+    }));
+
+export const MakeIconField = (columnName: string, options: TAnyModel) => (
     new ConstEnumStringField({
         columnName,
         allowNull: true,

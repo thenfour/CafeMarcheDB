@@ -91,6 +91,7 @@ export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDi
                     select {props.spec.schemaColumn.label}
                     <Box sx={{ p: 0 }}>
                         Selected: {props.spec.args.renderAsChip!({
+                            colorVariant: "strong",
                             value: selectedObj || null,
                             onDelete: () => {
                                 setSelectedObj(null);

@@ -18,6 +18,7 @@ html,
     max-width: 1500px;
 }
 
+/* - CM Big Chip --------------------------------- */
 .cmbigchip {
     font-size: 14px;
     padding-bottom: 15px;
@@ -46,4 +47,17 @@ html,
 .cmbigchip.weak .content {
     background-color: var(--weak-color);
     color: var(--weak-contrast-color);
+}
+
+
+
+/* - CM Big Status --------------------------------- */
+.bigstatus {
+    font-size: 14px;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    letter-spacing: 2px;
+    font-weight: bold;
 }
