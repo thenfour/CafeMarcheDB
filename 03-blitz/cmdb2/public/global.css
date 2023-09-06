@@ -267,6 +267,13 @@ div.chipContainer.validationSuccess {
   padding: 0px 60px;
 }
 
+/* all stuff in hcontent area is centered horiz */
+.cmcard .hcontent>* {
+  display: flex;
+  /* align-items: center; */
+  justify-content: center;
+}
+
 .cmcard.rehearsal .hcontent {
   border-left: solid 1px black;
 }
@@ -375,6 +382,10 @@ div.chipContainer.validationSuccess {
   padding: 1px;
   font-size: 14px;
   color: blue;
+  /* border-top: 1px dashed #888; */
+}
+
+.cmcard .hcontent>*:last-child {
   border-top: 1px dashed #888;
 }
 

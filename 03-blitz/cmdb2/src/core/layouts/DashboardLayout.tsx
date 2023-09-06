@@ -61,6 +61,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode 
             <Head>
                 <title>{`CM: ${title}`}</title>
                 <meta charSet="utf-8" /> { /* needed for Draft.js */}
+                <link rel="icon" type="image/png" href="/favicon.png" />
             </Head>
 
             <Suspense fallback={fallback}>

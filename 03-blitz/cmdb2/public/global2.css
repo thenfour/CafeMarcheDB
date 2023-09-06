@@ -49,7 +49,9 @@ html,
     color: var(--weak-contrast-color);
 }
 
-
+.bigChipContainer {
+    flex-direction: column;
+}
 
 /* - CM Big Status --------------------------------- */
 .bigstatus {

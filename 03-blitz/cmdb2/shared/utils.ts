@@ -335,6 +335,7 @@ export const gIconOptions = {
     ErrorOutline: "ErrorOutline",
     HighlightOff: "HighlightOff",
     Place: "Place",
+    QuestionMark: "QuestionMark",
     Search: "Search",
     ThumbDown: "ThumbDown",
     ThumbUp: "ThumbUp",

@@ -1,6 +1,6 @@
 import React from "react";
 import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, Select, Tooltip } from "@mui/material";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateColorPaletteEntry, CreateNullPaletteEntry } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateColorPaletteEntry, CreateNullPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { gNullValue, getNextSequenceId } from "shared/utils";
 //import "../../../public/style/color.css"
 
@@ -27,7 +27,10 @@ export interface ColorSwatchProps {
 // to apply them, components should just use these vars as needed.
 // why not just have "color" var instead of "strong color" & "weak color"? so components can
 // access both. might as well support both methods tbh.
-export const GetStyleVariablesForColor = (color: ColorPaletteEntry | null) => {
+export const GetStyleVariablesForColor = (color: ColorPaletteEntry | null | string) => {
+    if (typeof color === 'string') {
+        color = gGeneralPaletteList.findEntry(color);
+    }
     const entry = !!color ? color : CreateNullPaletteEntry();
 
     return {

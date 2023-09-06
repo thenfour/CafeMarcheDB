@@ -27,7 +27,8 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import { TIconOptions, gIconOptions } from "shared/utils";
-import { ChoiceEditCell } from "./ChooseItemDialog";
+import { ChoiceEditCell } from "../../components/ChooseItemDialog";
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 
 
 
@@ -47,6 +48,7 @@ const gIconMap: IIconMap = {
     ErrorOutline: () => <ErrorOutlineIcon />,
     HighlightOff: () => <HighlightOffIcon />,
     Place: () => <PlaceIcon />,
+    Question: () => <QuestionMarkIcon />,
     Search: () => <SearchIcon />,
     ThumbDown: () => <ThumbDownIcon />,
     ThumbUp: () => <ThumbUpIcon />,

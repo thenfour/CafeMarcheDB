@@ -28,6 +28,8 @@ import { ColorPaletteEntry, gGeneralPaletteList } from 'shared/color';
 import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { TAnyModel } from 'shared/utils';
+import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 
 // a white surface elevated from the gray base background, allowing vertical content.
 // meant to be the ONLY surface
@@ -40,7 +42,7 @@ export const CMSinglePageSurface = (props: React.PropsWithChildren) => {
 ////////////////////////////////////////////////////////////////
 // big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
 export interface CMBigChipProps {
-    color: ColorPaletteEntry | null;
+    color: ColorPaletteEntry | string | null;
     variant: ColorVariationOptions;
     // put icons & text in children
 };
@@ -53,24 +55,66 @@ export const CMBigChip = (props: React.PropsWithChildren<CMBigChipProps>) => {
 };
 
 ////////////////////////////////////////////////////////////////
-// TODO: specific big chip for event attendance.
-
-////////////////////////////////////////////////////////////////
-// non-interactive status of something.
-// different than "big chip" because it implies that it's not interactive, or more global, less contained.
-export interface CMBigStatusProps {
+// specific big chip for event attendance summary
+export interface CMEventAttendanceSummaryBigChipProps {
+    event: db3.EventPayloadClient,
+    tableClient: DB3Client.xTableRenderClient,
 };
 
-export const CMBigStatus = (props: React.PropsWithChildren<CMBigStatusProps>) => {
-    return <div className="bigstatus">{props.children}</div>;
-    //     <CheckIcon />
-    //     Confirmed
-    // </div>;
+export const CMEventAttendanceSummaryBigChip = (props: CMEventAttendanceSummaryBigChipProps) => {
+    const user = useCurrentUser()!;
+    console.assert(!!user);
+
+    const eventInfo = new db3.EventInfoForUser({ event: props.event, userId: user.id });
+    console.assert(!!eventInfo.segments);
+
+    // if all responses are the same, easy; display 1 big thing.
+    // if all responses are NOT the same .... then display them all in compact form, one slot for each event segment
+
+    // const segmentResponses = {}; // key = segment id, value=response or undefined
+    // const distinctResponses = {}; // 
+    // props.event.segments.forEach(seg => {
+    //     const found = seg.responses.find(r => r.userId === user?.id);
+    //     if (found) segmentResponses[seg.id] = found;
+    // });
+
+    //console.log(segmentResponses);
+
+    return <div className='CMEventAttendanceSummary bigChipContainer'>
+        {
+            eventInfo.segments.map((seg, index) => {
+                if (!seg.response) {
+                    return <CMBigChip key={index} color={null} variant="weak">
+                        <QuestionMarkIcon />
+                        no response yet
+                    </CMBigChip>;
+                } else {
+                    console.assert(!!seg.response.attendance);
+                    const attendance = seg.response.attendance!;
+                    return <CMBigChip key={index} color={attendance.color} variant="weak">
+                        {(attendance.strength > 50) ?
+                            <ThumbUpIcon /> : <ThumbDownIcon />
+                        }
+                        {attendance.personalText}
+                    </CMBigChip>;
+                }
+            })
+        }
+    </div>;
+
+    // const sampleColor = gGeneralPaletteList.findEntry("yes");
+
+    // return <CMBigChip color={sampleColor} variant='strong'>
+    //     <ThumbUpIcon />
+    //     You are coming!
+    // </CMBigChip>;
 };
 
 
 ////////////////////////////////////////////////////////////////
-// TODO: specific non-interactive status for event status
+// TODO: generic big status
+////////////////////////////////////////////////////////////////
+// specific non-interactive status for event status
 export interface CMEventBigStatusProps {
     event: db3.EventPayloadClient,
     tableClient: DB3Client.xTableRenderClient,
@@ -81,10 +125,12 @@ export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
         return null;
     }
     const status: db3.EventStatusPayload = props.event.status;
-    return <div className="status confirmed">
-        <CheckIcon />
-        Confirmed
-    </div>;
+    const style = GetStyleVariablesForColor(status.color);
+    //console.log(status.color)
+    return <div><div className={`bigstatus applyColor-inv`} style={style}>
+        {RenderMuiIcon(status.iconName)}
+        {status.label}
+    </div></div>;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -141,13 +187,6 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
     const user = useCurrentUser();
     if (!user || !user.id) throw new Error(`no current user`);
 
-    const yourResponses = {};
-    props.event.segments.forEach(seg => {
-        const found = seg.responses.find(r => r.userId === user?.id);
-        if (found) yourResponses[seg.id] = found;
-    });
-    const sampleColor = gGeneralPaletteList.findEntry("yes");
-
     return <Card className="cmcard concert" elevation={5} >
         <CardActionArea className="actionArea">
             <div className="cardContent">
@@ -158,18 +197,20 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
                     <div className="name">{props.event.name}</div>
 
                     <CMEventBigStatus event={props.event} tableClient={props.tableClient} />
-
+                    {/* 
                     <CMBigChip color={sampleColor} variant='strong'>
                         <ThumbUpIcon />
                         You are coming!
-                    </CMBigChip>
+                    </CMBigChip> */}
 
+                    <CMEventAttendanceSummaryBigChip event={props.event} tableClient={props.tableClient} />
+                    {/* 
                     <div className="attendance yes">
                         <div className="chip">
                         </div>
-                    </div>
+                    </div> */}
 
-                    <div className="info">43 photos uploaded</div>
+                    {/* <div className="info">43 photos uploaded</div> */}
                     <CMTagList
                         tagAssociations={props.event.tags}
                         tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}

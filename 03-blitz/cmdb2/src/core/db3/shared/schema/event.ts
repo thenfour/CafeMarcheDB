@@ -1,7 +1,8 @@
 // TODO: permissions for actions like these needs to be done in a different way.
 // for example i should be able to edit my own posts but not others. etc.
+// or think about the concept of user blocking, or not being able to see responses of certain kinds of events or people. todo...
 
-import db, { Prisma } from "db";
+import db, { EventSegment, EventSegmentUserResponse, Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
@@ -611,6 +612,7 @@ export const xEventAttendance = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("text"),
+        new GenericStringField({ allowNull: false, columnName: "personalText", format: "title", caseSensitive: false }),
         MakeMarkdownTextField("description"),
         MakeColorField("color"),
         MakeIntegerField("strength"),
@@ -832,3 +834,58 @@ export const xEventSongListSong = new db3.xTable({
         }),
     ]
 });
+
+
+////////////////////////////////////////////////////////////////
+// by the time the data reaches the UX, ideally it should be a rich object with methods, calculated fields etc.
+// unfortunately we're not there yet. helper functions like this exist.
+export interface CalculateEventInfoForUserArgs {
+    userId: number;
+    event: EventPayloadClient;
+}
+
+export interface SegmentAndResponse {
+    segment: EventSegment;
+    response?: EventSegmentUserResponsePayload;
+};
+
+export class EventInfoForUser {
+    userId: number;
+    event: EventPayloadClient;
+    segments: SegmentAndResponse[];  //{ [segmentId: number]: EventSegmentUserResponse }; // all segments in order, together with response
+
+    // (todo) when there is only 1 response type for all segments (1 segment, or all the same), then this will contain that singular one.
+    //singularResponse?: EventSegmentUserResponsePayload;
+
+    constructor(args: CalculateEventInfoForUserArgs) {
+        this.userId = args.userId;
+        this.event = args.event;
+
+        console.assert(!!args.event.segments);
+        this.segments = args.event.segments.map(seg => {
+            console.assert(!!seg.responses);
+            return {
+                segment: seg,
+                response: seg.responses.find(r => r.userId === args.userId),
+            }
+        });
+        // this.segments = [];
+
+        // args.event.segments.forEach(seg => {
+        //     const found = seg.responses.find(r => r.userId === args.userId);
+        //     if (found) {
+        //         this.segments[seg.id] = found;
+        //     }
+        // });
+    }
+};
+
+// export const CalculateEventInfoForUser = (args: CalculateEventInfoForUserArgs): EventInfoForUser => {
+//     const ret: EventInfoForUser = {
+//         userId: args.userId,
+//         //singularResponse: undefined,
+//         segments: {},
+//     };
+
+//     return ret;
+// };

@@ -19,6 +19,27 @@
     user-select: none;
 }
 
+/* generic color application */
+.applyColor-strong {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+    border: 1px var(--strong-border-style) var(--strong-contrast-color);
+}
+
+.applyColor-weak {
+    background-color: var(--weak-color);
+    color: var(--weak-contrast-color);
+    border: 1px var(--weak-border-style) var(--weak-contrast-color);
+}
+
+/* for text-only (no background) rendering */
+.applyColor-inv {
+    color: var(--strong-color);
+    /* text-shadow: var(--weak-contrast-color) 0 1px 1px; */
+    /* text-shadow: var(--strong-contrast-color) 0 1px 1px; */
+}
+
+
 .colorSwatchRoot:hover {
     background-color: #0004;
     user-select: none;

@@ -73,7 +73,7 @@ const DynamicContent = () => {
         {/* <Link>View event details...</Link> */}
         <EventAttendanceResponseInput finalized={false} past={false} segmentCount={2} />
       </Alert>
-      <MockupEventCard />
+      {/* <MockupEventCard /> */}
       {
         tableClient.items.map((row, index) => <NoninteractiveCardEvent key={index} event={row as any} tableClient={tableClient} />)
       }

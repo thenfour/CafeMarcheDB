@@ -313,9 +313,15 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         const style: React.CSSProperties = {};
         const color = rowInfo.color;
         if (color != null) {
-            style.backgroundColor = color.strongValue;
-            style.color = color.strongContrastColor;
-            style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
+            if (args.colorVariant === "strong") {
+                style.backgroundColor = color.strongValue;
+                style.color = color.strongContrastColor;
+                style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
+            } else {
+                style.backgroundColor = color.weakValue;
+                style.color = color.weakContrastColor;
+                style.border = `1px solid ${color.weakOutline ? color.weakContrastColor : color.weakValue}`;
+            }
         }
 
         return <Chip
