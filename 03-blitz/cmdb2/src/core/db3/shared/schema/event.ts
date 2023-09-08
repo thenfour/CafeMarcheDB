@@ -617,6 +617,7 @@ export const xEventAttendance = new db3.xTable({
         MakeColorField("color"),
         MakeIntegerField("strength"),
         MakeSortOrderField("sortOrder"),
+        new BoolField({ columnName: "isDeleted", defaultValue: false }),
     ]
 });
 

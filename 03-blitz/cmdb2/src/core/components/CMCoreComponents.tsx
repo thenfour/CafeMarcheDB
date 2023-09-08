@@ -16,7 +16,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ErrorIcon from '@mui/icons-material/Error';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { Button, ButtonGroup, Card, CardActionArea, Chip, Link } from "@mui/material";
+import { Alert, Button, ButtonGroup, Card, CardActionArea, Chip, Link } from "@mui/material";
 import React, { FC, Suspense } from "react"
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
@@ -223,12 +223,87 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
 };
 
 
-// for "events page"; a sort of page surface but intended for multiple items on a page.
-// each surface should generally not take up much vertical space, so it's clear that there's more content.
-// export const CMMultiPageSurface = (props: React.PropsWithChildren) => {
 
-// };
+
+////////////////////////////////////////////////////////////////
+// event segment attendance standalone field (read-only possible, buttons array for input).
+// used on events page main and big alerts
+export interface EventSegmentAttendanceControlProps {
+    event: db3.EventPayloadClient,
+    tableClient: DB3Client.xTableRenderClient,
+};
+
+export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceControlProps) => {
+};
+
+
+
+////////////////////////////////////////////////////////////////
+// big attendance alert (per event, multiple segments)
+export interface EventAttendanceAlertControlProps {
+    event: db3.EventPayloadClient,
+    tableClient: DB3Client.xTableRenderClient,
+};
+
+export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlProps) => {
+    return <Alert severity="error">
+        <h1>Are you coming to <a href="#">Esperanzah 2023</a>?</h1>
+        <div className="attendanceResponseInput future">
+            <div className="segmentList">
+                <div className="segment">
+                    <div className='header'>
+                        <div className="segmentName">Saturday (23 Sept 14-16u)</div>
+                    </div>
+                    <div className="selectedValue yes_maybe">
+                        <div className="textWithIcon">
+                            <ThumbUpIcon className="icon" />
+                            <span className="text">You are probably going</span>
+                        </div>
+                    </div>
+                </div>
+                {props.segmentCount > 1 &&
+                    <div className={props.finalized ? "segment " : "segment alert"}>
+                        {props.finalized ? <>
+                            <div className='header'>
+                                <div className="segmentName">Sunday (24 Sept 14-16u)</div>
+                            </div>
+                            <div className="selectedValue yes_maybe">
+                                <div className="textWithIcon">
+                                    <ThumbUpIcon className="icon" />
+                                    <span className="text">You are probably going</span>
+
+                                </div>
+                            </div>
+                        </> : <>
+                            <div className='header'>
+                                <ErrorOutlineIcon className='icon' />
+                                <div>
+                                    <div className="segmentName">Sunday (24 Sept 14-16u)</div>
+                                    <div className="prompt">Are you going?</div>
+                                </div>
+                            </div>
+                            <ButtonGroup >
+                                <Button endIcon={<ThumbUpIcon />} className="yes noSelection">yep!</Button>
+                                <Button endIcon={<ThumbUpIcon />} className="yes_maybe noSelection">probably</Button>
+                                <Button endIcon={<ThumbDownIcon />} className="no_maybe noSelection">probably not</Button>
+                                <Button endIcon={<ThumbDownIcon />} className="no noSelection">nope</Button>
+                                <Button className="null noSelection">no answer</Button>
+                            </ButtonGroup>
+                        </>}
+                    </div>
+                }
+            </div>
+        </div>
+    </Alert>;
+
+
+};
+
+
+
+
+
+
 
 // static concert card
 // static event card
-

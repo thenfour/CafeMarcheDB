@@ -15,7 +15,7 @@ import {
 } from '@mui/icons-material';
 import CheckIcon from '@mui/icons-material/Check';
 import { EventAttendanceResponseInput, MockupEventCard } from "src/core/components/CMMockupComponents";
-import { CMSinglePageSurface, NoninteractiveCardEvent } from "src/core/components/CMCoreComponents";
+import { CMSinglePageSurface, EventAttendanceAlertControl, NoninteractiveCardEvent } from "src/core/components/CMCoreComponents";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 
@@ -68,12 +68,17 @@ const DynamicContent = () => {
   return (
     <CMSinglePageSurface>
       <h1>Upcoming Events</h1>
-      <Alert severity="error">
+
+      {
+        tableClient.items.map((row, index) => <EventAttendanceAlertControl key={index} event={row as any} tableClient={tableClient} />)
+      }
+
+
+      {/* <Alert severity="error">
         <h1>Are you coming to <a href="#">Esperanzah 2023</a>?</h1>
-        {/* <Link>View event details...</Link> */}
-        <EventAttendanceResponseInput finalized={false} past={false} segmentCount={2} />
-      </Alert>
-      {/* <MockupEventCard /> */}
+      <EventAttendanceResponseInput finalized={false} past={false} segmentCount={2} />
+    </Alert> * /}
+      {/* <MockupEventCard /> */ }
       {
         tableClient.items.map((row, index) => <NoninteractiveCardEvent key={index} event={row as any} tableClient={tableClient} />)
       }
@@ -86,7 +91,7 @@ const DynamicContent = () => {
         <RehearsalCard />
         <EventCard /> */}
 
-    </CMSinglePageSurface>
+    </CMSinglePageSurface >
   )
 };
 
