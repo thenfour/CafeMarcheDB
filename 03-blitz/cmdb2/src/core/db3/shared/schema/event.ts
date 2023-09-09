@@ -856,6 +856,7 @@ export interface CalculateEventInfoForUserArgs {
 }
 
 export interface SegmentAndResponse {
+    event: EventPayloadClient;
     segment: EventSegmentPayloadFromEvent;
     response: EventSegmentUserResponsePayload;
 };
@@ -878,6 +879,7 @@ export class EventInfoForUser {
             const response = seg.responses.find(r => r.userId === args.user.id);
             if (!!response) {
                 return {
+                    event: args.event,
                     segment: seg,
                     response: response as EventSegmentUserResponsePayload,
                 };
@@ -896,6 +898,7 @@ export class EventInfoForUser {
             };
 
             return {
+                event: args.event,
                 segment: seg,
                 response: mockResponse,
             }

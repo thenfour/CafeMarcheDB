@@ -16,7 +16,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ErrorIcon from '@mui/icons-material/Error';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { Alert, Button, ButtonGroup, Card, CardActionArea, Chip, Link } from "@mui/material";
+import { Alert, Button, ButtonGroup, Card, CardActionArea, Chip, Link, TextField, Tooltip } from "@mui/material";
 import React, { FC, Suspense } from "react"
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
@@ -32,6 +32,10 @@ import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { API } from '../db3/clientAPI';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import CloseIcon from '@mui/icons-material/Close';
+import DoneIcon from '@mui/icons-material/Done';
+import { CMTextField } from './CMTextField';
+import RichTextEditor from './RichTextEditor';
 
 // a white surface elevated from the gray base background, allowing vertical content.
 // meant to be the ONLY surface
@@ -251,47 +255,86 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
 export interface EventAttendanceResponseControlProps {
     value: db3.EventAttendanceBasePayload | null;
     onChange: (value: db3.EventAttendanceBasePayload | null) => void;
+    showClose: boolean,
+    onClose: () => void,
 };
 
 export const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
     const options = API.events.useGetEventAttendanceOptions({});
     const nullSelStyle = (!props.value) ? "selected" : "notSelected";
-    return <ButtonGroup className='EventAttendanceResponseControlButtonGroup'>
+    return <>
+        <ButtonGroup className='EventAttendanceResponseControlButtonGroup'>
+            {options.items.map(option => {
+                const style = GetStyleVariablesForColor(option.color);
+                const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
+                const yesNoStyle = (option.strength > 50) ? "yes" : "no";
+                return <Button
+                    key={option.id}
+                    style={style}
+                    endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
+                    className={`${yesNoStyle} applyColor-strong-noBorder ${selStyle}`}
+                    onClick={() => { props.onChange(option); }}
+                >
+                    {option.text}
+                </Button>;
+            })}
 
-        {options.items.map(option => {
-            const style = GetStyleVariablesForColor(option.color);
-            const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
-            const yesNoStyle = (option.strength > 50) ? "yes" : "no";
-            return <Button
-                key={option.id}
-                style={style}
-                endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
-                className={`${yesNoStyle} applyColor-strong-noBorder ${selStyle}`}
-                onClick={() => { props.onChange(option); }}
-            >
-                {option.text}
-            </Button>;
-        })}
+            <Button className={`null noSelection ${nullSelStyle}`} onClick={() => { props.onChange(null); }}>no answer</Button>
 
-        <Button className={`null noSelection ${nullSelStyle}`} onClick={() => { props.onChange(null); }}>no answer</Button>
+        </ButtonGroup>
 
-    </ButtonGroup>;
+        {props.showClose && <Button onClick={() => { props.onClose() }}>
+            <Tooltip title="hide these buttons" >
+                <CloseIcon />
+            </Tooltip>
+        </Button>}
+
+        <RichTextEditor debounceMilliseconds={2000} initialValue='' onValueChanged={() => { }} isSaving={false} />
+    </>;
 };
 
+
+
+
+////////////////////////////////////////////////////////////////
+export interface EventAttendanceAlertControlAnsweredSegmentProps {
+    event: db3.EventPayloadClient,
+    segment: db3.EventSegmentPayloadFromEvent,
+    onEditClicked: () => void,
+    //tableClient: DB3Client.xTableRenderClient,
+};
+
+export const EventAttendanceAlertControlAnsweredSegment = (props: EventAttendanceAlertControlAnsweredSegmentProps) => {
+    return <div className="segment ">
+        <div className='header'>
+            <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
+        </div>
+        <div className="selectedValue yes_maybe">
+            <div className="textWithIcon">
+                <ThumbUpIcon className="icon" />
+                <span className="text">You are probably going</span>
+                <Button onClick={() => { props.onEditClicked() }}>
+                    <EditIcon />
+                </Button>
+            </div>
+        </div>
+    </div>
+};
 
 
 ////////////////////////////////////////////////////////////////
 // event segment attendance standalone field (read-only possible, buttons array for input).
 // used on events page main and big alerts
-export interface EventSegmentAttendanceControlProps {
+export interface EventSegmentAttendanceEditControlProps {
     event: db3.EventPayloadClient,
     segment: db3.EventSegmentPayloadFromEvent,
     userInfo: db3.EventInfoForUser,
     onRefetch: () => void,
-    //tableClient: DB3Client.xTableRenderClient,
+    showClose: boolean,
+    onClose: () => void,
 };
 
-export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceControlProps) => {
+export const EventSegmentAttendanceEditControl = (props: EventSegmentAttendanceEditControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const token = API.events.updateUserEventSegmentAttendance.useToken();
 
@@ -322,34 +365,35 @@ export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceContr
         <EventAttendanceResponseControl
             value={props.userInfo.getSegmentUserInfo(props.segment.id).response.attendance}
             onChange={handleOnChange}
+            showClose={props.showClose}
+            onClose={props.onClose}
         />
     </div>;
 
 };
 
-
-
 ////////////////////////////////////////////////////////////////
-export interface EventAttendanceAlertControlAnsweredSegmentProps {
+// shows your answer, lets you edit it.
+export interface EventSegmentAttendanceControlProps {
+    segmentInfo: db3.SegmentAndResponse,
     event: db3.EventPayloadClient,
-    segment: db3.EventSegmentPayloadFromEvent,
-    //tableClient: DB3Client.xTableRenderClient,
+    //segment: db3.EventSegmentPayloadFromEvent,
+    eventUserInfo: db3.EventInfoForUser,
+    onRefetch: () => void,
 };
 
-export const EventAttendanceAlertControlAnsweredSegment = (props: EventAttendanceAlertControlAnsweredSegmentProps) => {
-    return <div className="segment ">
-        <div className='header'>
-            <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
-        </div>
-        <div className="selectedValue yes_maybe">
-            <div className="textWithIcon">
-                <ThumbUpIcon className="icon" />
-                <span className="text">You are probably going</span>
-            </div>
-        </div>
-    </div>
-};
+export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceControlProps) => {
+    //const segInfo = eventInfo.getSegmentUserInfo(segment.id);
+    const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
+    if (!explicitEdit && !!props.segmentInfo.response.attendance) {
+        //console.log(`read-only`);
+        return <EventAttendanceAlertControlAnsweredSegment event={props.event} segment={props.segmentInfo.segment} onEditClicked={() => { setExplicitEdit(true); }} />;
+    } else {
+        //console.log(`editable`);
+        return <EventSegmentAttendanceEditControl event={props.event} segment={props.segmentInfo.segment} userInfo={props.eventUserInfo} onRefetch={props.onRefetch} showClose={explicitEdit} onClose={() => { setExplicitEdit(false) }} />;
+    }
 
+};
 
 ////////////////////////////////////////////////////////////////
 // big attendance alert (per event, multiple segments)
@@ -361,20 +405,24 @@ export interface EventAttendanceAlertControlProps {
 export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlProps) => {
     const user = useCurrentUser()!;
     const eventInfo = API.events.getEventInfoForUser({ event: props.event, user });
+    const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
     return <Alert severity="error" className='cmalert attendanceAlert'>
         <h1>Are you coming to <a href="#">{props.event.name}</a>?</h1>
         <div className="attendanceResponseInput">
             <div className="segmentList">
-
                 {props.event.segments.map(segment => {
-                    // if answered,
                     const segInfo = eventInfo.getSegmentUserInfo(segment.id);
-                    if (!!segInfo.response.attendance) {
-                        return <EventAttendanceAlertControlAnsweredSegment key={segment.id} event={props.event} segment={segment} />;
+                    return <EventSegmentAttendanceControl key={segment.id} onRefetch={props.onRefetch} segmentInfo={segInfo} eventUserInfo={eventInfo} event={props.event} />;
+                })}
+                {/* {
+                    if (!explicitEdit && !!segInfo.response.attendance) {
+                        console.log(`read-only`);
+                        return <EventAttendanceAlertControlAnsweredSegment key={segment.id} event={props.event} segment={segment} onEditClicked={() => { setExplicitEdit(true); }} />;
                     } else {
+                        console.log(`editable`);
                         return <EventSegmentAttendanceControl key={segment.id} event={props.event} segment={segment} userInfo={eventInfo} onRefetch={props.onRefetch} />;
                     }
-                })}
+                })} */}
 
             </div>
         </div>
