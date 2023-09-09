@@ -26,6 +26,12 @@
     border: 1px var(--strong-border-style) var(--strong-contrast-color);
 }
 
+/* for button groups (attendance control) border stuff gets unsightly */
+.applyColor-strong-noBorder {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+}
+
 .applyColor-weak {
     background-color: var(--weak-color);
     color: var(--weak-contrast-color);

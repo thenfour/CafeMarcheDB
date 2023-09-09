@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
-import { xUser } from "./user";
+import { UserPayload, xUser } from "./user";
 import { xSong } from "./song";
 /*
 
@@ -386,6 +386,13 @@ export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
 
 
 
+// when an event segment is fetched from an event, this is the payload type
+export type EventSegmentPayloadFromEvent = Prisma.EventSegmentGetPayload<{
+    include: {
+        responses: true,
+    }
+}>;
+
 export const xEvent = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
@@ -591,6 +598,9 @@ export type EventAttendancePayload = Prisma.EventAttendanceGetPayload<{
         responses: true,
     }
 }>;
+
+// when you don't need responses just use this
+export type EventAttendanceBasePayload = Prisma.EventAttendanceGetPayload<{}>;
 
 export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -841,33 +851,53 @@ export const xEventSongListSong = new db3.xTable({
 // by the time the data reaches the UX, ideally it should be a rich object with methods, calculated fields etc.
 // unfortunately we're not there yet. helper functions like this exist.
 export interface CalculateEventInfoForUserArgs {
-    userId: number;
+    user: UserPayload;
     event: EventPayloadClient;
 }
 
 export interface SegmentAndResponse {
-    segment: EventSegment;
-    response?: EventSegmentUserResponsePayload;
+    segment: EventSegmentPayloadFromEvent;
+    response: EventSegmentUserResponsePayload;
 };
 
 export class EventInfoForUser {
-    userId: number;
+    user: UserPayload;
     event: EventPayloadClient;
-    segments: SegmentAndResponse[];  //{ [segmentId: number]: EventSegmentUserResponse }; // all segments in order, together with response
+    segments: SegmentAndResponse[];  //{ [segmentId: number]: EventSegmentUserResponse }; // all segments in order, together with response. response ALWAYS there for simplicity.
 
     // (todo) when there is only 1 response type for all segments (1 segment, or all the same), then this will contain that singular one.
     //singularResponse?: EventSegmentUserResponsePayload;
 
     constructor(args: CalculateEventInfoForUserArgs) {
-        this.userId = args.userId;
+        this.user = args.user;
         this.event = args.event;
 
         console.assert(!!args.event.segments);
         this.segments = args.event.segments.map(seg => {
             console.assert(!!seg.responses);
+            const response = seg.responses.find(r => r.userId === args.user.id);
+            if (!!response) {
+                return {
+                    segment: seg,
+                    response: response as EventSegmentUserResponsePayload,
+                };
+            }
+
+            const mockResponse: EventSegmentUserResponsePayload = { // mock response
+                attendance: null,
+                attendanceComment: null,
+                attendanceId: null,
+                eventSegmentId: seg.id,
+                eventSegment: seg,
+                expectAttendance: false, // no response object means the user is not expected
+                id: -1,
+                user: this.user as any,
+                userId: this.user.id,
+            };
+
             return {
                 segment: seg,
-                response: seg.responses.find(r => r.userId === args.userId),
+                response: mockResponse,
             }
         });
         // this.segments = [];
@@ -878,6 +908,19 @@ export class EventInfoForUser {
         //         this.segments[seg.id] = found;
         //     }
         // });
+    }
+
+    // returns
+    // - not expected
+    // - expected & no response
+    // - expected & response
+    getSegmentUserInfo = (segmentId: number) => {
+        const segment = this.segments.find(s => s.segment.id === segmentId);
+        if (!segment) {
+            throw new Error(`segment id not found: ${segmentId}`);
+        }
+        console.assert(!!segment.response);
+        return segment;
     }
 };
 

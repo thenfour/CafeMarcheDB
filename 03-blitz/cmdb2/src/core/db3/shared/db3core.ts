@@ -321,6 +321,10 @@ export class xTable implements TableDesc {
         return { ...dbModel, ...ret };
         //return ret;
     }
+
+    getColumn = (name: string) => {
+        return this.columns.find(c => c.member === name);
+    }
 }
 
 ////////////////////////////////////////////////////////////////

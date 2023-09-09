@@ -26,6 +26,7 @@ import { TAnyModel } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
+import { ColorVariationOptions } from 'src/core/components/Color';
 
 
 const gMaxVisibleTags = 6;
@@ -272,6 +273,46 @@ export const TagsView = <TAssociation,>(props: TagsViewProps<TAssociation>) => {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface DefaultRenderAsChipParams<TAssociation> {
+    value: TAssociation | null;
+    columnSchema: db3.TagsField<TAssociation>,
+    colorVariant: ColorVariationOptions;
+    onDelete?: () => void;
+    onClick?: () => void;
+}
+
+export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipParams<TAssociation>) => {
+    if (!args.value) {
+        return <>--</>;
+    }
+    const rowInfo = args.columnSchema.associationTableSpec.getRowInfo(args.value);
+    const style: React.CSSProperties = {};
+    const color = rowInfo.color;
+    if (color != null) {
+        if (args.colorVariant === "strong") {
+            style.backgroundColor = color.strongValue;
+            style.color = color.strongContrastColor;
+            style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
+        } else {
+            style.backgroundColor = color.weakValue;
+            style.color = color.weakContrastColor;
+            style.border = `1px solid ${color.weakOutline ? color.weakContrastColor : color.weakValue}`;
+        }
+    }
+
+    return <Chip
+        className="cmdbChip"
+        style={style}
+        size="small"
+        label={rowInfo.name}
+        onDelete={args.onDelete}
+        clickable={!!args.onClick}
+        onClick={(e) => args.onClick!}
+    />;
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface TagsFieldClientArgs<TAssociation> {
     columnName: string;
     cellWidth: number;
@@ -306,33 +347,34 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     }
 
     defaultRenderAsChip = (args: DB3Client.RenderAsChipParams<TAssociation>) => {
-        if (!args.value) {
-            return <>--</>;
-        }
-        const rowInfo = this.typedSchemaColumn.associationTableSpec.getRowInfo(args.value);
-        const style: React.CSSProperties = {};
-        const color = rowInfo.color;
-        if (color != null) {
-            if (args.colorVariant === "strong") {
-                style.backgroundColor = color.strongValue;
-                style.color = color.strongContrastColor;
-                style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
-            } else {
-                style.backgroundColor = color.weakValue;
-                style.color = color.weakContrastColor;
-                style.border = `1px solid ${color.weakOutline ? color.weakContrastColor : color.weakValue}`;
-            }
-        }
+        return DefaultRenderAsChip({ ...args, columnSchema: this.typedSchemaColumn });
+        // if (!args.value) {
+        //     return <>--</>;
+        // }
+        // const rowInfo = this.typedSchemaColumn.associationTableSpec.getRowInfo(args.value);
+        // const style: React.CSSProperties = {};
+        // const color = rowInfo.color;
+        // if (color != null) {
+        //     if (args.colorVariant === "strong") {
+        //         style.backgroundColor = color.strongValue;
+        //         style.color = color.strongContrastColor;
+        //         style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
+        //     } else {
+        //         style.backgroundColor = color.weakValue;
+        //         style.color = color.weakContrastColor;
+        //         style.border = `1px solid ${color.weakOutline ? color.weakContrastColor : color.weakValue}`;
+        //     }
+        // }
 
-        return <Chip
-            className="cmdbChip"
-            style={style}
-            size="small"
-            label={rowInfo.name}
-            onDelete={args.onDelete}
-            clickable={!!args.onClick}
-            onClick={(e) => args.onClick!}
-        />;
+        // return <Chip
+        //     className="cmdbChip"
+        //     style={style}
+        //     size="small"
+        //     label={rowInfo.name}
+        //     onDelete={args.onDelete}
+        //     clickable={!!args.onClick}
+        //     onClick={(e) => args.onClick!}
+        // />;
     };
 
     defaultRenderAsListItem = (props, value, selected) => {

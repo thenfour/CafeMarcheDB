@@ -728,3 +728,9 @@ div.chipContainer.validationSuccess {
   border: 1px solid #8888;
   background-color: #eee;
 }
+
+/* by default multiple <Alert> have no space between. considering we're putting a lot in each alert, and each alert is for a distinctly different context,
+put spacing.*/
+.cmalert {
+  margin-bottom: 15px;
+}

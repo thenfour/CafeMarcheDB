@@ -30,6 +30,8 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { TAnyModel } from 'shared/utils';
 import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import { API } from '../db3/clientAPI';
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 
 // a white surface elevated from the gray base background, allowing vertical content.
 // meant to be the ONLY surface
@@ -58,14 +60,14 @@ export const CMBigChip = (props: React.PropsWithChildren<CMBigChipProps>) => {
 // specific big chip for event attendance summary
 export interface CMEventAttendanceSummaryBigChipProps {
     event: db3.EventPayloadClient,
-    tableClient: DB3Client.xTableRenderClient,
+    //tableClient: DB3Client.xTableRenderClient,
 };
 
 export const CMEventAttendanceSummaryBigChip = (props: CMEventAttendanceSummaryBigChipProps) => {
     const user = useCurrentUser()!;
     console.assert(!!user);
 
-    const eventInfo = new db3.EventInfoForUser({ event: props.event, userId: user.id });
+    const eventInfo = new db3.EventInfoForUser({ event: props.event, user });
     console.assert(!!eventInfo.segments);
 
     // if all responses are the same, easy; display 1 big thing.
@@ -83,12 +85,20 @@ export const CMEventAttendanceSummaryBigChip = (props: CMEventAttendanceSummaryB
     return <div className='CMEventAttendanceSummary bigChipContainer'>
         {
             eventInfo.segments.map((seg, index) => {
-                if (!seg.response) {
+                console.assert(!!seg.response);
+                if (seg.response.expectAttendance && !seg.response.attendance) {
+                    // no response but one is expected.
                     return <CMBigChip key={index} color={null} variant="weak">
                         <QuestionMarkIcon />
                         no response yet
                     </CMBigChip>;
+                } else if (!seg.response.expectAttendance && !seg.response.attendance) {
+                    // not expected & no response
+                    return <CMBigChip key={index} color={null} variant="weak">
+                        no response expected
+                    </CMBigChip>;
                 } else {
+                    // there's a response, whether it's expected or not doesn't matter.
                     console.assert(!!seg.response.attendance);
                     const attendance = seg.response.attendance!;
                     return <CMBigChip key={index} color={attendance.color} variant="weak">
@@ -117,7 +127,7 @@ export const CMEventAttendanceSummaryBigChip = (props: CMEventAttendanceSummaryB
 // specific non-interactive status for event status
 export interface CMEventBigStatusProps {
     event: db3.EventPayloadClient,
-    tableClient: DB3Client.xTableRenderClient,
+    //tableClient: DB3Client.xTableRenderClient,
 };
 
 export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
@@ -141,20 +151,24 @@ export interface ITagAssociation {
 
 export interface CMTagProps<TagAssignmentModel> {
     tagAssociation: ITagAssociation;
-    tagsFieldClient: DB3Client.TagsFieldClient<TagAssignmentModel>,
+    columnSchema: db3.TagsField<unknown>,
     colorVariant: ColorVariationOptions;
 };
 
 export const CMTag = (props: CMTagProps<TAnyModel>) => {
-    return props.tagsFieldClient.defaultRenderAsChip({
+    return DB3Client.DefaultRenderAsChip({
         value: props.tagAssociation,
         colorVariant: props.colorVariant,
+        columnSchema: props.columnSchema,
+        // onclick
+        // ondelete
     });
 };
 
 export interface CMTagListProps<TagAssignmentModel> {
     tagAssociations: ITagAssociation[],
-    tagsFieldClient: DB3Client.TagsFieldClient<TagAssignmentModel>,
+    //tagsFieldClient: DB3Client.TagsFieldClient<TagAssignmentModel>,
+    columnSchema: db3.TagsField<unknown>,
     colorVariant: ColorVariationOptions;
 };
 
@@ -162,7 +176,13 @@ export interface CMTagListProps<TagAssignmentModel> {
 export const CMTagList = (props: CMTagListProps<TAnyModel>) => {
     //console.log(props.tagAssociations);
     return <div className="chipContainer">
-        {props.tagAssociations.map(tagAssociation => <CMTag key={tagAssociation.id} tagAssociation={tagAssociation} tagsFieldClient={props.tagsFieldClient} colorVariant={props.colorVariant} />)}
+        {props.tagAssociations.map(tagAssociation => <CMTag
+            key={tagAssociation.id}
+            tagAssociation={tagAssociation}
+            columnSchema={props.columnSchema}
+            //tagsFieldClient={props.tagsFieldClient}
+            colorVariant={props.colorVariant}
+        />)}
     </div>
 };
 
@@ -171,7 +191,7 @@ export const CMTagList = (props: CMTagListProps<TAnyModel>) => {
 // non-interactive-feeling card; it's meant as a gateway to something else with very little very curated information.
 export interface NoninteractiveCardEventProps {
     event: db3.EventPayloadClient,
-    tableClient: DB3Client.xTableRenderClient,
+    //tableClient: DB3Client.xTableRenderClient,
 };
 
 export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => {
@@ -196,14 +216,14 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
                     <div className="date">{props.event.dateRangeInfo.formattedDateRange}</div>
                     <div className="name">{props.event.name}</div>
 
-                    <CMEventBigStatus event={props.event} tableClient={props.tableClient} />
+                    <CMEventBigStatus event={props.event} />
                     {/* 
                     <CMBigChip color={sampleColor} variant='strong'>
                         <ThumbUpIcon />
                         You are coming!
                     </CMBigChip> */}
 
-                    <CMEventAttendanceSummaryBigChip event={props.event} tableClient={props.tableClient} />
+                    <CMEventAttendanceSummaryBigChip event={props.event} />
                     {/* 
                     <div className="attendance yes">
                         <div className="chip">
@@ -213,7 +233,8 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
                     {/* <div className="info">43 photos uploaded</div> */}
                     <CMTagList
                         tagAssociations={props.event.tags}
-                        tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}
+                        columnSchema={db3.xEvent.getColumn("tags") as db3.TagsField<db3.EventTagAssignmentModel>}
+                        //tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}
                         colorVariant="weak"
                     />
                 </div>
@@ -224,74 +245,137 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
 
 
 
+////////////////////////////////////////////////////////////////
+// event segment attendance standalone field (read-only possible, buttons array for input).
+// used on events page main and big alerts
+export interface EventAttendanceResponseControlProps {
+    value: db3.EventAttendanceBasePayload | null;
+    onChange: (value: db3.EventAttendanceBasePayload | null) => void;
+};
+
+export const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
+    const options = API.events.useGetEventAttendanceOptions({});
+    const nullSelStyle = (!props.value) ? "selected" : "notSelected";
+    return <ButtonGroup className='EventAttendanceResponseControlButtonGroup'>
+
+        {options.items.map(option => {
+            const style = GetStyleVariablesForColor(option.color);
+            const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
+            const yesNoStyle = (option.strength > 50) ? "yes" : "no";
+            return <Button
+                key={option.id}
+                style={style}
+                endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
+                className={`${yesNoStyle} applyColor-strong-noBorder ${selStyle}`}
+                onClick={() => { props.onChange(option); }}
+            >
+                {option.text}
+            </Button>;
+        })}
+
+        <Button className={`null noSelection ${nullSelStyle}`} onClick={() => { props.onChange(null); }}>no answer</Button>
+
+    </ButtonGroup>;
+};
+
+
 
 ////////////////////////////////////////////////////////////////
 // event segment attendance standalone field (read-only possible, buttons array for input).
 // used on events page main and big alerts
 export interface EventSegmentAttendanceControlProps {
     event: db3.EventPayloadClient,
-    tableClient: DB3Client.xTableRenderClient,
+    segment: db3.EventSegmentPayloadFromEvent,
+    userInfo: db3.EventInfoForUser,
+    onRefetch: () => void,
+    //tableClient: DB3Client.xTableRenderClient,
 };
 
 export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceControlProps) => {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const token = API.events.updateUserEventSegmentAttendance.useToken();
+
+    const handleOnChange = async (value: db3.EventAttendanceBasePayload | null) => {
+        try {
+            await API.events.updateUserEventSegmentAttendance.invoke(token, {
+                userId: props.userInfo.user.id,
+                eventSegmentId: props.segment.id,
+                attendanceId: value == null ? null : value.id,
+            }); //{
+            //} props.segment.id, props.userInfo.user.id, value);
+            showSnackbar({ severity: 'success', children: "update successful - todo: refetch" });
+            props.onRefetch();
+        } catch (e) {
+            console.log(e);
+            showSnackbar({ severity: 'error', children: "error;  see console" });
+        }
+    };
+
+    return <div className={"segment alert"}>
+        <div className='header'>
+            <ErrorOutlineIcon className='icon' />
+            <div>
+                <div className="segmentName">{props.segment.name} {API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
+                <div className="prompt">Are you going?</div>
+            </div>
+        </div>
+        <EventAttendanceResponseControl
+            value={props.userInfo.getSegmentUserInfo(props.segment.id).response.attendance}
+            onChange={handleOnChange}
+        />
+    </div>;
+
 };
 
+
+
+////////////////////////////////////////////////////////////////
+export interface EventAttendanceAlertControlAnsweredSegmentProps {
+    event: db3.EventPayloadClient,
+    segment: db3.EventSegmentPayloadFromEvent,
+    //tableClient: DB3Client.xTableRenderClient,
+};
+
+export const EventAttendanceAlertControlAnsweredSegment = (props: EventAttendanceAlertControlAnsweredSegmentProps) => {
+    return <div className="segment ">
+        <div className='header'>
+            <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
+        </div>
+        <div className="selectedValue yes_maybe">
+            <div className="textWithIcon">
+                <ThumbUpIcon className="icon" />
+                <span className="text">You are probably going</span>
+            </div>
+        </div>
+    </div>
+};
 
 
 ////////////////////////////////////////////////////////////////
 // big attendance alert (per event, multiple segments)
 export interface EventAttendanceAlertControlProps {
     event: db3.EventPayloadClient,
-    tableClient: DB3Client.xTableRenderClient,
+    onRefetch: () => void,
 };
 
 export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlProps) => {
-    return <Alert severity="error">
-        <h1>Are you coming to <a href="#">Esperanzah 2023</a>?</h1>
-        <div className="attendanceResponseInput future">
+    const user = useCurrentUser()!;
+    const eventInfo = API.events.getEventInfoForUser({ event: props.event, user });
+    return <Alert severity="error" className='cmalert attendanceAlert'>
+        <h1>Are you coming to <a href="#">{props.event.name}</a>?</h1>
+        <div className="attendanceResponseInput">
             <div className="segmentList">
-                <div className="segment">
-                    <div className='header'>
-                        <div className="segmentName">Saturday (23 Sept 14-16u)</div>
-                    </div>
-                    <div className="selectedValue yes_maybe">
-                        <div className="textWithIcon">
-                            <ThumbUpIcon className="icon" />
-                            <span className="text">You are probably going</span>
-                        </div>
-                    </div>
-                </div>
-                {props.segmentCount > 1 &&
-                    <div className={props.finalized ? "segment " : "segment alert"}>
-                        {props.finalized ? <>
-                            <div className='header'>
-                                <div className="segmentName">Sunday (24 Sept 14-16u)</div>
-                            </div>
-                            <div className="selectedValue yes_maybe">
-                                <div className="textWithIcon">
-                                    <ThumbUpIcon className="icon" />
-                                    <span className="text">You are probably going</span>
 
-                                </div>
-                            </div>
-                        </> : <>
-                            <div className='header'>
-                                <ErrorOutlineIcon className='icon' />
-                                <div>
-                                    <div className="segmentName">Sunday (24 Sept 14-16u)</div>
-                                    <div className="prompt">Are you going?</div>
-                                </div>
-                            </div>
-                            <ButtonGroup >
-                                <Button endIcon={<ThumbUpIcon />} className="yes noSelection">yep!</Button>
-                                <Button endIcon={<ThumbUpIcon />} className="yes_maybe noSelection">probably</Button>
-                                <Button endIcon={<ThumbDownIcon />} className="no_maybe noSelection">probably not</Button>
-                                <Button endIcon={<ThumbDownIcon />} className="no noSelection">nope</Button>
-                                <Button className="null noSelection">no answer</Button>
-                            </ButtonGroup>
-                        </>}
-                    </div>
-                }
+                {props.event.segments.map(segment => {
+                    // if answered,
+                    const segInfo = eventInfo.getSegmentUserInfo(segment.id);
+                    if (!!segInfo.response.attendance) {
+                        return <EventAttendanceAlertControlAnsweredSegment key={segment.id} event={props.event} segment={segment} />;
+                    } else {
+                        return <EventSegmentAttendanceControl key={segment.id} event={props.event} segment={segment} userInfo={eventInfo} onRefetch={props.onRefetch} />;
+                    }
+                })}
+
             </div>
         </div>
     </Alert>;

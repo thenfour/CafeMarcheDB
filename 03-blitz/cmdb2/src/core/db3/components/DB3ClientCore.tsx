@@ -1,5 +1,8 @@
 'use client';
 
+// so originally this started as a general API (hence the "capabilities" bitfield). but it's really just geared towards datagrids.
+// for a more conventional "client side API" look at clientAPI.tsx et al.
+
 // xTable is server-side code; for client-side things we enrich it here.
 // so all UI stuff, react stuff, any behavioral stuff on the client should be here.
 //
@@ -97,6 +100,42 @@ export class xTableClientSpec {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
 
+export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: GridFilterModel, tableParams?: TAnyModel) => {
+    const where = { AND: [] as any[] };
+    if (filterModel && filterModel.quickFilterValues) { // quick filtering
+        const quickFilterItems = filterModel.quickFilterValues.map(q => {// for each token
+            return {
+                OR: tableSchema.GetQuickFilterWhereClauseExpression(q)
+            };
+        });
+        where.AND.push(...quickFilterItems);
+    }
+
+    if (filterModel && filterModel.items && filterModel.items.length > 0) { // non-quick normal filtering.
+        // convert items to prisma filter
+        const filterItems = filterModel.items.map((i) => {
+            return { [i.field]: { [i.operator]: i.value } }
+        });
+        where.AND.push(...filterItems);
+    }
+
+    if (tableParams && tableSchema.getParameterizedWhereClause) {
+        const filterItems = tableSchema.getParameterizedWhereClause(tableParams);
+        if (filterItems) {
+            where.AND.push(...filterItems);
+        }
+    }
+    return where;
+};
+
+export const CalculateOrderBy = (sortModel?: GridSortModel) => {
+    let orderBy: any = undefined;//{ id: "asc" }; // default order
+    if (sortModel && sortModel.length > 0) {
+        orderBy = { [sortModel[0]!.field]: sortModel[0]!.sort }; // only support 1 ordering (grid does too afaik)
+    }
+    return orderBy;
+};
+
 export type TMutateFn = (args: db3.MutatorInput) => Promise<unknown>;
 
 export enum xTableClientCaps {
@@ -142,35 +181,9 @@ export class xTableRenderClient {
             this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
         }
 
-        let orderBy: any = undefined;//{ id: "asc" }; // default order
-        if (args.sortModel && args.sortModel.length > 0) {
-            orderBy = { [args.sortModel[0]!.field]: args.sortModel[0]!.sort }; // only support 1 ordering (grid does too afaik)
-        }
+        const orderBy = CalculateOrderBy(args.sortModel);
 
-        const where = { AND: [] as any[] };
-        if (args.filterModel && args.filterModel.quickFilterValues) { // quick filtering
-            const quickFilterItems = args.filterModel.quickFilterValues.map(q => {// for each token
-                return {
-                    OR: args.tableSpec.args.table.GetQuickFilterWhereClauseExpression(q)
-                };
-            });
-            where.AND.push(...quickFilterItems);
-        }
-
-        if (args.filterModel && args.filterModel.items && args.filterModel.items.length > 0) { // non-quick normal filtering.
-            // convert items to prisma filter
-            const filterItems = args.filterModel.items.map((i) => {
-                return { [i.field]: { [i.operator]: i.value } }
-            });
-            where.AND.push(...filterItems);
-        }
-
-        if (args.tableParams && args.tableSpec.args.table.getParameterizedWhereClause) {
-            const filterItems = args.tableSpec.args.table.getParameterizedWhereClause(args.tableParams);
-            if (filterItems) {
-                where.AND.push(...filterItems);
-            }
-        }
+        const where = CalculateWhereClause(args.tableSpec.args.table, args.filterModel, args.tableParams);
 
         const skip = !!args.paginationModel ? (args.paginationModel.pageSize * args.paginationModel.page) : undefined;
         const take = !!args.paginationModel ? (args.paginationModel.pageSize) : undefined;
@@ -213,14 +226,6 @@ export class xTableRenderClient {
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
             return this.schema.getClientModel(dbitem as TAnyModel, "view");
-            // const ret =  {};
-            // this.clientColumns.forEach(col => {
-            //     console.assert(!!col.schemaColumn.ApplyDbToClient);
-            //     col.schemaColumn.ApplyDbToClient(dbitem as TAnyModel, ret, "view");
-            // })
-
-            // // retain database fields even if you didn't specify in the client table spec. they were transferred; no need to hide them.
-            // return { ...dbitem, ...ret };
         });
 
     }; // ctor
