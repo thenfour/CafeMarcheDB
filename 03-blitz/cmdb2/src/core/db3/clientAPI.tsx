@@ -8,7 +8,8 @@ import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import db3queries from "./queries/db3queries";
 import db3eventMutations from "./mutations/updateUserEventSegmentAttendanceMutation";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TupdateUserEventSegmentAttendanceMutationArgs, UpdateUserEventSegmentAttendanceMutationArgs } from "./shared/apiTypes";
+import { TupdateUserEventSegmentAttendanceCommentMutationArgs, TupdateUserEventSegmentAttendanceMutationArgs, UpdateUserEventSegmentAttendanceMutationArgs } from "./shared/apiTypes";
+import updateUserEventSegmentAttendanceCommentMutation from "./mutations/updateUserEventSegmentAttendanceCommentMutation";
 
 
 export interface APIQueryArgs {
@@ -96,6 +97,7 @@ export class EventsAPI {
     }
 
     updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
+    updateUserEventSegmentAttendanceComment = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceCommentMutationArgs, typeof updateUserEventSegmentAttendanceCommentMutation>(updateUserEventSegmentAttendanceCommentMutation);
 };
 
 

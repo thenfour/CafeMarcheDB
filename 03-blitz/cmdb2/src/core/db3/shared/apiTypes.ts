@@ -6,4 +6,10 @@ export interface TupdateUserEventSegmentAttendanceMutationArgs {
     attendanceId: null | number;
 };
 
+export interface TupdateUserEventSegmentAttendanceCommentMutationArgs {
+    userId: number;
+    eventSegmentId: number;
+    comment: string | null;
+};
+
 

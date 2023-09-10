@@ -20,7 +20,7 @@ import { Alert, Button, ButtonGroup, Card, CardActionArea, Chip, Link, TextField
 import React, { FC, Suspense } from "react"
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
-import { SettingMarkdown } from './SettingMarkdown';
+import { CompactMutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import db, { Prisma } from "db";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -35,7 +35,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { CMTextField } from './CMTextField';
-import RichTextEditor from './RichTextEditor';
+import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEditor';
 
 // a white surface elevated from the gray base background, allowing vertical content.
 // meant to be the ONLY surface
@@ -90,6 +90,7 @@ export const CMEventAttendanceSummaryBigChip = (props: CMEventAttendanceSummaryB
         {
             eventInfo.segments.map((seg, index) => {
                 console.assert(!!seg.response);
+                const segInfo = eventInfo.getSegmentUserInfo(seg.segment.id);
                 if (seg.response.expectAttendance && !seg.response.attendance) {
                     // no response but one is expected.
                     return <CMBigChip key={index} color={null} variant="weak">
@@ -102,10 +103,12 @@ export const CMEventAttendanceSummaryBigChip = (props: CMEventAttendanceSummaryB
                         no response expected
                     </CMBigChip>;
                 } else {
-                    // there's a response, whether it's expected or not doesn't matter.
                     console.assert(!!seg.response.attendance);
                     const attendance = seg.response.attendance!;
                     return <CMBigChip key={index} color={attendance.color} variant="weak">
+                        {/* todo: when only 1 segment don't bother specifying name / date stuff */}
+                        {segInfo.segment.name}
+                        {segInfo.response.attendanceComment}
                         {(attendance.strength > 50) ?
                             <ThumbUpIcon /> : <ThumbDownIcon />
                         }
@@ -250,8 +253,31 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
 
 
 ////////////////////////////////////////////////////////////////
+// a view/edit control for the comment only (including mutation)
+export interface EventAttendanceCommentControlProps {
+    event: db3.EventPayloadClient,
+    segmentInfo: db3.SegmentAndResponse,
+    eventUserInfo: db3.EventInfoForUser,
+    onRefetch: () => void,
+};
+
+export const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
+    const token = API.events.updateUserEventSegmentAttendanceComment.useToken();
+    return <CompactMutationMarkdownControl initialValue={props.segmentInfo.response.attendanceComment} refetch={props.onRefetch} onChange={async (value) => {
+        console.log(`updating ?`);
+        return await API.events.updateUserEventSegmentAttendanceComment.invoke(token, {
+            userId: props.eventUserInfo.user.id,
+            eventSegmentId: props.segmentInfo.segment.id,
+            comment: value,
+        });
+    }} />;
+};
+
+
+
+////////////////////////////////////////////////////////////////
 // event segment attendance standalone field (read-only possible, buttons array for input).
-// used on events page main and big alerts
+// basically a button array of responses, not tied to DB but just a value.
 export interface EventAttendanceResponseControlProps {
     value: db3.EventAttendanceBasePayload | null;
     onChange: (value: db3.EventAttendanceBasePayload | null) => void;
@@ -288,8 +314,6 @@ export const EventAttendanceResponseControl = (props: EventAttendanceResponseCon
                 <CloseIcon />
             </Tooltip>
         </Button>}
-
-        <RichTextEditor debounceMilliseconds={2000} initialValue='' onValueChanged={() => { }} isSaving={false} />
     </>;
 };
 
@@ -297,38 +321,39 @@ export const EventAttendanceResponseControl = (props: EventAttendanceResponseCon
 
 
 ////////////////////////////////////////////////////////////////
-export interface EventAttendanceAlertControlAnsweredSegmentProps {
+// read-only answer + comment, with optional "edit" button
+export interface EventSegmentAttendanceAnswerProps {
     event: db3.EventPayloadClient,
-    segment: db3.EventSegmentPayloadFromEvent,
+    segmentInfo: db3.SegmentAndResponse,
+    eventUserInfo: db3.EventInfoForUser,
+
     onEditClicked: () => void,
-    //tableClient: DB3Client.xTableRenderClient,
 };
 
-export const EventAttendanceAlertControlAnsweredSegment = (props: EventAttendanceAlertControlAnsweredSegmentProps) => {
-    return <div className="segment ">
-        <div className='header'>
-            <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
-        </div>
-        <div className="selectedValue yes_maybe">
-            <div className="textWithIcon">
-                <ThumbUpIcon className="icon" />
-                <span className="text">You are probably going</span>
-                <Button onClick={() => { props.onEditClicked() }}>
-                    <EditIcon />
-                </Button>
+export const EventSegmentAttendanceAnswer = (props: EventSegmentAttendanceAnswerProps) => {
+    return <div className="selectedValue yes_maybe">
+        <div className="textWithIcon">
+            <ThumbUpIcon className="icon" />
+            <span className="text">You are probably going</span>
+            <Button onClick={() => { props.onEditClicked() }}>
+                <EditIcon />
+            </Button>
+            <div className='userComment'>
+                <Markdown markdown={props.segmentInfo.response.attendanceComment} />
             </div>
         </div>
-    </div>
+    </div>;
 };
 
 
 ////////////////////////////////////////////////////////////////
-// event segment attendance standalone field (read-only possible, buttons array for input).
-// used on events page main and big alerts
+// frame for event segment
+// input controls for attendance + comment
 export interface EventSegmentAttendanceEditControlProps {
     event: db3.EventPayloadClient,
-    segment: db3.EventSegmentPayloadFromEvent,
-    userInfo: db3.EventInfoForUser,
+    segmentInfo: db3.SegmentAndResponse,
+    eventUserInfo: db3.EventInfoForUser,
+
     onRefetch: () => void,
     showClose: boolean,
     onClose: () => void,
@@ -341,11 +366,10 @@ export const EventSegmentAttendanceEditControl = (props: EventSegmentAttendanceE
     const handleOnChange = async (value: db3.EventAttendanceBasePayload | null) => {
         try {
             await API.events.updateUserEventSegmentAttendance.invoke(token, {
-                userId: props.userInfo.user.id,
-                eventSegmentId: props.segment.id,
+                userId: props.eventUserInfo.user.id,
+                eventSegmentId: props.segmentInfo.segment.id,
                 attendanceId: value == null ? null : value.id,
-            }); //{
-            //} props.segment.id, props.userInfo.user.id, value);
+            });
             showSnackbar({ severity: 'success', children: "update successful - todo: refetch" });
             props.onRefetch();
         } catch (e) {
@@ -354,48 +378,64 @@ export const EventSegmentAttendanceEditControl = (props: EventSegmentAttendanceE
         }
     };
 
-    return <div className={"segment alert"}>
-        <div className='header'>
-            <ErrorOutlineIcon className='icon' />
-            <div>
-                <div className="segmentName">{props.segment.name} {API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
-                <div className="prompt">Are you going?</div>
-            </div>
-        </div>
+    return <>
         <EventAttendanceResponseControl
-            value={props.userInfo.getSegmentUserInfo(props.segment.id).response.attendance}
+            value={props.segmentInfo.response.attendance}
             onChange={handleOnChange}
             showClose={props.showClose}
             onClose={props.onClose}
         />
-    </div>;
+        <EventAttendanceCommentControl segmentInfo={props.segmentInfo} eventUserInfo={props.eventUserInfo} event={props.event} onRefetch={props.onRefetch} />
+    </>;
 
 };
 
 ////////////////////////////////////////////////////////////////
-// shows your answer, lets you edit it.
+// frame for event segment:
+// shows your answer & comment, small button to show edit controls.
 export interface EventSegmentAttendanceControlProps {
-    segmentInfo: db3.SegmentAndResponse,
     event: db3.EventPayloadClient,
-    //segment: db3.EventSegmentPayloadFromEvent,
+    segmentInfo: db3.SegmentAndResponse,
     eventUserInfo: db3.EventInfoForUser,
     onRefetch: () => void,
 };
 
 export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceControlProps) => {
-    //const segInfo = eventInfo.getSegmentUserInfo(segment.id);
     const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
-    if (!explicitEdit && !!props.segmentInfo.response.attendance) {
-        //console.log(`read-only`);
-        return <EventAttendanceAlertControlAnsweredSegment event={props.event} segment={props.segmentInfo.segment} onEditClicked={() => { setExplicitEdit(true); }} />;
-    } else {
-        //console.log(`editable`);
-        return <EventSegmentAttendanceEditControl event={props.event} segment={props.segmentInfo.segment} userInfo={props.eventUserInfo} onRefetch={props.onRefetch} showClose={explicitEdit} onClose={() => { setExplicitEdit(false) }} />;
-    }
+    const hasResponse = !!props.segmentInfo.response.attendance;
+    const expectResponse = true;//props.segmentInfo.response.expectAttendance;
+    // alert mode effectively forces edit mode, regardless of explicit edit. so don't show the hide button in alert state because it would do nothing.
+    const alert = expectResponse && !hasResponse;
+    const editMode = (explicitEdit || alert);
+
+    return <div className={`segment ${alert && "alert"}`}>
+        <div className='header'>
+            {alert && <ErrorOutlineIcon className='icon' />}
+            <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.segmentInfo.segment)}</div>
+            {editMode && <div className="prompt">Are you going?</div>}
+        </div>
+        {editMode ?
+            <EventSegmentAttendanceEditControl
+                event={props.event}
+                segmentInfo={props.segmentInfo}
+                eventUserInfo={props.eventUserInfo}
+                onRefetch={props.onRefetch}
+                showClose={true && !alert} // alert forces edit mode; don't allow hiding then
+                onClose={() => { setExplicitEdit(false) }}
+            /> :
+            <EventSegmentAttendanceAnswer
+                event={props.event}
+                segmentInfo={props.segmentInfo}
+                eventUserInfo={props.eventUserInfo}
+                onEditClicked={() => { setExplicitEdit(true); }}
+            />
+        }
+    </div>;
 
 };
 
 ////////////////////////////////////////////////////////////////
+// frame for event:
 // big attendance alert (per event, multiple segments)
 export interface EventAttendanceAlertControlProps {
     event: db3.EventPayloadClient,
@@ -405,7 +445,6 @@ export interface EventAttendanceAlertControlProps {
 export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlProps) => {
     const user = useCurrentUser()!;
     const eventInfo = API.events.getEventInfoForUser({ event: props.event, user });
-    const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
     return <Alert severity="error" className='cmalert attendanceAlert'>
         <h1>Are you coming to <a href="#">{props.event.name}</a>?</h1>
         <div className="attendanceResponseInput">
@@ -414,27 +453,12 @@ export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlPr
                     const segInfo = eventInfo.getSegmentUserInfo(segment.id);
                     return <EventSegmentAttendanceControl key={segment.id} onRefetch={props.onRefetch} segmentInfo={segInfo} eventUserInfo={eventInfo} event={props.event} />;
                 })}
-                {/* {
-                    if (!explicitEdit && !!segInfo.response.attendance) {
-                        console.log(`read-only`);
-                        return <EventAttendanceAlertControlAnsweredSegment key={segment.id} event={props.event} segment={segment} onEditClicked={() => { setExplicitEdit(true); }} />;
-                    } else {
-                        console.log(`editable`);
-                        return <EventSegmentAttendanceControl key={segment.id} event={props.event} segment={segment} userInfo={eventInfo} onRefetch={props.onRefetch} />;
-                    }
-                })} */}
-
             </div>
         </div>
     </Alert>;
 
 
 };
-
-
-
-
-
 
 
 // static concert card

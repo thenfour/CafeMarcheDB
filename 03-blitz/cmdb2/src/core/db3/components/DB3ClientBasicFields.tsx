@@ -17,7 +17,6 @@ import { ColorPaletteEntry } from "shared/color";
 import { Button, Checkbox, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
 import * as DB3ClientCore from "./DB3ClientCore";
 import * as db3fields from "../shared/db3basicFields";
-import RichTextEditor from "src/core/components/RichTextEditor";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from "dayjs";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";

@@ -1,10 +1,8 @@
 //'use client'
 
-// ok we're close. now there's a sequence of events creating a flicker
-// debounce starts, we use an internal value.
-// debounce stops, now we use the passed in value (which is not correct)
-// so there needs to be many intermediate steps, between both the text editor and the caller.
-// better to just make it uncontrolled, so what the user sees is ALWAYS correct.
+// <Markdown> = rendered markdown text (simple read only html)
+// <MarkdownEditor> = just the text editor which outputs markdown
+// <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
 
 // todo: autocomplete routes (events, songs) [[]]
 // todo: autocomplete mentions
@@ -24,71 +22,90 @@ import DoneIcon from '@mui/icons-material/Done';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 
-interface RichTextEditorProps {
-    initialValue: string, // value which may be coming from the database.
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const Markdown = (props: { markdown: string | null }) => {
+    const md = new MarkdownIt;
+    return <div className='renderedContent'>
+        <div dangerouslySetInnerHTML={{ __html: md.render(props.markdown || "") }}></div>
+    </div >;
+};
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface MarkdownEditorProps {
+    value: string | null, // value which may be coming from the database.
     onValueChanged: (val: string) => void, // caller can save the changed value to a db here.
+}
+
+export function MarkdownEditor(props: MarkdownEditorProps) {
+    const Item = ({ entity: { name, char } }) => <div>{`${name}: ${char}`}</div>;
+    const Loading = ({ data }) => <div>Loading</div>;
+
+    return (
+        <ReactTextareaAutocomplete
+            containerClassName="editorContainer"
+            loadingComponent={Loading}
+            //ref={rta => setRta(rta)}
+            //innerRef={textarea => setTa(textarea)}
+            containerStyle={{
+                //marginTop: 20,
+            }}
+            //movePopupAsYouType={true}
+            value={props.value || ""}
+            height={400}
+            onChange={props.onValueChanged}
+            minChar={0} // how many chars AFTER the trigger char you need to type before the popup arrives
+            trigger={{
+                "@": {
+                    dataProvider: token => {
+                        return [
+                            { name: "smile", char: "🙂" },
+                            { name: "heart", char: "❤️" }
+                        ];
+                    },
+                    component: Item,
+                    output: (item, trigger) => item.char
+                }
+            }}
+        />
+    );
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
+interface MarkdownControlProps {
+    initialValue: string | null, // value which may be coming from the database.
+    onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
     isSaving: boolean, // show the value as saving in progress
     debounceMilliseconds: number,
 }
 
-// we will control the value, but callers must treat as uncontrolled.
-interface RichTextEditorValueState {
-    markdown: string | null, // null indicates the value has'nt been set at all. don't call callbacks for example.
-    html: string,
-}
-
-function MarkdownToHTML(md: any, value: string): string {
-    return md.render(value);
-}
-
-
-export default function RichTextEditor(props: RichTextEditorProps) {
-    const [md, setMd] = React.useState<any>(null);
-    const [valueState, setValueState] = React.useState<RichTextEditorValueState>({
-        markdown: null,
-        html: "",
-    });
-
+export function MarkdownControl(props: MarkdownControlProps) {
+    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
+    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
     const [isDebouncing, setIsDebouncing] = React.useState<boolean>(false);
-    const debouncedMarkdown = useDebounce<string | null>(valueState.markdown, props.debounceMilliseconds); // 
+    const debouncedMarkdown = useDebounce<string | null>(valueState, props.debounceMilliseconds); // 
 
-    React.useEffect(() => {
-        const md2 = new MarkdownIt;
-        //console.log(`init richtexteditor with initial value ${props.initialValue}`);
-        setMd(md2);
-        setValueState({
-            markdown: props.initialValue,
-            html: md2.render(props.initialValue),
-        });
-    }, []);
-
-    // when debounced value changes, tell caller to commit.
-    React.useEffect(() => {
-        //console.log(`debouncedMarkdown changed to ${debouncedMarkdown}`);
+    const saveNow = () => {
         setIsDebouncing(false);
-        if (debouncedMarkdown !== null) {
-            //console.log(`calling onValueChanged with ${debouncedMarkdown}; ${typeof md}`);
-            if (props.onValueChanged) props.onValueChanged(debouncedMarkdown);
+        if (firstUpdate && debouncedMarkdown === props.initialValue) {
+            setFirstUpdate(false);
+            return; // avoid onchange when the control first loads and sets debounced state.
         }
-    }, [debouncedMarkdown]);
+        props.onValueChanged(debouncedMarkdown);
+    };
 
-    // raw onchange; set internal state for temp use while debouncing
+    React.useEffect(saveNow, [debouncedMarkdown]);
+
     const onChange = (e) => {
         const newval = e.target.value;
         setIsDebouncing(true);
-        console.assert(!!md);
-        setValueState({
-            markdown: newval,
-            html: md.render(newval),
-        });
+        setValueState(newval);
     };
 
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
-
-    const [rta, setRta] = React.useState();
-    const [ta, setTa] = React.useState();
-    const Item = ({ entity: { name, char } }) => <div>{`${name}: ${char}`}</div>;
-    const Loading = ({ data }) => <div>Loading</div>;
 
     return (
         <div className={`richTextContainer ${showingEditor ? "editMode" : ""}`}>
@@ -96,7 +113,6 @@ export default function RichTextEditor(props: RichTextEditorProps) {
             <div className='editControlsContainer'>
                 {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
                 {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Close</Button>}
-                {/* <Button startIcon={<DeleteIcon />}>Delete</Button> */}
                 {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
                     isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
                         <></>
@@ -105,47 +121,77 @@ export default function RichTextEditor(props: RichTextEditorProps) {
             </div>
 
             <div className='richTextContentContainer'>
+                {showingEditor && <MarkdownEditor value={valueState} onValueChanged={onChange} />}
+                <Markdown markdown={valueState} />
+            </div>
 
-                {showingEditor && (<>
-                    {/* <div className='editorContainer'> */}
-                    {/* <TextField className='input' multiline={true} value={valueState.markdown} onChange={onChange}></TextField> */}
-                    <ReactTextareaAutocomplete
-                        containerClassName="editorContainer"
-                        loadingComponent={Loading}
-                        ref={rta => setRta(rta)}
-                        //innerRef={textarea => setTa(textarea)}
-                        containerStyle={{
-                            marginTop: 20,
-                            width: 400,
-                            height: 100,
-                            margin: "20px auto"
-                        }}
-                        //movePopupAsYouType={true}
-                        value={valueState.markdown}
-                        onChange={onChange}
-                        minChar={0} // how many chars AFTER the trigger char you need to type before the popup arrives
-                        trigger={{
-                            "@": {
-                                dataProvider: token => {
-                                    return [
-                                        { name: "smile", char: "🙂" },
-                                        { name: "heart", char: "❤️" }
-                                    ];
-                                },
-                                component: Item,
-                                output: (item, trigger) => item.char
-                            }
-                        }}
-                    />
+        </div>
+    );
+}
 
-                    {/* </div> */}
-                </>
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
+// miraculously works with useQuery() as initial value. i don't understand how tbh.
+
+// similar to the "normal" markdown control
+// but
+// - single-line
+// - no preview
+// - tiny edit button next to value
+interface CompactMarkdownControlProps {
+    initialValue: string | null, // value which may be coming from the database.
+    onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
+    isSaving: boolean, // show the value as saving in progress
+    debounceMilliseconds: number,
+}
+
+export function CompactMarkdownControl(props: CompactMarkdownControlProps) {
+    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
+    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
+    const [isDebouncing, setIsDebouncing] = React.useState<boolean>(false);
+    const debouncedMarkdown = useDebounce<string | null>(valueState, props.debounceMilliseconds); // 
+
+    const saveNow = () => {
+        setIsDebouncing(false);
+        if (firstUpdate && debouncedMarkdown === props.initialValue) {
+            setFirstUpdate(false);
+            return; // avoid onchange when the control first loads and sets debounced state.
+        }
+        props.onValueChanged(debouncedMarkdown);
+    };
+
+    React.useEffect(saveNow, [debouncedMarkdown]);
+
+    const onChange = (e) => {
+        console.log(`onchange`);
+        const newval = e.target.value;
+
+        setIsDebouncing(true);
+        setValueState(newval);
+    };
+
+    const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
+
+    return (
+        <div className={`compactMarkdownControl ${showingEditor ? "editMode" : ""}`}>
+
+            <div className='editControlsContainer'>
+                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
+                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { saveNow(); setShowingEditor(!showingEditor) }} >Close</Button>}
+                {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+                    isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
+                        <></>
+                    )
                 )}
-                <div className='renderedContent'>
-                    <div dangerouslySetInnerHTML={{ __html: valueState.html }}></div>
+            </div>
 
-
-                </div >
+            <div className='richTextContentContainer'>
+                {showingEditor && <MarkdownEditor value={valueState} onValueChanged={onChange} />}
+                <Markdown markdown={valueState} />
             </div>
 
         </div>

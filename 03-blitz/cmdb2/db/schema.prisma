@@ -17,7 +17,6 @@
 
 // do not try to change site behavior based on signifacance or classification; then use a dedicated field like eventType rather than tagging as rehearsal / concert.
 
-
 // journals...
 // i think stuff like events should have a timeline with things like "arnold approved this on 4/8" or whatever. that can be derived i guess. but it means attaching dates to things.
 
@@ -471,14 +470,14 @@ model EventSongListSong {
 
 // things like yes, no, not-sure-yes, not-sure-no, partially
 model EventAttendance {
-  id          Int     @id @default(autoincrement())
-  sortOrder   Int     @default(0)
-  text        String // generic button text ("yes", "probably")
-  personalText String @default("")// more personal text explanation ("you are going", "you are probably going")
-  description String  @default("") // explanation
-  color       String?
-  strength    Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
-  isDeleted   Boolean @default(false)
+  id           Int     @id @default(autoincrement())
+  sortOrder    Int     @default(0)
+  text         String // generic button text ("yes", "probably")
+  personalText String  @default("") // more personal text explanation ("you are going", "you are probably going")
+  description  String  @default("") // explanation
+  color        String?
+  strength     Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
+  isDeleted    Boolean @default(false)
 
   responses EventSegmentUserResponse[]
 }
@@ -591,6 +590,3 @@ model FileInstrumentTag {
 
   @@unique([fileId, instrumentId]) // 
 }
-
-
-
