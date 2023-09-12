@@ -10,6 +10,8 @@ export type DebounceResult<T> = [
     DebounceInfo<T>,
 ];
 
+// uses useEffect's comparator which only works at root level. so it won't work for array contents or object fields for example.
+// for arrays use useDebounceArray
 export function useDebounce<T>(value: T, delay?: number): DebounceResult<T> {
     const [debouncedValue, setDebouncedValue] = useState<T>(value)
     const [isDebouncing, setIsDebouncing] = useState<boolean>(false);
@@ -26,13 +28,42 @@ export function useDebounce<T>(value: T, delay?: number): DebounceResult<T> {
             setIsDebouncing(false);
             clearTimeout(timer);
         }
-    }, [value, delay])
+    }, [delay, value])
 
     return [
         debouncedValue,
         { isDebouncing },
     ];
-}
+};
+
+
+
+export function useDebounceArray<TValue>(valueArray: TValue[], delay?: number): DebounceResult<TValue[]> {
+    const [debouncedValue, setDebouncedValue] = useState<TValue[]>(valueArray);
+    const [isDebouncing, setIsDebouncing] = useState<boolean>(false);
+
+    useEffect(() => {
+        setIsDebouncing(true);
+        const timer = setTimeout(() => {
+            setIsDebouncing(false);
+            setDebouncedValue(valueArray)
+        },
+            delay || 500);
+
+        return () => {
+            setIsDebouncing(false);
+            clearTimeout(timer);
+        }
+    }, [delay, ...valueArray])
+
+    return [
+        debouncedValue,
+        { isDebouncing },
+    ];
+};
+
+
+
 
 // convert a non-debounced value to debounced.
 // then you can use useEffect() on the debounced value to trigger a change event.

@@ -3,6 +3,9 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeCreatedAtField, PKField, TagsField } from "../db3basicFields";
 import { xTable } from "../db3core";
+import { gGeneralPaletteList } from "shared/color";
+import { xInstrument } from "./instrument";
+import { TAnyModel } from "shared/utils";
 
 
 //   model RolePermission {
@@ -125,6 +128,7 @@ export const xRolePermissionAssociation = new xTable({
     ]
 });
 
+////////////////////////////////////////////////////////////////
 const RoleLocalInclude: Prisma.RoleInclude = {
     permissions: {
         include: {
@@ -206,13 +210,106 @@ export const xRole = new xTable({
 });
 
 
+
+
+
+
+////////////////////////////////////////////////////////////////
+export type UserInstrumentModel = Prisma.UserInstrumentGetPayload<{
+    include: {
+        instrument: {
+            include: {
+                functionalGroup: true,
+                instrumentTags: {
+                    include: {
+                        tag: true,
+                    }
+                }
+            }
+        },
+        user: true,
+    }
+}>;
+
+// not sure this is needed or used at all.
+const UserInstrumentInclude: Prisma.UserInstrumentInclude = {
+    instrument: {
+        include: {
+            functionalGroup: true,
+            instrumentTags: {
+                include: {
+                    tag: true,
+                }
+            }
+        }
+    },
+    user: true,
+};
+
+const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
+    { instrument: { sortOrder: 'desc' } },
+    { instrument: { name: 'asc' } },
+    { instrument: { id: 'asc' } },
+];
+export const xUserInstrument = new xTable({
+    tableName: "UserInstrument",
+    editPermission: Permission.login,
+    viewPermission: Permission.login,
+    localInclude: UserInstrumentInclude,
+    naturalOrderBy: UserInstrumentNaturalOrderBy,
+    getRowInfo: (row: UserInstrumentModel) => {
+        return {
+            name: row.instrument.name,
+            description: row.instrument.description,
+            color: gGeneralPaletteList.findEntry(row.instrument.functionalGroup.color),
+        };
+    }
+    ,
+    columns: [
+        new PKField({ columnName: "id" }),
+        new ForeignSingleField<Prisma.UserInstrumentGetPayload<{}>>({ // tags field should include the foreign object (tag object)
+            columnName: "instrument",
+            fkMember: "instrumentId",
+            allowNull: false,
+            foreignTableSpec: xInstrument,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        // don't include local object because of dependencies / redundancy issues
+    ]
+});
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////
 export const UserLocalInclude: Prisma.UserInclude = {
     role: true,
+    instruments: {
+        include: UserInstrumentInclude,
+    },
 };
 
 export type UserPayload = Prisma.UserGetPayload<{
     include: {
         role: true,
+        instruments: {
+            include: {
+                instrument: {
+                    include: {
+                        functionalGroup: true,
+                        instrumentTags: {
+                            include: {
+                                tag: true,
+                            }
+                        }
+                    }
+                },
+                user: true,
+            }
+        }
     }
 }>;
 
@@ -230,6 +327,14 @@ export const xUser = new xTable({
     getRowInfo: (row: UserPayload) => ({
         name: row.name,
     }),
+    getParameterizedWhereClause: (params: { userId?: number }): (Prisma.UserWhereInput[] | false) => {
+        if (params.userId != null) {
+            return [{
+                id: { equals: params.userId }
+            }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         new GenericStringField({
@@ -284,5 +389,14 @@ export const xUser = new xTable({
             allowNull: true,
         }),
         MakeCreatedAtField("createdAt"),
-    ]
+        new TagsField<UserInstrumentModel>({
+            columnName: "instruments",
+            associationForeignIDMember: "instrumentId",
+            associationForeignObjectMember: "instrument",
+            associationLocalIDMember: "userId",
+            associationLocalObjectMember: "user",
+            associationTableSpec: xUserInstrument,
+            foreignTableSpec: xInstrument,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),]
 });

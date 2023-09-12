@@ -11,7 +11,22 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
 
   const user = await db.user.findFirst({
     where: { id: session.userId },
-    include: { role: { include: { permissions: { include: { permission: true } } } } }
+    include: {
+      instruments: {
+        include: {
+          instrument: true,
+        }
+      },
+      role: {
+        include: {
+          permissions: {
+            include: {
+              permission: true
+            }
+          }
+        }
+      }
+    }
   });
 
   return user;

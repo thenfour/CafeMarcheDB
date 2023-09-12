@@ -221,7 +221,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
     }, []);
 
     return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
-        {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.args.renderAsChip!({
+        {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
             value,
             colorVariant: "strong",
             onDelete: () => {
@@ -316,6 +316,7 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
 export interface TagsFieldClientArgs<TAssociation> {
     columnName: string;
     cellWidth: number;
+    allowDeleteFromCell: boolean,
 
     renderAsChip?: (args: DB3Client.RenderAsChipParams<TAssociation>) => React.ReactElement;
 
@@ -327,6 +328,16 @@ export interface TagsFieldClientArgs<TAssociation> {
 export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     typedSchemaColumn: db3.TagsField<TAssociation>;
     args: TagsFieldClientArgs<TAssociation>;
+
+    renderAsChipForCell(args: DB3Client.RenderAsChipParams<TAssociation>) {
+        if (this.args.allowDeleteFromCell) {
+            console.log(`rendering with delete`);
+            return this.args.renderAsChip!(args);
+        }
+
+        console.log(`rendering without delete`);
+        return this.args.renderAsChip!({ ...args, onDelete: undefined });
+    };
 
     // convenience
     get associationLocalIDMember() {
@@ -344,37 +355,11 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
             width: args.cellWidth,
         });
         this.args = args;
+        if (this.args.allowDeleteFromCell === undefined) this.args.allowDeleteFromCell = true;
     }
 
     defaultRenderAsChip = (args: DB3Client.RenderAsChipParams<TAssociation>) => {
         return DefaultRenderAsChip({ ...args, columnSchema: this.typedSchemaColumn });
-        // if (!args.value) {
-        //     return <>--</>;
-        // }
-        // const rowInfo = this.typedSchemaColumn.associationTableSpec.getRowInfo(args.value);
-        // const style: React.CSSProperties = {};
-        // const color = rowInfo.color;
-        // if (color != null) {
-        //     if (args.colorVariant === "strong") {
-        //         style.backgroundColor = color.strongValue;
-        //         style.color = color.strongContrastColor;
-        //         style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
-        //     } else {
-        //         style.backgroundColor = color.weakValue;
-        //         style.color = color.weakContrastColor;
-        //         style.border = `1px solid ${color.weakOutline ? color.weakContrastColor : color.weakValue}`;
-        //     }
-        // }
-
-        // return <Chip
-        //     className="cmdbChip"
-        //     style={style}
-        //     size="small"
-        //     label={rowInfo.name}
-        //     onDelete={args.onDelete}
-        //     clickable={!!args.onClick}
-        //     onClick={(e) => args.onClick!}
-        // />;
     };
 
     defaultRenderAsListItem = (props, value, selected) => {
@@ -394,12 +379,9 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         this.typedSchemaColumn = this.schemaColumn as db3.TagsField<TAssociation>;
 
         if (!this.args.renderAsChip) {
-            // create a default renderer.
             this.args.renderAsChip = (args: DB3Client.RenderAsChipParams<TAssociation>) => this.defaultRenderAsChip(args);
-            // (props: React.HTMLAttributes<HTMLLIElement>, value: TAssociation, selected: boolean)
         }
         if (!this.args.renderAsListItem) {
-            // create a default renderer.
             this.args.renderAsListItem = (props, value, selected) => this.defaultRenderAsListItem(props, value, selected);
         }
 
@@ -407,19 +389,9 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
             renderCell: (params: GridRenderCellParams) => {
                 return <TagsView
                     associationForeignIDMember={this.typedSchemaColumn.associationForeignIDMember}
-                    renderAsChip={this.args.renderAsChip!}
+                    renderAsChip={this.renderAsChipForCell}
                     value={params.value}
                 />;
-                // const value: TAssociation[] = params.value;
-                // return <div className='MuiDataGrid-cellContent NoMaxHeight'>{
-                //     value.slice(0, gMaxVisibleTags).map(a => {
-                //         return <React.Fragment key={a[this.typedSchemaColumn.associationForeignIDMember]}>
-                //             {this.args.renderAsChip!({ value: a, })}
-                //         </React.Fragment>;
-                //     })
-                // }
-                //     {(value.length >= gMaxVisibleTags) && <div></div>}
-                // </div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.typedSchemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });

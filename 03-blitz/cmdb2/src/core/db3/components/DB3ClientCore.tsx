@@ -173,6 +173,10 @@ export class xTableRenderClient {
         return this.tableSpec.args.columns;
     }
 
+    getColumn(name: string) {
+        return this.tableSpec.getColumn(name);
+    }
+
     constructor(args: xTableClientArgs) {
         this.tableSpec = args.tableSpec;
         this.args = args;
@@ -240,11 +244,13 @@ export class xTableRenderClient {
         this.clientColumns.forEach(col => {
             col.schemaColumn.ApplyClientToDb(row, updateModel, "update");
         });
-        return await this.mutateFn({
+        const ret = await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             updateModel,
             updateId: row[this.schema.pkMember],
         });
+        this.refetch();
+        return ret;
     };
 
     doInsertMutation = async (row: TAnyModel) => {
