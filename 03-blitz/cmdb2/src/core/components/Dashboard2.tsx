@@ -9,6 +9,8 @@ import {
     MusicNoteOutlined as MusicNoteOutlinedIcon,
     Settings as SettingsIcon
 } from '@mui/icons-material';
+import CommentIcon from '@mui/icons-material/Comment';
+import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
@@ -18,15 +20,13 @@ import SecurityIcon from '@mui/icons-material/Security';
 import { AppBar, Avatar, Badge, Box, Button, Divider, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import { alpha, styled, useTheme } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
-import CommentIcon from '@mui/icons-material/Comment';
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 
 const drawerWidth = 260;
 
@@ -83,7 +83,7 @@ const AppBarUserIcon_MenuItems = () => {
 
 const AppBarUserIcon_Desktop = () => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const currentUser = useCurrentUser();
+    const [currentUser] = useCurrentUser();
 
     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -268,7 +268,7 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
 const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon /> },
     { type: "link", path: "/backstage/comingEvents", linkCaption: "Coming events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "link", path: "/backstage/pastEvents", linkCaption: "Past events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/eventList", linkCaption: "Event List", renderIcon: () => <CalendarMonthOutlinedIcon /> },
     { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
     { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon /> },
     { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
@@ -361,6 +361,7 @@ const Dashboard2 = ({ children }) => {
                         {
                             gMenuItems.map((item, index) => <MenuItemComponent key={index} item={item} />)
                         }
+                        <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
                     </List>
                 </Drawer>
                 <Box sx={{

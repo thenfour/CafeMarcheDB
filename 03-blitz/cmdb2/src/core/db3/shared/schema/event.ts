@@ -268,6 +268,8 @@ const EventInclude: Prisma.EventInclude = {
     },
 };
 
+export type EventPayloadMinimum = Prisma.EventGetPayload<{}>;
+
 export type EventPayload = Prisma.EventGetPayload<{
     include: {
         status: true,
@@ -289,6 +291,8 @@ export type EventPayload = Prisma.EventGetPayload<{
         }
     }
 }>;
+
+
 
 export interface DateRangeInfo {
     formattedDateRange: string;

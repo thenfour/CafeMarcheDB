@@ -5,13 +5,7 @@ import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CompactMarkdownControl, MarkdownControl } from "./RichTextEditor";
 
-/*
-
-let's take event attendance response as an example;
-the snackbar, the debouncing, and markdown control i kinda want to be encapsulated
-
-*/
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MutationMarkdownControlProps {
     initialValue: string | null,
     refetch: () => void,
@@ -42,6 +36,7 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
 };
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // same but compact single-line version
 interface CompactMutationMarkdownControlProps {
     initialValue: string | null,
@@ -78,6 +73,7 @@ export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownCon
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface SettingMarkdownProps {
     settingName: string,
 };

@@ -34,7 +34,7 @@ const LoginSignup = () => {
 };
 
 const DashboardLayout2 = ({ children }) => {
-    const currentUser = useCurrentUser();
+    const [currentUser] = useCurrentUser();
     //const isAuthorized = useAuthorization("DashboardLayout2", Permission.can_edit_users);
 
     return <Dashboard2>

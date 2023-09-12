@@ -1,21 +1,40 @@
 // https://usehooks-ts.com/react-hook/use-debounce
 import { useEffect, useState } from 'react'
 
-export default function useDebounce<T>(value: T, delay?: number): T {
+export interface DebounceInfo<T> {
+    isDebouncing: boolean;
+};
+
+export type DebounceResult<T> = [
+    T,
+    DebounceInfo<T>,
+];
+
+export function useDebounce<T>(value: T, delay?: number): DebounceResult<T> {
     const [debouncedValue, setDebouncedValue] = useState<T>(value)
+    const [isDebouncing, setIsDebouncing] = useState<boolean>(false);
 
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedValue(value), delay || 500)
+        setIsDebouncing(true);
+        const timer = setTimeout(() => {
+            setIsDebouncing(false);
+            setDebouncedValue(value)
+        },
+            delay || 500);
 
         return () => {
-            clearTimeout(timer)
+            setIsDebouncing(false);
+            clearTimeout(timer);
         }
     }, [value, delay])
 
-    return debouncedValue
+    return [
+        debouncedValue,
+        { isDebouncing },
+    ];
 }
 
-// use useDebounce() to convert a non-debounced value to debounced.
+// convert a non-debounced value to debounced.
 // then you can use useEffect() on the debounced value to trigger a change event.
 //
 // const debouncedHtml = useDebounce<string>(html || "", 500);

@@ -32,6 +32,12 @@
     color: var(--strong-contrast-color);
 }
 
+/* for button groups (attendance control) border stuff gets unsightly */
+.applyColor-strong-noBorder.notSelected {
+    background-color: white;
+    color: var(--weak-contrast-color);
+}
+
 .applyColor-weak {
     background-color: var(--weak-color);
     color: var(--weak-contrast-color);

@@ -4,7 +4,7 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Alert, Button, ButtonGroup, Chip } from "@mui/material";
-import { EventAttendanceResponseInput, EventAttendanceResponseInput2, EventCalendarMonth, EventSummary } from "src/core/components/CMMockupComponents";
+import { EventAttendanceResponseInput, EventAttendanceResponseInput2, EventSummary } from "src/core/components/CMMockupComponents";
 import CheckIcon from '@mui/icons-material/Check';
 import PlaceIcon from '@mui/icons-material/Place';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';

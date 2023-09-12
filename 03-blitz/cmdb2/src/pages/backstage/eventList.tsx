@@ -51,7 +51,7 @@ import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
 // therefore: no calendars for the moment.
 
 const MainContent = () => {
-    if (!useAuthorization("events page", Permission.view_events)) {
+    if (!useAuthorization("eventList", Permission.view_events)) {
         throw new Error(`unauthorized`);
     }
     return (
@@ -77,7 +77,7 @@ const MainContent = () => {
 
 const PastEventsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Events">
+        <DashboardLayout title="Event List">
             <MainContent />
         </DashboardLayout>
     )

@@ -9,18 +9,21 @@
 // todo: paste attachments
 // todo: drop attachments
 
-import {
-    DeleteOutlined as DeleteIcon,
-    Edit as EditIcon
-} from '@mui/icons-material';
+// import {
+//     DeleteOutlined as DeleteIcon,
+//     Edit as EditIcon
+// } from '@mui/icons-material';
 import { Box, Button, ButtonGroup, CircularProgress, TextField } from "@mui/material";
 import MarkdownIt from 'markdown-it';
 import React from "react";
-import useDebounce from "shared/useDebounce";
+//import useDebounce from "shared/useDebounce";
+import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
+import { useDebounce } from "shared/useDebounce";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const Markdown = (props: { markdown: string | null }) => {
@@ -72,6 +75,64 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     );
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible. external / internal values are different.
+// the "value" is used in a react.useEffect() so for isEqual() functionality just comply with that.
+interface DebouncedControlProps {
+    initialValue: any, // value which may be coming from the database.
+    onValueChanged: (value) => void, // caller can save the changed value to a db here.
+    isSaving: boolean, // show the value as saving in progress
+    debounceMilliseconds?: number,
+    className?: string,
+    render: (showingEditor: boolean, value, onChange: (value) => void) => React.ReactElement,
+}
+
+export function DebouncedControl(props: DebouncedControlProps) {
+    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
+    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
+    //const [isDebouncing, setIsDebouncing] = React.useState<boolean>(false);
+    const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
+
+    const saveNow = () => {
+        //setIsDebouncing(false);
+        console.log(`saving now: debouncing=false`);
+        if (firstUpdate && debouncedValue === props.initialValue) {
+            setFirstUpdate(false);
+            return; // avoid onchange when the control first loads and sets debounced state.
+        }
+        props.onValueChanged(debouncedValue);
+    };
+
+    React.useEffect(saveNow, [debouncedValue]);
+
+    const onChange = (value) => {
+        //setIsDebouncing(true);
+        console.log(`onChange: debouncing=true`);
+        setValueState(value);
+    };
+
+    const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
+
+    // richTextContainer
+    return (
+        <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
+            <div className='editControlsContainer'>
+                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
+                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Close</Button>}
+                {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+                    isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
+                        <></>
+                    )
+                )}
+            </div>
+            {props.render(showingEditor, valueState, onChange)}
+        </div>
+    );
+}
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
@@ -83,51 +144,24 @@ interface MarkdownControlProps {
 }
 
 export function MarkdownControl(props: MarkdownControlProps) {
-    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
-    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
-    const [isDebouncing, setIsDebouncing] = React.useState<boolean>(false);
-    const debouncedMarkdown = useDebounce<string | null>(valueState, props.debounceMilliseconds); // 
-
-    const saveNow = () => {
-        setIsDebouncing(false);
-        if (firstUpdate && debouncedMarkdown === props.initialValue) {
-            setFirstUpdate(false);
-            return; // avoid onchange when the control first loads and sets debounced state.
-        }
-        props.onValueChanged(debouncedMarkdown);
-    };
-
-    React.useEffect(saveNow, [debouncedMarkdown]);
-
-    const onChange = (e) => {
-        const newval = e.target.value;
-        setIsDebouncing(true);
-        setValueState(newval);
-    };
-
-    const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
-
-    return (
-        <div className={`richTextContainer ${showingEditor ? "editMode" : ""}`}>
-
-            <div className='editControlsContainer'>
-                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
-                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Close</Button>}
-                {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
-                    isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
-                        <></>
-                    )
-                )}
+    return <DebouncedControl
+        debounceMilliseconds={props.debounceMilliseconds}
+        initialValue={props.initialValue}
+        isSaving={props.isSaving}
+        onValueChanged={props.onValueChanged}
+        className="richTextContainer"
+        render={(showingEditor, value, onChange) => {
+            return <div className='richTextContentContainer'>
+                {showingEditor && <MarkdownEditor value={value} onValueChanged={onChange} />}
+                <Markdown markdown={value} />
             </div>
 
-            <div className='richTextContentContainer'>
-                {showingEditor && <MarkdownEditor value={valueState} onValueChanged={onChange} />}
-                <Markdown markdown={valueState} />
-            </div>
-
-        </div>
-    );
+        }}
+    />;
 }
+
+
+
 
 
 
@@ -135,8 +169,6 @@ export function MarkdownControl(props: MarkdownControlProps) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
-// miraculously works with useQuery() as initial value. i don't understand how tbh.
-
 // similar to the "normal" markdown control
 // but
 // - single-line
@@ -150,51 +182,18 @@ interface CompactMarkdownControlProps {
 }
 
 export function CompactMarkdownControl(props: CompactMarkdownControlProps) {
-    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
-    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
-    const [isDebouncing, setIsDebouncing] = React.useState<boolean>(false);
-    const debouncedMarkdown = useDebounce<string | null>(valueState, props.debounceMilliseconds); // 
-
-    const saveNow = () => {
-        setIsDebouncing(false);
-        if (firstUpdate && debouncedMarkdown === props.initialValue) {
-            setFirstUpdate(false);
-            return; // avoid onchange when the control first loads and sets debounced state.
-        }
-        props.onValueChanged(debouncedMarkdown);
-    };
-
-    React.useEffect(saveNow, [debouncedMarkdown]);
-
-    const onChange = (e) => {
-        console.log(`onchange`);
-        const newval = e.target.value;
-
-        setIsDebouncing(true);
-        setValueState(newval);
-    };
-
-    const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
-
-    return (
-        <div className={`compactMarkdownControl ${showingEditor ? "editMode" : ""}`}>
-
-            <div className='editControlsContainer'>
-                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
-                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { saveNow(); setShowingEditor(!showingEditor) }} >Close</Button>}
-                {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
-                    isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
-                        <></>
-                    )
-                )}
+    return <DebouncedControl
+        debounceMilliseconds={props.debounceMilliseconds}
+        initialValue={props.initialValue}
+        isSaving={props.isSaving}
+        onValueChanged={props.onValueChanged}
+        className="richTextContainer compactMarkdownControl"
+        render={(showingEditor, value, onChange) => {
+            return <div className='richTextContentContainer'>
+                {showingEditor && <MarkdownEditor value={value} onValueChanged={onChange} />}
+                <Markdown markdown={value} />
             </div>
 
-            <div className='richTextContentContainer'>
-                {showingEditor && <MarkdownEditor value={valueState} onValueChanged={onChange} />}
-                <Markdown markdown={valueState} />
-            </div>
-
-        </div>
-    );
-}
-
+        }}
+    />;
+};

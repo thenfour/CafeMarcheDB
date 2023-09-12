@@ -26,6 +26,7 @@ export enum Permission {
     view_instruments = "view_instruments",
 
     change_own_password = "change_own_password",
+    change_own_userInfo = "change_own_userInfo",
 
     associate_instrument_tags = "associate_instrument_tags",
     associate_song_tags = "associate_song_tags",

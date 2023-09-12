@@ -6,9 +6,8 @@ import { CalculateOrderBy, CalculateWhereClause } from "./DB3Client";
 import { TAnyModel } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import db3queries from "./queries/db3queries";
-import db3eventMutations from "./mutations/updateUserEventSegmentAttendanceMutation";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TupdateUserEventSegmentAttendanceCommentMutationArgs, TupdateUserEventSegmentAttendanceMutationArgs, UpdateUserEventSegmentAttendanceMutationArgs } from "./shared/apiTypes";
+import { TupdateUserEventSegmentAttendanceCommentMutationArgs, TupdateUserEventSegmentAttendanceMutationArgs } from "./shared/apiTypes";
 import updateUserEventSegmentAttendanceCommentMutation from "./mutations/updateUserEventSegmentAttendanceCommentMutation";
 
 
@@ -96,7 +95,17 @@ export class EventsAPI {
         return i;
     }
 
+    getURIForEvent(eventOrEventIdOrSlug: number | string | db3.EventPayloadMinimum) {
+        if (typeof eventOrEventIdOrSlug === 'object') {
+            if (eventOrEventIdOrSlug.slug) {
+                return `/backstage/event/${eventOrEventIdOrSlug.slug}`;
+            }
+        }
+        return `/backstage/event/${eventOrEventIdOrSlug}`;
+    }
+
     updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
+
     updateUserEventSegmentAttendanceComment = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceCommentMutationArgs, typeof updateUserEventSegmentAttendanceCommentMutation>(updateUserEventSegmentAttendanceCommentMutation);
 };
 

@@ -12,8 +12,6 @@ export default resolver.pipe(
     resolver.authorize("updateUserEventSegmentAttendanceCommentMutation", Permission.login),
     async (args: TupdateUserEventSegmentAttendanceCommentMutationArgs, ctx: AuthenticatedMiddlewareCtx) => {
 
-        console.log(`omg`);
-
         const existing = await db.eventSegmentUserResponse.findFirst({
             where: {
                 userId: args.userId,

@@ -10,7 +10,7 @@ import { EventDetail } from "src/core/components/CMMockupComponents";
 
 const MyComponent = () => {
     const params = useParams();
-    if (!useAuthorization(`event page: ${params.slug}`, Permission.view_events)) {
+    if (!useAuthorization(`event page: ${params.idOrSlug}`, Permission.view_events)) {
         throw new Error(`unauthorized`);
     }
     //return <div>{params.slug} - todo: show breadcrumbs of some sort</div>;
@@ -27,12 +27,12 @@ const MyComponent = () => {
         <Link
             underline="hover"
             color="inherit"
-            href="/backstage/instruments"
+            href="/backstage/events"
             sx={{ display: 'flex', alignItems: 'center' }}
         >
-            Instruments
+            Events
         </Link>
-        <Typography color="text.primary">{params.slug}</Typography>
+        <Typography color="text.primary">{params.idOrSlug}</Typography>
     </Breadcrumbs>
         <EventDetail />
     </div>
@@ -42,7 +42,7 @@ const MyComponent = () => {
 
 const EventPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument">
+        <DashboardLayout title="Event">
             <MyComponent></MyComponent>
         </DashboardLayout>
     )

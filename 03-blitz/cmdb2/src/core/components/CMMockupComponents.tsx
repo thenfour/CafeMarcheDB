@@ -376,6 +376,8 @@ export const EventDetail = () => {
                 Who's coming?
             </caption>
             <thead>
+            </thead>
+            <tbody>
                 <tr>
                     <th>Name</th>
                     <th>Instrument</th>
@@ -383,8 +385,6 @@ export const EventDetail = () => {
                     <th>Saturday</th>
                     <th>Sunday</th>
                 </tr>
-            </thead>
-            <tbody>
                 <tr>
                     <td>Carl</td>
                     <td>Flute, bass ++</td>
@@ -448,17 +448,20 @@ export const EventDetail = () => {
 
 
         <table className='viability'>
-            <thead>
-                <th>Function</th>
-                <th>going</th>
-                <th>not going</th>
-                <th>no answer</th>
-            </thead>
             <tbody>
-                <td>Flute</td>
-                <td>3</td>
-                <td>1</td>
-                <td>1</td>
+                <tr>
+                    <th>Function</th>
+                    <th>going</th>
+                    <th>not going</th>
+                    <th>no answer</th>
+                </tr>
+                <tr>
+
+                    <td>Flute</td>
+                    <td>3</td>
+                    <td>1</td>
+                    <td>1</td>
+                </tr>
             </tbody>
         </table>
 

@@ -196,6 +196,21 @@ div.chipContainer.validationSuccess {
   margin: 10px 0 17px 38px;
 }
 
+.cmcard.event {
+  max-width: 800px;
+}
+
+.cmcardList-vertical {
+  display: flex;
+  flex-direction: column;
+}
+
+/* when displaying in a vertical list, it looks messy if cards are different widths */
+.cmcardList-vertical .cmcard {
+  width: unset;
+  min-width: none;
+}
+
 .cmcard .cardContent {
   display: flex;
   /* height: 100%; */
@@ -734,3 +749,5 @@ put spacing.*/
 .cmalert {
   margin-bottom: 15px;
 }
+
+.MuiButton-root.selected {}
