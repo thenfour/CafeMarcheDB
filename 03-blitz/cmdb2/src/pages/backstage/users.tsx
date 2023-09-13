@@ -66,7 +66,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
         new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
         new DB3Client.BoolColumnClient({ columnName: "isActive" }),
-        new DB3Client.TagsFieldClient<db3.UserInstrumentModel>({ columnName: "instruments", cellWidth: 150 }),
+        new DB3Client.TagsFieldClient<db3.UserInstrumentModel>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
         new DB3Client.ForeignSingleFieldClient({
             columnName: "role",
             cellWidth: 180,

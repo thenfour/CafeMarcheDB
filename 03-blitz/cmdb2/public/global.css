@@ -744,10 +744,27 @@ div.chipContainer.validationSuccess {
   background-color: #eee;
 }
 
-/* by default multiple <Alert> have no space between. considering we're putting a lot in each alert, and each alert is for a distinctly different context,
-put spacing.*/
 .cmalert {
+  /* by default multiple <Alert> have no space between. considering we're putting a lot in each alert, and each alert is for a distinctly different context,
+put spacing.*/
   margin-bottom: 15px;
+
+  /* when placing an alert directly on the page (not a white surface), make it pop out more*/
+  border: 1px solid #f004;
 }
 
 .MuiButton-root.selected {}
+
+.EditableTextControl .valueContainer {
+
+  /* your profile page, the fields there need to have relative position so inputlabels are positioned correctly. */
+  position: relative;
+}
+
+
+/* your profile fields */
+.formFieldContainer {
+  border: 1px solid black;
+  margin: 4px;
+  padding: 3px 5px;
+}

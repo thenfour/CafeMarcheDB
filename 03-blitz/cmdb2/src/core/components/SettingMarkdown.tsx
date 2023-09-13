@@ -20,6 +20,7 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onValueChanged = (newValue: string | null) => {
+        console.log(`MutationMarkdownControl: onValueChanged ${newValue}`);
         setIsSaving(true);
         props.onChange(newValue).then(x => {
             showSnackbar({ severity: "success", children: props.successMessage || "Updated" });
@@ -32,7 +33,12 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
         });
     };
 
-    return <MarkdownControl initialValue={props.initialValue || ""} isSaving={isSaving} onValueChanged={onValueChanged} debounceMilliseconds={props.debounceMilliseconds || 1200} />;
+    return <MarkdownControl
+        initialValue={props.initialValue || ""}
+        isSaving={isSaving}
+        onValueChanged={onValueChanged}
+        debounceMilliseconds={props.debounceMilliseconds || 1200}
+    />;
 };
 
 
@@ -85,6 +91,7 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
         initialValue={initialValue}
         refetch={refetch}
         onChange={async (newValue) => {
+            console.log(`settingmarkdown onchange: ${newValue}`);
             await updateSetting({ name: props.settingName, value: newValue });
         }}
     />;

@@ -57,7 +57,10 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             //movePopupAsYouType={true}
             value={props.value || ""}
             height={400}
-            onChange={props.onValueChanged}
+            onChange={(e) => {
+                console.log(`MarkdownEditor onchange ${e.target.value}`);
+                props.onValueChanged(e.target.value);
+            }}
             minChar={0} // how many chars AFTER the trigger char you need to type before the popup arrives
             trigger={{
                 "@": {
@@ -78,6 +81,102 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible. external / internal values are different.
 // the "value" is used in a react.useEffect() so for isEqual() functionality just comply with that.
+
+// this version allows complete control over rendering by passing a render function.
+// another approach would allow rendering using a react context and child components. but meh that's more verbose and complex plumbing than this
+export interface DebouncedControlCustomRenderArgs {
+    isSaving: boolean;
+    isDebouncing: boolean;
+    value: any;
+    onChange: (value: any) => void;
+};
+
+export interface DebouncedControlCustomRenderProps {
+    initialValue: any, // value which may be coming from the database.
+    onValueChanged: (value) => void, // caller can save the changed value to a db here.
+    isSaving: boolean, // show the value as saving in progress
+    debounceMilliseconds?: number,
+    render: (args: DebouncedControlCustomRenderArgs) => React.ReactElement,
+}
+
+// here we let callers completely customize rendering with nested callbacks.
+// this calls props.onRender()
+export function DebouncedControlCustomRender(props: DebouncedControlCustomRenderProps) {
+    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
+    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
+    const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
+
+    const saveNow = () => {
+        if (firstUpdate && debouncedValue === props.initialValue) {
+            setFirstUpdate(false);
+            return; // avoid onchange when the control first loads and sets debounced state.
+        }
+        props.onValueChanged(debouncedValue);
+    };
+
+    React.useEffect(saveNow, [debouncedValue]);
+
+    return props.render({
+        isSaving: props.isSaving,
+        isDebouncing,
+        value: valueState,
+        onChange: (value) => { setValueState(value) },
+    });
+};
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interface DebouncedControlProps {
+//     initialValue: any, // value which may be coming from the database.
+//     onValueChanged: (value) => void, // caller can save the changed value to a db here.
+//     isSaving: boolean, // show the value as saving in progress
+//     debounceMilliseconds?: number,
+//     className?: string,
+//     render: (showingEditor: boolean, value, onChange: (value) => void) => React.ReactElement,
+// }
+
+// export function DebouncedControl(props: DebouncedControlProps) {
+//     const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
+//     const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
+//     const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
+
+//     const saveNow = () => {
+//         console.log(`saving now: debouncing=false`);
+//         if (firstUpdate && debouncedValue === props.initialValue) {
+//             setFirstUpdate(false);
+//             return; // avoid onchange when the control first loads and sets debounced state.
+//         }
+//         props.onValueChanged(debouncedValue);
+//     };
+
+//     React.useEffect(saveNow, [debouncedValue]);
+
+//     const onChange = (value) => {
+//         console.log(`onChange: debouncing=true`);
+//         setValueState(value);
+//     };
+
+//     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
+
+//     return (
+//         <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
+//             <div className='editControlsContainer'>
+//                 {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
+//                 {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Close</Button>}
+//                 {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+//                     isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
+//                         <></>
+//                     )
+//                 )}
+//             </div>
+//             {props.render(showingEditor, valueState, onChange)}
+//         </div>
+//     );
+// }
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// debounce control with default rendering (edit button, save progress)
 interface DebouncedControlProps {
     initialValue: any, // value which may be coming from the database.
     onValueChanged: (value) => void, // caller can save the changed value to a db here.
@@ -90,11 +189,9 @@ interface DebouncedControlProps {
 export function DebouncedControl(props: DebouncedControlProps) {
     const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
     const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
-    //const [isDebouncing, setIsDebouncing] = React.useState<boolean>(false);
     const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
 
     const saveNow = () => {
-        //setIsDebouncing(false);
         console.log(`saving now: debouncing=false`);
         if (firstUpdate && debouncedValue === props.initialValue) {
             setFirstUpdate(false);
@@ -106,14 +203,12 @@ export function DebouncedControl(props: DebouncedControlProps) {
     React.useEffect(saveNow, [debouncedValue]);
 
     const onChange = (value) => {
-        //setIsDebouncing(true);
-        console.log(`onChange: debouncing=true`);
+        console.log(`DebouncedControl onChange: debouncing=true; value=${value}`);
         setValueState(value);
     };
 
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
 
-    // richTextContainer
     return (
         <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
             <div className='editControlsContainer'>
@@ -129,7 +224,6 @@ export function DebouncedControl(props: DebouncedControlProps) {
         </div>
     );
 }
-
 
 
 

@@ -329,13 +329,10 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     typedSchemaColumn: db3.TagsField<TAssociation>;
     args: TagsFieldClientArgs<TAssociation>;
 
-    renderAsChipForCell(args: DB3Client.RenderAsChipParams<TAssociation>) {
+    renderAsChipForCell = (args: DB3Client.RenderAsChipParams<TAssociation>) => {
         if (this.args.allowDeleteFromCell) {
-            console.log(`rendering with delete`);
             return this.args.renderAsChip!(args);
         }
-
-        console.log(`rendering without delete`);
         return this.args.renderAsChip!({ ...args, onDelete: undefined });
     };
 

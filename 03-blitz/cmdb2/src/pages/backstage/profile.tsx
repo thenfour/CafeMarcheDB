@@ -4,14 +4,13 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { CardContent, Typography } from "@mui/material";
+import { CardContent, FormControl, FormHelperText, Input, InputLabel, Typography } from "@mui/material";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { ButtonSelectControl, ButtonSelectOption, MutationButtonSelectControl, MutationTextControl } from "src/core/components/CMTextField";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import updateName from "../api/user/mutations/updateName";
+import updateBasicProfileFields from "../api/user/mutations/updateBasicProfileFields";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { gIconOptions } from "shared/utils";
-import updateActive from "../api/user/mutations/updateActive";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { DebouncedControl } from "src/core/components/RichTextEditor";
@@ -19,23 +18,31 @@ import { useDebounce } from "shared/useDebounce";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import React from "react";
 
-export const OwnUserNameControl = () => {
+
+
+
+
+
+export const OwnProfileBasicFieldControl = (props: { member: string, label: string, helperText: string }) => {
     const [currentUser, { refetch }] = useCurrentUser();
-    const [theMutation] = useMutation(updateName);
+    const [theMutation] = useMutation(updateBasicProfileFields);
 
-    return currentUser && <MutationTextControl
-        initialValue={currentUser.name}
-        refetch={refetch}
-        onChange={async (value) => {
-            await theMutation({ userId: currentUser.id, name: value || "" });
-        }}
-    />;
+    return currentUser && <div className="formFieldContainer">
+        <div className="fieldLabel">{props.label}</div>
+        <MutationTextControl
+            initialValue={currentUser[props.member]}
+            refetch={refetch}
+            onChange={async (value) => {
+                await theMutation({ userId: currentUser.id, [props.member]: value });
+            }}
+        />
+        <FormHelperText>{props.helperText}</FormHelperText>
+    </div>;
 };
-
 
 export const OwnActiveControl = () => {
     const [currentUser, { refetch }] = useCurrentUser();
-    const [theMutation] = useMutation(updateActive);
+    const [theMutation] = useMutation(updateBasicProfileFields);
     const options: ButtonSelectOption[] = [
         {
             value: false,
@@ -49,14 +56,18 @@ export const OwnActiveControl = () => {
             color: "yes",
         }
     ];
-    return <MutationButtonSelectControl
-        refetch={refetch}
-        options={options}
-        initialValue={currentUser!.isActive}
-        onChange={async (val) => {
-            await theMutation({ userId: currentUser!.id, isActive: val });
-        }}
-    />;
+    return <div className="formFieldContainer">
+        <div className="fieldLabel">Active member?</div>
+        <MutationButtonSelectControl
+            refetch={refetch}
+            options={options}
+            initialValue={currentUser!.isActive}
+            onChange={async (val) => {
+                await theMutation({ userId: currentUser!.id, isActive: val });
+            }}
+        />
+        <FormHelperText>Being an active member means being invited to events</FormHelperText>
+    </div>;
 };
 
 
@@ -117,9 +128,14 @@ const MainContent = () => {
                     {gIconMap.Person()} Your profile
                 </Typography>
 
-                <OwnUserNameControl />
-                <OwnActiveControl />
-                <OwnInstrumentsControl />
+                <FormControl>
+                    <OwnProfileBasicFieldControl member="name" label="Name" helperText="Your full name" />
+                    <OwnProfileBasicFieldControl member="compactName" label="Compact name" helperText="Shorter name (typically just your first name) that can be used in reduced-space page elements" />
+                    <OwnProfileBasicFieldControl member="phone" label="Phone" helperText="Provide your phone number in case we need to reach you" />
+                    <OwnProfileBasicFieldControl member="email" label="Email" helperText="" />
+                    <OwnActiveControl />
+                    <OwnInstrumentsControl />
+                </FormControl>
 
             </CardContent>
         </CMSinglePageSurfaceCard>

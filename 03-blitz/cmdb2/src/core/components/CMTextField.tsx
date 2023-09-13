@@ -3,12 +3,15 @@ import {
     Button,
     ButtonGroup,
     CircularProgress,
+    FormHelperText,
+    Input,
+    InputLabel,
     TextField
 } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 //import { useDebounce } from "shared/useDebounce";
-import { DebouncedControl } from "./RichTextEditor";
+import { DebouncedControl, DebouncedControlCustomRender, DebouncedControlCustomRenderArgs } from "./RichTextEditor";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { TAnyModel, TIconOptions } from "shared/utils";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
@@ -22,7 +25,7 @@ import { GetStyleVariablesForColor } from "./Color";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface CMTextFieldProps {
     validationError: string | null;
-    label: string;
+    label?: string;
     value: string | null;
     onChange: (e, value) => void;
     autoFocus: boolean;
@@ -56,8 +59,6 @@ export function CMTextField({ validationError, label, value, onChange, autoFocus
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
-// miraculously works with useQuery() as initial value. i don't understand how tbh.
 interface EditableTextControlProps {
     initialValue: string | null, // value which may be coming from the database.
     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
@@ -65,29 +66,105 @@ interface EditableTextControlProps {
     debounceMilliseconds: number,
 }
 
-export function EditableTextControl(props: EditableTextControlProps) {
-    return <DebouncedControl
+export const DebouncedTextField = (props: EditableTextControlProps) => {
+
+    const render = (args: DebouncedControlCustomRenderArgs) => {
+        return <div style={{ display: "flex" }}>
+            <CMTextField
+                value={args.value}
+                onChange={(e, value) => args.onChange(value)}
+                autoFocus={false}
+                //label="todo: label here"
+                validationError={null}
+                readOnly={false}
+            />
+            {args.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+                args.isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
+                    <></>
+                )
+            )}
+
+        </div>;
+    };
+
+    return <DebouncedControlCustomRender
+        render={render}
         debounceMilliseconds={props.debounceMilliseconds}
         initialValue={props.initialValue}
         isSaving={props.isSaving}
         onValueChanged={props.onValueChanged}
-        className="EditableTextControl"
-        render={(showingEditor, value, onChange) => {
-            return <div className='valueContainer'>
-                {showingEditor ? <CMTextField
-                    value={value}
-                    onChange={(e, value) => onChange(value)}
-                    autoFocus={false}
-                    label="todo: label here"
-                    validationError={null}
-                    readOnly={false}
-                /> :
-                    <div className="value">{value}</div>}
-            </div>
-
-        }}
     />;
-}
+};
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
+// miraculously works with useQuery() as initial value. i don't understand how tbh.
+// interface EditableTextControlProps {
+//     initialValue: string | null, // value which may be coming from the database.
+//     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
+//     isSaving: boolean, // show the value as saving in progress
+//     debounceMilliseconds: number,
+// }
+
+// export function EditableTextControl(props: EditableTextControlProps) {
+
+//     const realEdit = (value, onChange) => <div className='valueContainer'>
+//         <CMTextField
+//             value={value}
+//             onChange={(e, value) => onChange(value)}
+//             autoFocus={false}
+//             label="todo: label here"
+//             validationError={null}
+//             readOnly={false}
+//         />
+//         <FormHelperText id="my-helper-text">We'll never share your email.</FormHelperText>
+//     </div>;
+
+//     const viewMode = (value) => <div className='valueContainer'>
+//         <div className="value">{value}</div>
+//         <FormHelperText id="my-helper-text">We'll never share your email.</FormHelperText>
+//     </div>;
+
+//     return <DebouncedControl
+//         debounceMilliseconds={props.debounceMilliseconds}
+//         initialValue={props.initialValue}
+//         isSaving={props.isSaving}
+//         onValueChanged={props.onValueChanged}
+//         className="EditableTextControl"
+//         render={(showingEditor, value, onChange) => {
+//             return showingEditor ? realEdit(value, onchange) :
+//                 viewMode(value);
+//         }}
+//     />;
+// };
+
+
+
+export function EditableTextControl(props: EditableTextControlProps) {
+
+    const [editMode, setEditMode] = React.useState(false);
+
+    const view = <div style={{ display: "flex" }}>
+        <Button startIcon={RenderMuiIcon("Edit")} onClick={() => setEditMode(true)}></Button>
+        <div>{props.initialValue}</div>
+    </div>;
+
+    const edit = <div style={{ display: "flex" }}>
+        <Button startIcon={RenderMuiIcon("Done")} onClick={() => setEditMode(false)}></Button>
+        <DebouncedTextField
+            debounceMilliseconds={props.debounceMilliseconds}
+            initialValue={props.initialValue}
+            isSaving={props.isSaving}
+            onValueChanged={props.onValueChanged}
+        />
+    </div>;
+
+    return editMode ? edit : view;
+};
 
 
 

@@ -152,7 +152,7 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
     if (!user || !user.id) throw new Error(`no current user`);
 
     return <Card className="cmcard event concert" elevation={5} >
-        <CardActionArea className="actionArea">
+        <CardActionArea className="actionArea" href={API.events.getURIForEvent(props.event)}>
             <div className="cardContent">
                 <div className="left"><div className="leftVertText">{props.event.dateRangeInfo.formattedYear}</div></div>
                 <div className="image"></div>
