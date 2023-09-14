@@ -27,8 +27,9 @@ import * as React from 'react';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
+import CollectionsIcon from '@mui/icons-material/Collections';
 
-const drawerWidth = 260;
+const drawerWidth = 300;
 
 
 const Search = styled('div')(({ theme }) => ({
@@ -267,13 +268,11 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
 
 const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon /> },
-    { type: "link", path: "/backstage/comingEvents", linkCaption: "Coming events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
+    { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
     { type: "link", path: "/backstage/eventList", linkCaption: "Event List", renderIcon: () => <CalendarMonthOutlinedIcon /> },
     { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
     { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon /> },
     { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
-    // { type: "link", path: "/backstage/editSongs", linkCaption: "Manage Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
-    // { type: "link", path: "/backstage/editEvents", linkCaption: "Manage Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
 
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Auth" },
@@ -317,6 +316,7 @@ const gMenuItems: MenuItem[] = [
     { type: "sectionHeader", sectionName: "Admin Settings" },
     { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon /> },
     { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon /> },
+    { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon /> },
 ]
 
 const Dashboard2 = ({ children }) => {

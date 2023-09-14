@@ -51,19 +51,22 @@ import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
 // therefore: no calendars for the moment.
 
 const MainContent = () => {
-    if (!useAuthorization("eventList", Permission.view_events)) {
+    if (!useAuthorization("events page", Permission.view_events)) {
         throw new Error(`unauthorized`);
     }
-    return (
+    const style: React.CSSProperties = {
+        border: "2px solid blue",
+        height: "100px",
+        backgroundColor: "red",
+        position: "sticky",
+        top: 0,
+    };
+    return (<>
+        <div className="stickyControls" style={style}>
+        </div>
         <div className="eventsMainContent">
+
             <SettingMarkdown settingName="events_markdown"></SettingMarkdown>
-            + new event
-            {/* <div className="homeCalendars">
-                <EventCalendarMonth />
-                <EventCalendarMonth /> */}
-            {/* <EventCalendarMonth /> */}
-            {/* <div className="filler"></div> */}
-            {/* </div> */}
 
             <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
             <EventSummary asArnold={true} asDirector={true} finalized={true} past={true} />
@@ -71,16 +74,22 @@ const MainContent = () => {
             <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
             <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
             <EventSummary asArnold={false} asDirector={false} finalized={true} past={true} />
+
+            <EventSummary asArnold={true} asDirector={false} finalized={true} past={false} />
+            <EventSummary asArnold={true} asDirector={true} finalized={true} past={false} />
+            <EventSummary asArnold={false} asDirector={false} finalized={false} past={false} />
+            <EventSummary asArnold={false} asDirector={false} finalized={true} past={false} />
         </div>
+    </>
     )
 };
 
-const PastEventsPage: BlitzPage = () => {
+const ViewEventsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event List">
+        <DashboardLayout title="Events">
             <MainContent />
         </DashboardLayout>
     )
 }
 
-export default PastEventsPage;
+export default ViewEventsPage;

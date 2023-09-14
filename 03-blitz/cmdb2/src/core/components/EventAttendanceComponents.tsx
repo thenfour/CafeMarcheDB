@@ -1,4 +1,66 @@
-// 
+/*
+better terminology would make things clearer. ideally,
+"answer" is just the yes/no/etc portion of your response
+"comment" is just the comment
+"response" or "attendance" or "attendanceResponse" refers to the combination attendance + comment
+
+"frame" or "chip" will put a frame. otherwise it's a standalone embeddable component
+-----------------------------------------------------------------------------------------------------------------------------
+
+EventAttendanceAnswer
+  big chip answer + optional edit button
+  read-only companion to EventAttendanceEditControl
+  you are going [edit]
+  comment       [edit]
+
+
+EventAttendanceCommentControl [internal, used by EventAttendanceEditControl]
+  Just the field for showing or editing comment
+  comment       [edit]
+
+
+EventAttendanceResponseControl [internal, used by EventAttendanceEditControl]
+  button array for generic event segment response
+  [ yes ][ maybe ][ no ][ no answer ]
+
+
+EventAttendanceEditControl
+    the editable version of a complete response
+    EventAttendanceResponseControl + EventAttendanceCommentControl
+  [ yes ][ maybe ][ no ][ no answer ]
+  comment       [edit]
+
+
+EventAttendanceFrame
+  per segment
+  frame + editMode EventAttendanceEditControl or EventAttendanceAnswer
+  direct child of alert control
+  .---------------------------------------------------------.
+  | Set 1 from  12:00 - 14:00                               |
+  | you are going [edit]                                    | <EventAttendanceAnswer>
+  | comment       [edit]                                    | 
+  `---------------------------------------------------------`
+  or,
+  .---------------------------------------------------------.
+  | Set 1 from  12:00 - 14:00                               |
+  | <EventAttendanceEditControl> or <EventAttendanceAnswer> |
+  `---------------------------------------------------------`
+
+
+EventAttendanceAlertControl
+  big alert for an event with edit controls for all segments.
+  .--------------------------------.
+  | Are you going to xyz?          |
+  | <EventAttendanceFrame>       |
+  | <EventAttendanceFrame>       |
+  `--------------------------------`
+
+  
+EventAttendanceSummary
+  per event, an array of <BigChip> showing a response + comment (EventAttendanceAnswer). used by noninteractivecard
+
+
+*/
 
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
@@ -39,169 +101,18 @@ import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEdi
 import { CMBigChip, CMTagList } from './CMCoreComponents';
 import HomeIcon from '@mui/icons-material/Home';
 
-
-////////////////////////////////////////////////////////////////
-// specific big chip for event attendance summary
-export interface CMEventAttendanceSummaryBigChipProps {
-    event: db3.EventPayloadClient,
-    //tableClient: DB3Client.xTableRenderClient,
-};
-
-export const CMEventAttendanceSummaryBigChip = (props: CMEventAttendanceSummaryBigChipProps) => {
-    const [user] = useCurrentUser()!;
-    console.assert(!!user);
-
-    const eventInfo = new db3.EventInfoForUser({ event: props.event, user });
-    console.assert(!!eventInfo.segments);
-
-    // if all responses are the same, easy; display 1 big thing.
-    // if all responses are NOT the same .... then display them all in compact form, one slot for each event segment
-
-    // const segmentResponses = {}; // key = segment id, value=response or undefined
-    // const distinctResponses = {}; // 
-    // props.event.segments.forEach(seg => {
-    //     const found = seg.responses.find(r => r.userId === user?.id);
-    //     if (found) segmentResponses[seg.id] = found;
-    // });
-
-    //console.log(segmentResponses);
-
-    return <div className='CMEventAttendanceSummary bigChipContainer'>
-        {
-            eventInfo.segments.map((seg, index) => {
-                console.assert(!!seg.response);
-                const segInfo = eventInfo.getSegmentUserInfo(seg.segment.id);
-                if (seg.response.expectAttendance && !seg.response.attendance) {
-                    // no response but one is expected.
-                    return <CMBigChip key={index} color={null} variant="weak">
-                        <QuestionMarkIcon />
-                        no response yet
-                    </CMBigChip>;
-                } else if (!seg.response.expectAttendance && !seg.response.attendance) {
-                    // not expected & no response
-                    return <CMBigChip key={index} color={null} variant="weak">
-                        no response expected
-                    </CMBigChip>;
-                } else {
-                    console.assert(!!seg.response.attendance);
-                    const attendance = seg.response.attendance!;
-                    return <CMBigChip key={index} color={attendance.color} variant="weak">
-                        {/* when only 1 segment don't bother specifying name / date stuff */}
-                        {props.event.segments.length > 1 && segInfo.segment.name}
-                        {segInfo.response.attendanceComment}
-                        {(attendance.strength > 50) ?
-                            <ThumbUpIcon /> : <ThumbDownIcon />
-                        }
-                        {attendance.personalText}
-                    </CMBigChip>;
-                }
-            })
-        }
-    </div>;
-
-    // const sampleColor = gGeneralPaletteList.findEntry("yes");
-
-    // return <CMBigChip color={sampleColor} variant='strong'>
-    //     <ThumbUpIcon />
-    //     You are coming!
-    // </CMBigChip>;
-};
-
-
-////////////////////////////////////////////////////////////////
-// TODO: generic big status
-////////////////////////////////////////////////////////////////
-// specific non-interactive status for event status
-export interface CMEventBigStatusProps {
-    event: db3.EventPayloadClient,
-    //tableClient: DB3Client.xTableRenderClient,
-};
-
-export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
-    if (!props.event.status) {
-        return null;
-    }
-    const status: db3.EventStatusPayload = props.event.status;
-    const style = GetStyleVariablesForColor(status.color);
-    //console.log(status.color)
-    return <div><div className={`bigstatus applyColor-inv`} style={style}>
-        {RenderMuiIcon(status.iconName)}
-        {status.label}
-    </div></div>;
-};
-
-
-////////////////////////////////////////////////////////////////
-// non-interactive-feeling card; it's meant as a gateway to something else with very little very curated information.
-export interface NoninteractiveCardEventProps {
-    event: db3.EventPayloadClient,
-    //tableClient: DB3Client.xTableRenderClient,
-};
-
-export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => {
-
-    // the rotation is cool looking but maybe just too much
-    // const maxRotation = 2;
-    // const rotate = `${((Math.random() * maxRotation)) - (maxRotation * .5)}deg`;
-    // const maxMargin = 30;
-    // const marginLeft = `${(Math.random() * maxMargin) + 25}px`;
-    // style={{ rotate, marginLeft }}
-
-    // find your attendance record.
-    const [user] = useCurrentUser();
-    if (!user || !user.id) throw new Error(`no current user`);
-
-    return <Card className="cmcard event concert" elevation={5} >
-        <CardActionArea className="actionArea" href={API.events.getURIForEvent(props.event)}>
-            <div className="cardContent">
-                <div className="left"><div className="leftVertText">{props.event.dateRangeInfo.formattedYear}</div></div>
-                <div className="image"></div>
-                <div className="hcontent">
-                    <div className="date">{props.event.dateRangeInfo.formattedDateRange}</div>
-                    <div className="name">{props.event.name}</div>
-
-                    <CMEventBigStatus event={props.event} />
-                    {/* 
-                    <CMBigChip color={sampleColor} variant='strong'>
-                        <ThumbUpIcon />
-                        You are coming!
-                    </CMBigChip> */}
-
-                    <CMEventAttendanceSummaryBigChip event={props.event} />
-                    {/* 
-                    <div className="attendance yes">
-                        <div className="chip">
-                        </div>
-                    </div> */}
-
-                    {/* <div className="info">43 photos uploaded</div> */}
-                    <CMTagList
-                        tagAssociations={props.event.tags}
-                        columnSchema={db3.xEvent.getColumn("tags") as db3.TagsField<db3.EventTagAssignmentModel>}
-                        //tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}
-                        colorVariant="weak"
-                    />
-                </div>
-            </div>
-        </CardActionArea>
-    </Card>
-};
-
-
-
 ////////////////////////////////////////////////////////////////
 // a view/edit control for the comment only (including mutation)
-export interface EventAttendanceCommentControlProps {
+interface EventAttendanceCommentControlProps {
     event: db3.EventPayloadClient,
     segmentInfo: db3.SegmentAndResponse,
     eventUserInfo: db3.EventInfoForUser,
     onRefetch: () => void,
 };
 
-export const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
+const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
     const token = API.events.updateUserEventSegmentAttendanceComment.useToken();
     return <CompactMutationMarkdownControl initialValue={props.segmentInfo.response.attendanceComment} refetch={props.onRefetch} onChange={async (value) => {
-        console.log(`updating ?`);
         return await API.events.updateUserEventSegmentAttendanceComment.invoke(token, {
             userId: props.eventUserInfo.user.id,
             eventSegmentId: props.segmentInfo.segment.id,
@@ -215,14 +126,14 @@ export const EventAttendanceCommentControl = (props: EventAttendanceCommentContr
 ////////////////////////////////////////////////////////////////
 // event segment attendance standalone field (read-only possible, buttons array for input).
 // basically a button array of responses, not tied to DB but just a value.
-export interface EventAttendanceResponseControlProps {
+interface EventAttendanceResponseControlProps {
     value: db3.EventAttendanceBasePayload | null;
     onChange: (value: db3.EventAttendanceBasePayload | null) => void;
     showClose: boolean,
     onClose: () => void,
 };
 
-export const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
+const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
     const options = API.events.useGetEventAttendanceOptions({});
     const nullSelStyle = (!props.value) ? "selected" : "notSelected";
     return <>
@@ -259,34 +170,32 @@ export const EventAttendanceResponseControl = (props: EventAttendanceResponseCon
 
 ////////////////////////////////////////////////////////////////
 // read-only answer + comment, with optional "edit" button
-export interface EventSegmentAttendanceAnswerProps {
+export interface EventAttendanceAnswerProps {
     event: db3.EventPayloadClient,
     segmentInfo: db3.SegmentAndResponse,
     eventUserInfo: db3.EventInfoForUser,
-
-    onEditClicked: () => void,
+    readOnly: boolean,
+    onEditClicked?: () => void,
 };
 
-export const EventSegmentAttendanceAnswer = (props: EventSegmentAttendanceAnswerProps) => {
-    return <div className="selectedValue yes_maybe">
-        <div className="textWithIcon">
-            <ThumbUpIcon className="icon" />
-            <span className="text">You are probably going</span>
-            <Button onClick={() => { props.onEditClicked() }}>
-                <EditIcon />
-            </Button>
-            <div className='userComment'>
-                <Markdown markdown={props.segmentInfo.response.attendanceComment} />
-            </div>
+export const EventAttendanceAnswer = (props: EventAttendanceAnswerProps) => {
+    return <CMBigChip color={props.segmentInfo.response.attendance!.color} variant='strong'>
+        <ThumbUpIcon className="icon" />
+        <span className="text">{props.segmentInfo.response.attendance?.personalText}</span>
+        {!props.readOnly && <Button onClick={() => { props.onEditClicked && props.onEditClicked() }}>
+            <EditIcon />
+        </Button>}
+        <div className='userComment'>
+            <Markdown markdown={props.segmentInfo.response.attendanceComment} />
         </div>
-    </div>;
+    </CMBigChip>;
 };
 
 
 ////////////////////////////////////////////////////////////////
 // frame for event segment
 // input controls for attendance + comment
-export interface EventSegmentAttendanceEditControlProps {
+export interface EventAttendanceEditControlProps {
     event: db3.EventPayloadClient,
     segmentInfo: db3.SegmentAndResponse,
     eventUserInfo: db3.EventInfoForUser,
@@ -296,7 +205,7 @@ export interface EventSegmentAttendanceEditControlProps {
     onClose: () => void,
 };
 
-export const EventSegmentAttendanceEditControl = (props: EventSegmentAttendanceEditControlProps) => {
+export const EventAttendanceEditControl = (props: EventAttendanceEditControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const token = API.events.updateUserEventSegmentAttendance.useToken();
 
@@ -330,14 +239,14 @@ export const EventSegmentAttendanceEditControl = (props: EventSegmentAttendanceE
 ////////////////////////////////////////////////////////////////
 // frame for event segment:
 // shows your answer & comment, small button to show edit controls.
-export interface EventSegmentAttendanceControlProps {
+export interface EventAttendanceFrameProps {
     event: db3.EventPayloadClient,
     segmentInfo: db3.SegmentAndResponse,
     eventUserInfo: db3.EventInfoForUser,
     onRefetch: () => void,
 };
 
-export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceControlProps) => {
+export const EventAttendanceFrame = (props: EventAttendanceFrameProps) => {
     const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
     const hasResponse = !!props.segmentInfo.response.attendance;
     const expectResponse = true;//props.segmentInfo.response.expectAttendance;
@@ -352,7 +261,7 @@ export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceContr
             {editMode && <div className="prompt">Are you going?</div>}
         </div>
         {editMode ?
-            <EventSegmentAttendanceEditControl
+            <EventAttendanceEditControl
                 event={props.event}
                 segmentInfo={props.segmentInfo}
                 eventUserInfo={props.eventUserInfo}
@@ -360,7 +269,7 @@ export const EventSegmentAttendanceControl = (props: EventSegmentAttendanceContr
                 showClose={true && !alert} // alert forces edit mode; don't allow hiding then
                 onClose={() => { setExplicitEdit(false) }}
             /> :
-            <EventSegmentAttendanceAnswer
+            <EventAttendanceAnswer
                 event={props.event}
                 segmentInfo={props.segmentInfo}
                 eventUserInfo={props.eventUserInfo}
@@ -383,12 +292,12 @@ export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlPr
     const [user] = useCurrentUser()!;
     const eventInfo = API.events.getEventInfoForUser({ event: props.event, user });
     return <Alert severity="error" className='cmalert attendanceAlert'>
-        <h1>Are you coming to <a href={API.events.getURIForEvent(eventInfo.event)}>{props.event.name}</a>?</h1>
+        <Typography variant='h5'>Are you coming to <a href={API.events.getURIForEvent(eventInfo.event)}>{props.event.name}</a>?</Typography>
         <div className="attendanceResponseInput">
             <div className="segmentList">
                 {props.event.segments.map(segment => {
                     const segInfo = eventInfo.getSegmentUserInfo(segment.id);
-                    return <EventSegmentAttendanceControl key={segment.id} onRefetch={props.onRefetch} segmentInfo={segInfo} eventUserInfo={eventInfo} event={props.event} />;
+                    return <EventAttendanceFrame key={segment.id} onRefetch={props.onRefetch} segmentInfo={segInfo} eventUserInfo={eventInfo} event={props.event} />;
                 })}
             </div>
         </div>
@@ -398,32 +307,34 @@ export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlPr
 };
 
 
-// static concert card
-// static event card
-
-
-
 
 ////////////////////////////////////////////////////////////////
-export const EventBreadcrumbs = () => {
-    return <Breadcrumbs aria-label="breadcrumb">
-        <Link
-            underline="hover"
-            color="inherit"
-            sx={{ display: 'flex', alignItems: 'center' }}
-            href="/backstage"
-        >
-            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Backstage
-        </Link>
-        <Link
-            underline="hover"
-            color="inherit"
-            href="/backstage/events"
-            sx={{ display: 'flex', alignItems: 'center' }}
-        >
-            Events
-        </Link>
-    </Breadcrumbs>
-        ;
+export interface EventAttendanceSummaryProps {
+    event: db3.EventPayloadClient,
 };
+
+export const EventAttendanceSummary = (props: EventAttendanceSummaryProps) => {
+    const [user] = useCurrentUser()!;
+    console.assert(!!user);
+
+    const eventInfo = new db3.EventInfoForUser({ event: props.event, user });
+    console.assert(!!eventInfo.segments);
+
+    return <div className='CMEventAttendanceSummary bigChipContainer'>
+        {
+            eventInfo.segments.map((seg, index) => {
+
+                return <EventAttendanceAnswer
+                    readOnly={true}
+                    event={props.event}
+                    segmentInfo={seg}
+                    eventUserInfo={eventInfo}
+                    onEditClicked={() => { }}
+                />;
+            })
+        }
+    </div>;
+};
+
+
+

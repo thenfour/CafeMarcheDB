@@ -10,7 +10,6 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-//import { TIconOptions } from "shared/utils";
 
 
 export interface ChooseItemDialogProps {
@@ -32,30 +31,6 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedObj, setSelectedObj] = React.useState<any>(props.value);
-    //const [filterText, setFilterText] = React.useState("");
-
-    //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    // const onNewClicked = (e) => {
-    //     db3Context.doInsertFromString(filterText)//.then(updatedObj)
-    //         .then((updatedObj) => {
-    //             setSelectedObj(updatedObj);
-    //             showSnackbar({ children: "created new success", severity: 'success' });
-    //             db3Context.refetch();
-    //         }).catch((err => {
-    //             showSnackbar({ children: "create error", severity: 'error' });
-    //             db3Context.refetch(); // should revert the data.
-    //         }));
-    // };
-
-    // const isEqual = (a: TForeign | null, b: TForeign | null) => {
-    //     const anull = (a === null || a === undefined);
-    //     const bnull = (b === null || b === undefined);
-    //     if (anull && bnull) return true;
-    //     if (anull !== bnull) return false;
-    //     // both non-null.
-    //     return a![props.spec.typedSchemaColumn.foreignTableSpec.pkMember] === b![props.spec.typedSchemaColumn.foreignTableSpec.pkMember];
-    // };
 
     const handleItemClick = (value) => {
         if (props.isEqual(value, selectedObj)) {
@@ -67,8 +42,6 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
             props.onOK(value);
         }
     };
-
-    //const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
 
     return (
         <Dialog
@@ -87,33 +60,6 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
                 <DialogContentText>
                     {props.renderDescription()}
                 </DialogContentText>
-                {/* 
-                    <Box>
-                        <InputBase
-                            size="small"
-                            placeholder="Filter"
-                            sx={{
-                                backgroundColor: "#f0f0f0",
-                                borderRadius: 3,
-                            }}
-                            value={filterText}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            startAdornment={<SearchIcon />}
-                        />
-                    </Box> */}
-                {/* 
-                    {
-                        !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
-                            <Box><Button
-                                size="small"
-                                startIcon={<AddIcon />}
-                                onClick={onNewClicked}
-                            >
-                                add {filterText}
-                            </Button>
-                            </Box>
-                        )
-                    } */}
 
                 {
                     (props.items.length == 0) ?

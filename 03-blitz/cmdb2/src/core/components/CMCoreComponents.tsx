@@ -58,7 +58,6 @@ export const CMTag = (props: CMTagProps<TAnyModel>) => {
 
 export interface CMTagListProps<TagAssignmentModel> {
     tagAssociations: ITagAssociation[],
-    //tagsFieldClient: DB3Client.TagsFieldClient<TagAssignmentModel>,
     columnSchema: db3.TagsField<unknown>,
     colorVariant: ColorVariationOptions;
 };
