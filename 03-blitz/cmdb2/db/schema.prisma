@@ -356,8 +356,9 @@ model Event {
   statusId            Int?
   status              EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
-  isCancelled Boolean   @default(false) // used as an input for calculating status
-  cancelledAt DateTime?
+  // don't do this because it's redundant with status. bring it back only if there's a true need.
+  // isCancelled Boolean   @default(false) // used as an input for calculating status
+  // cancelledAt DateTime?
 
   createdAt DateTime
 
@@ -389,12 +390,14 @@ model EventSegment {
 }
 
 model EventType {
-  id          Int     @id @default(autoincrement())
-  text        String
-  description String
-  color       String?
-  sortOrder   Int     @default(0)
-  events      Event[]
+  id           Int     @id @default(autoincrement())
+  text         String
+  description  String
+  color        String?
+  sortOrder    Int     @default(0)
+  significance String?
+  iconName     String?
+  events       Event[]
 }
 
 model EventStatus {
@@ -497,25 +500,6 @@ model EventSegmentUserResponse {
 
   @@unique([userId, eventSegmentId]) // 
 }
-
-// model EventUserResponse {
-//   id      Int   @id @default(autoincrement())
-//   userId  Int
-//   user    User  @relation(fields: [userId], references: [id], onDelete: Restrict)
-
-//   eventId Int
-//   event  Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
-
-//   expectAgreement   Boolean @default(false)
-//   agreementAnswer        Boolean?
-//   agreementComment String?
-
-//   expectFinalize   Boolean @default(false)
-//   finalizeAnswer        Boolean?
-//   finalizeComment String?
-
-//   @@unique([userId, eventId]) // 
-// }
 
 // tech rider, partition, invoice, contract, event media, other, what is the usage? needed to:
 // - find similar things at an application level like finding partitions

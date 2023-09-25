@@ -27,7 +27,7 @@ export interface ColorSwatchProps {
 // to apply them, components should just use these vars as needed.
 // why not just have "color" var instead of "strong color" & "weak color"? so components can
 // access both. might as well support both methods tbh.
-export const GetStyleVariablesForColor = (color: ColorPaletteEntry | null | string) => {
+export const GetStyleVariablesForColor = (color: ColorPaletteEntry | null | string | undefined) => {
     if (typeof color === 'string') {
         color = gGeneralPaletteList.findEntry(color);
     }

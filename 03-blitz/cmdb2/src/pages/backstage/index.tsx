@@ -8,6 +8,8 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
 
 {/* <MockupEventCard /> */ }
 {/* <EventCard />
@@ -16,7 +18,18 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const DynamicContent = () => {
 
-  const events = API.events.useGetEvents({});
+  const tableClient = DB3Client.useTableRenderContext({
+    requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+    tableSpec: new DB3Client.xTableClientSpec({
+      table: db3.xEvent,
+      columns: [
+        new DB3Client.PKColumnClient({ columnName: "id" }),
+      ],
+    }),
+
+
+  });
+
 
   // what needs alerts?
   // events which expect your response but you haven't responded.
@@ -29,10 +42,10 @@ const DynamicContent = () => {
     </CMSinglePageSurface> */}
 
     {/* <CMSinglePageSurface> */}
-    {events.items.map((row, index) => <EventAttendanceAlertControl
+    {tableClient.items.map((row, index) => <EventAttendanceAlertControl
       key={index}
       event={row as any}
-      onRefetch={() => { events.refetch() }}
+      onRefetch={tableClient.refetch}
     />)}
     {/* </CMSinglePageSurface > */}
     {/* 
@@ -71,7 +84,7 @@ const DynamicContent = () => {
           {gIconMap.CalendarMonth()} Upcoming Events
         </Typography>
         <div className="cmcardList-vertical">
-          {events.items.map((row, index) => <NoninteractiveCardEvent key={index} event={row as any} />)}
+          {tableClient.items.map((row, index) => <NoninteractiveCardEvent key={index} event={row as any} />)}
         </div>
       </CardContent>
     </CMSinglePageSurfaceCard>

@@ -5,42 +5,49 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Breadcrumbs, Link, Typography } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
-import { EventDetail } from "src/core/components/CMMockupComponents";
-
+import { EventBreadcrumbs, EventDetail } from "src/core/components/EventComponents";
+import { API } from "src/core/db3/clientAPI";
+import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { IsEntirelyIntegral } from "shared/utils";
 
 const MyComponent = () => {
     const params = useParams();
-    if (!useAuthorization(`event page: ${params.idOrSlug}`, Permission.view_events)) {
+    const idOrSlug = (params.idOrSlug as string) || "";
+
+    if (!useAuthorization(`event page: ${idOrSlug}`, Permission.view_events)) {
         throw new Error(`unauthorized`);
     }
-    //return <div>{params.slug} - todo: show breadcrumbs of some sort</div>;
-    return <div><Breadcrumbs aria-label="breadcrumb">
-        <Link
-            underline="hover"
-            color="inherit"
-            sx={{ display: 'flex', alignItems: 'center' }}
-            href="/backstage"
-        >
-            <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            Backstage
-        </Link>
-        <Link
-            underline="hover"
-            color="inherit"
-            href="/backstage/events"
-            sx={{ display: 'flex', alignItems: 'center' }}
-        >
-            Events
-        </Link>
-        <Typography color="text.primary">{params.idOrSlug}</Typography>
-    </Breadcrumbs>
-        <EventDetail />
-    </div>
-        ;
+
+    const queryArgs: DB3Client.xTableClientArgs = {
+        requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xEventVerbose,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+                new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+            ],
+        }),
+        tableParams: {}
+    };
+
+    if (IsEntirelyIntegral(idOrSlug)) {
+        queryArgs.tableParams!.eventId = parseInt(idOrSlug);
+    } else {
+        queryArgs.tableParams!.eventSlug = params.idOrSlug;
+    }
+
+    const tableClient = DB3Client.useTableRenderContext(queryArgs);
+    const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
+
+    return <div>
+        <EventBreadcrumbs event={event} />
+        <EventDetail event={event} tableClient={tableClient} />
+    </div>;
 };
 
 
-const EventPage: BlitzPage = () => {
+const EventDetailPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Event">
             <MyComponent></MyComponent>
@@ -48,4 +55,4 @@ const EventPage: BlitzPage = () => {
     )
 }
 
-export default EventPage;
+export default EventDetailPage;

@@ -127,6 +127,7 @@ export type SongModel = Prisma.SongGetPayload<{
         tags: true,
     }
 }>;
+export type SongPayloadMinimum = Prisma.SongGetPayload<{}>;
 
 // not sure this is needed or used at all.
 const SongInclude: Prisma.SongInclude = {

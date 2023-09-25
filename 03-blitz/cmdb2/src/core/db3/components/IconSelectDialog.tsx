@@ -15,10 +15,12 @@ import { ForeignSingleFieldClient, useForeignSingleFieldRenderContext } from "./
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import EditIcon from '@mui/icons-material/Edit';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckIcon from '@mui/icons-material/Check';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import TuneIcon from '@mui/icons-material/Tune';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
@@ -33,9 +35,7 @@ import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import CommentIcon from '@mui/icons-material/Comment';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
-
-
-
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import InfoIcon from '@mui/icons-material/Info';
 import MicIcon from '@mui/icons-material/Mic';
 import CampaignIcon from '@mui/icons-material/Campaign';
@@ -45,23 +45,31 @@ import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import NightlifeIcon from '@mui/icons-material/Nightlife';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import GroupsIcon from '@mui/icons-material/Groups';
+import PublicIcon from '@mui/icons-material/Public';
+import CelebrationIcon from '@mui/icons-material/Celebration';
+import GroupIcon from '@mui/icons-material/Group';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
 // };
+
+// keep in sync with export const gIconOptions = 
 export const gIconMap /*: IIconMap*/ = {
     Add: () => <AddIcon />,
     CalendarMonth: () => <CalendarMonthIcon />,
     Campaign: () => <CampaignIcon />,
+    Celebration: () => <CelebrationIcon />,
     Check: () => <CheckIcon />,
     CheckCircleOutline: () => <CheckCircleOutlineIcon />,
     Close: () => <CloseIcon />,
     Comment: () => <CommentIcon />,
     Done: () => <DoneIcon />,
     Edit: () => <EditIcon />,
+    EditNote: () => <EditNoteIcon />,
     Error: () => <ErrorIcon />,
     ErrorOutline: () => <ErrorOutlineIcon />,
     GraphicEq: () => <GraphicEqIcon />,
+    Group: () => <GroupIcon />,
     Groups: () => <GroupsIcon />,
     HighlightOff: () => <HighlightOffIcon />,
     Home: () => <HomeIcon />,
@@ -71,20 +79,23 @@ export const gIconMap /*: IIconMap*/ = {
     MusicNote: () => <MusicNoteIcon />,
     Nightlife: () => <NightlifeIcon />,
     Person: () => <PersonIcon />,
+    PersonSearch: () => <PersonSearchIcon />,
     Place: () => <PlaceIcon />,
-    Question: () => <QuestionMarkIcon />,
+    Public: () => <PublicIcon />,
+    QuestionMark: () => <QuestionMarkIcon />,
     Search: () => <SearchIcon />,
     Security: () => <SecurityIcon />,
     Settings: () => <SettingsIcon />,
     ThumbDown: () => <ThumbDownIcon />,
     ThumbUp: () => <ThumbUpIcon />,
+    Tune: () => <TuneIcon />,
 
 
 
 
 } as const;
 
-export const RenderMuiIcon = (name: TIconOptions | undefined | null): (React.ReactElement | null) => {
+export const RenderMuiIcon = (name: TIconOptions | undefined | null | string): (React.ReactElement | null) => {
     if (name == null) return null;
     if (!gIconMap[name]) return null;
     return gIconMap[name]!();
@@ -113,6 +124,7 @@ export function IconEditCell(props: ChooseIconDialogProps) {
             return <li {...props}>
                 {selected && <DoneIcon />}
                 {RenderMuiIcon(value)}
+                {value}
                 {selected && <CloseIcon />}
             </li>;
         }}

@@ -19,6 +19,8 @@ const InstrumentFunctionalGroupInclude: Prisma.InstrumentFunctionalGroupInclude 
 };
 
 export type InstrumentFunctionalGroupModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
+export type InstrumentFunctionalGroupPayload = InstrumentFunctionalGroupModel;
+export type InstrumentFunctionalGroupMinimalPayload = InstrumentFunctionalGroupModel;
 export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
     { name: 'asc' },

@@ -1,4 +1,4 @@
-
+// types used by mutations and other blitzy-things which can't export more than 1 thing.
 
 export interface TupdateUserEventSegmentAttendanceMutationArgs {
     userId: number;
@@ -12,4 +12,15 @@ export interface TupdateUserEventSegmentAttendanceCommentMutationArgs {
     comment: string | null;
 };
 
-
+export interface TupdateEventBasicFieldsArgs {
+    eventId: number;
+    name?: string;
+    slug?: string;
+    description?: string;
+    typeId?: number;
+    isPublished?: boolean;
+    locationDescription?: string;
+    locationURL?: string;
+    isDeleted?: boolean;
+    statusId?: number;
+}

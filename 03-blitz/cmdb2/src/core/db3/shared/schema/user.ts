@@ -285,6 +285,8 @@ export const xUserInstrument = new xTable({
 
 
 ////////////////////////////////////////////////////////////////
+export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
+
 export const UserLocalInclude: Prisma.UserInclude = {
     role: true,
     instruments: {

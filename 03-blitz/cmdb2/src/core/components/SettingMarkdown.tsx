@@ -20,7 +20,7 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onValueChanged = (newValue: string | null) => {
-        console.log(`MutationMarkdownControl: onValueChanged ${newValue}`);
+        //console.log(`MutationMarkdownControl: onValueChanged ${newValue}`);
         setIsSaving(true);
         props.onChange(newValue).then(x => {
             showSnackbar({ severity: "success", children: props.successMessage || "Updated" });

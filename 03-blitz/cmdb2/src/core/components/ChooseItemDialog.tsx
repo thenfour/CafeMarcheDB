@@ -21,19 +21,28 @@ export interface ChooseItemDialogProps {
     renderDescription: () => React.ReactElement; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     // how to treat items of unknown type...
-    isEqual: (a: any, b: any) => boolean;
+    isEqual: (a: any, b: any) => boolean; // non-null values. null values are compared internally.
     renderValue: (value: any, onDelete: (undefined | (() => void))) => React.ReactElement;
     renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: any, selected: boolean) => React.ReactElement;
     items: any[];
 };
 
+// todo: add a text filter
 export function ChooseItemDialog(props: ChooseItemDialogProps) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedObj, setSelectedObj] = React.useState<any>(props.value);
 
+    const betterIsEqual = (a, b) => {
+        if (a == null) {
+            return b == null; // either both null or only 1 null. no further comparison necessary.
+        }
+        if (b == null) return false; // a not null, b is null.
+        return props.isEqual(a, b);
+    };
+
     const handleItemClick = (value) => {
-        if (props.isEqual(value, selectedObj)) {
+        if (betterIsEqual(value, selectedObj)) {
             setSelectedObj(null);
             return;
         }
@@ -68,7 +77,7 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
                         <List>
                             {
                                 props.items.map((item, index) => {
-                                    const selected = props.isEqual(item, selectedObj);
+                                    const selected = betterIsEqual(item, selectedObj);
                                     return (
                                         <React.Fragment key={index}>
                                             <ListItemButton selected onClick={e => { handleItemClick(item) }}>
@@ -94,7 +103,6 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
 
 
 export interface ChoiceEditCellProps {
-    // foreignSpec: ForeignSingleFieldClient<TForeign>;
     value: any | null;
     onChange: (value: any | null) => void;
     validationError: string | null;
@@ -147,3 +155,5 @@ export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
         {props.validationError && <FormHelperText children={props.validationError} />}
     </div>;
 };
+
+// todo: EditTextDialogButton but for choices. the above is really for datagrid cells; should be broken down.

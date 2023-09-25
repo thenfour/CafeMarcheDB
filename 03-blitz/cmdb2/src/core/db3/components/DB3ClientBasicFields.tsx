@@ -480,7 +480,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
             >
                 {
                     this.gridOptions.map(option => {
-                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>;
+                        return <MenuItem key={option.value} value={option.value}>{RenderMuiIcon(option.value as any)} {option.label}</MenuItem>;
                     })
                 }
             </Select>

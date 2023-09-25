@@ -768,3 +768,20 @@ put spacing.*/
   margin: 4px;
   padding: 3px 5px;
 }
+
+
+/* default table formatting to at least reveal cell boundaries */
+table {
+  border: 1px solid #0006;
+  margin: 8px 6px;
+}
+
+table tr {}
+
+table th {}
+
+table td {
+  background-color: #0000000c;
+  border-radius: 3px;
+  padding: 2px 6px;
+}

@@ -134,11 +134,21 @@ interface EventAttendanceResponseControlProps {
 };
 
 const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
-    const options = API.events.useGetEventAttendanceOptions({});
+
+    const optionsClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xEventAttendance,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+            ],
+        }),
+    });
+
     const nullSelStyle = (!props.value) ? "selected" : "notSelected";
     return <>
         <ButtonGroup className='EventAttendanceResponseControlButtonGroup'>
-            {options.items.map(option => {
+            {optionsClient.items.map(option => {
                 const style = GetStyleVariablesForColor(option.color);
                 const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
                 const yesNoStyle = (option.strength > 50) ? "yes" : "no";
@@ -270,6 +280,7 @@ export const EventAttendanceFrame = (props: EventAttendanceFrameProps) => {
                 onClose={() => { setExplicitEdit(false) }}
             /> :
             <EventAttendanceAnswer
+                readOnly={false}
                 event={props.event}
                 segmentInfo={props.segmentInfo}
                 eventUserInfo={props.eventUserInfo}
@@ -325,6 +336,7 @@ export const EventAttendanceSummary = (props: EventAttendanceSummaryProps) => {
             eventInfo.segments.map((seg, index) => {
 
                 return <EventAttendanceAnswer
+                    key={seg.segment.id}
                     readOnly={true}
                     event={props.event}
                     segmentInfo={seg}

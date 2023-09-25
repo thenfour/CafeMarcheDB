@@ -327,172 +327,172 @@ export const RehearsalSummary = (props: EventSummaryProps) => {
 };
 
 
-export const EventDetail = () => {
-    return <div className={`contentSection event future`}>
+// export const EventDetail = () => {
+//     return <div className={`contentSection event future`}>
 
-        <div className="infoLine">
-            <div className="date smallInfoBox">
-                <CalendarMonthIcon className="icon" />
-                <span className="text">24 August 2023</span>
-            </div>
+//         <div className="infoLine">
+//             <div className="date smallInfoBox">
+//                 <CalendarMonthIcon className="icon" />
+//                 <span className="text">24 August 2023</span>
+//             </div>
 
-            <div className="location smallInfoBox">
-                <PlaceIcon className="icon" />
-                <span className="text">24 lombardstraat, 1050 brussel</span>
-            </div>
+//             <div className="location smallInfoBox">
+//                 <PlaceIcon className="icon" />
+//                 <span className="text">24 lombardstraat, 1050 brussel</span>
+//             </div>
 
-        </div>
+//         </div>
 
-        <div className='titleLine'>
-            <Link href="/backstage/event/aoeu" className="titleLink">
-                <div className="titleText">rehearsal</div>
-            </Link>
-            <div className="statusIndicator confirmed">
-                <CheckIcon className="statusIcon" />
-                <span className="statusText">Confirmed</span>
-            </div>
-        </div>
+//         <div className='titleLine'>
+//             <Link href="/backstage/event/aoeu" className="titleLink">
+//                 <div className="titleText">rehearsal</div>
+//             </Link>
+//             <div className="statusIndicator confirmed">
+//                 <CheckIcon className="statusIcon" />
+//                 <span className="statusText">Confirmed</span>
+//             </div>
+//         </div>
 
-        <div className="tagsLine">
-        </div>
+//         <div className="tagsLine">
+//         </div>
 
-        <EventAttendanceResponseInput finalized={false} past={false} segmentCount={1} />
+//         <EventAttendanceResponseInput finalized={false} past={false} segmentCount={1} />
 
-        <div className='songListLine'>
-            <div className='caption'>Set list #1</div>
-            <ol className='list'>
-                <li>Uma Compania</li>
-                <li>Early Bird</li>
-                <li>Pour Pour</li>
-                <li>In The Mood</li>
-                <li>Musique Mechanique</li>
-                <li>Uma Compania</li>
-                <li>+ add song</li>
-            </ol>
-        </div>
+//         <div className='songListLine'>
+//             <div className='caption'>Set list #1</div>
+//             <ol className='list'>
+//                 <li>Uma Compania</li>
+//                 <li>Early Bird</li>
+//                 <li>Pour Pour</li>
+//                 <li>In The Mood</li>
+//                 <li>Musique Mechanique</li>
+//                 <li>Uma Compania</li>
+//                 <li>+ add song</li>
+//             </ol>
+//         </div>
 
-        <table className='attendanceTable'>
-            <caption>
-                Who's coming?
-            </caption>
-            <thead>
-            </thead>
-            <tbody>
-                <tr>
-                    <th>Name</th>
-                    <th>Instrument</th>
-                    <th>Function</th>
-                    <th>Saturday</th>
-                    <th>Sunday</th>
-                </tr>
-                <tr>
-                    <td>Carl</td>
-                    <td>Flute, bass ++</td>
-                    <td>Flute</td>
-                    <td>
-                        <div className="attendanceResponseChip yes_maybe">
-                            <ThumbUpIcon className="icon" />
-                            <span className="responseText">
-                                probably going
-                            </span>
-                            <div className='userComment'>depends on a meeting at work</div>
-                        </div>
-                    </td>
-                    <td>
-                        <div className="attendanceResponseChip yes_maybe">
-                            <ThumbUpIcon className="icon" />
-                            <span className="responseText">
-                                probably going
-                            </span>
-                            <div className='userComment'></div>
-                        </div>
-                    </td>
+//         <table className='attendanceTable'>
+//             <caption>
+//                 Who's coming?
+//             </caption>
+//             <thead>
+//             </thead>
+//             <tbody>
+//                 <tr>
+//                     <th>Name</th>
+//                     <th>Instrument</th>
+//                     <th>Function</th>
+//                     <th>Saturday</th>
+//                     <th>Sunday</th>
+//                 </tr>
+//                 <tr>
+//                     <td>Carl</td>
+//                     <td>Flute, bass ++</td>
+//                     <td>Flute</td>
+//                     <td>
+//                         <div className="attendanceResponseChip yes_maybe">
+//                             <ThumbUpIcon className="icon" />
+//                             <span className="responseText">
+//                                 probably going
+//                             </span>
+//                             <div className='userComment'>depends on a meeting at work</div>
+//                         </div>
+//                     </td>
+//                     <td>
+//                         <div className="attendanceResponseChip yes_maybe">
+//                             <ThumbUpIcon className="icon" />
+//                             <span className="responseText">
+//                                 probably going
+//                             </span>
+//                             <div className='userComment'></div>
+//                         </div>
+//                     </td>
 
-                </tr>
-                <tr>
-                    <td>Vincent</td>
-                    <td>Trumpet</td>
-                    <td>Trumpet</td>
-                    <td>
-                        <div className="attendanceResponseChip no">
-                            <ThumbUpIcon className="icon" />
-                            <span className="responseText">
-                                not going
-                            </span>
-                            <div className='userComment'></div>
-                        </div>
-                    </td>
-                    <td>
-                        <div className="attendanceResponseChip no">
-                            <ThumbUpIcon className="icon" />
-                            <span className="responseText">
-                                not going
-                            </span>
-                            <div className='userComment'></div>
-                        </div>
-                    </td>
+//                 </tr>
+//                 <tr>
+//                     <td>Vincent</td>
+//                     <td>Trumpet</td>
+//                     <td>Trumpet</td>
+//                     <td>
+//                         <div className="attendanceResponseChip no">
+//                             <ThumbUpIcon className="icon" />
+//                             <span className="responseText">
+//                                 not going
+//                             </span>
+//                             <div className='userComment'></div>
+//                         </div>
+//                     </td>
+//                     <td>
+//                         <div className="attendanceResponseChip no">
+//                             <ThumbUpIcon className="icon" />
+//                             <span className="responseText">
+//                                 not going
+//                             </span>
+//                             <div className='userComment'></div>
+//                         </div>
+//                     </td>
 
-                </tr>
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td>26</td>
-                    <td></td>
-                    <td></td>
-                    <td>7 going, 12 not</td>
-                    <td>7 going, 12 not</td>
-                </tr>
+//                 </tr>
+//             </tbody>
+//             <tfoot>
+//                 <tr>
+//                     <td>26</td>
+//                     <td></td>
+//                     <td></td>
+//                     <td>7 going, 12 not</td>
+//                     <td>7 going, 12 not</td>
+//                 </tr>
 
-            </tfoot>
-        </table>
-
-
-        <table className='viability'>
-            <tbody>
-                <tr>
-                    <th>Function</th>
-                    <th>going</th>
-                    <th>not going</th>
-                    <th>no answer</th>
-                </tr>
-                <tr>
-
-                    <td>Flute</td>
-                    <td>3</td>
-                    <td>1</td>
-                    <td>1</td>
-                </tr>
-            </tbody>
-        </table>
+//             </tfoot>
+//         </table>
 
 
-        {/* 
-        <div className='attendanceDetailGrid'>
-            <div className='row header'>
-                <div className='cell name'>Name</div>
-                <div className='cell instrument'>Instrument</div>
-                <div className='cell function'>Function</div>
-                <div className='cell response'>Response</div>
-            </div>
-            <div className='row'>
-                <div className='cell name'>Carl</div>
-                <div className='cell instrument'>Flute, bass ++</div>
-                <div className='cell function'>Flute</div>
-                <div className='cell response'>
-                    <div className="attendanceResponseChip yes_maybe">
-                        <ThumbUpIcon className="icon" />
-                        <span className="responseText">
-                            probably going
-                        </span>
-                        <div className='userComment'>depends on a meeting at work</div>
-                    </div>
+//         <table className='viability'>
+//             <tbody>
+//                 <tr>
+//                     <th>Function</th>
+//                     <th>going</th>
+//                     <th>not going</th>
+//                     <th>no answer</th>
+//                 </tr>
+//                 <tr>
 
-                </div>
-            </div>
-        </div> */}
+//                     <td>Flute</td>
+//                     <td>3</td>
+//                     <td>1</td>
+//                     <td>1</td>
+//                 </tr>
+//             </tbody>
+//         </table>
 
-    </div>;
-};
+
+//         {/*
+//         <div className='attendanceDetailGrid'>
+//             <div className='row header'>
+//                 <div className='cell name'>Name</div>
+//                 <div className='cell instrument'>Instrument</div>
+//                 <div className='cell function'>Function</div>
+//                 <div className='cell response'>Response</div>
+//             </div>
+//             <div className='row'>
+//                 <div className='cell name'>Carl</div>
+//                 <div className='cell instrument'>Flute, bass ++</div>
+//                 <div className='cell function'>Flute</div>
+//                 <div className='cell response'>
+//                     <div className="attendanceResponseChip yes_maybe">
+//                         <ThumbUpIcon className="icon" />
+//                         <span className="responseText">
+//                             probably going
+//                         </span>
+//                         <div className='userComment'>depends on a meeting at work</div>
+//                     </div>
+
+//                 </div>
+//             </div>
+//         </div> */}
+
+//     </div>;
+// };
 
 
 // interface CustomPickerDayProps extends PickersDayProps<Dayjs> {

@@ -308,8 +308,8 @@ const gMenuItems: MenuItem[] = [
     { type: "link", path: "/backstage/editEventSongListSongs", linkCaption: "Event Song List Songs", renderIcon: () => <FormatListNumberedIcon /> },
     { type: "divider" },
     { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon /> },
-    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => <SettingsIcon /> },
     { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon /> },
+    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => <SettingsIcon /> },
     { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon /> },
 
     { type: "divider" },

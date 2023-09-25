@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
-import { UserPayload, xUser } from "./user";
+import { UserMinimumPayload, UserPayload, xUser } from "./user";
 import { xSong } from "./song";
 /*
 
@@ -57,6 +57,12 @@ leave all that for later.
 // EventSegmentUserResponse {
 
 ////////////////////////////////////////////////////////////////
+export const EventTypeSignificance = {
+    Concert: "Concert",
+    Rehearsal: "Rehearsal",
+    Weekend: "Weekend",
+} as const satisfies Record<string, string>;
+
 const EventTypeInclude: Prisma.EventTypeInclude = {
     events: true,
 };
@@ -93,6 +99,8 @@ export const xEventType = new db3.xTable({
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
         MakeColorField("color"),
+        MakeSignificanceField("significance", EventTypeSignificance),
+        MakeIconField("iconName", gIconOptions),
     ]
 });
 
@@ -112,6 +120,7 @@ export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInp
 
 export const EventStatusSignificance = {
     New: "New",
+    Cancelled: "Cancelled",
 } as const satisfies Record<string, string>;
 
 export const xEventStatus = new db3.xTable({
@@ -246,40 +255,20 @@ export const xEventTagAssignment = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const EventInclude: Prisma.EventInclude = {
-    status: true,
-    tags: {
-        orderBy: EventTagAssignmentNaturalOrderBy,
-        include: {
-            eventTag: true,
-        }
-    },
-    type: true,
-    segments: {
-        orderBy: { startsAt: "desc" },
-        include: {
-            responses: {
-                include: {
-                    attendance: true,
-                    user: true,
-                }
-            }
-        }
-    },
-};
-
 export type EventPayloadMinimum = Prisma.EventGetPayload<{}>;
 
-export type EventPayload = Prisma.EventGetPayload<{
+const EventArgs = Prisma.validator<Prisma.EventArgs>()({
     include: {
         status: true,
         tags: {
+            orderBy: EventTagAssignmentNaturalOrderBy,
             include: {
                 eventTag: true,
             }
-        }, // todo: orderby
+        },
         type: true,
         segments: {
+            orderBy: { startsAt: "desc" },
             include: {
                 responses: {
                     include: {
@@ -288,24 +277,24 @@ export type EventPayload = Prisma.EventGetPayload<{
                     }
                 }
             }
-        }
-    }
-}>;
+        },
+    },
+});
 
-
+export type EventPayload = Prisma.EventGetPayload<typeof EventArgs>;
 
 export interface DateRangeInfo {
     formattedDateRange: string;
     formattedYear: string;
 };
-export type EventPayloadClient = EventPayload & {
+export interface EventClientPayloadExtras {
     dateRangeInfo: DateRangeInfo;
 };
+export type EventPayloadClient = EventPayload & EventClientPayloadExtras;
 
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
     { id: 'desc' }, // TODO: we should find a way to order by segment! can be done in SQL but not prisma afaik. ordering can just be done in code.
 ];
-
 
 export interface DateRange {
     startsAt: Date | null,
@@ -383,8 +372,6 @@ export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
         });
         clientModel[this.member] = ret;
         clientModel.dateRangeInfo = getDateRangeInfo(ret);
-        // clientModel["formattedDateRange"] = formatDateRange(ret);
-        // clientModel["formattedYear"] = formatYear(ret);
     }
 };
 
@@ -397,17 +384,28 @@ export type EventSegmentPayloadFromEvent = Prisma.EventSegmentGetPayload<{
     }
 }>;
 
-export const xEvent = new db3.xTable({
+const xEventArgs_Base: db3.TableDesc = {
+    tableName: "event",
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventInclude,
-    tableName: "event",
+    localInclude: EventArgs.include,
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
     }),
+    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string }): (Prisma.EventWhereInput[] | false) => {
+        if (params.eventId !== undefined) {
+            console.assert(params.eventSlug === undefined);
+            return [{ id: params.eventId, }];
+        }
+        if (params.eventSlug !== undefined) {
+            console.assert(params.eventId === undefined);
+            return [{ slug: params.eventSlug }];
+        }
+        return false;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name"),
@@ -415,15 +413,15 @@ export const xEvent = new db3.xTable({
         MakeMarkdownTextField("description"),
         new BoolField({ columnName: "isPublished", defaultValue: false }),
         new BoolField({ columnName: "isDeleted", defaultValue: false }),
-        new BoolField({ columnName: "isCancelled", defaultValue: false }),
+        //new BoolField({ columnName: "isCancelled", defaultValue: false }),
         MakePlainTextField("locationDescription"),
         MakePlainTextField("locationURL"),
         new CalculatedEventDateRangeField(),
-        new DateTimeField({
-            allowNull: true,
-            columnName: "cancelledAt",
-            granularity: "second",
-        }),
+        // new DateTimeField({
+        //     allowNull: true,
+        //     columnName: "cancelledAt",
+        //     granularity: "second",
+        // }),
         MakeCreatedAtField("createdAt"),
         new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
             columnName: "type",
@@ -460,7 +458,90 @@ export const xEvent = new db3.xTable({
             }),
         }),
     ]
+};
+
+export const xEvent = new db3.xTable(xEventArgs_Base);
+
+// all info that will appear on an event detail page
+const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
+    include: {
+        status: true,
+        songLists: {
+            include: {
+                songs: {
+                    include: {
+                        song: true,
+                    }
+                }
+            }
+        },
+        tags: {
+            orderBy: EventTagAssignmentNaturalOrderBy,
+            include: {
+                eventTag: true,
+            }
+        },
+        type: true,
+        comments: {
+            include: {
+                user: true,
+            }
+        },
+        fileTags: {
+            include: {
+                file: true,
+            }
+        },
+        segments: {
+            orderBy: { startsAt: "desc" },
+            include: {
+                responses: {
+                    include: {
+                        attendance: true,
+                        user: {
+                            include: {
+                                instruments: {
+                                    include: {
+                                        instrument: {
+                                            include: {
+                                                functionalGroup: true,
+                                                instrumentTags: {
+                                                    include: {
+                                                        tag: true,
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+        },
+    }
 });
+
+const xEventArgs_Verbose: db3.TableDesc = {
+    ...xEventArgs_Base,
+    localInclude: EventArgs_Verbose.include,
+};
+
+export type EventClientPayload_Verbose = EventClientPayloadExtras & Prisma.EventGetPayload<typeof EventArgs_Verbose>;
+
+export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
+
+
+
+const userInclude = Prisma.validator<Prisma.UserInclude>()({
+    role: true,
+});
+
+type UserWithRoles = Prisma.UserGetPayload<{
+    include: typeof userInclude;
+}>;
 
 
 ////////////////////////////////////////////////////////////////
@@ -907,20 +988,8 @@ export class EventInfoForUser {
                 response: mockResponse,
             }
         });
-        // this.segments = [];
-
-        // args.event.segments.forEach(seg => {
-        //     const found = seg.responses.find(r => r.userId === args.userId);
-        //     if (found) {
-        //         this.segments[seg.id] = found;
-        //     }
-        // });
     }
 
-    // returns
-    // - not expected
-    // - expected & no response
-    // - expected & response
     getSegmentUserInfo = (segmentId: number) => {
         const segment = this.segments.find(s => s.segment.id === segmentId);
         if (!segment) {
@@ -931,12 +1000,26 @@ export class EventInfoForUser {
     }
 };
 
-// export const CalculateEventInfoForUser = (args: CalculateEventInfoForUserArgs): EventInfoForUser => {
-//     const ret: EventInfoForUser = {
-//         userId: args.userId,
-//         //singularResponse: undefined,
-//         segments: {},
-//     };
+// calculate responses for each user who is invited OR has a response.
+// requires verbose view of event
+interface EventResponsesPerUserArgs {
+    event: EventClientPayload_Verbose;
+};
 
-//     return ret;
-// };
+// returns array of response info per user. so each element has unique user.
+export function GetEventResponsesPerUser({ event }: EventResponsesPerUserArgs): EventInfoForUser[] {
+    // calculate a list of distinct users
+    const users: UserPayload[] = [];
+    event.segments.forEach((seg) => {
+        // get user ids for this segment
+        seg.responses.forEach(resp => {
+            if (users.find(u => u.id === resp.userId) == null) {
+                users.push(resp.user);
+            }
+        });
+    });
+
+    // and calculate responses for all those users.
+    return users.map(user => new EventInfoForUser({ event, user }));
+};
+

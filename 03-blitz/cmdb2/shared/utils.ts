@@ -206,8 +206,38 @@ export const CoerceToNumberOrNull = (value): number | null => {
 export const ValidateNullableInt = (arg) => {
     return arg === null || Number.isInteger(arg);
 };
+
+// only works for true integers, not strings.
+// ValidateInt("1") = false
 export const ValidateInt = (arg) => {
     return Number.isInteger(arg);
+};
+
+// permissively converts a string or number to integer.
+export const parseIntOrNull = (s): (number | null) => {
+    if (typeof s === 'number') return s;
+    const i = parseInt(s, 10);
+    return isNaN(i) ? null : i;
+}
+
+export const CoerceNullableNumberToNullableString = (inp: number | null): string | null => {
+    if (inp === null) return null;
+    return `${inp}`;
+};
+
+// returns whether the string is completely integral.
+// parseInt("1etcetc") returns 1. we don't want that here.
+// use case: deciding whether a string is a row ID or a string.
+export const IsEntirelyIntegral = (arg: string) => {
+    // https://stackoverflow.com/questions/1779013/check-if-string-contains-only-digits
+    // apparently this is also the most performant
+    return /^\d+$/.test(arg);
+};
+
+export const IsNullOrWhitespace = (s) => {
+    if (s == null) return true;
+    if (typeof (s) !== 'string') return false;
+    return (s.trim() === "");
 };
 
 // utility type to allow strict selection of the keys of a const object
@@ -227,11 +257,6 @@ export type TAnyModel = { [key: string]: any };
 export const HasFlag = <T extends number,>(myvar: T, flag: T): boolean => {
     return (myvar & flag) === flag;
 }
-
-export const CoerceNullableNumberToNullableString = (inp: number | null): string | null => {
-    if (inp === null) return null;
-    return `${inp}`;
-};
 
 
 export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
@@ -316,26 +341,23 @@ export const clamp01 = (x) => {
     return x;
 }
 
-export const parseIntOrNull = (s): (number | null) => {
-    if (typeof s === 'number') return s;
-    const i = parseInt(s, 10);
-    return isNaN(i) ? null : i;
-
-}
-
+// this should be synchronized with export const gIconMap.
 export const gIconOptions = {
     Add: "Add",
     CalendarMonth: "CalendarMonth",
     Campaign: "Campaign",
+    Celebration: "Celebration",
     Check: "Check",
     CheckCircleOutline: "CheckCircleOutline",
     Close: "Close",
     Comment: "Comment",
     Done: "Done",
     Edit: "Edit",
+    EditNote: "EditNote",
     Error: "Error",
     ErrorOutline: "ErrorOutline",
     GraphicEq: "GraphicEq",
+    Group: "Group",
     Groups: "Groups",
     HighlightOff: "HighlightOff",
     Home: "Home",
@@ -345,15 +367,21 @@ export const gIconOptions = {
     MusicNote: "MusicNote",
     Nightlife: "Nightlife",
     Person: "Person",
+    PersonSearch: "PersonSearch",
     Place: "Place",
+    Public: "Public",
     QuestionMark: "QuestionMark",
     Search: "Search",
     Security: "Security",
     Settings: "Settings",
     ThumbDown: "ThumbDown",
     ThumbUp: "ThumbUp",
+    Tune: "Tune",
 } as const;
 
 export type TIconOptions = keyof typeof gIconOptions;
 
+// https://stackoverflow.com/a/51399781/402169
+export type ArrayElement<ArrayType extends readonly unknown[]> =
+    ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
 
