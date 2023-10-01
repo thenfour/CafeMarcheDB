@@ -377,6 +377,8 @@ export const gIconOptions = {
     ThumbDown: "ThumbDown",
     ThumbUp: "ThumbUp",
     Tune: "Tune",
+    Visibility: "Visibility",
+    VisibilityOff: "VisibilityOff",
 } as const;
 
 export type TIconOptions = keyof typeof gIconOptions;

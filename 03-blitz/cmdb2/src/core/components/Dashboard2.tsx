@@ -284,6 +284,7 @@ const gMenuItems: MenuItem[] = [
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Instruments" },
     { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon /> },
+    { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon /> },
     { type: "divider" },
     { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon /> },
     { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => <MusicNoteIcon /> },

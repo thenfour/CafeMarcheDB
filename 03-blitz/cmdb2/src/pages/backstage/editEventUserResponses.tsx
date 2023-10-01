@@ -18,7 +18,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.ForeignSingleFieldClient({ columnName: "eventSegment", cellWidth: 120 }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120 }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "attendance", cellWidth: 120 }),
-
+        new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120 }),
     ],
 });
 

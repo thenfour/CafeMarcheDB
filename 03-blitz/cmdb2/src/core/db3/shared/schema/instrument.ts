@@ -177,26 +177,19 @@ export const xInstrumentTagAssociation = new xTable({
 });
 
 ////////////////////////////////////////////////////////////////
-const InstrumentInclude: Prisma.InstrumentInclude = {
-    functionalGroup: true,
-    instrumentTags: {
-        include: {
-            tag: true,
-        },
-        orderBy: InstrumentTagAssociationNaturalOrderBy
-    }
-};
-
-export type InstrumentPayload = Prisma.InstrumentGetPayload<{
+export const InstrumentArgs = Prisma.validator<Prisma.InstrumentArgs>()({
     include: {
         functionalGroup: true,
         instrumentTags: {
             include: {
-                tag: true, // todo: sort
-            }
+                tag: true,
+            },
+            orderBy: InstrumentTagAssociationNaturalOrderBy
         }
     }
-}>;
+});
+
+export type InstrumentPayload = Prisma.InstrumentGetPayload<typeof InstrumentArgs>;
 
 // order by functional group, then by instrument.
 export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput[] = [
@@ -213,7 +206,7 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
 export const xInstrument = new xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: InstrumentInclude,
+    localInclude: InstrumentArgs.include,
     tableName: "instrument",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({

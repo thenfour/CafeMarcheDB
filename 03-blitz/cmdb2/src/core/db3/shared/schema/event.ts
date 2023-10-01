@@ -10,6 +10,7 @@ import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { UserMinimumPayload, UserPayload, xUser } from "./user";
 import { xSong } from "./song";
+import { InstrumentPayload, xInstrument } from "./instrument";
 /*
 
 let's think workflow for events.
@@ -724,6 +725,11 @@ const EventSegmentUserResponseArgs: Prisma.EventSegmentUserResponseArgs = {
     include: {
         attendance: true,
         eventSegment: true,
+        instrument: {
+            include: {
+                functionalGroup: true,
+            }
+        },
         user: {
             include: {
                 instruments: {
@@ -745,6 +751,11 @@ export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGet
     include: {
         attendance: true,
         eventSegment: true,
+        instrument: {
+            include: {
+                functionalGroup: true,
+            }
+        },
         user: {
             include: {
                 instruments: {
@@ -806,6 +817,13 @@ export const xEventSegmentUserResponse = new db3.xTable({
             fkMember: "attendanceId",
             allowNull: false,
             foreignTableSpec: xEventAttendance,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
+            columnName: "instrument",
+            fkMember: "instrumentId",
+            allowNull: true,
+            foreignTableSpec: xInstrument,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -944,6 +962,7 @@ export interface SegmentAndResponse {
     event: EventPayloadClient;
     segment: EventSegmentPayloadFromEvent;
     response: EventSegmentUserResponsePayload;
+    instrument: InstrumentPayload;
 };
 
 export class EventInfoForUser {

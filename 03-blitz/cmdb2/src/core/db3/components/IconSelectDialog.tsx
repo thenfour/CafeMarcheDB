@@ -1,53 +1,43 @@
 
-import {
-    Box,
-    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
-    Divider,
-    InputBase,
-    List,
-    ListItemButton
-} from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from '@mui/material/useMediaQuery';
-import React, { Suspense } from "react";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { ForeignSingleFieldClient, useForeignSingleFieldRenderContext } from "./db3ForeignSingleFieldClient";
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import EditIcon from '@mui/icons-material/Edit';
-import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import AddIcon from '@mui/icons-material/Add';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import CelebrationIcon from '@mui/icons-material/Celebration';
 import CheckIcon from '@mui/icons-material/Check';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import TuneIcon from '@mui/icons-material/Tune';
-import HomeIcon from '@mui/icons-material/Home';
-import PlaceIcon from '@mui/icons-material/Place';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import CloseIcon from '@mui/icons-material/Close';
+import CommentIcon from '@mui/icons-material/Comment';
+import DoneIcon from '@mui/icons-material/Done';
+import EditIcon from '@mui/icons-material/Edit';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import ErrorIcon from '@mui/icons-material/Error';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import AddIcon from '@mui/icons-material/Add';
+import GraphicEqIcon from '@mui/icons-material/GraphicEq';
+import GroupIcon from '@mui/icons-material/Group';
+import GroupsIcon from '@mui/icons-material/Groups';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import HomeIcon from '@mui/icons-material/Home';
+import InfoIcon from '@mui/icons-material/Info';
+import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
+import MicIcon from '@mui/icons-material/Mic';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import NightlifeIcon from '@mui/icons-material/Nightlife';
+import PersonIcon from '@mui/icons-material/Person';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import PlaceIcon from '@mui/icons-material/Place';
+import PublicIcon from '@mui/icons-material/Public';
+import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import SearchIcon from '@mui/icons-material/Search';
+import SecurityIcon from '@mui/icons-material/Security';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
+import TuneIcon from '@mui/icons-material/Tune';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import React from "react";
 import { TIconOptions, gIconOptions } from "shared/utils";
 import { ChoiceEditCell } from "../../components/ChooseItemDialog";
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import CommentIcon from '@mui/icons-material/Comment';
-import PersonIcon from '@mui/icons-material/Person';
-import SecurityIcon from '@mui/icons-material/Security';
-import EditNoteIcon from '@mui/icons-material/EditNote';
-import InfoIcon from '@mui/icons-material/Info';
-import MicIcon from '@mui/icons-material/Mic';
-import CampaignIcon from '@mui/icons-material/Campaign';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
-import GraphicEqIcon from '@mui/icons-material/GraphicEq';
-import NightlifeIcon from '@mui/icons-material/Nightlife';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import GroupsIcon from '@mui/icons-material/Groups';
-import PublicIcon from '@mui/icons-material/Public';
-import CelebrationIcon from '@mui/icons-material/Celebration';
-import GroupIcon from '@mui/icons-material/Group';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -89,7 +79,8 @@ export const gIconMap /*: IIconMap*/ = {
     ThumbDown: () => <ThumbDownIcon />,
     ThumbUp: () => <ThumbUpIcon />,
     Tune: () => <TuneIcon />,
-
+    Visibility: () => <VisibilityIcon />,
+    VisibilityOff: () => <VisibilityOffIcon />,
 
 
 

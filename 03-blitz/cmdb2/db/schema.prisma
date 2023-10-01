@@ -1,13 +1,6 @@
 // some common patterns:
-// todo: random seed column on tables?
-// todo: languages
-// todo: strings
+// todo: languages / strings
 // TODO: website integration (fields for events, image editing, whether it's published etc)
-
-// sortOrder   Int              @default(0)
-// isDeleted      Boolean             @default(false)
-// significance String? // for tags
-// isPublished Boolean @default(false)
 
 // tags have both significance and classification
 // they look similar, and in a way they are. but more like,
@@ -29,12 +22,6 @@
 
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// note that we can generate model types which include related objects like this:
-// https://github.com/prisma/prisma/discussions/10928
-// type FactionWithOwner = Prisma.FactionGetPayload<{
-//   include: { owner: true }
-// }>
 
 datasource db {
   provider = "sqlite"
@@ -294,8 +281,9 @@ model Instrument {
   functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Restrict) // if you want to delete a functional group, you need to manually reassign
   instrumentTags    InstrumentTagAssociation[]
 
-  fileTags FileInstrumentTag[]
-  users    UserInstrument[]
+  fileTags                  FileInstrumentTag[]
+  users                     UserInstrument[]
+  eventSegmentUserResponses EventSegmentUserResponse[]
 }
 
 model InstrumentTag {
@@ -323,6 +311,7 @@ model UserInstrument {
   id           Int        @id @default(autoincrement())
   instrumentId Int
   instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
+  isPrimary    Boolean    @default(false)
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Restrict) // cascade delete association
 }
@@ -497,6 +486,9 @@ model EventSegmentUserResponse {
   attendanceId      Int?
   attendance        EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
   attendanceComment String? // comment
+
+  instrumentId Int? // specify the specific instrument
+  instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: SetDefault) // delete instrument, set to null
 
   @@unique([userId, eventSegmentId]) // 
 }
