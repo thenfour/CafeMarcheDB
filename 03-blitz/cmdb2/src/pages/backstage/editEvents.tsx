@@ -16,16 +16,15 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
         new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-        new DB3Client.BoolColumnClient({ columnName: "isPublished" }),
         new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-        //new DB3Client.BoolColumnClient({ columnName: "isCancelled" }),
         new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
         new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
-        //new DB3Client.DateTimeColumn({ columnName: "cancelledAt", cellWidth: 150 }),
         new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
         new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150 }),
         new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150 }),
         new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
     ],
 });
 

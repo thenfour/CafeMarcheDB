@@ -377,35 +377,68 @@ export const EventDescriptionControl = ({ event, refetch }: { event: db3.EventPa
 };
 
 
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export const EventPublishedValue = ({ event }: { event: db3.EventPayloadMinimum }) => {
+//     return <div className={`eventPublishedValue ${event.isPublished ? "published" : "unpublished"}`}>
+//         <div className='icon'>{event.isPublished ? gIconMap.Public() : gIconMap.EditNote()}</div>
+//         <div className='text'>{event.isPublished ? "published" : "unpublished"}</div>
+//     </div>;
+// };
+
+// export const EventPublishedControl = ({ event, refetch }: { event: db3.EventPayloadMinimum, refetch: () => void }) => {
+//     const mutationToken = API.events.updateEventBasicFields.useToken();
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+//     const handleClick = async () => {
+//         mutationToken.invoke({
+//             eventId: event.id,
+//             isPublished: !event.isPublished,
+//         }).then(() => {
+//             showSnackbar({ severity: "success", children: "Successfully updated published status" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: "error updating published status" });
+//         }).finally(() => {
+//             refetch();
+//         });
+//     };
+
+//     return <div className={`eventPublishedControl ${event.isPublished ? "published" : "unpublished"}`}>
+//         <EventPublishedValue event={event} />
+//         <Button className='eventPublishedToggleButton' onClick={handleClick}>{event.isPublished ? "click to Unpublish" : "click to Publish"}</Button>
+//     </div>;
+// };
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventPublishedValue = ({ event }: { event: db3.EventPayloadMinimum }) => {
-    return <div className={`eventPublishedValue ${event.isPublished ? "published" : "unpublished"}`}>
-        <div className='icon'>{event.isPublished ? gIconMap.Public() : gIconMap.EditNote()}</div>
-        <div className='text'>{event.isPublished ? "published" : "unpublished"}</div>
-    </div>;
-};
+// export const EventVisibilityValue = ({ event }: { event: db3.EventPayloadMinimum }) => {
+//     return <div className={`eventPublishedValue`}>
+//         <div className='icon'>{event.isPublished ? gIconMap.Public() : gIconMap.EditNote()}</div>
+//         <div className='text'>{event.isPublished ? "published" : "unpublished"}</div>
+//     </div>;
+// };
 
-export const EventPublishedControl = ({ event, refetch }: { event: db3.EventPayloadMinimum, refetch: () => void }) => {
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+export const EventVisibilityControl = ({ event, refetch }: { event: db3.EventPayloadWithVisiblePermission, refetch: () => void }) => {
+    //const mutationToken = API.events.updateEventBasicFields.useToken();
+    //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const handleClick = async () => {
-        mutationToken.invoke({
-            eventId: event.id,
-            isPublished: !event.isPublished,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated published status" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating published status" });
-        }).finally(() => {
-            refetch();
-        });
-    };
+    // const handleClick = async () => {
+    //     mutationToken.invoke({
+    //         eventId: event.id,
+    //         isPublished: !event.isPublished,
+    //     }).then(() => {
+    //         showSnackbar({ severity: "success", children: "Successfully updated published status" });
+    //     }).catch(e => {
+    //         console.log(e);
+    //         showSnackbar({ severity: "error", children: "error updating published status" });
+    //     }).finally(() => {
+    //         refetch();
+    //     });
+    // };
 
-    return <div className={`eventPublishedControl ${event.isPublished ? "published" : "unpublished"}`}>
-        <EventPublishedValue event={event} />
-        <Button className='eventPublishedToggleButton' onClick={handleClick}>{event.isPublished ? "click to Unpublish" : "click to Publish"}</Button>
+    return <div className={`eventPublishedControl`}>
+        {/* <EventVisibilityValue event={event} /> */}
+        <Button>{!event.visiblePermissionId ? "(private)" : event.visiblePermission!.name}</Button>
     </div>;
 };
 
@@ -685,7 +718,7 @@ export const EventDetail = ({ event, tableClient }: { event: db3.EventClientPayl
 
     return <div className={`contentSection event future`}>
 
-        <EventPublishedControl event={event} refetch={tableClient.refetch} />
+        <EventVisibilityControl event={event} refetch={tableClient.refetch} />
 
         <div className="infoLine">
             <div className="date smallInfoBox">
@@ -719,33 +752,34 @@ export const EventDetail = ({ event, tableClient }: { event: db3.EventClientPayl
 
         <Tabs value={selectedTab} onChange={handleTabChange} aria-label="basic tabs example">
             <Tab label="Info" {...a11yProps(0)} />
-            <Tab label={`Set Lists (${event.songLists.length})`} {...a11yProps(1)} />
-            <Tab label={`Attendance ${formattedAttendeeRange}`} {...a11yProps(2)} />
-            <Tab label={`Completeness`} {...a11yProps(3)} />
+            <Tab label={`Comments (${event.comments.length})`} {...a11yProps(1)} />
+            <Tab label={`Set Lists (${event.songLists.length})`} {...a11yProps(2)} />
+            <Tab label={`Attendance ${formattedAttendeeRange}`} {...a11yProps(3)} />
+            <Tab label={`Completeness`} {...a11yProps(4)} />
         </Tabs>
 
         <CustomTabPanel value={selectedTab} index={0}>
-
-
-
             <div className='descriptionLine'>
                 <EventDescriptionControl event={event} refetch={tableClient.refetch} />
             </div>
-
         </CustomTabPanel>
 
         <CustomTabPanel value={selectedTab} index={1}>
+            (todo)
+        </CustomTabPanel>
+
+        <CustomTabPanel value={selectedTab} index={2}>
             {
                 event.songLists.map(songList => <EventSongListDetail key={songList.id} event={event} tableClient={tableClient} songList={songList} />)
             }
             <Button startIcon={gIconMap.Add()}>Add song list</Button>
         </CustomTabPanel>
 
-        <CustomTabPanel value={selectedTab} index={2}>
+        <CustomTabPanel value={selectedTab} index={3}>
             <EventAttendanceDetail event={event} tableClient={tableClient} />
         </CustomTabPanel>
 
-        <CustomTabPanel value={selectedTab} index={3}>
+        <CustomTabPanel value={selectedTab} index={4}>
             <table>
                 <tbody>
                     <tr>

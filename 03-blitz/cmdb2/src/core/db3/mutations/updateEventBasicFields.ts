@@ -18,11 +18,12 @@ export default resolver.pipe(
             slug: args.slug,
             description: args.description,
             typeId: args.typeId,
-            isPublished: args.isPublished,
+            visiblePermissionId: args.visiblePermissionId,
             locationDescription: args.locationDescription,
             locationURL: args.locationURL,
             isDeleted: args.isDeleted,
             statusId: args.statusId,
+            createdByUserId: args.createdByUserId,
         };
 
         mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx);

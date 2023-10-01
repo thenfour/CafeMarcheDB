@@ -8,7 +8,7 @@ export const RoleClientSchema = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 300 }),
+        new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 300, allowDeleteFromCell: false }),
     ],
 });
 
@@ -19,5 +19,8 @@ export const PermissionClientSchema = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+        new DB3Client.BoolColumnClient({ columnName: "isVisibility" }),
+        new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 120 }),
+        new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120 }),
     ],
 });

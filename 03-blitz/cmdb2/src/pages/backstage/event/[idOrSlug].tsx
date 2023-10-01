@@ -37,12 +37,16 @@ const MyComponent = () => {
         queryArgs.tableParams!.eventSlug = params.idOrSlug;
     }
 
+    console.log(`event here`);
+
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
 
     return <div>
-        <EventBreadcrumbs event={event} />
-        <EventDetail event={event} tableClient={tableClient} />
+        {event && <>
+            <EventBreadcrumbs event={event} />
+            <EventDetail event={event} tableClient={tableClient} />
+        </>}
     </div>;
 };
 

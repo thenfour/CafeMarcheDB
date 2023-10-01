@@ -18,9 +18,10 @@ export interface TupdateEventBasicFieldsArgs {
     slug?: string;
     description?: string;
     typeId?: number;
-    isPublished?: boolean;
     locationDescription?: string;
     locationURL?: string;
     isDeleted?: boolean;
     statusId?: number;
+    visiblePermissionId?: number;
+    createdByUserId?: number;
 }

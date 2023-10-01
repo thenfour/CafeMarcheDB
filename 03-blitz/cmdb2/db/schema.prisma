@@ -20,6 +20,14 @@
 // the fact that it's a sort of emergency action and play it safe. if you can hard-delete objects via admin, then you can 
 // hard-delete the related objects first.
 
+// regarding "published" style visibility.
+// it's not exactly a user role to assign, because we need to support things like "private" to the author.
+// also because users are assigned a SINGLE role.
+// really it's more of a style of PERMISSION. so we should
+// - mark permissions as usable as visibility or not
+// - for visibility of objects, just use a FK to permissions.
+// we need to track which user CREATED objects as well, to understand the null visibility.
+
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -45,11 +53,20 @@ model Role {
 }
 
 model Permission {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique
-  description String?
-  sortOrder   Int              @default(0)
-  roles       RolePermission[]
+  id           Int     @id @default(autoincrement())
+  name         String  @unique
+  isVisibility Boolean @default(false)
+  description  String?
+  sortOrder    Int     @default(0)
+  color        String?
+  iconName     String?
+
+  roles                       RolePermission[]
+  visibilityForSongs          Song[]
+  visibilityForSongComments   SongComment[]
+  visibilityForEvents         Event[]
+  visibilityForEventComments  EventComment[]
+  visibilityForEventSongLists EventSongList[]
 }
 
 model RolePermission {
@@ -90,6 +107,10 @@ model User {
   eventComments         EventComment[]
   songComments          SongComment[]
   instruments           UserInstrument[]
+
+  creatorForSongs          Song[]
+  creatorForEvents         Event[]
+  creatorForEventSongLists EventSongList[]
 }
 
 model Setting {
@@ -184,6 +205,11 @@ model Song {
   lengthSeconds Int? // length. this is approximate, and could vary wildly esp. considering variations.
   // so what about variations like roger variete, or tango long/short versions? do we relate them? or score stuff? i think don't bother; maybe there can be related songs or something but not yet.
 
+  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+
   FileSongTag FileSongTag[]
   tags        SongTagAssociation[]
   comments    SongComment[]
@@ -202,9 +228,8 @@ model SongComment {
   text      String
   user      User     @relation(fields: [userId], references: [id], onDelete: Restrict) // users are soft delete; if an admin wants to force delete, then they can go through this.
 
-  // we want users to be able to unpublish things they edit.
-  // deletes are always hard.
-  isPublished Boolean @default(false)
+  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
   //@@unique([songId, commentId])
 }
@@ -334,7 +359,6 @@ model Event {
   description String // what's the diff between a description & comment? description is the pinned general description in markdown.
   typeId      Int?
   type        EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
-  isPublished Boolean    @default(false) // is it visible to non-editors?
 
   locationDescription String       @default("")
   locationURL         String       @default("")
@@ -350,6 +374,11 @@ model Event {
   // cancelledAt DateTime?
 
   createdAt DateTime
+
+  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
   // contact people ?
   // links ?
@@ -431,9 +460,8 @@ model EventComment {
   text      String
   user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  // we want users to be able to unpublish things they edit.
-  // deletes are always hard.
-  isPublished Boolean @default(false)
+  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 }
 
 model EventSongList {
@@ -441,6 +469,11 @@ model EventSongList {
   sortOrder   Int    @default(0)
   name        String
   description String @default("")
+
+  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.

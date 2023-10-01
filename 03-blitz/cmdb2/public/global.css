@@ -785,3 +785,9 @@ table td {
   border-radius: 3px;
   padding: 2px 6px;
 }
+
+
+.CMEditGrid2 .MuiDataGrid-virtualScroller {
+  min-height: 40px;
+  /* when there are no rows, there's a "nothing to show" overlay, but with our row height auto, it will result in a 1px-height area. this allows the overlay to show.*/
+}

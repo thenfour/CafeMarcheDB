@@ -9,7 +9,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import { xTable } from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
-import { xUser } from "./user";
+import { xPermission, xUser } from "./user";
 
 ////////////////////////////////////////////////////////////////
 const SongTagInclude: Prisma.SongTagInclude = {
@@ -125,12 +125,14 @@ export const xSongTagAssociation = new xTable({
 export type SongModel = Prisma.SongGetPayload<{
     include: {
         tags: true,
+        visiblePermission: true,
     }
 }>;
 export type SongPayloadMinimum = Prisma.SongGetPayload<{}>;
 
 // not sure this is needed or used at all.
 const SongInclude: Prisma.SongInclude = {
+    visiblePermission: true,
     tags: {
         include: {
             tag: true, // include foreign object
@@ -185,6 +187,22 @@ export const xSong = new xTable({
             columnName: "lengthSeconds",
             allowNull: true,
         }),
+
+        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName: "createdByUser",
+            fkMember: "createdByUserId",
+            allowNull: true,
+            foreignTableSpec: xUser,
+            getQuickFilterWhereClause: (query) => false,
+        }),
+        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+            columnName: "visiblePermission",
+            fkMember: "visiblePermissionId",
+            allowNull: true,
+            foreignTableSpec: xPermission,
+            getQuickFilterWhereClause: (query) => false,
+        }),
+
         new TagsField<SongTagAssociationModel>({
             columnName: "tags",
             associationForeignIDMember: "tagId",
@@ -216,6 +234,7 @@ export const xSong = new xTable({
 const SongCommentInclude: Prisma.SongCommentInclude = {
     song: true,
     user: true,
+    visiblePermission: true,
 };
 
 export type SongCommentPayload = Prisma.SongCommentGetPayload<{}>;
@@ -230,7 +249,7 @@ export const xSongComment = new xTable({
     viewPermission: Permission.view_general_info,
     localInclude: SongCommentInclude,
     tableName: "songComment",
-    naturalOrderBy: SongTagNaturalOrderBy,
+    naturalOrderBy: SongCommentNaturalOrderBy,
     getRowInfo: (row: SongCommentPayload) => ({
         name: "<not supported>",
     }),
@@ -249,10 +268,6 @@ export const xSongComment = new xTable({
             allowNull: false,
             format: "plain",
         }),
-        new BoolField({
-            columnName: "isPublished", // a soft delete for users
-            defaultValue: true,
-        }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
             fkMember: "userId",
@@ -260,6 +275,15 @@ export const xSongComment = new xTable({
             foreignTableSpec: xUser,
             getQuickFilterWhereClause: (query: string) => false,
         }),
+
+        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+            columnName: "visiblePermission",
+            fkMember: "visiblePermissionId",
+            allowNull: true,
+            foreignTableSpec: xPermission,
+            getQuickFilterWhereClause: (query) => false,
+        }),
+
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
             columnName: "song",
             fkMember: "songId",

@@ -1,11 +1,11 @@
 
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeCreatedAtField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, PKField, TagsField } from "../db3basicFields";
 import { xTable } from "../db3core";
 import { gGeneralPaletteList } from "shared/color";
 import { InstrumentArgs, xInstrument } from "./instrument";
-import { TAnyModel } from "shared/utils";
+import { TAnyModel, gIconOptions } from "shared/utils";
 
 
 
@@ -107,19 +107,6 @@ export const xUserMinimum = new xTable({
 
 
 
-
-//   model RolePermission {
-//     id           Int        @id @default(autoincrement())
-//     roleId       Int
-//     permissionId Int
-//     role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade) // cascade delete association
-//     permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade) // cascade delete association
-
-//     // you could also cluster the keys but this is just simpler
-//     //   @@id([roleId, permissionId])
-//     @@unique([roleId, permissionId]) // 
-//   }
-
 const PermissionLocalInclude: Prisma.PermissionInclude = {
     roles: {
         include: {
@@ -151,6 +138,7 @@ export const xPermission = new xTable({
     getRowInfo: (row: PermissionPayload) => ({
         name: row.name,
         description: row.description || "",
+        color: gGeneralPaletteList.findEntry(row.color),
     }),
     columns: [
         new PKField({ columnName: "id" }),
@@ -168,6 +156,12 @@ export const xPermission = new xTable({
             columnName: "sortOrder",
             allowNull: false,
         }),
+        new BoolField({
+            columnName: "isVisibility",
+            defaultValue: false,
+        }),
+        MakeColorField("color"),
+        MakeIconField("iconName", gIconOptions),
     ]
     // renderCell: (params) => {
     //     const dbname = params.row.name;

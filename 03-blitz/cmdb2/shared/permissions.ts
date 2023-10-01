@@ -3,6 +3,9 @@
 export enum Permission {
     login = "login", // basic permission to access the site at all.
 
+    visibility_restricted = "visibility_restricted",
+    visibility_all = "visibility_all",
+
     admin_auth = "admin_auth", // roles, permissions
     impersonate_user = "impersonate_user",
     view_roles = "view_roles",

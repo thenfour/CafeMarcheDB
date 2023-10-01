@@ -71,13 +71,13 @@ html,
     display: flex;
 }
 
-.eventPublishedControl.published {
+/* .eventPublishedControl.published {
     background-color: #0802;
 }
 
 .eventPublishedControl.unpublished {
     background-color: #f802;
-}
+} */
 
 .eventPublishedValue {
     display: flex;
@@ -85,21 +85,6 @@ html,
     align-items: center;
 }
 
-.eventPublishedValue.published {}
-
-.eventPublishedValue.unpublished {}
-
-.eventPublishedToggleButton {
-    /* background-color: #f808; */
-    font-style: italic;
-    color: #0008;
-}
-
-.published .eventPublishedToggleButton {}
-
-.unpublished .eventPublishedToggleButton {
-    /* background-color: #0808; */
-}
 
 /* ---------------------------------- */
 .eventTypeControl {}

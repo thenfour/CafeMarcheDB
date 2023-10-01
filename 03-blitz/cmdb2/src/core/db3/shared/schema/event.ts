@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
-import { UserMinimumPayload, UserPayload, xUser } from "./user";
+import { UserMinimumPayload, UserPayload, xPermission, xUser } from "./user";
 import { xSong } from "./song";
 import { InstrumentPayload, xInstrument } from "./instrument";
 /*
@@ -257,9 +257,15 @@ export const xEventTagAssignment = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 export type EventPayloadMinimum = Prisma.EventGetPayload<{}>;
+export type EventPayloadWithVisiblePermission = Prisma.EventGetPayload<{
+    include: {
+        visiblePermission: true,
+    }
+}>;
 
 const EventArgs = Prisma.validator<Prisma.EventArgs>()({
     include: {
+        visiblePermission: true,
         status: true,
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
@@ -412,9 +418,7 @@ const xEventArgs_Base: db3.TableDesc = {
         MakeTitleField("name"),
         MakeSlugField("slug", "name"),
         MakeMarkdownTextField("description"),
-        new BoolField({ columnName: "isPublished", defaultValue: false }),
         new BoolField({ columnName: "isDeleted", defaultValue: false }),
-        //new BoolField({ columnName: "isCancelled", defaultValue: false }),
         MakePlainTextField("locationDescription"),
         MakePlainTextField("locationURL"),
         new CalculatedEventDateRangeField(),
@@ -430,6 +434,20 @@ const xEventArgs_Base: db3.TableDesc = {
             allowNull: true,
             foreignTableSpec: xEventType,
             getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName: "createdByUser",
+            fkMember: "createdByUserId",
+            allowNull: false,
+            foreignTableSpec: xUser,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+            columnName: "visiblePermission",
+            fkMember: "visiblePermissionId",
+            allowNull: true,
+            foreignTableSpec: xPermission,
+            getQuickFilterWhereClause: (query) => false,
         }),
         new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
             columnName: "status",
@@ -467,6 +485,7 @@ export const xEvent = new db3.xTable(xEventArgs_Base);
 const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
     include: {
         status: true,
+        visiblePermission: true,
         songLists: {
             include: {
                 songs: {
@@ -613,12 +632,14 @@ export const xEventSegment = new db3.xTable({
 const EventCommentInclude: Prisma.EventCommentInclude = {
     event: true,
     user: true,
+    visiblePermission: true,
 };
 
 export type EventCommentPayload = Prisma.EventCommentGetPayload<{
     include: {
         event: true,
         user: true,
+        visiblePermission: true,
     }
 }>;
 
@@ -647,7 +668,6 @@ export const xEventComment = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeMarkdownTextField("text"),
-        new BoolField({ columnName: "isPublished", defaultValue: true }),
         MakeCreatedAtField("createdAt"),
         new DateTimeField({ allowNull: false, columnName: "updatedAt", granularity: "minute", }),
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
@@ -663,6 +683,13 @@ export const xEventComment = new db3.xTable({
             allowNull: false,
             foreignTableSpec: xUser,
             getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+            columnName: "visiblePermission",
+            fkMember: "visiblePermissionId",
+            allowNull: true,
+            foreignTableSpec: xPermission,
+            getQuickFilterWhereClause: (query) => false,
         }),
     ]
 });
@@ -840,6 +867,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
 const EventSongListArgs: Prisma.EventSongListArgs = {
     include: {
         event: true,
+        visiblePermission: true,
     }
 }
 
@@ -847,6 +875,7 @@ const EventSongListArgs: Prisma.EventSongListArgs = {
 export type EventSongListPayload = Prisma.EventSongListGetPayload<{
     include: {
         event: true,
+        visiblePermission: true,
     }
 }>;
 
@@ -884,6 +913,20 @@ export const xEventSongList = new db3.xTable({
             allowNull: false,
             foreignTableSpec: xEvent,
             getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName: "createdByUser",
+            fkMember: "createdByUserId",
+            allowNull: true,
+            foreignTableSpec: xUser,
+            getQuickFilterWhereClause: (query) => false,
+        }),
+        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+            columnName: "visiblePermission",
+            fkMember: "visiblePermissionId",
+            allowNull: true,
+            foreignTableSpec: xPermission,
+            getQuickFilterWhereClause: (query) => false,
         }),
     ]
 });
