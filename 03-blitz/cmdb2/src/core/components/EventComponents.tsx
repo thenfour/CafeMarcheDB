@@ -424,29 +424,89 @@ export const EventDescriptionControl = ({ event, refetch }: { event: db3.EventPa
 //     </div>;
 // };
 
-export const EventVisibilityControl = ({ event, refetch }: { event: db3.EventPayloadWithVisiblePermission, refetch: () => void }) => {
-    //const mutationToken = API.events.updateEventBasicFields.useToken();
-    //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+// export const EventVisibilityControl = ({ event, refetch }: { event: db3.EventPayloadWithVisiblePermission, refetch: () => void }) => {
+//     //const mutationToken = API.events.updateEventBasicFields.useToken();
+//     //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    // const handleClick = async () => {
-    //     mutationToken.invoke({
-    //         eventId: event.id,
-    //         isPublished: !event.isPublished,
-    //     }).then(() => {
-    //         showSnackbar({ severity: "success", children: "Successfully updated published status" });
-    //     }).catch(e => {
-    //         console.log(e);
-    //         showSnackbar({ severity: "error", children: "error updating published status" });
-    //     }).finally(() => {
-    //         refetch();
-    //     });
-    // };
+//     // const handleClick = async () => {
+//     //     mutationToken.invoke({
+//     //         eventId: event.id,
+//     //         isPublished: !event.isPublished,
+//     //     }).then(() => {
+//     //         showSnackbar({ severity: "success", children: "Successfully updated published status" });
+//     //     }).catch(e => {
+//     //         console.log(e);
+//     //         showSnackbar({ severity: "error", children: "error updating published status" });
+//     //     }).finally(() => {
+//     //         refetch();
+//     //     });
+//     // };
 
-    return <div className={`eventPublishedControl`}>
-        {/* <EventVisibilityValue event={event} /> */}
-        <Button>{!event.visiblePermissionId ? "(private)" : event.visiblePermission!.name}</Button>
+//     return <div className={`eventPublishedControl`}>
+//         {/* <EventVisibilityValue event={event} /> */}
+//         <Button>{!event.visiblePermissionId ? "(private)" : event.visiblePermission!.name}</Button>
+//     </div>;
+// };
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const EventVisibilityValue = ({ permission }: { permission: db3.PermissionPayload | null }) => {
+    const style = GetStyleVariablesForColor(permission?.color);
+    return <div className='eventVisibilityValue' style={style}>
+        {RenderMuiIcon(permission?.iconName)}
+        {permission === null ? "(private)" : `${permission.name}-nam`}
     </div>;
 };
+
+export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
+    const mutationToken = API.events.updateEventBasicFields.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const handleChange = (value: db3.PermissionPayload | null) => {
+        mutationToken.invoke({
+            eventId: event.id,
+            visiblePermissionId: !value ? null : value.id,
+        }).then(() => {
+            showSnackbar({ severity: "success", children: "Successfully updated event visibility" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating event visibility" });
+        }).finally(() => {
+            refetch();
+        });
+    };
+
+    const permissions = API.users.getAllPermissions();
+    const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => p.isVisibility)];
+
+    // ChoiceEditCell value type is PermissionPayload
+    return <div className={`EventVisibilityControl ${event.type?.significance}`}>
+        <ChoiceEditCell
+            isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
+            items={visibilityChoices}
+            readOnly={false} // todo!
+            validationError={null}
+            selectDialogTitle='select dialog title here'
+            selectButtonLabel='change visibility'
+            value={event.visiblePermission}
+            renderDialogDescription={() => {
+                return <>dialog description heree</>;
+            }}
+            renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
+                return <li {...chprops}>
+                    <EventVisibilityValue permission={value} /></li>;
+            }}
+            renderValue={(value: db3.PermissionPayload | null, onDelete) => {
+                return <EventVisibilityValue permission={value} />;
+            }}
+            onChange={handleChange}
+        />
+    </div>;
+};
+
+
+
+
 
 
 

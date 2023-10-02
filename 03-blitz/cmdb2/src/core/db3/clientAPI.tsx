@@ -74,7 +74,20 @@ class UsersAPI {
             return p.instrument;
         }
         return user.instruments[0]!.instrument;
-    }
+    };
+
+    getAllPermissions = () => {
+        return DB3Client.useTableRenderContext({
+            tableSpec: new DB3Client.xTableClientSpec({
+                table: db3.xPermission,
+                columns: [
+                    new DB3Client.PKColumnClient({ columnName: "id" }),
+                ],
+            }),
+            requestedCaps: DB3Client.xTableClientCaps.Query,
+        });
+
+    };
 
     updateUserPrimaryInstrument = CreateAPIMutationFunction<TupdateUserPrimaryInstrumentMutationArgs, typeof updateUserPrimaryInstrumentMutation>(updateUserPrimaryInstrumentMutation);
 };
