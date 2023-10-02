@@ -4,7 +4,7 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { CardContent, FormControl, FormHelperText, Input, InputLabel, Typography } from "@mui/material";
+import { Button, CardContent, FormControl, FormHelperText, Input, InputLabel, Typography } from "@mui/material";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { ButtonSelectControl, ButtonSelectOption, MutationButtonSelectControl, MutationTextControl } from "src/core/components/CMTextField";
 import { useMutation, useQuery } from "@blitzjs/rpc";
@@ -17,7 +17,7 @@ import { DebouncedControl } from "src/core/components/RichTextEditor";
 import { useDebounce } from "shared/useDebounce";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import React from "react";
-
+import { API, APIQueryResult } from 'src/core/db3/clientAPI';
 
 
 
@@ -71,6 +71,73 @@ export const OwnActiveControl = () => {
 };
 
 
+export type UserInstrumentsFieldInput = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
+    refetch: () => void;
+};
+
+export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInput) => {
+    const updatePrimaryMutationToken = API.users.updateUserPrimaryInstrument.useToken();
+    const [currentUser, { refetch }] = useCurrentUser();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const [isOpen, setIsOpen] = React.useState<boolean>(false);
+    const [oldValue, setOldValue] = React.useState<db3.UserInstrumentPayload[]>([]);
+
+    React.useEffect(() => {
+        setOldValue(props.value);
+    }, []);
+
+    const primary: (db3.InstrumentPayload | null) = API.users.getPrimaryInstrument(props.row as db3.UserPayload);
+
+    const handleClickMakePrimary = (instrumentId: number) => {
+        updatePrimaryMutationToken.invoke({ userId: currentUser!.id, instrumentId }).then(e => {
+            showSnackbar({ severity: "success", children: "Primary instrument updated" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating primary instrument" });
+        }).finally(() => {
+            props.refetch();
+            refetch();
+        });
+    };
+
+    return <div className={props.validationError ? "instrumentListVertical validationError" : "instrumentListVertical validationSuccess"}>
+        {props.value.map(value => (
+            <div className="instrumentAndPrimaryContainer" key={value[props.spec.associationForeignIDMember]}>
+                {props.spec.renderAsChipForCell!({
+                    value,
+                    colorVariant: "strong",
+                    onDelete: () => {
+                        const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
+                        props.onChange(newValue);
+                    }
+                })}
+                {
+                    (value.instrumentId === primary?.id) ? <>primary</> : <Button onClick={() => handleClickMakePrimary(value.instrumentId)}>make primary</Button>
+                }
+            </div>
+        ))}
+
+        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.label}</Button>
+        {isOpen && <DB3Client.DB3SelectTagsDialog
+            row={props.row}
+            value={props.value}
+            spec={props.spec}
+            onClose={() => {
+                setIsOpen(false);
+            }}
+            onChange={(newValue: db3.UserInstrumentPayload[]) => {
+                props.onChange(newValue);
+            }}
+        />}
+        {props.validationError && <FormHelperText children={props.validationError} />}
+    </div>;
+};
+
+
+
+
+
 // given a userid, this is a standalone field for editing their instrument list.
 // i would love to debounce this field like the others but that would cause problems:
 // - the GUI will be gross. either useless or noisy, either way disruptive or error-prone.
@@ -84,7 +151,7 @@ const OwnInstrumentsControl = () => {
             table: db3.xUser,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.TagsFieldClient<db3.UserInstrumentModel>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
+                new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
             ],
         }),
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
@@ -96,26 +163,31 @@ const OwnInstrumentsControl = () => {
     const row = tableClient.items[0]!;
     const validationResult = tableClient.schema.ValidateAndComputeDiff(row, row, "update");
 
-    return tableClient.getColumn("instruments").renderForNewDialog!({
-        key: row.id,
-        row,
-        value: tableClient.items[0]!.instruments,
-        validationResult,
-        api: {
-            setFieldValues: (updatedFields) => {
-                const updateObj = {
-                    id: currentUser!.id,
-                    ...updatedFields,
-                };
-                tableClient.doUpdateMutation(updateObj).then(e => {
-                    showSnackbar({ severity: "success", children: "Instruments updated" });
-                }).catch(e => {
-                    console.log(e);
-                    showSnackbar({ severity: "error", children: "error updating instruments" });
-                });
-            }
-        }
-    });
+    // can't use tableClient.getColumn("instruments").renderForNewDialog,
+    // because it just lists instruments as tag-like-chips. we need the ability to select a primary instrument.
+    return <UserInstrumentsFieldInput
+        spec={tableClient.getColumn("instruments") as any}
+        validationError={validationResult.getErrorForField("instruments")}
+        row={row}
+        value={row.instruments}
+        refetch={tableClient.refetch}
+        onChange={(value: db3.xUserInstrument[]) => {
+            const updateObj = {
+                id: currentUser!.id,
+                instruments: value,
+            };
+            tableClient.doUpdateMutation(updateObj).then(e => {
+                showSnackbar({ severity: "success", children: "Instruments updated" });
+            }).catch(e => {
+                console.log(e);
+                showSnackbar({ severity: "error", children: "error updating instruments" });
+            }).finally(() => {
+                tableClient.refetch();
+                refetch();
+            });
+        }}
+    />;
+
 };
 
 

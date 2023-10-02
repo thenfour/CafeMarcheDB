@@ -105,6 +105,25 @@ div.chipContainer.validationSuccess {
   margin: 2px;
 }
 
+/* your profile page, instrument list */
+div.instrumentListVertical {
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+div.instrumentListVertical.validationError {
+  background-color: #fee;
+  border: 1px solid red;
+}
+
+div.instrumentListVertical.validationSuccess {
+  border: 1px solid green;
+}
+
+div.instrumentListVertical .instrumentAndPrimaryContainer {
+  display: flex;
+}
 
 
 /* rich text editor */

@@ -8,9 +8,10 @@ import { IsEntirelyIntegral, TAnyModel } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import db3queries from "./queries/db3queries";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TupdateEventBasicFieldsArgs, TupdateUserEventSegmentAttendanceCommentMutationArgs, TupdateUserEventSegmentAttendanceMutationArgs } from "./shared/apiTypes";
+import { TupdateEventBasicFieldsArgs, TupdateUserEventSegmentAttendanceCommentMutationArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
 import updateUserEventSegmentAttendanceCommentMutation from "./mutations/updateUserEventSegmentAttendanceCommentMutation";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
+import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 
 
 export interface APIQueryArgs {
@@ -146,7 +147,23 @@ class SongsAPI {
 
 };
 
+class UsersAPI {
+    // returns an instrument payload, or null if the user has no instruments.
+    // primary instrument is defined as either teh 1st instrument marked as primary, or if none are primary, the 1st instrument period.
+    getPrimaryInstrument = (user: db3.UserPayload): (db3.InstrumentPayload | null) => {
+        if (user.instruments.length < 1) return null;
+        const p = user.instruments.find(i => i.isPrimary);
+        if (p) {
+            return p.instrument;
+        }
+        return user.instruments[0]!.instrument;
+    }
+
+    updateUserPrimaryInstrument = CreateAPIMutationFunction<TupdateUserPrimaryInstrumentMutationArgs, typeof updateUserPrimaryInstrumentMutation>(updateUserPrimaryInstrumentMutation);
+}
+
 export const API = {
     events: new EventsAPI(),
     songs: new SongsAPI(),
+    users: new UsersAPI(),
 };

@@ -212,7 +212,7 @@ export interface TagsFieldInputProps<TAssociation> {
     validationError: string | null;
 };
 
-// general use "edit cell" for foreign single values
+// general use "edit cell" for tags
 export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssociation>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [oldValue, setOldValue] = React.useState<TAssociation[]>([]);
