@@ -20,6 +20,8 @@ export default resolver.pipe(
         if (existing) {
             await mutationCore.updateImpl(db3.xEventSegmentUserResponse, existing.id, {
                 attendanceId: args.attendanceId,
+                attendanceComment: args.comment,
+                instrumentId: args.instrumentId,
             }, ctx);
             return args; // blitz is weird and wants the return type to be the same as the input type.
         }
@@ -27,7 +29,10 @@ export default resolver.pipe(
         const fields: Prisma.EventSegmentUserResponseUncheckedCreateInput = {
             userId: args.userId,
             eventSegmentId: args.eventSegmentId,
+
             attendanceId: args.attendanceId,
+            attendanceComment: args.comment,
+            instrumentId: args.instrumentId,
         };
 
         await mutationCore.insertImpl(db3.xEventSegmentUserResponse, fields, ctx);

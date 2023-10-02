@@ -8,9 +8,9 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
-import { UserMinimumPayload, UserPayload, xPermission, xUser } from "./user";
+import { xPermission, xUser } from "./user";
 import { xSong } from "./song";
-import { InstrumentPayload, xInstrument } from "./instrument";
+import { InstrumentArgs, InstrumentPayload, UserArgs, UserPayload, getUserPrimaryInstrument, xInstrument } from "./instrument";
 /*
 
 let's think workflow for events.
@@ -36,26 +36,12 @@ leave all that for later.
 // - events can get multiple conflicting types
 // - type is used for things; tag significance is sorta a lame way to accomplish this.
 // advantages of dropdown:
-// - field is required, structured, queryable, and obvious
+// - field is required, structured, queryable, and obvious, and only 1 possible
 
 // to go further i could make events & rehearsals separate tables. but i don't think that's a good idea; the idea would be that
 // they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 
-
-
-// admin pages:
-// x event types
-// x event status
-// x event tags / EventTagAssignment
-// x EventAttendance
-// x events
-
-// xEventComment
-// EventSegment
-// EventSongList {
-// EventSongListSong {
-// EventSegmentUserResponse {
 
 ////////////////////////////////////////////////////////////////
 export const EventTypeSignificance = {
@@ -281,6 +267,7 @@ const EventArgs = Prisma.validator<Prisma.EventArgs>()({
                     include: {
                         attendance: true,
                         user: true,
+                        instrument: InstrumentArgs,
                     }
                 }
             }
@@ -387,7 +374,13 @@ export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
 // when an event segment is fetched from an event, this is the payload type
 export type EventSegmentPayloadFromEvent = Prisma.EventSegmentGetPayload<{
     include: {
-        responses: true,
+        responses: {
+            include: {
+                attendance: true,
+                user: true,
+                instrument: typeof InstrumentArgs,
+            }
+        },
     }
 }>;
 
@@ -518,6 +511,7 @@ const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
                 responses: {
                     include: {
                         attendance: true,
+                        instrument: InstrumentArgs,
                         user: {
                             include: {
                                 instruments: {
@@ -748,55 +742,17 @@ export const xEventAttendance = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const EventSegmentUserResponseArgs: Prisma.EventSegmentUserResponseArgs = {
+const EventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseArgs>()({
     include: {
         attendance: true,
         eventSegment: true,
-        instrument: {
-            include: {
-                functionalGroup: true,
-            }
-        },
-        user: {
-            include: {
-                instruments: {
-                    include: {
-                        instrument: {
-                            include: {
-                                functionalGroup: true,
-                            }
-                        },
-                    }
-                }
-            }
-        },
+        instrument: InstrumentArgs,
+        user: UserArgs
     }
-}
+});
 
-//export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGetPayload<typeof EventSegmentUserResponseArgs>;
 export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGetPayload<{
-    include: {
-        attendance: true,
-        eventSegment: true,
-        instrument: {
-            include: {
-                functionalGroup: true,
-            }
-        },
-        user: {
-            include: {
-                instruments: {
-                    include: {
-                        instrument: {
-                            include: {
-                                functionalGroup: true,
-                            }
-                        },
-                    }
-                }
-            }
-        },
-    }
+    include: typeof EventSegmentUserResponseArgs.include
 }>;
 
 export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
@@ -1005,8 +961,21 @@ export interface SegmentAndResponse {
     event: EventPayloadClient;
     segment: EventSegmentPayloadFromEvent;
     response: EventSegmentUserResponsePayload;
-    instrument: InstrumentPayload;
+    instrument: InstrumentPayload | null;
 };
+
+////////////////////////////////////////////////////////////////
+export const getInstrumentForEventSegmentUserResponse = (response: EventSegmentUserResponsePayload, user: UserPayload): (InstrumentPayload | null) => {
+    if (response.instrument != null) {
+        console.log(`response instrument null; returning user instrument ${response.instrument?.name} id:${response.instrumentId}`);
+        return response.instrument;
+    }
+    // use default.
+    const ret = getUserPrimaryInstrument(user);
+    console.log(`response instrument == null; returning user instrument ${ret?.name} id:${ret?.id}`);
+    return ret;
+}
+
 
 export class EventInfoForUser {
     user: UserPayload;
@@ -1029,10 +998,12 @@ export class EventInfoForUser {
                     event: args.event,
                     segment: seg,
                     response: response as EventSegmentUserResponsePayload,
+                    instrument: getInstrumentForEventSegmentUserResponse(response, args.user),
                 };
             }
 
-            const mockResponse: EventSegmentUserResponsePayload = { // mock response
+            // mock response when none exists
+            const mockResponse: EventSegmentUserResponsePayload = {
                 attendance: null,
                 attendanceComment: null,
                 attendanceId: null,
@@ -1042,12 +1013,15 @@ export class EventInfoForUser {
                 id: -1,
                 user: this.user as any,
                 userId: this.user.id,
+                instrument: null,
+                instrumentId: null,
             };
 
             return {
                 event: args.event,
                 segment: seg,
                 response: mockResponse,
+                instrument: getInstrumentForEventSegmentUserResponse(mockResponse, args.user),
             }
         });
     }

@@ -5,7 +5,7 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { Button, CardContent, FormControl, FormHelperText, Input, InputLabel, Typography } from "@mui/material";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { ButtonSelectControl, ButtonSelectOption, MutationButtonSelectControl, MutationTextControl } from "src/core/components/CMTextField";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import updateBasicProfileFields from "../api/user/mutations/updateBasicProfileFields";
@@ -113,7 +113,13 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInput) => {
                     }
                 })}
                 {
-                    (value.instrumentId === primary?.id) ? <>primary</> : <Button onClick={() => handleClickMakePrimary(value.instrumentId)}>make primary</Button>
+                    (value.instrumentId === primary?.id) ? (
+                        <>
+                            {gIconMap.Check()} Primary
+                        </>
+                    ) : (
+                        <Button onClick={() => handleClickMakePrimary(value.instrumentId)}>make primary</Button>
+                    )
                 }
             </div>
         ))}

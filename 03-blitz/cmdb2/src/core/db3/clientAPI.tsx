@@ -63,6 +63,25 @@ export interface EventMinMaxAttendeesResult {
     maxAttendees: number | null;
 }
 
+
+class UsersAPI {
+    // returns an instrument payload, or null if the user has no instruments.
+    // primary instrument is defined as either teh 1st instrument marked as primary, or if none are primary, the 1st instrument period.
+    getPrimaryInstrument = (user: db3.UserPayload): (db3.InstrumentPayload | null) => {
+        if (user.instruments.length < 1) return null;
+        const p = user.instruments.find(i => i.isPrimary);
+        if (p) {
+            return p.instrument;
+        }
+        return user.instruments[0]!.instrument;
+    }
+
+    updateUserPrimaryInstrument = CreateAPIMutationFunction<TupdateUserPrimaryInstrumentMutationArgs, typeof updateUserPrimaryInstrumentMutation>(updateUserPrimaryInstrumentMutation);
+};
+
+const gUsersAPI = new UsersAPI();
+
+
 class EventsAPI {
 
     getEventSegmentFormattedDateRange(segment: db3.EventSegmentPayloadFromEvent) {
@@ -129,8 +148,11 @@ class EventsAPI {
         });
     }
 
+    getInstrumentForUserResponse = (response: db3.EventSegmentUserResponsePayload, user: db3.UserPayload): (db3.InstrumentPayload | null) => {
+        return db3.getInstrumentForEventSegmentUserResponse(response, user);
+    }
+
     updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
-    updateUserEventSegmentAttendanceComment = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceCommentMutationArgs, typeof updateUserEventSegmentAttendanceCommentMutation>(updateUserEventSegmentAttendanceCommentMutation);
     updateEventBasicFields = CreateAPIMutationFunction<TupdateEventBasicFieldsArgs, typeof updateEventBasicFields>(updateEventBasicFields);
 };
 
@@ -147,23 +169,8 @@ class SongsAPI {
 
 };
 
-class UsersAPI {
-    // returns an instrument payload, or null if the user has no instruments.
-    // primary instrument is defined as either teh 1st instrument marked as primary, or if none are primary, the 1st instrument period.
-    getPrimaryInstrument = (user: db3.UserPayload): (db3.InstrumentPayload | null) => {
-        if (user.instruments.length < 1) return null;
-        const p = user.instruments.find(i => i.isPrimary);
-        if (p) {
-            return p.instrument;
-        }
-        return user.instruments[0]!.instrument;
-    }
-
-    updateUserPrimaryInstrument = CreateAPIMutationFunction<TupdateUserPrimaryInstrumentMutationArgs, typeof updateUserPrimaryInstrumentMutation>(updateUserPrimaryInstrumentMutation);
-}
-
 export const API = {
     events: new EventsAPI(),
     songs: new SongsAPI(),
-    users: new UsersAPI(),
+    users: gUsersAPI,
 };

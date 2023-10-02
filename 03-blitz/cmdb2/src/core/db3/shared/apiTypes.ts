@@ -3,14 +3,16 @@
 export interface TupdateUserEventSegmentAttendanceMutationArgs {
     userId: number;
     eventSegmentId: number;
-    attendanceId: null | number;
+    attendanceId?: null | number;
+    comment?: string | null;
+    instrumentId?: number | null;
 };
 
-export interface TupdateUserEventSegmentAttendanceCommentMutationArgs {
-    userId: number;
-    eventSegmentId: number;
-    comment: string | null;
-};
+// export interface TupdateUserEventSegmentAttendanceCommentMutationArgs {
+//     userId: number;
+//     eventSegmentId: number;
+//     comment: string | null;
+// };
 
 export interface TupdateEventBasicFieldsArgs {
     eventId: number;

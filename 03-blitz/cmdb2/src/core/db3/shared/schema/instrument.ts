@@ -13,6 +13,7 @@ import { xTable } from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField } from "../db3basicFields";
 
 
+
 ////////////////////////////////////////////////////////////////
 const InstrumentFunctionalGroupInclude: Prisma.InstrumentFunctionalGroupInclude = {
     instruments: true,
@@ -265,3 +266,52 @@ export const xInstrument = new xTable({
     ]
 });
 
+
+
+
+////////////////////////////////////////////////////////////////
+// server API...
+
+
+////////////////////////////////////////////////////////////////
+export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
+    include: {
+        instrument: InstrumentArgs,
+        user: true,
+    }
+});
+
+export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserInstrumentArgs>;
+
+export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
+    { instrument: { sortOrder: 'desc' } },
+    { instrument: { name: 'asc' } },
+    { instrument: { id: 'asc' } },
+];
+
+export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
+
+export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
+    include: {
+        role: true,
+        instruments: UserInstrumentArgs,
+    }
+});
+
+export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
+
+export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
+    { name: 'asc' },
+    { id: 'asc' },
+];
+
+
+
+export const getUserPrimaryInstrument = (user: UserPayload): (InstrumentPayload | null) => {
+    if (user.instruments.length < 1) return null;
+    const p = user.instruments.find(i => i.isPrimary);
+    if (p) {
+        return p.instrument;
+    }
+    return user.instruments[0]!.instrument;
+}

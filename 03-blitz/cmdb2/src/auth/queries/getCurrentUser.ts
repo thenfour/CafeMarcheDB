@@ -2,6 +2,7 @@ import { Ctx } from "blitz"
 import db, { prisma } from "db"
 import { User } from "db"
 import { Permission } from "shared/permissions";
+import * as db3 from "src/core/db3/db3";
 
 export default async function getCurrentUser(_ = null, { session }: Ctx) {
 
@@ -11,22 +12,7 @@ export default async function getCurrentUser(_ = null, { session }: Ctx) {
 
   const user = await db.user.findFirst({
     where: { id: session.userId },
-    include: {
-      instruments: {
-        include: {
-          instrument: true,
-        }
-      },
-      role: {
-        include: {
-          permissions: {
-            include: {
-              permission: true
-            }
-          }
-        }
-      }
-    }
+    include: db3.UserArgs.include
   });
 
   return user;

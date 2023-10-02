@@ -312,10 +312,12 @@ export interface EventAttendanceDetailRowProps {
 export const EventAttendanceDetailRow = ({ userResponse }: EventAttendanceDetailRowProps) => {
     return <tr>
         <td>{userResponse.user.name}</td>
-        <td>{userResponse.user.instruments.map(inst => <div key={inst.id}>{inst.instrument.name}</div>)}</td>
-        <td>{userResponse.user.instruments.map(inst => <div key={inst.id}>{inst.instrument.functionalGroup.name}</div>)}</td>
         {userResponse.segments.map(segment => {
-            return <td key={segment.segment.id}>{!!segment.response.attendance ? segment.response.attendance.text : "--"}</td>;
+            return <React.Fragment key={segment.segment.id}>
+                <td>{!!segment.response.attendance ? segment.response.attendance.text : "--"}</td>
+                <td>{segment.instrument?.name || "--"}</td>
+                <td>{segment.instrument?.functionalGroup.name || "--"}</td>
+            </React.Fragment>;
         })}
     </tr>;
 };
@@ -337,9 +339,11 @@ export const EventAttendanceDetail = ({ event, tableClient }: EventAttendanceDet
             <thead>
                 <tr>
                     <th>Who</th>
-                    <th>Instrument</th>
-                    <th>Function</th>
-                    {event.segments.map(seg => <th key={seg.id}>{seg.name}</th>)}
+                    {event.segments.map(seg => <React.Fragment key={seg.id}>
+                        <th>{seg.name}</th>
+                        <th>Instrument</th>
+                        <th>Function</th>
+                    </React.Fragment>)}
                 </tr>
             </thead>
             <tbody>
@@ -350,9 +354,11 @@ export const EventAttendanceDetail = ({ event, tableClient }: EventAttendanceDet
             <tfoot>
                 <tr>
                     <td></td>
-                    <td></td>
-                    <td></td>
-                    {segAttendees.map(seg => <td key={seg.segment.id}>{seg.attendeeCount}</td>)}
+                    {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
+                        <td>{seg.attendeeCount}</td>
+                        <td>{/*Instrument*/}</td>
+                        <td>{/*Function*/}</td>
+                    </React.Fragment>)}
                 </tr>
             </tfoot>
         </table>
@@ -687,6 +693,7 @@ export const EventDetail = ({ event, tableClient }: { event: db3.EventClientPayl
     //const locationKnown = !IsNullOrWhitespace(event.locationDescription);
     const [user] = useCurrentUser()!;
     const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
+    console.log(myEventInfo);
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -780,6 +787,7 @@ export const EventDetail = ({ event, tableClient }: { event: db3.EventClientPayl
         </CustomTabPanel>
 
         <CustomTabPanel value={selectedTab} index={4}>
+            {/* COMPLETENESS */}
             <table>
                 <tbody>
                     <tr>
@@ -799,7 +807,8 @@ export const EventDetail = ({ event, tableClient }: { event: db3.EventClientPayl
                                     const sorted = seg.responses.filter(resp => {
                                         // only take responses where we 1. expect the user, OR they have responded.
                                         // AND it matches the current instrument function.
-                                        if (!resp.user.instruments.some(inst => inst.instrument.functionalGroupId === functionalGroup.id)) return false;
+                                        const responseInstrument = API.events.getInstrumentForUserResponse(resp, resp.user);
+                                        if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
                                         return resp.expectAttendance || !!resp.attendance;
                                     });
                                     sorted.sort((a, b) => {

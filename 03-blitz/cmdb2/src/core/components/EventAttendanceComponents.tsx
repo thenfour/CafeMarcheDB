@@ -11,6 +11,7 @@ EventAttendanceAnswer
   big chip answer + optional edit button
   read-only companion to EventAttendanceEditControl
   you are going [edit]
+  instrument    [edit]
   comment       [edit]
 
 
@@ -28,6 +29,7 @@ EventAttendanceEditControl
     the editable version of a complete response
     EventAttendanceResponseControl + EventAttendanceCommentControl
   [ yes ][ maybe ][ no ][ no answer ]
+  instrument    [edit]
   comment       [edit]
 
 
@@ -111,9 +113,9 @@ interface EventAttendanceCommentControlProps {
 };
 
 const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
-    const token = API.events.updateUserEventSegmentAttendanceComment.useToken();
+    const token = API.events.updateUserEventSegmentAttendance.useToken();
     return <CompactMutationMarkdownControl initialValue={props.segmentInfo.response.attendanceComment} refetch={props.onRefetch} onChange={async (value) => {
-        return await API.events.updateUserEventSegmentAttendanceComment.invoke(token, {
+        return await token.invoke({
             userId: props.eventUserInfo.user.id,
             eventSegmentId: props.segmentInfo.segment.id,
             comment: value,
@@ -177,6 +179,37 @@ const EventAttendanceResponseControl = (props: EventAttendanceResponseControlPro
 
 
 
+////////////////////////////////////////////////////////////////
+// event segment attendance standalone field (read-only possible, buttons array for input).
+// basically a button array of responses, not tied to DB but just a value.
+interface EventAttendanceInstrumentControlProps {
+    selectedInstrumentId: number | null;
+    onChange: (value: db3.InstrumentPayload | null) => void;
+    user: db3.UserPayload;
+};
+
+const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
+
+    return <>
+        <ButtonGroup className='EventAttendanceInstrumentControl'>
+            {props.user.instruments.map(assoc => {
+                const style = GetStyleVariablesForColor(assoc.instrument.functionalGroup.color);
+                const selStyle = (props.selectedInstrumentId == assoc.instrumentId) ? "selected" : "notSelected";
+                return <Button
+                    key={assoc.id}
+                    style={style}
+                    className={`applyColor-strong-noBorder ${selStyle}`}
+                    onClick={() => { props.onChange(assoc.instrument); }}
+                >
+                    {assoc.instrument.name}
+                </Button>;
+            })}
+        </ButtonGroup>
+    </>;
+};
+
+
+
 
 ////////////////////////////////////////////////////////////////
 // read-only answer + comment, with optional "edit" button
@@ -195,6 +228,10 @@ export const EventAttendanceAnswer = (props: EventAttendanceAnswerProps) => {
         {!props.readOnly && <Button onClick={() => { props.onEditClicked && props.onEditClicked() }}>
             <EditIcon />
         </Button>}
+        {
+            props.eventUserInfo.user.instruments.length > 1 &&
+            <div className='instrument'>{props.segmentInfo.instrument!.name}</div>
+        }
         <div className='userComment'>
             <Markdown markdown={props.segmentInfo.response.attendanceComment} />
         </div>
@@ -226,7 +263,23 @@ export const EventAttendanceEditControl = (props: EventAttendanceEditControlProp
                 eventSegmentId: props.segmentInfo.segment.id,
                 attendanceId: value == null ? null : value.id,
             });
-            showSnackbar({ severity: 'success', children: "update successful - todo: refetch" });
+            showSnackbar({ severity: 'success', children: "update successful" });
+            props.onRefetch();
+        } catch (e) {
+            console.log(e);
+            showSnackbar({ severity: 'error', children: "error;  see console" });
+        }
+    };
+
+    const handleInstrumentChange = async (value: db3.InstrumentPayload) => {
+        try {
+            console.log(`changing instrument to ${value.id}`);
+            await API.events.updateUserEventSegmentAttendance.invoke(token, {
+                userId: props.eventUserInfo.user.id,
+                eventSegmentId: props.segmentInfo.segment.id,
+                instrumentId: value.id,
+            });
+            showSnackbar({ severity: 'success', children: "update instrument successful" });
             props.onRefetch();
         } catch (e) {
             console.log(e);
@@ -240,6 +293,11 @@ export const EventAttendanceEditControl = (props: EventAttendanceEditControlProp
             onChange={handleOnChange}
             showClose={props.showClose}
             onClose={props.onClose}
+        />
+        <EventAttendanceInstrumentControl
+            onChange={handleInstrumentChange}
+            selectedInstrumentId={props.segmentInfo.instrument?.id || null}
+            user={props.eventUserInfo.user}
         />
         <EventAttendanceCommentControl segmentInfo={props.segmentInfo} eventUserInfo={props.eventUserInfo} event={props.event} onRefetch={props.onRefetch} />
     </>;
@@ -313,8 +371,6 @@ export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlPr
             </div>
         </div>
     </Alert>;
-
-
 };
 
 

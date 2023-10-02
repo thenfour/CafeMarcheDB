@@ -4,43 +4,9 @@ import { Permission } from "shared/permissions";
 import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, PKField, TagsField } from "../db3basicFields";
 import { xTable } from "../db3core";
 import { gGeneralPaletteList } from "shared/color";
-import { InstrumentArgs, xInstrument } from "./instrument";
+import { InstrumentArgs, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, xInstrument } from "./instrument";
 import { TAnyModel, gIconOptions } from "shared/utils";
 
-
-
-
-////////////////////////////////////////////////////////////////
-export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
-    include: {
-        instrument: InstrumentArgs,
-        user: true,
-    }
-});
-
-export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserInstrumentArgs>;
-
-const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
-    { instrument: { sortOrder: 'desc' } },
-    { instrument: { name: 'asc' } },
-    { instrument: { id: 'asc' } },
-];
-////////////////////////////////////////////////////////////////
-export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
-
-export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
-    include: {
-        role: true,
-        instruments: UserInstrumentArgs,
-    }
-});
-
-export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
-
-export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
-    { name: 'asc' },
-    { id: 'asc' },
-];
 
 export const xUserMinimum = new xTable({
     editPermission: Permission.admin_auth,
@@ -447,6 +413,7 @@ export const xUser = new xTable({
         }),]
 });
 
-export const GetUserPrimaryInstrument = () => {
 
-};
+
+////////////////////////////////////////////////////////////////
+// server API...
