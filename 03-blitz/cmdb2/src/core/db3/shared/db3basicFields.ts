@@ -312,9 +312,9 @@ export class BoolField extends FieldBase<boolean> {
         return a === b;
     };
 
-    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        return { [this.member]: { equals: query } };
-    };
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;//{
+    //     return { [this.member]: { equals: query } };
+    // };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;

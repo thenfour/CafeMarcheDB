@@ -103,7 +103,7 @@ export class xTableClientSpec {
 export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: GridFilterModel, tableParams?: TAnyModel) => {
     const where = { AND: [] as any[] };
     if (filterModel && filterModel.quickFilterValues) { // quick filtering
-        const quickFilterItems = filterModel.quickFilterValues.map(q => {// for each token
+        const quickFilterItems = filterModel.quickFilterValues.filter(q => q.length > 0).map(q => {// for each token
             return {
                 OR: tableSchema.GetQuickFilterWhereClauseExpression(q)
             };
@@ -125,6 +125,7 @@ export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: Grid
             where.AND.push(...filterItems);
         }
     }
+
     return where;
 };
 

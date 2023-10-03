@@ -51,6 +51,63 @@
     /* text-shadow: var(--strong-contrast-color) 0 1px 1px; */
 }
 
+/* 
+// strong / weak
+// selected / notselected
+// disabled / enabled
+// hover
+// focus */
+
+.applyColor-strong-notselected-enabled {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+    border: 1px var(--strong-border-style) var(--strong-contrast-color);
+}
+
+.applyColor-strong-notselected-disabled {
+    background-color: var(--weak-color);
+    color: var(--weak-contrast-color);
+    border: 1px var(--weak-border-style) var(--weak-contrast-color);
+}
+
+.applyColor-strong-selected-enabled {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+    border: 1px var(--strong-border-style) var(--strong-contrast-color);
+}
+
+.applyColor-strong-selected-disabled {
+    background-color: var(--weak-color);
+    color: var(--weak-contrast-color);
+    border: 1px var(--weak-border-style) var(--weak-contrast-color);
+}
+
+
+.applyColor-weak-notselected-enabled {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+    border: 1px var(--strong-border-style) var(--strong-contrast-color);
+}
+
+.applyColor-weak-notselected-disabled {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+    border: 1px var(--strong-border-style) var(--strong-contrast-color);
+}
+
+.applyColor-weak-selected-enabled {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+    border: 1px var(--strong-border-style) var(--strong-contrast-color);
+}
+
+.applyColor-weak-selected-disabled {
+    background-color: var(--strong-color);
+    color: var(--strong-contrast-color);
+    border: 1px var(--strong-border-style) var(--strong-contrast-color);
+}
+
+
 
 .colorSwatchRoot:hover {
     background-color: #0004;

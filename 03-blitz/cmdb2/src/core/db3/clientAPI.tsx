@@ -12,6 +12,7 @@ import { TupdateEventBasicFieldsArgs, TupdateUserEventSegmentAttendanceCommentMu
 import updateUserEventSegmentAttendanceCommentMutation from "./mutations/updateUserEventSegmentAttendanceCommentMutation";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
+import getPopularEventTags from "src/auth/queries/getPopularEventTags";
 
 
 export interface APIQueryArgs {
@@ -160,6 +161,10 @@ class EventsAPI {
             requestedCaps: DB3Client.xTableClientCaps.Query,
         });
     }
+
+    usePopularEventTagsQuery = () => {
+        return useQuery(getPopularEventTags, {});
+    };
 
     getInstrumentForUserResponse = (response: db3.EventSegmentUserResponsePayload, user: db3.UserPayload): (db3.InstrumentPayload | null) => {
         return db3.getInstrumentForEventSegmentUserResponse(response, user);

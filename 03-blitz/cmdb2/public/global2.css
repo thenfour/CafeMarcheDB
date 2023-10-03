@@ -90,3 +90,59 @@ html,
 .eventTypeControl {}
 
 .eventTypeValue {}
+
+
+/* ---------------------------------- */
+.CMChipContainer {
+    display: flex;
+}
+
+.CMChipContainer .CMChip {
+    margin: 1px 3px;
+}
+
+.CMChip {
+    /* requires an .applyColor- css class for coloring */
+    /* background-color: #eee;
+    border: 1px solid #ccc;
+    color: #888; */
+
+    /* instant transitions for filtering etc feel clunky almost broken or something. the smoothness feels comfy */
+
+    transition: border .1s, color .1s;
+
+    width: min-content;
+    max-width: 250px;
+    user-select: none;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.CMChip.big {
+    font-size: 16px;
+    padding: 1px 12px;
+    border-radius: 19px;
+}
+
+.CMChip.small {
+    font-size: 13px;
+    padding: 1px 6px;
+    border-radius: 19px;
+}
+
+.CMChip .content {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.CMChip.selected {
+    border: 1px solid #000;
+    color: #000;
+}
+
+/* general purpose style for interactable things like buttons. avoid selection which is awkward with mouse */
+.interactable {
+    user-select: none;
+    cursor: pointer;
+}

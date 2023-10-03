@@ -32,4 +32,3 @@ export interface TupdateUserPrimaryInstrumentMutationArgs {
     userId: number;
     instrumentId: number;
 };
-

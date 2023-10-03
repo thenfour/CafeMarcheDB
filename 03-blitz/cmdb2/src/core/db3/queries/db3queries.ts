@@ -20,7 +20,7 @@ export default resolver.pipe(
             const items = await dbTableClient.findMany({
                 where: input.where,
                 orderBy,
-                include: table.localInclude
+                include: table.localInclude,
             });
             return items;
         } catch (e) {

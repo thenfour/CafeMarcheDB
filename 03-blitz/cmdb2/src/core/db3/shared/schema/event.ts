@@ -43,6 +43,41 @@ leave all that for later.
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 
 
+
+////////////////////////////////////////////////////////////////
+
+export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { id: 'asc' },
+];
+
+
+const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
+    include: {
+        event: true,
+        visiblePermission: true,
+    },
+});
+
+export type EventSongListPayload = Prisma.EventSongListGetPayload<typeof EventSongListArgs>;
+
+export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { id: 'asc' },
+];
+
+
+////////////////////////////////////////////////////////////////
+const EventSongListSongArgs = Prisma.validator<Prisma.EventSongListSongArgs>()({
+    include: {
+        song: true,
+    }
+});
+
+//export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof EventSongListSongArgs>;
+export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof EventSongListSongArgs>;
+
+
 ////////////////////////////////////////////////////////////////
 export const EventTypeSignificance = {
     Concert: "Concert",
@@ -60,6 +95,52 @@ export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[]
     { text: 'asc' },
     { id: 'asc' },
 ];
+
+
+////////////////////////////////////////////////////////////////
+const EventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseArgs>()({
+    include: {
+        attendance: true,
+        eventSegment: true,
+        instrument: InstrumentArgs,
+        user: UserArgs
+    }
+});
+
+export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGetPayload<{
+    include: typeof EventSegmentUserResponseArgs.include
+}>;
+
+
+
+////////////////////////////////////////////////////////////////
+export const EventSegmentArgs = Prisma.validator<Prisma.EventSegmentArgs>()({
+    //orderBy: { startsAt: "desc" },
+    include: {
+        event: true,
+        responses: EventSegmentUserResponseArgs,
+    }
+});
+
+export type EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
+
+////////////////////////////////////////////////////////////////
+export const EventCommentArgs = Prisma.validator<Prisma.EventCommentArgs>()({
+    include: {
+        event: true,
+        user: true,
+        visiblePermission: true,
+    }
+});
+
+export type EventCommentPayload = Prisma.EventCommentGetPayload<typeof EventCommentArgs>;
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////
 
 export const xEventType = new db3.xTable({
     editPermission: Permission.admin_general,
@@ -262,15 +343,7 @@ const EventArgs = Prisma.validator<Prisma.EventArgs>()({
         type: true,
         segments: {
             orderBy: { startsAt: "desc" },
-            include: {
-                responses: {
-                    include: {
-                        attendance: true,
-                        user: true,
-                        instrument: InstrumentArgs,
-                    }
-                }
-            }
+            include: EventSegmentArgs.include,
         },
     },
 });
@@ -479,15 +552,7 @@ const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
     include: {
         status: true,
         visiblePermission: true,
-        songLists: {
-            include: {
-                songs: {
-                    include: {
-                        song: true,
-                    }
-                }
-            }
-        },
+        songLists: EventSongListArgs,
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
             include: {
@@ -495,11 +560,7 @@ const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
             }
         },
         type: true,
-        comments: {
-            include: {
-                user: true,
-            }
-        },
+        comments: EventCommentArgs,
         fileTags: {
             include: {
                 file: true,
@@ -507,33 +568,7 @@ const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         },
         segments: {
             orderBy: { startsAt: "desc" },
-            include: {
-                responses: {
-                    include: {
-                        attendance: true,
-                        instrument: InstrumentArgs,
-                        user: {
-                            include: {
-                                instruments: {
-                                    include: {
-                                        instrument: {
-                                            include: {
-                                                functionalGroup: true,
-                                                instrumentTags: {
-                                                    include: {
-                                                        tag: true,
-                                                    }
-                                                }
-                                            }
-                                        },
-                                    }
-                                }
-                            }
-
-                        }
-                    }
-                }
-            }
+            include: EventSegmentArgs.include,
         },
     }
 });
@@ -558,19 +593,6 @@ type UserWithRoles = Prisma.UserGetPayload<{
 }>;
 
 
-////////////////////////////////////////////////////////////////
-const EventSegmentInclude: Prisma.EventSegmentInclude = {
-    event: true,
-    responses: true,
-};
-
-export type EventSegmentPayload = Prisma.EventSegmentGetPayload<{
-    include: {
-        event: true,
-        responses: true,
-    }
-}>;
-
 export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
     { startsAt: "asc" },
     { id: "asc" },
@@ -579,7 +601,7 @@ export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationI
 export const xEventSegment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventSegmentInclude,
+    localInclude: EventSegmentArgs.include,
     tableName: "eventSegment",
     naturalOrderBy: EventSegmentNaturalOrderBy,
     getRowInfo: (row: EventSegmentPayload) => ({
@@ -621,22 +643,6 @@ export const xEventSegment = new db3.xTable({
 
 
 
-
-////////////////////////////////////////////////////////////////
-const EventCommentInclude: Prisma.EventCommentInclude = {
-    event: true,
-    user: true,
-    visiblePermission: true,
-};
-
-export type EventCommentPayload = Prisma.EventCommentGetPayload<{
-    include: {
-        event: true,
-        user: true,
-        visiblePermission: true,
-    }
-}>;
-
 export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationInput[] = [
     { createdAt: "asc" },
     { id: "asc" },
@@ -645,7 +651,7 @@ export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationI
 export const xEventComment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventCommentInclude,
+    localInclude: EventCommentArgs.include,
     tableName: "eventComment",
     naturalOrderBy: EventCommentNaturalOrderBy,
     getRowInfo: (row: EventCommentPayload) => ({
@@ -741,20 +747,6 @@ export const xEventAttendance = new db3.xTable({
 
 
 
-////////////////////////////////////////////////////////////////
-const EventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseArgs>()({
-    include: {
-        attendance: true,
-        eventSegment: true,
-        instrument: InstrumentArgs,
-        user: UserArgs
-    }
-});
-
-export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGetPayload<{
-    include: typeof EventSegmentUserResponseArgs.include
-}>;
-
 export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
     // todo: sort by something else?
     { id: 'asc' },
@@ -818,28 +810,6 @@ export const xEventSegmentUserResponse = new db3.xTable({
 
 
 
-
-////////////////////////////////////////////////////////////////
-const EventSongListArgs: Prisma.EventSongListArgs = {
-    include: {
-        event: true,
-        visiblePermission: true,
-    }
-}
-
-//export type EventSongListPayload = Prisma.EventSongListGetPayload<typeof EventSongListArgs>;
-export type EventSongListPayload = Prisma.EventSongListGetPayload<{
-    include: {
-        event: true,
-        visiblePermission: true,
-    }
-}>;
-
-export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { id: 'asc' },
-];
-
 export const xEventSongList = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
@@ -888,26 +858,6 @@ export const xEventSongList = new db3.xTable({
 });
 
 
-
-
-////////////////////////////////////////////////////////////////
-const EventSongListSongArgs: Prisma.EventSongListSongArgs = {
-    include: {
-        song: true,
-    }
-}
-
-//export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof EventSongListSongArgs>;
-export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<{
-    include: {
-        song: true,
-    }
-}>;
-
-export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { id: 'asc' },
-];
 
 export const xEventSongListSong = new db3.xTable({
     editPermission: Permission.admin_general,
@@ -967,12 +917,12 @@ export interface SegmentAndResponse {
 ////////////////////////////////////////////////////////////////
 export const getInstrumentForEventSegmentUserResponse = (response: EventSegmentUserResponsePayload, user: UserPayload): (InstrumentPayload | null) => {
     if (response.instrument != null) {
-        console.log(`response instrument null; returning user instrument ${response.instrument?.name} id:${response.instrumentId}`);
+        //console.log(`response instrument null; returning user instrument ${response.instrument?.name} id:${response.instrumentId}`);
         return response.instrument;
     }
     // use default.
     const ret = getUserPrimaryInstrument(user);
-    console.log(`response instrument == null; returning user instrument ${ret?.name} id:${ret?.id}`);
+    //console.log(`response instrument == null; returning user instrument ${ret?.name} id:${ret?.id}`);
     return ret;
 }
 

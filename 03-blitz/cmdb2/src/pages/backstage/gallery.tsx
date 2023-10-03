@@ -94,6 +94,31 @@ const MainContent = () => {
         <CMCoreComponents.CMTagList colorVariant="strong" columnSchema={MockAssociationSchema as any} tagAssociations={MockUserInstruments as any} />
 
 
+        <h3>CMChip</h3>
+        <CMCoreComponents.CMChipContainer>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={false} variant="strong">strong notselected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={true} variant="strong">strong selected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={false} variant="strong">strong notselected disabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={true} variant="strong">strong selected disabled</CMCoreComponents.CMChip>
+        </CMCoreComponents.CMChipContainer>
+        <CMCoreComponents.CMChipContainer>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={false} variant="strong">strong notselected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={true} variant="strong">strong selected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={false} variant="strong">strong notselected disabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={true} variant="strong">strong selected disabled</CMCoreComponents.CMChip>
+        </CMCoreComponents.CMChipContainer>
+        <CMCoreComponents.CMChipContainer>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={false} variant="weak">weak notselected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={true} variant="weak">weak selected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={false} variant="weak">weak notselected disabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={true} variant="weak">weak selected disabled</CMCoreComponents.CMChip>
+        </CMCoreComponents.CMChipContainer>
+        <CMCoreComponents.CMChipContainer>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={false} variant="weak">weak notselected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={true} variant="weak">weak selected enabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={false} variant="weak">weak notselected disabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={true} variant="weak">weak selected disabled</CMCoreComponents.CMChip>
+        </CMCoreComponents.CMChipContainer>
     </>;
 };
 

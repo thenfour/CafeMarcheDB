@@ -22,6 +22,58 @@ export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren) => {
 
 
 ////////////////////////////////////////////////////////////////
+// rethinking "variant"... for component coloring variations, there are
+// strong / weak
+// selected / notselected
+// disabled / enabled
+// (hover)
+// (focus)
+
+// but it means having a lot of color variations:
+// - main / contrast
+// - faded main / contrast, for disabled/enabled
+// - for selected, something else? maybe we're OK as is
+
+export interface CMChipProps {
+    color?: ColorPaletteEntry | string | null;
+    variant?: ColorVariationOptions;
+    selected?: boolean;
+    disabled?: boolean;
+    size?: "small" | "big";
+
+    onDelete?: () => void;
+    onClick?: () => void;
+};
+
+export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
+    const style = GetStyleVariablesForColor(props.color);
+    const variant: ColorVariationOptions = props.variant || "strong";
+    const size = props.size || "big";
+
+    // .applyColor-strong-notselected-disabled
+    const applyColorClass = `applyColor-${variant}-${props.selected ? "selected" : "notselected"}-${props.disabled ? "disabled" : "enabled"}`;
+
+    const classes: string[] = [
+        "CMChip",
+        size,
+        variant,
+        props.disabled ? "disabled" : "enabled",
+        props.selected ? "selected" : "notselected",
+        (props.onClick || props.onDelete) ? "interactable" : "noninteractable",
+        applyColorClass,
+    ];
+
+    return <div className={classes.join(" ")} style={style} onClick={props.onClick}>
+        <div className='content'>
+            {props.children}
+        </div>
+    </div>;
+}
+
+export const CMChipContainer = (props: React.PropsWithChildren<{}>) => {
+    return <div className="CMChipContainer">{props.children}</div>
+}
+
 // big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
 export interface CMBigChipProps {
     color: ColorPaletteEntry | string | null;

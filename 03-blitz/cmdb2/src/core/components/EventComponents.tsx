@@ -749,11 +749,13 @@ export const EventLocationControl = ({ event, refetch }: { event: EventWithStatu
 };
 
 ////////////////////////////////////////////////////////////////
-export const EventDetail = ({ event, tableClient }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient }) => {
+export type EventDetailVerbosity = "compact" | "default" | "verbose";
+
+export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, verbosity: EventDetailVerbosity }) => {
     //const locationKnown = !IsNullOrWhitespace(event.locationDescription);
     const [user] = useCurrentUser()!;
     const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
-    console.log(myEventInfo);
+    //console.log(myEventInfo);
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
