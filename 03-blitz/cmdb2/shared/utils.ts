@@ -3,6 +3,9 @@ import { AuthenticatedMiddlewareCtx } from "blitz";
 import { randomUUID } from "crypto";
 import db from "db"
 
+export const Date_MIN_VALUE = new Date(-8640000000000000);
+export const Date_MAX_VALUE = new Date(8640000000000000);
+
 // CHANGES /////////////////////////////////////////////////////////////////////////////////////////////////////////
 export enum ChangeAction {
     insert = "insert",

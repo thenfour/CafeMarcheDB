@@ -97,11 +97,17 @@ export class xTableClientSpec {
     getColumn = (name: string): IColumnClient => this.args.columns.find(c => c.columnName === name)!;
 };
 
+
+export type TableClientSpecFilterModel = GridFilterModel & db3.TableClientSpecFilterModelCMDBExtras;
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
 
-export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: GridFilterModel, tableParams?: TAnyModel) => {
+export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: TableClientSpecFilterModel, tableParams?: TAnyModel) => {
     const where = { AND: [] as any[] };
+
+    // QUICK FILTER
     if (filterModel && filterModel.quickFilterValues) { // quick filtering
         const quickFilterItems = filterModel.quickFilterValues.filter(q => q.length > 0).map(q => {// for each token
             return {
@@ -109,6 +115,11 @@ export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: Grid
             };
         });
         where.AND.push(...quickFilterItems);
+    }
+
+    // GENERAL FILTER (allows custom)
+    if (filterModel?.cmdb) {
+        where.AND.push(tableSchema.GetCustomWhereClauseExpression(filterModel));
     }
 
     if (filterModel && filterModel.items && filterModel.items.length > 0) { // non-quick normal filtering.
@@ -153,7 +164,7 @@ export interface xTableClientArgs {
 
     // optional for example for new item dialog which doesn't do any querying at all.
     sortModel?: GridSortModel,
-    filterModel?: GridFilterModel,
+    filterModel?: TableClientSpecFilterModel,
     paginationModel?: GridPaginationModel,
     tableParams?: TAnyModel,
 };
@@ -226,6 +237,20 @@ export class xTableRenderClient {
             items_ = items;
             this.rowCount = items.length;
             this.refetch = refetch;
+        }
+
+        // apply client-side sorting.
+        if (items_ && this.tableSpec.args.table.clientLessThan) {
+            const lt = this.tableSpec.args.table.clientLessThan;
+            items_.sort((a, b) => {
+                if (lt(a, b)) {
+                    return -1;
+                }
+                if (lt(b, a)) {
+                    return 1;
+                }
+                return 0;
+            });
         }
 
         // convert items from a database result to a client-side object.

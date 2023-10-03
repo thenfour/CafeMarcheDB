@@ -2,13 +2,13 @@
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, PKField, TagsField } from "../db3basicFields";
-import { xTable } from "../db3core";
+import * as db3 from "../db3core";
 import { gGeneralPaletteList } from "shared/color";
 import { InstrumentArgs, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, xInstrument } from "./instrument";
 import { TAnyModel, gIconOptions } from "shared/utils";
 
 
-export const xUserMinimum = new xTable({
+export const xUserMinimum = new db3.xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: UserArgs.include,
@@ -95,7 +95,7 @@ export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput
     { id: 'asc' },
 ];
 
-export const xPermission = new xTable({
+export const xPermission = new db3.xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: PermissionLocalInclude,
@@ -162,7 +162,7 @@ const RolePermissionNaturalOrderBy: Prisma.RolePermissionOrderByWithRelationInpu
 ];
 
 // this schema is required for tags selection dlg.
-export const xRolePermissionAssociation = new xTable({
+export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
@@ -215,7 +215,7 @@ const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
     { id: 'asc' },
 ];
 
-export const xRole = new xTable({
+export const xRole = new db3.xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: RoleLocalInclude,
@@ -256,6 +256,7 @@ export const xRole = new xTable({
             associationLocalIDMember: "roleId",
             associationLocalObjectMember: "role",
             foreignTableSpec: xPermission,
+            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
                     some: {
@@ -273,7 +274,7 @@ export const xRole = new xTable({
 
 
 
-export const xUserInstrument = new xTable({
+export const xUserInstrument = new db3.xTable({
     tableName: "UserInstrument",
     editPermission: Permission.login,
     viewPermission: Permission.login,
@@ -331,7 +332,7 @@ export const xUserInstrument = new xTable({
 //     { id: 'asc' },
 //];
 
-export const xUser = new xTable({
+export const xUser = new db3.xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: UserArgs.include,
@@ -409,6 +410,7 @@ export const xUser = new xTable({
             associationLocalObjectMember: "user",
             associationTableSpec: xUserInstrument,
             foreignTableSpec: xInstrument,
+            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
         }),]
 });

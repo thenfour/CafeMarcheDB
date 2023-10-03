@@ -136,6 +136,16 @@ export const SuccessfulValidateAndComputeDiffResult: ValidateAndComputeDiffResul
 
 export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDiffResult;
 
+
+// allow client users to specify cmdb-specific queries.
+// normal filtering & quick filtering is great but this allows for example custom filtering like tagIds.
+export interface TableClientSpecFilterModelCMDBExtras {
+    cmdb?: {
+        tagIds: number[];
+    };
+};
+
+
 ////////////////////////////////////////////////////////////////
 //export type FieldSignificanceOptions = "name" | "description" | "none" | "color";
 export type DB3RowMode = "new" | "view" | "update";
@@ -169,8 +179,9 @@ export abstract class FieldBase<FieldDataType> {
     // field child classes impl this to get established. for example pk fields will set the table's pk here.
     abstract connectToTable: (table: xTable) => void;
 
-    // return either falsy, or an object like { name: { contains: query } }
+    // return either falsy, or a "WhereInput" object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
+    abstract getCustomFilterWhereClause: (query: TableClientSpecFilterModelCMDBExtras) => TAnyModel | boolean;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null>;// => {
@@ -181,7 +192,6 @@ export abstract class FieldBase<FieldDataType> {
     abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => void;
     abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => void; // apply the value from db to client.
 }
-
 
 export interface SortModel {
     field: string,
@@ -203,6 +213,7 @@ export interface TableDesc {
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     naturalOrderBy?: TAnyModel;
+    clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
     getParameterizedWhereClause?: (params: TAnyModel) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 };
 
@@ -222,6 +233,7 @@ export class xTable implements TableDesc {
     rowNameMember?: string;
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
+    clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
     getParameterizedWhereClause?: (params: TAnyModel) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
@@ -310,6 +322,18 @@ export class xTable implements TableDesc {
             }
         }
         return ret;
+    };
+
+    GetCustomWhereClauseExpression = (filterModel: TableClientSpecFilterModelCMDBExtras) => {
+        const ret = [] as any[];
+        for (let i = 0; i < this.columns.length; ++i) {
+            const field = this.columns[i]!;
+            const clause = field.getCustomFilterWhereClause(filterModel);
+            if (clause) {
+                ret.push(clause);
+            }
+        }
+        return { AND: ret };
     };
 
     getClientModel = (dbModel: TAnyModel, mode: DB3RowMode) => {

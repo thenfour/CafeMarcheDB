@@ -156,10 +156,6 @@ const MainContent = () => {
         throw new Error(`unauthorized`);
     }
 
-    // show all tags
-    // maximum 15 displayed
-    // order by usage, only when >1 references
-
     const [controlSpec, setControlSpec] = React.useState<EventsControlsSpec>({
         recordCount: 20,
         quickFilter: "",
@@ -178,6 +174,9 @@ const MainContent = () => {
         filterModel: {
             quickFilterValues: controlSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
             items: [],
+            cmdb: {
+                tagIds: controlSpec.tagFilter,
+            },
         },
         paginationModel: {
             page: 0,
@@ -187,7 +186,6 @@ const MainContent = () => {
     });
 
     const handleSpecChange = (value: EventsControlsSpec) => {
-        console.log(`spec changesd`);
         setControlSpec(value);
         eventsClient.refetch();
     };

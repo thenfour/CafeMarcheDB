@@ -5,7 +5,7 @@
 import db, { EventSegment, EventSegmentUserResponse, Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
+import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { xPermission, xUser } from "./user";
@@ -41,7 +41,6 @@ leave all that for later.
 // to go further i could make events & rehearsals separate tables. but i don't think that's a good idea; the idea would be that
 // they get separate data for the different types. but that's not really the case because this Events table is quite general for events;
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
-
 
 
 ////////////////////////////////////////////////////////////////
@@ -135,8 +134,36 @@ export const EventCommentArgs = Prisma.validator<Prisma.EventCommentArgs>()({
 
 export type EventCommentPayload = Prisma.EventCommentGetPayload<typeof EventCommentArgs>;
 
+export const IsEarlierDateWithLateNull = (a: Date | null, b: Date | null) => {
+    if (a === null) {
+        return false;// a is null; b must be earlier.
+    }
+    if (b === null) {
+        return true; // b null; a must be earlier.
+    }
+    return a < b; // no nulls; return earliest date.
+}
 
+export const MinDateOrLateNull = (a: Date | null, b: Date | null) => {
+    if (a === null) {
+        if (b === null) {
+            return null; // both null; forced null return.
+        }
+        return b;// a is null; b must be earlier.
+    }
+    if (b === null) {
+        return a; // b null; a must be earlier.
+    }
+    return a < b ? a : b; // no nulls; return earliest date.
+}
 
+export const getEventSegmentMinDate = (event: EventPayload) => {
+    return event.segments.reduce((acc, seg) => {
+        // we want NULLs to count as maximum. The idea is that the date is not "yet" determined.
+        const thisSegmentMinDate = MinDateOrLateNull(seg.startsAt, seg.endsAt);
+        return MinDateOrLateNull(acc, thisSegmentMinDate);
+    }, null);
+};
 
 
 
@@ -360,6 +387,8 @@ export interface EventClientPayloadExtras {
 export type EventPayloadClient = EventPayload & EventClientPayloadExtras;
 
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
+    // while you can order by relation (ex orderByRelation): https://github.com/prisma/prisma/issues/5008
+    // you can't do aggregations; for us sorting by soonest segment date would require a min() aggregation. https://stackoverflow.com/questions/67930989/prisma-order-by-relation-has-only-count-property-can-not-order-by-relation-fie
     { id: 'desc' }, // TODO: we should find a way to order by segment! can be done in SQL but not prisma afaik. ordering can just be done in code.
 ];
 
@@ -413,6 +442,7 @@ export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
     };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query) => false;
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: db3.DB3RowMode) => { };
 
@@ -479,6 +509,10 @@ const xEventArgs_Base: db3.TableDesc = {
         }
         return false;
     },
+    clientLessThan: (a: EventPayload, b: EventPayload) => {
+        // `!`, because we want desc (late dates first)
+        return !IsEarlierDateWithLateNull(getEventSegmentMinDate(a), getEventSegmentMinDate(b));
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name"),
@@ -541,6 +575,21 @@ const xEventArgs_Base: db3.TableDesc = {
                     }
                 }
             }),
+            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.EventWhereInput | boolean => {
+                if (!query?.cmdb?.tagIds?.length) return false;
+                const tagIds = query!.cmdb!.tagIds;
+
+                return {
+                    AND: tagIds.map(tagId => ({
+                        tags: { some: { eventTagId: { equals: tagId } } }
+                    }))
+                };
+
+                // the following does not work; it would require that, for an event, all of its tags are being queried.
+                // return ({
+                //     tags: { every: { eventTagId: { in: query!.cmdb!.tagIds } } }
+                // });
+            },
         }),
     ]
 };

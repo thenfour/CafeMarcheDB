@@ -7,7 +7,7 @@ import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
-import { xTable } from "../db3core";
+import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
 import { xPermission, xUser } from "./user";
 
@@ -29,7 +29,7 @@ export const SongTagSignificance = {
     VocalSolo: "VocalSolo",
 } as const satisfies Record<string, string>;
 
-export const xSongTag = new xTable({
+export const xSongTag = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: SongTagInclude,
@@ -96,7 +96,7 @@ const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByWithRela
     { tag: { id: 'asc' } },
 ];
 
-export const xSongTagAssociation = new xTable({
+export const xSongTagAssociation = new db3.xTable({
     tableName: "SongTagAssociation",
     editPermission: Permission.associate_song_tags,
     viewPermission: Permission.view_general_info,
@@ -144,7 +144,7 @@ const SongNaturalOrderBy: Prisma.SongOrderByWithRelationInput[] = [
     { id: 'asc' },
 ];
 
-export const xSong = new xTable({
+export const xSong = new db3.xTable({
     tableName: "Song",
     editPermission: Permission.admin_songs,
     viewPermission: Permission.view_songs,
@@ -211,6 +211,7 @@ export const xSong = new xTable({
             associationLocalObjectMember: "song",
             associationTableSpec: xSongTagAssociation,
             foreignTableSpec: xSongTag,
+            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
                 tags: {
                     some: {
@@ -244,7 +245,7 @@ export const SongCommentNaturalOrderBy: Prisma.SongCommentOrderByWithRelationInp
     { id: 'asc' },
 ];
 
-export const xSongComment = new xTable({
+export const xSongComment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: SongCommentInclude,
@@ -317,7 +318,7 @@ export const SongCreditTypeNaturalOrderBy: Prisma.SongCreditTypeOrderByWithRelat
     { id: 'asc' },
 ];
 
-export const xSongCreditType = new xTable({
+export const xSongCreditType = new db3.xTable({
     editPermission: Permission.edit_song_credit_types,
     viewPermission: Permission.view_general_info,
     localInclude: SongCreditTypeInclude,
@@ -369,7 +370,7 @@ export const SongCreditNaturalOrderBy: Prisma.SongCreditOrderByWithRelationInput
     { id: 'asc' },
 ];
 
-export const xSongCredit = new xTable({
+export const xSongCredit = new db3.xTable({
     editPermission: Permission.edit_song_credits,
     viewPermission: Permission.view_general_info,
     localInclude: SongCreditInclude,

@@ -9,7 +9,7 @@ import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
-import { xTable } from "../db3core";
+import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField } from "../db3basicFields";
 
 
@@ -28,7 +28,7 @@ export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctio
     { id: 'asc' },
 ];
 
-export const xInstrumentFunctionalGroup = new xTable({
+export const xInstrumentFunctionalGroup = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentFunctionalGroupInclude,
@@ -84,7 +84,7 @@ export const InstrumentTagSignificance = {
     Big: "Big",
 } as const satisfies Record<string, string>;
 
-export const xInstrumentTag = new xTable({
+export const xInstrumentTag = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentTagInclude,
@@ -151,7 +151,7 @@ const InstrumentTagAssociationNaturalOrderBy: Prisma.InstrumentTagAssociationOrd
 ];
 
 // this is mostly only in order to define the tags field in xInstruments.
-export const xInstrumentTagAssociation = new xTable({
+export const xInstrumentTagAssociation = new db3.xTable({
     tableName: "InstrumentTagAssociation",
     editPermission: Permission.associate_instrument_tags,
     viewPermission: Permission.view_general_info,
@@ -204,7 +204,7 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
     { id: 'asc' },
 ];
 
-export const xInstrument = new xTable({
+export const xInstrument = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     localInclude: InstrumentArgs.include,
@@ -262,6 +262,7 @@ export const xInstrument = new xTable({
                     }
                 }
             }),
+            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
         }),
     ]
 });
