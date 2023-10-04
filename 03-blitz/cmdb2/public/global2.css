@@ -136,10 +136,11 @@ html,
     white-space: nowrap;
 }
 
+/* 
 .CMChip.selected {
     border: 1px solid #000;
     color: #000;
-}
+} */
 
 /* general purpose style for interactable things like buttons. avoid selection which is awkward with mouse */
 .interactable {

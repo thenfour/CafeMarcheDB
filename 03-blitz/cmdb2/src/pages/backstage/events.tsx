@@ -160,7 +160,7 @@ const MainContent = () => {
         recordCount: 20,
         quickFilter: "",
         tagFilter: [],
-        verbosity: "compact",
+        verbosity: "default",
     });
 
     const eventsClient = DB3Client.useTableRenderContext({

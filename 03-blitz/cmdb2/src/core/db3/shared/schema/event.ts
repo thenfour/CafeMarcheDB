@@ -55,6 +55,15 @@ const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
         event: true,
         visiblePermission: true,
+        songs: {
+            include: {
+                song: {
+                    include: {
+                        visiblePermission: true,
+                    }
+                }
+            }
+        }
     },
 });
 

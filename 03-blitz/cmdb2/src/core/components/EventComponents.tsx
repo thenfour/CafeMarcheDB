@@ -749,13 +749,19 @@ export const EventLocationControl = ({ event, refetch }: { event: EventWithStatu
 };
 
 ////////////////////////////////////////////////////////////////
+// do not create separate components for the various verbosities.
+// it's tempting, because it would have advantages:
+// - can optimize queries easier for more compact variations
+// - can have simpler control over big gui variations instead of trying to make everything unified
+//
+// however, that has drawbacks:
+// - the init code is a lot, and it would either need to be duplicated or pass a huge amount of data around. neither is nice
+// - will allow a smoother transition between verbosities
 export type EventDetailVerbosity = "compact" | "default" | "verbose";
 
 export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, verbosity: EventDetailVerbosity }) => {
-    //const locationKnown = !IsNullOrWhitespace(event.locationDescription);
     const [user] = useCurrentUser()!;
     const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
-    //console.log(myEventInfo);
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -785,7 +791,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
         formattedAttendeeRange = ` (${minMaxSegmentAttendees.minAttendees}-${minMaxSegmentAttendees.maxAttendees})`;
     }
 
-    return <div className={`contentSection event future`}>
+    return <div className={`contentSection event ${verbosity}Verbosity`}>
 
         <EventVisibilityControl event={event} refetch={tableClient.refetch} />
 
@@ -819,87 +825,91 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
             </div>
         </div>
 
-        <Tabs value={selectedTab} onChange={handleTabChange} aria-label="basic tabs example">
-            <Tab label="Info" {...a11yProps(0)} />
-            <Tab label={`Comments (${event.comments.length})`} {...a11yProps(1)} />
-            <Tab label={`Set Lists (${event.songLists.length})`} {...a11yProps(2)} />
-            <Tab label={`Attendance ${formattedAttendeeRange}`} {...a11yProps(3)} />
-            <Tab label={`Completeness`} {...a11yProps(4)} />
-        </Tabs>
+        {verbosity === 'verbose' && (
+            <>
 
-        <CustomTabPanel value={selectedTab} index={0}>
-            <div className='descriptionLine'>
-                <EventDescriptionControl event={event} refetch={tableClient.refetch} />
-            </div>
-        </CustomTabPanel>
+                <Tabs value={selectedTab} onChange={handleTabChange} aria-label="basic tabs example">
+                    <Tab label="Info" {...a11yProps(0)} />
+                    <Tab label={`Comments (${event.comments.length})`} {...a11yProps(1)} />
+                    <Tab label={`Set Lists (${event.songLists.length})`} {...a11yProps(2)} />
+                    <Tab label={`Attendance ${formattedAttendeeRange}`} {...a11yProps(3)} />
+                    <Tab label={`Completeness`} {...a11yProps(4)} />
+                </Tabs>
 
-        <CustomTabPanel value={selectedTab} index={1}>
-            (todo)
-        </CustomTabPanel>
+                <CustomTabPanel value={selectedTab} index={0}>
+                    <div className='descriptionLine'>
+                        <EventDescriptionControl event={event} refetch={tableClient.refetch} />
+                    </div>
+                </CustomTabPanel>
 
-        <CustomTabPanel value={selectedTab} index={2}>
-            {
-                event.songLists.map(songList => <EventSongListDetail key={songList.id} event={event} tableClient={tableClient} songList={songList} />)
-            }
-            <Button startIcon={gIconMap.Add()}>Add song list</Button>
-        </CustomTabPanel>
+                <CustomTabPanel value={selectedTab} index={1}>
+                    (todo)
+                </CustomTabPanel>
 
-        <CustomTabPanel value={selectedTab} index={3}>
-            <EventAttendanceDetail event={event} tableClient={tableClient} />
-        </CustomTabPanel>
-
-        <CustomTabPanel value={selectedTab} index={4}>
-            {/* COMPLETENESS */}
-            <table>
-                <tbody>
-                    <tr>
-                        <th>Instrument group</th>
-                        {event.segments.map((seg) => {
-                            return <th key={seg.id}>{seg.name}</th>;
-                        })}
-                    </tr>
+                <CustomTabPanel value={selectedTab} index={2}>
                     {
-                        (functionalGroupsClient.items as db3.InstrumentFunctionalGroupMinimalPayload[]).map(functionalGroup => {
-                            return <tr key={functionalGroup.id}>
-                                <td>{functionalGroup.name}</td>
-                                {event.segments.map((seg) => {
-                                    // come up with the icons per user responses
-                                    // either just sort segment responses by answer strength,
-                                    // or group by answer. not sure which is more useful probably the 1st.
-                                    const sorted = seg.responses.filter(resp => {
-                                        // only take responses where we 1. expect the user, OR they have responded.
-                                        // AND it matches the current instrument function.
-                                        const responseInstrument = API.events.getInstrumentForUserResponse(resp, resp.user);
-                                        if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
-                                        return resp.expectAttendance || !!resp.attendance;
-                                    });
-                                    sorted.sort((a, b) => {
-                                        // no response is weakest.
-                                        if (a.attendance === null) {
-                                            if (b.attendance === null) return 0;
-                                            return -1; // null always lowest, and b is not null.
-                                        }
-                                        if (b.attendance === null) {
-                                            return 1; // b is null & a is not.
-                                        }
-                                        return (a > b) ? -1 : 1;
-                                    });
-                                    return <td key={seg.id}>
-                                        {sorted.map(resp => {
-                                            if (resp.attendance === null) {
-                                                return <div key={resp.id}>null</div>;
-                                            }
-                                            return <div key={resp.id}>{resp.attendance.text}</div>
-                                        })}
-                                    </td>;
-                                })}
-                            </tr>;
-                        })
+                        event.songLists.map(songList => <EventSongListDetail key={songList.id} event={event} tableClient={tableClient} songList={songList} />)
                     }
-                </tbody>
-            </table>
-        </CustomTabPanel>
+                    <Button startIcon={gIconMap.Add()}>Add song list</Button>
+                </CustomTabPanel>
 
+                <CustomTabPanel value={selectedTab} index={3}>
+                    <EventAttendanceDetail event={event} tableClient={tableClient} />
+                </CustomTabPanel>
+
+                <CustomTabPanel value={selectedTab} index={4}>
+                    {/* COMPLETENESS */}
+                    <table>
+                        <tbody>
+                            <tr>
+                                <th>Instrument group</th>
+                                {event.segments.map((seg) => {
+                                    return <th key={seg.id}>{seg.name}</th>;
+                                })}
+                            </tr>
+                            {
+                                (functionalGroupsClient.items as db3.InstrumentFunctionalGroupMinimalPayload[]).map(functionalGroup => {
+                                    return <tr key={functionalGroup.id}>
+                                        <td>{functionalGroup.name}</td>
+                                        {event.segments.map((seg) => {
+                                            // come up with the icons per user responses
+                                            // either just sort segment responses by answer strength,
+                                            // or group by answer. not sure which is more useful probably the 1st.
+                                            const sorted = seg.responses.filter(resp => {
+                                                // only take responses where we 1. expect the user, OR they have responded.
+                                                // AND it matches the current instrument function.
+                                                const responseInstrument = API.events.getInstrumentForUserResponse(resp, resp.user);
+                                                if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
+                                                return resp.expectAttendance || !!resp.attendance;
+                                            });
+                                            sorted.sort((a, b) => {
+                                                // no response is weakest.
+                                                if (a.attendance === null) {
+                                                    if (b.attendance === null) return 0;
+                                                    return -1; // null always lowest, and b is not null.
+                                                }
+                                                if (b.attendance === null) {
+                                                    return 1; // b is null & a is not.
+                                                }
+                                                return (a > b) ? -1 : 1;
+                                            });
+                                            return <td key={seg.id}>
+                                                {sorted.map(resp => {
+                                                    if (resp.attendance === null) {
+                                                        return <div key={resp.id}>null</div>;
+                                                    }
+                                                    return <div key={resp.id}>{resp.attendance.text}</div>
+                                                })}
+                                            </td>;
+                                        })}
+                                    </tr>;
+                                })
+                            }
+                        </tbody>
+                    </table>
+                </CustomTabPanel>
+            </>
+        )}
 
 
     </div>;
