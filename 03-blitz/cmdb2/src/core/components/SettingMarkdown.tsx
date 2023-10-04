@@ -86,7 +86,13 @@ interface SettingMarkdownProps {
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const [updateSetting] = useMutation(updateSettingMutation);
-    let [initialValue, { refetch }] = useQuery(getSetting, props.settingName);
+    let [initialValue, { refetch }] = useQuery(getSetting, { name: props.settingName, cmdbQueryContext: `SettingMarkdown` }, {
+        staleTime: Infinity,
+        cacheTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: true,
+    });
     return <MutationMarkdownControl
         initialValue={initialValue}
         refetch={refetch}

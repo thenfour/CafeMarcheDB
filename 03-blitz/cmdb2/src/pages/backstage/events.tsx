@@ -151,6 +151,38 @@ const EventsControls = (props: EventsControlsProps) => {
     </div>;
 };
 
+const EventsList = ({ filterSpec }: { filterSpec: EventsControlsSpec }) => {
+    const eventsClient = DB3Client.useTableRenderContext({
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xEventVerbose,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+                new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+            ],
+        }),
+        filterModel: {
+            quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
+            items: [],
+            cmdb: {
+                tagIds: filterSpec.tagFilter,
+            },
+        },
+        paginationModel: {
+            page: 0,
+            pageSize: filterSpec.recordCount,
+        },
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+    });
+
+    React.useEffect(() => {
+        eventsClient.refetch();
+    }, [filterSpec]);
+
+    return <>
+        {eventsClient.items.map(event => <EventDetail key={event.id} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} />)}
+    </>;
+};
+
 const MainContent = () => {
     if (!useAuthorization("events page", Permission.view_events)) {
         throw new Error(`unauthorized`);
@@ -163,45 +195,27 @@ const MainContent = () => {
         verbosity: "default",
     });
 
-    const eventsClient = DB3Client.useTableRenderContext({
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xEventVerbose,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            ],
-        }),
-        filterModel: {
-            quickFilterValues: controlSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
-            items: [],
-            cmdb: {
-                tagIds: controlSpec.tagFilter,
-            },
-        },
-        paginationModel: {
-            page: 0,
-            pageSize: controlSpec.recordCount,
-        },
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-    });
-
     const handleSpecChange = (value: EventsControlsSpec) => {
         setControlSpec(value);
-        eventsClient.refetch();
     };
 
-    return (<>
-        <div className="eventsMainContent">
+    return <div className="eventsMainContent">
 
+        <Suspense>
             <SettingMarkdown settingName="events_markdown"></SettingMarkdown>
+        </Suspense>
 
+        <Suspense>
             <CMSinglePageSurfaceCard>
-                showing {eventsClient.items.length} events
+                {/* showing {eventsClient.items.length} events */}
                 <EventsControls onChange={handleSpecChange} spec={controlSpec} />
             </CMSinglePageSurfaceCard>
+        </Suspense>
 
-            {eventsClient.items.map(event => <EventDetail key={event.id} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={controlSpec.verbosity} />)}
-
+        <Suspense>
+            <EventsList filterSpec={controlSpec} />
+        </Suspense>
+        {/* 
             <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
             <EventSummary asArnold={true} asDirector={true} finalized={true} past={true} />
             <EventSummary asArnold={false} asDirector={false} finalized={false} past={true} />
@@ -212,10 +226,8 @@ const MainContent = () => {
             <EventSummary asArnold={true} asDirector={false} finalized={true} past={false} />
             <EventSummary asArnold={true} asDirector={true} finalized={true} past={false} />
             <EventSummary asArnold={false} asDirector={false} finalized={false} past={false} />
-            <EventSummary asArnold={false} asDirector={false} finalized={true} past={false} />
-        </div>
-    </>
-    )
+            <EventSummary asArnold={false} asDirector={false} finalized={true} past={false} /> */}
+    </div>;
 };
 
 const ViewEventsPage: BlitzPage = () => {
@@ -225,5 +237,7 @@ const ViewEventsPage: BlitzPage = () => {
         </DashboardLayout>
     )
 }
+
+//ViewEventsPage.suppressFirstRenderFlicker = true;
 
 export default ViewEventsPage;

@@ -135,7 +135,9 @@ interface EventAttendanceResponseControlProps {
     onClose: () => void,
 };
 
-const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
+
+
+const EventAttendanceResponseControlMeat = (props: EventAttendanceResponseControlProps) => {
 
     const optionsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -147,23 +149,30 @@ const EventAttendanceResponseControl = (props: EventAttendanceResponseControlPro
         }),
     });
 
+    //const nullSelStyle = (!props.value) ? "selected" : "notSelected";
+    return <>{optionsClient.items.map(option => {
+        const style = GetStyleVariablesForColor(option.color);
+        const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
+        const yesNoStyle = (option.strength > 50) ? "yes" : "no";
+        return <Button
+            key={option.id}
+            style={style}
+            endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
+            className={`${yesNoStyle} applyColor-strong-noBorder ${selStyle}`}
+            onClick={() => { props.onChange(option); }}
+        >
+            {option.text}
+        </Button>;
+    })}</>;
+};
+
+const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
     const nullSelStyle = (!props.value) ? "selected" : "notSelected";
     return <>
         <ButtonGroup className='EventAttendanceResponseControlButtonGroup'>
-            {optionsClient.items.map(option => {
-                const style = GetStyleVariablesForColor(option.color);
-                const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
-                const yesNoStyle = (option.strength > 50) ? "yes" : "no";
-                return <Button
-                    key={option.id}
-                    style={style}
-                    endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
-                    className={`${yesNoStyle} applyColor-strong-noBorder ${selStyle}`}
-                    onClick={() => { props.onChange(option); }}
-                >
-                    {option.text}
-                </Button>;
-            })}
+            <Suspense>
+                <EventAttendanceResponseControlMeat {...props} />
+            </Suspense>
 
             <Button className={`null noSelection ${nullSelStyle}`} onClick={() => { props.onChange(null); }}>no answer</Button>
 

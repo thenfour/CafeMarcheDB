@@ -3,7 +3,6 @@
 // the selected item is transmitted back on onOK().
 // all datasource is dsecribed by the spec: ForeignSingleField<any, TDBModel>,
 
-import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
     Search as SearchIcon

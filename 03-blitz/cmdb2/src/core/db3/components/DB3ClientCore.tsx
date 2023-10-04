@@ -233,7 +233,13 @@ export class xTableRenderClient {
                 orderBy,
                 where,
             };
-            const [items, { refetch }] = useQuery(db3queries, queryInput);
+            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "xTableRenderClient" }, {
+                staleTime: Infinity,
+                cacheTime: Infinity,
+                refetchOnWindowFocus: false,
+                refetchOnReconnect: false,
+                refetchOnMount: true,
+            });
             items_ = items;
             this.rowCount = items.length;
             this.refetch = refetch;

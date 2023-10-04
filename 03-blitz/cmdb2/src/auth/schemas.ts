@@ -132,7 +132,9 @@ export const RegisterActivitySchema = z.object({
 export const SettingNameSchema = z.string().min(1);
 export const SettingValueSchema = z.string(); // allow empty strings
 
-export const GetSettingSchema = z.string().min(1); // by name
+export const GetSettingSchema = z.object({
+  name: z.string().min(1)
+}); // by name
 
 
 export const UpdateSettingSchema = z.object({

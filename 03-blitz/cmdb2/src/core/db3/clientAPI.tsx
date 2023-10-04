@@ -162,7 +162,13 @@ class EventsAPI {
     }
 
     usePopularEventTagsQuery = () => {
-        return useQuery(getPopularEventTags, {});
+        return useQuery(getPopularEventTags, { cmdbQueryContext: `usePopularEventTagsQuery` }, {
+            staleTime: Infinity,
+            cacheTime: Infinity,
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            refetchOnMount: true,
+        });
     };
 
     getInstrumentForUserResponse = (response: db3.EventSegmentUserResponsePayload, user: db3.UserPayload): (db3.InstrumentPayload | null) => {

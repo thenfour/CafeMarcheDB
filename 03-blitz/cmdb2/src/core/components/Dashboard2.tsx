@@ -373,7 +373,9 @@ const Dashboard2 = ({ children }) => {
                     className="mainContentBackdrop"
                 >
                     <Toolbar />
-                    {children}
+                    <React.Suspense>
+                        {children}
+                    </React.Suspense>
                 </Box>
             </Box>
         </LocalizationProvider>

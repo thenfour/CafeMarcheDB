@@ -793,7 +793,9 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
 
     return <div className={`contentSection event ${verbosity}Verbosity`}>
 
-        <EventVisibilityControl event={event} refetch={tableClient.refetch} />
+        <Suspense>
+            <EventVisibilityControl event={event} refetch={tableClient.refetch} />
+        </Suspense>
 
         <div className="infoLine">
             <div className="date smallInfoBox">

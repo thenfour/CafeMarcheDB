@@ -465,6 +465,13 @@ export class TagsFieldRenderContext<TAssociation> {
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
             where,
+            cmdbQueryContext: "TagsFieldRenderContext"
+        }, {
+            staleTime: Infinity,
+            cacheTime: Infinity,
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            refetchOnMount: true,
         });
         this.options = items.map(item => this.args.spec.typedSchemaColumn.createMockAssociation(args.row, item));
         this.refetch = refetch;

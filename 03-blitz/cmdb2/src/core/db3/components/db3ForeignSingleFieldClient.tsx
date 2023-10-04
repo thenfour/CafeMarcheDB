@@ -148,7 +148,13 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
                 },
             };
 
-            const [items, { refetch }] = useQuery(db3queries, queryInput);
+            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "ForeignSingleFieldClient.onSchemaConnected foreign table" }, {
+                staleTime: Infinity,
+                cacheTime: Infinity,
+                refetchOnWindowFocus: false,
+                refetchOnReconnect: false,
+                refetchOnMount: true,
+            });
             if (items.length !== 1) {
                 console.error(`table params ${JSON.stringify(tableClient.args.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
@@ -263,6 +269,13 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
             where,
+            cmdbQueryContext: "ForeignSingleFieldRenderContext",
+        }, {
+            staleTime: Infinity,
+            cacheTime: Infinity,
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            refetchOnMount: true,
         });
         this.items = items;
         this.refetch = refetch;

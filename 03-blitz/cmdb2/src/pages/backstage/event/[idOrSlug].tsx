@@ -10,6 +10,7 @@ import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { IsEntirelyIntegral } from "shared/utils";
+import { Suspense } from "react";
 
 const MyComponent = () => {
     const params = useParams();
@@ -43,7 +44,7 @@ const MyComponent = () => {
     return <div>
         {event && <>
             <EventBreadcrumbs event={event} />
-            <EventDetail event={event} tableClient={tableClient} />
+            <EventDetail verbosity="verbose" event={event} tableClient={tableClient} />
         </>}
     </div>;
 };
@@ -52,7 +53,9 @@ const MyComponent = () => {
 const EventDetailPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Event">
-            <MyComponent></MyComponent>
+            <Suspense>
+                <MyComponent></MyComponent>
+            </Suspense>
         </DashboardLayout>
     )
 }

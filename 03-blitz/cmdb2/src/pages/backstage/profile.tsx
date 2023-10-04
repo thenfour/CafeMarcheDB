@@ -7,7 +7,7 @@ import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { Button, CardContent, FormControl, FormHelperText, Input, InputLabel, Typography } from "@mui/material";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { ButtonSelectControl, ButtonSelectOption, MutationButtonSelectControl, MutationTextControl } from "src/core/components/CMTextField";
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { useMutation } from "@blitzjs/rpc";
 import updateBasicProfileFields from "../api/user/mutations/updateBasicProfileFields";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { gIconOptions } from "shared/utils";

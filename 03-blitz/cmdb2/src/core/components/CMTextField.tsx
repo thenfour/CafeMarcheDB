@@ -102,7 +102,7 @@ export const DebouncedTextField = (props: EditableTextControlProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
-// miraculously works with useQuery() as initial value. i don't understand how tbh.
+// miraculously works with useQuery as initial value. i don't understand how tbh.
 // interface EditableTextControlProps {
 //     initialValue: string | null, // value which may be coming from the database.
 //     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
