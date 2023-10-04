@@ -33,7 +33,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
         setValidationResult(vr);
         //console.log(`obj changed & validation result: `);
         //console.log(obj);
-       // console.log(vr);
+        // console.log(vr);
         setOldObj(obj);
     }, [obj]);
 
@@ -41,6 +41,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
         // check validation and disallow
         if (!validationResult.success) {
             console.log(`DB3NewObjectDialog handleOK validation error`);
+            console.log(validationResult);
             return;
         }
         onOK(obj);

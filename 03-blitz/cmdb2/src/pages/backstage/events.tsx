@@ -2,19 +2,21 @@ import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { EventSummary, RehearsalSummary } from "src/core/components/CMMockupComponents";
-import { EventDetail, EventDetailVerbosity } from "src/core/components/EventComponents";
+import { EventDetail, EventDetailVerbosity, EventStatusSelectionList, EventTypeSelectionList } from "src/core/components/EventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React, { FC, Suspense } from "react"
-import { Chip, InputBase } from "@mui/material";
+import { Button, Chip, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputBase, TextField } from "@mui/material";
 import {
     Add as AddIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { API } from "src/core/db3/clientAPI";
+import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
 
 // effectively there are a couple variants of an "event":
 // x 1. grid row, for admins
@@ -54,6 +56,85 @@ function toggleValueInArray(array: number[], id: number): number[] {
     return array;
 }
 
+// interface NewEventModel {
+//     name: string,
+//     description: string,
+//     slug: string | null,
+//     location: string,
+//     locationURL: string,
+//     status: db3.EventStatusPayload | null,
+//     type: db3.EventTypePayload | null,
+// };
+
+// const NewEventDialogContent = ({ onCancel, onOK }: { onCancel: () => void, onOK: () => void }) => {
+//     const [row, setRow] = React.useState<NewEventModel>({
+//         name: "",
+//         description: "",
+//         location: "",
+//         locationURL: "",
+//         slug: null,
+//         status: null,
+//         type: null,
+//     });
+
+//     return <>
+//         <DialogTitle>
+//             New event
+//         </DialogTitle>
+//         <DialogContent dividers>
+//             <DialogContentText>
+//                 some text here explaining what will happen?
+//             </DialogContentText>
+
+//             <TextField></TextField>
+
+
+//             <EventTypeSelectionList value={row.type || null} onChange={type => setRow({ ...row, type })} />
+//             <EventStatusSelectionList value={row.status || null} onChange={status => setRow({ ...row, status })} />
+//         </DialogContent>
+//         <DialogActions>
+//             <Button onClick={onCancel}>Cancel</Button>
+//             <Button onClick={() => { onOK(value) }}>OK</Button>
+//         </DialogActions>
+//     </>;
+// };
+
+const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK: () => void }) => {
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xEvent,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
+            new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
+            //new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
+            //new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
+            //new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
+            //new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
+            //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150 }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150 }),
+            new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+            //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
+        ],
+    });
+    return <DB3NewObjectDialog
+        onCancel={onCancel}
+        onOK={onOK}
+        table={tableSpec}
+    />;
+};
+
+const NewEventButton = () => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    return <>
+        <Button onClick={() => setOpen(true)}>{gIconMap.Add()} New event</Button>
+        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+            {/* <NewEventDialogContent onCancel={() => setOpen(false)} onOK={() => setOpen(false)} /> */}
+            <NewEventDialogWrapper onCancel={() => setOpen(false)} onOK={() => setOpen(false)} />
+        </ReactiveInputDialog>}
+    </>;
+};
 
 /// there's a problem with showing calendars.
 // while it does show a cool overview, interactivity is a problem.
@@ -211,6 +292,8 @@ const MainContent = () => {
                 <EventsControls onChange={handleSpecChange} spec={controlSpec} />
             </CMSinglePageSurfaceCard>
         </Suspense>
+
+        <NewEventButton />
 
         <Suspense>
             <EventsList filterSpec={controlSpec} />

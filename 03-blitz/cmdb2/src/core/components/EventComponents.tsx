@@ -16,7 +16,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ErrorIcon from '@mui/icons-material/Error';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { Alert, Breadcrumbs, Button, ButtonGroup, Card, CardActionArea, Chip, Link, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
+import { Alert, Autocomplete, Breadcrumbs, Button, ButtonGroup, Card, CardActionArea, Chip, FormControl, FormHelperText, InputLabel, Link, MenuItem, Select, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
 import React, { FC, Suspense } from "react"
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
@@ -27,7 +27,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { ColorPaletteEntry, gGeneralPaletteList } from 'shared/color';
 import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
-import { ArrayElement, IsNullOrWhitespace, TAnyModel } from 'shared/utils';
+import { ArrayElement, IsNullOrWhitespace, TAnyModel, gNullValue } from 'shared/utils';
 import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { API, APIQueryResult } from '../db3/clientAPI';
@@ -571,6 +571,36 @@ export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePaylo
 };
 
 
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export interface EventTypeGenericControlProps {
+//     onChange: (value: db3.EventTypePayload | null) => void,
+//     value: db3.EventTypePayload | null,
+// };
+// export const EventTypeSelectionList = (props: EventTypeGenericControlProps) => {
+//     const typesClient = API.events.getEventTypesClient();
+//     return <FormControl>
+//         <InputLabel>an input label</InputLabel>
+//         <Select
+//             value={props.value?.id || gNullValue}
+//             onChange={e => {
+//                 if (e.target.value === gNullValue) {
+//                     props.onChange(null);
+//                     return;
+//                 }
+//                 props.onChange((typesClient.items as db3.EventTypePayload[]).find((s) => s.id === e.target.value)!);
+//             }}
+//         >
+//             <MenuItem value={gNullValue}>--</MenuItem>
+//             {
+//                 typesClient.items.map((option: db3.EventTypePayload) => {
+//                     return <MenuItem key={option.id} value={option.id}>{option.text}</MenuItem>;
+//                 })
+//             }
+//         </Select>
+//         <FormHelperText>Here's my helper text</FormHelperText>
+//     </FormControl>;
+// };
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -635,6 +665,36 @@ export const EventStatusControl = ({ event, refetch }: { event: EventWithStatusP
     </div>;
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export interface EventStatusGenericControlProps {
+//     onChange: (value: db3.EventStatusPayload | null) => void,
+//     value: db3.EventStatusPayload | null,
+// };
+// export const EventStatusSelectionList = (props: EventStatusGenericControlProps) => {
+//     const statusesClient = API.events.getEventStatusesClient();
+//     return <>
+//         <InputLabel>an input label</InputLabel>
+//         <Select
+//             value={props.value?.id || gNullValue}
+//             onChange={e => {
+//                 if (e.target.value === gNullValue) {
+//                     props.onChange(null);
+//                     return;
+//                 }
+//                 props.onChange(statusesClient.items.find((s: db3.EventStatusPayload) => s.id === e.target.value)!);
+//             }}
+//         >
+//             <MenuItem value={gNullValue}>--</MenuItem>
+//             {
+//                 statusesClient.items.map((option: db3.EventStatusPayload) => {
+//                     return <MenuItem key={option.id} value={option.id}>{option.label}</MenuItem>;
+//                 })
+//             }
+//         </Select>
+//         <FormHelperText>Here's my helper text</FormHelperText>
+//     </>;
+// };
 
 
 ////////////////////////////////////////////////////////////////
