@@ -278,7 +278,7 @@ export const xInstrument = new db3.xTable({
 export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
     include: {
         instrument: InstrumentArgs,
-        user: true,
+        //user: true,
     }
 });
 

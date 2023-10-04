@@ -379,10 +379,18 @@ const EventArgs = Prisma.validator<Prisma.EventArgs>()({
         type: true,
         segments: {
             orderBy: { startsAt: "desc" },
-            include: EventSegmentArgs.include,
+            include: {
+                responses: {
+                    include: {
+                        instrument: true,
+                        user: true,
+                    }
+                }
+            },
         },
     },
 });
+
 
 export type EventPayload = Prisma.EventGetPayload<typeof EventArgs>;
 

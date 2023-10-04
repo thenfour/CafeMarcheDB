@@ -4,7 +4,9 @@ html,
     background-color: #eee;
 }
 
-.CMDashboard2 {}
+.CMDashboard2 {
+    display: flex;
+}
 
 
 .singlePageSurface {

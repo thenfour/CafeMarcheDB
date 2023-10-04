@@ -74,19 +74,21 @@ export const xUserMinimum = new db3.xTable({
 
 
 const PermissionLocalInclude: Prisma.PermissionInclude = {
-    roles: {
-        include: {
-            permission: true,
-        }
-    },
+    roles: true,
+    // {
+    //     include: {
+    //         permission: true,
+    //     }
+    // },
 };
 export type PermissionPayload = Prisma.PermissionGetPayload<{
     include: {
-        roles: {
-            include: {
-                permission: true,
-            }
-        },
+        roles: true
+        // {
+        //     include: {
+        //         permission: true,
+        //     }
+        // },
     }
 }>;
 export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput[] = [
