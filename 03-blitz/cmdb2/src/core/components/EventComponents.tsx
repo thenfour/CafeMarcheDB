@@ -479,7 +479,7 @@ export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTyp
     const permissions = API.users.getAllPermissions();
     const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => p.isVisibility)];
 
-    // ChoiceEditCell value type is PermissionPayload
+    // value type is PermissionPayload
     return <div className={`EventVisibilityControl ${event.type?.significance}`}>
         <ChoiceEditCell
             isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
@@ -545,7 +545,7 @@ export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePaylo
 
     const typesClient = API.events.getEventTypesClient();
 
-    // ChoiceEditCell value type is EventTypePayload
+    // value type is EventTypePayload
     return <div className={`eventTypeControl ${event.type?.significance}`}>
         <ChoiceEditCell
             isEqual={(a: db3.EventTypePayload, b: db3.EventTypePayload) => a.id === b.id}
@@ -610,7 +610,7 @@ export const EventStatusControl = ({ event, refetch }: { event: EventWithStatusP
 
     const statusesClient = API.events.getEventStatusesClient();
 
-    // ChoiceEditCell value type is EventStatusPayload
+    // value type is EventStatusPayload
     return <div className={`eventStatusControl ${event.status?.significance}`}>
         <ChoiceEditCell
             isEqual={(a: db3.EventStatusPayload, b: db3.EventStatusPayload) => a.id === b.id}

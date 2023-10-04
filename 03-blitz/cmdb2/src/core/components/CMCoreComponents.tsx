@@ -2,7 +2,7 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import React from "react";
+import React, { FC, Suspense } from "react"
 import { ColorPaletteEntry } from 'shared/color';
 import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import db, { Prisma } from "db";
@@ -146,7 +146,9 @@ export const ReactiveInputDialog = (props: React.PropsWithChildren<ReactiveInput
             scroll="paper"
             fullScreen={fullScreen}
         >
-            {props.children}
+            <Suspense>
+                {props.children}
+            </Suspense>
         </Dialog>
     );
 };
