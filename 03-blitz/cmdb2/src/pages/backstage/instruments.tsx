@@ -19,8 +19,8 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "slug", cellWidth: 150 }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupModel>({ columnName: "functionalGroup", cellWidth: 200 }),
-        new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationModel>({ columnName: "instrumentTags", cellWidth: 220 }),
+        new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupModel>({ columnName: "functionalGroup", cellWidth: 200, clientIntention: { intention: "admin" } }),
+        new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationModel>({ columnName: "instrumentTags", cellWidth: 220, clientIntention: { intention: "admin" } }),
     ],
 });
 

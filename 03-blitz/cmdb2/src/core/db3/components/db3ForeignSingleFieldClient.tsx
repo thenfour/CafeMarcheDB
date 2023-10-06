@@ -4,7 +4,7 @@ import React from "react";
 import * as db3 from "../db3";
 import * as DB3Client from "../DB3Client";
 import { Button, Chip, FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
-import { TAnyModel, gNullValue, parseIntOrNull } from "shared/utils";
+import { TAnyModel, gNullValue, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { GridFilterModel, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { SelectSingleForeignDialog } from "./db3SelectSingleForeignDialog";
 import { useMutation, useQuery } from "@blitzjs/rpc";
@@ -33,6 +33,7 @@ export interface ForeignSingleFieldInputProps<TForeign> {
     onChange: (value: TForeign | null) => void;
     validationError: string | null;
     readOnly: boolean;
+    clientIntention: db3.xTableClientUsageContext,
 };
 
 // general use "edit cell" for foreign single values
@@ -55,6 +56,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
         {chip}
         <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.label}</Button>
         {isOpen && <SelectSingleForeignDialog
+            clientIntention={props.clientIntention}
             closeOnSelect={true}
             value={props.value}
             spec={props.foreignSpec}
@@ -75,6 +77,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 export interface ForeignSingleFieldClientArgs<TForeign> {
     columnName: string;
     cellWidth: number;
+    clientIntention: db3.xTableClientUsageContext,
 
     renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactElement;
 
@@ -148,13 +151,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
                 },
             };
 
-            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "ForeignSingleFieldClient.onSchemaConnected foreign table" }, {
-                staleTime: Infinity,
-                cacheTime: Infinity,
-                refetchOnWindowFocus: false,
-                refetchOnReconnect: false,
-                refetchOnMount: true,
-            });
+            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "ForeignSingleFieldClient.onSchemaConnected foreign table" }, gQueryOptions.default);
             if (items.length !== 1) {
                 console.error(`table params ${JSON.stringify(tableClient.args.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
@@ -185,6 +182,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
                 const vr = this.typedSchemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 return <ForeignSingleFieldInput
                     validationError={vr.success ? null : vr.errorMessage || null}
+                    clientIntention={this.args.clientIntention}
                     foreignSpec={this}
                     readOnly={false} // always allow switching this; for admin purposes makes sense
                     value={params.value}
@@ -219,6 +217,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             <ForeignSingleFieldInput
                 foreignSpec={this}
                 readOnly={!!this.fixedValue}
+                clientIntention={this.args.clientIntention}
                 validationError={params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null}
                 value={value}
                 onChange={(newValue: TForeign | null) => {
@@ -234,6 +233,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
 export interface ForeignSingleFieldRenderContextArgs<TForeign> {
     spec: ForeignSingleFieldClient<TForeign>;
     filterText: string;
+    clientIntention: db3.xTableClientUsageContext,
 };
 
 // the "live" adapter handling server-side comms.
@@ -251,32 +251,17 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             this.mutateFn = useMutation(db3mutations)[0] as DB3Client.TMutateFn;
         }
 
-        const where = { AND: [] as any[] };
-        if (args.filterText) {
-            const tokens = args.filterText.split(/\s+/).filter(token => token.length > 0);
-            const quickFilterItems = tokens.map(q => {
-                //const OR = args.spec.typedSchemaColumn.getForeignQuickFilterWhereClause(q);
-                const OR = args.spec.typedSchemaColumn.foreignTableSpec.GetQuickFilterWhereClauseExpression(q);
-                if (!OR) return null;
-                return {
-                    OR,
-                };
-            });
-            where.AND.push(...quickFilterItems.filter(i => i !== null));
-        }
+        const where = DB3Client.CalculateWhereClause({
+            tableSchema: args.spec.typedSchemaColumn.foreignTableSpec,
+            clientIntention: args.clientIntention,
+        });
 
         const [items, { refetch }]: [TForeign[], any] = useQuery(db3queries, {
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
             where,
             cmdbQueryContext: "ForeignSingleFieldRenderContext",
-        }, {
-            staleTime: Infinity,
-            cacheTime: Infinity,
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            refetchOnMount: true,
-        });
+        }, gQueryOptions.default);
         this.items = items;
         this.refetch = refetch;
     }

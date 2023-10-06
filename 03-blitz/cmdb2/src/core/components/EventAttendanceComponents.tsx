@@ -141,6 +141,7 @@ const EventAttendanceResponseControlMeat = (props: EventAttendanceResponseContro
 
     const optionsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention: { intention: 'user' },
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventAttendance,
             columns: [

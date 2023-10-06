@@ -1,6 +1,25 @@
-import { ColorPalette, ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
+//
+// field types:
+//
+// - PKField
+// - GenericStringField
+// - GenericIntegerField
+// - ColorField
+// - BoolField
+// - ConstEnumStringField
+// - ForeignSingleField
+// - TagsField
+// - DateTimeField
+// - CreatedAtField
+// - SlugField
+
+// other places in code may also define more...
+// - CalculatedEventDateRangeField
+
+
+import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
-import { DB3RowMode, ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, TableClientSpecFilterModelCMDBExtras, ValidateAndParseArgs, ValidateAndParseResult, xTable } from "./db3core";
+import { DB3RowMode, ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, TableClientSpecFilterModelCMDBExtras, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
 
 ////////////////////////////////////////////////////////////////
 // field types
@@ -32,12 +51,16 @@ export class PKField extends FieldBase<number> {
         return false;
     };
 
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     // for pk id fields, there should never be any changes. but it is required to pass into update/delete/whatever so just pass it always.
     ValidateAndParse = (val: ValidateAndParseArgs<number>): ValidateAndParseResult<number | null> => {
         return SuccessfulValidateAndParseResult(val.value);
     };
-
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        // new rows don't have primary keys assigned yet; NOP
+    };
     isEqual = (a: number, b: number) => {
         return a === b;
     };
@@ -115,6 +138,8 @@ export class GenericStringField extends FieldBase<string> {
 
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
 
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
     ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
         if (value === null) {
             if (this.allowNull) return SuccessfulValidateAndParseResult(value);
@@ -143,6 +168,10 @@ export class GenericStringField extends FieldBase<string> {
             }
         }
         return SuccessfulValidateAndParseResult(value);
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
     };
 
     isEqual = (a: string, b: string) => {
@@ -194,6 +223,8 @@ export class GenericIntegerField extends FieldBase<number> {
         return { [this.member]: { equals: r.parsedValue } };
     };
 
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -218,6 +249,10 @@ export class GenericIntegerField extends FieldBase<number> {
         }
         // todo here check other constraints like min/max whatever
         return SuccessfulValidateAndParseResult(value);
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
     };
 
     isEqual = (a: number, b: number) => {
@@ -273,6 +308,8 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
 
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: string | null = dbModel[this.member];
@@ -282,6 +319,10 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         const val: ColorPaletteEntry | null = clientModel[this.member];
         mutationModel[this.member] = (val?.id) || null;
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -325,6 +366,12 @@ export class BoolField extends FieldBase<boolean> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
 
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
+    };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -381,7 +428,13 @@ export class ConstEnumStringField extends FieldBase<string> {
         return { [this.member]: { contains: query } };
     };
 
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
+    };
+
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -470,11 +523,17 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
 
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         // leaves behind the fk id.
         clientModel[this.member] = dbModel[this.member];
     }
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
+    };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         // mutations want ONLY the id, not the object.
@@ -615,12 +674,17 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras) => this.getCustomFilterWhereClause__(query);
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         // the "includes" clause already returns the correct structure for clients.
         clientModel[this.member] = dbModel[this.member];
     }
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
+    };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         // clients work with associations, even mock associations (where id is empty).
@@ -670,6 +734,7 @@ export class DateTimeField extends FieldBase<Date> {
         return false;
     };
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = ({ value }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
@@ -698,6 +763,10 @@ export class DateTimeField extends FieldBase<Date> {
             }
         }
         return SuccessfulValidateAndParseResult(value);
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
     };
 
     isEqual = (a: Date, b: Date) => {
@@ -759,6 +828,8 @@ export class CreatedAtField extends FieldBase<Date> {
     };
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
 
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
         // we don't care about the input; for creations just generate a new date always.
@@ -767,6 +838,10 @@ export class CreatedAtField extends FieldBase<Date> {
         }
         console.assert(value instanceof Date);
         return SuccessfulValidateAndParseResult(value);
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = new Date();
     };
 
     isEqual = (a: Date, b: Date) => {
@@ -825,6 +900,8 @@ export class SlugField extends FieldBase<string> {
     };
     getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
 
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
     ValidateAndParse = (val: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
         let slugValue = val.value; // by default, for editing, allow users to enter a custom value.
         if (val.mode === "new") {
@@ -839,6 +916,10 @@ export class SlugField extends FieldBase<string> {
         if (typeof slugValue !== 'string') return ErrorValidateAndParseResult("unknown type", "");
         if (slugValue.length < 1) return ErrorValidateAndParseResult("required", "");
         return SuccessfulValidateAndParseResult(slugValue);
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
     };
 
     isEqual = (a: string, b: string) => {

@@ -347,6 +347,7 @@ export const clamp01 = (x) => {
 // this should be synchronized with export const gIconMap.
 export const gIconOptions = {
     Add: "Add",
+    AddCircleOutline: "AddCircleOutline",
     CalendarMonth: "CalendarMonth",
     Campaign: "Campaign",
     Celebration: "Celebration",
@@ -354,6 +355,7 @@ export const gIconOptions = {
     CheckCircleOutline: "CheckCircleOutline",
     Close: "Close",
     Comment: "Comment",
+    Delete: "Delete",
     Done: "Done",
     Edit: "Edit",
     EditNote: "EditNote",
@@ -369,14 +371,18 @@ export const gIconOptions = {
     Mic: "Mic",
     MusicNote: "MusicNote",
     Nightlife: "Nightlife",
+    PauseCircleOutline: "PauseCircleOutline",
     Person: "Person",
     PersonSearch: "PersonSearch",
     Place: "Place",
+    PlayCircleOutline: "PlayCircleOutline",
     Public: "Public",
     QuestionMark: "QuestionMark",
+    RemoveCircleOutline: "RemoveCircleOutline",
     Search: "Search",
     Security: "Security",
     Settings: "Settings",
+    Stars: "Stars",
     ThumbDown: "ThumbDown",
     ThumbUp: "ThumbUp",
     Tune: "Tune",
@@ -391,3 +397,27 @@ export type ArrayElement<ArrayType extends readonly unknown[]> =
     ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
 
 
+export const gQueryOptions = {
+    // default will go stale periodically
+    default: {
+        staleTime: Infinity,
+        cacheTime: Infinity,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        refetchOnMount: true,
+    },
+    static: {
+        staleTime: Infinity,
+        cacheTime: Infinity,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: true,
+    },
+    liveData: {
+        staleTime: 0,
+        cacheTime: 0,
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true,
+        refetchOnMount: true,
+    }
+};

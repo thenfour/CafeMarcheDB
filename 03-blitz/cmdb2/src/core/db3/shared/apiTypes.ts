@@ -8,12 +8,6 @@ export interface TupdateUserEventSegmentAttendanceMutationArgs {
     instrumentId?: number | null;
 };
 
-// export interface TupdateUserEventSegmentAttendanceCommentMutationArgs {
-//     userId: number;
-//     eventSegmentId: number;
-//     comment: string | null;
-// };
-
 export interface TupdateEventBasicFieldsArgs {
     eventId: number;
     name?: string;

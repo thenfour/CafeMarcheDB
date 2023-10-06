@@ -415,6 +415,7 @@ model EventType {
   sortOrder    Int     @default(0)
   significance String?
   iconName     String?
+  isDeleted    Boolean @default(false)
   events       Event[]
 }
 
@@ -426,6 +427,7 @@ model EventStatus {
   sortOrder    Int     @default(0)
   significance String?
   iconName     String?
+  isDeleted    Boolean @default(false)
 
   events Event[]
 }

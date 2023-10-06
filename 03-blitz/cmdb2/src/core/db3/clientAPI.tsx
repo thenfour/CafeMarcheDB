@@ -3,8 +3,7 @@
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { CalculateOrderBy, CalculateWhereClause } from "./DB3Client";
-import { IsEntirelyIntegral, TAnyModel } from "shared/utils";
+import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import db3queries from "./queries/db3queries";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
@@ -85,6 +84,7 @@ class UsersAPI {
                 ],
             }),
             requestedCaps: DB3Client.xTableClientCaps.Query,
+            clientIntention: { intention: 'user' },
         });
 
     };
@@ -146,6 +146,7 @@ class EventsAPI {
                 ],
             }),
             requestedCaps: DB3Client.xTableClientCaps.Query,
+            clientIntention: { intention: 'user' },
         });
     }
 
@@ -158,17 +159,12 @@ class EventsAPI {
                 ],
             }),
             requestedCaps: DB3Client.xTableClientCaps.Query,
+            clientIntention: { intention: 'user' },
         });
     }
 
     usePopularEventTagsQuery = () => {
-        return useQuery(getPopularEventTags, { cmdbQueryContext: `usePopularEventTagsQuery` }, {
-            staleTime: Infinity,
-            cacheTime: Infinity,
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            refetchOnMount: true,
-        });
+        return useQuery(getPopularEventTags, { cmdbQueryContext: `usePopularEventTagsQuery` }, gQueryOptions.default);
     };
 
     getInstrumentForUserResponse = (response: db3.EventSegmentUserResponsePayload, user: db3.UserPayload): (db3.InstrumentPayload | null) => {

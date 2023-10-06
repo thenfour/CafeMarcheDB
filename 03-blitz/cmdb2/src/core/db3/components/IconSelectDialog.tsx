@@ -4,7 +4,6 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CelebrationIcon from '@mui/icons-material/Celebration';
 import CheckIcon from '@mui/icons-material/Check';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import CommentIcon from '@mui/icons-material/Comment';
 import DoneIcon from '@mui/icons-material/Done';
@@ -15,7 +14,6 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import GroupIcon from '@mui/icons-material/Group';
 import GroupsIcon from '@mui/icons-material/Groups';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
@@ -38,6 +36,17 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import React from "react";
 import { TIconOptions, gIconOptions } from "shared/utils";
 import { ChoiceEditCell } from "../../components/ChooseItemDialog";
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
+import StarsIcon from '@mui/icons-material/Stars';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+
+
+
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -46,6 +55,7 @@ import { ChoiceEditCell } from "../../components/ChooseItemDialog";
 // keep in sync with export const gIconOptions = 
 export const gIconMap /*: IIconMap*/ = {
     Add: () => <AddIcon />,
+    AddCircleOutline: () => <AddCircleOutlineIcon />,
     CalendarMonth: () => <CalendarMonthIcon />,
     Campaign: () => <CampaignIcon />,
     Celebration: () => <CelebrationIcon />,
@@ -53,6 +63,7 @@ export const gIconMap /*: IIconMap*/ = {
     CheckCircleOutline: () => <CheckCircleOutlineIcon />,
     Close: () => <CloseIcon />,
     Comment: () => <CommentIcon />,
+    Delete: () => <DeleteIcon />,
     Done: () => <DoneIcon />,
     Edit: () => <EditIcon />,
     EditNote: () => <EditNoteIcon />,
@@ -68,21 +79,23 @@ export const gIconMap /*: IIconMap*/ = {
     Mic: () => <MicIcon />,
     MusicNote: () => <MusicNoteIcon />,
     Nightlife: () => <NightlifeIcon />,
+    PauseCircleOutline: () => <PauseCircleOutlineIcon />,
     Person: () => <PersonIcon />,
     PersonSearch: () => <PersonSearchIcon />,
     Place: () => <PlaceIcon />,
+    PlayCircleOutline: () => <PlayCircleOutlineIcon />,
     Public: () => <PublicIcon />,
     QuestionMark: () => <QuestionMarkIcon />,
+    RemoveCircleOutline: () => <RemoveCircleOutlineIcon />,
     Search: () => <SearchIcon />,
     Security: () => <SecurityIcon />,
     Settings: () => <SettingsIcon />,
+    Stars: () => <StarsIcon />,
     ThumbDown: () => <ThumbDownIcon />,
     ThumbUp: () => <ThumbUpIcon />,
     Tune: () => <TuneIcon />,
     Visibility: () => <VisibilityIcon />,
     VisibilityOff: () => <VisibilityOffIcon />,
-
-
 
 } as const;
 

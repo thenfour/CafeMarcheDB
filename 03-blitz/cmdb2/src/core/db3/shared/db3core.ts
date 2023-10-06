@@ -1,6 +1,7 @@
 import { ColorPaletteEntry } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/utils";
+import db, { Prisma } from "db";
 
 
 // server-side code for db schema expression.
@@ -76,6 +77,7 @@ export interface QueryInput {
     tableName: string;
     where: TAnyModel | undefined;
     orderBy: TAnyModel | undefined;
+    take?: number | undefined;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -145,6 +147,19 @@ export interface TableClientSpecFilterModelCMDBExtras {
     };
 };
 
+const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
+    include: {
+        role: {
+            include: {
+                permissions: true,
+            }
+        }
+    }
+});
+
+type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
+
+
 
 ////////////////////////////////////////////////////////////////
 //export type FieldSignificanceOptions = "name" | "description" | "none" | "color";
@@ -182,16 +197,47 @@ export abstract class FieldBase<FieldDataType> {
     // return either falsy, or a "WhereInput" object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
     abstract getCustomFilterWhereClause: (query: TableClientSpecFilterModelCMDBExtras) => TAnyModel | boolean;
+    abstract getOverallWhereClause: (clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null>;// => {
+
+    abstract ApplyToNewRow: (args: TAnyModel, clientIntention: xTableClientUsageContext) => void;
 
     // SANITIZED values are passed in. That means no nulls, and ValidateAndParse has already been called.
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
 
     abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => void;
     abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => void; // apply the value from db to client.
+};
+
+export enum xTableClientUsageCustomContextType {
+    UserInsertDialog,
+    AdminInsertDialog,
 }
+
+export interface xTableClientUsageCustomContextBase {
+    type: xTableClientUsageCustomContextType, // a way to identify the type of custom context provided.
+};
+export interface xTableClientUsageContext {
+
+    // various table interactions depend on how the client is using it. for example
+    // when creating an object from an admin table, versus a normal user create dialog.
+    // they have different permissions, and even take different values / defaults.
+    // so these are kinda "domains" of client interaction or something.
+    // originally thinking of specifying the specific area, like "EventsPageNewEventButton"
+    // but it's going to bleed too much logic and annoyance into here.
+    // then, more generally "UserCreate" vs. "AdminCreate"
+    // but the "create" now becomes pretty much redundant with the requestedcaps. Therefore leave the actual operation out, just focus on the domain.
+    intention: "user" | "admin";
+
+    // will be filled in by the table client so not necessary from client code.
+    currentUser?: UserWithRolesPayload;
+
+    // does your xTable need to act differently when it's being used to populate a dropdown for a related key of some field? use this to do whatever.
+    customContext?: xTableClientUsageCustomContextBase;
+};
+
 
 export interface SortModel {
     field: string,
@@ -208,13 +254,14 @@ export interface TableDesc {
     tableName: string;
     columns: FieldBase<unknown>[];
     localInclude: unknown, // the includes:{} clause for local items. generally returns some of the foreign members
+    staticWhereClause?: unknown, // a *Where object applied to everything.
     viewPermission: Permission;
     editPermission: Permission;
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     naturalOrderBy?: TAnyModel;
     clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
-    getParameterizedWhereClause?: (params: TAnyModel) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+    getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 };
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
@@ -223,18 +270,18 @@ export class xTable implements TableDesc {
     columns: FieldBase<unknown>[];
 
     localInclude: unknown;
+    staticWhereClause?: unknown; // a *Where object applied to everything.
 
     viewPermission: Permission;
     editPermission: Permission;
 
-    defaultObject: TAnyModel;
     pkMember: string;
 
     rowNameMember?: string;
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
     clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
-    getParameterizedWhereClause?: (params: TAnyModel) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+    getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
@@ -247,10 +294,6 @@ export class xTable implements TableDesc {
 
         gAllTables[args.tableName] = this;
 
-        this.defaultObject = {};
-        args.columns.forEach(field => {
-            this.defaultObject[field.member] = field.defaultValue;
-        });
         args.columns.forEach(field => {
             field.connectToTable(this);
         });
@@ -336,6 +379,18 @@ export class xTable implements TableDesc {
         return { AND: ret };
     };
 
+    GetOverallWhereClauseExpression = (clientIntention: xTableClientUsageContext) => {
+        const ret = [] as any[];
+        for (let i = 0; i < this.columns.length; ++i) {
+            const field = this.columns[i]!;
+            const clause = field.getOverallWhereClause(clientIntention);
+            if (clause) {
+                ret.push(clause);
+            }
+        }
+        return { AND: ret };
+    };
+
     getClientModel = (dbModel: TAnyModel, mode: DB3RowMode) => {
         const ret: TAnyModel = {};
         for (let i = 0; i < this.columns.length; ++i) {
@@ -349,9 +404,36 @@ export class xTable implements TableDesc {
     getColumn = (name: string) => {
         return this.columns.find(c => c.member === name);
     }
+
+    // create a new row object (no primary key etc)
+    // to later be used by insertion.
+    createNew = (clientIntention: xTableClientUsageContext) => {
+        const ret = {};
+        this.columns.forEach(field => {
+            field.ApplyToNewRow(ret, clientIntention);
+        });
+        return ret;
+    }
 }
 
 ////////////////////////////////////////////////////////////////
 export const gAllTables: { [key: string]: xTable } = {
     // populated at runtime. required in order for client to call an API, and the API able to access the same schema.
 };
+
+export const GetVisibilityWhereClause = (currentUser: UserWithRolesPayload, createdByUserIDColumnName: string) => ({
+    OR: [
+        {
+            // current user has access to the specified visibile permission
+            visiblePermissionId: { in: currentUser.role?.permissions.map(p => p.permissionId) }
+        },
+        {
+            // private visibility and you are the creator
+            AND: [
+                { visiblePermissionId: null },
+                { [createdByUserIDColumnName]: currentUser.id }
+            ]
+        }
+    ]
+});
+

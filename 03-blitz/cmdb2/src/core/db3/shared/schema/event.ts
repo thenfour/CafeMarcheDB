@@ -2,13 +2,13 @@
 // for example i should be able to edit my own posts but not others. etc.
 // or think about the concept of user blocking, or not being able to see responses of certain kinds of events or people. todo...
 
-import db, { EventSegment, EventSegmentUserResponse, Prisma } from "db";
+import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
-import { xPermission, xUser } from "./user";
+import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
 import { InstrumentArgs, InstrumentPayload, UserArgs, UserPayload, getUserPrimaryInstrument, xInstrument } from "./instrument";
 /*
@@ -197,8 +197,17 @@ export const xEventType = new db3.xTable({
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
     }),
+    getParameterizedWhereClause: (params, clientIntention): Prisma.EventTypeWhereInput[] => {
+        if (clientIntention.intention === "user") {
+            return [{
+                isDeleted: { equals: false }
+            }];
+        }
+        return [];
+    },
     columns: [
         new PKField({ columnName: "id" }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false }),
         MakeTitleField("text"),
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
@@ -245,8 +254,17 @@ export const xEventStatus = new db3.xTable({
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
     }),
+    getParameterizedWhereClause: (params, clientIntention): Prisma.EventStatusWhereInput[] => {
+        if (clientIntention.intention === "user") {
+            return [{
+                isDeleted: { equals: false }
+            }];
+        }
+        return [];
+    },
     columns: [
         new PKField({ columnName: "id" }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false }),
         MakeTitleField("label"),
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
@@ -460,8 +478,13 @@ export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
     getCustomFilterWhereClause = (query) => false;
+    getOverallWhereClause = (clientIntention: db3.xTableClientUsageContext): TAnyModel | boolean => false;
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: db3.DB3RowMode) => { };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
+    };
 
     ValidateAndParse = (val: db3.ValidateAndParseArgs<DateRange>): db3.ValidateAndParseResult<DateRange | null> => {
         return db3.SuccessfulValidateAndParseResult(val.value);
@@ -515,16 +538,29 @@ const xEventArgs_Base: db3.TableDesc = {
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
     }),
-    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string }): (Prisma.EventWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string }, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
+        const ret: Prisma.EventWhereInput[] = [];
+
+        console.assert(clientIntention.currentUser?.id !== undefined);
+        console.assert(clientIntention.currentUser?.role?.permissions !== undefined);
+
         if (params.eventId !== undefined) {
             console.assert(params.eventSlug === undefined);
-            return [{ id: params.eventId, }];
+            ret.push({ id: params.eventId, });
         }
         if (params.eventSlug !== undefined) {
             console.assert(params.eventId === undefined);
-            return [{ slug: params.eventSlug }];
+            ret.push({ slug: params.eventSlug });
         }
-        return false;
+
+        if (clientIntention.intention === "user") {
+            // apply soft delete
+            ret.push({ isDeleted: { equals: false } });
+
+            // apply visibility
+            ret.push(db3.GetVisibilityWhereClause(clientIntention.currentUser!, "createdByUserId"));
+        }
+        return ret;
     },
     clientLessThan: (a: EventPayload, b: EventPayload) => {
         // `!`, because we want desc (late dates first)
@@ -539,11 +575,6 @@ const xEventArgs_Base: db3.TableDesc = {
         MakePlainTextField("locationDescription"),
         MakePlainTextField("locationURL"),
         new CalculatedEventDateRangeField(),
-        // new DateTimeField({
-        //     allowNull: true,
-        //     columnName: "cancelledAt",
-        //     granularity: "second",
-        // }),
         MakeCreatedAtField("createdAt"),
         new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
             columnName: "type",
@@ -552,19 +583,13 @@ const xEventArgs_Base: db3.TableDesc = {
             foreignTableSpec: xEventType,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+        new CreatedByUserField({
             columnName: "createdByUser",
             fkMember: "createdByUserId",
-            allowNull: false,
-            foreignTableSpec: xUser,
-            getQuickFilterWhereClause: (query: string) => false,
         }),
-        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+        new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
-            allowNull: true,
-            foreignTableSpec: xPermission,
-            getQuickFilterWhereClause: (query) => false,
         }),
         new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
             columnName: "status",
@@ -650,15 +675,6 @@ export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
 
 
 
-const userInclude = Prisma.validator<Prisma.UserInclude>()({
-    role: true,
-});
-
-type UserWithRoles = Prisma.UserGetPayload<{
-    include: typeof userInclude;
-}>;
-
-
 export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
     { startsAt: "asc" },
     { id: "asc" },
@@ -674,7 +690,7 @@ export const xEventSegment = new db3.xTable({
         name: row.name,
         description: row.description,
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSegmentWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSegmentWhereInput[] | false) => {
         if (params.eventId != null) {
             return [{
                 eventId: { equals: params.eventId }
@@ -723,7 +739,7 @@ export const xEventComment = new db3.xTable({
     getRowInfo: (row: EventCommentPayload) => ({
         name: "<not supported>",
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventCommentWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventCommentWhereInput[] | false) => {
         if (params.eventId != null) {
             return [{
                 eventId: { equals: params.eventId }
@@ -750,12 +766,9 @@ export const xEventComment = new db3.xTable({
             foreignTableSpec: xUser,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+        new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
-            allowNull: true,
-            foreignTableSpec: xPermission,
-            getQuickFilterWhereClause: (query) => false,
         }),
     ]
 });
@@ -798,6 +811,14 @@ export const xEventAttendance = new db3.xTable({
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
     }),
+    getParameterizedWhereClause: (params, clientIntention): Prisma.EventTypeWhereInput[] => {
+        if (clientIntention.intention === "user") {
+            return [{
+                isDeleted: { equals: false }
+            }];
+        }
+        return [];
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("text"),
@@ -827,7 +848,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
         name: row.user.compactName,
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSegmentUserResponseWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSegmentUserResponseWhereInput[] | false) => {
         if (params.eventSegmentId != null) {
             return [{
                 eventSegmentId: { equals: params.eventSegmentId }
@@ -886,7 +907,7 @@ export const xEventSongList = new db3.xTable({
         name: row.name,
         description: row.description,
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSongListWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListWhereInput[] | false) => {
         if (params.eventId != null) {
             return [{
                 eventId: { equals: params.eventId }
@@ -906,19 +927,13 @@ export const xEventSongList = new db3.xTable({
             foreignTableSpec: xEvent,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+        new CreatedByUserField({
             columnName: "createdByUser",
             fkMember: "createdByUserId",
-            allowNull: true,
-            foreignTableSpec: xUser,
-            getQuickFilterWhereClause: (query) => false,
         }),
-        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+        new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
-            allowNull: true,
-            foreignTableSpec: xPermission,
-            getQuickFilterWhereClause: (query) => false,
         }),
     ]
 });
@@ -935,7 +950,7 @@ export const xEventSongListSong = new db3.xTable({
         name: row.song.name,
         description: row.subtitle || "",
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.EventSongListSongWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListSongWhereInput[] | false) => {
         if (params.eventSongListId != null) {
             return [{
                 eventSongListId: { equals: params.eventSongListId }

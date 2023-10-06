@@ -161,6 +161,7 @@ const OwnInstrumentsControl = () => {
             ],
         }),
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+        clientIntention: { intention: "user" },
         tableParams: {
             userId: currentUser!.id,
         }

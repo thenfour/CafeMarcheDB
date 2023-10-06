@@ -21,6 +21,7 @@ export default resolver.pipe(
                 where: input.where,
                 orderBy,
                 include: table.localInclude,
+                take: input.take,
             });
             return items;
         } catch (e) {

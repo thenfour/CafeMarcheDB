@@ -10,30 +10,29 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { TAnyModel } from "shared/utils";
 
 type db3NewObjectDialogProps = {
-    onOK: (obj: TAnyModel) => any;
+    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => any;
     onCancel: () => any;
     table: DB3ClientCore.xTableClientSpec;
+    clientIntention: db3.xTableClientUsageContext;
 };
 
-export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialogProps) {
+export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: db3NewObjectDialogProps) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [obj, setObj] = React.useState(table.args.table.defaultObject);
-    const [oldObj, setOldObj] = React.useState(table.args.table.defaultObject); // needed for tracking changes
+    const [obj, setObj] = React.useState(table.args.table.createNew(clientIntention));
+    const [oldObj, setOldObj] = React.useState(table.args.table.createNew(clientIntention)); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
 
     const tableClient = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
         tableSpec: table,
+        clientIntention,
     });
 
     // validate on change
     React.useEffect(() => {
         const vr = tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new");
         setValidationResult(vr);
-        //console.log(`obj changed & validation result: `);
-        //console.log(obj);
-        // console.log(vr);
         setOldObj(obj);
     }, [obj]);
 
@@ -44,7 +43,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table }: db3NewObjectDialog
             console.log(validationResult);
             return;
         }
-        onOK(obj);
+        onOK(obj, tableClient);
     };
 
     const api: DB3ClientCore.NewDialogAPI = {

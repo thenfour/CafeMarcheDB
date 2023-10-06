@@ -21,10 +21,12 @@ import React, { Suspense } from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { ForeignSingleFieldClient, useForeignSingleFieldRenderContext } from "./db3ForeignSingleFieldClient";
 import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import * as db3 from '../db3';
 
 export interface SelectSingleForeignDialogProps<TForeign> {
     value: TForeign | null;
     spec: ForeignSingleFieldClient<TForeign>;
+    clientIntention: db3.xTableClientUsageContext,
 
     onOK: (value: TForeign | null) => void;
     onCancel: () => void;
@@ -38,6 +40,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
     const db3Context = useForeignSingleFieldRenderContext({
         filterText,
         spec: props.spec,
+        clientIntention: props.clientIntention,
     });
     const items = db3Context.items;
 

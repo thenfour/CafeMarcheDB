@@ -38,6 +38,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 import { TAnyModel } from 'shared/utils';
+import * as db3 from '../db3';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -80,6 +81,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
 
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
+        clientIntention: { intention: 'admin' },
         tableSpec,
         filterModel,
         sortModel,
@@ -334,6 +336,12 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddOK}
             table={tableSpec}
+            clientIntention={{
+                intention: 'admin',
+                customContext: {
+                    type: db3.xTableClientUsageCustomContextType.AdminInsertDialog,
+                }
+            }}
         />}
         <DataGrid
             // basic config

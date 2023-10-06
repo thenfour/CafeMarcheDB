@@ -19,12 +19,13 @@ import db3mutations from "../mutations/db3mutations";
 //import db3queries from "../queries/db3queries";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
-import { HasFlag, TAnyModel, gNullValue } from "shared/utils";
+import { HasFlag, TAnyModel, gNullValue, gQueryOptions } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
 import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import db3queries from "../queries/db3queries";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
@@ -104,7 +105,14 @@ export type TableClientSpecFilterModel = GridFilterModel & db3.TableClientSpecFi
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
 
-export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: TableClientSpecFilterModel, tableParams?: TAnyModel) => {
+export interface CalculateWhereClauseArgs {
+    tableSchema: db3.xTable;
+    filterModel?: TableClientSpecFilterModel;
+    tableParams?: TAnyModel;
+    clientIntention: db3.xTableClientUsageContext;
+};
+
+export const CalculateWhereClause = ({ tableSchema, filterModel, tableParams, clientIntention }: CalculateWhereClauseArgs) => {
     const where = { AND: [] as any[] };
 
     // QUICK FILTER
@@ -130,11 +138,22 @@ export const CalculateWhereClause = (tableSchema: db3.xTable, filterModel?: Tabl
         where.AND.push(...filterItems);
     }
 
-    if (tableParams && tableSchema.getParameterizedWhereClause) {
-        const filterItems = tableSchema.getParameterizedWhereClause(tableParams);
+    if (tableSchema.getParameterizedWhereClause) {
+        const filterItems = tableSchema.getParameterizedWhereClause(tableParams || {}, clientIntention);
         if (filterItems) {
             where.AND.push(...filterItems);
         }
+    }
+
+    const overallWhere = tableSchema.GetOverallWhereClauseExpression(clientIntention);
+    where.AND.push(overallWhere);
+
+    if (tableSchema.staticWhereClause) {
+        where.AND.push(tableSchema.staticWhereClause);
+        //console.log(`applying static where clause; total where = `);
+        //console.log(where);
+    } else {
+        //console.log(`not applying static where for table ${tableSchema.tableName}`);
     }
 
     return where;
@@ -154,19 +173,22 @@ export enum xTableClientCaps {
     None = 0,
     PaginatedQuery = 1,
     Query = 2,
-    Mutation = 4
-}
+    Mutation = 4,
+};
 
 export interface xTableClientArgs {
     tableSpec: xTableClientSpec,
 
     requestedCaps: xTableClientCaps,
+    clientIntention: db3.xTableClientUsageContext;
 
     // optional for example for new item dialog which doesn't do any querying at all.
     sortModel?: GridSortModel,
     filterModel?: TableClientSpecFilterModel,
     paginationModel?: GridPaginationModel,
     tableParams?: TAnyModel,
+
+    queryOptions?: any; // of gQueryOptions
 };
 
 export class xTableRenderClient {
@@ -193,13 +215,23 @@ export class xTableRenderClient {
         this.tableSpec = args.tableSpec;
         this.args = args;
 
+        const [currentUser] = useCurrentUser();
+        if (currentUser != null) {
+            args.clientIntention.currentUser = currentUser;
+        }
+
         if (HasFlag(args.requestedCaps, xTableClientCaps.Mutation)) {
             this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
         }
 
         const orderBy = CalculateOrderBy(args.sortModel);
 
-        const where = CalculateWhereClause(args.tableSpec.args.table, args.filterModel, args.tableParams);
+        const where = CalculateWhereClause({
+            tableSchema: args.tableSpec.args.table,
+            filterModel: args.filterModel,
+            tableParams: args.tableParams,
+            clientIntention: args.clientIntention,
+        });
 
         const skip = !!args.paginationModel ? (args.paginationModel.pageSize * args.paginationModel.page) : undefined;
         const take = !!args.paginationModel ? (args.paginationModel.pageSize) : undefined;
@@ -220,7 +252,7 @@ export class xTableRenderClient {
                 where,
             };
 
-            const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput);
+            const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
             items_ = items as TAnyModel[];
             this.rowCount = count;
             this.refetch = refetch;
@@ -228,18 +260,14 @@ export class xTableRenderClient {
 
         if (HasFlag(args.requestedCaps, xTableClientCaps.Query)) {
             console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)); // don't do both. why would you do both types of queries.??
+            console.assert(skip === 0 || skip === undefined);
             const queryInput: db3.QueryInput = {
                 tableName: this.args.tableSpec.args.table.tableName,
                 orderBy,
                 where,
+                take,
             };
-            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "xTableRenderClient" }, {
-                staleTime: Infinity,
-                cacheTime: Infinity,
-                refetchOnWindowFocus: false,
-                refetchOnReconnect: false,
-                refetchOnMount: true,
-            });
+            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "xTableRenderClient" }, args.queryOptions || gQueryOptions.default);
             items_ = items;
             this.rowCount = items.length;
             this.refetch = refetch;
@@ -273,8 +301,8 @@ export class xTableRenderClient {
     doUpdateMutation = async (row: TAnyModel) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
         const updateModel = {};
-        this.clientColumns.forEach(col => {
-            col.schemaColumn.ApplyClientToDb(row, updateModel, "update");
+        this.schema.columns.forEach(col => {
+            col.ApplyClientToDb(row, updateModel, "update");
         });
         const ret = await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
@@ -287,8 +315,8 @@ export class xTableRenderClient {
 
     doInsertMutation = async (row: TAnyModel) => {
         const insertModel = {};
-        this.clientColumns.forEach(col => {
-            col.schemaColumn.ApplyClientToDb(row, insertModel, "new");
+        this.schema.columns.forEach(col => {
+            col.ApplyClientToDb(row, insertModel, "new");
         });
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,

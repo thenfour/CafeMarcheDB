@@ -294,7 +294,11 @@ export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
 
 export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
     include: {
-        role: true,
+        role: {
+            include: {
+                permissions: true,
+            }
+        },
         instruments: UserInstrumentArgs,
     }
 });

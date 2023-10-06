@@ -36,7 +36,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { CMTextField } from './CMTextField';
 import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEditor';
-import { CMBigChip, CMTagList, EditTextDialogButton } from './CMCoreComponents';
+import { CMBigChip, CMTagList, ConfirmationDialog, EditTextDialogButton } from './CMCoreComponents';
 import HomeIcon from '@mui/icons-material/Home';
 import { EventAttendanceAnswer, EventAttendanceFrame, EventAttendanceSummary } from './EventAttendanceComponents';
 import { EventAttendanceResponseInput } from './CMMockupComponents';
@@ -667,34 +667,35 @@ export const EventStatusControl = ({ event, refetch }: { event: EventWithStatusP
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export interface EventStatusGenericControlProps {
-//     onChange: (value: db3.EventStatusPayload | null) => void,
-//     value: db3.EventStatusPayload | null,
-// };
-// export const EventStatusSelectionList = (props: EventStatusGenericControlProps) => {
-//     const statusesClient = API.events.getEventStatusesClient();
-//     return <>
-//         <InputLabel>an input label</InputLabel>
-//         <Select
-//             value={props.value?.id || gNullValue}
-//             onChange={e => {
-//                 if (e.target.value === gNullValue) {
-//                     props.onChange(null);
-//                     return;
-//                 }
-//                 props.onChange(statusesClient.items.find((s: db3.EventStatusPayload) => s.id === e.target.value)!);
-//             }}
-//         >
-//             <MenuItem value={gNullValue}>--</MenuItem>
-//             {
-//                 statusesClient.items.map((option: db3.EventStatusPayload) => {
-//                     return <MenuItem key={option.id} value={option.id}>{option.label}</MenuItem>;
-//                 })
-//             }
-//         </Select>
-//         <FormHelperText>Here's my helper text</FormHelperText>
-//     </>;
-// };
+export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPayloadMinimum, refetch: () => void }) => {
+    const mutationToken = API.events.updateEventBasicFields.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const [showingConfirmation, setShowingConfirmation] = React.useState(false);
+
+    const handleClick = () => {
+        mutationToken.invoke({
+            eventId: event.id,
+            isDeleted: true,
+        }).then(() => {
+            showSnackbar({ severity: "success", children: "Successfully deleted event" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error deleting event" });
+        }).finally(() => {
+            refetch();
+            setShowingConfirmation(false);
+        });
+    };
+
+    return <>
+        <div className={`interactable EventSoftDeleteControl`} onClick={() => setShowingConfirmation(true)}>
+            {gIconMap.Delete()}
+        </div>
+        {showingConfirmation && <ConfirmationDialog onCancel={() => setShowingConfirmation(false)} onConfirm={handleClick} />}
+    </>;
+};
+
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -825,6 +826,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention: { intention: 'user' },
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xInstrumentFunctionalGroup,
             columns: [
@@ -870,6 +872,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
             <EventTitleControl event={event} refetch={tableClient.refetch} />
             <EventTypeControl event={event} refetch={tableClient.refetch} />
             <EventStatusControl event={event} refetch={tableClient.refetch} />
+            <EventSoftDeleteControl event={event} refetch={tableClient.refetch} />
         </div>
 
         <div className="tagsLine">

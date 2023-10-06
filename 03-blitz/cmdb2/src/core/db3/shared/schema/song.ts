@@ -9,7 +9,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
-import { xPermission, xUser } from "./user";
+import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 
 ////////////////////////////////////////////////////////////////
 const SongTagInclude: Prisma.SongTagInclude = {
@@ -154,6 +154,19 @@ export const xSong = new db3.xTable({
         name: row.name,
         description: row.description,
     }),
+    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.SongWhereInput[] => {
+        const ret: Prisma.SongWhereInput[] = [];
+        console.assert(clientIntention.currentUser?.id !== undefined);
+        console.assert(clientIntention.currentUser?.role?.permissions !== undefined);
+        if (clientIntention.intention === "user") {
+            // apply soft delete
+            ret.push({ isDeleted: { equals: false } });
+
+            // apply visibility
+            ret.push(db3.GetVisibilityWhereClause(clientIntention.currentUser!, "createdByUserId"));
+        }
+        return ret;
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name"),
@@ -188,19 +201,13 @@ export const xSong = new db3.xTable({
             allowNull: true,
         }),
 
-        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+        new CreatedByUserField({
             columnName: "createdByUser",
             fkMember: "createdByUserId",
-            allowNull: true,
-            foreignTableSpec: xUser,
-            getQuickFilterWhereClause: (query) => false,
         }),
-        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+        new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
-            allowNull: true,
-            foreignTableSpec: xPermission,
-            getQuickFilterWhereClause: (query) => false,
         }),
 
         new TagsField<SongTagAssociationModel>({
@@ -254,7 +261,7 @@ export const xSongComment = new db3.xTable({
     getRowInfo: (row: SongCommentPayload) => ({
         name: "<not supported>",
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.SongCommentWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCommentWhereInput[] | false) => {
         if (params.songId != null) {
             return [{
                 songId: { equals: params.songId }
@@ -277,14 +284,10 @@ export const xSongComment = new db3.xTable({
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
-        new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
+        new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
-            allowNull: true,
-            foreignTableSpec: xPermission,
-            getQuickFilterWhereClause: (query) => false,
         }),
-
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
             columnName: "song",
             fkMember: "songId",
@@ -379,7 +382,7 @@ export const xSongCredit = new db3.xTable({
     getRowInfo: (row: SongCreditPayload) => ({
         name: "<not supported>",
     }),
-    getParameterizedWhereClause: (params: TAnyModel): (Prisma.SongCreditWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCreditWhereInput[] | false) => {
         if (params.songId != null) {
             return [{
                 songId: { equals: params.songId }

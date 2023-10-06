@@ -252,3 +252,36 @@ export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
     </>;
 };
 
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface ConfirmationDialogProps {
+    onConfirm: () => void;
+    onCancel: () => void;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    title?: () => React.ReactElement | string;
+    description?: () => React.ReactElement | string;
+};
+export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
+    return <ReactiveInputDialog
+        onCancel={props.onCancel}
+    >
+        <DialogTitle>
+            {props.title === undefined ? "Confirm?" : ((typeof props.title === 'string' ? props.title : props.title()))}
+        </DialogTitle>
+        <DialogContent dividers>
+            {/* <DialogContentText> */}
+            {(props.description !== undefined) && ((typeof props.description === 'string' ? props.description : props.description()))}
+            {/* </DialogContentText> */}
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onCancel}>{props.cancelLabel || "Cancel"}</Button>
+            <Button onClick={props.onConfirm}>{props.confirmLabel || "OK"}</Button>
+        </DialogActions>
+    </ReactiveInputDialog>;
+};
+

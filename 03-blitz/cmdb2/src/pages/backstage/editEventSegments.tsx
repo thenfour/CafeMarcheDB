@@ -37,7 +37,7 @@ const MainContent = () => {
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
             new DB3Client.DateTimeColumn({ columnName: "startsAt", cellWidth: 180 }),
             new DB3Client.DateTimeColumn({ columnName: "endsAt", cellWidth: 180 }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120 }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention: { intention: "admin" } }),
         ],
     });
 

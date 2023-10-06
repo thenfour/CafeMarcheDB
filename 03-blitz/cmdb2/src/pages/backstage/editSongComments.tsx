@@ -10,42 +10,6 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 
-// new PKField({ columnName: "id" }),
-// new GenericStringField({
-//     columnName: "text",
-//     allowNull: false,
-//     format: "plain",
-// }),
-// new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-//     columnName: "user",
-//     fkMember: "userId",
-//     allowNull: false,
-//     foreignTableSpec: xUser,
-//     getQuickFilterWhereClause: (query: string) => false,
-// }),
-
-// new ForeignSingleField<Prisma.PermissionGetPayload<{}>>({
-//     columnName: "visiblePermission",
-//     fkMember: "visiblePermissionId",
-//     allowNull: true,
-//     foreignTableSpec: xPermission,
-//     getQuickFilterWhereClause: (query) => false,
-// }),
-
-// new ForeignSingleField<Prisma.SongGetPayload<{}>>({
-//     columnName: "song",
-//     fkMember: "songId",
-//     allowNull: false,
-//     foreignTableSpec: xSong,
-//     getQuickFilterWhereClause: (query: string) => false,
-// }),
-// MakeCreatedAtField("createdAt"),
-// new DateTimeField({
-//     columnName: "updatedAt",
-//     allowNull: true,
-//     granularity: "minute",
-// }),
-
 const tableSpec = new DB3Client.xTableClientSpec({
     table: db3.xSongComment,
     columns: [
@@ -53,9 +17,9 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.MarkdownStringColumnClient({ columnName: "text", cellWidth: 200 }),
         new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 180 }),
         new DB3Client.DateTimeColumn({ columnName: "updatedAt", cellWidth: 180 }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120 }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120 }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, clientIntention: { intention: "admin" } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, clientIntention: { intention: "admin" } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin" } }),
     ],
 });
 

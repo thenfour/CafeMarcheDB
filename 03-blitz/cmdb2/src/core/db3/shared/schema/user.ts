@@ -1,7 +1,7 @@
 
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, DateTimeField, ForeignSingleField, ForeignSingleFieldArgs, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { gGeneralPaletteList } from "shared/color";
 import { InstrumentArgs, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, xInstrument } from "./instrument";
@@ -17,7 +17,7 @@ export const xUserMinimum = new db3.xTable({
     getRowInfo: (row: UserPayload) => ({
         name: row.name,
     }),
-    getParameterizedWhereClause: (params: { userId?: number }): (Prisma.UserWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): (Prisma.UserWhereInput[] | false) => {
         if (params.userId != null) {
             return [{
                 id: { equals: params.userId }
@@ -97,7 +97,7 @@ export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput
     { id: 'asc' },
 ];
 
-export const xPermission = new db3.xTable({
+export const xPermissionBaseArgs: db3.TableDesc = {
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     localInclude: PermissionLocalInclude,
@@ -131,14 +131,19 @@ export const xPermission = new db3.xTable({
         MakeColorField("color"),
         MakeIconField("iconName", gIconOptions),
     ]
-    // renderCell: (params) => {
-    //     const dbname = params.row.name;
-    //     if (Object.values(Permission).find(p => p === dbname)) {
-    //         return (<Tooltip title="This permission is understood by internal code; all permissions should have this state."><Chip size="small" color="primary" label="Ok" variant="outlined" /></Tooltip>);
-    //     } else {
-    //         return (<Tooltip title="This permission is unknown by internal code. It won't be used by anything unless code changes are made. Is it obsolete? Typo in the name?"><Chip size="small" color="error" label="Unknown" variant="outlined" /></Tooltip>);
-    //     }
-    // }
+};
+
+export const xPermission = new db3.xTable(xPermissionBaseArgs);
+
+export const xPermissionVisibilityWhere: Prisma.PermissionWhereInput = {
+    isVisibility: {
+        equals: true
+    }
+};
+
+export const xPermissionForVisibility = new db3.xTable({
+    ...xPermissionBaseArgs,
+    staticWhereClause: xPermissionVisibilityWhere,
 });
 
 
@@ -343,13 +348,15 @@ export const xUser = new db3.xTable({
     getRowInfo: (row: UserPayload) => ({
         name: row.name,
     }),
-    getParameterizedWhereClause: (params: { userId?: number }): (Prisma.UserWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.UserWhereInput[] => {
+        const ret: Prisma.UserWhereInput[] = [];
         if (params.userId != null) {
-            return [{
-                id: { equals: params.userId }
-            }];
+            ret.push({ id: { equals: params.userId } });
         }
-        return false;
+        if (clientIntention.intention === "user") {
+            ret.push({ isDeleted: false });
+        }
+        return ret;
     },
     columns: [
         new PKField({ columnName: "id" }),
@@ -417,6 +424,50 @@ export const xUser = new db3.xTable({
         }),]
 });
 
+
+
+
+// let's create a "created by" field which is a specialization of ForeignSingle, specialized to User payload
+// automatically populated with current user on creation (see ApplyToNewRow)
+export interface CreatedByUserFieldArgs {
+    columnName?: string; // "instrumentType"
+    fkMember?: string; // "instrumentTypeId"
+};
+
+export class CreatedByUserField extends ForeignSingleField<UserPayload> {
+    constructor(args: CreatedByUserFieldArgs) {
+        super({
+            columnName: args.columnName || "createdByUser",
+            fkMember: args.fkMember || "createdByUserId",
+            foreignTableSpec: xUser,
+            allowNull: true,
+            getQuickFilterWhereClause: () => false,
+        });
+    }
+    ApplyToNewRow = (args: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        args[this.member] = clientIntention.currentUser;
+    };
+};
+
+
+// let's create a "visiblePermission" column which is ForeignSingle for a permission, but only for "visibility" permissions.
+// in theory this will apply a filter over permissions for isVisibility = TRUE; however that is already done in a different way.
+export interface VisiblePermissionFieldArgs {
+    columnName?: string; // "visiblePermission"
+    fkMember?: string; // "visiblePermissionId"
+};
+
+export class VisiblePermissionField extends ForeignSingleField<PermissionPayload> {
+    constructor(args: VisiblePermissionFieldArgs) {
+        super({
+            columnName: args.columnName || "visiblePermission",
+            fkMember: args.fkMember || "visiblePermissionId",
+            foreignTableSpec: xPermissionForVisibility,
+            allowNull: true,
+            getQuickFilterWhereClause: () => false,
+        });
+    }
+};
 
 
 ////////////////////////////////////////////////////////////////

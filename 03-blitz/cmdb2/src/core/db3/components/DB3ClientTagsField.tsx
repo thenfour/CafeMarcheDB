@@ -22,7 +22,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { TAnyModel } from "shared/utils";
+import { TAnyModel, gQueryOptions } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
@@ -466,13 +466,7 @@ export class TagsFieldRenderContext<TAssociation> {
             orderBy: undefined,
             where,
             cmdbQueryContext: "TagsFieldRenderContext"
-        }, {
-            staleTime: Infinity,
-            cacheTime: Infinity,
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            refetchOnMount: true,
-        });
+        }, gQueryOptions.default);
         this.options = items.map(item => this.args.spec.typedSchemaColumn.createMockAssociation(args.row, item));
         this.refetch = refetch;
     }

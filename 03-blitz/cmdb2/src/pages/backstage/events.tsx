@@ -2,7 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { EventSummary, RehearsalSummary } from "src/core/components/CMMockupComponents";
-import { EventDetail, EventDetailVerbosity, EventStatusSelectionList, EventTypeSelectionList } from "src/core/components/EventComponents";
+import { EventDetail, EventDetailVerbosity } from "src/core/components/EventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -17,6 +17,8 @@ import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, ReactiveInputDialog }
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { gQueryOptions } from "shared/utils";
 
 // effectively there are a couple variants of an "event":
 // x 1. grid row, for admins
@@ -100,6 +102,8 @@ function toggleValueInArray(array: number[], id: number): number[] {
 // };
 
 const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK: () => void }) => {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
         columns: [
@@ -111,27 +115,58 @@ const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK:
             //new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
             //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150 }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150 }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin" } }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin" } }),
             new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin" } }),
         ],
     });
+
+    const handleOK = (obj, tableClient) => {
+        tableClient.doInsertMutation(obj).then((newRow) => {
+            showSnackbar({ children: "insert successful", severity: 'success' });
+        }).catch(err => {
+            //console.log(err);
+            showSnackbar({ children: "insert error", severity: 'error' });
+            throw err;
+        }).finally(() => {
+            if (tableClient.refetch) {
+                console.log(`refetching`);
+                tableClient.refetch();
+            }
+        });
+        onOK();
+    };
+
     return <DB3NewObjectDialog
+        clientIntention={{
+            intention: "user",
+            customContext: {
+                type: db3.xTableClientUsageCustomContextType.UserInsertDialog,
+            }
+        }}
         onCancel={onCancel}
-        onOK={onOK}
+        onOK={handleOK}
         table={tableSpec}
     />;
 };
 
-const NewEventButton = () => {
+const NewEventButton = (props: { onOK: () => void }) => {
     const [open, setOpen] = React.useState<boolean>(false);
     return <>
         <Button onClick={() => setOpen(true)}>{gIconMap.Add()} New event</Button>
         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
             {/* <NewEventDialogContent onCancel={() => setOpen(false)} onOK={() => setOpen(false)} /> */}
-            <NewEventDialogWrapper onCancel={() => setOpen(false)} onOK={() => setOpen(false)} />
+            <NewEventDialogWrapper
+                onCancel={
+                    () => {
+                        setOpen(false);
+                    }}
+                onOK={() => {
+                    setOpen(false);
+                    props.onOK();
+                }} />
         </ReactiveInputDialog>}
     </>;
 };
@@ -146,6 +181,7 @@ interface EventsControlsSpec {
     quickFilter: string;
     tagFilter: number[];
     verbosity: EventDetailVerbosity;
+    refreshSerial: number; // increment this in order to trigger a refetch
 };
 
 interface EventsControlsProps {
@@ -232,7 +268,12 @@ const EventsControls = (props: EventsControlsProps) => {
     </div>;
 };
 
-const EventsList = ({ filterSpec }: { filterSpec: EventsControlsSpec }) => {
+interface EventsListArgs {
+    // in order for callers to be able to tell this to refetch, just increment a value in the filter
+    filterSpec: EventsControlsSpec,
+};
+
+const EventsList = ({ filterSpec }: EventsListArgs) => {
     const eventsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
@@ -253,6 +294,8 @@ const EventsList = ({ filterSpec }: { filterSpec: EventsControlsSpec }) => {
             pageSize: filterSpec.recordCount,
         },
         requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention: { intention: "user" },
+        queryOptions: gQueryOptions.liveData,
     });
 
     React.useEffect(() => {
@@ -274,6 +317,7 @@ const MainContent = () => {
         quickFilter: "",
         tagFilter: [],
         verbosity: "default",
+        refreshSerial: 0,
     });
 
     const handleSpecChange = (value: EventsControlsSpec) => {
@@ -293,7 +337,9 @@ const MainContent = () => {
             </CMSinglePageSurfaceCard>
         </Suspense>
 
-        <NewEventButton />
+        <NewEventButton onOK={() => {
+            setControlSpec({ ...controlSpec, refreshSerial: controlSpec.refreshSerial + 1 });
+        }} />
 
         <Suspense>
             <EventsList filterSpec={controlSpec} />
