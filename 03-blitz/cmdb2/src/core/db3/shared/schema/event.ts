@@ -5,7 +5,7 @@
 import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, gIconOptions } from "shared/utils";
+import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
@@ -539,7 +539,7 @@ const xEventArgs_Base: db3.TableDesc = {
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
     }),
-    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string }, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
+    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string, eventTypeIds?: number[], eventStatusIds: number[] }, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
 
         console.assert(clientIntention.currentUser?.id !== undefined);
@@ -553,12 +553,30 @@ const xEventArgs_Base: db3.TableDesc = {
             console.assert(params.eventId === undefined);
             ret.push({ slug: params.eventSlug });
         }
+        if (params.eventTypeIds !== undefined) {
+            assertIsNumberArray(params.eventTypeIds);
+            if (params.eventTypeIds.length > 0) {
+                const t: Prisma.EventWhereInput = {
+                    typeId: { in: params.eventTypeIds }
+                };
+                ret.push(t);
+            }
+        }
+        if (params.eventStatusIds !== undefined) {
+            assertIsNumberArray(params.eventStatusIds);
+            if (params.eventStatusIds.length > 0) {
+                const t: Prisma.EventWhereInput = {
+                    statusId: { in: params.eventStatusIds }
+                };
+                ret.push(t);
+            }
+        }
 
         if (clientIntention.intention === "user") {
             // apply soft delete
             ret.push({ isDeleted: { equals: false } });
         }
-        // apply visibility
+
         db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
         return ret;
     },

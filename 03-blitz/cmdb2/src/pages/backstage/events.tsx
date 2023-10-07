@@ -15,7 +15,7 @@ import {
 } from '@mui/icons-material';
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { API } from "src/core/db3/clientAPI";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gQueryOptions } from "shared/utils";
@@ -181,6 +181,8 @@ interface EventsControlsSpec {
     recordCount: number;
     quickFilter: string;
     tagFilter: number[];
+    statusFilter: number[];
+    typeFilter: number[];
     verbosity: EventDetailVerbosity;
     refreshSerial: number; // increment this in order to trigger a refetch
 };
@@ -193,6 +195,9 @@ const EventsControls = (props: EventsControlsProps) => {
 
     const [popularTags, { refetch }] = API.events.usePopularEventTagsQuery();
     //console.log(popularTags);
+
+    const statusesClient = API.events.getEventStatusesClient();
+    const typesClient = API.events.getEventTypesClient();
 
     const setFilterText = (quickFilter: string) => {
         const newSpec: EventsControlsSpec = { ...props.spec, quickFilter };
@@ -215,6 +220,18 @@ const EventsControls = (props: EventsControlsProps) => {
         props.onChange(newSpec);
     };
 
+    const toggleStatus = (id: number) => {
+        const newSpec: EventsControlsSpec = { ...props.spec };
+        newSpec.statusFilter = toggleValueInArray(newSpec.statusFilter, id);
+        props.onChange(newSpec);
+    };
+
+    const toggleType = (id: number) => {
+        const newSpec: EventsControlsSpec = { ...props.spec };
+        newSpec.typeFilter = toggleValueInArray(newSpec.typeFilter, id);
+        props.onChange(newSpec);
+    };
+
     // FILTER: [upcoming] [past] [concert] [rehearsals] [majorettes] [__________________]
     // SHOW:   [compact] [default] [full] [verbose]
     // 20 100 all
@@ -222,6 +239,32 @@ const EventsControls = (props: EventsControlsProps) => {
         <div className="row">
             <div className="caption">FILTER</div>
             <div className="tagList">
+                <CMChipContainer>
+                    {(statusesClient.items as db3.EventStatusPayload[]).map(status => (
+                        <CMChip
+                            key={status.id}
+                            selected={props.spec.statusFilter.some(id => id === status.id)}
+                            onClick={() => toggleStatus(status.id)}
+                            color={status.color}
+                        >
+                            {RenderMuiIcon(status.iconName)}{status.label}
+                        </CMChip>
+                    ))}
+                </CMChipContainer>
+
+                <CMChipContainer>
+                    {(typesClient.items as db3.EventTypePayload[]).map(type => (
+                        <CMChip
+                            key={type.id}
+                            selected={props.spec.typeFilter.some(id => id === type.id)}
+                            onClick={() => toggleType(type.id)}
+                            color={type.color}
+                        >
+                            {RenderMuiIcon(type.iconName)}{type.text}
+                        </CMChip>
+                    ))}
+                </CMChipContainer>
+
                 <CMChipContainer>
                     {popularTags.filter(t => t.events.length > 0).map(tag => (
                         <CMChip
@@ -288,6 +331,10 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
             quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
             items: [],
             tagIds: filterSpec.tagFilter,
+            tableParams: {
+                eventTypeIds: filterSpec.typeFilter,
+                eventStatusIds: filterSpec.statusFilter,
+            }
         },
         paginationModel: {
             page: 0,
@@ -317,6 +364,8 @@ const MainContent = () => {
         quickFilter: "",
         tagFilter: [],
         verbosity: "default",
+        statusFilter: [],
+        typeFilter: [],
         refreshSerial: 0,
     });
 

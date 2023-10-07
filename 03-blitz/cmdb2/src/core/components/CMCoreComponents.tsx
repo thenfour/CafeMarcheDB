@@ -53,19 +53,30 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
     // .applyColor-strong-notselected-disabled
     const applyColorClass = `applyColor-${variant}-${props.selected ? "selected" : "notselected"}-${props.disabled ? "disabled" : "enabled"}`;
 
-    const classes: string[] = [
+    const wrapperClasses: string[] = [
         "CMChip",
         size,
         variant,
         props.disabled ? "disabled" : "enabled",
         props.selected ? "selected" : "notselected",
         (props.onClick || props.onDelete) ? "interactable" : "noninteractable",
+        //applyColorClass,
+    ];
+
+    const chipClasses: string[] = [
+        "chipMain",
+        size,
+        variant,
+        props.disabled ? "disabled" : "enabled",
+        props.selected ? "selected" : "notselected",
         applyColorClass,
     ];
 
-    return <div className={classes.join(" ")} style={style} onClick={props.onClick}>
-        <div className='content'>
-            {props.children}
+    return <div className={wrapperClasses.join(" ")} style={style} onClick={props.onClick}>
+        <div className={chipClasses.join(" ")}>
+            <div className='content'>
+                {props.children}
+            </div>
         </div>
     </div>;
 }
