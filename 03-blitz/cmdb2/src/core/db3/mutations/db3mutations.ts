@@ -13,17 +13,29 @@ export default resolver.pipe(
     resolver.authorize("db3mutations", Permission.login),
     async (input: db3.MutatorInput, ctx: AuthenticatedMiddlewareCtx) => {
         const table = db3.gAllTables[input.tableName]!;
+
+        const currentUser = await db.user.findFirst({
+            ...db3.UserWithRolesArgs,
+            where: {
+                id: ctx.session.userId,
+            }
+        });
+
+        if (currentUser == null) {
+            throw new Error(`current user not found`);
+        }
+
         if (input.deleteId != null) {
             // return boolean
-            return await mutationCore.deleteImpl(table, input.deleteId, ctx);
+            return await mutationCore.deleteImpl(table, input.deleteId, ctx, currentUser);
         }
         if (input.insertModel != null) {
             // return new object
-            return await mutationCore.insertImpl(table, input.insertModel, ctx);
+            return await mutationCore.insertImpl(table, input.insertModel, ctx, currentUser);
         }
         if (input.updateModel != null) {
             // return new object
-            return await mutationCore.updateImpl(table, input.updateId!, input.updateModel, ctx);
+            return await mutationCore.updateImpl(table, input.updateId!, input.updateModel, ctx, currentUser);
         }
         return false;
     }

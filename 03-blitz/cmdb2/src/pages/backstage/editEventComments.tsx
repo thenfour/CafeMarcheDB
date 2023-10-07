@@ -16,9 +16,9 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.MarkdownStringColumnClient({ columnName: "text", cellWidth: 200 }),
         new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 180 }),
         new DB3Client.DateTimeColumn({ columnName: "updatedAt", cellWidth: 180 }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention: { intention: "admin" } }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, clientIntention: { intention: "admin" } }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin" } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention: { intention: "admin", mode: 'primary' } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, clientIntention: { intention: "admin", mode: 'primary' } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: 'primary' } }),
     ],
 });
 

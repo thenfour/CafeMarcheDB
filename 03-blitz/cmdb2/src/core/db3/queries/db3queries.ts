@@ -15,10 +15,27 @@ export default resolver.pipe(
             CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
             const dbTableClient = db[table.tableName]; // the prisma interface
 
+            const currentUser = await db.user.findFirst({
+                ...db3.UserWithRolesArgs,
+                where: {
+                    id: ctx.session.userId,
+                }
+            });
+
+            if (currentUser == null) {
+                throw new Error(`current user not found`);
+            }
+
             const orderBy = input.orderBy || table.naturalOrderBy;
+            const clientIntention = input.clientIntention;
+            clientIntention.currentUser = currentUser;
+            const where = table.CalculateWhereClause({
+                clientIntention,
+                filterModel: input.filter,
+            });
 
             const items = await dbTableClient.findMany({
-                where: input.where,
+                where,
                 orderBy,
                 include: table.localInclude,
                 take: input.take,

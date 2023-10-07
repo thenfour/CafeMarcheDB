@@ -23,7 +23,7 @@ export default resolver.pipe(
             locationURL: args.locationURL,
             isDeleted: args.isDeleted,
             statusId: args.statusId,
-            createdByUserId: args.createdByUserId,
+            createdByUserId: args.createdByUserId, // TODO: validate client info
         };
 
         mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx);

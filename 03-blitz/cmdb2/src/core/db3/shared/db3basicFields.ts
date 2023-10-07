@@ -19,7 +19,7 @@
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
-import { DB3RowMode, ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, TableClientSpecFilterModelCMDBExtras, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
+import { CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
 
 ////////////////////////////////////////////////////////////////
 // field types
@@ -47,9 +47,7 @@ export class PKField extends FieldBase<number> {
         return false;// don't filter on pk id. { [this.member]: { contains: query } };
     };
 
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => {
-        return false;
-    };
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
@@ -136,7 +134,7 @@ export class GenericStringField extends FieldBase<string> {
         return { [this.member]: { contains: query } };
     };
 
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
@@ -225,7 +223,7 @@ export class GenericIntegerField extends FieldBase<number> {
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = ({ value }: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
@@ -306,7 +304,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
         return false;// { [this.member]: { contains: query } };
     };
 
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
@@ -365,7 +363,7 @@ export class BoolField extends FieldBase<boolean> {
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
 
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
@@ -432,7 +430,7 @@ export class ConstEnumStringField extends FieldBase<string> {
         args[this.member] = this.defaultValue;
     };
 
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
@@ -521,7 +519,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
@@ -567,7 +565,7 @@ export interface TagsFieldArgs<TAssociation> {
     associationTableSpec: xTable;
     foreignTableSpec: xTable;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    getCustomFilterWhereClause: (query: TableClientSpecFilterModelCMDBExtras) => TAnyModel | boolean;
+    getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
     doesItemExactlyMatchText?: (item: TAssociation, filterText: string) => boolean;
 
     // when we get a list of tag options, they're foreign models (tags).
@@ -593,7 +591,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     associationTableSpec: xTable;
     foreignTableSpec: xTable;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    getCustomFilterWhereClause__: (query: TableClientSpecFilterModelCMDBExtras) => TAnyModel | boolean;
+    getCustomFilterWhereClause__: (query: CMDBTableFilterModel) => TAnyModel | boolean;
 
     createMockAssociation: (row: TAnyModel, foreignObject: TAnyModel) => TAssociation;
     doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
@@ -673,7 +671,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras) => this.getCustomFilterWhereClause__(query);
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel) => this.getCustomFilterWhereClause__(query);
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -733,7 +731,7 @@ export class DateTimeField extends FieldBase<Date> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return false;
     };
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -826,7 +824,7 @@ export class CreatedAtField extends FieldBase<Date> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return false;
     };
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
@@ -898,7 +896,7 @@ export class SlugField extends FieldBase<string> {
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return { [this.member]: { contains: query } };
     };
-    getCustomFilterWhereClause = (query: TableClientSpecFilterModelCMDBExtras): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 

@@ -63,21 +63,43 @@ export interface MutatorInput {
     updateModel?: TAnyModel;
 };
 
+export interface CMDBTableFilterItem { // from MUI GridFilterItem
+    id?: number | string;
+    field: string;
+    value?: any;
+    operator: string;
+}
+
+// allow client users to specify cmdb-specific queries.
+// normal filtering & quick filtering is great but this allows for example custom filtering like tagIds.
+export interface CMDBTableFilterModel {
+    items: CMDBTableFilterItem[];
+    quickFilterValues?: any[];
+
+    tagIds?: number[];
+    tableParams?: TAnyModel;
+};
+
+
 ////////////////////////////////////////////////////////////////
 export interface PaginatedQueryInput {
     tableName: string;
     skip: number | undefined;
     take: number | undefined;
-    where: TAnyModel | undefined;
     orderBy: TAnyModel | undefined;
+
+    filter: CMDBTableFilterModel;
+    clientIntention: xTableClientUsageContext;
 };
 
 ////////////////////////////////////////////////////////////////
 export interface QueryInput {
     tableName: string;
-    where: TAnyModel | undefined;
     orderBy: TAnyModel | undefined;
     take?: number | undefined;
+
+    filter: CMDBTableFilterModel;
+    clientIntention: xTableClientUsageContext;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -138,16 +160,7 @@ export const SuccessfulValidateAndComputeDiffResult: ValidateAndComputeDiffResul
 
 export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDiffResult;
 
-
-// allow client users to specify cmdb-specific queries.
-// normal filtering & quick filtering is great but this allows for example custom filtering like tagIds.
-export interface TableClientSpecFilterModelCMDBExtras {
-    cmdb?: {
-        tagIds: number[];
-    };
-};
-
-const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
+export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
     include: {
         role: {
             include: {
@@ -157,7 +170,7 @@ const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
     }
 });
 
-type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
+export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
 
 
 
@@ -196,7 +209,7 @@ export abstract class FieldBase<FieldDataType> {
 
     // return either falsy, or a "WhereInput" object like { name: { contains: query } }
     abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
-    abstract getCustomFilterWhereClause: (query: TableClientSpecFilterModelCMDBExtras) => TAnyModel | boolean;
+    abstract getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
     abstract getOverallWhereClause: (clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -220,7 +233,6 @@ export interface xTableClientUsageCustomContextBase {
     type: xTableClientUsageCustomContextType, // a way to identify the type of custom context provided.
 };
 export interface xTableClientUsageContext {
-
     // various table interactions depend on how the client is using it. for example
     // when creating an object from an admin table, versus a normal user create dialog.
     // they have different permissions, and even take different values / defaults.
@@ -230,6 +242,11 @@ export interface xTableClientUsageContext {
     // then, more generally "UserCreate" vs. "AdminCreate"
     // but the "create" now becomes pretty much redundant with the requestedcaps. Therefore leave the actual operation out, just focus on the domain.
     intention: "user" | "admin";
+
+    // visibility is different depending on where the object is within a query.
+    // if you're viewing a list of Songs, we want to exclude ones which are deleted.
+    // if you're viewing an old setlist, then we don't want to exclude songs which are in the setlist but deleted.
+    mode: "relation" | "primary";
 
     // will be filled in by the table client so not necessary from client code.
     currentUser?: UserWithRolesPayload;
@@ -248,6 +265,12 @@ export interface RowInfo {
     name: string;
     description?: string;
     color?: ColorPaletteEntry | null;
+};
+
+
+export interface CalculateWhereClauseArgs {
+    filterModel: CMDBTableFilterModel;
+    clientIntention: xTableClientUsageContext;
 };
 
 export interface TableDesc {
@@ -355,6 +378,56 @@ export class xTable implements TableDesc {
         return ret;
     };
 
+
+    CalculateWhereClause = ({ filterModel, clientIntention }: CalculateWhereClauseArgs) => {
+        const where = { AND: [] as any[] };
+
+        // QUICK FILTER
+        if (filterModel && filterModel.quickFilterValues) { // quick filtering
+            const quickFilterItems = filterModel.quickFilterValues.filter(q => q.length > 0).map(q => {// for each token
+                return {
+                    OR: this.GetQuickFilterWhereClauseExpression(q)
+                };
+            });
+            where.AND.push(...quickFilterItems);
+        }
+
+        // GENERAL FILTER (allows custom)
+        if (filterModel) {
+            where.AND.push(this.GetCustomWhereClauseExpression(filterModel));
+        }
+
+        if (filterModel && filterModel.items && filterModel.items.length > 0) { // non-quick normal filtering.
+            // convert items to prisma filter
+            const filterItems = filterModel.items.map((i) => {
+                return { [i.field]: { [i.operator]: i.value } }
+            });
+            where.AND.push(...filterItems);
+        }
+
+        if (this.getParameterizedWhereClause) {
+            const filterItems = this.getParameterizedWhereClause(filterModel.tableParams || {}, clientIntention);
+            if (filterItems) {
+                where.AND.push(...filterItems);
+            }
+        }
+
+        const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);
+        where.AND.push(overallWhere);
+
+        if (this.staticWhereClause) {
+            where.AND.push(this.staticWhereClause);
+            //console.log(`applying static where clause; total where = `);
+            //console.log(where);
+        } else {
+            //console.log(`not applying static where for table ${tableSchema.tableName}`);
+        }
+
+        return where;
+    };
+
+
+
     GetQuickFilterWhereClauseExpression = (query: string) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
         const ret = [] as any[];
         for (let i = 0; i < this.columns.length; ++i) {
@@ -367,7 +440,7 @@ export class xTable implements TableDesc {
         return ret;
     };
 
-    GetCustomWhereClauseExpression = (filterModel: TableClientSpecFilterModelCMDBExtras) => {
+    GetCustomWhereClauseExpression = (filterModel: CMDBTableFilterModel) => {
         const ret = [] as any[];
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
@@ -421,19 +494,34 @@ export const gAllTables: { [key: string]: xTable } = {
     // populated at runtime. required in order for client to call an API, and the API able to access the same schema.
 };
 
-export const GetVisibilityWhereClause = (currentUser: UserWithRolesPayload, createdByUserIDColumnName: string) => ({
-    OR: [
-        {
-            // current user has access to the specified visibile permission
-            visiblePermissionId: { in: currentUser.role?.permissions.map(p => p.permissionId) }
-        },
-        {
-            // private visibility and you are the creator
-            AND: [
-                { visiblePermissionId: null },
-                { [createdByUserIDColumnName]: currentUser.id }
-            ]
-        }
-    ]
-});
+// NOT applying a clause means always visible.
+export const ApplyVisibilityWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, createdByUserIDColumnName: string) => {
+    // for admin grids, always show admins the items. they see the IsDeleted / visibility columns there.
+    if (clientIntention.intention === "admin") {
+        if (clientIntention.currentUser!.isSysAdmin) return; // sys admins 
+
+        // non-sysadmins just should never see admin content.
+        throw new Error(`unauthorized access to admin content`);
+    }
+
+    if (clientIntention.currentUser!.isSysAdmin) return; // sys admins can always see everything.
+
+    // intention is user, so apply visibility
+
+    ret.push({
+        OR: [
+            {
+                // current user has access to the specified visibile permission
+                visiblePermissionId: { in: clientIntention.currentUser?.role?.permissions.map(p => p.permissionId) }
+            },
+            {
+                // private visibility and you are the creator
+                AND: [
+                    { visiblePermissionId: null },
+                    { [createdByUserIDColumnName]: clientIntention.currentUser?.id }
+                ]
+            }
+        ]
+    });
+};
 

@@ -115,11 +115,11 @@ const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK:
             //new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
             //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin" } }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin" } }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
             new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         ],
     });
 
@@ -144,7 +144,8 @@ const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK:
             intention: "user",
             customContext: {
                 type: db3.xTableClientUsageCustomContextType.UserInsertDialog,
-            }
+            },
+            mode: 'primary'
         }}
         onCancel={onCancel}
         onOK={handleOK}
@@ -274,6 +275,7 @@ interface EventsListArgs {
 };
 
 const EventsList = ({ filterSpec }: EventsListArgs) => {
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
     const eventsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
@@ -285,16 +287,14 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
         filterModel: {
             quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
             items: [],
-            cmdb: {
-                tagIds: filterSpec.tagFilter,
-            },
+            tagIds: filterSpec.tagFilter,
         },
         paginationModel: {
             page: 0,
             pageSize: filterSpec.recordCount,
         },
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: "user" },
+        clientIntention,
         queryOptions: gQueryOptions.liveData,
     });
 

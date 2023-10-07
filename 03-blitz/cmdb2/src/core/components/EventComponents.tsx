@@ -826,7 +826,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: 'user' },
+        clientIntention: { intention: 'user', mode: 'primary' },
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xInstrumentFunctionalGroup,
             columns: [

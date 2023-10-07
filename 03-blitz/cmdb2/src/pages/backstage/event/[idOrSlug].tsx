@@ -22,7 +22,7 @@ const MyComponent = () => {
 
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: "user" },
+        clientIntention: { intention: "user", mode: 'primary' },
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
             columns: [

@@ -262,7 +262,7 @@ export const xInstrument = new db3.xTable({
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
         }),
     ]
 });

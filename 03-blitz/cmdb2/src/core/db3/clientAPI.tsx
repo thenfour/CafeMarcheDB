@@ -84,7 +84,7 @@ class UsersAPI {
                 ],
             }),
             requestedCaps: DB3Client.xTableClientCaps.Query,
-            clientIntention: { intention: 'user' },
+            clientIntention: { intention: 'user', mode: 'primary' },
         });
 
     };
@@ -146,7 +146,7 @@ class EventsAPI {
                 ],
             }),
             requestedCaps: DB3Client.xTableClientCaps.Query,
-            clientIntention: { intention: 'user' },
+            clientIntention: { intention: 'user', mode: 'primary' },
         });
     }
 
@@ -159,7 +159,7 @@ class EventsAPI {
                 ],
             }),
             requestedCaps: DB3Client.xTableClientCaps.Query,
-            clientIntention: { intention: 'user' },
+            clientIntention: { intention: 'user', mode: 'primary' },
         });
     }
 

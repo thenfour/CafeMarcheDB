@@ -99,65 +99,8 @@ export class xTableClientSpec {
 };
 
 
-export type TableClientSpecFilterModel = GridFilterModel & db3.TableClientSpecFilterModelCMDBExtras;
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
-
-export interface CalculateWhereClauseArgs {
-    tableSchema: db3.xTable;
-    filterModel?: TableClientSpecFilterModel;
-    tableParams?: TAnyModel;
-    clientIntention: db3.xTableClientUsageContext;
-};
-
-export const CalculateWhereClause = ({ tableSchema, filterModel, tableParams, clientIntention }: CalculateWhereClauseArgs) => {
-    const where = { AND: [] as any[] };
-
-    // QUICK FILTER
-    if (filterModel && filterModel.quickFilterValues) { // quick filtering
-        const quickFilterItems = filterModel.quickFilterValues.filter(q => q.length > 0).map(q => {// for each token
-            return {
-                OR: tableSchema.GetQuickFilterWhereClauseExpression(q)
-            };
-        });
-        where.AND.push(...quickFilterItems);
-    }
-
-    // GENERAL FILTER (allows custom)
-    if (filterModel?.cmdb) {
-        where.AND.push(tableSchema.GetCustomWhereClauseExpression(filterModel));
-    }
-
-    if (filterModel && filterModel.items && filterModel.items.length > 0) { // non-quick normal filtering.
-        // convert items to prisma filter
-        const filterItems = filterModel.items.map((i) => {
-            return { [i.field]: { [i.operator]: i.value } }
-        });
-        where.AND.push(...filterItems);
-    }
-
-    if (tableSchema.getParameterizedWhereClause) {
-        const filterItems = tableSchema.getParameterizedWhereClause(tableParams || {}, clientIntention);
-        if (filterItems) {
-            where.AND.push(...filterItems);
-        }
-    }
-
-    const overallWhere = tableSchema.GetOverallWhereClauseExpression(clientIntention);
-    where.AND.push(overallWhere);
-
-    if (tableSchema.staticWhereClause) {
-        where.AND.push(tableSchema.staticWhereClause);
-        //console.log(`applying static where clause; total where = `);
-        //console.log(where);
-    } else {
-        //console.log(`not applying static where for table ${tableSchema.tableName}`);
-    }
-
-    return where;
-};
 
 export const CalculateOrderBy = (sortModel?: GridSortModel) => {
     let orderBy: any = undefined;//{ id: "asc" }; // default order
@@ -184,7 +127,7 @@ export interface xTableClientArgs {
 
     // optional for example for new item dialog which doesn't do any querying at all.
     sortModel?: GridSortModel,
-    filterModel?: TableClientSpecFilterModel,
+    filterModel?: db3.CMDBTableFilterModel,
     paginationModel?: GridPaginationModel,
     tableParams?: TAnyModel,
 
@@ -226,12 +169,12 @@ export class xTableRenderClient {
 
         const orderBy = CalculateOrderBy(args.sortModel);
 
-        const where = CalculateWhereClause({
-            tableSchema: args.tableSpec.args.table,
-            filterModel: args.filterModel,
-            tableParams: args.tableParams,
-            clientIntention: args.clientIntention,
-        });
+        // const where = CalculateWhereClause({
+        //     tableSchema: args.tableSpec.args.table,
+        //     filterModel: args.filterModel,
+        //     tableParams: args.tableParams,
+        //     clientIntention: args.clientIntention,
+        // });
 
         const skip = !!args.paginationModel ? (args.paginationModel.pageSize * args.paginationModel.page) : undefined;
         const take = !!args.paginationModel ? (args.paginationModel.pageSize) : undefined;
@@ -249,7 +192,8 @@ export class xTableRenderClient {
                 orderBy,
                 skip,
                 take,
-                where,
+                filter: args.filterModel || { items: [] },
+                clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
             };
 
             const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
@@ -264,8 +208,9 @@ export class xTableRenderClient {
             const queryInput: db3.QueryInput = {
                 tableName: this.args.tableSpec.args.table.tableName,
                 orderBy,
-                where,
                 take,
+                filter: args.filterModel || { items: [] },
+                clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
             };
             const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "xTableRenderClient" }, args.queryOptions || gQueryOptions.default);
             items_ = items;

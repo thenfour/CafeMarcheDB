@@ -11,6 +11,7 @@ import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerFie
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
 import { InstrumentArgs, InstrumentPayload, UserArgs, UserPayload, getUserPrimaryInstrument, xInstrument } from "./instrument";
+
 /*
 
 let's think workflow for events.
@@ -556,10 +557,9 @@ const xEventArgs_Base: db3.TableDesc = {
         if (clientIntention.intention === "user") {
             // apply soft delete
             ret.push({ isDeleted: { equals: false } });
-
-            // apply visibility
-            ret.push(db3.GetVisibilityWhereClause(clientIntention.currentUser!, "createdByUserId"));
         }
+        // apply visibility
+        db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
         return ret;
     },
     clientLessThan: (a: EventPayload, b: EventPayload) => {
@@ -617,9 +617,9 @@ const xEventArgs_Base: db3.TableDesc = {
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.EventWhereInput | boolean => {
-                if (!query?.cmdb?.tagIds?.length) return false;
-                const tagIds = query!.cmdb!.tagIds;
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventWhereInput | boolean => {
+                if (!query.tagIds?.length) return false;
+                const tagIds = query!.tagIds;
 
                 return {
                     AND: tagIds.map(tagId => ({
@@ -629,7 +629,7 @@ const xEventArgs_Base: db3.TableDesc = {
 
                 // the following does not work; it would require that, for an event, all of its tags are being queried.
                 // return ({
-                //     tags: { every: { eventTagId: { in: query!.cmdb!.tagIds } } }
+                //     tags: { every: { eventTagId: { in: query!.tagIds } } }
                 // });
             },
         }),

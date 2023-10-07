@@ -77,6 +77,8 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 export interface ForeignSingleFieldClientArgs<TForeign> {
     columnName: string;
     cellWidth: number;
+
+    // used for selecting new items. therefore mode:primary.
     clientIntention: db3.xTableClientUsageContext,
 
     renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactElement;

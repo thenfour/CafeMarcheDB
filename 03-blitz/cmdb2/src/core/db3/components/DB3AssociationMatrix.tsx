@@ -44,7 +44,7 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
 
     const dbRows = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery | DB3Client.xTableClientCaps.Mutation,
-        clientIntention: { intention: 'admin' },
+        clientIntention: { intention: 'admin', mode: 'primary' },
         tableSpec: props.localTableSpec,
         filterModel,// quick filter will apply to both rows & columns
         sortModel,
@@ -53,7 +53,7 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
 
     const dbColumns = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: 'admin' },
+        clientIntention: { intention: 'admin', mode: 'primary' },
         tableSpec: props.foreignTableSpec,
         filterModel, // quick filter will apply to both rows & columns
         // use the table's natural sort

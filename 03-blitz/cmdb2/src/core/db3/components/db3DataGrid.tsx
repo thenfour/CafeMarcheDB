@@ -81,7 +81,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
 
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
-        clientIntention: { intention: 'admin' },
+        clientIntention: { intention: 'admin', mode: 'primary' },
         tableSpec,
         filterModel,
         sortModel,
@@ -337,7 +337,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             onOK={onAddOK}
             table={tableSpec}
             clientIntention={{
-                intention: 'admin',
+                intention: 'admin', mode: 'primary',
                 customContext: {
                     type: db3.xTableClientUsageCustomContextType.AdminInsertDialog,
                 }

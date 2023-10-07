@@ -263,7 +263,7 @@ export const xRole = new db3.xTable({
             associationLocalIDMember: "roleId",
             associationLocalObjectMember: "role",
             foreignTableSpec: xPermission,
-            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
                     some: {
@@ -419,7 +419,7 @@ export const xUser = new db3.xTable({
             associationLocalObjectMember: "user",
             associationTableSpec: xUserInstrument,
             foreignTableSpec: xInstrument,
-            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
         }),]
 });

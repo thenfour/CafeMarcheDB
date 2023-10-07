@@ -161,10 +161,9 @@ export const xSong = new db3.xTable({
         if (clientIntention.intention === "user") {
             // apply soft delete
             ret.push({ isDeleted: { equals: false } });
-
-            // apply visibility
-            ret.push(db3.GetVisibilityWhereClause(clientIntention.currentUser!, "createdByUserId"));
         }
+        // apply visibility
+        db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
         return ret;
     },
     columns: [
@@ -218,7 +217,7 @@ export const xSong = new db3.xTable({
             associationLocalObjectMember: "song",
             associationTableSpec: xSongTagAssociation,
             foreignTableSpec: xSongTag,
-            getCustomFilterWhereClause: (query: db3.TableClientSpecFilterModelCMDBExtras): Prisma.InstrumentWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
                 tags: {
                     some: {

@@ -117,7 +117,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
 
 
 // DELETE ////////////////////////////////////////////////
-export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedMiddlewareCtx): Promise<boolean> => {
+export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedMiddlewareCtx, currentUser: db3.UserWithRolesPayload): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -159,7 +159,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 };
 
 // INSERT ////////////////////////////////////////////////
-export const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx): Promise<boolean> => {
+export const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, currentUser: db3.UserWithRolesPayload): Promise<boolean> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
         CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
@@ -219,7 +219,7 @@ export const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Auth
 
 
 // UPDATE ////////////////////////////////////////////////
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx): Promise<boolean> => {
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, currentUser: db3.UserWithRolesPayload): Promise<boolean> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
