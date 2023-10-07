@@ -87,7 +87,7 @@ interface SettingMarkdownProps {
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const [updateSetting] = useMutation(updateSettingMutation);
-    let [initialValue, { refetch }] = useQuery(getSetting, { name: props.settingName, cmdbQueryContext: `SettingMarkdown` }, gQueryOptions.default);
+    let [initialValue, { refetch }] = useQuery(getSetting, { name: props.settingName }, gQueryOptions.default);
     return <MutationMarkdownControl
         initialValue={initialValue}
         refetch={refetch}

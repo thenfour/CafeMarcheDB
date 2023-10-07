@@ -835,6 +835,9 @@ export class CreatedAtField extends FieldBase<Date> {
             return SuccessfulValidateAndParseResult(new Date());
         }
         console.assert(value instanceof Date);
+        // if (!(value instanceof Date)) {
+        //     debugger;
+        // }
         return SuccessfulValidateAndParseResult(value);
     };
 

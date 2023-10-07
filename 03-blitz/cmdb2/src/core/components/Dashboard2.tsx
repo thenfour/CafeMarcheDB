@@ -176,8 +176,8 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
 
-    const onClickStopImpersonating = () => {
-        stopImpersonatingMutation();
+    const onClickStopImpersonating = async () => {
+        await stopImpersonatingMutation();
     };
 
     return (
@@ -241,10 +241,10 @@ interface MenuItemLink {
     renderIcon: () => React.ReactElement;
 };
 
-type MenuItem = MenuItemDivider | MenuItemSectionHeader | MenuItemLink;
+type MenuItemSpec = MenuItemDivider | MenuItemSectionHeader | MenuItemLink;
 
 interface MenuItemComponentProps {
-    item: MenuItem
+    item: MenuItemSpec
 };
 
 const MenuItemComponent = (props: MenuItemComponentProps) => {
@@ -266,7 +266,7 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
     return <>??</>;
 };
 
-const gMenuItems: MenuItem[] = [
+const gMenuItems: MenuItemSpec[] = [
     { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon /> },
     { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
     { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },

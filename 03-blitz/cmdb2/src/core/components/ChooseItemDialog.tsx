@@ -152,7 +152,7 @@ export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
             }}
         />
         }
-        {props.validationError && <FormHelperText children={props.validationError} />}
+        {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
     </div>;
 };
 

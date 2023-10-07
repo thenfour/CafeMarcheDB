@@ -79,14 +79,27 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
+    //console.log(`DB3EditGrid tableParams: ${JSON.stringify(props.tableParams)}`);
+
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
         clientIntention: { intention: 'admin', mode: 'primary' },
         tableSpec,
-        filterModel,
+        filterModel: {
+            items: filterModel.items.map(i => {
+                console.assert(i.operator === "equals");
+                const ret: db3.CMDBTableFilterItem = {
+                    field: i.field,
+                    value: i.value,
+                    operator: "equals",
+                }
+                return ret;
+            }),
+            quickFilterValues: filterModel.quickFilterValues,
+            tableParams: props.tableParams || {}
+        },
         sortModel,
         paginationModel,
-        tableParams: props.tableParams || {},
     });
 
     const [rowModesModel, setRowModesModel] = React.useState({});

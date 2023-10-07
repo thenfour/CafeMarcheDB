@@ -71,11 +71,11 @@ export const OwnActiveControl = () => {
 };
 
 
-export type UserInstrumentsFieldInput = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
+export type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
     refetch: () => void;
 };
 
-export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInput) => {
+export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps) => {
     const updatePrimaryMutationToken = API.users.updateUserPrimaryInstrument.useToken();
     const [currentUser, { refetch }] = useCurrentUser();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -95,9 +95,9 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInput) => {
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "error updating primary instrument" });
-        }).finally(() => {
+        }).finally(async () => {
             props.refetch();
-            refetch();
+            await refetch();
         });
     };
 
@@ -136,7 +136,7 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInput) => {
                 props.onChange(newValue);
             }}
         />}
-        {props.validationError && <FormHelperText children={props.validationError} />}
+        {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
     </div>;
 };
 
@@ -162,9 +162,12 @@ const OwnInstrumentsControl = () => {
         }),
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         clientIntention: { intention: "user", mode: 'primary' },
-        tableParams: {
-            userId: currentUser!.id,
-        }
+        filterModel: {
+            items: [],
+            tableParams: {
+                userId: currentUser!.id,
+            }
+        },
     });
 
     const row = tableClient.items[0]!;
@@ -188,9 +191,9 @@ const OwnInstrumentsControl = () => {
             }).catch(e => {
                 console.log(e);
                 showSnackbar({ severity: "error", children: "error updating instruments" });
-            }).finally(() => {
+            }).finally(async () => {
                 tableClient.refetch();
-                refetch();
+                await refetch();
             });
         }}
     />;

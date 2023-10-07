@@ -164,6 +164,9 @@ export const xSong = new db3.xTable({
         }
         // apply visibility
         db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
+        console.log(`getParameterizedWhereClause for song with params: ${params}`);
+        debugger;
+        console.log(ret)
         return ret;
     },
     columns: [
@@ -335,7 +338,9 @@ export const xSongCreditType = new db3.xTable({
         };
     },
     getRowInfo: (row: SongCreditTypePayload) => ({
-        name: "<not supported>",
+        name: row.text,
+        description: row.description,
+        color: gGeneralPaletteList.findEntry(row.color),
     }),
     columns: [
         new PKField({ columnName: "id" }),
@@ -379,9 +384,10 @@ export const xSongCredit = new db3.xTable({
     tableName: "songCredit",
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({
-        name: "<not supported>",
+        name: "<a song credit>",
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCreditWhereInput[] | false) => {
+        console.log(`song credit getParameterizedWhereClause`);
         if (params.songId != null) {
             return [{
                 songId: { equals: params.songId }

@@ -514,6 +514,7 @@ export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTyp
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
         type: true,
+        visiblePermission: true,
     }
 }>;
 export const EventTypeValue = ({ type }: { type: db3.EventTypePayload | null }) => {

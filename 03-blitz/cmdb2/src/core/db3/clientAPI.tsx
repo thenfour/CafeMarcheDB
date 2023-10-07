@@ -5,7 +5,6 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
-import db3queries from "./queries/db3queries";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
 import { TupdateEventBasicFieldsArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
@@ -164,7 +163,7 @@ class EventsAPI {
     }
 
     usePopularEventTagsQuery = () => {
-        return useQuery(getPopularEventTags, { cmdbQueryContext: `usePopularEventTagsQuery` }, gQueryOptions.default);
+        return useQuery(getPopularEventTags, {}, gQueryOptions.default);
     };
 
     getInstrumentForUserResponse = (response: db3.EventSegmentUserResponsePayload, user: db3.UserPayload): (db3.InstrumentPayload | null) => {

@@ -21,7 +21,6 @@ blitz install material-ui
     * almost all are riddled with weird behaviors, bugs, dubious support lifetimes or paywalls
     * the ones which feel comfortable enough to use are so complex i don't want to put the effort
 
-
 # how: change db schema
 
   1. modify `schema.prisma`
@@ -118,5 +117,6 @@ seems like it happens often when I add `useQuery()` or `useMutation()` or other 
   * http://localhost:3000/auth/logout
 
 
-# how: deployment?
+# how: build / deployment?
 
+  * `npm run build`

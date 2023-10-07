@@ -11,6 +11,8 @@ export default resolver.pipe(
     resolver.authorize("updateUserPrimaryInstrumentMutation", Permission.login),
     async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: AuthenticatedMiddlewareCtx) => {
 
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+
         // load ALL instruments because it's always a small list,
         // and we want to get multiple data:
         // - where is primary already
@@ -36,13 +38,13 @@ export default resolver.pipe(
         for (let i = 0; i < existingIds.length; ++i) {
             await mutationCore.updateImpl(db3.xUserInstrument, existingIds[i]!, {
                 isPrimary: false,
-            }, ctx);
+            }, ctx, currentUser);
         }
 
         if (newId) {
             await mutationCore.updateImpl(db3.xUserInstrument, newId, {
                 isPrimary: true,
-            }, ctx);
+            }, ctx, currentUser);
         }
 
         return args;// blitz is weird and wants the return type to be the same as the input type.

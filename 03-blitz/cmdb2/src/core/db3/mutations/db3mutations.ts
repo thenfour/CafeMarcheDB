@@ -14,16 +14,7 @@ export default resolver.pipe(
     async (input: db3.MutatorInput, ctx: AuthenticatedMiddlewareCtx) => {
         const table = db3.gAllTables[input.tableName]!;
 
-        const currentUser = await db.user.findFirst({
-            ...db3.UserWithRolesArgs,
-            where: {
-                id: ctx.session.userId,
-            }
-        });
-
-        if (currentUser == null) {
-            throw new Error(`current user not found`);
-        }
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
 
         if (input.deleteId != null) {
             // return boolean

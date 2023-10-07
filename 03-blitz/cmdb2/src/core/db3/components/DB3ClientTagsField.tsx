@@ -76,6 +76,7 @@ export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProp
         filterText,
         row: props.row,
         spec: props.spec,
+        clientIntention: { intention: 'user', mode: 'primary' },
     });
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -425,6 +426,7 @@ export interface TagsFieldRenderContextArgs<TAssociation> {
     row: TAnyModel;
     spec: TagsFieldClient<TAssociation>;
     filterText: string;
+    clientIntention: db3.xTableClientUsageContext;
 };
 
 export interface TagsCreateFromStringArgs {
@@ -447,25 +449,17 @@ export class TagsFieldRenderContext<TAssociation> {
             this.mutateFn = useMutation(db3mutations)[0] as DB3Client.TMutateFn;
         }
 
-        const where = { AND: [] as any[] };
-        if (args.filterText) {
-            const tokens = args.filterText.split(/\s+/).filter(token => token.length > 0);
-            const quickFilterItems = tokens.map(q => {
-                const OR = args.spec.typedSchemaColumn.foreignTableSpec.GetQuickFilterWhereClauseExpression(q);
-                if (!OR) return null;
-                return {
-                    OR,
-                };
-            });
-            where.AND.push(...quickFilterItems.filter(i => i !== null));
-        }
-
         // returns the foreign items.
         const [items, { refetch }]: [TAnyModel[], any] = useQuery(db3queries, {
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
-            where,
-            cmdbQueryContext: "TagsFieldRenderContext"
+            clientIntention: args.clientIntention,
+            filter: {
+                items: [],
+                tableParams: {},
+                quickFilterValues: args.filterText.split(/\s+/).filter(token => token.length > 0),
+            },
+            cmdbQueryContext: `TagsFieldRenderContext for table.field: ${args.spec.schemaTable.tableName}.${args.spec.columnName}`,
         }, gQueryOptions.default);
         this.options = items.map(item => this.args.spec.typedSchemaColumn.createMockAssociation(args.row, item));
         this.refetch = refetch;

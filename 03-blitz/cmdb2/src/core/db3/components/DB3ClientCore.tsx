@@ -16,7 +16,6 @@ import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 //import * as db3 from "../db3";
 import * as db3 from "../db3"
 import db3mutations from "../mutations/db3mutations";
-//import db3queries from "../queries/db3queries";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
 import { HasFlag, TAnyModel, gNullValue, gQueryOptions } from "shared/utils";
@@ -129,7 +128,6 @@ export interface xTableClientArgs {
     sortModel?: GridSortModel,
     filterModel?: db3.CMDBTableFilterModel,
     paginationModel?: GridPaginationModel,
-    tableParams?: TAnyModel,
 
     queryOptions?: any; // of gQueryOptions
 };
@@ -169,13 +167,6 @@ export class xTableRenderClient {
 
         const orderBy = CalculateOrderBy(args.sortModel);
 
-        // const where = CalculateWhereClause({
-        //     tableSchema: args.tableSpec.args.table,
-        //     filterModel: args.filterModel,
-        //     tableParams: args.tableParams,
-        //     clientIntention: args.clientIntention,
-        // });
-
         const skip = !!args.paginationModel ? (args.paginationModel.pageSize * args.paginationModel.page) : undefined;
         const take = !!args.paginationModel ? (args.paginationModel.pageSize) : undefined;
 
@@ -211,9 +202,17 @@ export class xTableRenderClient {
                 take,
                 filter: args.filterModel || { items: [] },
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
+                cmdbQueryContext: `xTableRenderClient for ${args.tableSpec.args.table.tableName}`,
             };
-            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "xTableRenderClient" }, args.queryOptions || gQueryOptions.default);
+            const [items, { refetch }] = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
             items_ = items;
+
+            // console.log(`basic client query items on table ${this.args.tableSpec.args.table.tableName}:`);
+            // console.log(items);
+            // console.log(`filtermodel:`);
+            // console.log(args.filterModel);
+
+
             this.rowCount = items.length;
             this.refetch = refetch;
         }
@@ -246,26 +245,32 @@ export class xTableRenderClient {
     doUpdateMutation = async (row: TAnyModel) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
         const updateModel = {};
-        this.schema.columns.forEach(col => {
-            col.ApplyClientToDb(row, updateModel, "update");
+        // this.schema.columns.forEach(col => {
+        //     col.ApplyClientToDb(row, updateModel, "update");
+        // });
+        this.clientColumns.forEach(clientCol => {
+            clientCol.schemaColumn.ApplyClientToDb(row, updateModel, "update");
         });
         const ret = await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             updateModel,
             updateId: row[this.schema.pkMember],
         });
+        // console.log(`doUpdateMutation [clientomdel, dbmodel]`);
+        // console.log(row);
+        // console.log(updateModel);
         this.refetch();
         return ret;
     };
 
     doInsertMutation = async (row: TAnyModel) => {
-        const insertModel = {};
+        const dbModel = {};
         this.schema.columns.forEach(col => {
-            col.ApplyClientToDb(row, insertModel, "new");
+            col.ApplyClientToDb(row, dbModel, "new");
         });
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
-            insertModel,
+            insertModel: dbModel,
         });
     };
 

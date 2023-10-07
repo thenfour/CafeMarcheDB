@@ -67,7 +67,7 @@ export interface CMDBTableFilterItem { // from MUI GridFilterItem
     id?: number | string;
     field: string;
     value?: any;
-    operator: string;
+    operator: "equals";
 }
 
 // allow client users to specify cmdb-specific queries.
@@ -90,6 +90,7 @@ export interface PaginatedQueryInput {
 
     filter: CMDBTableFilterModel;
     clientIntention: xTableClientUsageContext;
+    cmdbQueryContext: string;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -100,6 +101,7 @@ export interface QueryInput {
 
     filter: CMDBTableFilterModel;
     clientIntention: xTableClientUsageContext;
+    cmdbQueryContext: string;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -384,6 +386,7 @@ export class xTable implements TableDesc {
 
         // QUICK FILTER
         if (filterModel && filterModel.quickFilterValues) { // quick filtering
+            // each "item" is a token typically.
             const quickFilterItems = filterModel.quickFilterValues.filter(q => q.length > 0).map(q => {// for each token
                 return {
                     OR: this.GetQuickFilterWhereClauseExpression(q)
@@ -392,7 +395,7 @@ export class xTable implements TableDesc {
             where.AND.push(...quickFilterItems);
         }
 
-        // GENERAL FILTER (allows custom)
+        // GENERAL FILTER (allows custom) -- TODO: maybe this is redundant. parameterized where clauses kinda cover this.
         if (filterModel) {
             where.AND.push(this.GetCustomWhereClauseExpression(filterModel));
         }

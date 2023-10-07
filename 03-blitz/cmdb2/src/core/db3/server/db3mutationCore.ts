@@ -7,6 +7,20 @@ import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 
+export const getCurrentUserCore = async (ctx: AuthenticatedMiddlewareCtx) => {
+    const currentUser = await db.user.findFirst({
+        ...db3.UserWithRolesArgs,
+        where: {
+            id: ctx.session.userId,
+        }
+    });
+
+    if (currentUser == null) {
+        throw new Error(`current user not found`);
+    }
+    return currentUser;
+};
+
 export interface separateMutationValuesArgs {
     table: db3.xTable;
     fields: TAnyModel;

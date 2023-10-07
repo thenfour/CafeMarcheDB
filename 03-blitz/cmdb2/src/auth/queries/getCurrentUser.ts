@@ -7,8 +7,10 @@ import * as db3 from "src/core/db3/db3";
 export default async function getCurrentUser(_ = null, { session }: Ctx) {
 
   if (!session.userId) {
-    return null
+    return null;
   }
+
+
 
   const user = await db.user.findFirst({
     where: { id: session.userId },

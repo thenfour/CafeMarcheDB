@@ -70,7 +70,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
             }}
         />
         }
-        {props.validationError && <FormHelperText children={props.validationError} />}
+        {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
     </div>;
 };
 
@@ -148,12 +148,18 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             const queryInput: db3.QueryInput = {
                 tableName: this.typedSchemaColumn.foreignTableSpec.tableName,
                 orderBy: undefined,
-                where: {
-                    [this.typedSchemaColumn.foreignTableSpec.pkMember]: { equals: fkid }
+                clientIntention: this.args.clientIntention,
+                filter: {
+                    items: [{
+                        field: this.typedSchemaColumn.foreignTableSpec.pkMember,
+                        operator: "equals",
+                        value: fkid,
+                    }]
                 },
+                cmdbQueryContext: `ForeignSingleFieldClient querying table ${this.typedSchemaColumn.foreignTableSpec.tableName} for table.column ${this.schemaTable.tableName}.${this.columnName}`
             };
 
-            const [items, { refetch }] = useQuery(db3queries, { ...queryInput, cmdbQueryContext: "ForeignSingleFieldClient.onSchemaConnected foreign table" }, gQueryOptions.default);
+            const [items, { refetch }] = useQuery(db3queries, queryInput, gQueryOptions.default);
             if (items.length !== 1) {
                 console.error(`table params ${JSON.stringify(tableClient.args.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
@@ -253,15 +259,11 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             this.mutateFn = useMutation(db3mutations)[0] as DB3Client.TMutateFn;
         }
 
-        const where = DB3Client.CalculateWhereClause({
-            tableSchema: args.spec.typedSchemaColumn.foreignTableSpec,
-            clientIntention: args.clientIntention,
-        });
-
         const [items, { refetch }]: [TForeign[], any] = useQuery(db3queries, {
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
-            where,
+            clientIntention: args.clientIntention,
+            filter: { items: [] },
             cmdbQueryContext: "ForeignSingleFieldRenderContext",
         }, gQueryOptions.default);
         this.items = items;

@@ -4,5 +4,5 @@ import { gQueryOptions } from "shared/utils";
 import getCurrentUser from "src/auth/queries/getCurrentUser"
 
 export const useCurrentUser = () => {
-  return useQuery(getCurrentUser, { cmdbQueryContext: "useCurrentUser" }, gQueryOptions.default);
+  return useQuery(getCurrentUser, {}, gQueryOptions.default);
 }

@@ -4,6 +4,7 @@ import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 import { CMDBAuthorizeOrThrow } from "types";
+import * as mutationCore from "../server/db3mutationCore"
 
 export default resolver.pipe(
     resolver.authorize("db3query", Permission.login),
@@ -15,19 +16,13 @@ export default resolver.pipe(
             CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
             const dbTableClient = db[table.tableName]; // the prisma interface
 
-            const currentUser = await db.user.findFirst({
-                ...db3.UserWithRolesArgs,
-                where: {
-                    id: ctx.session.userId,
-                }
-            });
-
-            if (currentUser == null) {
-                throw new Error(`current user not found`);
-            }
-
             const orderBy = input.orderBy || table.naturalOrderBy;
+
             const clientIntention = input.clientIntention;
+            if (!input.clientIntention) {
+                throw new Error(`client intention is required; context: ${input.cmdbQueryContext}.`);
+            }
+            const currentUser = await mutationCore.getCurrentUserCore(ctx);
             clientIntention.currentUser = currentUser;
             const where = table.CalculateWhereClause({
                 clientIntention,

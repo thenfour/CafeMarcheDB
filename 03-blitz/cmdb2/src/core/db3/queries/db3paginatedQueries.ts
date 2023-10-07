@@ -4,6 +4,7 @@ import db, { Prisma } from "db";
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
 import { Permission } from "shared/permissions";
+import * as mutationCore from "../server/db3mutationCore"
 
 export default resolver.pipe(
     resolver.authorize("db3paginatedQuery", Permission.login),
@@ -16,6 +17,17 @@ export default resolver.pipe(
 
             const orderBy = input.orderBy || table.naturalOrderBy;
 
+            const clientIntention = input.clientIntention;
+            if (!input.clientIntention) {
+                throw new Error(`client intention is required; context: ${input.cmdbQueryContext}.`);
+            }
+            const currentUser = await mutationCore.getCurrentUserCore(ctx);
+            clientIntention.currentUser = currentUser;
+            const where = table.CalculateWhereClause({
+                clientIntention,
+                filterModel: input.filter,
+            });
+
             const {
                 items,
                 hasMore,
@@ -24,11 +36,11 @@ export default resolver.pipe(
             } = await paginate({
                 skip: input.skip,
                 take: input.take,
-                count: () => dbTableClient.count({ where: input.where }),
+                count: () => dbTableClient.count({ where }),
                 query: (paginateArgs) =>
                     dbTableClient.findMany({
                         ...paginateArgs,
-                        where: input.where,
+                        where,
                         orderBy,
                         include: table.localInclude || undefined,
                     }),

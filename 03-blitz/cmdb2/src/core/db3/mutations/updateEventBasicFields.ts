@@ -26,7 +26,8 @@ export default resolver.pipe(
             createdByUserId: args.createdByUserId, // TODO: validate client info
         };
 
-        mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx);
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        mutationCore.updateImpl(db3.xEvent, args.eventId, fields, ctx, currentUser);
 
         return args;// blitz is weird and wants the return type to be the same as the input type.
     }

@@ -17,12 +17,14 @@ export default resolver.pipe(
             }
         });
 
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+
         if (existing) {
             await mutationCore.updateImpl(db3.xEventSegmentUserResponse, existing.id, {
                 attendanceId: args.attendanceId,
                 attendanceComment: args.comment,
                 instrumentId: args.instrumentId,
-            }, ctx);
+            }, ctx, currentUser);
             return args; // blitz is weird and wants the return type to be the same as the input type.
         }
 
@@ -35,7 +37,7 @@ export default resolver.pipe(
             instrumentId: args.instrumentId,
         };
 
-        await mutationCore.insertImpl(db3.xEventSegmentUserResponse, fields, ctx);
+        await mutationCore.insertImpl(db3.xEventSegmentUserResponse, fields, ctx, currentUser);
 
         return args;// blitz is weird and wants the return type to be the same as the input type.
     }
