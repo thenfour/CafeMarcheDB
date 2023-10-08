@@ -44,13 +44,17 @@ leave all that for later.
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 
 
+// const x : Prisma.EventInclude = {
+
+// };
+
+
 ////////////////////////////////////////////////////////////////
 
 export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
     { id: 'asc' },
 ];
-
 
 const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
@@ -61,7 +65,7 @@ const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
                 song: {
                     include: {
                         visiblePermission: true,
-                    }
+                    },
                 }
             }
         }
@@ -183,14 +187,16 @@ export const getEventSegmentMinDate = (event: EventPayload) => {
     }, null);
 };
 
-
-
-////////////////////////////////////////////////////////////////
-
 export const xEventType = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventTypeArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTypeInclude => {
+        return EventTypeArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        // this is necessary because this field is not listed in the schema columns.
+        db3.ApplyIncludeFilteringToRelation(include, "events", "eventType", xEvent, clientIntention);
+    },
     tableName: "eventType",
     naturalOrderBy: EventTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
@@ -256,7 +262,13 @@ export const EventStatusSignificance = {
 export const xEventStatus = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventStatusArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventStatusInclude => {
+        return EventStatusArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        // this is necessary because this field is not listed in the schema columns.
+        db3.ApplyIncludeFilteringToRelation(include, "events", "eventStatus", xEvent, clientIntention);
+    },
     tableName: "eventStatus",
     naturalOrderBy: EventStatusNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
@@ -293,11 +305,13 @@ export const xEventStatus = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const EventTagInclude: Prisma.EventTagInclude = {
-    events: true,
-};
+const EventTagArgs = Prisma.validator<Prisma.EventTagArgs>()({
+    include: {
+        events: true,
+    }
+});
 
-export type EventTagPayload = Prisma.EventTagGetPayload<{}>;
+export type EventTagPayload = Prisma.EventTagGetPayload<typeof EventTagArgs>;
 
 export const EventTagNaturalOrderBy: Prisma.EventTagOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -312,7 +326,10 @@ export const EventTagSignificance = {
 export const xEventTag = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventTagInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagInclude => {
+        return EventTagArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventTag",
     naturalOrderBy: EventTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventTagCreateInput => {
@@ -342,18 +359,15 @@ export const xEventTag = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-export type EventTagAssignmentModel = Prisma.EventTagAssignmentGetPayload<{
+export const EventTagAssignmentArgs = Prisma.validator<Prisma.EventTagAssignmentArgs>()({
     include: {
         event: true,
         eventTag: true,
     }
-}>;
+});
+export type EventTagAssignmentPayload = Prisma.EventTagAssignmentGetPayload<typeof EventTagAssignmentArgs>;
 
-// not sure this is needed or used at all.
-const EventTagAssignmentInclude: Prisma.EventTagAssignmentInclude = {
-    event: true,
-    eventTag: true,
-};
+
 const EventTagAssignmentNaturalOrderBy: Prisma.EventTagAssignmentOrderByWithRelationInput[] = [
     { eventTag: { sortOrder: 'desc' } },
     { eventTag: { text: 'asc' } },
@@ -363,9 +377,12 @@ export const xEventTagAssignment = new db3.xTable({
     tableName: "EventTagAssignment",
     editPermission: Permission.edit_events,
     viewPermission: Permission.view_events,
-    localInclude: EventTagAssignmentInclude,
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
-    getRowInfo: (row: EventTagAssignmentModel) => {
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentInclude => {
+        return EventTagAssignmentArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    getRowInfo: (row: EventTagAssignmentPayload) => {
         return {
             name: row.eventTag.text,
             description: row.eventTag.description,
@@ -503,6 +520,9 @@ export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
         args[this.member] = this.defaultValue;
     };
 
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { };
+
     ValidateAndParse = (val: db3.ValidateAndParseArgs<DateRange>): db3.ValidateAndParseResult<DateRange | null> => {
         return db3.SuccessfulValidateAndParseResult(val.value);
     };
@@ -548,7 +568,17 @@ const xEventArgs_Base: db3.TableDesc = {
     tableName: "event",
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
+        return EventArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        // todo.
+        db3.ApplyIncludeFilteringToRelation(include, "tags", "event", xEventTagAssignment, clientIntention);
+        db3.ApplyIncludeFilteringToRelation(include, "comments", "event", xEventComment, clientIntention);
+        db3.ApplyIncludeFilteringToRelation(include, "segments", "event", xEventSegment, clientIntention);
+        db3.ApplyIncludeFilteringToRelation(include, "songLists", "event", xEventSongList, clientIntention);
+
+    },
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
         name: row.name,
@@ -632,7 +662,7 @@ const xEventArgs_Base: db3.TableDesc = {
             foreignTableSpec: xEventStatus,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new TagsField<EventTagAssignmentModel>({
+        new TagsField<EventTagAssignmentPayload>({
             columnName: "tags",
             associationForeignIDMember: "eventTagId",
             associationForeignObjectMember: "eventTag",
@@ -700,14 +730,14 @@ const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
 
 const xEventArgs_Verbose: db3.TableDesc = {
     ...xEventArgs_Base,
-    localInclude: EventArgs_Verbose.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
+        return EventArgs_Verbose.include;
+    },
 };
 
 export type EventClientPayload_Verbose = EventClientPayloadExtras & Prisma.EventGetPayload<typeof EventArgs_Verbose>;
 
 export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
-
-
 
 export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
     { startsAt: "asc" },
@@ -717,7 +747,12 @@ export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationI
 export const xEventSegment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventSegmentArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentInclude => {
+        return EventSegmentArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        // todo
+    },
     tableName: "eventSegment",
     naturalOrderBy: EventSegmentNaturalOrderBy,
     getRowInfo: (row: EventSegmentPayload) => ({
@@ -767,7 +802,10 @@ export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationI
 export const xEventComment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventCommentArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCommentInclude => {
+        return EventCommentArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventComment",
     naturalOrderBy: EventCommentNaturalOrderBy,
     getRowInfo: (row: EventCommentPayload) => ({
@@ -815,15 +853,13 @@ export const xEventComment = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const EventAttendanceInclude: Prisma.EventAttendanceInclude = {
-    responses: true,
-};
-
-export type EventAttendancePayload = Prisma.EventAttendanceGetPayload<{
+const EventAttendanceArgs = Prisma.validator<Prisma.EventAttendanceArgs>()({
     include: {
         responses: true,
     }
-}>;
+});
+
+export type EventAttendancePayload = Prisma.EventAttendanceGetPayload<typeof EventAttendanceArgs>;
 
 // when you don't need responses just use this
 export type EventAttendanceBasePayload = Prisma.EventAttendanceGetPayload<{}>;
@@ -837,7 +873,10 @@ export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRel
 export const xEventAttendance = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventAttendanceInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventAttendanceInclude => {
+        return EventAttendanceArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventAttendance",
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({
@@ -876,7 +915,10 @@ export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResp
 export const xEventSegmentUserResponse = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventSegmentUserResponseArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentUserResponseInclude => {
+        return EventSegmentUserResponseArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventSegmentUserResponse",
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
@@ -934,7 +976,12 @@ export const xEventSegmentUserResponse = new db3.xTable({
 export const xEventSongList = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventSongListArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListInclude => {
+        return EventSongListArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        db3.ApplyIncludeFilteringToRelation(include, "songs", "eventSongList", xEventSongListSong, clientIntention);
+    },
     tableName: "eventSongList",
     naturalOrderBy: EventSongListNaturalOrderBy,
     getRowInfo: (row: EventSongListPayload) => ({
@@ -977,7 +1024,12 @@ export const xEventSongList = new db3.xTable({
 export const xEventSongListSong = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventSongListSongArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListSongInclude => {
+        return EventSongListSongArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        //db3.ApplyIncludeFilteringToRelation(include, "song", "eventSongListSong", xSong, clientIntention);
+    },
     tableName: "eventSongListSong",
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     getRowInfo: (row: EventSongListSongPayload) => ({
@@ -985,12 +1037,15 @@ export const xEventSongListSong = new db3.xTable({
         description: row.subtitle || "",
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListSongWhereInput[] | false) => {
+        const ret: Prisma.EventSongListSongWhereInput[] = [];
         if (params.eventSongListId != null) {
-            return [{
+            ret.push({
                 eventSongListId: { equals: params.eventSongListId }
-            }];
+            });
         }
-        return false;
+        // filter by the indirect field
+        db3.ApplyVisibilityWhereClauseIndirectly(ret, clientIntention, "song", "createdByUserId");
+        return ret;
     },
     columns: [
         new PKField({ columnName: "id" }),

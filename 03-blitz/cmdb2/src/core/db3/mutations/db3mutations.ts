@@ -15,18 +15,20 @@ export default resolver.pipe(
         const table = db3.gAllTables[input.tableName]!;
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        input.clientIntention = input.clientIntention || { intention: "user", mode: "primary" };
+        input.clientIntention.currentUser = currentUser;
 
         if (input.deleteId != null) {
             // return boolean
-            return await mutationCore.deleteImpl(table, input.deleteId, ctx, currentUser);
+            return await mutationCore.deleteImpl(table, input.deleteId, ctx, input.clientIntention);
         }
         if (input.insertModel != null) {
             // return new object
-            return await mutationCore.insertImpl(table, input.insertModel, ctx, currentUser);
+            return await mutationCore.insertImpl(table, input.insertModel, ctx, input.clientIntention);
         }
         if (input.updateModel != null) {
             // return new object
-            return await mutationCore.updateImpl(table, input.updateId!, input.updateModel, ctx, currentUser);
+            return await mutationCore.updateImpl(table, input.updateId!, input.updateModel, ctx, input.clientIntention);
         }
         return false;
     }

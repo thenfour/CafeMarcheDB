@@ -131,7 +131,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
 
 
 // DELETE ////////////////////////////////////////////////
-export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedMiddlewareCtx, currentUser: db3.UserWithRolesPayload): Promise<boolean> => {
+export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -173,7 +173,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 };
 
 // INSERT ////////////////////////////////////////////////
-export const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, currentUser: db3.UserWithRolesPayload): Promise<boolean> => {
+export const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<boolean> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
         CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
@@ -195,10 +195,11 @@ export const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Auth
         // console.log(JSON.stringify(localFields));
         // console.log(`ASSOCIATIONS:`);
         // console.log(JSON.stringify(associationFields));
+        const include = table.CalculateInclude(clientIntention);
 
         const obj = await dbTableClient.create({
             data: localFields,
-            include: table.localInclude,
+            include,
         });
 
         await RegisterChange({
@@ -233,7 +234,7 @@ export const insertImpl = async (table: db3.xTable, fields: TAnyModel, ctx: Auth
 
 
 // UPDATE ////////////////////////////////////////////////
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, currentUser: db3.UserWithRolesPayload): Promise<boolean> => {
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<boolean> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
@@ -254,10 +255,12 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
 
+        const include = table.CalculateInclude(clientIntention);
+
         const obj = await dbTableClient.update({
             where: { [table.pkMember]: pkid },
             data: localFields,
-            include: table.localInclude,
+            include,
         });
 
         await RegisterChange({

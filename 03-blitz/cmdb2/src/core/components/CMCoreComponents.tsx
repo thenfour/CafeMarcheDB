@@ -8,7 +8,7 @@ import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import db, { Prisma } from "db";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { Button, Card, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, useMediaQuery } from "@mui/material";
+import { Button, Card, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, useMediaQuery } from "@mui/material";
 import { TAnyModel } from "shared/utils";
 import { useTheme } from "@mui/material/styles";
 import { CMTextField } from "./CMTextField";
@@ -303,10 +303,12 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-export const InspectObject = (props: { src: any }) => {
+export const InspectObject = (props: { src: any, tooltip?: string }) => {
     const [open, setOpen] = React.useState<boolean>(false);
     return <>
-        <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
+        <Tooltip title={props.tooltip || "Open object inspector"}>
+            <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
+        </Tooltip>
         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
             <DynamicReactJson src={props.src} />
         </ReactiveInputDialog>}

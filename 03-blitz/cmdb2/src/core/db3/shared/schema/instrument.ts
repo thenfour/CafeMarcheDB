@@ -15,13 +15,14 @@ import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerFie
 
 
 ////////////////////////////////////////////////////////////////
-const InstrumentFunctionalGroupInclude: Prisma.InstrumentFunctionalGroupInclude = {
-    instruments: true,
-};
+const InstrumentFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentFunctionalGroupArgs>()({
+    include: {
+        instruments: true,
+    },
+});
 
-export type InstrumentFunctionalGroupModel = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
-export type InstrumentFunctionalGroupPayload = InstrumentFunctionalGroupModel;
-export type InstrumentFunctionalGroupMinimalPayload = InstrumentFunctionalGroupModel;
+export type InstrumentFunctionalGroupPayload = Prisma.InstrumentFunctionalGroupGetPayload<typeof InstrumentFunctionalGroupArgs>;
+
 export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
     { name: 'asc' },
@@ -31,15 +32,18 @@ export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctio
 export const xInstrumentFunctionalGroup = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: InstrumentFunctionalGroupInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupInclude => {
+        return InstrumentFunctionalGroupArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrumentFunctionalGroup",
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
-    getRowInfo: (row: InstrumentFunctionalGroupModel) => ({
+    getRowInfo: (row: InstrumentFunctionalGroupPayload) => ({
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
     }),
-    createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupModel> => ({
+    createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupPayload> => ({
         description: "auto-created from selection dlg",
         name: input,
         sortOrder: 0,
@@ -65,11 +69,13 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
 });
 
 ////////////////////////////////////////////////////////////////
-const InstrumentTagInclude: Prisma.InstrumentTagInclude = {
-    instruments: true,
-};
+const InstrumentTagArgs = Prisma.validator<Prisma.InstrumentTagArgs>()({
+    include: {
+        instruments: true,
+    }
+});
 
-export type InstrumentTagPayload = Prisma.InstrumentTagGetPayload<{}>;
+export type InstrumentTagPayload = Prisma.InstrumentTagGetPayload<typeof InstrumentTagArgs>;
 
 export const InstrumentTagNaturalOrderBy: Prisma.InstrumentTagOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -87,7 +93,10 @@ export const InstrumentTagSignificance = {
 export const xInstrumentTag = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: InstrumentTagInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagInclude => {
+        return InstrumentTagArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrumentTag",
     naturalOrderBy: InstrumentTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
@@ -131,18 +140,15 @@ export const xInstrumentTag = new db3.xTable({
 });
 
 ////////////////////////////////////////////////////////////////
-export type InstrumentTagAssociationModel = Prisma.InstrumentTagAssociationGetPayload<{
+
+const InstrumentTagAssociationArgs = Prisma.validator<Prisma.InstrumentTagAssociationArgs>()({
     include: {
         instrument: true,
         tag: true,
     }
-}>;
+});
 
-// not sure this is needed or used at all.
-const InstrumentTagAssociationInclude: Prisma.InstrumentTagAssociationInclude = {
-    instrument: true,
-    tag: true,
-};
+export type InstrumentTagAssociationPayload = Prisma.InstrumentTagAssociationGetPayload<typeof InstrumentTagAssociationArgs>;
 
 const InstrumentTagAssociationNaturalOrderBy: Prisma.InstrumentTagAssociationOrderByWithRelationInput[] = [
     { tag: { sortOrder: 'desc' } },
@@ -155,9 +161,12 @@ export const xInstrumentTagAssociation = new db3.xTable({
     tableName: "InstrumentTagAssociation",
     editPermission: Permission.associate_instrument_tags,
     viewPermission: Permission.view_general_info,
-    localInclude: InstrumentTagAssociationInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationInclude => {
+        return InstrumentTagAssociationArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
-    getRowInfo: (row: InstrumentTagAssociationModel) => ({
+    getRowInfo: (row: InstrumentTagAssociationPayload) => ({
         name: row.tag.text,
         description: row.tag.description,
         color: gGeneralPaletteList.findEntry(row.tag.color),
@@ -207,7 +216,10 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
 export const xInstrument = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: InstrumentArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentInclude => {
+        return InstrumentArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrument",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({
@@ -232,7 +244,7 @@ export const xInstrument = new db3.xTable({
             columnName: "sortOrder",
             allowNull: false,
         }),
-        new ForeignSingleField<InstrumentFunctionalGroupModel>({
+        new ForeignSingleField<InstrumentFunctionalGroupPayload>({
             columnName: "functionalGroup",
             fkMember: "functionalGroupId",
             foreignTableSpec: xInstrumentFunctionalGroup,
@@ -243,7 +255,7 @@ export const xInstrument = new db3.xTable({
                 }
             }),
         }),
-        new TagsField<InstrumentTagAssociationModel>({
+        new TagsField<InstrumentTagAssociationPayload>({
             columnName: "instrumentTags",
             associationForeignIDMember: "tagId",
             associationForeignObjectMember: "tag",

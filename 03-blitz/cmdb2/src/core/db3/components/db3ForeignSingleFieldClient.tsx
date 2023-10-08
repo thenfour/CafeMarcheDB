@@ -142,8 +142,8 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
     onSchemaConnected = (tableClient: DB3Client.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
 
-        if (tableClient.args.tableParams && tableClient.args.tableParams[this.typedSchemaColumn.fkMember] != null) {
-            const fkid = parseIntOrNull(tableClient.args.tableParams[this.typedSchemaColumn.fkMember]);
+        if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember] != null) {
+            const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember]);
 
             const queryInput: db3.QueryInput = {
                 tableName: this.typedSchemaColumn.foreignTableSpec.tableName,
@@ -161,7 +161,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
 
             const [items, { refetch }] = useQuery(db3queries, queryInput, gQueryOptions.default);
             if (items.length !== 1) {
-                console.error(`table params ${JSON.stringify(tableClient.args.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
+                console.error(`table params ${JSON.stringify(tableClient.args.filterModel?.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
             else {
                 this.fixedValue = items[0];
@@ -277,6 +277,7 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             return await this.mutateFn({
                 tableName: this.args.spec.typedSchemaColumn.foreignTableSpec.tableName,
                 insertModel,
+                clientIntention: this.args.clientIntention,
             }) as TForeign;
         } catch (e) {
             // ?

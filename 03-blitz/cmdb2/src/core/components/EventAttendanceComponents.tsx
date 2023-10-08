@@ -152,7 +152,7 @@ const EventAttendanceResponseControlMeat = (props: EventAttendanceResponseContro
     });
 
     //const nullSelStyle = (!props.value) ? "selected" : "notSelected";
-    return <>{optionsClient.items.map(option => {
+    return <>{(optionsClient.items as db3.EventAttendancePayload[]).map(option => {
         const style = GetStyleVariablesForColor(option.color);
         const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
         const yesNoStyle = (option.strength > 50) ? "yes" : "no";
@@ -284,7 +284,6 @@ export const EventAttendanceEditControl = (props: EventAttendanceEditControlProp
 
     const handleInstrumentChange = async (value: db3.InstrumentPayload) => {
         try {
-            console.log(`changing instrument to ${value.id}`);
             await API.events.updateUserEventSegmentAttendance.invoke(token, {
                 userId: props.eventUserInfo.user.id,
                 eventSegmentId: props.segmentInfo.segment.id,
@@ -373,7 +372,7 @@ export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlPr
     // - events in the past should say "did you go" rather than "will you go"
     // - future events are far more critical than past events. mayeb just don't show past events?
     // - i think when you explicitly set "No answer" it doesn't highlight buttons like it should
-    const [user] = useCurrentUser()!;
+    const user = useCurrentUser()[0]!;
     const eventInfo = API.events.getEventInfoForUser({ event: props.event, user });
 
     return <Alert severity="error" className='cmalert attendanceAlert'>
@@ -398,8 +397,7 @@ export interface EventAttendanceSummaryProps {
 };
 
 export const EventAttendanceSummary = (props: EventAttendanceSummaryProps) => {
-    const [user] = useCurrentUser()!;
-    console.assert(!!user);
+    const user = useCurrentUser()[0]!;
 
     const eventInfo = new db3.EventInfoForUser({ event: props.event, user });
     console.assert(!!eventInfo.segments);

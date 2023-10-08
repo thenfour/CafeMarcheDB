@@ -429,3 +429,7 @@ export function assertIsNumberArray(value: any): asserts value is number[] {
     }
 }
 
+export function isEmptyArray(obj: any) {
+    if (!Array.isArray(obj)) return false;
+    return 0 === ((obj as any[]).length);
+}

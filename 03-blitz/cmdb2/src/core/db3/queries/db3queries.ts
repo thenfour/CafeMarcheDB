@@ -29,10 +29,12 @@ export default resolver.pipe(
                 filterModel: input.filter,
             });
 
+            const include = table.CalculateInclude(clientIntention);
+
             const items = await dbTableClient.findMany({
                 where,
                 orderBy,
-                include: table.localInclude,
+                include,
                 take: input.take,
             });
             return items;

@@ -13,12 +13,13 @@ import {
     Add as AddIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, InspectObject, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gQueryOptions } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 
 // effectively there are a couple variants of an "event":
 // x 1. grid row, for admins
@@ -117,7 +118,7 @@ const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK:
             //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
             new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
             new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+            new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         ],
@@ -320,12 +321,28 @@ interface EventsListArgs {
 
 const EventsList = ({ filterSpec }: EventsListArgs) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
+    const filterModel: db3.CMDBTableFilterModel = {
+        quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
+        items: [],
+        tagIds: filterSpec.tagFilter,
+        tableParams: {
+            eventTypeIds: filterSpec.typeFilter,
+            eventStatusIds: filterSpec.statusFilter,
+        }
+    };
+    const [currentUser] = useCurrentUser();
+    clientIntention.currentUser = currentUser!;
+    const where = db3.xEventVerbose.CalculateWhereClause({
+        filterModel,
+        clientIntention,
+    });
+    const include = db3.xEventVerbose.CalculateInclude(clientIntention);
     const eventsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+                new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             ],
         }),
         filterModel: {
@@ -351,6 +368,8 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     }, [filterSpec]);
 
     return <>
+        <InspectObject src={where} tooltip={`inspect where clause for events query`} />
+        <InspectObject src={include} tooltip={`inspect include clause for events query`} />
         {eventsClient.items.map(event => <EventDetail key={event.id} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} />)}
     </>;
 };

@@ -474,6 +474,7 @@ export class TagsFieldRenderContext<TAssociation> {
             const foreignObject = await this.mutateFn({
                 tableName: foreignTableSpec.tableName,
                 insertModel,
+                clientIntention: this.args.clientIntention,
             }) as TAnyModel;
             return this.args.spec.typedSchemaColumn.createMockAssociation(args.row, foreignObject);
         } catch (e) {

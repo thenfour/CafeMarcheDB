@@ -1,6 +1,6 @@
 import { ColorPaletteEntry } from "shared/color";
 import { Permission } from "shared/permissions";
-import { TAnyModel } from "shared/utils";
+import { TAnyModel, isEmptyArray } from "shared/utils";
 import db, { Prisma } from "db";
 
 
@@ -61,6 +61,7 @@ export interface MutatorInput {
     deleteId?: number;
     updateId?: number;
     updateModel?: TAnyModel;
+    clientIntention: xTableClientUsageContext;
 };
 
 export interface CMDBTableFilterItem { // from MUI GridFilterItem
@@ -224,6 +225,9 @@ export abstract class FieldBase<FieldDataType> {
 
     abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => void;
     abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => void; // apply the value from db to client.
+
+    // for foreign "includes", we need to apply a WHERE clause which excludes soft deletes, irrelevant things, & records the user doesn't have access to.
+    abstract ApplyIncludeFiltering: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void;
 };
 
 export enum xTableClientUsageCustomContextType {
@@ -234,6 +238,12 @@ export enum xTableClientUsageCustomContextType {
 export interface xTableClientUsageCustomContextBase {
     type: xTableClientUsageCustomContextType, // a way to identify the type of custom context provided.
 };
+
+export interface UsageContextPathPart {
+    table: string,
+    member: string,
+};
+
 export interface xTableClientUsageContext {
     // various table interactions depend on how the client is using it. for example
     // when creating an object from an admin table, versus a normal user create dialog.
@@ -255,6 +265,9 @@ export interface xTableClientUsageContext {
 
     // does your xTable need to act differently when it's being used to populate a dropdown for a related key of some field? use this to do whatever.
     customContext?: xTableClientUsageCustomContextBase;
+
+    // for related objects, this is the hierarchical path. first element is the root.
+    relationPath?: UsageContextPathPart[];
 };
 
 
@@ -275,10 +288,15 @@ export interface CalculateWhereClauseArgs {
     clientIntention: xTableClientUsageContext;
 };
 
+
 export interface TableDesc {
     tableName: string;
     columns: FieldBase<unknown>[];
-    localInclude: unknown, // the includes:{} clause for local items. generally returns some of the foreign members
+
+    // formerly localInclude; the includes:{} object. Like Prisma.UserInclude.
+    getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel,
+    // for members which exist in your includes:{} object (and therefore need to be filtered), but are not specified in your columns list.
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void,
     staticWhereClause?: unknown, // a *Where object applied to everything.
     viewPermission: Permission;
     editPermission: Permission;
@@ -294,8 +312,10 @@ export class xTable implements TableDesc {
     tableName: string;
     columns: FieldBase<unknown>[];
 
-    localInclude: unknown;
-    staticWhereClause?: unknown; // a *Where object applied to everything.
+    // formerly localInclude; the includes:{} object. Like Prisma.UserInclude.
+    getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel;
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void;
+    staticWhereClause?: unknown; // a *Where object applied to everything. TODO: remove. currently used for a "for visibility" view of permissions but this would be best done in parameterized where clause.
 
     viewPermission: Permission;
     editPermission: Permission;
@@ -314,7 +334,7 @@ export class xTable implements TableDesc {
     constructor(args: TableDesc) {
         Object.assign(this, args);
 
-        // this CAN safely happen when clients refresh data
+        // this CAN safely happen when clients refresh data, or you have multiple tables with similar args
         //console.assert(!gAllTables[args.tableName]); // don't define a table multiple times. effectively singleton.
 
         gAllTables[args.tableName] = this;
@@ -380,9 +400,26 @@ export class xTable implements TableDesc {
         return ret;
     };
 
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext): void => {
+        this.columns.forEach(col => {
+            if (col.member === 'songLists') {
+                console.log(`songLists`);
+            }
+            col.ApplyIncludeFiltering(include, clientIntention);
+        });
+        this.applyIncludeFilteringForExtraColumns(include, clientIntention);
+    };
+
+    CalculateInclude = (clientIntention: xTableClientUsageContext): TAnyModel => {
+        //const include = { ...this.getInclude(clientIntention) }; // create a copy so our modifications don't spill into other stuff.
+        const include = JSON.parse(JSON.stringify(this.getInclude(clientIntention)));
+        this.ApplyIncludeFiltering(include, clientIntention);
+        return include;
+    };
 
     CalculateWhereClause = ({ filterModel, clientIntention }: CalculateWhereClauseArgs) => {
-        const where = { AND: [] as any[] };
+        //const where = { AND: [] as any[] };
+        const and: any[] = [];
 
         // QUICK FILTER
         if (filterModel && filterModel.quickFilterValues) { // quick filtering
@@ -392,12 +429,12 @@ export class xTable implements TableDesc {
                     OR: this.GetQuickFilterWhereClauseExpression(q)
                 };
             });
-            where.AND.push(...quickFilterItems);
+            and.push(...quickFilterItems);
         }
 
         // GENERAL FILTER (allows custom) -- TODO: maybe this is redundant. parameterized where clauses kinda cover this.
         if (filterModel) {
-            where.AND.push(this.GetCustomWhereClauseExpression(filterModel));
+            and.push(...this.GetCustomWhereClauseExpression(filterModel));
         }
 
         if (filterModel && filterModel.items && filterModel.items.length > 0) { // non-quick normal filtering.
@@ -405,38 +442,35 @@ export class xTable implements TableDesc {
             const filterItems = filterModel.items.map((i) => {
                 return { [i.field]: { [i.operator]: i.value } }
             });
-            where.AND.push(...filterItems);
+            and.push(...filterItems);
         }
 
         if (this.getParameterizedWhereClause) {
             const filterItems = this.getParameterizedWhereClause(filterModel.tableParams || {}, clientIntention);
             if (filterItems) {
-                where.AND.push(...filterItems);
+                and.push(...filterItems);
             }
         }
 
         const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);
-        where.AND.push(overallWhere);
+        and.push(...overallWhere);
 
-        if (this.staticWhereClause) {
-            where.AND.push(this.staticWhereClause);
-            //console.log(`applying static where clause; total where = `);
-            //console.log(where);
-        } else {
-            //console.log(`not applying static where for table ${tableSchema.tableName}`);
+        if (this.staticWhereClause && !isEmptyArray(this.staticWhereClause)) {
+            and.push(this.staticWhereClause);
         }
 
-        return where;
+        const ret = (and.length > 0) ? { AND: and } : undefined;
+        // console.log(`calculate where clause on table ${this.tableName}`);
+        // console.log(ret);
+        return ret;
     };
-
-
 
     GetQuickFilterWhereClauseExpression = (query: string) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
         const ret = [] as any[];
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
             const clause = field.getQuickFilterWhereClause(query);
-            if (clause) {
+            if (clause && !isEmptyArray(clause)) {
                 ret.push(clause);
             }
         }
@@ -448,11 +482,11 @@ export class xTable implements TableDesc {
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
             const clause = field.getCustomFilterWhereClause(filterModel);
-            if (clause) {
+            if (clause && !isEmptyArray(clause)) {
                 ret.push(clause);
             }
         }
-        return { AND: ret };
+        return ret;
     };
 
     GetOverallWhereClauseExpression = (clientIntention: xTableClientUsageContext) => {
@@ -460,11 +494,11 @@ export class xTable implements TableDesc {
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
             const clause = field.getOverallWhereClause(clientIntention);
-            if (clause) {
+            if (clause && !isEmptyArray(clause)) {
                 ret.push(clause);
             }
         }
-        return { AND: ret };
+        return ret;
     };
 
     getClientModel = (dbModel: TAnyModel, mode: DB3RowMode) => {
@@ -492,11 +526,99 @@ export class xTable implements TableDesc {
     }
 }
 
+
 ////////////////////////////////////////////////////////////////
 export const gAllTables: { [key: string]: xTable } = {
     // populated at runtime. required in order for client to call an API, and the API able to access the same schema.
 };
 
+////////////////////////////////////////////////////////////////
+// adds the "where" clause to the "include" block to support db-side visibility / softdelete / whatever filtering per table.
+export const ApplyIncludeFilteringToRelation = (include: TAnyModel, memberName: string, localTableName: string, foreignTable: xTable, clientIntention: xTableClientUsageContext) => {
+    let member = include[memberName];
+    if (!member) { // applies to === false, === null, === undefined
+        // this member is not present in the include; nothing to be done; silent NOP.
+        return;
+    }
+    if (member !== true) {
+        // assume member is an object which is the typical case, like Prisma.UserInclude.
+        // if there's already a where clause there, it's not clear what to do. likely "AND" them, but overall not worth supporting this case.
+        if (member.where) {
+            console.log(member.where);
+            throw new Error(`can't apply a WHERE clause when one already exists. probably a bug. table.member: ${localTableName}.${memberName}`);
+        }
+    } else {
+        // member === true is a shorthand; in order to support adding our WHERE clause it must be an object.
+        member = {};
+    }
+
+    // calculate the where clause
+    const newClientIntention: xTableClientUsageContext = { ...clientIntention, mode: "relation" };
+    newClientIntention.relationPath = !!newClientIntention.relationPath ? [...newClientIntention.relationPath] : [];
+    newClientIntention.relationPath.push({
+        table: localTableName,
+        member: memberName,
+    });
+    const where = foreignTable.CalculateWhereClause({
+        clientIntention: newClientIntention,
+        filterModel: { // clobber the filter; we don't propagate any filter values through relations for this.
+            items: [],
+        }
+    });
+
+    // replace it. no longer use `member` after this.
+    include[memberName] = {
+        ...member,
+        where,
+    };
+
+    // now we should do children. for all members, apply its table filtering. see the example hierarchy:
+    // const x: Prisma.EventInclude = {
+    //     songLists: {
+    //         where: { // <--- we have just done this.
+    //             //...
+    //         },
+    //         include: {
+    //             songs: {
+    //                 where: { // <-- now we need to calculate these.
+    //                     // ...
+    //                 }
+    //             }
+    //         },
+    //     }
+    // };
+    if (include[memberName].include) {
+        foreignTable.ApplyIncludeFiltering(include[memberName].include, newClientIntention);
+    }
+
+    // const x: Prisma.EventInclude = {
+    //     songLists: {
+    //         include: {
+    //             songs: {
+    //                 where: {
+    //                     AND: [
+    //                         {
+
+    //                         }
+    //                     ]
+    //                 }
+    //             }
+    //         }
+    //     }
+    // };
+
+    // console.log(`ApplyIncludeFilteringToRelation for table.member ${localTableName}.${memberName}; where=`);
+    // console.log(JSON.stringify(where));
+    // console.log(`input include:`);
+    // console.log(JSON.stringify(include));
+    // console.log(`outp:`);
+    // console.log(JSON.stringify(include));
+};
+
+
+
+////////////////////////////////////////////////////////////////
+// apply conditions for visibility. usually columns visiblePermissionId + createdByUserId.
 // NOT applying a clause means always visible.
 export const ApplyVisibilityWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, createdByUserIDColumnName: string) => {
     // for admin grids, always show admins the items. they see the IsDeleted / visibility columns there.
@@ -507,7 +629,9 @@ export const ApplyVisibilityWhereClause = (ret: Array<any>, clientIntention: xTa
         throw new Error(`unauthorized access to admin content`);
     }
 
-    if (clientIntention.currentUser!.isSysAdmin) return; // sys admins can always see everything.
+    // don't do this, because it would just be confusing. leave that kind of omnicience to admin-specific functions.
+    // make user-looking functions operate as close to user as possible.
+    //if (clientIntention.currentUser!.isSysAdmin) return; // sys admins can always see everything.
 
     // intention is user, so apply visibility
 
@@ -526,5 +650,21 @@ export const ApplyVisibilityWhereClause = (ret: Array<any>, clientIntention: xTa
             }
         ]
     });
+};
+
+
+////////////////////////////////////////////////////////////////
+export const ApplyVisibilityWhereClauseIndirectly = (ret: Array<any>, clientIntention: xTableClientUsageContext, foreignMemberName: string, createdByUserIDColumnName: string) => {
+    const foreignFilter = [];
+    ApplyVisibilityWhereClause(foreignFilter, clientIntention, createdByUserIDColumnName);
+    if (foreignFilter.length) {
+        // a where clause was constructed. now form it into an indirect one.
+        const x: Prisma.EventSongListSongWhereInput = {
+            [foreignMemberName]: {
+                AND: foreignFilter,
+            }
+        };
+        ret.push(x);
+    }
 };
 

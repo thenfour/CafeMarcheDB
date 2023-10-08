@@ -28,6 +28,8 @@ export default resolver.pipe(
                 filterModel: input.filter,
             });
 
+            const include = table.CalculateInclude(clientIntention);
+
             const {
                 items,
                 hasMore,
@@ -42,7 +44,7 @@ export default resolver.pipe(
                         ...paginateArgs,
                         where,
                         orderBy,
-                        include: table.localInclude || undefined,
+                        include,
                     }),
             });
 

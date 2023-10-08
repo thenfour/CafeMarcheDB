@@ -11,7 +11,10 @@ import { TAnyModel, gIconOptions } from "shared/utils";
 export const xUserMinimum = new db3.xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
-    localInclude: UserArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
+        return UserArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "user",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
@@ -73,24 +76,13 @@ export const xUserMinimum = new db3.xTable({
 
 
 
-const PermissionLocalInclude: Prisma.PermissionInclude = {
-    roles: true,
-    // {
-    //     include: {
-    //         permission: true,
-    //     }
-    // },
-};
-export type PermissionPayload = Prisma.PermissionGetPayload<{
+const PermissionArgs = Prisma.validator<Prisma.PermissionArgs>()({
     include: {
-        roles: true
-        // {
-        //     include: {
-        //         permission: true,
-        //     }
-        // },
+        roles: true,
     }
-}>;
+});
+export type PermissionPayload = Prisma.PermissionGetPayload<typeof PermissionArgs>;
+
 export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
     { name: 'asc' },
@@ -100,7 +92,10 @@ export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput
 export const xPermissionBaseArgs: db3.TableDesc = {
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
-    localInclude: PermissionLocalInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.PermissionInclude => {
+        return PermissionArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "permission",
     naturalOrderBy: PermissionNaturalOrderBy,
     getRowInfo: (row: PermissionPayload) => ({
@@ -150,17 +145,14 @@ export const xPermissionForVisibility = new db3.xTable({
 // if we think of role-permission as tags relationship,
 // then roles are the local object, and permissions are the foreign tags object.
 
-const RolePermissionInclude: Prisma.RolePermissionInclude = {
-    permission: true,
-    role: true,
-};
-
-export type RolePermissionAssociationModel = Prisma.RolePermissionGetPayload<{
+const RolePermissionArgs = Prisma.validator<Prisma.RolePermissionArgs>()({
     include: {
         permission: true,
         role: true,
     }
-}>;
+});
+
+export type RolePermissionAssociationPayload = Prisma.RolePermissionGetPayload<typeof RolePermissionArgs>;
 
 const RolePermissionNaturalOrderBy: Prisma.RolePermissionOrderByWithRelationInput[] = [
     { permission: { sortOrder: 'desc' } },
@@ -173,15 +165,18 @@ export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
-    localInclude: RolePermissionInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionInclude => {
+        return RolePermissionArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: RolePermissionNaturalOrderBy,
-    getRowInfo: (row: RolePermissionAssociationModel) => ({
+    getRowInfo: (row: RolePermissionAssociationPayload) => ({
         name: row.permission.name,
         description: row.permission.description || "",
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new ForeignSingleField<RolePermissionAssociationModel>({
+        new ForeignSingleField<RolePermissionAssociationPayload>({
             columnName: "permission",
             fkMember: "permissionId",
             allowNull: false,
@@ -196,25 +191,18 @@ export const xRolePermissionAssociation = new db3.xTable({
 });
 
 ////////////////////////////////////////////////////////////////
-const RoleLocalInclude: Prisma.RoleInclude = {
-    permissions: {
-        include: {
-            permission: true,
-        },
-        orderBy: RolePermissionNaturalOrderBy,
-    },
-};
-
-//export type RolePermissionForeignModel = Prisma.InstrumentTagGetPayload<{}>;
-export type RolePayload = Prisma.RoleGetPayload<{
+const RoleArgs = Prisma.validator<Prisma.RoleArgs>()({
     include: {
         permissions: {
             include: {
                 permission: true,
             },
+            orderBy: RolePermissionNaturalOrderBy,
         },
     }
-}>;
+});
+
+export type RolePayload = Prisma.RoleGetPayload<typeof RoleArgs>;
 
 const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -225,7 +213,10 @@ const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
 export const xRole = new db3.xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
-    localInclude: RoleLocalInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RoleInclude => {
+        return RoleArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "role",
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
@@ -255,7 +246,7 @@ export const xRole = new db3.xTable({
             columnName: "sortOrder",
             allowNull: false,
         }),
-        new TagsField<RolePermissionAssociationModel>({
+        new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",
             associationTableSpec: xRolePermissionAssociation,
             associationForeignIDMember: "permissionId",
@@ -285,7 +276,10 @@ export const xUserInstrument = new db3.xTable({
     tableName: "UserInstrument",
     editPermission: Permission.login,
     viewPermission: Permission.login,
-    localInclude: UserInstrumentArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInstrumentInclude => {
+        return UserInstrumentArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: UserInstrumentNaturalOrderBy,
     getRowInfo: (row: UserInstrumentPayload) => {
         return {
@@ -323,26 +317,14 @@ export const xUserInstrument = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-// export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
-
-// export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
-//     include: {
-//         role: true,
-//         instruments: UserInstrumentArgs,
-//     }
-// });
-
-// export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
-
-// export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
-//     { name: 'asc' },
-//     { id: 'asc' },
-//];
 
 export const xUser = new db3.xTable({
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
-    localInclude: UserArgs.include,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
+        return UserArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "user",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({

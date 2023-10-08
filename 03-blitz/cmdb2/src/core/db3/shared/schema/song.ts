@@ -12,11 +12,13 @@ import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerFie
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 
 ////////////////////////////////////////////////////////////////
-const SongTagInclude: Prisma.SongTagInclude = {
-    songs: true, // not sure the point of including this; too much?
-};
+const SongTagArgs = Prisma.validator<Prisma.SongTagArgs>()({
+    include: {
+        songs: true
+    }
+});
 
-export type SongTagPayload = Prisma.SongTagGetPayload<{}>;
+export type SongTagPayload = Prisma.SongTagGetPayload<typeof SongTagArgs>;
 
 export const SongTagNaturalOrderBy: Prisma.SongTagOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -32,7 +34,10 @@ export const SongTagSignificance = {
 export const xSongTag = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: SongTagInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagInclude => {
+        return SongTagArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songTag",
     naturalOrderBy: SongTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
@@ -77,18 +82,15 @@ export const xSongTag = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-export type SongTagAssociationModel = Prisma.SongTagAssociationGetPayload<{
+
+const SongTagAssociationArgs = Prisma.validator<Prisma.SongTagAssociationArgs>()({
     include: {
         song: true,
         tag: true,
     }
-}>;
+});
 
-// not sure this is needed or used at all.
-const SongTagAssociationInclude: Prisma.SongTagAssociationInclude = {
-    song: true,
-    tag: true,
-};
+export type SongTagAssociationPayload = Prisma.SongTagAssociationGetPayload<typeof SongTagAssociationArgs>;
 
 const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByWithRelationInput[] = [
     { tag: { sortOrder: 'desc' } },
@@ -100,9 +102,12 @@ export const xSongTagAssociation = new db3.xTable({
     tableName: "SongTagAssociation",
     editPermission: Permission.associate_song_tags,
     viewPermission: Permission.view_general_info,
-    localInclude: SongTagAssociationInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationInclude => {
+        return SongTagAssociationArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
-    getRowInfo: (row: SongTagAssociationModel) => ({
+    getRowInfo: (row: SongTagAssociationPayload) => ({
         name: row.tag.text,
         description: row.tag.description,
         color: gGeneralPaletteList.findEntry(row.tag.color),
@@ -122,23 +127,18 @@ export const xSongTagAssociation = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-export type SongModel = Prisma.SongGetPayload<{
+const SongArgs = Prisma.validator<Prisma.SongArgs>()({
     include: {
-        tags: true,
         visiblePermission: true,
+        tags: {
+            include: {
+                tag: true, // include foreign object
+            }
+        },
     }
-}>;
-export type SongPayloadMinimum = Prisma.SongGetPayload<{}>;
+});
 
-// not sure this is needed or used at all.
-const SongInclude: Prisma.SongInclude = {
-    visiblePermission: true,
-    tags: {
-        include: {
-            tag: true, // include foreign object
-        }
-    },
-};
+export type SongModel = Prisma.SongGetPayload<typeof SongArgs>;
 
 const SongNaturalOrderBy: Prisma.SongOrderByWithRelationInput[] = [
     { id: 'asc' },
@@ -148,7 +148,10 @@ export const xSong = new db3.xTable({
     tableName: "Song",
     editPermission: Permission.admin_songs,
     viewPermission: Permission.view_songs,
-    localInclude: SongInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
+        return SongArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: SongNaturalOrderBy,
     getRowInfo: (row: SongModel) => ({
         name: row.name,
@@ -165,7 +168,6 @@ export const xSong = new db3.xTable({
         // apply visibility
         db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
         console.log(`getParameterizedWhereClause for song with params: ${params}`);
-        debugger;
         console.log(ret)
         return ret;
     },
@@ -212,7 +214,7 @@ export const xSong = new db3.xTable({
             fkMember: "visiblePermissionId",
         }),
 
-        new TagsField<SongTagAssociationModel>({
+        new TagsField<SongTagAssociationPayload>({
             columnName: "tags",
             associationForeignIDMember: "tagId",
             associationForeignObjectMember: "tag",
@@ -237,17 +239,16 @@ export const xSong = new db3.xTable({
 });
 
 
-
-
-
 ////////////////////////////////////////////////////////////////
-const SongCommentInclude: Prisma.SongCommentInclude = {
-    song: true,
-    user: true,
-    visiblePermission: true,
-};
+const SongCommentArgs = Prisma.validator<Prisma.SongCommentArgs>()({
+    include: {
+        song: true,
+        user: true,
+        visiblePermission: true,
+    }
+});
 
-export type SongCommentPayload = Prisma.SongCommentGetPayload<{}>;
+export type SongCommentPayload = Prisma.SongCommentGetPayload<typeof SongCommentArgs>;
 
 export const SongCommentNaturalOrderBy: Prisma.SongCommentOrderByWithRelationInput[] = [
     { updatedAt: 'desc' },
@@ -257,7 +258,10 @@ export const SongCommentNaturalOrderBy: Prisma.SongCommentOrderByWithRelationInp
 export const xSongComment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: SongCommentInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCommentInclude => {
+        return SongCommentArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songComment",
     naturalOrderBy: SongCommentNaturalOrderBy,
     getRowInfo: (row: SongCommentPayload) => ({
@@ -311,11 +315,13 @@ export const xSongComment = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const SongCreditTypeInclude: Prisma.SongCreditTypeInclude = {
-    songCredits: true,
-};
+const SongCreditTypeArgs = Prisma.validator<Prisma.SongCreditTypeArgs>()({
+    include: {
+        songCredits: true,
+    }
+});
 
-export type SongCreditTypePayload = Prisma.SongCreditTypeGetPayload<{}>;
+export type SongCreditTypePayload = Prisma.SongCreditTypeGetPayload<typeof SongCreditTypeArgs>;
 
 export const SongCreditTypeNaturalOrderBy: Prisma.SongCreditTypeOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -326,7 +332,10 @@ export const SongCreditTypeNaturalOrderBy: Prisma.SongCreditTypeOrderByWithRelat
 export const xSongCreditType = new db3.xTable({
     editPermission: Permission.edit_song_credit_types,
     viewPermission: Permission.view_general_info,
-    localInclude: SongCreditTypeInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditTypeInclude => {
+        return SongCreditTypeArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songCreditType",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
@@ -365,13 +374,15 @@ export const xSongCreditType = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const SongCreditInclude: Prisma.SongCreditInclude = {
-    song: true,
-    user: true,
-    type: true,
-};
+const SongCreditArgs = Prisma.validator<Prisma.SongCreditArgs>()({
+    include: {
+        song: true,
+        user: true,
+        type: true,
+    }
+});
 
-export type SongCreditPayload = Prisma.SongCreditGetPayload<{}>;
+export type SongCreditPayload = Prisma.SongCreditGetPayload<typeof SongCreditArgs>;
 
 export const SongCreditNaturalOrderBy: Prisma.SongCreditOrderByWithRelationInput[] = [
     { id: 'asc' },
@@ -380,7 +391,10 @@ export const SongCreditNaturalOrderBy: Prisma.SongCreditOrderByWithRelationInput
 export const xSongCredit = new db3.xTable({
     editPermission: Permission.edit_song_credits,
     viewPermission: Permission.view_general_info,
-    localInclude: SongCreditInclude,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditInclude => {
+        return SongCreditArgs.include;
+    },
+    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songCredit",
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({

@@ -20,6 +20,7 @@
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
 import { CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
+import { ApplyIncludeFilteringToRelation } from "../db3";
 
 ////////////////////////////////////////////////////////////////
 // field types
@@ -42,6 +43,9 @@ export class PKField extends FieldBase<number> {
     connectToTable = (table: xTable) => {
         table.pkMember = this.member;
     };
+
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
         return false;// don't filter on pk id. { [this.member]: { contains: query } };
@@ -138,6 +142,9 @@ export class GenericStringField extends FieldBase<string> {
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
     ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
         if (value === null) {
             if (this.allowNull) return SuccessfulValidateAndParseResult(value);
@@ -225,6 +232,9 @@ export class GenericIntegerField extends FieldBase<number> {
 
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = ({ value }: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
         if (value === null) {
@@ -308,6 +318,9 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: string | null = dbModel[this.member];
@@ -366,6 +379,9 @@ export class BoolField extends FieldBase<boolean> {
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
         args[this.member] = this.defaultValue;
@@ -434,6 +450,9 @@ export class ConstEnumStringField extends FieldBase<string> {
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
@@ -475,6 +494,7 @@ export interface ForeignSingleFieldArgs<TForeign> {
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     fkMember: string;
     foreignTableSpec: xTable;
+    localTableSpec: xTable;
     allowNull: boolean;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
@@ -512,7 +532,9 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         return !!this.foreignTableSpec.createInsertModelFromString;
     }
 
-    connectToTable = (table: xTable) => { };
+    connectToTable = (table: xTable) => {
+        this.localTableSpec = table;
+    };
 
     isEqual = (a: TForeign, b: TForeign) => {
         return a[this.foreignTableSpec.pkMember] === b[this.foreignTableSpec.pkMember];
@@ -522,6 +544,13 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        // actually what is the play here? for a many-to-one relationship like this, when the foreign item is not accessibly by the current user
+        // then we are forced to return null?
+        // hm, well actually it's not possible to do this; there is no "where" clause on these types of relations.
+        // which makes sense.
+    };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -674,6 +703,10 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getCustomFilterWhereClause = (query: CMDBTableFilterModel) => this.getCustomFilterWhereClause__(query);
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.foreignTableSpec, clientIntention);
+    };
+
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         // the "includes" clause already returns the correct structure for clients.
@@ -733,6 +766,9 @@ export class DateTimeField extends FieldBase<Date> {
     };
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = ({ value }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
@@ -828,6 +864,10 @@ export class CreatedAtField extends FieldBase<Date> {
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
+
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
         // we don't care about the input; for creations just generate a new date always.
@@ -902,6 +942,9 @@ export class SlugField extends FieldBase<string> {
     getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
     ValidateAndParse = (val: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
         let slugValue = val.value; // by default, for editing, allow users to enter a custom value.

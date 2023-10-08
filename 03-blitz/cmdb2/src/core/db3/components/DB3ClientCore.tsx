@@ -176,6 +176,8 @@ export class xTableRenderClient {
 
         let items_: TAnyModel[] = [];
 
+        const filter: db3.CMDBTableFilterModel = args.filterModel || { items: [] };
+
         if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
             console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.Query)); // don't do both. why would you do both types of queries.??
             const paginatedQueryInput: db3.PaginatedQueryInput = {
@@ -183,7 +185,8 @@ export class xTableRenderClient {
                 orderBy,
                 skip,
                 take,
-                filter: args.filterModel || { items: [] },
+                filter,
+                cmdbQueryContext: `xTableRenderClient/paginated for ${args.tableSpec.args.table.tableName}`,
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
             };
 
@@ -196,13 +199,14 @@ export class xTableRenderClient {
         if (HasFlag(args.requestedCaps, xTableClientCaps.Query)) {
             console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)); // don't do both. why would you do both types of queries.??
             console.assert(skip === 0 || skip === undefined);
+
             const queryInput: db3.QueryInput = {
                 tableName: this.args.tableSpec.args.table.tableName,
                 orderBy,
                 take,
-                filter: args.filterModel || { items: [] },
+                filter,
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
-                cmdbQueryContext: `xTableRenderClient for ${args.tableSpec.args.table.tableName}`,
+                cmdbQueryContext: `xTableRenderClient/query for ${args.tableSpec.args.table.tableName}`,
             };
             const [items, { refetch }] = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
             items_ = items;
@@ -211,7 +215,6 @@ export class xTableRenderClient {
             // console.log(items);
             // console.log(`filtermodel:`);
             // console.log(args.filterModel);
-
 
             this.rowCount = items.length;
             this.refetch = refetch;
@@ -255,6 +258,7 @@ export class xTableRenderClient {
             tableName: this.tableSpec.args.table.tableName,
             updateModel,
             updateId: row[this.schema.pkMember],
+            clientIntention: this.args.clientIntention,
         });
         // console.log(`doUpdateMutation [clientomdel, dbmodel]`);
         // console.log(row);
@@ -271,6 +275,7 @@ export class xTableRenderClient {
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             insertModel: dbModel,
+            clientIntention: this.args.clientIntention,
         });
     };
 
@@ -278,6 +283,7 @@ export class xTableRenderClient {
         return await this.mutateFn({
             tableName: this.tableSpec.args.table.tableName,
             deleteId: pk,
+            clientIntention: this.args.clientIntention,
         });
     };
 };

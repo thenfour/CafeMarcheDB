@@ -20,7 +20,7 @@ export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
 export const xSetting = new xTable({
     editPermission: Permission.admin_settings,
     viewPermission: Permission.admin_settings,
-    localInclude: null,
+    getInclude: (clientIntention) => null,
     tableName: "setting",
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({
