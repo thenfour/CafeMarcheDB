@@ -3,6 +3,8 @@ import { SessionContext } from "@blitzjs/auth";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 import { User } from "db"
 import { Permission } from "shared/permissions";
+import { Ctx } from "@blitzjs/next";
+
 
 type PublicDataType = {
   userId: User["id"],
@@ -13,8 +15,8 @@ type PublicDataType = {
 
 type CMAuthorizeArgs = {
   reason: string,
-  permission?: Permission | null,
-  publicData?: Partial<PublicDataType> | EmptyPublicData,
+  permission: Permission | null,
+  publicData: Partial<PublicDataType> | EmptyPublicData,
 };
 
 export function CMAuthorize(args: CMAuthorizeArgs) {
@@ -25,19 +27,35 @@ export function CMAuthorize(args: CMAuthorizeArgs) {
   return ret || false;
 };
 
-// intended only for use via resolver.authorize("reason", "an arg PermissionFindManyArgs"),
-export function CMDBRolesIsAuthorized(params: any) {
-  const publicData = (params.ctx.session as SessionContext).$publicData;
-  const [reason, permission] = params.args;
+// interface CMDBRolesIsAuthorizedArgs {
+//   ctx: Ctx,
+//   reason: string;
+//   permission: Permission;
+// };
 
-  return CMAuthorize({ reason, permission, publicData });
-}
+// export function CMDBRolesIsAuthorized(params: CMDBRolesIsAuthorizedArgs) {
+//   const publicData = (params.ctx.session as SessionContext).$publicData;
+//   return CMAuthorize({ ...params.args[0], publicData });
+// }
 
-// use instead of resolver.authorize
 export function CMDBAuthorizeOrThrow(reason: string, permission: Permission, ctx: AuthenticatedMiddlewareCtx) {
   if (!CMAuthorize({ reason, permission, publicData: ctx.session.$publicData })) {
     throw new Error(`Unauthorized: ${reason}`);
   }
+}
+
+// use instead of resolver.authorize
+interface CMDBResolverAuthorizeArgs {
+  ctx: Ctx,
+  args: [permission: string],
+};
+
+export function CMDBResolverAuthorize(args: CMDBResolverAuthorizeArgs) {
+  return CMAuthorize({
+    permission: args.args[0] as Permission,
+    reason: "resolver.authorize => CMDBResolverAuthorize",
+    publicData: args.ctx.session.$publicData,
+  });
 }
 
 declare module "@blitzjs/auth" {

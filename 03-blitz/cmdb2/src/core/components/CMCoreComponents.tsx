@@ -12,6 +12,9 @@ import { Button, Card, Dialog, DialogActions, DialogContent, DialogContentText, 
 import { TAnyModel } from "shared/utils";
 import { useTheme } from "@mui/material/styles";
 import { CMTextField } from "./CMTextField";
+import dynamic from 'next/dynamic'
+import { gIconMap } from "../db3/components/IconSelectDialog";
+const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
 // a white surface elevated from the gray base background, allowing vertical content.
 // meant to be the ONLY surface
@@ -87,7 +90,7 @@ export const CMChipContainer = (props: React.PropsWithChildren<{}>) => {
 
 // big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
 export interface CMBigChipProps {
-    color: ColorPaletteEntry | string | null;
+    color: ColorPaletteEntry | string | null | undefined;
     variant: ColorVariationOptions;
     // put icons & text in children
 };
@@ -296,3 +299,16 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
     </ReactiveInputDialog>;
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+export const InspectObject = (props: { src: any }) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    return <>
+        <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
+        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+            <DynamicReactJson src={props.src} />
+        </ReactiveInputDialog>}
+    </>;
+};

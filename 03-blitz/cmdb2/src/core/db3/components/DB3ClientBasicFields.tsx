@@ -79,7 +79,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
                     validationError={vr.success ? null : (vr.errorMessage || null)}
                     value={params.value as string}
                     onChange={(e, value) => {
-                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                     }}
                 />;
             },
@@ -128,7 +128,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
                     validationError={vr.success ? null : (vr.errorMessage || null)}
                     value={params.value as string}
                     onChange={(e, value) => {
-                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                     }}
                 />;
             },
@@ -192,7 +192,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
                     validationError={vr.success ? null : (vr.errorMessage || null)}
                     value={params.value as string}
                     onChange={(e, value) => {
-                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                     }}
                 />
                     <Button>edit</Button>
@@ -246,7 +246,7 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
                     validationError={vr.success ? null : (vr.errorMessage || null)}
                     value={params.value as string}
                     onChange={(e, value) => {
-                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                     }}
                 />;
             },
@@ -295,7 +295,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
                     <Checkbox
                         checked={params.value}
                         onChange={(e, value) => {
-                            params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                            void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                         }}
                     />
                 } />
@@ -339,7 +339,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
                         value={args.value}
                         palettes={(this.schemaColumn as db3fields.ColorField).palette}
                         onChange={(value: ColorPaletteEntry) => {
-                            args.api.setEditCellValue({ id: args.id, field: this.schemaColumn.member, value: value });
+                            void args.api.setEditCellValue({ id: args.id, field: this.schemaColumn.member, value: value });
                         }}
                         allowNull={(this.schemaColumn as db3fields.ColorField).allowNull}
                     />;
@@ -429,7 +429,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
                     })
                 }
             </Select>
-            <FormHelperText>Here's my helper text</FormHelperText>
+            <FormHelperText>Heres my helper text</FormHelperText>
         </React.Fragment>;
 
     };
@@ -457,7 +457,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
                 value={params.value}
                 //allowNull={true}
                 onOK={(value) => {
-                    params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                    void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                 }}
             />;
         };
@@ -484,7 +484,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
                     })
                 }
             </Select>
-            <FormHelperText>Here's my helper text</FormHelperText>
+            <FormHelperText>Heres my helper text</FormHelperText>
         </React.Fragment>;
 
     };
@@ -619,7 +619,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
                             label={this.typedSchemaColumn.label}
                             value={params.value}
                             onChange={(value: Date | null) => {
-                                params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                                void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                             }}
                         />;
                     default:

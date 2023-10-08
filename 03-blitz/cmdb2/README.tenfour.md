@@ -90,10 +90,14 @@ const isAuthorized = useAuthorization("DashboardLayout2", Permission.can_edit_us
 ````
 ### Securing queries & mutations:
 
+We can't actually change the parameters sent to `resolver.authorize`, because the type is kinda hardcoded in the blitz code. But it's a required call in the `resolver` call chain
+in order to obtain the authorized context object. So in the call chain do
+
 ````
-    resolver.authorize("GetPaginatedUsers", Permission.can_edit_users),
+    resolver.authorize(Permission.login), // assert that the user can log in (basic permission to obtain authorized context)
 ````
 
+And then the mutation/query code should narrow the authorization further with standard logic and calls to `CMDBAuthorizeOrThrow` or similar.
 
 
 # changes, activities
@@ -119,4 +123,15 @@ seems like it happens often when I add `useQuery()` or `useMutation()` or other 
 
 # how: build / deployment?
 
+  * `npm run lint`
   * `npm run build`
+
+  * things i need to work out:
+    * debugging prod? - will i be able to breakpoint? inspect much at all?
+      * we can enable inspection directly on the GUI via `<InspectObject src={eventInfo} />`
+    * testing prod build on dev machine
+    * updating prod database (how do migrations work)
+    * logging: viewing
+    * certainly more admin tools would be needed
+    * tests / CI
+

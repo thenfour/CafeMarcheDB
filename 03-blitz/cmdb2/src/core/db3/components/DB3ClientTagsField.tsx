@@ -246,7 +246,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
             }}
         />
         }
-        {props.validationError && <FormHelperText children={props.validationError} />}
+        {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
     </div>;
 };
 
@@ -400,7 +400,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
                     value={value}
                     row={params.row as TAnyModel}
                     onChange={(value: TAssociation[]) => {
-                        params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                     }}
                 />;
             },

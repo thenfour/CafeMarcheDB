@@ -28,6 +28,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import CollectionsIcon from '@mui/icons-material/Collections';
+import { gIconMap } from "../db3/components/IconSelectDialog";
 
 const drawerWidth = 300;
 
@@ -102,7 +103,9 @@ const AppBarUserIcon_Desktop = () => {
                 sx={{ padding: 0 }}
             >
                 <Badge badgeContent={4} color="error">
-                    <Avatar alt={currentUser?.name || ""}>CC</Avatar>
+                    <Avatar alt={currentUser?.name || ""}>
+                        {gIconMap.Person()}
+                    </Avatar>
                 </Badge>
                 <Typography sx={{ p: 2 }}>{currentUser?.name}</Typography>
             </IconButton>

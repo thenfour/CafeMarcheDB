@@ -4,5 +4,5 @@ import { gQueryOptions } from "shared/utils";
 import getCurrentUser from "src/auth/queries/getCurrentUser"
 
 export const useCurrentUser = () => {
-  return useQuery(getCurrentUser, {}, gQueryOptions.default);
+  return useQuery(getCurrentUser, null, gQueryOptions.default);
 }

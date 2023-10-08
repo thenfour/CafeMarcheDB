@@ -43,7 +43,7 @@ const DynamicContent = () => {
     </CMSinglePageSurface> */}
 
     {/* <CMSinglePageSurface> */}
-    {tableClient.items.map((row, index) => <EventAttendanceAlertControl
+    {(tableClient.items as db3.EventPayloadClient[]).filter(event => event.segments.length > 0).map((row, index) => <EventAttendanceAlertControl
       key={index}
       event={row as any}
       onRefetch={tableClient.refetch}

@@ -100,7 +100,7 @@ html,
 }
 
 .CMChipContainer .CMChip {
-    margin: 1px 3px;
+    margin: 1px 1px;
 }
 
 .CMChip {
@@ -121,7 +121,7 @@ html,
 }
 
 .CMChip.big {
-    padding: 0px;
+    padding: 2px;
     border-radius: 19px;
 }
 
@@ -132,7 +132,7 @@ html,
 }
 
 .CMChip.small {
-    padding: 0;
+    padding: 2;
     border-radius: 19px;
 }
 
@@ -167,4 +167,16 @@ html,
 .interactable {
     user-select: none;
     cursor: pointer;
+}
+
+
+.debugInspectorOpen {
+    user-select: none;
+    cursor: pointer;
+    border: 2px solid #aa08;
+    background-color: #8ff8;
+    padding: 2px;
+    margin: 2px;
+    width: min-content;
+    display: inline-flex;
 }

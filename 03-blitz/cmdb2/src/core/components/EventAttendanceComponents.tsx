@@ -92,7 +92,7 @@ import { ColorPaletteEntry, gGeneralPaletteList } from 'shared/color';
 import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { TAnyModel } from 'shared/utils';
-import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
+import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
 import { API } from '../db3/clientAPI';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -100,8 +100,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { CMTextField } from './CMTextField';
 import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEditor';
-import { CMBigChip, CMTagList } from './CMCoreComponents';
+import { CMBigChip, CMTagList, InspectObject, ReactiveInputDialog } from './CMCoreComponents';
 import HomeIcon from '@mui/icons-material/Home';
+
 
 ////////////////////////////////////////////////////////////////
 // a view/edit control for the comment only (including mutation)
@@ -232,7 +233,7 @@ export interface EventAttendanceAnswerProps {
 };
 
 export const EventAttendanceAnswer = (props: EventAttendanceAnswerProps) => {
-    return <CMBigChip color={props.segmentInfo.response.attendance!.color} variant='strong'>
+    return <CMBigChip color={props.segmentInfo.response.attendance?.color} variant='strong'>
         <ThumbUpIcon className="icon" />
         <span className="text">{props.segmentInfo.response.attendance?.personalText}</span>
         {!props.readOnly && <Button onClick={() => { props.onEditClicked && props.onEditClicked() }}>
@@ -368,9 +369,15 @@ export interface EventAttendanceAlertControlProps {
 };
 
 export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlProps) => {
+    // there are many scenarios yet to deal with and bugs currently
+    // - events in the past should say "did you go" rather than "will you go"
+    // - future events are far more critical than past events. mayeb just don't show past events?
+    // - i think when you explicitly set "No answer" it doesn't highlight buttons like it should
     const [user] = useCurrentUser()!;
     const eventInfo = API.events.getEventInfoForUser({ event: props.event, user });
+
     return <Alert severity="error" className='cmalert attendanceAlert'>
+        {/* <InspectObject src={eventInfo} /> */}
         <Typography variant='h5'>Are you coming to <a href={API.events.getURIForEvent(eventInfo.event)}>{props.event.name}</a>?</Typography>
         <div className="attendanceResponseInput">
             <div className="segmentList">
