@@ -239,32 +239,33 @@ const EventsControls = (props: EventsControlsProps) => {
         <div className="row">
             <div className="caption">FILTER</div>
             <div className="tagList">
-                <CMChipContainer>
-                    {(statusesClient.items as db3.EventStatusPayload[]).map(status => (
+                status: <CMChipContainer>
+                    {(statusesClient.items as db3.EventStatusPayload[]).filter(i => i.events.length > 0).map(status => (
                         <CMChip
                             key={status.id}
                             selected={props.spec.statusFilter.some(id => id === status.id)}
                             onClick={() => toggleStatus(status.id)}
                             color={status.color}
                         >
-                            {RenderMuiIcon(status.iconName)}{status.label}
+                            {RenderMuiIcon(status.iconName)}{status.label} ({status.events.length})
                         </CMChip>
                     ))}
                 </CMChipContainer>
 
-                <CMChipContainer>
-                    {(typesClient.items as db3.EventTypePayload[]).map(type => (
+                event type: <CMChipContainer>
+                    {(typesClient.items as db3.EventTypePayload[]).filter(i => i.events.length > 0).map(type => (
                         <CMChip
                             key={type.id}
                             selected={props.spec.typeFilter.some(id => id === type.id)}
                             onClick={() => toggleType(type.id)}
                             color={type.color}
                         >
-                            {RenderMuiIcon(type.iconName)}{type.text}
+                            {RenderMuiIcon(type.iconName)}{type.text} ({type.events.length})
                         </CMChip>
                     ))}
                 </CMChipContainer>
 
+                tags:
                 <CMChipContainer>
                     {popularTags.filter(t => t.events.length > 0).map(tag => (
                         <CMChip

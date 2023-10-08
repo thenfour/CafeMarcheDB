@@ -94,13 +94,21 @@ export const EventTypeSignificance = {
     Weekend: "Weekend",
 } as const satisfies Record<string, string>;
 
-const EventTypeInclude: Prisma.EventTypeInclude = {
-    events: true,
-};
+const EventTypeArgs = Prisma.validator<Prisma.EventTypeArgs>()({
+    include: {
+        events: {
+            select: {
+                id: true,
+                name: true,
+            }
+        },
+    }
+});
 
-export type EventTypePayload = Prisma.EventTypeGetPayload<{}>;
+export type EventTypePayload = Prisma.EventTypeGetPayload<typeof EventTypeArgs>;
 
 export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[] = [
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];
@@ -182,7 +190,7 @@ export const getEventSegmentMinDate = (event: EventPayload) => {
 export const xEventType = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventTypeInclude,
+    localInclude: EventTypeArgs.include,
     tableName: "eventType",
     naturalOrderBy: EventTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
@@ -220,11 +228,19 @@ export const xEventType = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const EventStatusInclude: Prisma.EventStatusInclude = {
-    events: true, // not sure the point of including this; too much?
-};
+const EventStatusArgs = Prisma.validator<Prisma.EventStatusArgs>()({
+    include: {
+        // including only in order to get a count.
+        events: {
+            select: {
+                id: true,
+                name: true,
+            }
+        },
+    }
+});
 
-export type EventStatusPayload = Prisma.EventStatusGetPayload<{}>;
+export type EventStatusPayload = Prisma.EventStatusGetPayload<typeof EventStatusArgs>;
 
 export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -240,7 +256,7 @@ export const EventStatusSignificance = {
 export const xEventStatus = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
-    localInclude: EventStatusInclude,
+    localInclude: EventStatusArgs.include,
     tableName: "eventStatus",
     naturalOrderBy: EventStatusNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
