@@ -81,6 +81,7 @@ const PermissionArgs = Prisma.validator<Prisma.PermissionArgs>()({
         roles: true,
     }
 });
+export type PermissionPayloadMinimum = Prisma.PermissionGetPayload<{}>;
 export type PermissionPayload = Prisma.PermissionGetPayload<typeof PermissionArgs>;
 
 export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput[] = [
@@ -130,15 +131,26 @@ export const xPermissionBaseArgs: db3.TableDesc = {
 
 export const xPermission = new db3.xTable(xPermissionBaseArgs);
 
-export const xPermissionVisibilityWhere: Prisma.PermissionWhereInput = {
-    isVisibility: {
-        equals: true
-    }
-};
-
 export const xPermissionForVisibility = new db3.xTable({
     ...xPermissionBaseArgs,
-    staticWhereClause: xPermissionVisibilityWhere,
+    tableUniqueName: "xPermissionForVisibility",
+    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.PermissionWhereInput[] => {
+        return [
+            {
+                isVisibility: {
+                    equals: true
+                }
+            },
+            {
+                // when you are selecting a visibility permission it makes no sense to include visibilities you can't see yourself.
+                roles: {
+                    some: {
+                        roleId: clientIntention.currentUser!.roleId!,
+                    }
+                }
+            }
+        ];
+    },
 });
 
 

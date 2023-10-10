@@ -5,6 +5,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { InspectObject } from "src/core/components/CMCoreComponents";
 //import { CMAssociationMatrix } from "src/core/cmdashboard/CMAssociationMatrix";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -24,10 +25,7 @@ const MainContent = () => {
         <DB3AssociationMatrix
             localTableSpec={RoleClientSchema}
             foreignTableSpec={PermissionClientSchema}
-            //localMember="permissions"
-            tagsField={RoleClientSchema.getColumn("permissions") as DB3Client.TagsFieldClient<db3.RolePermissionAssociationModel>}
-        //getRowName={(a: db3.RoleLocalPayload) => a.name}
-        //getTagName={(a: db3.RolePermissionAssociationModel) => a.permission.name}
+            tagsField={RoleClientSchema.getColumn("permissions") as DB3Client.TagsFieldClient<db3.RolePermissionAssociationPayload>}
         />
     </>;
 };

@@ -13,7 +13,11 @@ import { TAnyModel } from "shared/utils";
 import { useTheme } from "@mui/material/styles";
 import { CMTextField } from "./CMTextField";
 import dynamic from 'next/dynamic'
-import { gIconMap } from "../db3/components/IconSelectDialog";
+import { API, APIQueryResult } from '../db3/clientAPI';
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
+import { ChoiceEditCell } from "./ChooseItemDialog";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
 // a white surface elevated from the gray base background, allowing vertical content.
@@ -314,3 +318,54 @@ export const InspectObject = (props: { src: any, tooltip?: string }) => {
         </ReactiveInputDialog>}
     </>;
 };
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+type VisibilityControlValue = (db3.PermissionPayload | null);
+
+export const VisibilityValue = ({ permission }: { permission: db3.PermissionPayload | null }) => {
+    const style = GetStyleVariablesForColor(permission?.color);
+    return <div className='visibilityValue eventVisibilityValue' style={style}>
+        {RenderMuiIcon(permission?.iconName)}
+        {permission === null ? "(private)" : `${permission.name}-nam`}
+    </div>;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface VisibilityControlProps {
+    value: VisibilityControlValue;
+    onChange: (value: VisibilityControlValue) => void;
+};
+export const VisibilityControl = (props: VisibilityControlProps) => {
+    const permissions = API.users.getAllPermissions();
+    const [currentUser] = useCurrentUser();
+    const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => {
+        return p.isVisibility && p.roles.some(r => r.roleId === currentUser?.roleId);
+    })];
+
+    // value type is PermissionPayload
+    return <div className={`VisibilityControl`}>
+        <ChoiceEditCell
+            isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
+            items={visibilityChoices}
+            readOnly={false} // todo!
+            validationError={null}
+            selectDialogTitle='select dialog title here'
+            selectButtonLabel='change visibility'
+            value={props.value}
+            renderDialogDescription={() => {
+                return <>dialog description heree</>;
+            }}
+            renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
+                return <li {...chprops}>
+                    <VisibilityValue permission={value} /></li>;
+            }}
+            renderValue={(value: db3.PermissionPayload | null, onDelete) => {
+                return <VisibilityValue permission={value} />;
+            }}
+            onChange={props.onChange}
+        />
+    </div>;
+};
+

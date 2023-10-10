@@ -20,12 +20,13 @@ export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
 export const xSetting = new xTable({
     editPermission: Permission.admin_settings,
     viewPermission: Permission.admin_settings,
-    getInclude: (clientIntention) => null,
+    getInclude: (clientIntention) => ({}),
     tableName: "setting",
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({
         name: row.name
     }),
+    applyIncludeFilteringForExtraColumns: () => { },
     columns: [
         new PKField({ columnName: "id" }),
         new GenericStringField({

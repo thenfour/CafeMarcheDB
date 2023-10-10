@@ -26,3 +26,28 @@ export interface TupdateUserPrimaryInstrumentMutationArgs {
     userId: number;
     instrumentId: number;
 };
+
+export interface TinsertEventCommentArgs {
+    eventId: number;
+    text: string;
+    visiblePermissionId: number | null;
+    // created by user id = current user always
+    // created at, updated at = automatic
+};
+
+export interface TupdateEventCommentArgs {
+    id: number;
+    text?: string;
+    visiblePermissionId?: number | null;
+    // cannot change:
+    // - event id
+    // - user id
+    // - created at
+    // updated at = automatic
+};
+
+export interface TdeleteEventCommentArgs {
+    id: number;
+};
+
+

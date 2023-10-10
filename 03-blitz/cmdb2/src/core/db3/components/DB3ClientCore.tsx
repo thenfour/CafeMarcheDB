@@ -139,6 +139,7 @@ export class xTableRenderClient {
 
     items: TAnyModel[];
     rowCount: number;
+    remainingQueryResults: any;
     refetch: () => void;
 
     get schema() {
@@ -181,6 +182,7 @@ export class xTableRenderClient {
         if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
             console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.Query)); // don't do both. why would you do both types of queries.??
             const paginatedQueryInput: db3.PaginatedQueryInput = {
+                tableID: this.args.tableSpec.args.table.tableID,
                 tableName: this.args.tableSpec.args.table.tableName,
                 orderBy,
                 skip,
@@ -190,9 +192,10 @@ export class xTableRenderClient {
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
             };
 
-            const [{ items, count }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
+            const [{ items, count, ...remainingQueryResults }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
             items_ = items as TAnyModel[];
             this.rowCount = count;
+            this.remainingQueryResults = remainingQueryResults;
             this.refetch = refetch;
         }
 
@@ -201,6 +204,7 @@ export class xTableRenderClient {
             console.assert(skip === 0 || skip === undefined);
 
             const queryInput: db3.QueryInput = {
+                tableID: this.args.tableSpec.args.table.tableID,
                 tableName: this.args.tableSpec.args.table.tableName,
                 orderBy,
                 take,
@@ -208,7 +212,7 @@ export class xTableRenderClient {
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
                 cmdbQueryContext: `xTableRenderClient/query for ${args.tableSpec.args.table.tableName}`,
             };
-            const [items, { refetch }] = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
+            const [{ items, ...remainingQueryResults }, { refetch, ...queryOutput }] = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
             items_ = items;
 
             // console.log(`basic client query items on table ${this.args.tableSpec.args.table.tableName}:`);
@@ -216,6 +220,7 @@ export class xTableRenderClient {
             // console.log(`filtermodel:`);
             // console.log(args.filterModel);
 
+            this.remainingQueryResults = remainingQueryResults;
             this.rowCount = items.length;
             this.refetch = refetch;
         }
@@ -255,6 +260,7 @@ export class xTableRenderClient {
             clientCol.schemaColumn.ApplyClientToDb(row, updateModel, "update");
         });
         const ret = await this.mutateFn({
+            tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
             updateModel,
             updateId: row[this.schema.pkMember],
@@ -273,6 +279,7 @@ export class xTableRenderClient {
             col.ApplyClientToDb(row, dbModel, "new");
         });
         return await this.mutateFn({
+            tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
             insertModel: dbModel,
             clientIntention: this.args.clientIntention,
@@ -281,6 +288,7 @@ export class xTableRenderClient {
 
     doDeleteMutation = async (pk: number) => {
         return await this.mutateFn({
+            tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
             deleteId: pk,
             clientIntention: this.args.clientIntention,

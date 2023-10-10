@@ -810,3 +810,10 @@ table td {
   min-height: 40px;
   /* when there are no rows, there's a "nothing to show" overlay, but with our row height auto, it will result in a 1px-height area. this allows the overlay to show.*/
 }
+
+
+.comment {
+  border: 1px solid black;
+  padding: 7px;
+  margin: 7px;
+}

@@ -12,6 +12,11 @@ export default resolver.pipe(
     async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: AuthenticatedMiddlewareCtx) => {
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        const clientIntention: db3.xTableClientUsageContext = {
+            intention: "user",
+            mode: "primary",
+            currentUser,
+        };
 
         // load ALL instruments because it's always a small list,
         // and we want to get multiple data:
@@ -38,13 +43,13 @@ export default resolver.pipe(
         for (let i = 0; i < existingIds.length; ++i) {
             await mutationCore.updateImpl(db3.xUserInstrument, existingIds[i]!, {
                 isPrimary: false,
-            }, ctx, currentUser);
+            }, ctx, clientIntention);
         }
 
         if (newId) {
             await mutationCore.updateImpl(db3.xUserInstrument, newId, {
                 isPrimary: true,
-            }, ctx, currentUser);
+            }, ctx, clientIntention);
         }
 
         return args;// blitz is weird and wants the return type to be the same as the input type.

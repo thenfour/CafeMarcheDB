@@ -146,6 +146,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember]);
 
             const queryInput: db3.QueryInput = {
+                tableID: this.typedSchemaColumn.foreignTableSpec.tableID,
                 tableName: this.typedSchemaColumn.foreignTableSpec.tableName,
                 orderBy: undefined,
                 clientIntention: this.args.clientIntention,
@@ -159,7 +160,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
                 cmdbQueryContext: `ForeignSingleFieldClient querying table ${this.typedSchemaColumn.foreignTableSpec.tableName} for table.column ${this.schemaTable.tableName}.${this.columnName}`
             };
 
-            const [items, { refetch }] = useQuery(db3queries, queryInput, gQueryOptions.default);
+            const [{ items }, { refetch }] = useQuery(db3queries, queryInput, gQueryOptions.default);
             if (items.length !== 1) {
                 console.error(`table params ${JSON.stringify(tableClient.args.filterModel?.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
@@ -259,7 +260,8 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             this.mutateFn = useMutation(db3mutations)[0] as DB3Client.TMutateFn;
         }
 
-        const [items, { refetch }]: [TForeign[], any] = useQuery(db3queries, {
+        const [{ items }, { refetch }] = useQuery(db3queries, {
+            tableID: args.spec.typedSchemaColumn.foreignTableSpec.tableID,
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
             clientIntention: args.clientIntention,
@@ -275,6 +277,7 @@ export class ForeignSingleFieldRenderContext<TForeign> {
         const insertModel = this.args.spec.typedSchemaColumn.foreignTableSpec.createInsertModelFromString!(userInput);
         try {
             return await this.mutateFn({
+                tableID: this.args.spec.typedSchemaColumn.foreignTableSpec.tableID,
                 tableName: this.args.spec.typedSchemaColumn.foreignTableSpec.tableName,
                 insertModel,
                 clientIntention: this.args.clientIntention,

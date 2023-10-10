@@ -450,7 +450,8 @@ export class TagsFieldRenderContext<TAssociation> {
         }
 
         // returns the foreign items.
-        const [items, { refetch }]: [TAnyModel[], any] = useQuery(db3queries, {
+        const [{ items }, { refetch }] = useQuery(db3queries, {
+            tableID: args.spec.schemaTable.tableID,
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
             clientIntention: args.clientIntention,
@@ -472,6 +473,7 @@ export class TagsFieldRenderContext<TAssociation> {
         const insertModel = foreignTableSpec.createInsertModelFromString!(args.userInput);
         try {
             const foreignObject = await this.mutateFn({
+                tableID: foreignTableSpec.tableID,
                 tableName: foreignTableSpec.tableName,
                 insertModel,
                 clientIntention: this.args.clientIntention,

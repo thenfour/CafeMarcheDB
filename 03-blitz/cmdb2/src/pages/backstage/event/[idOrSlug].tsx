@@ -27,20 +27,26 @@ const MyComponent = () => {
             table: db3.xEventVerbose,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+                new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             ],
         }),
-        tableParams: {}
+        filterModel: {
+            items: [],
+            tableParams: {}
+        }
     };
 
     if (IsEntirelyIntegral(idOrSlug)) {
-        queryArgs.tableParams!.eventId = parseInt(idOrSlug);
+        queryArgs.filterModel!.tableParams!.eventId = parseInt(idOrSlug);
     } else {
-        queryArgs.tableParams!.eventSlug = params.idOrSlug;
+        queryArgs.filterModel!.tableParams!.eventSlug = params.idOrSlug;
     }
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
+
+    console.log(tableClient.items);
+    console.log(tableClient.remainingQueryResults);
 
     return <div>
         {event && <>

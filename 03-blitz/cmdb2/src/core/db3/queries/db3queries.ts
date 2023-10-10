@@ -10,7 +10,7 @@ export default resolver.pipe(
     resolver.authorize("db3query", Permission.login),
     async (input: db3.QueryInput, ctx: AuthenticatedMiddlewareCtx) => {
         try {
-            const table = db3.gAllTables[input.tableName]!;
+            const table = db3.gAllTables[input.tableID]!;
             console.assert(!!table);
             const contextDesc = `query:${table.tableName}`;
             CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
@@ -37,7 +37,12 @@ export default resolver.pipe(
                 include,
                 take: input.take,
             });
-            return items;
+            return {
+                items,
+                where,
+                include,
+                clientIntention,
+            };
         } catch (e) {
             console.error(e);
             throw (e);

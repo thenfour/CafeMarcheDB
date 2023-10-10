@@ -6,10 +6,13 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TupdateEventBasicFieldsArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
+import { TdeleteEventCommentArgs, TinsertEventCommentArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
+import insertEventComment from "./mutations/insertEventComment";
+import updateEventComment from "./mutations/updateEventComment";
+import deleteEventComment from "./mutations/deleteEventComment";
 
 
 export interface APIQueryArgs {
@@ -172,6 +175,10 @@ class EventsAPI {
 
     updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
     updateEventBasicFields = CreateAPIMutationFunction<TupdateEventBasicFieldsArgs, typeof updateEventBasicFields>(updateEventBasicFields);
+
+    insertEventCommentMutation = CreateAPIMutationFunction<TinsertEventCommentArgs, typeof insertEventComment>(insertEventComment);
+    deleteEventCommentMutation = CreateAPIMutationFunction<TdeleteEventCommentArgs, typeof deleteEventComment>(deleteEventComment);
+    updateEventCommentMutation = CreateAPIMutationFunction<TupdateEventCommentArgs, typeof updateEventComment>(updateEventComment);
 };
 
 class SongsAPI {

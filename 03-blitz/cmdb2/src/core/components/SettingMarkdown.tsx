@@ -92,7 +92,7 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
         initialValue={initialValue}
         refetch={refetch}
         onChange={async (newValue) => {
-            console.log(`settingmarkdown onchange: ${newValue}`);
+            //console.log(`settingmarkdown onchange: ${newValue}`);
             await updateSetting({ name: props.settingName, value: newValue });
         }}
     />;

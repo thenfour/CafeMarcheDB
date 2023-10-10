@@ -36,12 +36,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { CMTextField } from './CMTextField';
 import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEditor';
-import { CMBigChip, CMTagList, ConfirmationDialog, EditTextDialogButton } from './CMCoreComponents';
+import { CMBigChip, CMTagList, ConfirmationDialog, EditTextDialogButton, VisibilityControl } from './CMCoreComponents';
 import HomeIcon from '@mui/icons-material/Home';
 import { EventAttendanceAnswer, EventAttendanceFrame, EventAttendanceSummary } from './EventAttendanceComponents';
 import { EventAttendanceResponseInput } from './CMMockupComponents';
 import PublicIcon from '@mui/icons-material/Public';
 import { ChoiceEditCell } from './ChooseItemDialog';
+import { EventCommentTabContent } from './EventCommentComponents';
 
 ////////////////////////////////////////////////////////////////
 // TODO: generic big status
@@ -144,7 +145,7 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
                     {/* <div className="info">43 photos uploaded</div> */}
                     <CMTagList
                         tagAssociations={props.event.tags}
-                        columnSchema={db3.xEvent.getColumn("tags") as db3.TagsField<db3.EventTagAssignmentModel>}
+                        columnSchema={db3.xEvent.getColumn("tags") as db3.TagsField<db3.EventTagAssignmentPayload>}
                         //tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}
                         colorVariant="weak"
                     />
@@ -383,81 +384,8 @@ export const EventDescriptionControl = ({ event, refetch }: { event: db3.EventPa
 };
 
 
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export const EventPublishedValue = ({ event }: { event: db3.EventPayloadMinimum }) => {
-//     return <div className={`eventPublishedValue ${event.isPublished ? "published" : "unpublished"}`}>
-//         <div className='icon'>{event.isPublished ? gIconMap.Public() : gIconMap.EditNote()}</div>
-//         <div className='text'>{event.isPublished ? "published" : "unpublished"}</div>
-//     </div>;
-// };
-
-// export const EventPublishedControl = ({ event, refetch }: { event: db3.EventPayloadMinimum, refetch: () => void }) => {
-//     const mutationToken = API.events.updateEventBasicFields.useToken();
-//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-//     const handleClick = async () => {
-//         mutationToken.invoke({
-//             eventId: event.id,
-//             isPublished: !event.isPublished,
-//         }).then(() => {
-//             showSnackbar({ severity: "success", children: "Successfully updated published status" });
-//         }).catch(e => {
-//             console.log(e);
-//             showSnackbar({ severity: "error", children: "error updating published status" });
-//         }).finally(() => {
-//             refetch();
-//         });
-//     };
-
-//     return <div className={`eventPublishedControl ${event.isPublished ? "published" : "unpublished"}`}>
-//         <EventPublishedValue event={event} />
-//         <Button className='eventPublishedToggleButton' onClick={handleClick}>{event.isPublished ? "click to Unpublish" : "click to Publish"}</Button>
-//     </div>;
-// };
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export const EventVisibilityValue = ({ event }: { event: db3.EventPayloadMinimum }) => {
-//     return <div className={`eventPublishedValue`}>
-//         <div className='icon'>{event.isPublished ? gIconMap.Public() : gIconMap.EditNote()}</div>
-//         <div className='text'>{event.isPublished ? "published" : "unpublished"}</div>
-//     </div>;
-// };
-
-// export const EventVisibilityControl = ({ event, refetch }: { event: db3.EventPayloadWithVisiblePermission, refetch: () => void }) => {
-//     //const mutationToken = API.events.updateEventBasicFields.useToken();
-//     //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-//     // const handleClick = async () => {
-//     //     mutationToken.invoke({
-//     //         eventId: event.id,
-//     //         isPublished: !event.isPublished,
-//     //     }).then(() => {
-//     //         showSnackbar({ severity: "success", children: "Successfully updated published status" });
-//     //     }).catch(e => {
-//     //         console.log(e);
-//     //         showSnackbar({ severity: "error", children: "error updating published status" });
-//     //     }).finally(() => {
-//     //         refetch();
-//     //     });
-//     // };
-
-//     return <div className={`eventPublishedControl`}>
-//         {/* <EventVisibilityValue event={event} /> */}
-//         <Button>{!event.visiblePermissionId ? "(private)" : event.visiblePermission!.name}</Button>
-//     </div>;
-// };
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventVisibilityValue = ({ permission }: { permission: db3.PermissionPayload | null }) => {
-    const style = GetStyleVariablesForColor(permission?.color);
-    return <div className='eventVisibilityValue' style={style}>
-        {RenderMuiIcon(permission?.iconName)}
-        {permission === null ? "(private)" : `${permission.name}-nam`}
-    </div>;
-};
-
 export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -476,33 +404,11 @@ export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTyp
         });
     };
 
-    const permissions = API.users.getAllPermissions();
-    const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => p.isVisibility)];
-
-    // value type is PermissionPayload
-    return <div className={`EventVisibilityControl ${event.type?.significance}`}>
-        <ChoiceEditCell
-            isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
-            items={visibilityChoices}
-            readOnly={false} // todo!
-            validationError={null}
-            selectDialogTitle='select dialog title here'
-            selectButtonLabel='change visibility'
-            value={event.visiblePermission}
-            renderDialogDescription={() => {
-                return <>dialog description heree</>;
-            }}
-            renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
-                return <li {...chprops}>
-                    <EventVisibilityValue permission={value} /></li>;
-            }}
-            renderValue={(value: db3.PermissionPayload | null, onDelete) => {
-                return <EventVisibilityValue permission={value} />;
-            }}
-            onChange={handleChange}
-        />
-    </div>;
+    return <VisibilityControl value={event.visiblePermission} onChange={handleChange} />;
 };
+
+
+
 
 
 
@@ -570,38 +476,6 @@ export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePaylo
         />
     </div>;
 };
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export interface EventTypeGenericControlProps {
-//     onChange: (value: db3.EventTypePayload | null) => void,
-//     value: db3.EventTypePayload | null,
-// };
-// export const EventTypeSelectionList = (props: EventTypeGenericControlProps) => {
-//     const typesClient = API.events.getEventTypesClient();
-//     return <FormControl>
-//         <InputLabel>an input label</InputLabel>
-//         <Select
-//             value={props.value?.id || gNullValue}
-//             onChange={e => {
-//                 if (e.target.value === gNullValue) {
-//                     props.onChange(null);
-//                     return;
-//                 }
-//                 props.onChange((typesClient.items as db3.EventTypePayload[]).find((s) => s.id === e.target.value)!);
-//             }}
-//         >
-//             <MenuItem value={gNullValue}>--</MenuItem>
-//             {
-//                 typesClient.items.map((option: db3.EventTypePayload) => {
-//                     return <MenuItem key={option.id} value={option.id}>{option.text}</MenuItem>;
-//                 })
-//             }
-//         </Select>
-//         <FormHelperText>Here's my helper text</FormHelperText>
-//     </FormControl>;
-// };
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -810,6 +684,8 @@ export const EventLocationControl = ({ event, refetch }: { event: EventWithStatu
     </div>;
 };
 
+
+
 ////////////////////////////////////////////////////////////////
 // do not create separate components for the various verbosities.
 // it's tempting, because it would have advantages:
@@ -893,13 +769,13 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
 
         {verbosity === 'verbose' && (
             <>
-
-                <Tabs value={selectedTab} onChange={handleTabChange} aria-label="basic tabs example">
+                <Tabs value={selectedTab} onChange={handleTabChange}>
                     <Tab label="Info" {...a11yProps(0)} />
                     <Tab label={`Comments (${event.comments.length})`} {...a11yProps(1)} />
                     <Tab label={`Set Lists (${event.songLists.length})`} {...a11yProps(2)} />
                     <Tab label={`Attendance ${formattedAttendeeRange}`} {...a11yProps(3)} />
                     <Tab label={`Completeness`} {...a11yProps(4)} />
+                    <Tab label={`Files (${event.fileTags.length})`} {...a11yProps(5)} />
                 </Tabs>
 
                 <CustomTabPanel value={selectedTab} index={0}>
@@ -909,7 +785,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
                 </CustomTabPanel>
 
                 <CustomTabPanel value={selectedTab} index={1}>
-                    (todo)
+                    <EventCommentTabContent event={event} tableClient={tableClient} />
                 </CustomTabPanel>
 
                 <CustomTabPanel value={selectedTab} index={2}>
@@ -934,7 +810,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
                                 })}
                             </tr>
                             {
-                                (functionalGroupsClient.items as db3.InstrumentFunctionalGroupMinimalPayload[]).map(functionalGroup => {
+                                (functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
                                     return <tr key={functionalGroup.id}>
                                         <td>{functionalGroup.name}</td>
                                         {event.segments.map((seg) => {
@@ -974,6 +850,12 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
                         </tbody>
                     </table>
                 </CustomTabPanel>
+
+
+                <CustomTabPanel value={selectedTab} index={5}>
+                    (todo)
+                </CustomTabPanel>
+
             </>
         )}
 

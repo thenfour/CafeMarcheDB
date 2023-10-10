@@ -56,6 +56,7 @@ export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "f
 // the mutation needs to be able to access the xtable in order to
 // validate etc.
 export interface MutatorInput {
+    tableID: string;
     tableName: string;
     insertModel?: TAnyModel;
     deleteId?: number;
@@ -84,6 +85,7 @@ export interface CMDBTableFilterModel {
 
 ////////////////////////////////////////////////////////////////
 export interface PaginatedQueryInput {
+    tableID: string;
     tableName: string;
     skip: number | undefined;
     take: number | undefined;
@@ -96,6 +98,7 @@ export interface PaginatedQueryInput {
 
 ////////////////////////////////////////////////////////////////
 export interface QueryInput {
+    tableID: string;
     tableName: string;
     orderBy: TAnyModel | undefined;
     take?: number | undefined;
@@ -291,13 +294,13 @@ export interface CalculateWhereClauseArgs {
 
 export interface TableDesc {
     tableName: string;
+    tableUniqueName?: string; // DB tables have multiple variations (event vs. event verbose / permission vs. permission for visibility / et al). therefore tableName is not sufficient. use this instead.
     columns: FieldBase<unknown>[];
 
     // formerly localInclude; the includes:{} object. Like Prisma.UserInclude.
     getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel,
     // for members which exist in your includes:{} object (and therefore need to be filtered), but are not specified in your columns list.
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void,
-    staticWhereClause?: unknown, // a *Where object applied to everything.
     viewPermission: Permission;
     editPermission: Permission;
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
@@ -310,12 +313,12 @@ export interface TableDesc {
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
 export class xTable implements TableDesc {
     tableName: string;
+    tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
     // formerly localInclude; the includes:{} object. Like Prisma.UserInclude.
     getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel;
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void;
-    staticWhereClause?: unknown; // a *Where object applied to everything. TODO: remove. currently used for a "for visibility" view of permissions but this would be best done in parameterized where clause.
 
     viewPermission: Permission;
     editPermission: Permission;
@@ -336,8 +339,13 @@ export class xTable implements TableDesc {
 
         // this CAN safely happen when clients refresh data, or you have multiple tables with similar args
         //console.assert(!gAllTables[args.tableName]); // don't define a table multiple times. effectively singleton.
+        // if (gAllTables[args.tableUniqueName || args.tableName]) {
+        //     //console.log(`dupe table schema: ${args}`);
+        //     throw new Error(`dupe table ${args.tableUniqueName || args.tableName}`);
+        // }
 
-        gAllTables[args.tableName] = this;
+        this.tableID = args.tableUniqueName || args.tableName;
+        gAllTables[this.tableID] = this;
 
         args.columns.forEach(field => {
             field.connectToTable(this);
@@ -454,10 +462,6 @@ export class xTable implements TableDesc {
 
         const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);
         and.push(...overallWhere);
-
-        if (this.staticWhereClause && !isEmptyArray(this.staticWhereClause)) {
-            and.push(this.staticWhereClause);
-        }
 
         const ret = (and.length > 0) ? { AND: and } : undefined;
         // console.log(`calculate where clause on table ${this.tableName}`);

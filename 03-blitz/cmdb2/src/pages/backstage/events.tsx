@@ -59,49 +59,6 @@ function toggleValueInArray(array: number[], id: number): number[] {
     return array;
 }
 
-// interface NewEventModel {
-//     name: string,
-//     description: string,
-//     slug: string | null,
-//     location: string,
-//     locationURL: string,
-//     status: db3.EventStatusPayload | null,
-//     type: db3.EventTypePayload | null,
-// };
-
-// const NewEventDialogContent = ({ onCancel, onOK }: { onCancel: () => void, onOK: () => void }) => {
-//     const [row, setRow] = React.useState<NewEventModel>({
-//         name: "",
-//         description: "",
-//         location: "",
-//         locationURL: "",
-//         slug: null,
-//         status: null,
-//         type: null,
-//     });
-
-//     return <>
-//         <DialogTitle>
-//             New event
-//         </DialogTitle>
-//         <DialogContent dividers>
-//             <DialogContentText>
-//                 some text here explaining what will happen?
-//             </DialogContentText>
-
-//             <TextField></TextField>
-
-
-//             <EventTypeSelectionList value={row.type || null} onChange={type => setRow({ ...row, type })} />
-//             <EventStatusSelectionList value={row.status || null} onChange={status => setRow({ ...row, status })} />
-//         </DialogContent>
-//         <DialogActions>
-//             <Button onClick={onCancel}>Cancel</Button>
-//             <Button onClick={() => { onOK(value) }}>OK</Button>
-//         </DialogActions>
-//     </>;
-// };
-
 const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK: () => void }) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
@@ -370,6 +327,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     return <>
         <InspectObject src={where} tooltip={`inspect where clause for events query`} />
         <InspectObject src={include} tooltip={`inspect include clause for events query`} />
+        <InspectObject src={eventsClient.items} tooltip={`inspect events raw results`} />
         {eventsClient.items.map(event => <EventDetail key={event.id} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} />)}
     </>;
 };

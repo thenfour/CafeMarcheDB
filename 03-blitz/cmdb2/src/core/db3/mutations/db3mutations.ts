@@ -12,7 +12,7 @@ import * as mutationCore from "../server/db3mutationCore"
 export default resolver.pipe(
     resolver.authorize("db3mutations", Permission.login),
     async (input: db3.MutatorInput, ctx: AuthenticatedMiddlewareCtx) => {
-        const table = db3.gAllTables[input.tableName]!;
+        const table = db3.gAllTables[input.tableID]!;
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         input.clientIntention = input.clientIntention || { intention: "user", mode: "primary" };

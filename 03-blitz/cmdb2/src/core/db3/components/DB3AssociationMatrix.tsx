@@ -20,6 +20,8 @@ import * as db3 from '../db3';
 import * as DB3Client from "../DB3Client";
 import { TAnyModel, gIDValue, gNameValue, gNullValue } from 'shared/utils';
 import { Checkbox } from '@mui/material';
+import { InspectObject } from 'src/core/components/CMCoreComponents';
+import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -42,22 +44,45 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
+    const [currentUser] = useCurrentUser();
+
+    const clientIntention: db3.xTableClientUsageContext = {
+        intention: 'admin',
+        mode: 'primary',
+        currentUser: currentUser!
+    };
+
+    const convertedFilter: db3.CMDBTableFilterModel = {
+        items: filterModel.items.map((i): db3.CMDBTableFilterItem => ({
+            field: i.field,
+            operator: i.operator as any,
+            id: i.id,
+            value: i.value,
+        })),
+        quickFilterValues: filterModel.quickFilterValues,
+    };
+
     const dbRows = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery | DB3Client.xTableClientCaps.Mutation,
-        clientIntention: { intention: 'admin', mode: 'primary' },
+        clientIntention,
         tableSpec: props.localTableSpec,
-        filterModel,// quick filter will apply to both rows & columns
+        filterModel: convertedFilter,// quick filter will apply to both rows & columns
         sortModel,
         paginationModel,
     });
 
     const dbColumns = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: 'admin', mode: 'primary' },
+        clientIntention,
         tableSpec: props.foreignTableSpec,
-        filterModel, // quick filter will apply to both rows & columns
+        filterModel: convertedFilter,// quick filter will apply to both rows & columns
         // use the table's natural sort
     });
+
+    const rowWhere = props.localTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
+    const rowInclude = props.localTableSpec.args.table.CalculateInclude(clientIntention);
+    const columnWhere = props.foreignTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
+    const columnInclude = props.foreignTableSpec.args.table.CalculateInclude(clientIntention);
 
     const columns: GridColDef[] = [{
         field: "id",
@@ -118,6 +143,13 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
 
 
     return (<>
+        <InspectObject src={rowWhere} tooltip="ROW WHERE" />
+        <InspectObject src={rowInclude} tooltip="ROW INCLUDE" />
+        <InspectObject src={columnWhere} tooltip="COLUMN WHERE" />
+        <InspectObject src={columnInclude} tooltip="COLUMN INCLUDE" />
+        <InspectObject src={dbColumns.items} tooltip="COLUMN RESULTS" />
+        <InspectObject src={dbColumns.remainingQueryResults} tooltip="COLUMN extra results" />
+
         <DataGrid
             // basic config
             density="compact"

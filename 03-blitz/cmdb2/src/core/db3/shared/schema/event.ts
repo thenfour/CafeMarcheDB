@@ -150,7 +150,11 @@ export const EventCommentArgs = Prisma.validator<Prisma.EventCommentArgs>()({
     include: {
         event: true,
         user: true,
-        visiblePermission: true,
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
     }
 });
 
@@ -421,6 +425,7 @@ export type EventPayloadWithVisiblePermission = Prisma.EventGetPayload<{
 const EventArgs = Prisma.validator<Prisma.EventArgs>()({
     include: {
         visiblePermission: true,
+        createdByUser: true,
         status: true,
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
@@ -572,12 +577,10 @@ const xEventArgs_Base: db3.TableDesc = {
         return EventArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
-        // todo.
         db3.ApplyIncludeFilteringToRelation(include, "tags", "event", xEventTagAssignment, clientIntention);
         db3.ApplyIncludeFilteringToRelation(include, "comments", "event", xEventComment, clientIntention);
         db3.ApplyIncludeFilteringToRelation(include, "segments", "event", xEventSegment, clientIntention);
         db3.ApplyIncludeFilteringToRelation(include, "songLists", "event", xEventSongList, clientIntention);
-
     },
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
@@ -706,7 +709,12 @@ export const xEvent = new db3.xTable(xEventArgs_Base);
 const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
     include: {
         status: true,
-        visiblePermission: true,
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
+        createdByUser: true,
         songLists: EventSongListArgs,
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
@@ -730,6 +738,7 @@ const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
 
 const xEventArgs_Verbose: db3.TableDesc = {
     ...xEventArgs_Base,
+    tableUniqueName: "xEventArgs_Verbose",
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
         return EventArgs_Verbose.include;
     },
@@ -751,7 +760,7 @@ export const xEventSegment = new db3.xTable({
         return EventSegmentArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
-        // todo
+        db3.ApplyIncludeFilteringToRelation(include, "responses", "eventSegment", xEventSegmentUserResponse, clientIntention);
     },
     tableName: "eventSegment",
     naturalOrderBy: EventSegmentNaturalOrderBy,
@@ -811,13 +820,15 @@ export const xEventComment = new db3.xTable({
     getRowInfo: (row: EventCommentPayload) => ({
         name: "<not supported>",
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventCommentWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        const ret: Prisma.EventCommentWhereInput[] = [];
         if (params.eventId != null) {
-            return [{
+            ret.push({
                 eventId: { equals: params.eventId }
-            }];
+            });
         }
-        return false;
+        db3.ApplyVisibilityWhereClause(ret, clientIntention, "userId");
+        return ret;
     },
     columns: [
         new PKField({ columnName: "id" }),
@@ -924,13 +935,14 @@ export const xEventSegmentUserResponse = new db3.xTable({
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
         name: row.user.compactName,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSegmentUserResponseWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        const ret: Prisma.EventSegmentUserResponseWhereInput[] = [];
         if (params.eventSegmentId != null) {
-            return [{
+            ret.push({
                 eventSegmentId: { equals: params.eventSegmentId }
-            }];
+            });
         }
-        return false;
+        return ret;
     },
     columns: [
         new PKField({ columnName: "id" }),
@@ -988,13 +1000,15 @@ export const xEventSongList = new db3.xTable({
         name: row.name,
         description: row.description,
     }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        const ret: Prisma.EventSongListWhereInput[] = [];
         if (params.eventId != null) {
-            return [{
+            ret.push({
                 eventId: { equals: params.eventId }
-            }];
+            });
         }
-        return false;
+        db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
+        return ret;
     },
     columns: [
         new PKField({ columnName: "id" }),
