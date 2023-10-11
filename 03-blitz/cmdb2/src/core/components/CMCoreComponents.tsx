@@ -369,3 +369,51 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
     </div>;
 };
 
+
+
+////////////////////////////////////////////////////////////////
+interface TabPanelProps {
+    children?: React.ReactNode;
+    tabPanelID: string;
+    index: number;
+    value: number;
+}
+
+export function CustomTabPanel(props: TabPanelProps) {
+    const { children, value, index, tabPanelID, ...other } = props;
+
+    return (
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`${tabPanelID}-tabpanel-${index}`}
+            aria-labelledby={`${tabPanelID}-tab-${index}`}
+            {...other}
+        >
+            {value === index && (
+                <>
+                    {children}
+                </>
+            )}
+        </div>
+    );
+}
+
+export function TabA11yProps(tabPanelID: string, index: number) {
+    return {
+        id: `${tabPanelID}-tab-${index}`,
+        'aria-controls': `${tabPanelID}-tabpanel-${index}`,
+    };
+}
+
+
+////////////////////////////////////////////////////////////////
+// do not create separate components for the various verbosities.
+// it's tempting, because it would have advantages:
+// - can optimize queries easier for more compact variations
+// - can have simpler control over big gui variations instead of trying to make everything unified
+//
+// however, that has drawbacks:
+// - the init code is a lot, and it would either need to be duplicated or pass a huge amount of data around. neither is nice
+// - will allow a smoother transition between verbosities
+export type EventDetailVerbosity = "compact" | "default" | "verbose";

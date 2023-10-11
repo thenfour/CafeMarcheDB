@@ -2,7 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { EventSummary, RehearsalSummary } from "src/core/components/CMMockupComponents";
-import { EventDetail, EventDetailVerbosity } from "src/core/components/EventComponents";
+import { EventDetail } from "src/core/components/EventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";

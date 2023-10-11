@@ -4,45 +4,26 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import {
-    Edit as EditIcon
-} from '@mui/icons-material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import CheckIcon from '@mui/icons-material/Check';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import PlaceIcon from '@mui/icons-material/Place';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ErrorIcon from '@mui/icons-material/Error';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { Alert, Autocomplete, Breadcrumbs, Button, ButtonGroup, Card, CardActionArea, Chip, FormControl, FormHelperText, InputLabel, Link, MenuItem, Select, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
-import React, { FC, Suspense } from "react"
-import dayjs, { Dayjs } from "dayjs";
-import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
-import { CompactMutationMarkdownControl, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
-import db, { Prisma } from "db";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { ColorPaletteEntry, gGeneralPaletteList } from 'shared/color';
-import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
-import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
-import { ArrayElement, IsNullOrWhitespace, TAnyModel, gNullValue } from 'shared/utils';
-import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import { API, APIQueryResult } from '../db3/clientAPI';
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import { CMTextField } from './CMTextField';
-import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEditor';
-import { CMBigChip, CMTagList, ConfirmationDialog, EditTextDialogButton, VisibilityControl } from './CMCoreComponents';
 import HomeIcon from '@mui/icons-material/Home';
-import { EventAttendanceAnswer, EventAttendanceFrame, EventAttendanceSummary } from './EventAttendanceComponents';
-import { EventAttendanceResponseInput } from './CMMockupComponents';
-import PublicIcon from '@mui/icons-material/Public';
+import PlaceIcon from '@mui/icons-material/Place';
+import { Breadcrumbs, Button, Card, CardActionArea, Link, Tab, Tabs } from "@mui/material";
+import { Prisma } from "db";
+import React, { Suspense } from "react";
+import { ArrayElement, IsNullOrWhitespace } from 'shared/utils';
+import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
+import { API } from '../db3/clientAPI';
+import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
+import { CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
+import { GetStyleVariablesForColor } from './Color';
+import { EventAttendanceFrame, EventAttendanceSummary } from './EventAttendanceComponents';
 import { EventCommentTabContent } from './EventCommentComponents';
+import { MutationMarkdownControl } from './SettingMarkdown';
+import { EventSegmentPanel, NewSegmentButton, SegmentList } from './EventSegmentComponents';
 
 ////////////////////////////////////////////////////////////////
 // TODO: generic big status
@@ -65,6 +46,17 @@ import { EventCommentTabContent } from './EventCommentComponents';
 //     </div></div>;
 // };
 
+type EventWithTypePayload = Prisma.EventGetPayload<{
+    include: {
+        type: true,
+        visiblePermission: {
+            include: {
+                roles: true,
+            }
+        },
+    }
+}>;
+
 
 ////////////////////////////////////////////////////////////////
 // TODO: generic big status
@@ -85,7 +77,7 @@ export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
     if (!props.event.status) {
         return null;
     }
-    const status: db3.EventStatusPayload = props.event.status;
+    const status: db3.EventStatusPayloadBare = props.event.status;
     const style = GetStyleVariablesForColor(status.color);
     //console.log(status.color)
     return <div><div className={`bigstatus applyColor-inv`} style={style}>
@@ -417,12 +409,6 @@ export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTyp
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-type EventWithTypePayload = Prisma.EventGetPayload<{
-    include: {
-        type: true,
-        visiblePermission: true,
-    }
-}>;
 export const EventTypeValue = ({ type }: { type: db3.EventTypePayload | null }) => {
     const style = GetStyleVariablesForColor(type?.color);
     return <div className='eventTypeValue' style={style}>
@@ -574,43 +560,6 @@ export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPay
 
 
 ////////////////////////////////////////////////////////////////
-interface TabPanelProps {
-    children?: React.ReactNode;
-    index: number;
-    value: number;
-}
-
-function CustomTabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
-
-    return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`event-tabpanel-${index}`}
-            aria-labelledby={`event-tab-${index}`}
-            {...other}
-        >
-            {value === index && (
-                <>
-                    {children}
-                </>
-            )}
-        </div>
-    );
-}
-
-function a11yProps(index: number) {
-    return {
-        id: `event-tab-${index}`,
-        'aria-controls': `event-tabpanel-${index}`,
-    };
-}
-
-
-
-
-////////////////////////////////////////////////////////////////
 export const EventTitleControl = ({ event, refetch }: { event: EventWithStatusPayload, refetch: () => void }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -686,17 +635,6 @@ export const EventLocationControl = ({ event, refetch }: { event: EventWithStatu
 
 
 
-////////////////////////////////////////////////////////////////
-// do not create separate components for the various verbosities.
-// it's tempting, because it would have advantages:
-// - can optimize queries easier for more compact variations
-// - can have simpler control over big gui variations instead of trying to make everything unified
-//
-// however, that has drawbacks:
-// - the init code is a lot, and it would either need to be duplicated or pass a huge amount of data around. neither is nice
-// - will allow a smoother transition between verbosities
-export type EventDetailVerbosity = "compact" | "default" | "verbose";
-
 export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, verbosity: EventDetailVerbosity }) => {
     const [user] = useCurrentUser()!;
     const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
@@ -755,51 +693,51 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
         <div className="tagsLine">
             <EventTagsControl event={event} tableClient={tableClient} />
         </div>
-
-        <div>
-            <div className="attendanceResponseInput">
-                <div className="segmentList">
-                    {event.segments.map(segment => {
-                        const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
-                        return <EventAttendanceFrame key={segment.id} onRefetch={tableClient.refetch} segmentInfo={segInfo} eventUserInfo={myEventInfo} event={event} />;
-                    })}
-                </div>
+        {/* 
+        <div className="attendanceResponseInput">
+            <div className="segmentList">
+                {event.segments.map(segment => {
+                    const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
+                    return <EventAttendanceFrame key={segment.id} onRefetch={refetch} segmentInfo={segInfo} eventUserInfo={myEventInfo} event={event} />;
+                })}
             </div>
-        </div>
+        </div> */}
+
+        <SegmentList event={event} myEventInfo={myEventInfo} tableClient={tableClient} verbosity={verbosity} />
 
         {verbosity === 'verbose' && (
             <>
                 <Tabs value={selectedTab} onChange={handleTabChange}>
-                    <Tab label="Info" {...a11yProps(0)} />
-                    <Tab label={`Comments (${event.comments.length})`} {...a11yProps(1)} />
-                    <Tab label={`Set Lists (${event.songLists.length})`} {...a11yProps(2)} />
-                    <Tab label={`Attendance ${formattedAttendeeRange}`} {...a11yProps(3)} />
-                    <Tab label={`Completeness`} {...a11yProps(4)} />
-                    <Tab label={`Files (${event.fileTags.length})`} {...a11yProps(5)} />
+                    <Tab label="Info" {...TabA11yProps('event', 0)} />
+                    <Tab label={`Comments (${event.comments.length})`} {...TabA11yProps('event', 1)} />
+                    <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 2)} />
+                    <Tab label={`Attendance ${formattedAttendeeRange}`} {...TabA11yProps('event', 3)} />
+                    <Tab label={`Completeness`} {...TabA11yProps('event', 4)} />
+                    <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 5)} />
                 </Tabs>
 
-                <CustomTabPanel value={selectedTab} index={0}>
+                <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
                     <div className='descriptionLine'>
                         <EventDescriptionControl event={event} refetch={tableClient.refetch} />
                     </div>
                 </CustomTabPanel>
 
-                <CustomTabPanel value={selectedTab} index={1}>
+                <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
                     <EventCommentTabContent event={event} tableClient={tableClient} />
                 </CustomTabPanel>
 
-                <CustomTabPanel value={selectedTab} index={2}>
+                <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
                     {
                         event.songLists.map(songList => <EventSongListDetail key={songList.id} event={event} tableClient={tableClient} songList={songList} />)
                     }
                     <Button startIcon={gIconMap.Add()}>Add song list</Button>
                 </CustomTabPanel>
 
-                <CustomTabPanel value={selectedTab} index={3}>
+                <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
                     <EventAttendanceDetail event={event} tableClient={tableClient} />
                 </CustomTabPanel>
 
-                <CustomTabPanel value={selectedTab} index={4}>
+                <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
                     {/* COMPLETENESS */}
                     <table>
                         <tbody>
@@ -852,7 +790,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
                 </CustomTabPanel>
 
 
-                <CustomTabPanel value={selectedTab} index={5}>
+                <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
                     (todo)
                 </CustomTabPanel>
 

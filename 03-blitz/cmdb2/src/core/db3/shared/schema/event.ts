@@ -252,6 +252,8 @@ const EventStatusArgs = Prisma.validator<Prisma.EventStatusArgs>()({
 
 export type EventStatusPayload = Prisma.EventStatusGetPayload<typeof EventStatusArgs>;
 
+export type EventStatusPayloadBare = Prisma.EventStatusGetPayload<{}>;
+
 export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
     { label: 'asc' },

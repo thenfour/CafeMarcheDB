@@ -244,6 +244,8 @@ export class xTableRenderClient {
             return this.schema.getClientModel(dbitem as TAnyModel, "view");
         });
 
+        this.refetch = this.refetch || (() => { });
+
     }; // ctor
 
     // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
