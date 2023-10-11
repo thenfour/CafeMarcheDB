@@ -13,7 +13,7 @@ import {
     Add as AddIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, InspectObject, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, InspectObject, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";

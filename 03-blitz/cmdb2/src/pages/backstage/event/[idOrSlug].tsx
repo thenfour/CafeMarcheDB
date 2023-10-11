@@ -45,8 +45,8 @@ const MyComponent = () => {
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
 
-    console.log(tableClient.items);
-    console.log(tableClient.remainingQueryResults);
+    // console.log(tableClient.items);
+    // console.log(tableClient.remainingQueryResults);
 
     return <div>
         {event && <>

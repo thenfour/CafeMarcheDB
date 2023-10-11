@@ -17,7 +17,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import { CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, TabA11yProps, VisibilityControl } from './CMCoreComponents';
+import { CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceFrame, EventAttendanceSummary } from './EventAttendanceComponents';
@@ -270,26 +270,29 @@ interface EventTagsControlProps {
 export const EventTagsControl = ({ event, tableClient }: EventTagsControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const validationResult = tableClient.schema.ValidateAndComputeDiff(event, event, "update");
-    return tableClient.getColumn("tags").renderForNewDialog!({
-        key: event.id,
-        row: event,
-        value: event.tags,
-        validationResult,
-        api: {
-            setFieldValues: (updatedFields) => {
-                const updateObj = {
-                    id: event.id,
-                    ...updatedFields,
-                };
-                tableClient.doUpdateMutation(updateObj).then(e => {
-                    showSnackbar({ severity: "success", children: "Tags updated" });
-                }).catch(e => {
-                    console.log(e);
-                    showSnackbar({ severity: "error", children: "error updating tags" });
-                });
+    return (<>
+        <InspectObject src={event} tooltip='event row' />
+        {tableClient.getColumn("tags").renderForNewDialog!({
+            key: event.id,
+            row: event,
+            value: event.tags,
+            validationResult,
+            api: {
+                setFieldValues: (updatedFields) => {
+                    const updateObj = {
+                        id: event.id,
+                        ...updatedFields,
+                    };
+                    tableClient.doUpdateMutation(updateObj).then(e => {
+                        showSnackbar({ severity: "success", children: "Tags updated" });
+                    }).catch(e => {
+                        console.log(e);
+                        showSnackbar({ severity: "error", children: "error updating tags" });
+                    });
+                }
             }
-        }
-    });
+        })}
+    </>);
 };
 
 

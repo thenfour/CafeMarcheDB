@@ -71,37 +71,21 @@ EventAttendanceSummary
 import {
     Edit as EditIcon
 } from '@mui/icons-material';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import CheckIcon from '@mui/icons-material/Check';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import PlaceIcon from '@mui/icons-material/Place';
+import CloseIcon from '@mui/icons-material/Close';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ErrorIcon from '@mui/icons-material/Error';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { Alert, Breadcrumbs, Button, ButtonGroup, Card, CardActionArea, Chip, Link, TextField, Tooltip, Typography } from "@mui/material";
-import React, { FC, Suspense } from "react"
-import dayjs, { Dayjs } from "dayjs";
-import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
-import { CompactMutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
-import db, { Prisma } from "db";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { ColorPaletteEntry, gGeneralPaletteList } from 'shared/color';
-import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
+import { Alert, Button, ButtonGroup, Tooltip, Typography } from "@mui/material";
+import React, { Suspense } from "react";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
-import { TAnyModel } from 'shared/utils';
-import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import { API } from '../db3/clientAPI';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import { CMTextField } from './CMTextField';
-import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEditor';
-import { CMBigChip, CMTagList, InspectObject, ReactiveInputDialog } from './CMCoreComponents';
-import HomeIcon from '@mui/icons-material/Home';
+import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
+import { API } from '../db3/clientAPI';
+import { CMBigChip } from './CMCoreComponents';
+import { GetStyleVariablesForColor } from './Color';
+import { Markdown } from './RichTextEditor';
+import { CompactMutationMarkdownControl } from './SettingMarkdown';
 
 
 ////////////////////////////////////////////////////////////////
@@ -201,7 +185,7 @@ interface EventAttendanceInstrumentControlProps {
 
 const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
 
-    return <>
+    return <div className='EventAttendanceInstrumentControlContainer'>
         <ButtonGroup className='EventAttendanceInstrumentControl'>
             {props.user.instruments.map(assoc => {
                 const style = GetStyleVariablesForColor(assoc.instrument.functionalGroup.color);
@@ -216,7 +200,7 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
                 </Button>;
             })}
         </ButtonGroup>
-    </>;
+    </div>;
 };
 
 

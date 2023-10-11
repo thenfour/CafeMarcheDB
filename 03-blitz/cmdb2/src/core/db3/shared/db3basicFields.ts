@@ -653,6 +653,9 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             // }
             // return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
             const rowInfo = this.associationTableSpec.getRowInfo(value as TAnyModel);
+            // console.log(`rowInfo for association table ${this.associationTableSpec.tableID} = ${JSON.stringify(rowInfo)}`);
+            // console.log(` -> and value =`);
+            // console.log(value);
             return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
         }
 
@@ -673,13 +676,14 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     };
 
     createMockAssociation_DefaultImpl = (row: TAnyModel, foreignObject: TAnyModel): TAssociation => {
-        return {
+        const ret = {
             [this.associationTableSpec.pkMember]: -1, // an ID that we can assume is never valid or going to match an existing. we could also put null which may be more accurate but less safe in terms of query compatibiliy.
             [this.associationLocalObjectMember]: row, // local object
             [this.associationLocalIDMember]: row[this.localTableSpec.pkMember], // local ID
             [this.associationForeignObjectMember]: foreignObject, // local object
             [this.associationForeignIDMember]: foreignObject[this.foreignTableSpec.pkMember], // foreign ID
         } as TAssociation /* trust me */;
+        return ret;
     };
 
     isEqual = (a: TAssociation[], b: TAssociation[]) => {

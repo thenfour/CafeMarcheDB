@@ -451,7 +451,7 @@ export class TagsFieldRenderContext<TAssociation> {
 
         // returns the foreign items.
         const [{ items }, { refetch }] = useQuery(db3queries, {
-            tableID: args.spec.schemaTable.tableID,
+            tableID: args.spec.typedSchemaColumn.foreignTableSpec.tableID,
             tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
             orderBy: undefined,
             clientIntention: args.clientIntention,

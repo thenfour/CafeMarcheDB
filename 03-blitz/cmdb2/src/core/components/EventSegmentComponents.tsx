@@ -178,7 +178,7 @@ export const EventSegmentPanel = ({ event, myEventInfo, refetch, ...props }: Eve
             </div>
         </div>
 
-        <div className='description'>description: {props.segmentInfo.segment.description}</div>
+        {/* <div className='description'>description: {props.segmentInfo.segment.description}</div> */}
         {editOpen && (<EventSegmentEditDialog
             initialValue={props.segmentInfo.segment}
             onDelete={handleDelete}
