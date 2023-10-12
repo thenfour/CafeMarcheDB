@@ -517,7 +517,7 @@ model EventSegmentUserResponse {
   eventSegmentId Int
   eventSegment   EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Restrict)
 
-  expectAttendance  Boolean          @default(false)
+  expectAttendance  Boolean?
   attendanceId      Int?
   attendance        EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
   attendanceComment String? // comment

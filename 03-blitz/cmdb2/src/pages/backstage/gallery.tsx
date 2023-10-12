@@ -19,6 +19,7 @@ import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
 import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import * as db3 from "src/core/db3/db3";
 import { gGeneralPaletteList } from "shared/color";
+import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 
 const MainContent = () => {
 
@@ -70,29 +71,6 @@ const MainContent = () => {
 
 
         <Divider />
-        <h2>CMCoreComponents</h2>
-
-        <h3>CMSinglePageSurfaceCard</h3>
-        <div>for elevating content on a page</div>
-        <CMCoreComponents.CMSinglePageSurfaceCard>
-            CMSinglePageSurfaceCard
-        </CMCoreComponents.CMSinglePageSurfaceCard>
-
-        <h3>CMBigChip</h3>
-        <div>colored chip that can contain a lot of stuff (not like a small chip like a single TAG), used by attendance options</div>
-        <CMCoreComponents.CMBigChip color={"yes"} variant="strong">
-            <ThumbUpIcon />
-            <div>CMCoreComponents.CMBigChip</div>
-        </CMCoreComponents.CMBigChip>
-
-        <h3>CMTag</h3>
-        <div>renders a column value using a default chip render method.</div>
-        <CMCoreComponents.CMTag colorVariant="strong" tagAssociation={MockUserInstruments[0] as any} columnSchema={MockAssociationSchema as any} />
-
-        <h3>CMTagList</h3>
-        <div></div>
-        <CMCoreComponents.CMTagList colorVariant="strong" columnSchema={MockAssociationSchema as any} tagAssociations={MockUserInstruments as any} />
-
 
         <h3>CMChip</h3>
         <CMCoreComponents.CMChipContainer>
@@ -119,6 +97,12 @@ const MainContent = () => {
             <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={false} variant="weak">weak notselected disabled</CMCoreComponents.CMChip>
             <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={true} variant="weak">weak selected disabled</CMCoreComponents.CMChip>
         </CMCoreComponents.CMChipContainer>
+
+
+        <h3>Icons</h3>
+        <div>
+            <IconEditCell validationError={null} onOK={() => { }} value={null} />
+        </div>
     </>;
 };
 

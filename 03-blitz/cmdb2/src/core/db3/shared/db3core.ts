@@ -301,6 +301,7 @@ export interface TableDesc {
     getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel,
     // for members which exist in your includes:{} object (and therefore need to be filtered), but are not specified in your columns list.
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void,
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: xTableClientUsageContext) => void;
     viewPermission: Permission;
     editPermission: Permission;
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
@@ -319,6 +320,8 @@ export class xTable implements TableDesc {
     // formerly localInclude; the includes:{} object. Like Prisma.UserInclude.
     getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel;
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void;
+
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: xTableClientUsageContext) => void;
 
     viewPermission: Permission;
     editPermission: Permission;
@@ -526,6 +529,7 @@ export class xTable implements TableDesc {
         this.columns.forEach(field => {
             field.ApplyToNewRow(ret, clientIntention);
         });
+        this.applyExtraColumnsToNewObject(ret, clientIntention);
         return ret;
     }
 }

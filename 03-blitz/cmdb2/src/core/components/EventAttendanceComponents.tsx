@@ -319,7 +319,7 @@ export const EventAttendanceFrame = (props: EventAttendanceFrameProps) => {
     return <div className={`segment ${alert && "alert"}`}>
         <div className='header'>
             {alert && <ErrorOutlineIcon className='icon' />}
-            <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.segmentInfo.segment)}</div>
+            <div className="segmentName">{API.events.getEventSegmentDateInfo(props.segmentInfo.segment).formattedDateRange}</div>
             <div className=''>{props.segmentInfo.segment.name}</div>
             {editMode && <div className="prompt">Are you going?</div>}
         </div>

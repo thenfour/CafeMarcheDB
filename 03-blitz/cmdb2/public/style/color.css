@@ -67,9 +67,9 @@
 
 .applyColor-strong-notselected-disabled,
 .applyColor-weak-notselected-disabled {
-    background-color: var(--weak-color);
-    color: var(--weak-contrast-color);
-    border: 1px var(--weak-border-style) var(--weak-contrast-color);
+    background-color: var(--disabled-color);
+    color: var(--disabled-contrast-color);
+    border: 1px var(--disabled-border-style) var(--disabled-contrast-color);
 }
 
 .applyColor-strong-selected-enabled,
@@ -82,21 +82,15 @@
 
 .applyColor-strong-selected-disabled,
 .applyColor-weak-selected-disabled {
-    background-color: var(--weak-color);
-    color: var(--weak-contrast-color);
-    border: 1px var(--weak-border-style) var(--weak-contrast-color);
-    box-shadow: inset 0 0 4px var(--weak-contrast-color);
+    background-color: var(--disabled-color);
+    color: var(--disabled-contrast-color);
+    border: 1px var(--disabled-border-style) var(--disabled-contrast-color);
+    box-shadow: inset 0 0 4px var(--disabled-contrast-color);
 }
-
 
 .applyColor-strong-notselected-enabled:hover,
 .applyColor-weak-notselected-enabled:hover {
     box-shadow: inset 0 0 6px var(--strong-contrast-color);
-}
-
-.applyColor-strong-notselected-disabled:hover,
-.applyColor-weak-notselected-disabled:hover {
-    box-shadow: inset 0 0 6px var(--weak-contrast-color);
 }
 
 .applyColor-strong-selected-enabled:hover,
@@ -104,8 +98,27 @@
     box-shadow: inset 0 0 6px var(--strong-contrast-color);
 }
 
-.applyColor-strong-selected-disabled:hover,
-.applyColor-weak-selected-disabled:hover {
+
+
+
+.applyColor-weak-notselected-enabled {
+    background-color: var(--weak-color);
+    color: var(--weak-contrast-color);
+    border: 1px var(--strong-border-style) var(--weak-contrast-color);
+}
+
+.applyColor-weak-selected-enabled {
+    background-color: var(--weak-color);
+    color: var(--weak-contrast-color);
+    border: 1px var(--weak-border-style) var(--weak-contrast-color);
+    box-shadow: inset 0 0 4px var(--weak-contrast-color);
+}
+
+.applyColor-weak-notselected-enabled:hover {
+    box-shadow: inset 0 0 6px var(--weak-contrast-color);
+}
+
+.applyColor-weak-selected-enabled:hover {
     box-shadow: inset 0 0 6px var(--weak-contrast-color);
 }
 

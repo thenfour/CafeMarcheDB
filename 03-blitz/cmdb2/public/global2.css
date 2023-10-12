@@ -118,6 +118,7 @@ html,
     user-select: none;
     overflow: hidden;
     white-space: nowrap;
+    display: flex;
 }
 
 .CMChip.big {
@@ -157,12 +158,6 @@ html,
     border: 2px solid transparent;
 }
 
-/* 
-.CMChip.selected {
-    border: 1px solid #000;
-    color: #000;
-} */
-
 /* general purpose style for interactable things like buttons. avoid selection which is awkward with mouse */
 .interactable {
     user-select: none;
@@ -179,4 +174,69 @@ html,
     margin: 2px;
     width: min-content;
     display: inline-flex;
+}
+
+/* https://stackoverflow.com/questions/5697067/css-for-grabbing-cursors-drag-drop */
+.draggable {
+    cursor: move;
+    cursor: grab;
+}
+
+.draggable:active {
+    cursor: grabbing;
+}
+
+/* 
+this is for use of <InputBase /> as simple text fields. <TextField /> is too bulky sometimes.
+in the case of using within Autocomplete, I can't specify my own class names to the InputBase itself. i have to use a wrapper.
+so consider these equal:
+
+<div class="cmdbSimpleInputWrapper">
+    <input ...>
+</div>
+
+or,
+
+<input class="cmdbSimpleInput">
+
+*/
+.cmdbSimpleInputWrapper .MuiInputBase-input,
+.cmdbSimpleInput {
+    border-radius: 3px;
+    margin: 1px;
+    padding: 1px;
+    border: 1px solid #0003;
+}
+
+.cmdbSimpleInputWrapper .MuiInputBase-input:focus,
+.cmdbSimpleInput:focus {
+    border: 1px solid black;
+}
+
+
+.songListSongTable {
+    width: 1000px;
+}
+
+.songListSongTable td.dragHandle {
+    user-select: none;
+    width: 1px;
+}
+
+.songListSongTable td.minContent {
+    /* strange, but this will ensure a min-content fit. */
+    width: 1px;
+}
+
+
+.freeButton {
+    cursor: pointer;
+}
+
+.freeButton:hover {
+    background-color: #ccc8;
+}
+
+.EventSongListValueEditor .MuiDialog-paper {
+    max-width: 1200px;
 }

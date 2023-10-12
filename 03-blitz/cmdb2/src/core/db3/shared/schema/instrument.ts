@@ -13,6 +13,24 @@ import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField } from "../db3basicFields";
 
 
+////////////////////////////////////////////////////////////////
+export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
+    include: {
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
+        tags: {
+            include: {
+                tag: true, // include foreign object
+            }
+        },
+    }
+});
+
+export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
+
 
 ////////////////////////////////////////////////////////////////
 const InstrumentFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentFunctionalGroupArgs>()({
@@ -35,6 +53,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupInclude => {
         return InstrumentFunctionalGroupArgs.include;
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrumentFunctionalGroup",
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
@@ -97,6 +116,7 @@ export const xInstrumentTag = new db3.xTable({
         return InstrumentTagArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrumentTag",
     naturalOrderBy: InstrumentTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
@@ -165,6 +185,7 @@ export const xInstrumentTagAssociation = new db3.xTable({
         return InstrumentTagAssociationArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
     getRowInfo: (row: InstrumentTagAssociationPayload) => ({
         name: row.tag.text,
@@ -220,6 +241,7 @@ export const xInstrument = new db3.xTable({
         return InstrumentArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrument",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({

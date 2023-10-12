@@ -1,5 +1,6 @@
 
 import AddIcon from '@mui/icons-material/Add';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CelebrationIcon from '@mui/icons-material/Celebration';
@@ -18,6 +19,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
 import HelpIcon from '@mui/icons-material/Help';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
+import LinkIcon from '@mui/icons-material/Link';
 import MicIcon from '@mui/icons-material/Mic';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import NightlifeIcon from '@mui/icons-material/Nightlife';
@@ -48,7 +50,7 @@ import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import MoreIcon from '@mui/icons-material/More';
-
+import LaunchIcon from '@mui/icons-material/Launch';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -57,6 +59,7 @@ import MoreIcon from '@mui/icons-material/More';
 // keep in sync with export const gIconOptions = 
 export const gIconMap /*: IIconMap*/ = {
     Add: () => <AddIcon />,
+    AttachFile: () => <AttachFileIcon />,
     AddCircleOutline: () => <AddCircleOutlineIcon />,
     CalendarMonth: () => <CalendarMonthIcon />,
     Campaign: () => <CampaignIcon />,
@@ -79,7 +82,9 @@ export const gIconMap /*: IIconMap*/ = {
     HighlightOff: () => <HighlightOffIcon />,
     Home: () => <HomeIcon />,
     Info: () => <InfoIcon />,
+    Launch: () => <LaunchIcon />,
     LibraryMusic: () => <LibraryMusicIcon />,
+    Link: () => <LinkIcon />,
     Mic: () => <MicIcon />,
     More: () => <MoreIcon />,
     MusicNote: () => <MusicNoteIcon />,

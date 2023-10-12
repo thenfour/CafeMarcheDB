@@ -15,6 +15,7 @@ export const xUserMinimum = new db3.xTable({
         return UserArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "user",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
@@ -97,6 +98,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
         return PermissionArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "permission",
     naturalOrderBy: PermissionNaturalOrderBy,
     getRowInfo: (row: PermissionPayload) => ({
@@ -181,6 +183,7 @@ export const xRolePermissionAssociation = new db3.xTable({
         return RolePermissionArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: RolePermissionNaturalOrderBy,
     getRowInfo: (row: RolePermissionAssociationPayload) => ({
         name: row.permission.name,
@@ -229,6 +232,7 @@ export const xRole = new db3.xTable({
         return RoleArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "role",
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
@@ -292,6 +296,7 @@ export const xUserInstrument = new db3.xTable({
         return UserInstrumentArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: UserInstrumentNaturalOrderBy,
     getRowInfo: (row: UserInstrumentPayload) => {
         return {
@@ -337,6 +342,7 @@ export const xUser = new db3.xTable({
         return UserArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "user",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({

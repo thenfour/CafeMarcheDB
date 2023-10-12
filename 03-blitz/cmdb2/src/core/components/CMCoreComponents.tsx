@@ -153,12 +153,14 @@ export const CMTagList = (props: CMTagListProps<TAnyModel>) => {
 // wraps <Dialog> except with mobile responsiveness
 export interface ReactiveInputDialogProps {
     onCancel: () => void;
+    className?: string;
 };
 export const ReactiveInputDialog = (props: React.PropsWithChildren<ReactiveInputDialogProps>) => {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     return (
         <Dialog
+            className={props.className}
             open={true}
             onClose={props.onCancel}
             scroll="paper"

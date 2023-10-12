@@ -10,6 +10,7 @@ import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
+import { SongArgs, SongPayload } from "./instrument";
 
 ////////////////////////////////////////////////////////////////
 const SongTagArgs = Prisma.validator<Prisma.SongTagArgs>()({
@@ -38,6 +39,7 @@ export const xSongTag = new db3.xTable({
         return SongTagArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songTag",
     naturalOrderBy: SongTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
@@ -105,6 +107,7 @@ export const xSongTagAssociation = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationInclude => {
         return SongTagAssociationArgs.include;
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
     getRowInfo: (row: SongTagAssociationPayload) => ({
@@ -127,18 +130,6 @@ export const xSongTagAssociation = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const SongArgs = Prisma.validator<Prisma.SongArgs>()({
-    include: {
-        visiblePermission: true,
-        tags: {
-            include: {
-                tag: true, // include foreign object
-            }
-        },
-    }
-});
-
-export type SongModel = Prisma.SongGetPayload<typeof SongArgs>;
 
 const SongNaturalOrderBy: Prisma.SongOrderByWithRelationInput[] = [
     { id: 'asc' },
@@ -152,8 +143,9 @@ export const xSong = new db3.xTable({
         return SongArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: SongNaturalOrderBy,
-    getRowInfo: (row: SongModel) => ({
+    getRowInfo: (row: SongPayload) => ({
         name: row.name,
         description: row.description,
     }),
@@ -244,7 +236,11 @@ const SongCommentArgs = Prisma.validator<Prisma.SongCommentArgs>()({
     include: {
         song: true,
         user: true,
-        visiblePermission: true,
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
     }
 });
 
@@ -262,6 +258,7 @@ export const xSongComment = new db3.xTable({
         return SongCommentArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songComment",
     naturalOrderBy: SongCommentNaturalOrderBy,
     getRowInfo: (row: SongCommentPayload) => ({
@@ -336,6 +333,7 @@ export const xSongCreditType = new db3.xTable({
         return SongCreditTypeArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songCreditType",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
@@ -395,6 +393,7 @@ export const xSongCredit = new db3.xTable({
         return SongCreditArgs.include;
     },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songCredit",
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({

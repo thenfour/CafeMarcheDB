@@ -38,10 +38,16 @@ export const GetStyleVariablesForColor = (color: ColorPaletteEntry | null | stri
         "--strong-contrast-color": entry.strongContrastColor,
         "--strong-border-color": entry.strongOutline ? entry.strongContrastColor : "#d8d8d8",
         "--strong-border-style": (color == null) ? "dotted" : (color.strongOutline ? "solid" : "hidden"),
+
         "--weak-color": entry.weakValue,
         "--weak-contrast-color": entry.weakContrastColor,
         "--weak-border-color": entry.weakOutline ? entry.weakContrastColor : "#d8d8d8",
         "--weak-border-style": (color == null) ? "dotted" : (color.weakOutline ? "solid" : "hidden"),
+
+        "--disabled-color": "#eee",
+        "--disabled-contrast-color": "#999",
+        "--disabled-border-color": "#999",
+        "--disabled-border-style": "solid",
     } as React.CSSProperties;
 }
 

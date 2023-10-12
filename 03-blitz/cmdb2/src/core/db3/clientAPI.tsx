@@ -6,13 +6,16 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TdeleteEventCommentArgs, TinsertEventCommentArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
+import { TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
 import insertEventComment from "./mutations/insertEventComment";
 import updateEventComment from "./mutations/updateEventComment";
 import deleteEventComment from "./mutations/deleteEventComment";
+import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
+import deleteEventSongList from "./mutations/deleteEventSongList";
+import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 
 
 export interface APIQueryArgs {
@@ -64,6 +67,13 @@ export interface EventMinMaxAttendeesResult {
     maxAttendees: number | null;
 }
 
+export interface SongListStats {
+    songCount: number;
+    durationSeconds: number;
+    songsOfUnknownDuration: number; // true if the duration excludes songs which have unknown duration
+    // credits?
+    // tags?
+};
 
 class UsersAPI {
     // returns an instrument payload, or null if the user has no instruments.
@@ -101,6 +111,13 @@ class EventsAPI {
 
     getEventSegmentFormattedDateRange(segment: db3.EventSegmentPayloadFromEvent) {
         return "daterangehere";
+    }
+
+    getEventSegmentDateInfo(segment: db3.EventSegmentPayloadFromEvent) {
+        return db3.getDateRangeInfo({
+            startsAt: segment.startsAt,
+            endsAt: segment.endsAt,
+        });
     }
 
     getEventInfoForUser(args: { event: db3.EventPayloadClient, user: db3.UserPayload }) {
@@ -173,12 +190,38 @@ class EventsAPI {
         return db3.getInstrumentForEventSegmentUserResponse(response, user);
     }
 
+    getSongListStats = (songList: db3.EventSongListPayload): SongListStats => {
+        console.assert(songList.songs);
+        const initialValue: SongListStats = {
+            durationSeconds: 0,
+            songsOfUnknownDuration: 0,
+            songCount: 0,
+        };
+        // filter out "new" items which have no song specified yet.
+        return songList.songs.filter(s => !!s.songId).reduce((acc, song) => {
+            console.assert(!!song.song); // make sure the payload contains
+            const ret = acc;
+            if (song.song.lengthSeconds == null) {
+                ret.songsOfUnknownDuration++;
+            } else {
+                ret.durationSeconds += song.song.lengthSeconds;
+            }
+            ret.songCount++;
+            return ret;
+        }, initialValue);
+    };
+
     updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
     updateEventBasicFields = CreateAPIMutationFunction<TupdateEventBasicFieldsArgs, typeof updateEventBasicFields>(updateEventBasicFields);
 
     insertEventCommentMutation = CreateAPIMutationFunction<TinsertEventCommentArgs, typeof insertEventComment>(insertEventComment);
     deleteEventCommentMutation = CreateAPIMutationFunction<TdeleteEventCommentArgs, typeof deleteEventComment>(deleteEventComment);
     updateEventCommentMutation = CreateAPIMutationFunction<TupdateEventCommentArgs, typeof updateEventComment>(updateEventComment);
+
+    // lol consistent naming
+    insertEventSongListx = CreateAPIMutationFunction<TinsertOrUpdateEventSongListArgs, typeof insertEventSongListMutation>(insertEventSongListMutation);
+    deleteEventSongListx = CreateAPIMutationFunction<TGeneralDeleteArgs, typeof deleteEventSongList>(deleteEventSongList);
+    updateEventSongListx = CreateAPIMutationFunction<TinsertOrUpdateEventSongListArgs, typeof updateEventSongListMutation>(updateEventSongListMutation);
 };
 
 class SongsAPI {

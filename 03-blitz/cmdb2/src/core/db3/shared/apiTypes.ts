@@ -46,8 +46,51 @@ export interface TupdateEventCommentArgs {
     // updated at = automatic
 };
 
+export type TGeneralDeleteArgs = {
+    id: number;
+};
+
 export interface TdeleteEventCommentArgs {
     id: number;
 };
 
 
+
+
+/*
+model EventSongList {
+  id          Int    @id @default(autoincrement())
+  sortOrder   Int    @default(0)
+  name        String
+  description String @default("")
+  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
+  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
+  eventId Int
+}
+
+model EventSongListSong {
+  id        Int     @id @default(autoincrement())
+  subtitle  String? // could be a small comment like "short version"
+  sortOrder Int     @default(0)
+  songId Int
+  eventSongListId Int
+}
+*/
+
+export interface TinsertOrUpdateEventSongListSong {
+    id?: number;
+    // don't rely on array ordering because it's shuffled etc during the change plan computation
+    sortOrder: number;
+    songId: number;
+    subtitle: string;
+};
+
+export interface TinsertOrUpdateEventSongListArgs {
+    id?: number; // for insertion, this is not used / specified.
+    name: string;
+    description: string;
+    visiblePermissionId: number | null;
+    eventId: number;
+    sortOrder: number;
+    songs: TinsertOrUpdateEventSongListSong[];
+};

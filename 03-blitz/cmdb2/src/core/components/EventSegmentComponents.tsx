@@ -131,7 +131,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 export interface EventSegmentPanelProps {
     event: db3.EventPayloadClient,
     segmentInfo: db3.SegmentAndResponse,
-    //tableClient: DB3Client.xTableRenderClient;
+    verbosity: EventDetailVerbosity;
     myEventInfo: db3.EventInfoForUser,
     refetch: () => void;
 };
@@ -172,11 +172,11 @@ export const EventSegmentPanel = ({ event, myEventInfo, refetch, ...props }: Eve
         <div className='name'>name: {props.segmentInfo.segment.name}</div>
         <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segmentInfo.segment)}</div>
 
-        <div className="attendanceResponseInput">
+        {(props.verbosity !== 'compact') && <div className="attendanceResponseInput">
             <div className="segmentList">
                 <EventAttendanceFrame onRefetch={refetch} segmentInfo={props.segmentInfo} eventUserInfo={myEventInfo} event={event} />
             </div>
-        </div>
+        </div>}
 
         {/* <div className='description'>description: {props.segmentInfo.segment.description}</div> */}
         {editOpen && (<EventSegmentEditDialog
@@ -203,7 +203,7 @@ export const SegmentList = ({ event, myEventInfo, tableClient, verbosity, ...pro
         <div className="segmentList">
             {event.segments.map(segment => {
                 const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
-                return <EventSegmentPanel key={segment.id} segmentInfo={segInfo} myEventInfo={myEventInfo} event={event} refetch={tableClient.refetch} />;
+                return <EventSegmentPanel key={segment.id} segmentInfo={segInfo} myEventInfo={myEventInfo} event={event} refetch={tableClient.refetch} verbosity={verbosity} />;
             })}
         </div>
         <NewEventSegmentButton event={event} refetch={tableClient.refetch} />

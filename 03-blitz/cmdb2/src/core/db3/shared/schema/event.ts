@@ -10,7 +10,7 @@ import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
-import { InstrumentArgs, InstrumentPayload, UserArgs, UserPayload, getUserPrimaryInstrument, xInstrument } from "./instrument";
+import { InstrumentArgs, InstrumentPayload, SongArgs, UserArgs, UserPayload, getUserPrimaryInstrument, xInstrument } from "./instrument";
 
 /*
 
@@ -59,14 +59,14 @@ export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWit
 const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
         event: true,
-        visiblePermission: true,
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
         songs: {
             include: {
-                song: {
-                    include: {
-                        visiblePermission: true,
-                    },
-                }
+                song: SongArgs,
             }
         }
     },
@@ -83,7 +83,7 @@ export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelatio
 ////////////////////////////////////////////////////////////////
 const EventSongListSongArgs = Prisma.validator<Prisma.EventSongListSongArgs>()({
     include: {
-        song: true,
+        song: SongArgs,
     }
 });
 
@@ -201,6 +201,7 @@ export const xEventType = new db3.xTable({
         // this is necessary because this field is not listed in the schema columns.
         db3.ApplyIncludeFilteringToRelation(include, "events", "eventType", xEvent, clientIntention);
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventType",
     naturalOrderBy: EventTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
@@ -275,6 +276,7 @@ export const xEventStatus = new db3.xTable({
         // this is necessary because this field is not listed in the schema columns.
         db3.ApplyIncludeFilteringToRelation(include, "events", "eventStatus", xEvent, clientIntention);
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventStatus",
     naturalOrderBy: EventStatusNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
@@ -335,6 +337,7 @@ export const xEventTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagInclude => {
         return EventTagArgs.include;
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventTag",
     naturalOrderBy: EventTagNaturalOrderBy,
@@ -387,6 +390,7 @@ export const xEventTagAssignment = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentInclude => {
         return EventTagAssignmentArgs.include;
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getRowInfo: (row: EventTagAssignmentPayload) => {
         return {
@@ -420,13 +424,21 @@ export const xEventTagAssignment = new db3.xTable({
 export type EventPayloadMinimum = Prisma.EventGetPayload<{}>;
 export type EventPayloadWithVisiblePermission = Prisma.EventGetPayload<{
     include: {
-        visiblePermission: true,
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
     }
 }>;
 
 const EventArgs = Prisma.validator<Prisma.EventArgs>()({
     include: {
-        visiblePermission: true,
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
         createdByUser: true,
         status: true,
         tags: {
@@ -473,13 +485,14 @@ export interface DateRange {
     endsAt: Date | null,
 }
 
+// formats a single date; date must be valid.
 function formatDate(date: Date): string {
     const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
     return date.toLocaleDateString(undefined, options);
 }
 
 
-function getDateRangeInfo(dateRange: DateRange): DateRangeInfo {
+export function getDateRangeInfo(dateRange: DateRange): DateRangeInfo {
     if (!dateRange.startsAt) {
         if (!dateRange.endsAt) {
             return { formattedDateRange: "Date TBD", formattedYear: "TBD" };
@@ -584,6 +597,7 @@ const xEventArgs_Base: db3.TableDesc = {
         db3.ApplyIncludeFilteringToRelation(include, "segments", "event", xEventSegment, clientIntention);
         db3.ApplyIncludeFilteringToRelation(include, "songLists", "event", xEventSongList, clientIntention);
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
         name: row.name,
@@ -770,6 +784,7 @@ export const xEventSegment = new db3.xTable({
         name: row.name,
         description: row.description,
     }),
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSegmentWhereInput[] | false) => {
         if (params.eventId != null) {
             return [{
@@ -822,6 +837,7 @@ export const xEventComment = new db3.xTable({
     getRowInfo: (row: EventCommentPayload) => ({
         name: "<not supported>",
     }),
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         const ret: Prisma.EventCommentWhereInput[] = [];
         if (params.eventId != null) {
@@ -897,6 +913,7 @@ export const xEventAttendance = new db3.xTable({
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
     }),
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getParameterizedWhereClause: (params, clientIntention): Prisma.EventTypeWhereInput[] => {
         if (clientIntention.intention === "user") {
             return [{
@@ -931,6 +948,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentUserResponseInclude => {
         return EventSegmentUserResponseArgs.include;
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventSegmentUserResponse",
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
@@ -996,6 +1014,10 @@ export const xEventSongList = new db3.xTable({
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         db3.ApplyIncludeFilteringToRelation(include, "songs", "eventSongList", xEventSongListSong, clientIntention);
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        // because we don't have the "songs" column in the list, for new objects we should seed it manually with an empty array.
+        obj.songs = [];
+    },
     tableName: "eventSongList",
     naturalOrderBy: EventSongListNaturalOrderBy,
     getRowInfo: (row: EventSongListPayload) => ({
@@ -1046,6 +1068,7 @@ export const xEventSongListSong = new db3.xTable({
     applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         //db3.ApplyIncludeFilteringToRelation(include, "song", "eventSongListSong", xSong, clientIntention);
     },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "eventSongListSong",
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     getRowInfo: (row: EventSongListSongPayload) => ({

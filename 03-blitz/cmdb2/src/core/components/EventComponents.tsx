@@ -1,4 +1,18 @@
+// TODO:
+// attendance responses & new events.
+// what happens when you create a new event? originally i thought the event creator would explicitly have buttons like "invite all active members"
+// but i think that's not cool; better to have automatic logic which is sensible.
+//
+// so by default, no attendance is created. treat all active members as invited, and no EventSegmentAttendanceUserResponse is needed.
+// that's like expectAttendance being NULL.
 // 
+// on one hand i don't like the idea of adding more complexity with a 3rd expectAttendance state.
+// because just "add/remove users" wouldn't be enough; theoretically there should be a 3rd option to "use default"
+// which is ultra confusing. or can we unify them somehow? like, on the attendees list, by default show active members,
+// and only if you remove them explicitly we mark it FALSE. otherwise NULL is fine.
+// and then TRUE is only necessary for non-active members.
+// so an "add" dialog is necessary to show all users who aren't there already.
+
 
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
@@ -20,10 +34,11 @@ import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
 import { CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
-import { EventAttendanceFrame, EventAttendanceSummary } from './EventAttendanceComponents';
+import { EventAttendanceSummary } from './EventAttendanceComponents';
 import { EventCommentTabContent } from './EventCommentComponents';
+import { SegmentList } from './EventSegmentComponents';
 import { MutationMarkdownControl } from './SettingMarkdown';
-import { EventSegmentPanel, NewSegmentButton, SegmentList } from './EventSegmentComponents';
+import { EventSongListTabContent } from './EventSongListComponents';
 
 ////////////////////////////////////////////////////////////////
 // TODO: generic big status
@@ -188,78 +203,6 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
 
 
 ////////////////////////////////////////////////////////////////
-type SongListPayload = ArrayElement<db3.EventClientPayload_Verbose['songLists']>;
-type SongListSongPayload = ArrayElement<SongListPayload['songs']>;
-
-export interface SongListSongProps {
-    event: db3.EventClientPayload_Verbose;
-    tableClient: DB3Client.xTableRenderClient;
-    songList: ArrayElement<db3.EventClientPayload_Verbose['songLists']>;
-    song: SongListSongPayload,
-    index: number,
-};
-
-export const SongListSong = ({ event, tableClient, songList, song, index }: SongListSongProps) => {
-    return <tr>
-        <td>{index + 1 /** one-based */}</td>
-        <td><a href={API.songs.getURIForSong(song.song)}>{song.song.name}</a></td>
-        <td>{song.subtitle}</td>
-        <td>{song.song.startBPM}-{song.song.endBPM} BPM</td>
-        <td>{song.song.lengthSeconds}</td>
-    </tr>;
-};
-
-
-
-////////////////////////////////////////////////////////////////
-export interface EventSongListDetailProps {
-    event: db3.EventClientPayload_Verbose;
-    tableClient: DB3Client.xTableRenderClient;
-    songList: SongListPayload;
-};
-
-////////////////////////////////////////////////////////////////
-export const SongListSummary = ({ event, tableClient, songList }: EventSongListDetailProps) => {
-    const totalSeconds = songList.songs.reduce((acc, song) => acc + (song.song.lengthSeconds || 0), 0);
-    return <tr>
-        <td>{songList.songs.length} songs</td>
-        <td></td>
-        <td></td>
-        <td></td>
-        <td>{totalSeconds} total seconds</td>
-    </tr>;
-};
-
-////////////////////////////////////////////////////////////////
-export const EventSongListDetail = ({ event, tableClient, songList }: EventSongListDetailProps) => {
-    return <>
-        <div className='caption'>{songList.name} {gIconMap.Edit()}</div>
-        <div className='description'>{songList.description}</div>
-        <table className='songListTable'>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Song</th>
-                    <th>Comment</th>
-                    <th>BPM</th>
-                    <th>Length</th>
-                </tr>
-            </thead>
-            <tbody>
-                {songList.songs.map((song, index) => <SongListSong key={song.id} index={index} event={event} tableClient={tableClient} songList={songList} song={song} />)}
-            </tbody>
-            <tfoot>
-                <SongListSummary event={event} tableClient={tableClient} songList={songList} />
-            </tfoot>
-        </table>
-    </>;
-
-};
-
-
-
-
-////////////////////////////////////////////////////////////////
 // tag list with ability to edit
 // see also OwnInstrumentsControl
 interface EventTagsControlProps {
@@ -307,7 +250,7 @@ export interface EventAttendanceDetailRowProps {
 
 export const EventAttendanceDetailRow = ({ userResponse }: EventAttendanceDetailRowProps) => {
     return <tr>
-        <td>{userResponse.user.name}</td>
+        <td>{userResponse.user.name}{userResponse.user.isActive ? " (active)" : ""} {gIconMap.Delete()}</td>
         {userResponse.segments.map(segment => {
             return <React.Fragment key={segment.segment.id}>
                 <td>{!!segment.response.attendance ? segment.response.attendance.text : "--"}</td>
@@ -331,6 +274,7 @@ export const EventAttendanceDetail = ({ event, tableClient }: EventAttendanceDet
     const segAttendees = API.events.getAttendeeCountPerSegment({ event });
 
     return <>
+        <div>todo: sortable columns</div>
         <table className='attendanceDetailTable'>
             <thead>
                 <tr>
@@ -349,7 +293,7 @@ export const EventAttendanceDetail = ({ event, tableClient }: EventAttendanceDet
             </tbody>
             <tfoot>
                 <tr>
-                    <td></td>
+                    <td><Button>{gIconMap.Add()} Add users</Button></td>
                     {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
                         <td>{seg.attendeeCount}</td>
                         <td>{/*Instrument*/}</td>
@@ -730,10 +674,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
                 </CustomTabPanel>
 
                 <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
-                    {
-                        event.songLists.map(songList => <EventSongListDetail key={songList.id} event={event} tableClient={tableClient} songList={songList} />)
-                    }
-                    <Button startIcon={gIconMap.Add()}>Add song list</Button>
+                    <EventSongListTabContent event={event} tableClient={tableClient} />
                 </CustomTabPanel>
 
                 <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>

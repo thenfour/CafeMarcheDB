@@ -77,7 +77,7 @@ export const EventCommentValueEditor = (props: EventCommentValueEditorProps) => 
         <VisibilityControl value={value.visiblePermission} onChange={(newVisiblePermission) => {
             const newValue: db3.EventCommentPayload = { ...value, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
             setValue(newValue);
-        }} />;
+        }} />
 
         <MarkdownEditor value={value.text} onValueChanged={(newText) => {
             const newValue: db3.EventCommentPayload = { ...value, text: newText };

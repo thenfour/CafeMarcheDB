@@ -6,6 +6,12 @@ import db from "db"
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
 
+let gUniqueNegativeID = -1;
+
+export function getUniqueNegativeID() {
+    return gUniqueNegativeID--;
+}
+
 // CHANGES /////////////////////////////////////////////////////////////////////////////////////////////////////////
 export enum ChangeAction {
     insert = "insert",
@@ -348,6 +354,7 @@ export const clamp01 = (x) => {
 export const gIconOptions = {
     Add: "Add",
     AddCircleOutline: "AddCircleOutline",
+    AttachFile: "AttachFile",
     CalendarMonth: "CalendarMonth",
     Campaign: "Campaign",
     Cancel: "Cancel",
@@ -365,11 +372,14 @@ export const gIconOptions = {
     GraphicEq: "GraphicEq",
     Group: "Group",
     Groups: "Groups",
+    // do not use drag handle; users will never need it. use "☰" instead.
     HighlightOff: "HighlightOff",
     Help: "Help",
     Home: "Home",
     Info: "Info",
+    Launch: "Launch",
     LibraryMusic: "LibraryMusic",
+    Link: "Link",
     Mic: "Mic",
     More: "More",
     MusicNote: "MusicNote",
