@@ -20,6 +20,8 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
+////////////////////////////////////////////////////////////////
+
 // a white surface elevated from the gray base background, allowing vertical content.
 // meant to be the ONLY surface
 export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren) => {
@@ -49,10 +51,12 @@ export interface CMChipProps {
     selected?: boolean;
     disabled?: boolean;
     size?: CMChipSizeOptions;
+    className?: string;
 
     onDelete?: () => void;
     onClick?: () => void;
 };
+
 
 export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
     const style = GetStyleVariablesForColor(props.color);
@@ -71,6 +75,9 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
         (props.onClick || props.onDelete) ? "interactable" : "noninteractable",
         //applyColorClass,
     ];
+    if (props.className) {
+        wrapperClasses.push(props.className);
+    }
 
     const chipClasses: string[] = [
         "chipMain",
@@ -90,31 +97,59 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
     </div>;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const CMChipContainer = (props: React.PropsWithChildren<{}>) => {
     return <div className="CMChipContainer">{props.children}</div>
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMStandardDBChipModel {
     color?: null | string | ColorPaletteEntry;
     iconName?: string | null;
     text?: string | null;
 }
 
-export interface CMStandardDBChipProps {
-    model: CMStandardDBChipModel;
+export interface CMStandardDBChipProps<T> {
+    model: T;
+    getText?: (value: any) => string; // override the text getter
     variant?: ColorVariationOptions;
     size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
 };
 
-export const CMStandardDBChip = (props: CMStandardDBChipProps) => {
+export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
     return <CMChip
         color={props.model.color}
         variant={props.variant}
         size={props.size}
+        onClick={props.onClick}
+        className={props.className}
     >
-        {RenderMuiIcon(props.model.iconName)}{props.model.text}
+        {RenderMuiIcon(props.model.iconName)}{props.getText ? props.getText(props.model) : props.model.text}
     </CMChip>;
 };
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const CMStatusIndicator = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
+    return <CMStandardDBChip {...props} className="CMStatusIndicator" />;
+};
+
+
+
+// export const CMStatusIndicator = (props: React.PropsWithChildren<CMStatusIndicatorProps>) => {
+//     const style = GetStyleVariablesForColor(props.type?.color);
+//     return <div className='eventTypeValue' style={style}>
+//         {RenderMuiIcon(props.type?.iconName)}
+//         {props.type == null ? "--" :
+//             props.type.text}
+//     </div>;
+// };
+
+
+
 
 // big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
 export interface CMBigChipProps {
@@ -387,8 +422,8 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
                 return <li {...chprops}>
                     <VisibilityValue permission={value} /></li>;
             }}
-            renderValue={(value: db3.PermissionPayload | null, onDelete) => {
-                return <VisibilityValue permission={value} />;
+            renderValue={(args) => {
+                return <VisibilityValue permission={args.value} />;
             }}
             onChange={props.onChange}
         />

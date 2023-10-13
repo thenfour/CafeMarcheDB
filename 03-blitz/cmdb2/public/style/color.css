@@ -63,6 +63,9 @@
     background-color: var(--strong-color);
     color: var(--strong-contrast-color);
     border: 1px var(--strong-border-style) var(--strong-contrast-color);
+
+    transition: color var(--color-transition-duration);
+    transition: background-color var(--color-transition-duration);
 }
 
 .applyColor-strong-notselected-disabled,
@@ -77,7 +80,10 @@
     background-color: var(--strong-color);
     color: var(--strong-contrast-color);
     border: 1px var(--strong-border-style) var(--strong-contrast-color);
-    box-shadow: inset 0 0 4px var(--strong-contrast-color);
+    /* box-shadow: inset 0 0 4px var(--strong-contrast-color); */
+
+    transition: color var(--color-transition-duration);
+    transition: background-color var(--color-transition-duration);
 }
 
 .applyColor-strong-selected-disabled,
@@ -92,14 +98,24 @@
 .interactable .applyColor-weak-notselected-enabled:hover,
 .interactable.applyColor-strong-notselected-enabled:hover,
 .interactable.applyColor-weak-notselected-enabled:hover {
-    box-shadow: inset 0 0 6px var(--strong-contrast-color);
+    /* box-shadow: inset 0 0 6px var(--strong-contrast-color); */
+    /* border: 1px solid black; */
+    background-color: rgb(88, 110, 162);
+    color: #fff;
+    transition: color var(--color-transition-duration);
+    transition: background-color var(--color-transition-duration);
 }
 
 .interactable .applyColor-strong-selected-enabled:hover,
 .interactable .applyColor-weak-selected-enabled:hover,
 .interactable.applyColor-strong-selected-enabled:hover,
 .interactable.applyColor-weak-selected-enabled:hover {
-    box-shadow: inset 0 0 6px var(--strong-contrast-color);
+    /* box-shadow: inset 0 0 6px var(--strong-contrast-color); */
+    /* border: 1px solid black; */
+    background-color: rgb(88, 110, 162);
+    color: #fff;
+    transition: color var(--color-transition-duration);
+    transition: background-color var(--color-transition-duration);
 }
 
 

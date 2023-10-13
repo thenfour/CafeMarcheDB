@@ -32,7 +32,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import { CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
+import { CMStatusIndicator, CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceSummary } from './EventAttendanceComponents';
@@ -213,14 +213,14 @@ interface EventTagsControlProps {
 
 export const EventTagsControl = ({ event, tableClient }: EventTagsControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const validationResult = tableClient.schema.ValidateAndComputeDiff(event, event, "update");
+    //const validationResult = tableClient.schema.ValidateAndComputeDiff(event, event, "update");
     return (<>
-        <InspectObject src={event} tooltip='event row' />
+        {/* <InspectObject src={event} tooltip='event row' /> */}
         {tableClient.getColumn("tags").renderForNewDialog!({
             key: event.id,
             row: event,
             value: event.tags,
-            validationResult,
+            //validationResult,
             api: {
                 setFieldValues: (updatedFields) => {
                     const updateObj = {
@@ -354,16 +354,13 @@ export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTyp
 
 
 
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventTypeValue = ({ type }: { type: db3.EventTypePayload | null }) => {
-    const style = GetStyleVariablesForColor(type?.color);
-    return <div className='eventTypeValue' style={style}>
-        {RenderMuiIcon(type?.iconName)}
-        {type == null ? "--" :
-            type.text}
-    </div>;
+export interface EventTypeValueProps {
+    onClick?: () => void;
+    type: db3.EventTypePayload | null;
+};
+export const EventTypeValue = (props: EventTypeValueProps) => {
+    return !props.type ? (<Button>Set event type</Button>) : (<CMStatusIndicator model={props.type} onClick={props.onClick} />);
 };
 
 export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
@@ -392,9 +389,7 @@ export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePaylo
             isEqual={(a: db3.EventTypePayload, b: db3.EventTypePayload) => a.id === b.id}
             items={typesClient.items}
             readOnly={false} // todo!
-            validationError={null}
             selectDialogTitle='select dialog title here'
-            selectButtonLabel='select button'
             value={event.type}
             renderDialogDescription={() => {
                 return <>dialog description heree</>;
@@ -403,8 +398,8 @@ export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePaylo
                 return <li {...chprops}>
                     <EventTypeValue type={value} /></li>;
             }}
-            renderValue={(value: db3.EventTypePayload | null, onDelete) => {
-                return <EventTypeValue type={value} />;
+            renderValue={(args) => {
+                return <EventTypeValue type={args.value} onClick={args.handleEnterEdit} />;
             }}
             onChange={handleChange}
         />
@@ -419,14 +414,12 @@ type EventWithStatusPayload = Prisma.EventGetPayload<{
     }
 }>;
 
-// todo: format like: {/* <CMEventBigStatus event={event} /> */}
-export const EventStatusValue = ({ value }: { value: db3.EventStatusPayload | null }) => {
-    const style = GetStyleVariablesForColor(value?.color);
-    return <div className='eventStatusValue' style={style}>
-        {RenderMuiIcon(value?.iconName as any)}
-        {value == null ? "--" :
-            value.label}
-    </div>;
+export interface EventStatusValueProps {
+    onClick?: () => void;
+    status: db3.EventStatusPayload | null;
+};
+export const EventStatusValue = (props: EventStatusValueProps) => {
+    return !props.status ? (<Button>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o.label} />);
 };
 
 export const EventStatusControl = ({ event, refetch }: { event: EventWithStatusPayload, refetch: () => void }) => {
@@ -455,19 +448,19 @@ export const EventStatusControl = ({ event, refetch }: { event: EventWithStatusP
             isEqual={(a: db3.EventStatusPayload, b: db3.EventStatusPayload) => a.id === b.id}
             items={statusesClient.items}
             readOnly={false} // todo!
-            validationError={null}
+            //validationError={null}
             selectDialogTitle='select dialog title here'
-            selectButtonLabel='select button'
+            //selectButtonLabel='select button'
             value={event.status}
             renderDialogDescription={() => {
                 return <>dialog description heree</>;
             }}
             renderAsListItem={(chprops, value: db3.EventStatusPayload | null, selected: boolean) => {
                 return <li {...chprops}>
-                    <EventStatusValue value={value} /></li>;
+                    <EventStatusValue status={value} /></li>;
             }}
-            renderValue={(value: db3.EventStatusPayload | null, onDelete) => {
-                return <EventStatusValue value={value} />;
+            renderValue={(args) => {
+                return <EventStatusValue status={args.value} onClick={args.handleEnterEdit} />;
             }}
             onChange={handleChange}
         />
@@ -649,6 +642,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
         <Suspense>
             <EventVisibilityControl event={event} refetch={tableClient.refetch} />
         </Suspense>
+        <EventSoftDeleteControl event={event} refetch={tableClient.refetch} />
 
         <div className="infoLine">
             <div className="date smallInfoBox">
@@ -663,7 +657,6 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             <EventTitleControl event={event} refetch={tableClient.refetch} eventURI={eventURI} />
             <EventTypeControl event={event} refetch={tableClient.refetch} />
             <EventStatusControl event={event} refetch={tableClient.refetch} />
-            <EventSoftDeleteControl event={event} refetch={tableClient.refetch} />
         </div>
 
         <div className="tagsLine">
@@ -683,7 +676,12 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
         {verbosity === 'verbose' && (
             <>
-                <Tabs value={selectedTab} onChange={handleTabChange}>
+                <Tabs
+                    value={selectedTab}
+                    onChange={handleTabChange}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                >
                     <Tab label="Event Info" {...TabA11yProps('event', 0)} />
                     <Tab label={`Comments (${event.comments.length})`} {...TabA11yProps('event', 1)} />
                     <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 2)} />

@@ -378,6 +378,8 @@ or,
     height: 10px;
     width: 200px; */
     flex-wrap: wrap;
+    /* right-justify makes them look nicer when wrapping + comment*/
+    justify-content: flex-end;
 }
 
 .songListSongTable .td.comment .cmdbSimpleInput {
@@ -421,4 +423,10 @@ li.songDropdownOption {
 
 .EventSongListValueEditor .MuiDialog-paper {
     max-width: 1200px;
+}
+
+
+.CMChip.CMStatusIndicator,
+.CMChip.CMStatusIndicator .chipMain {
+    border-radius: 2px;
 }

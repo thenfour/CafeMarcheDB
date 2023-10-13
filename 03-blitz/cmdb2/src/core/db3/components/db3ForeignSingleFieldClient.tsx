@@ -31,7 +31,7 @@ export interface ForeignSingleFieldInputProps<TForeign> {
     foreignSpec: ForeignSingleFieldClient<TForeign>;
     value: TForeign | null;
     onChange: (value: TForeign | null) => void;
-    validationError: string | null;
+    validationError?: string | null;
     readOnly: boolean;
     clientIntention: db3.xTableClientUsageContext,
 };
@@ -52,7 +52,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
         }),
     });
 
-    return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
+    return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
         {chip}
         <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.label}</Button>
         {isOpen && <SelectSingleForeignDialog
@@ -221,13 +221,15 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             }
         }
 
+        const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
+
         return <React.Fragment key={params.key}>
             {/* <InputLabel>{this.schemaColumn.label}</InputLabel> */}
             <ForeignSingleFieldInput
                 foreignSpec={this}
                 readOnly={!!this.fixedValue}
                 clientIntention={this.args.clientIntention}
-                validationError={params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null}
+                validationError={validationValue}
                 value={value}
                 onChange={(newValue: TForeign | null) => {
                     params.api.setFieldValues({

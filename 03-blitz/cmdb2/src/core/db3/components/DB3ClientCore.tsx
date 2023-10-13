@@ -36,7 +36,7 @@ export interface RenderForNewItemDialogArgs {
     key: any;
     row: TAnyModel; // row
     value: unknown;
-    validationResult: db3.ValidateAndComputeDiffResult;
+    validationResult?: db3.ValidateAndComputeDiffResult;
     api: NewDialogAPI,
 };
 

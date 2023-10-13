@@ -210,7 +210,7 @@ export interface TagsFieldInputProps<TAssociation> {
 
     // for creating new associations
     row: TAnyModel;
-    validationError: string | null;
+    validationError?: string | null;
 };
 
 // general use "edit cell" for tags
@@ -221,7 +221,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         setOldValue(props.value);
     }, []);
 
-    return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
+    return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
         {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
             value,
             colorVariant: "strong",
@@ -408,9 +408,10 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
     };
 
     renderForNewDialog = (params: DB3Client.RenderForNewItemDialogArgs) => {
+        const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
         return <TagsFieldInput
             spec={this}
-            validationError={params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null}
+            validationError={validationValue}
             row={params.row as TAnyModel}
             value={params.value as TAssociation[]}
             onChange={(value: TAssociation[]) => {

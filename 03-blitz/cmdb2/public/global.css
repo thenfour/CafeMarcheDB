@@ -4,6 +4,8 @@
   --primary-color: red;
 
   --subtle-elevation: 2px 2px 5px 2px rgba(0, 0, 0, 0.2);
+
+  --color-transition-duration: .3s;
 }
 
 a,
@@ -580,17 +582,17 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 .contentSection .infoLine {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
   /* margin-bottom: 12px; */
 }
 
 .contentSection .titleText {
-  font-size: 28px;
+  font-size: 34px;
   font-weight: bold;
-  margin-right: 20px;
   color: var(--primary-color);
   text-transform: uppercase;
+  margin: 3px 0px;
 }
 
 .contentSection.rehearsal .titleText {

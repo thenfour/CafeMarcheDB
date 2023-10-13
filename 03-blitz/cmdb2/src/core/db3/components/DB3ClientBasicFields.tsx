@@ -93,7 +93,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             key={params.key}
             autoFocus={false}
             label={this.headerName}
-            validationError={params.validationResult.getErrorForField(this.columnName)}
+            validationError={params.validationResult && params.validationResult.getErrorForField(this.columnName)}
             value={params.value as string}
             onChange={(e, val) => {
                 params.api.setFieldValues({ [this.columnName]: val });
@@ -149,7 +149,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
             key={params.key}
             autoFocus={false}
             label={this.headerName}
-            validationError={null} // don't show validation errors for fields you can't edit.
+            //validationError={null} // don't show validation errors for fields you can't edit.
             //validationError={vr.errorMessage || null}
             value={vr.parsedValue as string}
             onChange={(e, val) => {
@@ -208,7 +208,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
             key={params.key}
             autoFocus={false}
             label={this.headerName}
-            validationError={params.validationResult.getErrorForField(this.columnName)}
+            validationError={params.validationResult && params.validationResult.getErrorForField(this.columnName)}
             value={params.value as string}
             onChange={(e, val) => {
                 params.api.setFieldValues({ [this.columnName]: val });
@@ -260,7 +260,7 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
             key={params.key}
             autoFocus={false}
             label={this.headerName}
-            validationError={params.validationResult.getErrorForField(this.columnName)}
+            validationError={params.validationResult && params.validationResult.getErrorForField(this.columnName)}
             value={params.value as string}
             onChange={(e, val) => {
                 // so this sets the row model value to a string. that's OK because the value gets parsed later.
@@ -416,7 +416,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             <InputLabel>{this.schemaColumn.label}</InputLabel>
             <Select
                 value={value}
-                error={!!params.validationResult.hasErrorForField(this.schemaColumn.member)}
+                error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}
                 onChange={e => {
                     let userInputValue: (string | null) = e.target.value as string;
                     if (userInputValue === gNullValue) {
@@ -471,7 +471,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
             <InputLabel>{this.schemaColumn.label}</InputLabel>
             <Select
                 value={value}
-                error={!!params.validationResult.hasErrorForField(this.schemaColumn.member)}
+                error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}
                 onChange={e => {
                     let userInputValue: (string | null) = e.target.value as string;
                     if (userInputValue === gNullValue) {

@@ -152,8 +152,8 @@ export function IconEditCell(props: ChooseIconDialogProps) {
                 {selected && <CloseIcon />}
             </li>;
         }}
-        renderValue={(value, onDelete) => {
-            return <>{RenderMuiIcon(value)}</>;
+        renderValue={(args) => {
+            return <>{RenderMuiIcon(args.value)}</>;
         }}
     />;
 }

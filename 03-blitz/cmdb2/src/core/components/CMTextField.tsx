@@ -24,7 +24,7 @@ import { GetStyleVariablesForColor } from "./Color";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface CMTextFieldProps {
-    validationError: string | null;
+    validationError?: string | null;
     label?: string;
     value: string | null;
     onChange: (e, value) => void;

@@ -12,6 +12,13 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
 
 
+
+export interface ChoiceEditCellRenderValueArgs {
+    value: any;
+    onDelete: (undefined | (() => void)); // allows the renderer to add a delete function
+    handleEnterEdit?: () => void; // allows renderer to handle clicks to edit the value.
+};
+
 export interface ChooseItemDialogProps {
     value: any | null;
     onOK: (value: any | null) => void;
@@ -22,7 +29,7 @@ export interface ChooseItemDialogProps {
 
     // how to treat items of unknown type...
     isEqual: (a: any, b: any) => boolean; // non-null values. null values are compared internally.
-    renderValue: (value: any, onDelete: (undefined | (() => void))) => React.ReactElement;
+    renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactElement;
     renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: any, selected: boolean) => React.ReactElement;
     items: any[];
 };
@@ -62,7 +69,10 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
             <DialogTitle>
                 {props.title}
                 <Box sx={{ p: 0 }}>
-                    Selected: {props.renderValue(selectedObj || null, () => { setSelectedObj(null) })}
+                    Selected: {props.renderValue({
+                        value: selectedObj || null,
+                        onDelete: () => setSelectedObj(null)
+                    })}
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
@@ -101,24 +111,23 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
 }
 
 
-
 export interface ChoiceEditCellProps {
     value: any | null;
     onChange: (value: any | null) => void;
-    validationError: string | null;
+    validationError?: string | null;
     readOnly: boolean;
-    selectButtonLabel: string;
+    selectButtonLabel?: string; // if behavior includes extra button this is needed. if not specified then the button won't be rendered.
 
     selectDialogTitle: string;
     renderDialogDescription: () => React.ReactElement; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     isEqual: (a: any, b: any) => boolean;
-    renderValue: (value: any, onDelete: (undefined | (() => void))) => React.ReactElement;
+    renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactElement;
     renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: any, selected: boolean) => React.ReactElement;
     items: any[];
 };
 
-// general use "edit cell" for foreign single values
+// general use "edit cell" for foreign single values.
 export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [oldValue, setOldValue] = React.useState<any | null>();
@@ -126,13 +135,17 @@ export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
         setOldValue(props.value);
     }, []);
 
-    const chip = props.renderValue(props.value, props.readOnly ? undefined : (() => {
-        props.onChange(null);
-    }));
+    const renderedValue = props.renderValue({
+        value: props.value,
+        onDelete: props.readOnly ? undefined : (() => {
+            props.onChange(null);
+        }),
+        handleEnterEdit: () => { setIsOpen(!isOpen) },
+    });
 
-    return <div className={props.validationError ? "chipContainer validationError" : "chipContainer validationSuccess"}>
-        {chip}
-        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>
+    return <div className={`ChoiceEditCell ${(props.validationError === undefined) ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
+        {renderedValue}
+        {props.selectButtonLabel && <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>}
         {isOpen && <ChooseItemDialog
             closeOnSelect={true}
             value={props.value}
