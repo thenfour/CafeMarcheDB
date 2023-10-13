@@ -30,6 +30,7 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
 });
 
 export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
+export type SongPayloadMinimum = Prisma.SongGetPayload<{}>;
 
 
 ////////////////////////////////////////////////////////////////

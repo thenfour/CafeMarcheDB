@@ -235,6 +235,23 @@ class SongsAPI {
         return `/backstage/song/${songOrIdOrSlug}`;
     }
 
+    getFormattedBPM(song: db3.SongPayloadMinimum) {
+        if (!song.startBPM) {
+            if (!song.endBPM) {
+                return "";// neither specified
+            }
+            return `⇢${song.endBPM}`; // only end bpm
+        }
+        if (!song.endBPM) {
+            return `${song.startBPM}⇢`; // only start bpm
+        }
+        // both specified 
+        if ((song.startBPM | 0) === (song.endBPM | 0)) {
+            return `${song.startBPM}`; // both BPMs the same: just show 1.
+        }
+        return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
+    }
+
 };
 
 export const API = {

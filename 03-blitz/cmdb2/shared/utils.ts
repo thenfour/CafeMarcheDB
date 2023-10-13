@@ -447,3 +447,38 @@ export function isEmptyArray(obj: any) {
     if (!Array.isArray(obj)) return false;
     return 0 === ((obj as any[]).length);
 }
+
+export function formatSongLength(seconds: number): string {
+    if (isNaN(seconds) || seconds < 0) {
+        return "Invalid duration";
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    const formattedMinutes = String(minutes).padStart(2, '0');
+    const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+
+    return `${formattedMinutes}:${formattedSeconds}`;
+}
+
+export function moveItemInArray<T>(array: T[], oldIndex: number, newIndex: number): T[] {
+    if (oldIndex === newIndex) {
+        return array; // No need to move if oldIndex and newIndex are the same
+    }
+
+    if (oldIndex < 0 || oldIndex >= array.length || newIndex < 0 || newIndex >= array.length) {
+        throw new Error("Invalid oldIndex or newIndex");
+    }
+
+    const itemToMove = array[oldIndex]!;
+    const newArray = [...array]; // Create a copy of the original array
+
+    // Remove the item from the old position
+    newArray.splice(oldIndex, 1);
+
+    // Insert the item at the new position
+    newArray.splice(newIndex, 0, itemToMove);
+
+    return newArray;
+}

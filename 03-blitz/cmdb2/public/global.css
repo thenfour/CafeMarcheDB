@@ -795,9 +795,6 @@ table {
   margin: 8px 6px;
 }
 
-table tr {}
-
-table th {}
 
 table td {
   background-color: #0000000c;
@@ -811,8 +808,8 @@ table td {
   /* when there are no rows, there's a "nothing to show" overlay, but with our row height auto, it will result in a 1px-height area. this allows the overlay to show.*/
 }
 
-
-.comment {
+/* todo:  this is no good */
+.pleasebemorespecific .comment {
   border: 1px solid black;
   padding: 7px;
   margin: 7px;

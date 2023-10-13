@@ -74,6 +74,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
                 const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
                 return <CMTextField
                     key={params.key}
+                    className={`columnName-${this.columnName}`}
                     autoFocus={params.hasFocus}
                     label={this.headerName}
                     validationError={vr.success ? null : (vr.errorMessage || null)}
@@ -88,6 +89,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <CMTextField
+            className={`columnName-${this.columnName}`}
             key={params.key}
             autoFocus={false}
             label={this.headerName}

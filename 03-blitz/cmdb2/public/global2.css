@@ -186,6 +186,13 @@ html,
     cursor: grabbing;
 }
 
+
+.EventSongListValueEditor .columnName-name input {
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
 /* 
 this is for use of <InputBase /> as simple text fields. <TextField /> is too bulky sometimes.
 in the case of using within Autocomplete, I can't specify my own class names to the InputBase itself. i have to use a wrapper.
@@ -200,34 +207,159 @@ or,
 <input class="cmdbSimpleInput">
 
 */
-.cmdbSimpleInputWrapper .MuiInputBase-input,
-.cmdbSimpleInput {
+/* 
+.cmdbSimpleInputWrapper .MuiInputBase-input .cmdbSimpleInput {
     border-radius: 3px;
     margin: 1px;
     padding: 1px;
-    border: 1px solid #0003;
+    border: 1px solid #0001;
 }
 
 .cmdbSimpleInputWrapper .MuiInputBase-input:focus,
-.cmdbSimpleInput:focus {
+.cmdbSimpleInputWrapper .MuiInputBase-input:active {
     border: 1px solid black;
-}
+} */
+
 
 
 .songListSongTable {
     width: 1000px;
+    /* for small windows this makes it smaller so it doesn't overflow the screen. */
+    max-width: 100%;
 }
 
-.songListSongTable td.dragHandle {
+.songListSongTable .th {
+    font-weight: bold;
+    /* background-color: #0001; */
+    color: #0005;
+    border-bottom: 1px solid #0003;
+    /* font-style: italic; */
+}
+
+.songListSongTable .td,
+.songListSongTable .th {
+    display: flex;
+    justify-content: center;
+}
+
+.songListSongTable .td:hover {
+    background-color: #8881;
+}
+
+.songListSongTable .td.dragHandle,
+.songListSongTable .th.dragHandle {
     user-select: none;
-    width: 1px;
+    width: 30px;
 }
 
-.songListSongTable td.minContent {
-    /* strange, but this will ensure a min-content fit. */
-    width: 1px;
+.songListSongTable .td.songIndex,
+.songListSongTable .th.songIndex {
+    width: 30px;
 }
 
+.songListSongTable .td.songIndex {
+    font-family: monospace;
+}
+
+.songListSongTable .td.icon,
+.songListSongTable .th.icon {
+    width: 30px;
+}
+
+.songListSongTable .tr.invalidItem .td.songIndex,
+.songListSongTable .tr.invalidItem .td.dragHandle,
+.songListSongTable .tr.invalidItem .td.icon {
+    color: #0002;
+}
+
+.songListSongTable .td.icon {
+    color: #0005;
+}
+
+.songListSongTable .td.icon svg {
+    height: 20px;
+}
+
+.songListSongTable .td.songName,
+.songListSongTable .th.songName {
+    /* flex-grow: 1; */
+    width: 350px;
+}
+
+.songListSongTable .td.songName .cmdbSimpleInput {
+    font-weight: bold;
+    padding: 0;
+}
+
+.songListSongTable .td.length,
+.songListSongTable .th.length {
+    width: 80px;
+}
+
+.songListSongTable .td.length {
+    font-family: monospace;
+}
+
+.songListSongTable .td.tempo,
+.songListSongTable .th.tempo {
+    width: 80px;
+}
+
+.songListSongTable .td.tempo {
+    font-family: monospace;
+}
+
+.songListSongTable .td.comment,
+.songListSongTable .th.comment {
+    flex-grow: 1;
+    min-width: 150px;
+}
+
+.songListSongTable .td.comment {
+    font-style: italic;
+    color: #0008;
+}
+
+.songListSongTable .td.comment .cmdbSimpleInput {
+    width: 100%;
+}
+
+.songListSongTable .td.comment input::placeholder {
+    color: #0005;
+    font-size: 12px;
+}
+
+.songListSongTable .td.comment:hover input::placeholder {
+    color: #000;
+    font-size: 12px;
+}
+
+.songListSongTable .tr {
+    display: flex;
+    /* interacts with the max-width:100% of the table to allow the comments field to wrap to the next line*/
+    flex-wrap: wrap;
+}
+
+.songListSongTable .thead .tr {}
+
+
+.songListSongTable .tbody .tr {
+    /* makes icons and things center vertically within cells; looks cleaner */
+    align-items: center;
+}
+
+
+.songListSongTable .td,
+.songListSongTable .th {
+    display: flex;
+    white-space: nowrap;
+}
+
+
+/* autocomplete dropdown for songs */
+li.songDropdownOption {
+    white-space: nowrap;
+}
 
 .freeButton {
     cursor: pointer;

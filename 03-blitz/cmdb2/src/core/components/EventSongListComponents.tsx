@@ -15,7 +15,8 @@ import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, I
 import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
 
 import { CMTextField } from "./CMTextField";
-import { TAnyModel, getUniqueNegativeID } from "shared/utils";
+import { TAnyModel, formatSongLength, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { Container, Draggable, DropResult } from "react-smooth-dnd";
 
 /*
 similar to other tab contents structures (see also EventSegmentComponents, EventCommentComponents...)
@@ -76,12 +77,12 @@ interface EventSongListValueViewerRowProps {
 };
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
 
-    const formattedBPM = (!!props.value.song?.startBPM && !!props.value.song?.startBPM) ? `${props.value.song?.startBPM || ""}⇢${props.value.song?.endBPM || ""}` : "";
+    const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
     return <tr>
-        <td className="minContent songIndex">{props.index}</td>
+        <td className="minContent songIndex">{props.index + 1} id:{props.value.id} so:{props.value.sortOrder}</td>
         <td>{props.value.song.name}</td>
-        <td className="minContent length">{props.value.song && props.value.song.lengthSeconds}</td>
+        <td className="minContent length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</td>
         <td className="minContent tempo" >{formattedBPM}</td>
         <td>{props.value.subtitle}</td>
     </tr>;
@@ -102,7 +103,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         <VisibilityValue permission={props.value.visiblePermission} />
         <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
 
-        {stats.songCount} songs, length seconds: {stats.durationSeconds}
+        {stats.songCount} songs, length seconds: {formatSongLength(stats.durationSeconds)}
         {stats.songsOfUnknownDuration > 0 && <div>with {stats.songsOfUnknownDuration} songs of unknown length</div>}
         <table className="songListSongTable">
             <thead>
@@ -164,7 +165,7 @@ export const SongAutocomplete = (props: SongAutocompleteProps) => {
         value={props.value}
         onChange={(event, value) => props.onChange(value)}
 
-        fullWidth={true}// at least for table cells this makes sense.
+        fullWidth={true}
         // open={open}
         // onClose={() => setOpen(false)} // always close when user requests it.
         // onOpen={(event) => {
@@ -187,7 +188,7 @@ export const SongAutocomplete = (props: SongAutocompleteProps) => {
 
         isOptionEqualToValue={(option, value) => option.id === value.id}
         renderOption={(props, option, state) => {
-            return <li {...props}>{option.name}</li>;
+            return <li className="songDropdownOption" {...props}>{option.name}</li>;
         }}
         renderInput={(params: AutocompleteRenderInputParams) => {
             // using autocomplete with InputBase: https://stackoverflow.com/questions/64609126/how-do-i-use-autocomplete-component-of-material-ui-with-inputbase
@@ -232,26 +233,35 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         props.onChange(props.value);
     };
 
-    const formattedBPM = (!!props.value.song?.startBPM && !!props.value.song?.startBPM) ? `${props.value.song?.startBPM || ""}⇢${props.value.song?.endBPM || ""}` : "";
+    const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
-    return <tr>
-        <td className="minContent dragHandle draggable">☰ <InspectObject src={props.value} tooltip="snth" /></td>
-        <td className="minContent songIndex">{props.index}</td>
-        <td className="minContent icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</td>
-        <td><SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} /></td>
-        <td className="minContent length">{props.value.song && props.value.song.lengthSeconds}</td>
-        <td className="minContent tempo">{formattedBPM}</td>
-        <td>
-            <InputBase
-                className="cmdbSimpleInput"
-                // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
-                onMouseDownCapture={(e) => e.stopPropagation()}
-                value={props.value.subtitle}
-                onChange={(e) => handleCommentChange(e.target.value)}
-            />
-        </td>
-    </tr>;
+    return <>
+        <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
+            <div className="td dragHandle draggable">☰
+                {/* <InspectObject src={props.value} tooltip="snth" /> */}
+            </div>
+            <div className="td songIndex">{props.index + 1}
+                {/* id:{props.value.id} so:{props.value.sortOrder} */}
+            </div>
+            <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div>
+            <div className="td songName"><SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} /></div>
+            <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
+            <div className="td tempo">{formattedBPM}</div>
+            {/* </div>
+        <div className="tr"> */}
+            <div className="td comment">
+                <InputBase
+                    className="cmdbSimpleInput"
+                    placeholder="Comment"
+                    // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
+                    // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
+                    onMouseDownCapture={(e) => e.stopPropagation()}
+                    value={props.value.subtitle}
+                    onChange={(e) => handleCommentChange(e.target.value)}
+                />
+            </div>
+        </div>
+    </>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -271,14 +281,16 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         // make sure there is at least 1 "new" item.
         if (!list.some(s => !s.songId)) {
             const id = getUniqueNegativeID(); // make sure all objects have IDs, for tracking changes
-            console.log(`adding a new row id ${id}`);
+            //console.log(`adding a new row id ${id}`);
+            const sortOrders = list.map(song => song.sortOrder);
+            const newSortOrder = 1 + Math.max(...sortOrders);
             list.push({
                 // create a new association model
                 eventSongListId: props.initialValue.id,
                 id,
                 song: null,
                 songId: null,
-                sortOrder: 0,
+                sortOrder: newSortOrder,
                 subtitle: "",
             });
         }
@@ -329,6 +341,16 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         setValue(n);
     };
 
+    const onDrop = (args: DropResult) => {
+        // removedIndex is the previous index; the original item to be moved
+        // addedIndex is the new index where it should be moved to.
+        if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+        //console.log(args);
+        value.songs = moveItemInArray(value.songs, args.removedIndex, args.addedIndex).map((song, index) => ({ ...song, sortOrder: index }));
+        setValue({ ...value });
+        //setItems(items => arrayMove(items, removedIndex, addedIndex));
+    };
+
     return <>
         <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
 
@@ -339,10 +361,10 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                 <DialogContentText>
                     description of song lists.
                 </DialogContentText>
-
+                {/* 
                 <InspectObject src={props.initialValue} tooltip="props.initialValue" />
                 <InspectObject src={initialValueCopy} tooltip="initialValueCopy" />
-                <InspectObject src={value} tooltip="value" />
+                <InspectObject src={value} tooltip="value" /> */}
 
                 {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
@@ -361,26 +383,41 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 ☰ 2. 🗑 Jet Begine____________   4:24       120 ||||  ____________________
    + ______________________ <-- autocomplete for new song search
 
+   drag & drop is not supported by HTML tables.
+   even though you can technically render the components (<container / draggable>) as table elements, dragging won't work.
+   we don't even get the dragstart/end/etc events.
+
+   best to stick to <div>s; fortunately:
+   - we have few columns and only the song title is really essential; others can be fixed width
+   - this grants us more reactive-friendly behaviors
+
                  */}
 
-                <table className="songListSongTable">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>#</th>
-                            <th>del</th>
-                            <th>song</th>
-                            <th>len</th>
-                            <th>tempo</th>
-                            <th>comment</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <div className="songListSongTable">
+                    <div className="thead">
+                        <div className="tr">
+                            <div className="th dragHandle"></div>
+                            <div className="th songIndex">#</div>
+                            <div className="th icon"></div>
+                            <div className="th songName">Song</div>
+                            <div className="th length">Length</div>
+                            <div className="th tempo">Tempo</div>
+                            <div className="th comment"></div>{/* don't show text here because when it wraps it looks awkward */}
+                        </div>
+                    </div>
+                    <Container
+                        dragHandleSelector=".dragHandle"
+                        lockAxis="y"
+                        onDrop={onDrop}
+                    >
                         {
-                            value.songs.map((s, index) => <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} />)
+                            value.songs.map((s, index) => <Draggable key={s.id}>
+                                <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} />
+                            </Draggable>
+                            )
                         }
-                    </tbody>
-                </table>
+                    </Container>
+                </div>
 
 
             </DialogContent>
@@ -390,9 +427,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
             </DialogActions>
 
         </ReactiveInputDialog>
-    </>
-
-        ;
+    </>;
 };
 
 

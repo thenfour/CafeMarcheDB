@@ -30,10 +30,11 @@ interface CMTextFieldProps {
     onChange: (e, value) => void;
     autoFocus: boolean;
     readOnly?: boolean;
+    className?: string;
 };
 
 // textfield for a string field on an object.
-export function CMTextField({ validationError, label, value, onChange, autoFocus, readOnly }: CMTextFieldProps) {
+export function CMTextField({ validationError, label, value, onChange, autoFocus, readOnly, ...props }: CMTextFieldProps) {
     return (
         <TextField
             //key={key}
@@ -47,6 +48,7 @@ export function CMTextField({ validationError, label, value, onChange, autoFocus
             margin="dense"
             type="text"
             fullWidth
+            className={props.className}
             variant="filled"
             inputProps={{
                 'data-lpignore': true, // supposedly prevent lastpass from auto-completing. doesn't work for me tho
