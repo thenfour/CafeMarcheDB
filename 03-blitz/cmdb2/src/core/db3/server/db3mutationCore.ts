@@ -334,7 +334,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
 
     // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
     const desiredValues: TinsertOrUpdateEventSongListSong[] = args.desiredValues.map((a, index) => ({
-        id: a.id || -index, // negative index would be a unique value for temp purposes
+        id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
         songId: a.songId,
         sortOrder: a.sortOrder,
         subtitle: a.subtitle || "",
@@ -342,7 +342,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
 
     // get current associations to the local / parent item (eventsonglistid)
     const currentAssociationsRaw: Prisma.EventSongListSongGetPayload<{}>[] = await db.eventSongListSong.findMany({
-        where: { id: args.songListID },
+        where: { eventSongListId: args.songListID },
     });
 
     // in order to make the change plan, unify the types into the kind that's passed in args
@@ -356,7 +356,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     // computes which associations need to be created, deleted, and which may need to be updated
     const cp = ComputeChangePlan(
         currentAssociations,
-        args.desiredValues, // ORDER matters; we assume 'b' is the desired.
+        desiredValues, // ORDER matters; we assume 'b' is the desired.
         (a, b) => a.id === b.id, // all should have unique numeric IDs. could assert that.
     );
 

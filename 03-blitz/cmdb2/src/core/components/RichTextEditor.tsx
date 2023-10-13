@@ -28,7 +28,9 @@ import { useDebounce } from "shared/useDebounce";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const Markdown = (props: { markdown: string | null }) => {
     const md = new MarkdownIt;
-    return <div className='renderedContent'>
+    if (props.markdown == null) return <></>;
+    if (props.markdown.trim().length < 1) return <></>;
+    return <div className='markdown renderedContent'>
         <div dangerouslySetInnerHTML={{ __html: md.render(props.markdown || "") }}></div>
     </div >;
 };

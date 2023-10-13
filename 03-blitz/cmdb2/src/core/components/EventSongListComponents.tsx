@@ -82,14 +82,6 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
     const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
-    // return <tr>
-    //     <td className="minContent songIndex">{props.index + 1} id:{props.value.id} so:{props.value.sortOrder}</td>
-    //     <td>{props.value.song.name}</td>
-    //     <td className="minContent length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</td>
-    //     <td className="minContent tempo" >{formattedBPM}</td>
-    //     <td>{props.value.subtitle}</td>
-    // </tr>;
-
     return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
         <div className="td songIndex">{props.index + 1}
             {/* id:{props.value.id} so:{props.value.sortOrder} */}
@@ -118,6 +110,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
 
         <div className="columnName-name">{props.value.name}</div>
+
+        <Markdown markdown={props.value.description} />
 
         <div className="songListSongTable">
             <div className="thead">
@@ -299,9 +293,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         // make sure there is at least 1 "new" item.
         if (!list.some(s => !s.songId)) {
             const id = getUniqueNegativeID(); // make sure all objects have IDs, for tracking changes
-            //console.log(`adding a new row id ${id}`);
             const sortOrders = list.map(song => song.sortOrder);
-            const newSortOrder = 1 + Math.max(...sortOrders);
+            const newSortOrder = 1 + Math.max(0, ...sortOrders);
             list.push({
                 // create a new association model
                 eventSongListId: props.initialValue.id,
@@ -314,8 +307,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         }
     };
 
-    // make sure the caller's object doesn't get modified. esp. create a copy of the songs array so we can manipulate it.
-    const initialValueCopy = { ...props.initialValue, songs: [...props.initialValue.songs] };
+    // make sure the caller's object doesn't get modified. esp. create a copy of the songs array so we can manipulate it. any refs we modify should not leak outside of this component.
+    const initialValueCopy = { ...props.initialValue, songs: [...props.initialValue.songs.map(s => ({ ...s }))] };
     ensureHasNewRow(initialValueCopy.songs);
 
     const [value, setValue] = React.useState<db3.EventSongListPayload>(initialValueCopy);
@@ -325,6 +318,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
         ],
     });
 
@@ -394,6 +388,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     }} />
 
                     {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name })}
+                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description })}
 
                     {/*
           TITLE                  DURATION    BPM      Comment
@@ -535,6 +530,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
         currentUser: currentUser!,
     };
     const initialValue = db3.xEventSongList.createNew(clientIntention) as db3.EventSongListPayload;
+    initialValue.name = `Set ${props.event.songLists.length + 1}`;
 
     const handleSave = (value: db3.EventSongListPayload) => {
         insertMutation.invoke({
