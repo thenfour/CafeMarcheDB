@@ -12,7 +12,7 @@ import { API, APIQueryResult } from '../db3/clientAPI';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { EditTextField, InspectObject, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
+import { CMChip, CMChipContainer, CMStandardDBChip, CMTagList, EditTextField, InspectObject, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, InputBase, TextField } from "@mui/material";
 import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
@@ -86,10 +86,20 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         <div className="td songIndex">{props.index + 1}
             {/* id:{props.value.id} so:{props.value.sortOrder} */}
         </div>
-        <div className="td songName">{props.value.song.name}</div>
+        <div className="td songName">
+            {props.value.song.name}
+        </div>
         <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
         <div className="td tempo">{formattedBPM}</div>
-        <div className="td comment">{props.value.subtitle}</div>
+        <div className="td comment">
+            <div className="comment">{props.value.subtitle}</div>
+            {/* <div className="CMChipContainer comment2"></div> */}
+            {props.value.song.tags.length > 0 && (
+                <CMChipContainer>
+                    {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variant="weak" />)}
+                </CMChipContainer>
+            )}
+        </div>
     </div>
 
 };
@@ -109,7 +119,9 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         <VisibilityValue permission={props.value.visiblePermission} />
         <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
 
-        <div className="columnName-name">{props.value.name}</div>
+        <div className="columnName-name">
+            {props.value.name}
+        </div>
 
         <Markdown markdown={props.value.description} />
 
@@ -256,21 +268,30 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 {/* id:{props.value.id} so:{props.value.sortOrder} */}
             </div>
             <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div>
-            <div className="td songName"><SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} /></div>
+            <div className="td songName">
+                <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} />
+            </div>
             <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
             <div className="td tempo">{formattedBPM}</div>
             {/* </div>
         <div className="tr"> */}
             <div className="td comment">
-                <InputBase
-                    className="cmdbSimpleInput"
-                    placeholder="Comment"
-                    // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                    // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
-                    onMouseDownCapture={(e) => e.stopPropagation()}
-                    value={props.value.subtitle}
-                    onChange={(e) => handleCommentChange(e.target.value)}
-                />
+                <div className="comment">
+                    <InputBase
+                        className="cmdbSimpleInput"
+                        placeholder="Comment"
+                        // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
+                        // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
+                        onMouseDownCapture={(e) => e.stopPropagation()}
+                        value={props.value.subtitle}
+                        onChange={(e) => handleCommentChange(e.target.value)}
+                    />
+                </div>
+                {props.value.song && props.value.song.tags.length > 0 && (
+                    <CMChipContainer>
+                        {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variant="weak" size="small" />)}
+                    </CMChipContainer>
+                )}
             </div>
         </div>
     </>;

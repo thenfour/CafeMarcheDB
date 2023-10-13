@@ -148,6 +148,9 @@ html,
     overflow: hidden;
     white-space: nowrap;
     display: flex;
+    /* override parent styles*/
+    font-weight: normal;
+    font-style: normal;
 }
 
 .CMChip.selected {
@@ -235,19 +238,38 @@ or,
     border-bottom: 1px solid #ccc;
 }
 
+
+.songListSongTable .tr {
+    display: flex;
+    /*
+     interacts with the max-width:100% of the table to allow the comments field to wrap to the next line
+     actually this is very ugly; cannot make wrapping cells to look nice. better to make cells wrap internally like the tag list
+    */
+    /* flex-wrap: wrap; */
+}
+
+.songListSongTable .tbody .tr {
+    /* makes icons and things center vertically within cells; looks cleaner */
+    align-items: center;
+}
+
+
+.songListSongTable .td,
+.songListSongTable .th {
+    display: flex;
+    justify-content: center;
+    white-space: nowrap;
+    margin: 2px 0;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .songListSongTable .th {
     font-weight: bold;
     /* background-color: #0001; */
     color: #0005;
     border-bottom: 1px solid #0003;
     /* font-style: italic; */
-}
-
-.songListSongTable .td,
-.songListSongTable .th {
-    display: flex;
-    justify-content: center;
-    margin: 2px 0;
 }
 
 .songListSongTable .td:hover {
@@ -291,7 +313,7 @@ or,
 .songListSongTable .td.songName,
 .songListSongTable .th.songName {
     /* flex-grow: 1; */
-    width: 350px;
+    width: 420px;
     display: flex;
     justify-content: flex-start;
     font-weight: bold;
@@ -323,13 +345,29 @@ or,
 
 .songListSongTable .td.comment,
 .songListSongTable .th.comment {
+    display: flex;
     flex-grow: 1;
-    min-width: 150px;
 }
 
 .songListSongTable .td.comment {
     font-style: italic;
     color: #0008;
+    font-style: italic;
+    /* allow tag lists to wrap*/
+    flex-wrap: wrap;
+    /* so long as the comment is nowrap, then this works fine to keep things on 1 line when possible.*/
+    width: min-content;
+}
+
+.songListSongTable .td.comment div.comment {
+    /* when no tags, the comment container will fill the cell.*/
+    flex-grow: 1;
+}
+
+.songListSongTable .td.comment .CMChipContainer {
+    /* background-color: blue;
+    height: 10px;
+    width: 200px; */
 }
 
 .songListSongTable .td.comment .cmdbSimpleInput {
@@ -344,27 +382,6 @@ or,
 .songListSongTable .td.comment:hover input::placeholder {
     color: #000;
     font-size: 12px;
-}
-
-.songListSongTable .tr {
-    display: flex;
-    /* interacts with the max-width:100% of the table to allow the comments field to wrap to the next line*/
-    flex-wrap: wrap;
-}
-
-.songListSongTable .thead .tr {}
-
-
-.songListSongTable .tbody .tr {
-    /* makes icons and things center vertically within cells; looks cleaner */
-    align-items: center;
-}
-
-
-.songListSongTable .td,
-.songListSongTable .th {
-    display: flex;
-    white-space: nowrap;
 }
 
 

@@ -259,13 +259,14 @@ model SongCredit {
 }
 
 model SongTag {
-  id           Int                  @id @default(autoincrement())
-  text         String
-  description  String               @default("")
-  color        String?
-  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  sortOrder    Int                  @default(0)
-  songs        SongTagAssociation[]
+  id              Int                  @id @default(autoincrement())
+  text            String
+  description     String               @default("")
+  color           String?
+  significance    String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  showOnSongLists Boolean              @default(false)
+  sortOrder       Int                  @default(0)
+  songs           SongTagAssociation[]
 }
 
 model SongTagAssociation {

@@ -41,12 +41,14 @@ export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren) => {
 // - faded main / contrast, for disabled/enabled
 // - for selected, something else? maybe we're OK as is
 
+export type CMChipSizeOptions = "small" | "big";
+
 export interface CMChipProps {
     color?: ColorPaletteEntry | string | null;
     variant?: ColorVariationOptions;
     selected?: boolean;
     disabled?: boolean;
-    size?: "small" | "big";
+    size?: CMChipSizeOptions;
 
     onDelete?: () => void;
     onClick?: () => void;
@@ -91,6 +93,28 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 export const CMChipContainer = (props: React.PropsWithChildren<{}>) => {
     return <div className="CMChipContainer">{props.children}</div>
 }
+
+export interface CMStandardDBChipModel {
+    color?: null | string | ColorPaletteEntry;
+    iconName?: string | null;
+    text?: string | null;
+}
+
+export interface CMStandardDBChipProps {
+    model: CMStandardDBChipModel;
+    variant?: ColorVariationOptions;
+    size?: CMChipSizeOptions;
+};
+
+export const CMStandardDBChip = (props: CMStandardDBChipProps) => {
+    return <CMChip
+        color={props.model.color}
+        variant={props.variant}
+        size={props.size}
+    >
+        {RenderMuiIcon(props.model.iconName)}{props.model.text}
+    </CMChip>;
+};
 
 // big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
 export interface CMBigChipProps {

@@ -88,13 +88,17 @@
     /* box-shadow: inset 0 0 4px var(--disabled-contrast-color); */
 }
 
-.applyColor-strong-notselected-enabled:hover,
-.applyColor-weak-notselected-enabled:hover {
+.interactable .applyColor-strong-notselected-enabled:hover,
+.interactable .applyColor-weak-notselected-enabled:hover,
+.interactable.applyColor-strong-notselected-enabled:hover,
+.interactable.applyColor-weak-notselected-enabled:hover {
     box-shadow: inset 0 0 6px var(--strong-contrast-color);
 }
 
-.applyColor-strong-selected-enabled:hover,
-.applyColor-weak-selected-enabled:hover {
+.interactable .applyColor-strong-selected-enabled:hover,
+.interactable .applyColor-weak-selected-enabled:hover,
+.interactable.applyColor-strong-selected-enabled:hover,
+.interactable.applyColor-weak-selected-enabled:hover {
     box-shadow: inset 0 0 6px var(--strong-contrast-color);
 }
 
@@ -114,11 +118,13 @@
     box-shadow: inset 0 0 4px var(--weak-contrast-color);
 }
 
-.applyColor-weak-notselected-enabled:hover {
+.interactable .applyColor-weak-notselected-enabled:hover,
+.interactable.applyColor-weak-notselected-enabled:hover {
     box-shadow: inset 0 0 6px var(--weak-contrast-color);
 }
 
-.applyColor-weak-selected-enabled:hover {
+.interactable .applyColor-weak-selected-enabled:hover,
+.interactable.applyColor-weak-selected-enabled:hover {
     box-shadow: inset 0 0 6px var(--weak-contrast-color);
 }
 

@@ -19,6 +19,7 @@ const songTagsTableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
         new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 200 }),
+        new DB3Client.BoolColumnClient({ columnName: "showOnSongLists" }),
     ],
 });
 

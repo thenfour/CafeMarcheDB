@@ -79,6 +79,10 @@ export const xSongTag = new db3.xTable({
             defaultValue: null,
             options: SongTagSignificance,
         }),
+        new BoolField({
+            columnName: "showOnSongLists",
+            defaultValue: false,
+        }),
     ]
 });
 
