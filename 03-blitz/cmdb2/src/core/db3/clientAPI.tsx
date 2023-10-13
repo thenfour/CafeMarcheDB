@@ -125,13 +125,15 @@ class EventsAPI {
         return i;
     }
 
-    getURIForEvent(eventOrEventIdOrSlug: number | string | db3.EventPayloadMinimum) {
+    getURIForEvent(eventOrEventIdOrSlug: number | string | db3.EventPayloadMinimum, tabSlug?: string) {
+        const tabPart = tabSlug ? `/${tabSlug}` : "";
+
         if (typeof eventOrEventIdOrSlug === 'object') {
             if (eventOrEventIdOrSlug.slug) {
-                return `/backstage/event/${eventOrEventIdOrSlug.slug}`;
+                return `/backstage/event/${eventOrEventIdOrSlug.slug}${tabPart}`;
             }
         }
-        return `/backstage/event/${eventOrEventIdOrSlug}`;
+        return `/backstage/event/${eventOrEventIdOrSlug}${tabPart}`;
     }
 
     getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {

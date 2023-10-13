@@ -5,7 +5,7 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Breadcrumbs, Link, Typography } from "@mui/material";
 import HomeIcon from '@mui/icons-material/Home';
-import { EventBreadcrumbs, EventDetail } from "src/core/components/EventComponents";
+import { EventBreadcrumbs, EventDetail, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -14,7 +14,9 @@ import { Suspense } from "react";
 
 const MyComponent = () => {
     const params = useParams();
-    const idOrSlug = (params.idOrSlug as string) || "";
+    const [idOrSlug, tabIdOrSlug] = params.idOrSlug_tab as string[];
+
+    if (!idOrSlug) return <div>not found</div>;
 
     if (!useAuthorization(`event page: ${idOrSlug}`, Permission.view_events)) {
         throw new Error(`unauthorized`);
@@ -42,16 +44,22 @@ const MyComponent = () => {
         queryArgs.filterModel!.tableParams!.eventSlug = params.idOrSlug;
     }
 
+    let initialTabIndex: undefined | number = undefined;
+    if (tabIdOrSlug) {
+        if (IsEntirelyIntegral(tabIdOrSlug)) {
+            initialTabIndex = parseInt(tabIdOrSlug);
+        } else {
+            initialTabIndex = gEventDetailTabSlugIndices[tabIdOrSlug];
+        }
+    }
+
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
-
-    // console.log(tableClient.items);
-    // console.log(tableClient.remainingQueryResults);
 
     return <div>
         {event && <>
             <EventBreadcrumbs event={event} />
-            <EventDetail verbosity="verbose" event={event} tableClient={tableClient} />
+            <EventDetail verbosity="verbose" event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} allowRouterPush={true} />
         </>}
     </div>;
 };

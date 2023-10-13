@@ -1,6 +1,9 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
+// clipboard custom formats
+// https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
+
 import React, { FC, Suspense } from "react"
 import db, { Prisma } from "db";
 import * as db3 from "src/core/db3/db3";
@@ -79,13 +82,24 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
     const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
-    return <tr>
-        <td className="minContent songIndex">{props.index + 1} id:{props.value.id} so:{props.value.sortOrder}</td>
-        <td>{props.value.song.name}</td>
-        <td className="minContent length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</td>
-        <td className="minContent tempo" >{formattedBPM}</td>
-        <td>{props.value.subtitle}</td>
-    </tr>;
+    // return <tr>
+    //     <td className="minContent songIndex">{props.index + 1} id:{props.value.id} so:{props.value.sortOrder}</td>
+    //     <td>{props.value.song.name}</td>
+    //     <td className="minContent length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</td>
+    //     <td className="minContent tempo" >{formattedBPM}</td>
+    //     <td>{props.value.subtitle}</td>
+    // </tr>;
+
+    return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
+        <div className="td songIndex">{props.index + 1}
+            {/* id:{props.value.id} so:{props.value.sortOrder} */}
+        </div>
+        <div className="td songName">{props.value.song.name}</div>
+        <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
+        <div className="td tempo">{formattedBPM}</div>
+        <div className="td comment">{props.value.subtitle}</div>
+    </div>
+
 };
 
 
@@ -99,31 +113,35 @@ interface EventSongListValueViewerProps {
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     const [currentUser] = useCurrentUser();
     const stats = API.events.getSongListStats(props.value);
-    return <div className="EventSongList viewer">
+    return <div className="EventSongListValue EventSongListValueViewer">
         <VisibilityValue permission={props.value.visiblePermission} />
         <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
 
-        {stats.songCount} songs, length seconds: {formatSongLength(stats.durationSeconds)}
-        {stats.songsOfUnknownDuration > 0 && <div>with {stats.songsOfUnknownDuration} songs of unknown length</div>}
-        <table className="songListSongTable">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>song</th>
-                    <th>len</th>
-                    <th>tempo</th>
-                    <th>comment</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div className="columnName-name">{props.value.name}</div>
+
+        <div className="songListSongTable">
+            <div className="thead">
+                <div className="tr">
+                    <div className="th songIndex">#</div>
+                    <div className="th songName">Song</div>
+                    <div className="th length">Length</div>
+                    <div className="th tempo">Tempo</div>
+                    <div className="th comment"></div>{/* don't show text here because when it wraps it looks awkward */}
+                </div>
+            </div>
+
+            <div className="tbody">
                 {
                     props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} />)
                 }
-            </tbody>
-        </table>
 
+            </div>
+        </div>
 
-
+        <div className="stats">
+            {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
+            {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
+        </div>
     </div>;
 };
 
@@ -361,23 +379,23 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                 <DialogContentText>
                     description of song lists.
                 </DialogContentText>
-                {/* 
+
+                <div className="EventSongListValue">
+                    {/* 
                 <InspectObject src={props.initialValue} tooltip="props.initialValue" />
                 <InspectObject src={initialValueCopy} tooltip="initialValueCopy" />
                 <InspectObject src={value} tooltip="value" /> */}
 
-                {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
+                    {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
-                <VisibilityControl value={value.visiblePermission} onChange={(newVisiblePermission) => {
-                    const newValue: db3.EventSongListPayload = { ...value, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
-                    setValue(newValue);
-                }} />
+                    <VisibilityControl value={value.visiblePermission} onChange={(newVisiblePermission) => {
+                        const newValue: db3.EventSongListPayload = { ...value, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
+                        setValue(newValue);
+                    }} />
 
-                {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name })}
-                {stats.songCount} songs, length seconds: {stats.durationSeconds}
-                {stats.songsOfUnknownDuration > 0 && <div>with {stats.songsOfUnknownDuration} songs of unknown length</div>}
+                    {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name })}
 
-                {/*
+                    {/*
           TITLE                  DURATION    BPM      Comment
 ☰ 1. 🗑 Paper Spaceships______   3:54       104 |||   ____________________
 ☰ 2. 🗑 Jet Begine____________   4:24       120 ||||  ____________________
@@ -393,33 +411,37 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
                  */}
 
-                <div className="songListSongTable">
-                    <div className="thead">
-                        <div className="tr">
-                            <div className="th dragHandle"></div>
-                            <div className="th songIndex">#</div>
-                            <div className="th icon"></div>
-                            <div className="th songName">Song</div>
-                            <div className="th length">Length</div>
-                            <div className="th tempo">Tempo</div>
-                            <div className="th comment"></div>{/* don't show text here because when it wraps it looks awkward */}
+                    <div className="songListSongTable">
+                        <div className="thead">
+                            <div className="tr">
+                                <div className="th dragHandle"></div>
+                                <div className="th songIndex">#</div>
+                                <div className="th icon"></div>
+                                <div className="th songName">Song</div>
+                                <div className="th length">Length</div>
+                                <div className="th tempo">Tempo</div>
+                                <div className="th comment"></div>{/* don't show text here because when it wraps it looks awkward */}
+                            </div>
                         </div>
+                        <Container
+                            dragHandleSelector=".dragHandle"
+                            lockAxis="y"
+                            onDrop={onDrop}
+                        >
+                            {
+                                value.songs.map((s, index) => <Draggable key={s.id}>
+                                    <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} />
+                                </Draggable>
+                                )
+                            }
+                        </Container>
                     </div>
-                    <Container
-                        dragHandleSelector=".dragHandle"
-                        lockAxis="y"
-                        onDrop={onDrop}
-                    >
-                        {
-                            value.songs.map((s, index) => <Draggable key={s.id}>
-                                <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} />
-                            </Draggable>
-                            )
-                        }
-                    </Container>
+
+                    <div className="stats">
+                        {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
+                        {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
+                    </div>
                 </div>
-
-
             </DialogContent>
             <DialogActions>
                 <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
@@ -486,11 +508,10 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
         });
     };
 
-    return editMode ? (
-        <EventSongListValueEditor initialValue={props.value} onSave={handleSave} onDelete={handleDelete} onCancel={() => setEditMode(false)} rowMode="update" />
-    ) : (
+    return <>
+        {editMode && <EventSongListValueEditor initialValue={props.value} onSave={handleSave} onDelete={handleDelete} onCancel={() => setEditMode(false)} rowMode="update" />}
         <EventSongListValueViewer value={props.value} onEnterEditMode={() => setEditMode(true)} />
-    );
+    </>;
 };
 
 
@@ -551,11 +572,11 @@ export const EventSongListList = ({ event, tableClient }: { event: db3.EventClie
 export const EventSongListTabContent = ({ event, tableClient }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
     return <div className="EventSongListTabContent">
+        <EventSongListList event={event} tableClient={tableClient} />
         {newOpen && (
             <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); tableClient.refetch(); }} />
         )}
         <div className="addButtonContainer"><Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button></div>
-        <EventSongListList event={event} tableClient={tableClient} />
     </div>;
 };
 

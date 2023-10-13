@@ -565,6 +565,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   /* spacing is already provided by parent layout*/
   /* margin: 20px; */
   padding: 0px 20px;
+  padding-bottom: 20px;
   border-radius: 6px;
   background-color: white;
   margin-bottom: 40px;

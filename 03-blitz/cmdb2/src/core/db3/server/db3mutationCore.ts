@@ -236,7 +236,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
 
 
 // UPDATE ////////////////////////////////////////////////
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<boolean> => {
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<TAnyModel> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);

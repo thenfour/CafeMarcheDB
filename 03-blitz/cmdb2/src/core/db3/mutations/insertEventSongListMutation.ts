@@ -35,7 +35,7 @@ export default resolver.pipe(
         };
 
         // insert the song list
-        const changeContext = CreateChangeContext(`insertOrUpdateEventSongList`);
+        const changeContext = CreateChangeContext(`insertEventSongList`);
 
         const newObject = await mutationCore.insertImpl<Prisma.EventSongListGetPayload<{}>>(db3.xEventSongList, fields, ctx, clientIntention);
 

@@ -6,6 +6,7 @@ import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
+import { CreateChangeContext } from "shared/utils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -36,7 +37,11 @@ export default resolver.pipe(
             sortOrder: args.sortOrder,
         };
 
-        await mutationCore.updateImpl(db3.xEventSongList, args.id, fields, ctx, clientIntention);
+        const changeContext = CreateChangeContext(`updateEventSongList`);
+
+        const newObject = await mutationCore.updateImpl(db3.xEventSongList, args.id, fields, ctx, clientIntention);
+
+        await mutationCore.UpdateEventSongListSongs({ changeContext, ctx, songListID: newObject.id, desiredValues: args.songs });
 
         return args;// blitz is weird and wants the return type to be the same as the input type.
     }

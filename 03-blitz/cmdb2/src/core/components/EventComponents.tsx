@@ -19,6 +19,7 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import { useRouter } from "next/router";
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Card, CardActionArea, Link, Tab, Tabs } from "@mui/material";
@@ -507,7 +508,7 @@ export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPay
 
 
 ////////////////////////////////////////////////////////////////
-export const EventTitleControl = ({ event, refetch }: { event: EventWithStatusPayload, refetch: () => void }) => {
+export const EventTitleControl = ({ event, eventURI, refetch }: { event: EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
@@ -526,7 +527,7 @@ export const EventTitleControl = ({ event, refetch }: { event: EventWithStatusPa
     };
 
     return <div className="titleText">
-        <Link href={API.events.getURIForEvent(event)} className="titleLink">
+        <Link href={eventURI} className="titleLink">
             {event.name}
         </Link>
         <EditTextDialogButton
@@ -581,10 +582,28 @@ export const EventLocationControl = ({ event, refetch }: { event: EventWithStatu
 };
 
 
+export const gEventDetailTabSlugIndices = {
+    "info": 0,
+    "comments": 1,
+    "set-lists": 2,
+    "attendance": 3,
+    "completeness": 4,
+    "files": 5,
+} as const;
 
-export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, verbosity: EventDetailVerbosity }) => {
+
+export interface EventDetailArgs {
+    event: db3.EventClientPayload_Verbose;
+    tableClient: DB3Client.xTableRenderClient;
+    verbosity: EventDetailVerbosity;
+    initialTabIndex?: number;
+    allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
+}
+
+export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDetailArgs) => {
     const [user] = useCurrentUser()!;
     const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
+    const router = useRouter()
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -597,11 +616,21 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
         }),
     });
 
-    const [selectedTab, setSelectedTab] = React.useState<number>(0);
+    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
     };
+
+    // convert index to tab slug
+    const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
+    const eventURI = API.events.getURIForEvent(event, tabSlug);
+
+    React.useEffect(() => {
+        if (props.allowRouterPush) {
+            router.push(eventURI);
+        }
+    }, [eventURI]);
 
     const minMaxSegmentAttendees = API.events.getMinMaxAttendees({ event });
     let formattedAttendeeRange: string = "";
@@ -631,7 +660,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
         </div>
 
         <div className='titleLine'>
-            <EventTitleControl event={event} refetch={tableClient.refetch} />
+            <EventTitleControl event={event} refetch={tableClient.refetch} eventURI={eventURI} />
             <EventTypeControl event={event} refetch={tableClient.refetch} />
             <EventStatusControl event={event} refetch={tableClient.refetch} />
             <EventSoftDeleteControl event={event} refetch={tableClient.refetch} />
@@ -655,7 +684,7 @@ export const EventDetail = ({ event, tableClient, verbosity }: { event: db3.Even
         {verbosity === 'verbose' && (
             <>
                 <Tabs value={selectedTab} onChange={handleTabChange}>
-                    <Tab label="Info" {...TabA11yProps('event', 0)} />
+                    <Tab label="Event Info" {...TabA11yProps('event', 0)} />
                     <Tab label={`Comments (${event.comments.length})`} {...TabA11yProps('event', 1)} />
                     <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 2)} />
                     <Tab label={`Attendance ${formattedAttendeeRange}`} {...TabA11yProps('event', 3)} />

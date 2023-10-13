@@ -51,6 +51,11 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import MoreIcon from '@mui/icons-material/More';
 import LaunchIcon from '@mui/icons-material/Launch';
+import LockIcon from '@mui/icons-material/Lock';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -68,6 +73,9 @@ export const gIconMap /*: IIconMap*/ = {
     CheckCircleOutline: () => <CheckCircleOutlineIcon />,
     Close: () => <CloseIcon />,
     Comment: () => <CommentIcon />,
+    ContentCopy: () => <ContentCopyIcon />,
+    ContentCut: () => <ContentCutIcon />,
+    ContentPaste: () => <ContentPasteIcon />,
     Delete: () => <DeleteIcon />,
     Done: () => <DoneIcon />,
     Edit: () => <EditIcon />,
@@ -85,6 +93,7 @@ export const gIconMap /*: IIconMap*/ = {
     Launch: () => <LaunchIcon />,
     LibraryMusic: () => <LibraryMusicIcon />,
     Link: () => <LinkIcon />,
+    Lock: () => <LockIcon />,
     Mic: () => <MicIcon />,
     More: () => <MoreIcon />,
     MusicNote: () => <MusicNoteIcon />,
