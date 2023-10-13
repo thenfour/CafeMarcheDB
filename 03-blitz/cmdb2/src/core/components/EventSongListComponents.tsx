@@ -14,7 +14,7 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMStandardDBChip, CMTagList, EditTextField, InspectObject, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
-import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, InputBase, TextField } from "@mui/material";
+import { Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, TextField } from "@mui/material";
 import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
 
 import { CMTextField } from "./CMTextField";
@@ -77,6 +77,7 @@ model EventSongListSong {
 interface EventSongListValueViewerRowProps {
     index: number;
     value: db3.EventSongListSongPayload;
+    showTags: boolean;
 };
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
 
@@ -94,7 +95,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         <div className="td comment">
             <div className="comment">{props.value.subtitle}</div>
             {/* <div className="CMChipContainer comment2"></div> */}
-            {props.value.song.tags.length > 0 && (
+            {props.showTags && (props.value.song.tags.length > 0) && (
                 <CMChipContainer>
                     {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variant="weak" />)}
                 </CMChipContainer>
@@ -113,7 +114,9 @@ interface EventSongListValueViewerProps {
 };
 
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
-    const [currentUser] = useCurrentUser();
+    //const [currentUser] = useCurrentUser();
+    const [showTags, setShowTags] = React.useState<boolean>(false);
+
     const stats = API.events.getSongListStats(props.value);
     return <div className="EventSongListValue EventSongListValueViewer">
         <VisibilityValue permission={props.value.visiblePermission} />
@@ -132,13 +135,16 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                     <div className="th songName">Song</div>
                     <div className="th length">Length</div>
                     <div className="th tempo">Tempo</div>
-                    <div className="th comment"></div>{/* don't show text here because when it wraps it looks awkward */}
+                    <div className="th comment">
+                        Comment
+                        <FormControlLabel control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+                    </div>
                 </div>
             </div>
 
             <div className="tbody">
                 {
-                    props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} />)
+                    props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} showTags={showTags} />)
                 }
 
             </div>
@@ -241,6 +247,7 @@ export const SongAutocomplete = (props: SongAutocompleteProps) => {
 interface EventSongListValueEditorRowProps {
     index: number;
     value: db3.EventSongListSongPayload;
+    showTags: boolean;
     onChange: (newValue: db3.EventSongListSongPayload) => void;
     onDelete: () => void;
 };
@@ -287,7 +294,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                         onChange={(e) => handleCommentChange(e.target.value)}
                     />
                 </div>
-                {props.value.song && props.value.song.tags.length > 0 && (
+                {props.showTags && props.value.song && props.value.song.tags.length > 0 && (
                     <CMChipContainer>
                         {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variant="weak" size="small" />)}
                     </CMChipContainer>
@@ -327,6 +334,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
             });
         }
     };
+    const [showTags, setShowTags] = React.useState<boolean>(false);
 
     // make sure the caller's object doesn't get modified. esp. create a copy of the songs array so we can manipulate it. any refs we modify should not leak outside of this component.
     const initialValueCopy = { ...props.initialValue, songs: [...props.initialValue.songs.map(s => ({ ...s }))] };
@@ -436,7 +444,10 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                 <div className="th songName">Song</div>
                                 <div className="th length">Length</div>
                                 <div className="th tempo">Tempo</div>
-                                <div className="th comment"></div>{/* don't show text here because when it wraps it looks awkward */}
+                                <div className="th comment">
+                                    Comment
+                                    <FormControlLabel control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+                                </div>
                             </div>
                         </div>
                         <Container
@@ -446,7 +457,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                         >
                             {
                                 value.songs.map((s, index) => <Draggable key={s.id}>
-                                    <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} />
+                                    <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} showTags={showTags} />
                                 </Draggable>
                                 )
                             }

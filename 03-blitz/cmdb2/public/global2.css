@@ -266,7 +266,7 @@ or,
 
 .songListSongTable .th {
     font-weight: bold;
-    /* background-color: #0001; */
+    background-color: #0001;
     color: #0005;
     border-bottom: 1px solid #0003;
     /* font-style: italic; */
@@ -300,6 +300,10 @@ or,
 .songListSongTable .tr.invalidItem .td.dragHandle,
 .songListSongTable .tr.invalidItem .td.icon {
     color: #0002;
+}
+
+.songListSongTable .tr.existingItem {
+    border-bottom: 1px dotted #0002;
 }
 
 .songListSongTable .td.icon {
@@ -349,6 +353,11 @@ or,
     flex-grow: 1;
 }
 
+.songListSongTable .th.comment {
+    /* left-justify */
+    justify-content: flex-start;
+}
+
 .songListSongTable .td.comment {
     font-style: italic;
     color: #0008;
@@ -368,6 +377,7 @@ or,
     /* background-color: blue;
     height: 10px;
     width: 200px; */
+    flex-wrap: wrap;
 }
 
 .songListSongTable .td.comment .cmdbSimpleInput {
