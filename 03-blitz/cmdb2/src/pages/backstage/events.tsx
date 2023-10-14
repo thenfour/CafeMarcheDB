@@ -278,22 +278,23 @@ interface EventsListArgs {
 
 const EventsList = ({ filterSpec }: EventsListArgs) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    const filterModel: db3.CMDBTableFilterModel = {
-        quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
-        items: [],
-        tagIds: filterSpec.tagFilter,
-        tableParams: {
-            eventTypeIds: filterSpec.typeFilter,
-            eventStatusIds: filterSpec.statusFilter,
-        }
-    };
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
-    const where = db3.xEventVerbose.CalculateWhereClause({
-        filterModel,
-        clientIntention,
-    });
-    const include = db3.xEventVerbose.CalculateInclude(clientIntention);
+
+    // const filterModel: db3.CMDBTableFilterModel = {
+    //     quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
+    //     items: [],
+    //     tagIds: filterSpec.tagFilter,
+    //     tableParams: {
+    //         eventTypeIds: filterSpec.typeFilter,
+    //         eventStatusIds: filterSpec.statusFilter,
+    //     }
+    // };
+    // const where = db3.xEventVerbose.CalculateWhereClause({
+    //     filterModel,
+    //     clientIntention,
+    // });
+    // const include = db3.xEventVerbose.CalculateInclude(clientIntention);
     const eventsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
@@ -325,9 +326,9 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     }, [filterSpec]);
 
     return <>
-        <InspectObject src={where} tooltip={`inspect where clause for events query`} />
+        {/* <InspectObject src={where} tooltip={`inspect where clause for events query`} />
         <InspectObject src={include} tooltip={`inspect include clause for events query`} />
-        <InspectObject src={eventsClient.items} tooltip={`inspect events raw results`} />
+        <InspectObject src={eventsClient.items} tooltip={`inspect events raw results`} /> */}
         {eventsClient.items.map(event => <EventDetail key={event.id} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} allowRouterPush={false} />)}
     </>;
 };
@@ -360,7 +361,9 @@ const MainContent = () => {
         <Suspense>
             <CMSinglePageSurfaceCard>
                 {/* showing {eventsClient.items.length} events */}
-                <EventsControls onChange={handleSpecChange} spec={controlSpec} />
+                <div className="content">
+                    <EventsControls onChange={handleSpecChange} spec={controlSpec} />
+                </div>
             </CMSinglePageSurfaceCard>
         </Suspense>
 

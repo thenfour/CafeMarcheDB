@@ -49,7 +49,7 @@ export const EventCommentValueViewer = (props: EventCommentValueViewerProps) => 
     const [currentUser] = useCurrentUser();
     const canEnterEditMode = props.value.userId === currentUser?.id;
     return <div className="comment eventComment viewer">
-        <VisibilityValue permission={props.value.visiblePermission} />
+        <VisibilityValue permission={props.value.visiblePermission} variant="minimal" />
         <Markdown markdown={props.value.text} />
         <div className="date">{props.value.createdAt.toISOString()}</div>
         <div className="author">{props.value.user.name}</div>

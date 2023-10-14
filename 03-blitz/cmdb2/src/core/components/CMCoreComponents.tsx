@@ -17,6 +17,7 @@ import { API, APIQueryResult } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { Permission } from "shared/permissions";
 
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
@@ -24,8 +25,12 @@ const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
 // a white surface elevated from the gray base background, allowing vertical content.
 // meant to be the ONLY surface
+
+// well tbh, it's hard to know whether to use this or what <EventDetail> uses...
+// .contentSection seems more developed, with 
 export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren) => {
-    return <Card className='singlePageSurface'>{props.children}</Card>;
+    // return <Card className='singlePageSurface'>{props.children}</Card>;
+    return <div className="contentSection">{props.children}</div>;
 };
 
 
@@ -385,12 +390,39 @@ export const InspectObject = (props: { src: any, tooltip?: string }) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 type VisibilityControlValue = (db3.PermissionPayload | null);
 
-export const VisibilityValue = ({ permission }: { permission: db3.PermissionPayload | null }) => {
+export interface VisibilityValueProps {
+    permission: db3.PermissionPayload | null;
+    variant: "minimal" | "verbose";
+    onClick?: () => void;
+};
+
+export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValueProps) => {
     const style = GetStyleVariablesForColor(permission?.color);
-    return <div className='visibilityValue eventVisibilityValue' style={style}>
-        {RenderMuiIcon(permission?.iconName)}
-        {permission === null ? "(private)" : `${permission.name}-nam`}
-    </div>;
+    const visInfo = API.users.getVisibilityInfo({ visiblePermission: permission });
+    const classes: string[] = [
+        "visibilityValue eventVisibilityValue",
+        onClick ? "interactable" : "",
+        variant,
+        visInfo.className,
+    ];
+
+    let tooltipTitle = "Public visibility: Everyone can see this.";
+    if (visInfo.isPublic) {
+        //
+    } else if (visInfo.isPrivate) {
+        tooltipTitle = "Private visibility: Only you can see this. You'll have to change this in order for others to view.";
+    } else {
+        tooltipTitle = `Restricted visibility: This is visible only to members of ${permission!.name}`;
+    }
+
+    return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={style} onClick={onClick}>
+        {variant === "minimal" ? (
+            permission === null ? <>{gIconMap.Lock()}</> : RenderMuiIcon(permission?.iconName)
+        ) : (
+            permission === null ? <>{gIconMap.Lock()} private</> : <>{RenderMuiIcon(permission.iconName)} {permission.name}</>
+        )}
+        {/*permission === null ? "(private)" : `${permission.name}-nam`*/}
+    </div></Tooltip>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -413,17 +445,17 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
             readOnly={false} // todo!
             validationError={null}
             selectDialogTitle='select dialog title here'
-            selectButtonLabel='change visibility'
+            //selectButtonLabel='change visibility'
             value={props.value}
             renderDialogDescription={() => {
                 return <>dialog description heree</>;
             }}
             renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
                 return <li {...chprops}>
-                    <VisibilityValue permission={value} /></li>;
+                    <VisibilityValue permission={value} variant="verbose" /></li>;
             }}
             renderValue={(args) => {
-                return <VisibilityValue permission={args.value} />;
+                return <VisibilityValue permission={args.value} variant="minimal" onClick={args.handleEnterEdit} />;
             }}
             onChange={props.onChange}
         />

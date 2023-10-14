@@ -49,9 +49,10 @@ const MainContent = () => {
         <h2>CMCoreComponents</h2>
 
         <h3>CMSinglePageSurfaceCard</h3>
-        <div>for elevating content on a page</div>
+        <div>for elevating content on a page, or just use .contentSection / .header / .content</div>
         <CMCoreComponents.CMSinglePageSurfaceCard>
-            CMSinglePageSurfaceCard
+            <div className="header">CMSinglePageSurfaceCard.header</div>
+            <div className="content">CMSinglePageSurfaceCard.content</div>
         </CMCoreComponents.CMSinglePageSurfaceCard>
 
         <h3>CMBigChip</h3>

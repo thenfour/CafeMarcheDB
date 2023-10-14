@@ -6,6 +6,18 @@
   --subtle-elevation: 2px 2px 5px 2px rgba(0, 0, 0, 0.2);
 
   --color-transition-duration: .3s;
+
+  --general-interactable-bgcolor: #79b;
+  --general-interactable-color: #eee;
+
+  --visibility-public-bgcolor: #cec8;
+  --visibility-public-color: #fff;
+
+  --visibility-private-bgcolor: #ecc8;
+  --visibility-private-color: #000;
+
+  --visibility-other-bgcolor: #ecc8;
+  --visibility-other-color: #000;
 }
 
 a,
@@ -566,13 +578,24 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 .contentSection {
   /* spacing is already provided by parent layout*/
   /* margin: 20px; */
-  padding: 0px 20px;
+  padding: 0px;
   padding-bottom: 20px;
-  border-radius: 6px;
+  border-radius: 4px;
   background-color: white;
   margin-bottom: 40px;
   box-shadow: var(--subtle-elevation);
   max-width: 1500px;
+}
+
+.contentSection>.header {
+  padding: 2px 15px;
+  background-color: #ccc;
+  display: flex;
+  align-items: center;
+}
+
+.contentSection>.content {
+  padding: 2px 15px;
 }
 
 .contentSection .titleLine {
@@ -603,9 +626,20 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   border-left: solid 16px var(--primary-color);
 }
 
-.contentSection.event.rehearsal {
-  border-left: solid 16px #800;
+.contentSection.event>.header {
+  background-color: var(--visibility-other-bgcolor);
 }
+
+.contentSection.event.visibility-private>.header {
+  background-color: var(--visibility-private-bgcolor);
+  color: var(--visibility-private-color);
+}
+
+.contentSection.event.visibility-public>.header {
+  background-color: var(--visibility-public-bgcolor);
+  color: var(--visibility-public-color);
+}
+
 
 .contentSection .statusIndicator {
   display: flex;

@@ -10,13 +10,14 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API, APIQueryResult } from '../db3/clientAPI';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { gIconMap } from "../db3/components/IconSelectDialog";
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMStandardDBChip, CMTagList, EditTextField, InspectObject, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
-import { Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, TextField } from "@mui/material";
+import { Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, Menu, MenuItem, TextField } from "@mui/material";
 import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
-
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { CMTextField } from "./CMTextField";
 import { TAnyModel, formatSongLength, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { Container, Draggable, DropResult } from "react-smooth-dnd";
@@ -106,6 +107,39 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 };
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const EventSongListMenuButton = () => {
+    //const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
+    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    return <>
+        <div className="EventSongListMenuButton interactable iconButton" onClick={handleMenu}><MoreHorizIcon /></div>
+
+        <Menu
+            anchorEl={anchorEl}
+            open={!!anchorEl}
+            onClose={() => setAnchorEl(null)}
+
+            anchorOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+            }}
+            transformOrigin={{
+                vertical: 'top',
+                horizontal: 'right',
+            }}
+        >
+            <MenuItem>{gIconMap.ContentCopy()} Copy</MenuItem>
+            <MenuItem>{gIconMap.ContentPaste()} Paste (and replace)</MenuItem>
+        </Menu>
+
+    </>;
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
@@ -116,43 +150,51 @@ interface EventSongListValueViewerProps {
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     //const [currentUser] = useCurrentUser();
     const [showTags, setShowTags] = React.useState<boolean>(false);
+    const visInfo = API.users.getVisibilityInfo(props.value);
 
     const stats = API.events.getSongListStats(props.value);
-    return <div className="EventSongListValue EventSongListValueViewer">
-        <VisibilityValue permission={props.value.visiblePermission} />
-        <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
+    return <div className={`EventSongListValue EventSongListValueViewer ${visInfo.className}`}>
 
-        <div className="columnName-name">
-            {props.value.name}
+        <div className="header">
+            <VisibilityValue permission={props.value.visiblePermission} variant="minimal" />
+            <div className="flex-spacer"></div>
+            <EventSongListMenuButton />
+            <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
         </div>
+        <div className="content">
 
-        <Markdown markdown={props.value.description} />
+            <div className="columnName-name">
+                {props.value.name}
+            </div>
 
-        <div className="songListSongTable">
-            <div className="thead">
-                <div className="tr">
-                    <div className="th songIndex">#</div>
-                    <div className="th songName">Song</div>
-                    <div className="th length">Length</div>
-                    <div className="th tempo">Tempo</div>
-                    <div className="th comment">
-                        Comment
-                        <FormControlLabel control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+            <Markdown markdown={props.value.description} />
+
+            <div className="songListSongTable">
+                <div className="thead">
+                    <div className="tr">
+                        <div className="th songIndex">#</div>
+                        <div className="th songName">Song</div>
+                        <div className="th length">Length</div>
+                        <div className="th tempo">Tempo</div>
+                        <div className="th comment">
+                            Comment
+                            <FormControlLabel control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+                        </div>
                     </div>
+                </div>
+
+                <div className="tbody">
+                    {
+                        props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} showTags={showTags} />)
+                    }
+
                 </div>
             </div>
 
-            <div className="tbody">
-                {
-                    props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} showTags={showTags} />)
-                }
-
+            <div className="stats">
+                {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
+                {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
             </div>
-        </div>
-
-        <div className="stats">
-            {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
-            {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
         </div>
     </div>;
 };
@@ -409,12 +451,14 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                 <InspectObject src={initialValueCopy} tooltip="initialValueCopy" />
                 <InspectObject src={value} tooltip="value" /> */}
 
-                    {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
-
                     <VisibilityControl value={value.visiblePermission} onChange={(newVisiblePermission) => {
                         const newValue: db3.EventSongListPayload = { ...value, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
                         setValue(newValue);
                     }} />
+
+                    <div className="flex-spacer"></div>
+
+                    {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
                     {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name })}
                     {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description })}

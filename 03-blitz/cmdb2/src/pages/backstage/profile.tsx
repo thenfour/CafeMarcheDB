@@ -47,12 +47,12 @@ export const OwnActiveControl = () => {
         {
             value: false,
             label: "Not an active member",
-            iconName: currentUser!.isActive ? undefined : gIconOptions.Check,
+            iconName: currentUser!.isActive ? undefined : gIconOptions.CheckCircleOutline,
             color: "no",
         }, {
             value: true,
             label: "active member",
-            iconName: !currentUser!.isActive ? undefined : gIconOptions.Check,
+            iconName: !currentUser!.isActive ? undefined : gIconOptions.CheckCircleOutline,
             color: "yes",
         }
     ];
@@ -115,7 +115,7 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
                 {
                     (value.instrumentId === primary?.id) ? (
                         <>
-                            {gIconMap.Check()} Primary
+                            {gIconMap.CheckCircleOutline()} Primary
                         </>
                     ) : (
                         <Button onClick={() => handleClickMakePrimary(value.instrumentId)}>make primary</Button>
@@ -205,7 +205,7 @@ const MainContent = () => {
     return <>
         <SettingMarkdown settingName="profile_markdown"></SettingMarkdown>
         <CMSinglePageSurfaceCard>
-            <CardContent>
+            <div className="content">
                 <Typography gutterBottom variant="h4" component="div">
                     {gIconMap.Person()} Your profile
                 </Typography>
@@ -219,7 +219,7 @@ const MainContent = () => {
                     <OwnInstrumentsControl />
                 </FormControl>
 
-            </CardContent>
+            </div>
         </CMSinglePageSurfaceCard>
     </>;
 };

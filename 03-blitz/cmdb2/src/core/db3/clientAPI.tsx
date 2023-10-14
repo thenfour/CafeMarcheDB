@@ -16,6 +16,7 @@ import deleteEventComment from "./mutations/deleteEventComment";
 import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
 import deleteEventSongList from "./mutations/deleteEventSongList";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
+import { Permission } from "shared/permissions";
 
 
 export interface APIQueryArgs {
@@ -100,6 +101,21 @@ class UsersAPI {
         });
 
     };
+
+    getVisibilityInfo = <T extends { visiblePermission: db3.PermissionPayloadMinimum | null },>(item: T) => {
+        const isPrivate = item.visiblePermission === null;
+        const isPublic = item.visiblePermission?.name === Permission.visibility_all;
+        const cssClasses: string[] = [];
+        if (isPrivate) cssClasses.push("visibility-private");
+        if (isPublic) cssClasses.push("visibility-public");
+        if (!isPrivate) cssClasses.push(`visiblePermission-${item.visiblePermission.name}`);
+
+        return {
+            isPrivate,
+            isPublic,
+            className: cssClasses.join(" "),
+        }
+    }
 
     updateUserPrimaryInstrument = CreateAPIMutationFunction<TupdateUserPrimaryInstrumentMutationArgs, typeof updateUserPrimaryInstrumentMutation>(updateUserPrimaryInstrumentMutation);
 };

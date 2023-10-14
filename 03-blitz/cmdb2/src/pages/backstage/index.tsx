@@ -65,29 +65,27 @@ const DynamicContent = () => {
     </CMSinglePageSurfaceCard> */}
 
     <CMSinglePageSurfaceCard>
-      <CardContent>
+      <div className="content">
         <Typography gutterBottom variant="h4" component="div">
           {gIconMap.MusicNote()} Songs
         </Typography>
         <Typography variant="body2" color="text.secondary">
           Listen to recordings, view partitions, see set lists
         </Typography>
-      </CardContent>
-      <CardActions>
-        <Button size="small">Share</Button>
-        <Button size="small">Learn More</Button>
-      </CardActions>
+      </div>
+      <Button size="small">Share</Button>
+      <Button size="small">Learn More</Button>
     </CMSinglePageSurfaceCard>
 
     <CMSinglePageSurfaceCard>
-      <CardContent>
+      <div className="content">
         <Typography gutterBottom variant="h4" component="div">
           {gIconMap.CalendarMonth()} Upcoming Events
         </Typography>
         <div className="cmcardList-vertical">
           {tableClient.items.map((row, index) => <NoninteractiveCardEvent key={index} event={row as any} />)}
         </div>
-      </CardContent>
+      </div>
     </CMSinglePageSurfaceCard>
 
 

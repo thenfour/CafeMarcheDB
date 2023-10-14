@@ -4,46 +4,17 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import {
-    Edit as EditIcon
-} from '@mui/icons-material';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import CheckIcon from '@mui/icons-material/Check';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import PlaceIcon from '@mui/icons-material/Place';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ErrorIcon from '@mui/icons-material/Error';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { Alert, Autocomplete, Breadcrumbs, Button, ButtonGroup, Card, CardActionArea, Chip, FormControl, FormHelperText, InputLabel, Link, MenuItem, Select, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
-import React, { FC, Suspense } from "react"
-import dayjs, { Dayjs } from "dayjs";
-import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
-import { CompactMutationMarkdownControl, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
-import db, { Prisma } from "db";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { ColorPaletteEntry, gGeneralPaletteList } from 'shared/color';
-import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
+import { Button } from "@mui/material";
+import React from "react";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
-import { ArrayElement, IsNullOrWhitespace, TAnyModel, gNullValue } from 'shared/utils';
-import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
-import { API, APIQueryResult } from '../db3/clientAPI';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import { CMTextField } from './CMTextField';
-import { CompactMarkdownControl, Markdown, MarkdownControl } from './RichTextEditor';
-import { CMBigChip, CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, ReactiveInputDialog, TabA11yProps, VisibilityControl } from './CMCoreComponents';
-import HomeIcon from '@mui/icons-material/Home';
-import { EventAttendanceAnswer, EventAttendanceFrame, EventAttendanceSummary } from './EventAttendanceComponents';
-import { EventAttendanceResponseInput } from './CMMockupComponents';
-import PublicIcon from '@mui/icons-material/Public';
-import { ChoiceEditCell } from './ChooseItemDialog';
-import { EventCommentTabContent } from './EventCommentComponents';
-import { DB3EditObjectDialog, DB3NewObjectDialog } from '../db3/components/db3NewObjectDialog';
+import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
+import { API } from '../db3/clientAPI';
+import { gIconMap } from '../db3/components/IconSelectDialog';
+import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
+import { EventDetailVerbosity } from './CMCoreComponents';
+import { EventAttendanceFrame } from './EventAttendanceComponents';
 
 /*
 
