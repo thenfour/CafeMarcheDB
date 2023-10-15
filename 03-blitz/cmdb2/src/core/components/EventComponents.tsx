@@ -40,6 +40,7 @@ import { EventCommentTabContent } from './EventCommentComponents';
 import { SegmentList } from './EventSegmentComponents';
 import { MutationMarkdownControl } from './SettingMarkdown';
 import { EventSongListTabContent } from './EventSongListComponents';
+import { EventFilesTabContent } from './EventFileComponents';
 
 ////////////////////////////////////////////////////////////////
 // TODO: generic big status
@@ -408,11 +409,6 @@ export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePaylo
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-type EventWithStatusPayload = Prisma.EventGetPayload<{
-    include: {
-        status: true,
-    }
-}>;
 
 export interface EventStatusValueProps {
     onClick?: () => void;
@@ -422,7 +418,7 @@ export const EventStatusValue = (props: EventStatusValueProps) => {
     return !props.status ? (<Button>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o.label} />);
 };
 
-export const EventStatusControl = ({ event, refetch }: { event: EventWithStatusPayload, refetch: () => void }) => {
+export const EventStatusControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
@@ -501,7 +497,7 @@ export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPay
 
 
 ////////////////////////////////////////////////////////////////
-export const EventTitleControl = ({ event, eventURI, refetch }: { event: EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
+export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
@@ -538,7 +534,7 @@ export const EventTitleControl = ({ event, eventURI, refetch }: { event: EventWi
 
 
 ////////////////////////////////////////////////////////////////
-export const EventLocationControl = ({ event, refetch }: { event: EventWithStatusPayload, refetch: () => void }) => {
+export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
     const locationKnown = !IsNullOrWhitespace(event.locationDescription);
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -768,7 +764,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
-                        (todo)
+                        <EventFilesTabContent event={event} refetch={tableClient.refetch} />
                     </CustomTabPanel>
 
                 </>

@@ -50,6 +50,11 @@ leave all that for later.
 
 
 ////////////////////////////////////////////////////////////////
+export type EventWithStatusPayload = Prisma.EventGetPayload<{
+    include: {
+        status: true,
+    }
+}>;
 
 export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },

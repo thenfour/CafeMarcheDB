@@ -6,5 +6,6 @@ export * from "./shared/schema/instrument"
 export * from "./shared/schema/user"
 export * from "./shared/schema/song"
 export * from "./shared/schema/event"
+export * from "./shared/schema/file"
 
 

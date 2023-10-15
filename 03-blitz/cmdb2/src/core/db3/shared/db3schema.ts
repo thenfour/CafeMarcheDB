@@ -8,7 +8,8 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { GenericStringField, PKField } from "./db3basicFields";
-import { xTable } from "./db3core";
+import { xTable, xTableClientUsageContext } from "./db3core";
+import { TAnyModel } from "shared/utils";
 
 
 export type SettingPayload = Prisma.SettingGetPayload<{}>;
@@ -27,6 +28,7 @@ export const xSetting = new xTable({
         name: row.name
     }),
     applyIncludeFilteringForExtraColumns: () => { },
+    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: xTableClientUsageContext) => { },
     columns: [
         new PKField({ columnName: "id" }),
         new GenericStringField({
