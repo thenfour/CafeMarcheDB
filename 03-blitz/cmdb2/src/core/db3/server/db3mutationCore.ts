@@ -197,11 +197,11 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         // console.log(JSON.stringify(localFields));
         // console.log(`ASSOCIATIONS:`);
         // console.log(JSON.stringify(associationFields));
-        const include = table.CalculateInclude(clientIntention);
+        //const include = table.CalculateInclude(clientIntention);
 
         const obj = await dbTableClient.create({
             data: localFields,
-            include,
+            //include, // todo: is this needed? why?
         });
 
         await RegisterChange({

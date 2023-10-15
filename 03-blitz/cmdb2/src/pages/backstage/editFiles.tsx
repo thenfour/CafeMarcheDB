@@ -18,6 +18,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
         new DB3Client.CreatedAtColumn({ columnName: "uploadedAt", cellWidth: 150 }),
         new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
+        new DB3Client.GenericIntegerColumnClient({ columnName: "sizeBytes", cellWidth: 80 }),
 
         new DB3Client.ForeignSingleFieldClient({ columnName: "uploadedByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),

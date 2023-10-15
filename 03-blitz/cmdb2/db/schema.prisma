@@ -548,15 +548,15 @@ model FileTagAssignment {
 }
 
 // files can also just be floating uploads for example dropped into a markdown field
+// TODO: default sorting should probably be implemented. and depending on where it's being viewed it may be different.
+// so let's not work on this now; see how it feels necessary.
 model File {
   id             Int     @id @default(autoincrement())
   fileLeafName   String // the name of the file as it was uploaded, visible to (& editable) users. IMG20113.jpg for example.
   storedLeafName String // a unique filename used in server storage; a guid probably.
   description    String
   isDeleted      Boolean @default(false)
-
-  // TODO: default sorting should probably be implemented. and depending on where it's being viewed it may be different.
-  // so let's not work on this now; see how it feels necessary.
+  sizeBytes      Int
 
   uploadedAt          DateTime
   uploadedByUserId    Int?

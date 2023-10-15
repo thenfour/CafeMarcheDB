@@ -1,0 +1,83 @@
+// https://stackoverflow.com/questions/70490959/next-js-serving-static-files-that-are-not-included-in-the-build-or-source-code
+// https://dev.to/victrexx2002/how-to-get-the-mime-type-of-a-file-in-nodejs-p6c
+// https://www.reddit.com/r/node/comments/ecjsg6/how_to_determine_file_mime_type_without_a/
+import { Ctx } from "@blitzjs/next";
+import { AuthenticatedMiddlewareCtx } from 'blitz';
+import db, { Prisma } from "db";
+import fs from "fs";
+import * as mime from 'mime';
+import path from "path";
+import { Permission } from "shared/permissions";
+import { api } from "src/blitz-server";
+import * as db3 from 'src/core/db3/db3';
+import * as mutationCore from 'src/core/db3/server/db3mutationCore';
+
+// on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
+export default api(async (req, res, origCtx: Ctx) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            origCtx.session.$authorize(Permission.login);
+            const ctx: AuthenticatedMiddlewareCtx = origCtx as any; // authorize ensures this.
+            const currentUser = await mutationCore.getCurrentUserCore(ctx);
+            const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+
+            const leafRaw = req.query.leafName;
+            if (!leafRaw || (typeof (leafRaw) !== 'string')) {
+                reject(`invalid file`);
+                return;
+            }
+            const leaf = leafRaw as string;
+
+            const fullpath = path.resolve(`${process.env.FILE_UPLOAD_PATH}`, leaf || "");
+
+            const fileIncludeFilters: Prisma.FileWhereInput[] = [];
+            db3.ApplySoftDeleteWhereClause(fileIncludeFilters, clientIntention);
+            db3.ApplyVisibilityWhereClause(fileIncludeFilters, clientIntention, "uploadedByUserId");
+
+            const dbfile = await db.file.findFirst({
+                where: {
+                    AND: [
+                        { storedLeafName: leaf },
+                        ...fileIncludeFilters,
+                    ]
+                }
+            });
+
+            if (!dbfile) {
+                reject(`file not found`);
+                return;
+            }
+
+            const contentType = mime.getType(leaf);
+            if (contentType) {
+                res.setHeader("Content-Type", contentType);
+            } else {
+                res.setHeader("Content-Type", "application/octet-stream");
+            }
+
+            const fileStream = fs.createReadStream(fullpath);
+            res.setHeader("Content-Disposition", `attachment; filename=${dbfile.fileLeafName}`) // Specify the filename for download
+
+            fileStream.pipe(res);
+            fileStream.on("close", () => {
+                res.end(() => {
+                    resolve();
+                });
+            });
+            fileStream.on("error", () => { // todo: one day test that this actually works?
+                res.status(500).end(() => {
+                    reject();
+                });
+            });
+
+        } catch (e) {
+            console.log(e);
+            reject(`exception thrown: ${e}`);
+        }
+    }); // return new promise
+});
+
+
+
+
+

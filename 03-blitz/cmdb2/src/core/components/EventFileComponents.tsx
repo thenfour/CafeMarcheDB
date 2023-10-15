@@ -18,11 +18,13 @@ import { TAnyModel, formatSongLength, getUniqueNegativeID, moveItemInArray } fro
 import { Container, Draggable, DropResult } from "react-smooth-dnd";
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { getAntiCSRFToken } from "@blitzjs/auth"
+import { TClientUploadFileArgs } from "../db3/shared/apiTypes";
 
 
 ////////////////////////////////////////////////////////////////
 interface UploadFilesArgs {
     files: FileList;
+    fields: TClientUploadFileArgs;
     onProgress: (progress01: number, uploaded: number, total: number) => void;
 };
 
@@ -56,8 +58,10 @@ async function UploadFile(args: UploadFilesArgs) {
             reject(xhr.responseText);
         });
 
-
         // add form fields
+        Object.entries(args.fields).forEach(([key, value]) => {
+            formData.append(key, value);
+        });
 
         xhr.open("POST", "/api/files/upload", true);
 
@@ -71,87 +75,6 @@ async function UploadFile(args: UploadFilesArgs) {
     });
 }
 
-
-
-
-
-// ////////////////////////////////////////////////////////////////
-// interface FilePasteProps {
-//     onFileSelect: (files: FileList) => void;
-// }
-
-// const FileUploadPaste = (props: FilePasteProps) => {
-//     React.useEffect(() => {
-//         const handlePaste = (e: ClipboardEvent) => {
-//             e.preventDefault();
-
-//             if ((e.clipboardData?.files?.length || 0) > 0) {
-//                 props.onFileSelect(e.clipboardData!.files);
-//             }
-//             if ((e.clipboardData?.items?.length || 0) > 0) {
-//                 for (let i = 0; i < e.clipboardData!.items.length; ++i) {
-//                     const item = e.clipboardData!.items[i]!;
-//                     console.log(`item ${i} : ${item.type} ${item.kind}`);
-//                     item.getAsString((data) => {
-//                         console.log(`  -> ${data}`);
-//                     })
-//                 }
-//             }
-//         };
-
-//         // Attach the onPaste event listener to the entire document
-//         document.addEventListener('paste', handlePaste);
-
-//         return () => {
-//             // Remove the event listener when the component is unmounted
-//             document.removeEventListener('paste', handlePaste);
-//         };
-//     }, []);
-
-//     return (
-//         <div className={`UploadFileComponent interactable`}>
-//             paste files to upload
-//         </div>
-//     );
-// };
-
-
-// ////////////////////////////////////////////////////////////////
-// interface FileDropZoneProps {
-//     onFileSelect: (files: FileList) => void;
-//     onDragStateChange?: (isDragging: boolean) => void;
-//     className?: string;
-// }
-
-// const FileDropZone = (props: FileDropZoneProps) => {
-//     const [isDragging, setIsDragging] = React.useState(false);
-
-//     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-//         e.preventDefault();
-//         setIsDragging(false);
-
-//         const { files } = e.dataTransfer;
-//         if (files.length > 0) {
-//             props.onFileSelect(files);
-//         }
-//     };
-
-//     React.useEffect(() => {
-//         props.onDragStateChange && props.onDragStateChange(isDragging);
-//     }, [isDragging]);
-
-//     return (
-//         <div
-//             className={`UploadFileComponent interactable ${props.className}`}
-//             onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
-//             onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-//             onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
-//             onDrop={handleDrop}
-//         >
-//             Drop file(s) here to upload
-//         </div>
-//     );
-// };
 
 
 
@@ -253,8 +176,19 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
 
 
 ////////////////////////////////////////////////////////////////
+export interface EventFilesListProps {
+    event: db3.EventClientPayload_Verbose;
+    refetch: () => void;
+};
+
+export const EventFilesList = (props: EventFilesListProps) => {
+    return props.event.fileTags.map((file, index) => <div key={file.id}>{file.file.fileLeafName} ({file.file.sizeBytes} bytes)</div>);
+};
+
+
+////////////////////////////////////////////////////////////////
 export interface EventFilesTabContentProps {
-    event: db3.EventWithStatusPayload;
+    event: db3.EventClientPayload_Verbose;
     refetch: () => void;
 };
 
@@ -262,11 +196,16 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
     //const [progress, setProgress] = React.useState<string[]>([]);
     const [dragging, setDragging] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const publicPermissionId = API.users.getPublicPermission()!.id;
 
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
             //setProgress([...progress, `beginning upload.`]);
             UploadFile({
+                fields: {
+                    taggedEventId: props.event.id,
+                    visiblePermissionId: publicPermissionId,
+                },
                 files,
                 onProgress: (prog01, uploaded, total) => {
                     //console.log(`progress:${prog}, uploaded:${uploaded}, total:${total}`);
@@ -274,6 +213,7 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
                 },
             }).then(() => {
                 showSnackbar({ severity: "success", children: "file(s) uploaded" });
+                props.refetch();
                 //setProgress([...progress, `complete.`]);
             }).catch((e: string) => {
                 console.log(e);
@@ -285,6 +225,7 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
     return <>
         {/* <div>progress: [{progress.map((n, index) => <span key={index}>{n}</span>)}]</div> */}
         <UploadFileComponent className={dragging ? "dragging" : "notDragging"} onFileSelect={handleFileSelect} onDragStateChange={(isDragging) => setDragging(isDragging)} />
+        <EventFilesList event={props.event} refetch={props.refetch} />
         {/* <UploadFileComponent onFileSelect={handleFileSelect} /> */}
     </>;
 };

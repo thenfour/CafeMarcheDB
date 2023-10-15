@@ -94,3 +94,26 @@ export interface TinsertOrUpdateEventSongListArgs {
     sortOrder: number;
     songs: TinsertOrUpdateEventSongListSong[];
 };
+
+// interface from upload.ts to mutation. files themselves contain much of the data; this is only for associations.
+export interface TClientUploadFileArgs {
+    taggedUserId?: number;
+    taggedSongId?: number;
+    taggedEventId?: number;
+    taggedInstrumentId?: number;
+    visiblePermissionId?: number;
+};
+
+export interface TClientUpdateFile {
+    id?: number;
+    fileLeafName?: string;
+    description?: string;
+    isDeleted?: boolean;
+    visiblePermissionId?: number | null;
+
+    tagsIds?: number[];
+    taggedUserIds?: number[];
+    taggedSongIds?: number[];
+    taggedEventIds?: number[];
+    taggedInstrumentIds?: number[];
+};

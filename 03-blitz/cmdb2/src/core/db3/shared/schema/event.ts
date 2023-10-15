@@ -748,7 +748,8 @@ const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         fileTags: {
             include: {
                 file: true,
-            }
+            },
+            orderBy: { file: { uploadedAt: 'desc' } }
         },
         segments: {
             orderBy: { startsAt: "desc" },

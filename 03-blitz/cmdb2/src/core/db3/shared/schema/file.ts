@@ -406,8 +406,8 @@ export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
 
 export type FilePayload = Prisma.FileGetPayload<typeof FileArgs>;
 
-// order by functional group, then by File.
 export const FileNaturalOrderBy: Prisma.FileOrderByWithRelationInput[] = [
+    { uploadedAt: 'desc' }
 ];
 
 export interface xFileFilterParams {
@@ -456,6 +456,7 @@ export const xFile = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("fileLeafName"),
+        MakeIntegerField("sizeBytes"),
         new GenericStringField({
             columnName: "storedLeafName",
             allowNull: false,

@@ -17,6 +17,7 @@ import insertEventSongListMutation from "./mutations/insertEventSongListMutation
 import deleteEventSongList from "./mutations/deleteEventSongList";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 import { Permission } from "shared/permissions";
+import { Prisma } from "db";
 
 
 export interface APIQueryArgs {
@@ -76,6 +77,14 @@ export interface SongListStats {
     // tags?
 };
 
+class FilesAPI {
+    getURIForFile = (file: Prisma.FileGetPayload<{}>) => {
+        return `/api/files/download/${file.storedLeafName}`;
+    }
+};
+
+const gFilesAPI = new FilesAPI();
+
 class UsersAPI {
     // returns an instrument payload, or null if the user has no instruments.
     // primary instrument is defined as either teh 1st instrument marked as primary, or if none are primary, the 1st instrument period.
@@ -100,6 +109,14 @@ class UsersAPI {
             clientIntention: { intention: 'user', mode: 'primary' },
         });
 
+    };
+
+    getPermission = (q: Permission) => {
+        return (this.getAllPermissions().items as Prisma.PermissionGetPayload<{}>[]).find(p => p.name === q);
+    };
+
+    getPublicPermission = () => {
+        return this.getPermission(Permission.visibility_all);
     };
 
     getVisibilityInfo = <T extends { visiblePermission: db3.PermissionPayloadMinimum | null },>(item: T) => {
@@ -276,4 +293,5 @@ export const API = {
     events: new EventsAPI(),
     songs: new SongsAPI(),
     users: gUsersAPI,
+    files: gFilesAPI,
 };
