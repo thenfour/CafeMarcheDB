@@ -67,6 +67,7 @@ model Permission {
   visibilityForEvents         Event[]
   visibilityForEventComments  EventComment[]
   visibilityForEventSongLists EventSongList[]
+  visibilityForFiles          File[]
 }
 
 model RolePermission {
@@ -101,6 +102,7 @@ model User {
   changes  Change[] // yea don't include this in queries
 
   taggedFiles           FileUserTag[]
+  uploadedFiles         File[]
   eventSegmentResponses EventSegmentUserResponse[]
   activity              Activity[]
   songCredits           SongCredit[]
@@ -372,7 +374,6 @@ model Event {
 
   // don't do this because it's redundant with status. bring it back only if there's a true need.
   // isCancelled Boolean   @default(false) // used as an input for calculating status
-  // cancelledAt DateTime?
 
   createdAt DateTime
 
@@ -381,15 +382,11 @@ model Event {
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
-  // contact people ?
-  // links ?
-  // workflow confirmation etc.
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
   comments  EventComment[]
   segments  EventSegment[]
   songLists EventSongList[]
-  //responses EventUserResponse[]
 }
 
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
@@ -529,29 +526,45 @@ model EventSegmentUserResponse {
   @@unique([userId, eventSegmentId]) // 
 }
 
-// tech rider, partition, invoice, contract, event media, other, what is the usage? needed to:
-// - find similar things at an application level like finding partitions
-// - display relevant info for context
-model FileSignificance {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  description String?
-  Files       File[]
+// tech rider, partition, invoice, contract, event media, other, what is the usage?
+model FileTag {
+  id              Int                 @id @default(autoincrement())
+  text            String
+  description     String              @default("")
+  color           String?
+  significance    String? // 
+  sortOrder       Int                 @default(0)
+  fileAssignments FileTagAssignment[]
+}
+
+model FileTagAssignment {
+  id        Int     @id @default(autoincrement())
+  fileId    Int
+  file      File    @relation(fields: [fileId], references: [id], onDelete: Restrict) // files are soft-delete.
+  fileTagId Int
+  fileTag   FileTag @relation(fields: [fileTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
+
+  @@unique([fileId, fileTagId]) // 
 }
 
 // files can also just be floating uploads for example dropped into a markdown field
 model File {
   id             Int     @id @default(autoincrement())
-  subtitle       String? // could be a small comment like "short version"
-  fileLeafName   String // the name of the file as it was uploaded, visible to users. IMG20113.jpg for example.
+  fileLeafName   String // the name of the file as it was uploaded, visible to (& editable) users. IMG20113.jpg for example.
   storedLeafName String // a unique filename used in server storage; a guid probably.
-  uri            String // if this is a link, then here's the URI
   description    String
-  type           String // enum (video, photo, link, partition)
-  significanceId Int?
   isDeleted      Boolean @default(false)
 
-  significance      FileSignificance?   @relation(fields: [significanceId], references: [id], onDelete: SetNull) // when you delete a significance, set null.
+  // TODO: default sorting should probably be implemented. and depending on where it's being viewed it may be different.
+  // so let's not work on this now; see how it feels necessary.
+
+  uploadedAt          DateTime
+  uploadedByUserId    Int?
+  uploadedByUser      User?       @relation(fields: [uploadedByUserId], references: [id], onDelete: SetDefault)
+  visiblePermissionId Int?
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+
+  tags              FileTagAssignment[]
   taggedUsers       FileUserTag[]
   taggedSongs       FileSongTag[]
   taggedEvents      FileEventTag[]
@@ -559,46 +572,42 @@ model File {
 }
 
 model FileUserTag {
-  id     Int     @id @default(autoincrement())
+  id     Int  @id @default(autoincrement())
   fileId Int
-  file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  name   String? // if userid is not there...
-  user   User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
-  userId Int?
+  file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  userId Int
 
   @@unique([fileId, userId]) // 
 }
 
 model FileSongTag {
-  id     Int     @id @default(autoincrement())
+  id     Int  @id @default(autoincrement())
   fileId Int
-  file   File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  name   String? // if songid is not there...
-  song   Song?   @relation(fields: [songId], references: [id], onDelete: Restrict)
-  songId Int?
+  file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict)
+  songId Int
 
   @@unique([fileId, songId]) // 
 }
 
 model FileEventTag {
-  id      Int     @id @default(autoincrement())
+  id      Int   @id @default(autoincrement())
   fileId  Int
-  file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  name    String? // if eventid is not there...
-  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  eventId Int?
+  file    File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  eventId Int
 
   @@unique([fileId, eventId]) // 
 }
 
 // this is hm. i suppose this is correct, but tagging instrument groups may be more accurate in some scenarios?
 model FileInstrumentTag {
-  id           Int         @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
   fileId       Int
-  file         File        @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  name         String? // if instrumentid is not there...
-  instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
-  instrumentId Int?
+  file         File       @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  instrumentId Int
 
   @@unique([fileId, instrumentId]) // 
 }

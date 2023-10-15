@@ -37,14 +37,11 @@ async function UploadFile(args: UploadFilesArgs) {
         xhr.upload.addEventListener("progress", (event) => {
             if (event.lengthComputable) {
                 args.onProgress(event.loaded / event.total, event.loaded, event.total);
-                //console.log("upload progress:", event.loaded / event.total);
-                //uploadProgress.value = event.loaded / event.total;
             }
         });
         // for download progress which we don't want...
         //   xhr.addEventListener("progress", (event) => {
         xhr.addEventListener("loadend", () => {
-            //console.log(`loadend, readystate:${xhr.readyState}, status=${xhr.status}`);
             if (xhr.readyState === 4 && xhr.status === 200) {
                 // success
                 resolve(true);
@@ -58,6 +55,9 @@ async function UploadFile(args: UploadFilesArgs) {
         xhr.addEventListener("error", (e) => {
             reject(xhr.responseText);
         });
+
+
+        // add form fields
 
         xhr.open("POST", "/api/files/upload", true);
 
@@ -75,74 +75,83 @@ async function UploadFile(args: UploadFilesArgs) {
 
 
 
-////////////////////////////////////////////////////////////////
-interface FilePasteProps {
-    onFileSelect: (files: FileList) => void;
-}
+// ////////////////////////////////////////////////////////////////
+// interface FilePasteProps {
+//     onFileSelect: (files: FileList) => void;
+// }
 
-const FileUploadPaste = (props: FilePasteProps) => {
-    React.useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
-            e.preventDefault();
+// const FileUploadPaste = (props: FilePasteProps) => {
+//     React.useEffect(() => {
+//         const handlePaste = (e: ClipboardEvent) => {
+//             e.preventDefault();
 
-            if (e.clipboardData && e.clipboardData.items.length > 0) {
-                props.onFileSelect(e.clipboardData.files);
-            }
-        };
+//             if ((e.clipboardData?.files?.length || 0) > 0) {
+//                 props.onFileSelect(e.clipboardData!.files);
+//             }
+//             if ((e.clipboardData?.items?.length || 0) > 0) {
+//                 for (let i = 0; i < e.clipboardData!.items.length; ++i) {
+//                     const item = e.clipboardData!.items[i]!;
+//                     console.log(`item ${i} : ${item.type} ${item.kind}`);
+//                     item.getAsString((data) => {
+//                         console.log(`  -> ${data}`);
+//                     })
+//                 }
+//             }
+//         };
 
-        // Attach the onPaste event listener to the entire document
-        document.addEventListener('paste', handlePaste);
+//         // Attach the onPaste event listener to the entire document
+//         document.addEventListener('paste', handlePaste);
 
-        return () => {
-            // Remove the event listener when the component is unmounted
-            document.removeEventListener('paste', handlePaste);
-        };
-    }, []);
+//         return () => {
+//             // Remove the event listener when the component is unmounted
+//             document.removeEventListener('paste', handlePaste);
+//         };
+//     }, []);
 
-    return (
-        <div className={`UploadFileComponent interactable`}>
-            paste files to upload
-        </div>
-    );
-};
+//     return (
+//         <div className={`UploadFileComponent interactable`}>
+//             paste files to upload
+//         </div>
+//     );
+// };
 
 
-////////////////////////////////////////////////////////////////
-interface FileDropZoneProps {
-    onFileSelect: (files: FileList) => void;
-    onDragStateChange?: (isDragging: boolean) => void;
-    className?: string;
-}
+// ////////////////////////////////////////////////////////////////
+// interface FileDropZoneProps {
+//     onFileSelect: (files: FileList) => void;
+//     onDragStateChange?: (isDragging: boolean) => void;
+//     className?: string;
+// }
 
-const FileDropZone = (props: FileDropZoneProps) => {
-    const [isDragging, setIsDragging] = React.useState(false);
+// const FileDropZone = (props: FileDropZoneProps) => {
+//     const [isDragging, setIsDragging] = React.useState(false);
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        setIsDragging(false);
+//     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+//         e.preventDefault();
+//         setIsDragging(false);
 
-        const { files } = e.dataTransfer;
-        if (files.length > 0) {
-            props.onFileSelect(files);
-        }
-    };
+//         const { files } = e.dataTransfer;
+//         if (files.length > 0) {
+//             props.onFileSelect(files);
+//         }
+//     };
 
-    React.useEffect(() => {
-        props.onDragStateChange && props.onDragStateChange(isDragging);
-    }, [isDragging]);
+//     React.useEffect(() => {
+//         props.onDragStateChange && props.onDragStateChange(isDragging);
+//     }, [isDragging]);
 
-    return (
-        <div
-            className={`UploadFileComponent interactable ${props.className}`}
-            onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-            onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
-            onDrop={handleDrop}
-        >
-            Drop file(s) here to upload
-        </div>
-    );
-};
+//     return (
+//         <div
+//             className={`UploadFileComponent interactable ${props.className}`}
+//             onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
+//             onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+//             onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+//             onDrop={handleDrop}
+//         >
+//             Drop file(s) here to upload
+//         </div>
+//     );
+// };
 
 
 
@@ -151,6 +160,7 @@ const FileDropZone = (props: FileDropZoneProps) => {
 interface UploadFileComponentProps {
     onFileSelect: (files: FileList) => void;
     onDragStateChange?: (isDragging: boolean) => void;
+    className?: string;
 }
 
 export const UploadFileComponent = (props: UploadFileComponentProps) => {
@@ -170,15 +180,74 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
         }
     };
 
-    return <div className="UploadFileComponent interactable" onClick={openFileDialog}>
-        <input
-            type="file"
-            multiple
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            onChange={handleFileSelect}
-        />
-        <FileUploadIcon />Drop files here or click to select...
+    // for paste support
+    React.useEffect(() => {
+        const handlePaste = (e: ClipboardEvent) => {
+            e.preventDefault();
+
+            if ((e.clipboardData?.files?.length || 0) > 0) {
+                props.onFileSelect(e.clipboardData!.files);
+            }
+            if ((e.clipboardData?.items?.length || 0) > 0) {
+                for (let i = 0; i < e.clipboardData!.items.length; ++i) {
+                    const item = e.clipboardData!.items[i]!;
+                    console.log(`item ${i} : ${item.type} ${item.kind}`);
+                    item.getAsString((data) => {
+                        console.log(`  -> ${data}`);
+                    })
+                }
+            }
+        };
+
+        // Attach the onPaste event listener to the entire document
+        document.addEventListener('paste', handlePaste);
+
+        return () => {
+            // Remove the event listener when the component is unmounted
+            document.removeEventListener('paste', handlePaste);
+        };
+    }, []);
+
+    // drag & drop support
+
+    const [isDragging, setIsDragging] = React.useState(false);
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const { files } = e.dataTransfer;
+        if (files.length > 0) {
+            props.onFileSelect(files);
+        }
+    };
+
+    React.useEffect(() => {
+        props.onDragStateChange && props.onDragStateChange(isDragging);
+    }, [isDragging]);
+
+
+
+    return <div className="UploadFileComponentContainer">
+        <div
+            className={`UploadFileComponent interactable interactableWithBorder ${props.className}`}
+            onClick={openFileDialog}
+            onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+            onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+            onDrop={handleDrop}
+        >
+            <div className="UploadFileComponentInterior">
+                <input
+                    type="file"
+                    multiple
+                    ref={fileInputRef}
+                    style={{ display: 'none' }}
+                    onChange={handleFileSelect}
+                />
+                <FileUploadIcon />Click to select files to upload, or drag files here, or paste.
+            </div>
+        </div>
     </div>
 };
 
@@ -190,34 +259,33 @@ export interface EventFilesTabContentProps {
 };
 
 export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
-    const [progress, setProgress] = React.useState<string[]>([]);
+    //const [progress, setProgress] = React.useState<string[]>([]);
     const [dragging, setDragging] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
-            setProgress([...progress, `beginning upload.`]);
+            //setProgress([...progress, `beginning upload.`]);
             UploadFile({
                 files,
-                onProgress: (prog, uploaded, total) => {
+                onProgress: (prog01, uploaded, total) => {
                     //console.log(`progress:${prog}, uploaded:${uploaded}, total:${total}`);
-                    setProgress([...progress, `${prog}`]);
+                    //setProgress([...progress, `${prog}`]);
                 },
             }).then(() => {
                 showSnackbar({ severity: "success", children: "file(s) uploaded" });
-                setProgress([...progress, `complete.`]);
+                //setProgress([...progress, `complete.`]);
             }).catch((e: string) => {
                 console.log(e);
                 showSnackbar({ severity: "error", children: `error uploading file(s) : ${e}` });
-                setProgress([...progress, `catch`]);
+                //setProgress([...progress, `catch`]);
             });
         }
     };
     return <>
-        <div>progress: [{progress.map((n, index) => <span key={index}>{n}</span>)}]</div>
-        <FileDropZone className={dragging ? "dragging" : "notDragging"} onFileSelect={handleFileSelect} onDragStateChange={(isDragging) => setDragging(isDragging)} />
-        <UploadFileComponent onFileSelect={handleFileSelect} />
-        <FileUploadPaste onFileSelect={handleFileSelect} />
+        {/* <div>progress: [{progress.map((n, index) => <span key={index}>{n}</span>)}]</div> */}
+        <UploadFileComponent className={dragging ? "dragging" : "notDragging"} onFileSelect={handleFileSelect} onDragStateChange={(isDragging) => setDragging(isDragging)} />
+        {/* <UploadFileComponent onFileSelect={handleFileSelect} /> */}
     </>;
 };
 

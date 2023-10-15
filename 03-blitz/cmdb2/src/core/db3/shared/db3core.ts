@@ -624,6 +624,11 @@ export const ApplyIncludeFilteringToRelation = (include: TAnyModel, memberName: 
 };
 
 
+export const ApplySoftDeleteWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, isDeletedColumnName?: string) => {
+    if (clientIntention.intention === "user") {
+        ret.push({ [isDeletedColumnName || "isDeleted"]: false });
+    }
+}
 
 ////////////////////////////////////////////////////////////////
 // apply conditions for visibility. usually columns visiblePermissionId + createdByUserId.

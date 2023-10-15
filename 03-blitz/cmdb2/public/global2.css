@@ -176,6 +176,10 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     color: #08f;
 }
 
+.interactableWithBorder:hover {
+    border-color: #08f4;
+}
+
 .iconButton,
 .freeButton {
     display: flex;
@@ -509,17 +513,37 @@ li.songDropdownOption {
 
 
 /* - UploadFileComponent --------------------------------- */
+.UploadFileComponentContainer {
+    display: flex;
+    padding: 0 30px;
+}
+
 .UploadFileComponent {
-    border: 4px solid #eee;
+    border: 2px solid #eee;
     color: #aaa;
     font-size: 24px;
-    font-weight: bold;
+    /* font-weight: bold; */
     display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 10px 20%;
-    padding: 9px 2px;
+    /* margin: 10px 20%; */
+    /* padding: 9px 2px; */
+    border-radius: 5px;
+    width: 500px;
+}
 
+.UploadFileComponent svg {
+    font-size: 30px;
+    margin: 10px;
+}
+
+.UploadFileComponentInterior {
+    background-color: #eee8;
+    margin: 9px;
+    padding: 4px;
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
 }
 
 .UploadFileComponent.dragging {

@@ -317,6 +317,11 @@ const gMenuItems: MenuItemSpec[] = [
     { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon /> },
 
     { type: "divider" },
+    { type: "sectionHeader", sectionName: "Admin Files" },
+    { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.AttachFile },
+    { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile },
+
+    { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Settings" },
     { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon /> },
     { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon /> },
