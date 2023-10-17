@@ -1,4 +1,6 @@
 import db, { Prisma } from "db";
+import { TAnyModel } from "shared/utils";
+import * as db3 from "../db3core";
 
 /*
 
@@ -33,7 +35,62 @@ and together, redundant then with the same column on EVENTTAG.
 
 they should be defined outside of the table itself, and applied afterwards.
 
+
+
+
+
+
+another big improvement will be better typing. so far i avoid it because of all the scattered prisma types for each model.
+but it could be done by grouping them, and passing into xTable ctor.
+interface DBTypes {
+    WhereClause: Record<string, unknown>; // Generic placeholder
+    Args: Record<string, unknown>; // Generic placeholder
+    CreateInput: Record<string, unknown>; // Generic placeholder
+}
+
+interface UserDBTypes extends DBTypes {
+    WhereClause: Prisma.UserWhereInput;
+    Args: Prisma.UserArgs;
+    CreateInput: Prisma.UserCreateInput;
+};
+
+interface EventDBTypes extends DBTypes {
+    WhereClause: Prisma.EventWhereInput;
+    Args: Prisma.EventArgs;
+    CreateInput: Prisma.EventCreateInput;
+};
+
+
+const query = <T extends DBTypes,>(getCreateInput: () => T['CreateInput']) => {
+}
+
+query<EventDBTypes>(() => {
+    return null;
+});
+
+
+
 */
+
+export interface DBTypes {
+    Args: Record<string, unknown>; // 
+    WhereInput: Record<string, unknown>; // 
+    Include: Record<string, unknown>;
+    Select: Record<string, unknown>;
+    CreateInput: Record<string, unknown>; // 
+}
+
+export interface FileTypes extends DBTypes {
+    Args: Prisma.FileArgs;
+    WhereInput: Prisma.FileWhereInput;
+    Include: Prisma.FileInclude;
+    Select: Prisma.FileSelect;
+    CreateInput: Prisma.FileCreateInput;
+};
+
+
+
+
 
 ////////////////////////////////////////////////////////////////
 export const VisiblePermissionInclude = {
@@ -842,3 +899,44 @@ export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResp
     // todo: sort by something else?
     { id: 'asc' },
 ];
+
+
+
+
+
+// TODO:
+
+// generates 4 columns to link up this relationship:
+// local tags field
+// foreign tags field
+export interface DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload> {
+    // LOCAL
+    localTableID: string; // "event"
+    localColumnName: string; // "tags"
+
+    local_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
+    local_getCustomFilterWhereClause?: (query: db3.CMDBTableFilterModel) => TAnyModel;
+    local_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
+
+    // ASSOCIATION
+    associationTableID: string; // "eventTagAssociation"
+    associationLocalIDMember: string; // "eventID"
+    associationLocalObjectMember: string; // "event"
+    associationForeignIDMember: string; // eventTagID
+    associationForeignObjectMember: string; // eventTag
+    // when we get a list of tag options, they're foreign models (tags).
+    // but we need our list to be association objects (itemTagAssocitaion)
+    createMockAssociation?: (row: TAnyModel, item: TAnyModel) => TAssociationPayload;
+
+    // FOREIGN
+    foreignTableID: string; // "eventTag"
+    foreignColumnName: string; // "events"
+
+    foreign_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
+    foreign_getCustomFilterWhereClause?: (query: db3.CMDBTableFilterModel) => TAnyModel;
+    foreign_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
+};
+
+export const DefineManyToManyRelationship = <TLocalPayload, TAssociationPayload, TForeignPayload>(args: DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload>) => {
+
+};

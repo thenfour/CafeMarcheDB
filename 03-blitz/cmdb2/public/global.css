@@ -641,8 +641,10 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 }
 
 .contentSection.event.visibility-public>.header {
-  background-color: var(--visibility-public-bgcolor);
-  color: var(--visibility-public-color);
+  background-color: #eee;
+  color: black;
+  /* background-color: var(--visibility-public-bgcolor);
+  color: var(--visibility-public-color); */
 }
 
 

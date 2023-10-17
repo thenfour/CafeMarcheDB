@@ -607,15 +607,13 @@ export function CircularProgressWithLabel(props: CircularProgressProps & { value
 
 
 export interface AudioPreviewProps {
-    value: db3.FileMinimumPayload;
+    value: db3.FileWithTagsPayload;
 };
 
 export const AudioPreview = (props: AudioPreviewProps) => {
     const [myWaveSurfer, setWaveSurfer] = React.useState<WaveSurfer | null>(null);
     const [myID] = React.useState<string>(`waveform-${nanoid()}`);
     const [myRef, setMyRef] = React.useState<HTMLDivElement | null>(null);
-
-    //console.log(`rendering AudioPreview component; myid=${myID}`);
 
     const UnmountWavesurfer = () => {
         if (myWaveSurfer) {
@@ -655,6 +653,24 @@ export const AudioPreview = (props: AudioPreviewProps) => {
         <div id={myID} ref={(ref) => setMyRef(ref)} />
     </div>;
 };
+
+
+
+export interface AudioPreviewBehindButtonProps {
+    value: db3.FileWithTagsPayload;
+};
+
+export const AudioPreviewBehindButton = (props: AudioPreviewBehindButtonProps) => {
+    const [isOpen, setIsOpen] = React.useState<boolean>(false);
+    return <div className="audioPreviewGatewayContainer">
+        {isOpen ? <AudioPreview value={props.value} /> : (<div className="audioPreviewGatewayButton interactable" onClick={() => setIsOpen(true)}>
+            {gIconMap.PlayCircleOutline()}
+            Preview
+        </div>)}
+    </div>;
+
+};
+
 
 export interface UserChipProps {
     value: db3.UserMinimumPayload;

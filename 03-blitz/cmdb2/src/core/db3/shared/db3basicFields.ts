@@ -612,16 +612,10 @@ export interface TagsFieldArgs<TAssociation> {
 
     // mutations needs to where:{} to find associations for local rows. so "getForeignID()" is not going to work.
     // better to 
-    //getForeignID: (value: TAssociation) => any; // return a unique key for the given association. this sorta feels redundant (with all this metadata can't core deduce this?) but we don't have enough info for this. (which field of association represents the foreign object?)
-    //getLocalID:
     associationLocalIDMember: string;
     associationForeignIDMember: string;
     associationLocalObjectMember: string;
     associationForeignObjectMember: string;
-
-    // getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
-    // getChipDescription?: (value: TAssociation) => string;
-    // getChipColor?: (value: TAssociation) => ColorPaletteEntry;
 };
 
 export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {

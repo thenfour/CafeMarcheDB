@@ -585,7 +585,7 @@ li.songDropdownOption {
 
 
 .EventFileValueViewer:hover {
-    background-color: #eee;
+    background-color: #f8f8f8;
 }
 
 
@@ -617,4 +617,28 @@ li.songDropdownOption {
 .EventFileValue .downloadLink {
     display: flex;
     align-items: center;
+}
+
+.EventFileValue .audioPreviewGatewayContainer {}
+
+.EventFileValue .audioPreviewGatewayContainer .audioPreviewGatewayButton {
+    display: flex;
+    font-size: 20px;
+    color: #888;
+    align-items: center;
+    text-transform: uppercase;
+    align-content: center;
+    /* border: 2px solid blue; */
+    width: min-content;
+    padding: 4px;
+}
+
+.EventFileValue .audioPreviewGatewayContainer .audioPreviewGatewayButton svg {
+    height: 43px;
+    width: 43px;
+    margin-right: 8px;
+}
+
+.EventFileValue .audioPreviewGatewayContainer .audioPreviewGatewayButton:hover {
+    color: #08f;
 }

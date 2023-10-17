@@ -36,7 +36,6 @@ import { CMStatusIndicator, CMTagList, ConfirmationDialog, CustomTabPanel, EditT
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceSummary } from './EventAttendanceComponents';
-import { EventCommentTabContent } from './EventCommentComponents';
 import { SegmentList } from './EventSegmentComponents';
 import { MutationMarkdownControl } from './SettingMarkdown';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -639,11 +638,11 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
         <div className='header'>
+            <div className='flex-spacer'></div>
             <Suspense>
                 <EventVisibilityControl event={event} refetch={tableClient.refetch} />
             </Suspense>
             <EventSoftDeleteControl event={event} refetch={tableClient.refetch} />
-
         </div>
 
         <div className='content'>
@@ -687,11 +686,10 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                         scrollButtons="auto"
                     >
                         <Tab label="Event Info" {...TabA11yProps('event', 0)} />
-                        <Tab label={`Comments (${event.comments.length})`} {...TabA11yProps('event', 1)} />
-                        <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 2)} />
-                        <Tab label={`Attendance ${formattedAttendeeRange}`} {...TabA11yProps('event', 3)} />
-                        <Tab label={`Completeness`} {...TabA11yProps('event', 4)} />
-                        <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 5)} />
+                        <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
+                        <Tab label={`Attendance ${formattedAttendeeRange}`} {...TabA11yProps('event', 2)} />
+                        <Tab label={`Completeness`} {...TabA11yProps('event', 3)} />
+                        <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
                     </Tabs>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
@@ -701,18 +699,14 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
-                        <EventCommentTabContent event={event} tableClient={tableClient} />
-                    </CustomTabPanel>
-
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
                         <EventSongListTabContent event={event} tableClient={tableClient} />
                     </CustomTabPanel>
 
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
+                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
                         <EventAttendanceDetail event={event} tableClient={tableClient} />
                     </CustomTabPanel>
 
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
+                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
                         {/* COMPLETENESS */}
                         <table>
                             <tbody>
@@ -765,7 +759,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
 
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
+                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
                         <EventFilesTabContent event={event} refetch={tableClient.refetch} />
                     </CustomTabPanel>
 

@@ -8,7 +8,7 @@ import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerFie
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
-import { EventArgs, EventNaturalOrderBy, EventPayloadClient, EventTaggedFilesPayload, FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, VisiblePermissionInclude } from "./prismArgs";
+import { DBTypes, EventArgs, EventNaturalOrderBy, EventPayloadClient, EventTaggedFilesPayload, FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, VisiblePermissionInclude } from "./prismArgs";
 //import { xEvent } from "./event";
 
 

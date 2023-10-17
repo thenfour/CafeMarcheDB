@@ -15,7 +15,7 @@ import { API, APIQueryResult } from '../db3/clientAPI';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { AudioPreview, CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CMTagList, CircularProgressWithLabel, EditTextField, EventChip, InspectObject, InstrumentChip, ReactiveInputDialog, SongChip, UserChip, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
+import { AudioPreview, AudioPreviewBehindButton, CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CMTagList, CircularProgressWithLabel, EditTextField, EventChip, InspectObject, InstrumentChip, ReactiveInputDialog, SongChip, UserChip, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
 import { Box, Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, Menu, MenuItem, TextField, Typography } from "@mui/material";
 import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
@@ -111,7 +111,7 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
                 <Markdown markdown={file.description} />
             </div>
             <div className="preview">
-                {isAudio && <AudioPreview value={file} />}
+                {isAudio && <AudioPreviewBehindButton value={file} />}
             </div>
             <div className="stats">
                 {file.sizeBytes} bytes,
