@@ -193,82 +193,93 @@ const EventsControls = (props: EventsControlsProps) => {
     // FILTER: [upcoming] [past] [concert] [rehearsals] [majorettes] [__________________]
     // SHOW:   [compact] [default] [full] [verbose]
     // 20 100 all
-    return <div className="eventsControls">
-        <div className="row">
-            <div className="caption">FILTER</div>
-            <div className="tagList">
-                status: <CMChipContainer>
-                    {(statusesClient.items as db3.EventStatusPayload[]).filter(i => i.events.length > 0).map(status => (
-                        <CMChip
-                            key={status.id}
-                            selected={props.spec.statusFilter.some(id => id === status.id)}
-                            onClick={() => toggleStatus(status.id)}
-                            color={status.color}
-                        >
-                            {RenderMuiIcon(status.iconName)}{status.label} ({status.events.length})
-                        </CMChip>
-                    ))}
-                </CMChipContainer>
+    return <div className="filterControlsContainer">
+        <div className="header">FILTER</div>
+        <div className="content">
+            <div className="row">
+                <div className="filterControls">
+                    <div className="row">
+                        <div className="caption cell">status</div>
+                        <CMChipContainer className="cell">
+                            {(statusesClient.items as db3.EventStatusPayload[]).filter(i => i.events.length > 0).map(status => (
+                                <CMChip
+                                    key={status.id}
+                                    selected={props.spec.statusFilter.some(id => id === status.id)}
+                                    onClick={() => toggleStatus(status.id)}
+                                    color={status.color}
+                                >
+                                    {RenderMuiIcon(status.iconName)}{status.label} ({status.events.length})
+                                </CMChip>
+                            ))}
+                        </CMChipContainer>
+                    </div>
 
-                event type: <CMChipContainer>
-                    {(typesClient.items as db3.EventTypePayload[]).filter(i => i.events.length > 0).map(type => (
-                        <CMChip
-                            key={type.id}
-                            selected={props.spec.typeFilter.some(id => id === type.id)}
-                            onClick={() => toggleType(type.id)}
-                            color={type.color}
-                        >
-                            {RenderMuiIcon(type.iconName)}{type.text} ({type.events.length})
-                        </CMChip>
-                    ))}
-                </CMChipContainer>
+                    <div className="row">
+                        <div className="caption cell">event type</div>
+                        <CMChipContainer className="cell">
+                            {(typesClient.items as db3.EventTypePayload[]).filter(i => i.events.length > 0).map(type => (
+                                <CMChip
+                                    key={type.id}
+                                    selected={props.spec.typeFilter.some(id => id === type.id)}
+                                    onClick={() => toggleType(type.id)}
+                                    color={type.color}
+                                >
+                                    {RenderMuiIcon(type.iconName)}{type.text} ({type.events.length})
+                                </CMChip>
+                            ))}
+                        </CMChipContainer>
+                    </div>
 
-                tags:
-                <CMChipContainer>
-                    {popularTags.filter(t => t.events.length > 0).map(tag => (
-                        <CMChip
-                            key={tag.id}
-                            selected={props.spec.tagFilter.some(id => id === tag.id)}
-                            onClick={() => toggleTag(tag.id)}
-                            color={tag.color}
-                        >
-                            {tag.text} ({tag.events.length})
-                        </CMChip>
-                    ))}
-                </CMChipContainer>
+                    <div className="row">
+                        <div className="caption cell">tags</div>
+                        <CMChipContainer className="cell">
+                            {popularTags.filter(t => t.events.length > 0).map(tag => (
+                                <CMChip
+                                    key={tag.id}
+                                    selected={props.spec.tagFilter.some(id => id === tag.id)}
+                                    onClick={() => toggleTag(tag.id)}
+                                    color={tag.color}
+                                >
+                                    {tag.text} ({tag.events.length})
+                                </CMChip>
+                            ))}
+                        </CMChipContainer>
+                    </div>
 
-                <InputBase
-                    size="small"
-                    placeholder="Filter"
-                    sx={{
-                        backgroundColor: "#f0f0f0",
-                        borderRadius: 3,
-                    }}
-                    value={props.spec.quickFilter}
-                    onChange={(e) => setFilterText(e.target.value)}
-                    startAdornment={<SearchIcon />}
-                />
+                    <div className="row quickFilter">
+                        <InputBase
+                            size="small"
+                            placeholder="Filter"
+                            sx={{
+                                backgroundColor: "#f0f0f0",
+                                borderRadius: 3,
+                            }}
+                            value={props.spec.quickFilter}
+                            onChange={(e) => setFilterText(e.target.value)}
+                            startAdornment={<SearchIcon />}
+                        />
+                    </div>
 
+                </div>
             </div>
-        </div>
-        <div className="row">
-            <div className="caption">SHOW</div>
-            <CMChipContainer>
-                <CMChip selected={props.spec.verbosity === "compact"} onClick={() => setVerbosity("compact")}>Compact</CMChip>
-                <CMChip selected={props.spec.verbosity === "default"} onClick={() => setVerbosity("default")}>Default</CMChip>
-                <CMChip selected={props.spec.verbosity === "verbose"} onClick={() => setVerbosity("verbose")}>Full</CMChip>
-            </CMChipContainer>
-        </div>
-        <div className="row">
-            <div className="caption">#</div>
-            <CMChipContainer>
-                <CMChip selected={props.spec.recordCount === 5} onClick={() => setRecordCount(5)}>5</CMChip>
-                <CMChip selected={props.spec.recordCount === 20} onClick={() => setRecordCount(20)}>20</CMChip>
-                <CMChip selected={props.spec.recordCount === 100} onClick={() => setRecordCount(100)}>100</CMChip>
-            </CMChipContainer>
-        </div>
-
-    </div>;
+            <div className="row">
+                <div className="caption cell">SHOW</div>
+                <CMChipContainer className="cell">
+                    <CMChip selected={props.spec.verbosity === "compact"} onClick={() => setVerbosity("compact")}>Compact</CMChip>
+                    <CMChip selected={props.spec.verbosity === "default"} onClick={() => setVerbosity("default")}>Default</CMChip>
+                    <CMChip selected={props.spec.verbosity === "verbose"} onClick={() => setVerbosity("verbose")}>Full</CMChip>
+                </CMChipContainer>
+            </div>
+            <div className="row">
+                <div className="caption">#</div>
+                <CMChipContainer className="cell">
+                    <CMChip selected={props.spec.recordCount === 5} onClick={() => setRecordCount(5)}>5</CMChip>
+                    <CMChip selected={props.spec.recordCount === 20} onClick={() => setRecordCount(20)}>20</CMChip>
+                    <CMChip selected={props.spec.recordCount === 100} onClick={() => setRecordCount(100)}>100</CMChip>
+                </CMChipContainer>
+            </div>
+        </div>{/* content */}
+    </div>; // {/* filterControlsContainer */ }
 };
 
 interface EventsListArgs {

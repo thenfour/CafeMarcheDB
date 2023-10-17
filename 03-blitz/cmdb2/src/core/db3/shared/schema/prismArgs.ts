@@ -188,24 +188,24 @@ export const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByW
     { tag: { id: 'asc' } },
 ];
 
-export const SongCommentArgs = Prisma.validator<Prisma.SongCommentArgs>()({
-    include: {
-        song: true,
-        user: true,
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
-    }
-});
+// export const SongCommentArgs = Prisma.validator<Prisma.SongCommentArgs>()({
+//     include: {
+//         song: true,
+//         user: true,
+//         visiblePermission: {
+//             include: {
+//                 roles: true
+//             }
+//         },
+//     }
+// });
 
-export type SongCommentPayload = Prisma.SongCommentGetPayload<typeof SongCommentArgs>;
+// export type SongCommentPayload = Prisma.SongCommentGetPayload<typeof SongCommentArgs>;
 
-export const SongCommentNaturalOrderBy: Prisma.SongCommentOrderByWithRelationInput[] = [
-    { updatedAt: 'desc' },
-    { id: 'asc' },
-];
+// export const SongCommentNaturalOrderBy: Prisma.SongCommentOrderByWithRelationInput[] = [
+//     { updatedAt: 'desc' },
+//     { id: 'asc' },
+// ];
 
 export const SongCreditTypeArgs = Prisma.validator<Prisma.SongCreditTypeArgs>()({
     include: {
@@ -516,20 +516,20 @@ export const EventSegmentArgs = Prisma.validator<Prisma.EventSegmentArgs>()({
 
 export type EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
 
-////////////////////////////////////////////////////////////////
-export const EventCommentArgs = Prisma.validator<Prisma.EventCommentArgs>()({
-    include: {
-        event: true,
-        user: true,
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
-    }
-});
+// ////////////////////////////////////////////////////////////////
+// export const EventCommentArgs = Prisma.validator<Prisma.EventCommentArgs>()({
+//     include: {
+//         event: true,
+//         user: true,
+//         visiblePermission: {
+//             include: {
+//                 roles: true
+//             }
+//         },
+//     }
+// });
 
-export type EventCommentPayload = Prisma.EventCommentGetPayload<typeof EventCommentArgs>;
+// export type EventCommentPayload = Prisma.EventCommentGetPayload<typeof EventCommentArgs>;
 
 
 
@@ -572,7 +572,7 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
             }
         },
         type: true,
-        comments: EventCommentArgs,
+        //comments: EventCommentArgs,
         fileTags: {
             include: {
                 file: FileWithTagsArgs,
@@ -871,10 +871,10 @@ export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationI
 
 
 
-export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationInput[] = [
-    { createdAt: "asc" },
-    { id: "asc" },
-];
+// export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationInput[] = [
+//     { createdAt: "asc" },
+//     { id: "asc" },
+// ];
 
 
 export const EventAttendanceArgs = Prisma.validator<Prisma.EventAttendanceArgs>()({

@@ -108,8 +108,8 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const CMChipContainer = (props: React.PropsWithChildren<{}>) => {
-    return <div className="CMChipContainer">{props.children}</div>
+export const CMChipContainer = (props: React.PropsWithChildren<{ className?: string }>) => {
+    return <div className={`CMChipContainer ${props.className || ""}`}>{props.children}</div>
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

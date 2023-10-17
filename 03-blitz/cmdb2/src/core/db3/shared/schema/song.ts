@@ -10,7 +10,7 @@ import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
-import { SongArgs, SongCommentArgs, SongCommentNaturalOrderBy, SongCommentPayload, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload } from "./prismArgs";
 
 
 
@@ -190,64 +190,64 @@ export const xSong = new db3.xTable({
 });
 
 
-////////////////////////////////////////////////////////////////
-export const xSongComment = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCommentInclude => {
-        return SongCommentArgs.include;
-    },
-    tableName: "songComment",
-    naturalOrderBy: SongCommentNaturalOrderBy,
-    getRowInfo: (row: SongCommentPayload) => ({
-        name: "<not supported>",
-    }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCommentWhereInput[] | false) => {
-        if (params.songId != null) {
-            return [{
-                songId: { equals: params.songId }
-            }];
-        }
-        return false;
-    },
-    visibilitySpec: {
-        ownerUserIDColumnName: "userId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
-    columns: [
-        new PKField({ columnName: "id" }),
-        new GenericStringField({
-            columnName: "text",
-            allowNull: false,
-            format: "plain",
-        }),
-        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-            columnName: "user",
-            fkMember: "userId",
-            allowNull: false,
-            foreignTableID: "User",
-            getQuickFilterWhereClause: (query: string) => false,
-        }),
+// ////////////////////////////////////////////////////////////////
+// export const xSongComment = new db3.xTable({
+//     editPermission: Permission.admin_general,
+//     viewPermission: Permission.view_general_info,
+//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCommentInclude => {
+//         return SongCommentArgs.include;
+//     },
+//     tableName: "songComment",
+//     naturalOrderBy: SongCommentNaturalOrderBy,
+//     getRowInfo: (row: SongCommentPayload) => ({
+//         name: "<not supported>",
+//     }),
+//     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCommentWhereInput[] | false) => {
+//         if (params.songId != null) {
+//             return [{
+//                 songId: { equals: params.songId }
+//             }];
+//         }
+//         return false;
+//     },
+//     visibilitySpec: {
+//         ownerUserIDColumnName: "userId",
+//         visiblePermissionIDColumnName: "visiblePermissionId",
+//     },
+//     columns: [
+//         new PKField({ columnName: "id" }),
+//         new GenericStringField({
+//             columnName: "text",
+//             allowNull: false,
+//             format: "plain",
+//         }),
+//         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+//             columnName: "user",
+//             fkMember: "userId",
+//             allowNull: false,
+//             foreignTableID: "User",
+//             getQuickFilterWhereClause: (query: string) => false,
+//         }),
 
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-        }),
-        new ForeignSingleField<Prisma.SongGetPayload<{}>>({
-            columnName: "song",
-            fkMember: "songId",
-            allowNull: false,
-            foreignTableID: "Song",
-            getQuickFilterWhereClause: (query: string) => false,
-        }),
-        MakeCreatedAtField("createdAt"),
-        new DateTimeField({
-            columnName: "updatedAt",
-            allowNull: true,
-            granularity: "minute",
-        }),
-    ]
-});
+//         new VisiblePermissionField({
+//             columnName: "visiblePermission",
+//             fkMember: "visiblePermissionId",
+//         }),
+//         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
+//             columnName: "song",
+//             fkMember: "songId",
+//             allowNull: false,
+//             foreignTableID: "Song",
+//             getQuickFilterWhereClause: (query: string) => false,
+//         }),
+//         MakeCreatedAtField("createdAt"),
+//         new DateTimeField({
+//             columnName: "updatedAt",
+//             allowNull: true,
+//             granularity: "minute",
+//         }),
+//     ]
+// });
 
 
 

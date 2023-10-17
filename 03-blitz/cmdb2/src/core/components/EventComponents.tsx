@@ -574,11 +574,10 @@ export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithS
 
 export const gEventDetailTabSlugIndices = {
     "info": 0,
-    "comments": 1,
-    "set-lists": 2,
-    "attendance": 3,
-    "completeness": 4,
-    "files": 5,
+    "set-lists": 1,
+    "attendance": 2,
+    "completeness": 3,
+    "files": 4,
 } as const;
 
 

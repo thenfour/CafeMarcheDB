@@ -10,7 +10,7 @@ import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
-import { DateRangeInfo, EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventCommentArgs, EventCommentNaturalOrderBy, EventCommentPayload, EventNaturalOrderBy, EventPayload, EventPayloadClient, EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadFromEvent, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, InstrumentArgs, InstrumentPayload, UserPayload } from "./prismArgs";
+import { DateRangeInfo, EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient, EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadFromEvent, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, InstrumentArgs, InstrumentPayload, UserPayload } from "./prismArgs";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
 
@@ -526,56 +526,56 @@ export const xEventSegment = new db3.xTable({
 
 
 
-export const xEventComment = new db3.xTable({
-    tableName: "EventComment",
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCommentInclude => {
-        return EventCommentArgs.include;
-    },
-    naturalOrderBy: EventCommentNaturalOrderBy,
-    getRowInfo: (row: EventCommentPayload) => ({
-        name: "<not supported>",
-    }),
-    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
-        const ret: Prisma.EventCommentWhereInput[] = [];
-        if (params.eventId != null) {
-            ret.push({
-                eventId: { equals: params.eventId }
-            });
-        }
-        //db3.ApplyVisibilityWhereClause(ret, clientIntention, "userId");
-        return ret;
-    },
-    visibilitySpec: {
-        ownerUserIDColumnName: "userId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
-    columns: [
-        new PKField({ columnName: "id" }),
-        MakeMarkdownTextField("text"),
-        MakeCreatedAtField("createdAt"),
-        new DateTimeField({ allowNull: false, columnName: "updatedAt", granularity: "minute", }),
-        new ForeignSingleField<Prisma.EventGetPayload<{}>>({
-            columnName: "event",
-            fkMember: "eventId",
-            allowNull: false,
-            foreignTableID: "Event",
-            getQuickFilterWhereClause: (query: string) => false,
-        }),
-        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-            columnName: "user",
-            fkMember: "userId",
-            allowNull: false,
-            foreignTableID: "User",
-            getQuickFilterWhereClause: (query: string) => false,
-        }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-        }),
-    ]
-});
+// export const xEventComment = new db3.xTable({
+//     tableName: "EventComment",
+//     editPermission: Permission.admin_general,
+//     viewPermission: Permission.view_general_info,
+//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCommentInclude => {
+//         return EventCommentArgs.include;
+//     },
+//     naturalOrderBy: EventCommentNaturalOrderBy,
+//     getRowInfo: (row: EventCommentPayload) => ({
+//         name: "<not supported>",
+//     }),
+//     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+//         const ret: Prisma.EventCommentWhereInput[] = [];
+//         if (params.eventId != null) {
+//             ret.push({
+//                 eventId: { equals: params.eventId }
+//             });
+//         }
+//         //db3.ApplyVisibilityWhereClause(ret, clientIntention, "userId");
+//         return ret;
+//     },
+//     visibilitySpec: {
+//         ownerUserIDColumnName: "userId",
+//         visiblePermissionIDColumnName: "visiblePermissionId",
+//     },
+//     columns: [
+//         new PKField({ columnName: "id" }),
+//         MakeMarkdownTextField("text"),
+//         MakeCreatedAtField("createdAt"),
+//         new DateTimeField({ allowNull: false, columnName: "updatedAt", granularity: "minute", }),
+//         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
+//             columnName: "event",
+//             fkMember: "eventId",
+//             allowNull: false,
+//             foreignTableID: "Event",
+//             getQuickFilterWhereClause: (query: string) => false,
+//         }),
+//         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+//             columnName: "user",
+//             fkMember: "userId",
+//             allowNull: false,
+//             foreignTableID: "User",
+//             getQuickFilterWhereClause: (query: string) => false,
+//         }),
+//         new VisiblePermissionField({
+//             columnName: "visiblePermission",
+//             fkMember: "visiblePermissionId",
+//         }),
+//     ]
+// });
 
 
 
