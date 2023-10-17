@@ -6,7 +6,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
+import { TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
@@ -18,6 +18,7 @@ import deleteEventSongList from "./mutations/deleteEventSongList";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 import { Permission } from "shared/permissions";
 import { Prisma } from "db";
+import insertEvent from "./mutations/insertEvent";
 
 
 export interface APIQueryArgs {
@@ -245,6 +246,8 @@ class EventsAPI {
             return ret;
         }, initialValue);
     };
+
+    newEventMutation = CreateAPIMutationFunction<TinsertEventArgs, typeof insertEvent>(insertEvent);
 
     updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
     updateEventBasicFields = CreateAPIMutationFunction<TupdateEventBasicFieldsArgs, typeof updateEventBasicFields>(updateEventBasicFields);

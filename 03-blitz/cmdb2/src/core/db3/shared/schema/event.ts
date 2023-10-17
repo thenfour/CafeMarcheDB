@@ -502,7 +502,11 @@ export const xEventSegment = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("name"),
+        new GenericStringField({ // allow 0-length names in segments. sometimes it's not easy to know what to name them and it's not that important
+            columnName: "name",
+            allowNull: false,
+            format: "plain",
+        }),
         MakeMarkdownTextField("description"),
         new DateTimeField({
             allowNull: true,

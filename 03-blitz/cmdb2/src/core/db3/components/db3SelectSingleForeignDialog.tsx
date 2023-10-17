@@ -134,7 +134,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
                             items.map(item => {
                                 const selected = isEqual(item, selectedObj);
                                 return (
-                                    <React.Fragment key={item[props.spec.typedSchemaColumn.foreignTableSpec.pkMember]}>
+                                    <React.Fragment key={item[props.spec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
                                         <ListItemButton selected onClick={e => { handleItemClick(item) }}>
                                             {props.spec.args.renderAsListItem!({}, item, selected)}
                                         </ListItemButton>

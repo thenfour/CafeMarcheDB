@@ -138,6 +138,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        if (!this.schemaColumn) throw new Error(`no schemacolumn for slug column '${this.columnName}'`);
         const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
 
         // set the calculated value in the object.

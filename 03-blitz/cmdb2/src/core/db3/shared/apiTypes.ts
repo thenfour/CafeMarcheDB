@@ -35,6 +35,24 @@ export interface TinsertEventCommentArgs {
     // created at, updated at = automatic
 };
 
+export interface TinsertEventArgs {
+    event: {
+        name: string,
+        description: string,
+        slug: string,
+        typeId: number | null,
+        statusId: number | null,
+        tags: number[],
+        visiblePermissionId: number | null;
+    },
+    segment: {
+        startsAt: Date | null,
+        endsAt: Date | null,
+        name: string,
+        description: string,
+    }
+}
+
 export interface TupdateEventCommentArgs {
     id: number;
     text?: string;

@@ -551,7 +551,7 @@ export class xTable implements TableDesc {
 
     // create a new row object (no primary key etc)
     // to later be used by insertion.
-    createNew = (clientIntention: xTableClientUsageContext) => {
+    createNew = (clientIntention: xTableClientUsageContext): any => {
         const ret = {};
         this.columns.forEach(field => {
             field.ApplyToNewRow(ret, clientIntention);

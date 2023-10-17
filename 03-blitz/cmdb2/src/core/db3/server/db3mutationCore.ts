@@ -193,11 +193,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         const { localFields, associationFields } = separateMutationValues({ table, fields });
 
         // at this point `fields` should not be used because it mixes foreign associations with local values
-        // console.log(`Separated local & associations. LOCAL:`);
-        // console.log(JSON.stringify(localFields));
-        // console.log(`ASSOCIATIONS:`);
-        // console.log(JSON.stringify(associationFields));
-        //const include = table.CalculateInclude(clientIntention);
 
         const obj = await dbTableClient.create({
             data: localFields,

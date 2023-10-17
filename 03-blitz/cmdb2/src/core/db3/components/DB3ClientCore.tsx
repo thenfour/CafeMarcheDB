@@ -70,6 +70,7 @@ export abstract class IColumnClient {
     // called when the table client is initialized to make sure this column object knows about its sibling column in the schema.
     connectColumn = (schemaTable: db3.xTable, tableClient: xTableRenderClient) => {
         console.assert(this.columnName.length > 0);
+        //console.log(`connecting column ${this.columnName}`);
         this.schemaTable = schemaTable;
         this.schemaColumn = schemaTable.columns.find(c => c.member === this.columnName)!;
         if (!this.schemaColumn) {
@@ -255,7 +256,7 @@ export class xTableRenderClient {
     doUpdateMutation = async (row: TAnyModel) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
         const updateModel = {};
-        // this.schema.columns.forEach(col => {
+        // this.schema.columns.forEach(col => { // why does insert use schema, and this uses client? hm it's hard to know which is ideal. seems like schema should be used, and just make sure they gracefully handle not being present in the model.
         //     col.ApplyClientToDb(row, updateModel, "update");
         // });
         this.clientColumns.forEach(clientCol => {
@@ -275,11 +276,16 @@ export class xTableRenderClient {
         return ret;
     };
 
-    doInsertMutation = async (row: TAnyModel) => {
+    prepareInsertMutation = (row: TAnyModel) => {
         const dbModel = {};
         this.schema.columns.forEach(col => {
             col.ApplyClientToDb(row, dbModel, "new");
         });
+        return dbModel;
+    };
+
+    doInsertMutation = async (row: TAnyModel) => {
+        const dbModel = this.prepareInsertMutation(row);
         return await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,

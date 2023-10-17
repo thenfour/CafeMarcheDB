@@ -13,12 +13,12 @@ import {
     Add as AddIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, InspectObject, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, InspectObject, ReactiveInputDialog, VisibilityControl } from "src/core/components/CMCoreComponents";
 import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { gQueryOptions } from "shared/utils";
+import { TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 
 // effectively there are a couple variants of an "event":
@@ -38,17 +38,6 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 // - "Done"
 // - "Cancelled"
 
-// approvals - there need to be multiple approvals.
-// 1. agreement to pursue the event
-// 2. 
-
-// NO approvals, because
-// 1. it clogs up the GUI
-// 2. only 3 people use it, and requires everyone to be diligent
-// 3. adoption uncertain
-// 4. small impact overall
-// therefore: too much investment
-
 function toggleValueInArray(array: number[], id: number): number[] {
     const index = array.indexOf(id);
     if (index === -1) {
@@ -59,56 +48,132 @@ function toggleValueInArray(array: number[], id: number): number[] {
     return array;
 }
 
-const NewEventDialogWrapper = ({ onCancel, onOK }: { onCancel: () => void, onOK: () => void }) => {
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+interface NewEventDialogProps {
+    onCancel: () => void;
+    onOK: () => void;
+};
 
-    const tableSpec = new DB3Client.xTableClientSpec({
+const NewEventDialogWrapper = (props: NewEventDialogProps) => {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const mut = API.events.newEventMutation.useToken();
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
+    // EVENT table bindings
+    const eventTableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
             new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
-            //new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-            //new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-            //new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
-            //new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
-            //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention }),
+            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention }),
             new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention }),
         ],
     });
 
-    const handleOK = (obj, tableClient) => {
-        tableClient.doInsertMutation(obj).then((newRow) => {
-            showSnackbar({ children: "insert successful", severity: 'success' });
-        }).catch(err => {
-            //console.log(err);
-            showSnackbar({ children: "insert error", severity: 'error' });
-            throw err;
-        }).finally(() => {
-            if (tableClient.refetch) {
-                console.log(`refetching`);
-                tableClient.refetch();
-            }
-        });
-        onOK();
+    // necessary to connect all the columns in the spec.
+    const eventTableClient = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.None,
+        tableSpec: eventTableSpec,
+    });
+
+    const [eventValue, setEventValue] = React.useState<db3.EventPayload>(db3.xEvent.createNew(clientIntention));
+
+    const eventAPI: DB3Client.NewDialogAPI = {
+        setFieldValues: (fieldValues: TAnyModel) => {
+            const newValue = { ...eventValue, ...fieldValues };
+            setEventValue(newValue);
+        },
     };
 
-    return <DB3NewObjectDialog
-        clientIntention={{
-            intention: "user",
-            customContext: {
-                type: db3.xTableClientUsageCustomContextType.UserInsertDialog,
-            },
-            mode: 'primary'
-        }}
-        onCancel={onCancel}
-        onOK={handleOK}
-        table={tableSpec}
-    />;
+    const eventValidationResult = eventTableSpec.args.table.ValidateAndComputeDiff(eventValue, eventValue, "new");
+
+
+    // EVENT SEGMENT BINDINGS
+    const segmentTableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xEventSegment,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.DateTimeColumn({ columnName: "startsAt", cellWidth: 180 }),
+            new DB3Client.DateTimeColumn({ columnName: "endsAt", cellWidth: 180 }),
+        ],
+    });
+
+    // necessary to connect all the columns in the spec.
+    const segmentTableClient = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.None,
+        tableSpec: segmentTableSpec,
+    });
+
+    const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(db3.xEventSegment.createNew(clientIntention));
+
+    const segmentAPI: DB3Client.NewDialogAPI = {
+        setFieldValues: (fieldValues: TAnyModel) => {
+            const newValue = { ...segmentValue, ...fieldValues };
+            setSegmentValue(newValue);
+        },
+    };
+
+    const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new");
+
+    const handleSaveClick = () => {
+        const payload = {
+            event: eventTableClient.prepareInsertMutation(eventValue),
+            segment: segmentTableClient.prepareInsertMutation(segmentValue),
+        };
+        mut.invoke(payload).then(() => {
+            showSnackbar({ children: "insert successful", severity: 'success' });
+            props.onOK();
+        }).catch(err => {
+            console.log(err);
+            showSnackbar({ children: "insert error", severity: 'error' });
+        });
+    };
+
+    const renderColumn = (table: DB3Client.xTableClientSpec, colName: string, row: TAnyModel, validationResult: db3.ValidateAndComputeDiffResult, api: DB3Client.NewDialogAPI) => {
+        console.log(`col :${colName}`);
+        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName] });
+    };
+
+    return <>
+        <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
+
+            <DialogTitle>
+                new event
+            </DialogTitle>
+            <DialogContent dividers>
+                <DialogContentText>
+                    description of events and segments?
+                </DialogContentText>
+
+                <div className="EventSongListValue">
+                    <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
+                        const newValue: db3.EventPayload = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
+                        setEventValue(newValue);
+                    }} />
+
+                    {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI)}
+                    {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI)}
+                    {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI)}
+                    {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI)}
+                    {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI)}
+
+                    {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI)}
+                    {renderColumn(segmentTableSpec, "endsAt", segmentValue, segmentValidationResult, segmentAPI)}
+
+                </div>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
+                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+            </DialogActions>
+
+        </ReactiveInputDialog>
+    </>;
 };
 
 const NewEventButton = (props: { onOK: () => void }) => {
@@ -385,18 +450,6 @@ const MainContent = () => {
         <Suspense>
             <EventsList filterSpec={controlSpec} />
         </Suspense>
-        {/* 
-            <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
-            <EventSummary asArnold={true} asDirector={true} finalized={true} past={true} />
-            <EventSummary asArnold={false} asDirector={false} finalized={false} past={true} />
-            <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
-            <RehearsalSummary asArnold={true} asDirector={false} finalized={true} past={true} />
-            <EventSummary asArnold={false} asDirector={false} finalized={true} past={true} />
-
-            <EventSummary asArnold={true} asDirector={false} finalized={true} past={false} />
-            <EventSummary asArnold={true} asDirector={true} finalized={true} past={false} />
-            <EventSummary asArnold={false} asDirector={false} finalized={false} past={false} />
-            <EventSummary asArnold={false} asDirector={false} finalized={true} past={false} /> */}
     </div>;
 };
 
