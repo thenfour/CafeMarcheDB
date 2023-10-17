@@ -91,9 +91,9 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
     return <MutationMarkdownControl
         initialValue={initialValue}
         refetch={refetch}
-        onChange={async (newValue) => {
-            //console.log(`settingmarkdown onchange: ${newValue}`);
-            await updateSetting({ name: props.settingName, value: newValue });
+        onChange={(newValue) => {
+            console.log(`settingmarkdown onchange setting:'${props.settingName}' = '${newValue}'`);
+            return updateSetting({ name: props.settingName, value: newValue });
         }}
     />;
 };

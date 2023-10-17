@@ -1,14 +1,11 @@
 
-import db, { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, Prisma } from "db";
-import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
+import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, Prisma } from "db";
+import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
+import { BoolField, ForeignSingleField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
-import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
-import { xSong } from "./song";
-import { getUserPrimaryInstrument, xInstrument } from "./instrument";
-import { DBTypes, EventArgs, EventNaturalOrderBy, EventPayloadClient, EventTaggedFilesPayload, FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, VisiblePermissionInclude } from "./prismArgs";
+import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload } from "./prismArgs";
+import { CreatedByUserField, VisiblePermissionField } from "./user";
 //import { xEvent } from "./event";
 
 

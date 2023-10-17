@@ -21,6 +21,7 @@ export default resolver.pipe(
             if (oldValues) { // exists.
                 if (shouldBeDeleted) {
                     // delete existing.
+                    await db.setting.delete({ where: { id: oldValues.id } });
                     await RegisterChange({
                         action: ChangeAction.delete,
                         changeContext: CreateChangeContext("updateSetting:Delete"),
