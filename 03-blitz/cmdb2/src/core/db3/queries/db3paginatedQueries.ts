@@ -10,7 +10,7 @@ export default resolver.pipe(
     resolver.authorize("db3paginatedQuery", Permission.login),
     async (input: db3.PaginatedQueryInput, ctx: AuthenticatedMiddlewareCtx) => {
         try {
-            const table = db3.gAllTables[input.tableID]!;
+            const table = db3.GetTableById(input.tableID);
             const contextDesc = `paginatedQuery:${table.tableName}`;
             CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
             const dbTableClient = db[table.tableName]; // the prisma interface

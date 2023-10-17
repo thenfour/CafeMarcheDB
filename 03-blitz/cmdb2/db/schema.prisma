@@ -564,6 +564,9 @@ model File {
   visiblePermissionId Int?
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
+  mimeType    String?
+  previewData String? // JSON that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
+
   tags              FileTagAssignment[]
   taggedUsers       FileUserTag[]
   taggedSongs       FileSongTag[]

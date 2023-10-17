@@ -490,7 +490,7 @@ li.songDropdownOption {
     text-transform: uppercase;
     font-size: small;
     border-radius: 3px;
-    padding: 2px 14px;
+    padding: 2px 7px;
     user-select: none;
 
     background-color: #ccc;
@@ -498,13 +498,13 @@ li.songDropdownOption {
 }
 
 .visibilityValue.visibility-private {
-    background-color: #e00c;
-    color: #eee;
+    background-color: var(--visibility-private-bgcolor);
+    color: var(--visibility-private-color);
 }
 
 .visibilityValue.visibility-public {
-    background-color: #cfc;
-    color: #000;
+    background-color: var(--visibility-public-bgcolor);
+    color: var(--visibility-public-color);
 }
 
 .flex-spacer {
@@ -513,40 +513,108 @@ li.songDropdownOption {
 
 
 /* - UploadFileComponent --------------------------------- */
+.uploadControlContainer {
+    display: flex;
+    /* prevent the cancel button from being tall */
+    align-items: center;
+}
+
 .UploadFileComponentContainer {
     display: flex;
     padding: 0 30px;
+    margin: 20px;
 }
 
 .UploadFileComponent {
     border: 2px solid #eee;
     color: #aaa;
-    font-size: 24px;
+    font-size: 18px;
     /* font-weight: bold; */
     display: flex;
     /* margin: 10px 20%; */
     /* padding: 9px 2px; */
     border-radius: 5px;
-    width: 500px;
-}
-
-.UploadFileComponent svg {
-    font-size: 30px;
-    margin: 10px;
-}
-
-.UploadFileComponentInterior {
-    background-color: #eee8;
-    margin: 9px;
-    padding: 4px;
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 5px;
+    width: 520px;
+    /* fixed height needed so transition to progress bar is smooth.*/
+    height: 170px;
 }
 
 .UploadFileComponent.dragging {
     border: 4px dashed #ddd;
     color: #aaa;
+}
+
+.UploadFileComponentInterior {
+    background-color: #eee8;
+    margin: 11px;
+    flex-grow: 1;
+    display: flex;
+    border-radius: 5px;
+    align-items: center;
+    justify-content: center;
+}
+
+.UploadFileComponent svg {
+    font-size: 60px;
+    width: 33%;
+}
+
+.UploadFileComponent .instructions {
+    width: 50%;
+}
+
+
+.UploadFileComponent ul {
+    padding: 0px 0px 0px 20px;
+    margin: 0;
+    font-size: 15px;
+}
+
+
+/* - event files --------------------------------- */
+
+.EventFileValue {
+    --file-type-border-color: #888;
+    margin: 10px 0;
+    padding: 2px 8px;
+    /* background-color: #eee; */
+    border: 1px solid #0002;
+    border-left: 12px solid var(--file-type-border-color);
+    border-radius: 4px;
+}
+
+
+.EventFileValueViewer:hover {
+    background-color: #eee;
+}
+
+
+.EventFileValue .header {
+    display: flex;
+    align-items: center;
+    ;
+}
+
+.EventFileValue .descriptionContainer {}
+
+.EventFileValue.mime-type-audio {
+    --file-type-border-color: #44c;
+}
+
+.EventFileValue.mime-type-image {
+    --file-type-border-color: #080;
+}
+
+.EventFileValue.mime-subtype-pdf {
+    --file-type-border-color: #c84;
+}
+
+.EventFileValue .stats {
+    font-size: small;
+    color: #999;
+}
+
+.EventFileValue .downloadLink {
+    display: flex;
+    align-items: center;
 }

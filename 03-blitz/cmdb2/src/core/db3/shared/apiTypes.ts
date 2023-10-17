@@ -108,7 +108,7 @@ export interface TClientUpdateFile {
     id?: number;
     fileLeafName?: string;
     description?: string;
-    isDeleted?: boolean;
+    isDeleted?: boolean; // allow soft delete via mutation
     visiblePermissionId?: number | null;
 
     tagsIds?: number[];

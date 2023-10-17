@@ -221,6 +221,13 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         setOldValue(props.value);
     }, []);
 
+    if (!props.value) {
+        console.error(`props.value is null for ${props.spec.columnName}. make sure it's included in the query.`);
+    }
+    if (!props.spec.schemaColumn) {
+        console.error(`props.spec.schemaColumn is null for ${props.spec.columnName}. make sure the schema contains the right info`);
+    }
+
     return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
         {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
             value,
@@ -286,7 +293,7 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
     if (!args.value) {
         return <>--</>;
     }
-    const rowInfo = args.columnSchema.associationTableSpec.getRowInfo(args.value);
+    const rowInfo = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
     const style: React.CSSProperties = {};
     const color = rowInfo.color;
     if (color != null) {
@@ -452,8 +459,8 @@ export class TagsFieldRenderContext<TAssociation> {
 
         // returns the foreign items.
         const [{ items }, { refetch }] = useQuery(db3queries, {
-            tableID: args.spec.typedSchemaColumn.foreignTableSpec.tableID,
-            tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
+            tableID: args.spec.typedSchemaColumn.getForeignTableShema().tableID,
+            tableName: args.spec.typedSchemaColumn.getForeignTableShema().tableName,
             orderBy: undefined,
             clientIntention: args.clientIntention,
             filter: {
@@ -469,7 +476,7 @@ export class TagsFieldRenderContext<TAssociation> {
 
     doInsertFromString = async (args: TagsCreateFromStringArgs): Promise<TAssociation> => {
         // create the tag, and return the mocked up association.
-        const foreignTableSpec = this.args.spec.typedSchemaColumn.foreignTableSpec;
+        const foreignTableSpec = this.args.spec.typedSchemaColumn.getForeignTableShema();
         console.assert(!!foreignTableSpec.createInsertModelFromString);
         const insertModel = foreignTableSpec.createInsertModelFromString!(args.userInput);
         try {

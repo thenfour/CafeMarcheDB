@@ -48,7 +48,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                 return;
             }
 
-            const contentType = mime.getType(leaf);
+            const contentType = mime.getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
             if (contentType) {
                 res.setHeader("Content-Type", contentType);
             } else {
@@ -56,7 +56,8 @@ export default api(async (req, res, origCtx: Ctx) => {
             }
 
             const fileStream = fs.createReadStream(fullpath);
-            res.setHeader("Content-Disposition", `attachment; filename=${dbfile.fileLeafName}`) // Specify the filename for download
+            // content disposition "attachment" would prompt users to save the file instead of displaying in browser.
+            res.setHeader("Content-Disposition", `inline; filename=${dbfile.fileLeafName}`) // Specify the filename for download
 
             fileStream.pipe(res);
             fileStream.on("close", () => {

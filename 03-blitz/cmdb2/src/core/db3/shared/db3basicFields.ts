@@ -19,7 +19,7 @@
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
-import { CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
+import { CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
 import { ApplyIncludeFilteringToRelation } from "../db3";
 
 ////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ export class PKField extends FieldBase<number> {
 }
 
 // for validation and client UI behavior.
-export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title";
+export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw";
 
 export interface GenericStringFieldArgs {
     columnName: string;
@@ -121,6 +121,11 @@ export class GenericStringField extends FieldBase<string> {
                 this.minLength = 0;
                 this.doTrim = true;
                 this.caseSensitive = args.caseSensitive || false;
+                break;
+            case "raw":
+                this.minLength = 0;
+                this.doTrim = false;
+                this.caseSensitive = true;
                 break;
             case "title":
                 this.minLength = 1;
@@ -484,7 +489,7 @@ export class ConstEnumStringField extends FieldBase<string> {
 export interface ForeignSingleFieldArgs<TForeign> {
     columnName: string; // "instrumentType"
     fkMember: string; // "instrumentTypeId"
-    foreignTableSpec: xTable;
+    foreignTableID: string; // for circular referencing don't force caller to use the xTable.
     allowNull: boolean;
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
@@ -493,12 +498,16 @@ export interface ForeignSingleFieldArgs<TForeign> {
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     fkMember: string;
-    foreignTableSpec: xTable;
+    foreignTableID: string;
     localTableSpec: xTable;
     allowNull: boolean;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean;
+
+    getForeignTableSchema = () => {
+        return GetTableById(this.foreignTableID);
+    };
 
     constructor(args: ForeignSingleFieldArgs<TForeign>) {
         super({
@@ -515,21 +524,21 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleField ${args.columnName}`);
             // }
             //return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
-            const rowInfo = this.foreignTableSpec.getRowInfo(value as TAnyModel);
+            const rowInfo = this.getForeignTableSchema().getRowInfo(value as TAnyModel);
             return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
         }
 
         this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
         this.defaultValue = args.defaultValue || null;
-        this.foreignTableSpec = args.foreignTableSpec;
+        this.foreignTableID = args.foreignTableID;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         //this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
         this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
     }
 
     get allowInsertFromString() {
-        return !!this.foreignTableSpec.createInsertModelFromString;
+        return !!this.getForeignTableSchema().createInsertModelFromString;
     }
 
     connectToTable = (table: xTable) => {
@@ -537,7 +546,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     };
 
     isEqual = (a: TForeign, b: TForeign) => {
-        return a[this.foreignTableSpec.pkMember] === b[this.foreignTableSpec.pkMember];
+        return a[this.getForeignTableSchema().pkMember] === b[this.getForeignTableSchema().pkMember];
     };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => this.getQuickFilterWhereClause__(query);
@@ -569,7 +578,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             mutationModel[this.fkMember] = null;
             return;
         }
-        mutationModel[this.fkMember] = foreign[this.foreignTableSpec.pkMember];
+        mutationModel[this.fkMember] = foreign[this.getForeignTableSchema().pkMember];
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -591,8 +600,8 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
 // on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
 export interface TagsFieldArgs<TAssociation> {
     columnName: string; // "instrumentType"
-    associationTableSpec: xTable;
-    foreignTableSpec: xTable;
+    associationTableID: string;
+    foreignTableID: string;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
     doesItemExactlyMatchText?: (item: TAssociation, filterText: string) => boolean;
@@ -617,8 +626,8 @@ export interface TagsFieldArgs<TAssociation> {
 
 export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     localTableSpec: xTable;
-    associationTableSpec: xTable;
-    foreignTableSpec: xTable;
+    associationTableID: string;
+    foreignTableID: string;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     getCustomFilterWhereClause__: (query: CMDBTableFilterModel) => TAnyModel | boolean;
 
@@ -633,8 +642,15 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     associationLocalObjectMember: string;
     associationForeignObjectMember: string;
 
+    getAssociationTableShema = () => {
+        return GetTableById(this.associationTableID);
+    };
+    getForeignTableShema = () => {
+        return GetTableById(this.foreignTableID);
+    };
+
     get allowInsertFromString() {
-        return !!this.foreignTableSpec.createInsertModelFromString;
+        return !!this.getForeignTableShema().createInsertModelFromString;
     }
 
     constructor(args: TagsFieldArgs<TAssociation>) {
@@ -652,15 +668,12 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On TagsField ${args.columnName}`);
             // }
             // return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
-            const rowInfo = this.associationTableSpec.getRowInfo(value as TAnyModel);
-            // console.log(`rowInfo for association table ${this.associationTableSpec.tableID} = ${JSON.stringify(rowInfo)}`);
-            // console.log(` -> and value =`);
-            // console.log(value);
+            const rowInfo = this.getAssociationTableShema().getRowInfo(value as TAnyModel);
             return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
         }
 
-        this.associationTableSpec = args.associationTableSpec;
-        this.foreignTableSpec = args.foreignTableSpec;
+        this.associationTableID = args.associationTableID;
+        this.foreignTableID = args.foreignTableID;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         this.getCustomFilterWhereClause__ = args.getCustomFilterWhereClause;
         this.createMockAssociation = args.createMockAssociation || this.createMockAssociation_DefaultImpl;
@@ -677,11 +690,11 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
 
     createMockAssociation_DefaultImpl = (row: TAnyModel, foreignObject: TAnyModel): TAssociation => {
         const ret = {
-            [this.associationTableSpec.pkMember]: -1, // an ID that we can assume is never valid or going to match an existing. we could also put null which may be more accurate but less safe in terms of query compatibiliy.
+            [this.getAssociationTableShema().pkMember]: -1, // an ID that we can assume is never valid or going to match an existing. we could also put null which may be more accurate but less safe in terms of query compatibiliy.
             [this.associationLocalObjectMember]: row, // local object
             [this.associationLocalIDMember]: row[this.localTableSpec.pkMember], // local ID
             [this.associationForeignObjectMember]: foreignObject, // local object
-            [this.associationForeignIDMember]: foreignObject[this.foreignTableSpec.pkMember], // foreign ID
+            [this.associationForeignIDMember]: foreignObject[this.getForeignTableShema().pkMember], // foreign ID
         } as TAssociation /* trust me */;
         return ret;
     };
@@ -693,8 +706,9 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             return false; // shortcut
         }
         // ok they are equal length arrays; check all items
-        const avalues = a.map(x => x[this.associationTableSpec.pkMember]);
-        const bvalues = b.map(x => x[this.associationTableSpec.pkMember]);
+        const asst = this.getAssociationTableShema();
+        const avalues = a.map(x => x[asst.pkMember]);
+        const bvalues = b.map(x => x[asst.pkMember]);
         avalues.sort();
         bvalues.sort();
         for (let i = 0; i < avalues.length; ++i) {
@@ -708,7 +722,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
     ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => {
-        ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.foreignTableSpec, clientIntention);
+        ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.associationForeignObjectMember, this.foreignTableID, clientIntention);
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
@@ -725,7 +739,9 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         // clients work with associations, even mock associations (where id is empty).
         // mutations don't require any of this info; associations are always with existing local & foreign items.
         // so basically we just need to reduce associations down to an update/mutate model.
-        mutationModel[this.member] = clientModel[this.member].map(a => a[this.associationForeignIDMember]);
+        if (clientModel[this.member]) {
+            mutationModel[this.member] = clientModel[this.member].map(a => a[this.associationForeignIDMember]);
+        }
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -898,6 +914,7 @@ export class CreatedAtField extends FieldBase<Date> {
         mutationModel[this.member] = vr.parsedValue;
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
+        if (dbModel[this.member] === undefined) return;
         console.assert(dbModel[this.member] instanceof Date);
         clientModel[this.member] = dbModel[this.member];
     }

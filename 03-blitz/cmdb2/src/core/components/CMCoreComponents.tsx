@@ -8,7 +8,7 @@ import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import db, { Prisma } from "db";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { Button, Card, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, useMediaQuery } from "@mui/material";
+import { Box, Button, Card, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { TAnyModel } from "shared/utils";
 import { useTheme } from "@mui/material/styles";
 import { CMTextField } from "./CMTextField";
@@ -18,6 +18,10 @@ import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { Permission } from "shared/permissions";
+import { TClientUploadFileArgs } from "../db3/shared/apiTypes";
+import { getAntiCSRFToken } from "@blitzjs/auth"
+import WaveSurfer from "wavesurfer.js";
+import { nanoid } from 'nanoid'
 
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
@@ -428,10 +432,12 @@ export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValu
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface VisibilityControlProps {
     value: VisibilityControlValue;
+    variant?: "minimal" | "verbose";
     onChange: (value: VisibilityControlValue) => void;
 };
 export const VisibilityControl = (props: VisibilityControlProps) => {
     const permissions = API.users.getAllPermissions();
+    const variant = props.variant || "minimal";
     const [currentUser] = useCurrentUser();
     const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => {
         return p.isVisibility && p.roles.some(r => r.roleId === currentUser?.roleId);
@@ -452,10 +458,10 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
             }}
             renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
                 return <li {...chprops}>
-                    <VisibilityValue permission={value} variant="verbose" /></li>;
+                    <VisibilityValue permission={value} variant={variant} /></li>;
             }}
             renderValue={(args) => {
-                return <VisibilityValue permission={args.value} variant="minimal" onClick={args.handleEnterEdit} />;
+                return <VisibilityValue permission={args.value} variant={variant} onClick={args.handleEnterEdit} />;
             }}
             onChange={props.onChange}
         />
@@ -510,3 +516,224 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 // - the init code is a lot, and it would either need to be duplicated or pass a huge amount of data around. neither is nice
 // - will allow a smoother transition between verbosities
 export type EventDetailVerbosity = "compact" | "default" | "verbose";
+
+
+
+////////////////////////////////////////////////////////////////
+export interface CMDBUploadFilesArgs {
+    files: FileList;
+    fields: TClientUploadFileArgs;
+    onProgress: (progress01: number, uploaded: number, total: number) => void;
+};
+
+export async function CMDBUploadFile(args: CMDBUploadFilesArgs) {
+    const formData = new FormData();
+    for (let i = 0; i < args.files.length; ++i) {
+        formData.append(`file_${i}`, args.files[i]!);
+    }
+    const xhr = new XMLHttpRequest();
+
+    return new Promise((resolve, reject) => {
+        xhr.upload.addEventListener("progress", (event) => {
+            if (event.lengthComputable) {
+                args.onProgress(event.loaded / event.total, event.loaded, event.total);
+            }
+        });
+        // for download progress which we don't want...
+        //   xhr.addEventListener("progress", (event) => {
+        xhr.addEventListener("loadend", () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                // success
+                resolve(true);
+            } else {
+                reject(xhr.responseText);
+            }
+        });
+        xhr.upload.addEventListener("error", (e) => {
+            reject(`upload error`);
+        });
+        xhr.addEventListener("error", (e) => {
+            reject(xhr.responseText);
+        });
+
+        // add form fields
+        Object.entries(args.fields).forEach(([key, value]) => {
+            formData.append(key, value);
+        });
+
+        xhr.open("POST", "/api/files/upload", true);
+
+        // see blitz docs for manually invoking APIs / https://blitzjs.com/docs/session-management#manual-api-requests
+        const antiCSRFToken = getAntiCSRFToken();
+        if (antiCSRFToken) {
+            xhr.setRequestHeader("anti-csrf", antiCSRFToken);
+        }
+
+        xhr.send(formData);
+    });
+}
+
+
+
+////////////////////////////////////////////////////////////////
+export function CircularProgressWithLabel(props: CircularProgressProps & { value: number }) {
+    //props.size = props.size || 70;
+    //props.thickness = props.thickness || 7;
+    return (
+        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            <CircularProgress variant="determinate" {...props} style={{ color: "#0a0" }} size={70} thickness={7} />
+            <Box
+                sx={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Typography
+                    variant="caption"
+                    component="div"
+                    color="text.secondary"
+                >{`${Math.round(props.value)}%`}</Typography>
+            </Box>
+        </Box>
+    );
+}
+
+
+
+export interface AudioPreviewProps {
+    value: db3.FileMinimumPayload;
+};
+
+export const AudioPreview = (props: AudioPreviewProps) => {
+    const [myWaveSurfer, setWaveSurfer] = React.useState<WaveSurfer | null>(null);
+    const [myID] = React.useState<string>(`waveform-${nanoid()}`);
+    const [myRef, setMyRef] = React.useState<HTMLDivElement | null>(null);
+
+    //console.log(`rendering AudioPreview component; myid=${myID}`);
+
+    const UnmountWavesurfer = () => {
+        if (myWaveSurfer) {
+            //console.log(`unmounting wavesurfer`);
+            myWaveSurfer.unAll();
+            myWaveSurfer.destroy();
+            setWaveSurfer(null);
+        }
+    };
+
+    React.useEffect(() => {
+
+        //console.log(`mounting wavesurfer`);
+        if (myRef) {
+            UnmountWavesurfer();
+
+            const ws = WaveSurfer.create({
+                url: API.files.getURIForFile(props.value),
+                //barWidth: 2,
+                //cursorWidth: 1,
+                mediaControls: true,
+                container: myRef,
+                height: 80,
+                progressColor: "#88c",
+                waveColor: "#ddd",
+                cursorColor: "#00f",
+            });
+
+            setWaveSurfer(ws);
+        }
+        return () => {
+            UnmountWavesurfer();
+        };
+    }, [myRef]);
+
+    return <div className="CMDBAudioPreview">
+        <div id={myID} ref={(ref) => setMyRef(ref)} />
+    </div>;
+};
+
+export interface UserChipProps {
+    value: db3.UserMinimumPayload;
+    variant?: ColorVariationOptions;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+};
+
+export const UserChip = (props: UserChipProps) => {
+    return <CMChip
+        variant={props.variant}
+        size={props.size}
+        onClick={props.onClick}
+        className={props.className}
+    >
+        {props.value.compactName}
+    </CMChip>
+}
+
+
+export interface InstrumentChipProps {
+    value: db3.InstrumentPayload;
+    variant?: ColorVariationOptions;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+};
+
+export const InstrumentChip = (props: InstrumentChipProps) => {
+    return <CMChip
+        variant={props.variant}
+        size={props.size}
+        onClick={props.onClick}
+        className={props.className}
+        color={props.value.functionalGroup.color}
+    >
+        {props.value.name}
+    </CMChip>
+}
+
+
+export interface EventChipProps {
+    value: db3.EventPayloadMinimum;
+    variant?: ColorVariationOptions;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+};
+
+export const EventChip = (props: EventChipProps) => {
+    return <CMChip
+        variant={props.variant}
+        size={props.size}
+        onClick={props.onClick}
+        className={props.className}
+    //color={props.value.functionalGroup.color}
+    >
+        {props.value.name}
+    </CMChip>
+}
+
+
+export interface SongChipProps {
+    value: db3.SongPayloadMinimum;
+    variant?: ColorVariationOptions;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+};
+
+export const SongChip = (props: SongChipProps) => {
+    return <CMChip
+        variant={props.variant}
+        size={props.size}
+        onClick={props.onClick}
+        className={props.className}
+    //color={props.value.functionalGroup.color}
+    >
+        {props.value.name}
+    </CMChip>
+}

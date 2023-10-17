@@ -1,14 +1,17 @@
+// for mimetype db https://cdn.jsdelivr.net/gh/jshttp/mime-db@master/db.json
+
 import formidable, { PersistentFile } from 'formidable';
 import { api } from "src/blitz-server"
 import { Ctx } from "@blitzjs/next";
 import { TClientUploadFileArgs } from 'src/core/db3/shared/apiTypes';
-import { CoerceToNumberOrNull } from 'shared/utils';
+import { CoerceToNumberOrNull, sleep } from 'shared/utils';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import * as db3 from 'src/core/db3/db3';
 import { AuthenticatedMiddlewareCtx } from 'blitz';
 import { nanoid } from 'nanoid'
+import * as mime from 'mime';
 
 var path = require('path');
 var fs = require('fs');
@@ -46,6 +49,8 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
 
+                    //await sleep(1000);
+
                     // each field can contain multiple files
                     Object.values(files).forEach(async (field: PersistentFile) => {
                         for (let iFile = 0; iFile < field.length; ++iFile) {
@@ -67,6 +72,8 @@ export default api(async (req, res, origCtx: Ctx) => {
                             // relative to current working dir.
                             const newpath = path.resolve(`${process.env.FILE_UPLOAD_PATH}`, leaf);
 
+                            const mimeType = mime.getType(file.originalFilename); // requires a leaf only, for some reason explicitly fails on a full path.
+
                             const fields: Prisma.FileUncheckedCreateInput = {
                                 fileLeafName: file.originalFilename,
                                 uploadedAt: new Date(),
@@ -76,6 +83,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                                 isDeleted: false,
                                 visiblePermissionId: args.visiblePermissionId,
                                 sizeBytes: size,
+                                mimeType,
                             }
 
                             if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];

@@ -10,22 +10,9 @@ import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField, MakeCreatedAtField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
-import { SongArgs, SongPayload } from "./instrument";
+import { SongArgs, SongCommentArgs, SongCommentNaturalOrderBy, SongCommentPayload, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload } from "./prismArgs";
 
-////////////////////////////////////////////////////////////////
-const SongTagArgs = Prisma.validator<Prisma.SongTagArgs>()({
-    include: {
-        songs: true
-    }
-});
 
-export type SongTagPayload = Prisma.SongTagGetPayload<typeof SongTagArgs>;
-
-export const SongTagNaturalOrderBy: Prisma.SongTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
 
 export const SongTagSignificance = {
     Improvisation: "Improvisation",
@@ -38,8 +25,6 @@ export const xSongTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagInclude => {
         return SongTagArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songTag",
     naturalOrderBy: SongTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
@@ -89,21 +74,6 @@ export const xSongTag = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 
-const SongTagAssociationArgs = Prisma.validator<Prisma.SongTagAssociationArgs>()({
-    include: {
-        song: true,
-        tag: true,
-    }
-});
-
-export type SongTagAssociationPayload = Prisma.SongTagAssociationGetPayload<typeof SongTagAssociationArgs>;
-
-const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByWithRelationInput[] = [
-    { tag: { sortOrder: 'desc' } },
-    { tag: { text: 'asc' } },
-    { tag: { id: 'asc' } },
-];
-
 export const xSongTagAssociation = new db3.xTable({
     tableName: "SongTagAssociation",
     editPermission: Permission.associate_song_tags,
@@ -111,8 +81,6 @@ export const xSongTagAssociation = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationInclude => {
         return SongTagAssociationArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
     getRowInfo: (row: SongTagAssociationPayload) => ({
         name: row.tag.text,
@@ -125,7 +93,7 @@ export const xSongTagAssociation = new db3.xTable({
             columnName: "tag",
             fkMember: "tagId",
             allowNull: false,
-            foreignTableSpec: xSongTag,
+            foreignTableID: "SongTag",
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput | false => false,
         }),
     ]
@@ -135,10 +103,6 @@ export const xSongTagAssociation = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 
-const SongNaturalOrderBy: Prisma.SongOrderByWithRelationInput[] = [
-    { id: 'asc' },
-];
-
 export const xSong = new db3.xTable({
     tableName: "Song",
     editPermission: Permission.admin_songs,
@@ -146,26 +110,17 @@ export const xSong = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
         return SongArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: SongNaturalOrderBy,
     getRowInfo: (row: SongPayload) => ({
         name: row.name,
         description: row.description,
     }),
-    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.SongWhereInput[] => {
-        const ret: Prisma.SongWhereInput[] = [];
-        console.assert(clientIntention.currentUser?.id !== undefined);
-        console.assert(clientIntention.currentUser?.role?.permissions !== undefined);
-        if (clientIntention.intention === "user") {
-            // apply soft delete
-            ret.push({ isDeleted: { equals: false } });
-        }
-        // apply visibility
-        db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
-        console.log(`getParameterizedWhereClause for song with params: ${params}`);
-        console.log(ret)
-        return ret;
+    softDeleteSpec: {
+        isDeletedColumnName: "isDeleted",
+    },
+    visibilitySpec: {
+        ownerUserIDColumnName: "createdByUserId",
+        visiblePermissionIDColumnName: "visiblePermissionId",
     },
     columns: [
         new PKField({ columnName: "id" }),
@@ -216,8 +171,8 @@ export const xSong = new db3.xTable({
             associationForeignObjectMember: "tag",
             associationLocalIDMember: "songId",
             associationLocalObjectMember: "song",
-            associationTableSpec: xSongTagAssociation,
-            foreignTableSpec: xSongTag,
+            associationTableID: "SongTagAssociation",
+            foreignTableID: "SongTag",
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
                 tags: {
@@ -236,33 +191,12 @@ export const xSong = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const SongCommentArgs = Prisma.validator<Prisma.SongCommentArgs>()({
-    include: {
-        song: true,
-        user: true,
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
-    }
-});
-
-export type SongCommentPayload = Prisma.SongCommentGetPayload<typeof SongCommentArgs>;
-
-export const SongCommentNaturalOrderBy: Prisma.SongCommentOrderByWithRelationInput[] = [
-    { updatedAt: 'desc' },
-    { id: 'asc' },
-];
-
 export const xSongComment = new db3.xTable({
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCommentInclude => {
         return SongCommentArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songComment",
     naturalOrderBy: SongCommentNaturalOrderBy,
     getRowInfo: (row: SongCommentPayload) => ({
@@ -276,6 +210,10 @@ export const xSongComment = new db3.xTable({
         }
         return false;
     },
+    visibilitySpec: {
+        ownerUserIDColumnName: "userId",
+        visiblePermissionIDColumnName: "visiblePermissionId",
+    },
     columns: [
         new PKField({ columnName: "id" }),
         new GenericStringField({
@@ -287,7 +225,7 @@ export const xSongComment = new db3.xTable({
             columnName: "user",
             fkMember: "userId",
             allowNull: false,
-            foreignTableSpec: xUser,
+            foreignTableID: "User",
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
@@ -299,7 +237,7 @@ export const xSongComment = new db3.xTable({
             columnName: "song",
             fkMember: "songId",
             allowNull: false,
-            foreignTableSpec: xSong,
+            foreignTableID: "Song",
             getQuickFilterWhereClause: (query: string) => false,
         }),
         MakeCreatedAtField("createdAt"),
@@ -316,28 +254,12 @@ export const xSongComment = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const SongCreditTypeArgs = Prisma.validator<Prisma.SongCreditTypeArgs>()({
-    include: {
-        songCredits: true,
-    }
-});
-
-export type SongCreditTypePayload = Prisma.SongCreditTypeGetPayload<typeof SongCreditTypeArgs>;
-
-export const SongCreditTypeNaturalOrderBy: Prisma.SongCreditTypeOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
-
 export const xSongCreditType = new db3.xTable({
     editPermission: Permission.edit_song_credit_types,
     viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditTypeInclude => {
         return SongCreditTypeArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songCreditType",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
@@ -376,35 +298,18 @@ export const xSongCreditType = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-const SongCreditArgs = Prisma.validator<Prisma.SongCreditArgs>()({
-    include: {
-        song: true,
-        user: true,
-        type: true,
-    }
-});
-
-export type SongCreditPayload = Prisma.SongCreditGetPayload<typeof SongCreditArgs>;
-
-export const SongCreditNaturalOrderBy: Prisma.SongCreditOrderByWithRelationInput[] = [
-    { id: 'asc' },
-];
-
 export const xSongCredit = new db3.xTable({
     editPermission: Permission.edit_song_credits,
     viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditInclude => {
         return SongCreditArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "songCredit",
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({
         name: "<a song credit>",
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCreditWhereInput[] | false) => {
-        console.log(`song credit getParameterizedWhereClause`);
         if (params.songId != null) {
             return [{
                 songId: { equals: params.songId }
@@ -418,21 +323,21 @@ export const xSongCredit = new db3.xTable({
             columnName: "user",
             fkMember: "userId",
             allowNull: false,
-            foreignTableSpec: xUser,
+            foreignTableID: "User",
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
             columnName: "song",
             fkMember: "songId",
             allowNull: false,
-            foreignTableSpec: xSong,
+            foreignTableID: "Song",
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.SongCreditTypeGetPayload<{}>>({
             columnName: "type",
             fkMember: "typeId",
             allowNull: false,
-            foreignTableSpec: xSongCreditType,
+            foreignTableID: "SongCreditType",
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]

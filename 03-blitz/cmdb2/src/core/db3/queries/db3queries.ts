@@ -10,7 +10,7 @@ export default resolver.pipe(
     resolver.authorize("db3query", Permission.login),
     async (input: db3.QueryInput, ctx: AuthenticatedMiddlewareCtx) => {
         try {
-            const table = db3.gAllTables[input.tableID]!;
+            const table = db3.GetTableById(input.tableID);
             console.assert(!!table);
             const contextDesc = `query:${table.tableName}`;
             CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);

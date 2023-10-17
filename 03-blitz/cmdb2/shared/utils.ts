@@ -486,3 +486,50 @@ export function moveItemInArray<T>(array: T[], oldIndex: number, newIndex: numbe
 
     return newArray;
 }
+
+
+
+export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTimeout(() => {
+    resolve(`you slept for ${ms} millis with seed ${seed}`);
+}, ms));
+
+
+
+// thanks chatgpt
+export interface ParsedMimeType {
+    type: string | null;
+    subtype: string | null;
+    parameters: Record<string, string>;
+}
+
+export function parseMimeType(mimeTypeStringOrNullish: string | null | undefined): ParsedMimeType | null {
+    if (!mimeTypeStringOrNullish) return null;
+    const mimeTypeString = mimeTypeStringOrNullish as string;
+    const regex = /^([^/]+)\/([^;\s]+)(?:\s*;\s*(.*))?$/;
+    const matches = mimeTypeString.match(regex);
+
+    if (!matches) {
+        return null;
+    }
+
+    const type = matches[1] || null;
+    const subtype = matches[2] || null;
+    const parameterString = matches[3] || '';
+    const parameters: Record<string, string> = {};
+
+    parameterString.split(';').forEach((param) => {
+        const [key, value] = param.split('=').map((s) => s.trim());
+        if (key && value) {
+            parameters[key] = value;
+        }
+    });
+
+    return {
+        type,
+        subtype,
+        parameters,
+    };
+}
+
+
+

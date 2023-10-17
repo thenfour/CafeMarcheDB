@@ -4,8 +4,9 @@ import { Permission } from "shared/permissions";
 import { BoolField, DateTimeField, ForeignSingleField, ForeignSingleFieldArgs, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { gGeneralPaletteList } from "shared/color";
-import { InstrumentArgs, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, xInstrument } from "./instrument";
 import { TAnyModel, gIconOptions } from "shared/utils";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload } from "./prismArgs";
+import { xInstrument } from "./instrument";
 
 
 export const xUserMinimum = new db3.xTable({
@@ -14,8 +15,6 @@ export const xUserMinimum = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
         return UserArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "user",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
@@ -76,29 +75,12 @@ export const xUserMinimum = new db3.xTable({
 
 
 
-
-const PermissionArgs = Prisma.validator<Prisma.PermissionArgs>()({
-    include: {
-        roles: true,
-    }
-});
-export type PermissionPayloadMinimum = Prisma.PermissionGetPayload<{}>;
-export type PermissionPayload = Prisma.PermissionGetPayload<typeof PermissionArgs>;
-
-export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { name: 'asc' },
-    { id: 'asc' },
-];
-
 export const xPermissionBaseArgs: db3.TableDesc = {
     editPermission: Permission.admin_auth,
     viewPermission: Permission.admin_auth,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.PermissionInclude => {
         return PermissionArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "permission",
     naturalOrderBy: PermissionNaturalOrderBy,
     getRowInfo: (row: PermissionPayload) => ({
@@ -159,21 +141,6 @@ export const xPermissionForVisibility = new db3.xTable({
 // if we think of role-permission as tags relationship,
 // then roles are the local object, and permissions are the foreign tags object.
 
-const RolePermissionArgs = Prisma.validator<Prisma.RolePermissionArgs>()({
-    include: {
-        permission: true,
-        role: true,
-    }
-});
-
-export type RolePermissionAssociationPayload = Prisma.RolePermissionGetPayload<typeof RolePermissionArgs>;
-
-const RolePermissionNaturalOrderBy: Prisma.RolePermissionOrderByWithRelationInput[] = [
-    { permission: { sortOrder: 'desc' } },
-    { permission: { name: 'asc' } },
-    { permission: { id: 'asc' } },
-];
-
 // this schema is required for tags selection dlg.
 export const xRolePermissionAssociation = new db3.xTable({
     tableName: "RolePermission",
@@ -182,8 +149,6 @@ export const xRolePermissionAssociation = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionInclude => {
         return RolePermissionArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: RolePermissionNaturalOrderBy,
     getRowInfo: (row: RolePermissionAssociationPayload) => ({
         name: row.permission.name,
@@ -195,7 +160,7 @@ export const xRolePermissionAssociation = new db3.xTable({
             columnName: "permission",
             fkMember: "permissionId",
             allowNull: false,
-            foreignTableSpec: xPermission,
+            foreignTableID: "Permission",
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
@@ -206,24 +171,6 @@ export const xRolePermissionAssociation = new db3.xTable({
 });
 
 ////////////////////////////////////////////////////////////////
-const RoleArgs = Prisma.validator<Prisma.RoleArgs>()({
-    include: {
-        permissions: {
-            include: {
-                permission: true,
-            },
-            orderBy: RolePermissionNaturalOrderBy,
-        },
-    }
-});
-
-export type RolePayload = Prisma.RoleGetPayload<typeof RoleArgs>;
-
-const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { name: 'asc' },
-    { id: 'asc' },
-];
 
 export const xRole = new db3.xTable({
     editPermission: Permission.admin_auth,
@@ -231,8 +178,6 @@ export const xRole = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RoleInclude => {
         return RoleArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "role",
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
@@ -264,12 +209,12 @@ export const xRole = new db3.xTable({
         }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",
-            associationTableSpec: xRolePermissionAssociation,
             associationForeignIDMember: "permissionId",
             associationForeignObjectMember: "permission",
             associationLocalIDMember: "roleId",
             associationLocalObjectMember: "role",
-            foreignTableSpec: xPermission,
+            associationTableID: "RolePermissionAssociation",
+            foreignTableID: "Permission",
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
@@ -295,8 +240,6 @@ export const xUserInstrument = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInstrumentInclude => {
         return UserInstrumentArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: UserInstrumentNaturalOrderBy,
     getRowInfo: (row: UserInstrumentPayload) => {
         return {
@@ -304,8 +247,7 @@ export const xUserInstrument = new db3.xTable({
             description: row.instrument.description,
             color: gGeneralPaletteList.findEntry(row.instrument.functionalGroup.color),
         };
-    }
-    ,
+    },
     columns: [
         new PKField({ columnName: "id" }),
         new BoolField({ columnName: "isPrimary", defaultValue: false }),
@@ -313,14 +255,14 @@ export const xUserInstrument = new db3.xTable({
             columnName: "instrument",
             fkMember: "instrumentId",
             allowNull: false,
-            foreignTableSpec: xInstrument,
+            foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({ // tags field should include the foreign object (tag object)
             columnName: "user",
             fkMember: "userId",
             allowNull: false,
-            foreignTableSpec: xUserMinimum,
+            foreignTableID: "UserMinimum",
             getQuickFilterWhereClause: (query: string) => false,
         }),
         // don't include local object because of dependencies / redundancy issues
@@ -341,8 +283,6 @@ export const xUser = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
         return UserArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "user",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
@@ -353,10 +293,10 @@ export const xUser = new db3.xTable({
         if (params.userId != null) {
             ret.push({ id: { equals: params.userId } });
         }
-        if (clientIntention.intention === "user") {
-            ret.push({ isDeleted: false });
-        }
         return ret;
+    },
+    softDeleteSpec: {
+        isDeletedColumnName: "isDeleted",
     },
     columns: [
         new PKField({ columnName: "id" }),
@@ -392,7 +332,7 @@ export const xUser = new db3.xTable({
             columnName: "role",
             allowNull: false,
             fkMember: "roleId",
-            foreignTableSpec: xRole,
+            foreignTableID: "Role",
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 OR: [
                     { name: { contains: query } },
@@ -417,8 +357,8 @@ export const xUser = new db3.xTable({
             associationForeignObjectMember: "instrument",
             associationLocalIDMember: "userId",
             associationLocalObjectMember: "user",
-            associationTableSpec: xUserInstrument,
-            foreignTableSpec: xInstrument,
+            associationTableID: "UserInstrument",
+            foreignTableID: "Instrument",
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
         }),]
@@ -439,7 +379,7 @@ export class CreatedByUserField extends ForeignSingleField<UserPayload> {
         super({
             columnName: args.columnName || "createdByUser",
             fkMember: args.fkMember || "createdByUserId",
-            foreignTableSpec: xUser,
+            foreignTableID: "User",
             allowNull: true,
             getQuickFilterWhereClause: () => false,
         });
@@ -462,7 +402,7 @@ export class VisiblePermissionField extends ForeignSingleField<PermissionPayload
         super({
             columnName: args.columnName || "visiblePermission",
             fkMember: args.fkMember || "visiblePermissionId",
-            foreignTableSpec: xPermissionForVisibility,
+            foreignTableID: "xPermissionForVisibility",
             allowNull: true,
             getQuickFilterWhereClause: () => false,
         });

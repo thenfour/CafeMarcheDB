@@ -10,13 +10,13 @@
   --general-interactable-bgcolor: #79b;
   --general-interactable-color: #eee;
 
-  --visibility-public-bgcolor: #cec8;
-  --visibility-public-color: #fff;
+  --visibility-public-bgcolor: #cec;
+  --visibility-public-color: #484;
 
-  --visibility-private-bgcolor: #ecc8;
-  --visibility-private-color: #000;
+  --visibility-private-bgcolor: #ecc;
+  --visibility-private-color: #c00;
 
-  --visibility-other-bgcolor: #ecc8;
+  --visibility-other-bgcolor: #ecc;
   --visibility-other-color: #000;
 }
 
@@ -40,6 +40,11 @@ h1:first-child {
 
 .MuiDrawer-paper {
   width: var(--drawer-paper-width);
+}
+
+.MuiButton-root {
+  border: 2px outset #8883;
+  padding: 1px 8px;
 }
 
 .MuiDataGrid-columnHeaders {

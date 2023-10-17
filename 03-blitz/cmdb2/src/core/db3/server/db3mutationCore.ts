@@ -80,7 +80,7 @@ export interface UpdateAssociationsArgs {
 // creates/deletes associations. does not update any other data in associations table; this is only for making/breaking associations.
 // this is specifically for arrays of tag IDs. if the association has more to it than just associating two PKs, then you'll need something more sophisticated.
 export const UpdateAssociations = async ({ changeContext, ctx, ...args }: UpdateAssociationsArgs) => {
-    const associationTableName = args.column.associationTableSpec.tableName;
+    const associationTableName = args.column.getAssociationTableShema().tableName;
     const currentAssociations = await db[associationTableName].findMany({
         where: { [args.column.associationLocalIDMember]: args.localId },
     });
@@ -257,12 +257,12 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
 
-        const include = table.CalculateInclude(clientIntention);
+        //const include = table.CalculateInclude(clientIntention);
 
         const obj = await dbTableClient.update({
             where: { [table.pkMember]: pkid },
             data: localFields,
-            include,
+            //include,
         });
 
         await RegisterChange({

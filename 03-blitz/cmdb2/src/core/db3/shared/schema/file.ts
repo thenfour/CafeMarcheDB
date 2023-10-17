@@ -7,8 +7,9 @@ import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
-import { InstrumentArgs, InstrumentPayload, SongArgs, UserArgs, UserPayload, getUserPrimaryInstrument, xInstrument } from "./instrument";
-import { xEvent } from "./event";
+import { getUserPrimaryInstrument, xInstrument } from "./instrument";
+import { EventArgs, EventNaturalOrderBy, EventPayloadClient, EventTaggedFilesPayload, FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, VisiblePermissionInclude } from "./prismArgs";
+//import { xEvent } from "./event";
 
 
 
@@ -23,20 +24,6 @@ import { xEvent } from "./event";
 //     fileAssignments       FileTagAssignment[]
 //   }
 
-////////////////////////////////////////////////////////////////
-const FileTagArgs = Prisma.validator<Prisma.FileTagArgs>()({
-    include: {
-        fileAssignments: true,
-    }
-});
-
-export type FileTagPayload = Prisma.FileTagGetPayload<typeof FileTagArgs>;
-
-export const FileTagNaturalOrderBy: Prisma.FileTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
 
 export const FileTagSignificance = {
     Partition: "Partition",
@@ -53,8 +40,6 @@ export const xFileTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagInclude => {
         return FileTagArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "fileTag",
     naturalOrderBy: FileTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.FileTagCreateInput => {
@@ -94,21 +79,12 @@ export const xFileTag = new db3.xTable({
 
 
 
-////////////////////////////////////////////////////////////////
-export const FileTagAssignmentArgs = Prisma.validator<Prisma.FileTagAssignmentArgs>()({
-    include: {
-        file: true,
-        fileTag: true,
-    }
-});
-export type FileTagAssignmentPayload = Prisma.FileTagAssignmentGetPayload<typeof FileTagAssignmentArgs>;
 
 
-const FileTagAssignmentNaturalOrderBy: Prisma.FileTagAssignmentOrderByWithRelationInput[] = [
-    { fileTag: { sortOrder: 'desc' } },
-    { fileTag: { text: 'asc' } },
-    { fileTag: { id: 'asc' } },
-];
+
+
+
+
 export const xFileTagAssignment = new db3.xTable({
     tableName: "FileTagAssignment",
     editPermission: Permission.login,
@@ -117,8 +93,6 @@ export const xFileTagAssignment = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagAssignmentInclude => {
         return FileTagAssignmentArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getRowInfo: (row: FileTagAssignmentPayload) => {
         return {
             name: row.fileTag.text,
@@ -133,7 +107,7 @@ export const xFileTagAssignment = new db3.xTable({
             columnName: "fileTag",
             fkMember: "fileTagId",
             allowNull: false,
-            foreignTableSpec: xFileTag,
+            foreignTableID: "FileTag",
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -156,19 +130,10 @@ export const xFileTagAssignment = new db3.xTable({
 //     @@unique([fileId, userId]) // 
 //   }
 
-////////////////////////////////////////////////////////////////
-export const FileUserTagArgs = Prisma.validator<Prisma.FileUserTagArgs>()({
-    include: {
-        file: true,
-        user: true,
-    }
-});
-export type FileUserTagPayload = Prisma.FileUserTagGetPayload<typeof FileUserTagArgs>;
 
-const FileUserTagNaturalOrderBy: Prisma.FileUserTagOrderByWithRelationInput[] = [
-    { user: { name: 'asc' } },
-    { user: { id: 'asc' } },
-];
+
+
+
 export const xFileUserTag = new db3.xTable({
     tableName: "FileUserTag",
     editPermission: Permission.login,
@@ -177,8 +142,6 @@ export const xFileUserTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileUserTagInclude => {
         return FileUserTagArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getRowInfo: (row: FileUserTagPayload) => {
         return {
             name: row.user.name,
@@ -190,7 +153,7 @@ export const xFileUserTag = new db3.xTable({
             columnName: "user",
             fkMember: "userId",
             allowNull: false,
-            foreignTableSpec: xUser,
+            foreignTableID: "User",
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -212,19 +175,9 @@ export const xFileUserTag = new db3.xTable({
 //     @@unique([fileId, songId]) // 
 //   }
 
-////////////////////////////////////////////////////////////////
-export const FileSongTagArgs = Prisma.validator<Prisma.FileSongTagArgs>()({
-    include: {
-        file: true,
-        song: true,
-    }
-});
-export type FileSongTagPayload = Prisma.FileSongTagGetPayload<typeof FileSongTagArgs>;
 
-const FileSongTagNaturalOrderBy: Prisma.FileSongTagOrderByWithRelationInput[] = [
-    { song: { name: 'asc' } },
-    { song: { id: 'asc' } },
-];
+
+
 export const xFileSongTag = new db3.xTable({
     tableName: "FileSongTag",
     editPermission: Permission.login,
@@ -233,8 +186,6 @@ export const xFileSongTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileSongTagInclude => {
         return FileSongTagArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getRowInfo: (row: FileSongTagPayload) => {
         return {
             name: row.song.name,
@@ -246,7 +197,7 @@ export const xFileSongTag = new db3.xTable({
             columnName: "song",
             fkMember: "songId",
             allowNull: false,
-            foreignTableSpec: xSong,
+            foreignTableID: "Song",
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -266,19 +217,6 @@ export const xFileSongTag = new db3.xTable({
 //     @@unique([fileId, eventId]) // 
 //   }
 
-////////////////////////////////////////////////////////////////
-export const FileEventTagArgs = Prisma.validator<Prisma.FileEventTagArgs>()({
-    include: {
-        file: true,
-        event: true,
-    }
-});
-export type FileEventTagPayload = Prisma.FileEventTagGetPayload<typeof FileEventTagArgs>;
-
-const FileEventTagNaturalOrderBy: Prisma.FileEventTagOrderByWithRelationInput[] = [
-    { event: { name: 'asc' } },
-    { event: { id: 'asc' } },
-];
 export const xFileEventTag = new db3.xTable({
     tableName: "FileEventTag",
     editPermission: Permission.login,
@@ -287,8 +225,6 @@ export const xFileEventTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileEventTagInclude => {
         return FileEventTagArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getRowInfo: (row: FileEventTagPayload) => {
         return {
             name: row.event.name,
@@ -296,11 +232,18 @@ export const xFileEventTag = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        new ForeignSingleField<Prisma.FileEventTagGetPayload<{}>>({
+        new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
             fkMember: "eventId",
             allowNull: false,
-            foreignTableSpec: xEvent,
+            foreignTableID: "Event",
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+            columnName: "file",
+            fkMember: "fileId",
+            allowNull: false,
+            foreignTableID: "File",
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -322,18 +265,6 @@ export const xFileEventTag = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagArgs>()({
-    include: {
-        file: true,
-        instrument: true,
-    }
-});
-export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
-
-const FileInstrumentTagNaturalOrderBy: Prisma.FileInstrumentTagOrderByWithRelationInput[] = [
-    { instrument: { name: 'asc' } },
-    { instrument: { id: 'asc' } },
-];
 export const xFileInstrumentTag = new db3.xTable({
     tableName: "FileInstrumentTag",
     editPermission: Permission.login,
@@ -342,8 +273,6 @@ export const xFileInstrumentTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInstrumentTagInclude => {
         return FileInstrumentTagArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     getRowInfo: (row: FileInstrumentTagPayload) => {
         return {
             name: row.instrument.name,
@@ -355,7 +284,7 @@ export const xFileInstrumentTag = new db3.xTable({
             columnName: "instrument",
             fkMember: "instrumentId",
             allowNull: false,
-            foreignTableSpec: xInstrument,
+            foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -387,28 +316,6 @@ export const xFileInstrumentTag = new db3.xTable({
 //   }
 
 ////////////////////////////////////////////////////////////////
-export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
-    include: {
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
-        uploadedByUser: true,
-
-        tags: FileTagAssignmentArgs,
-        taggedUsers: FileUserTagArgs,
-        taggedSongs: FileSongTagArgs,
-        taggedEvents: FileEventTagArgs,
-        taggedInstruments: FileInstrumentTagArgs,
-    }
-});
-
-export type FilePayload = Prisma.FileGetPayload<typeof FileArgs>;
-
-export const FileNaturalOrderBy: Prisma.FileOrderByWithRelationInput[] = [
-    { uploadedAt: 'desc' }
-];
 
 export interface xFileFilterParams {
     fileId?: number;
@@ -416,19 +323,19 @@ export interface xFileFilterParams {
 };
 
 export const xFile = new db3.xTable({
+    tableName: "File",
     editPermission: Permission.admin_general,
     viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInclude => {
         return FileArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
-        // db3.ApplyIncludeFilteringToRelation(include, "tags", "event", xEventTagAssignment, clientIntention);
-        // db3.ApplyIncludeFilteringToRelation(include, "comments", "event", xEventComment, clientIntention);
-        // db3.ApplyIncludeFilteringToRelation(include, "segments", "event", xEventSegment, clientIntention);
-        // db3.ApplyIncludeFilteringToRelation(include, "songLists", "event", xEventSongList, clientIntention);
+    softDeleteSpec: {
+        isDeletedColumnName: "isDeleted",
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    tableName: "File",
+    visibilitySpec: {
+        ownerUserIDColumnName: "uploadedByUserId",
+        visiblePermissionIDColumnName: "visiblePermissionId",
+    },
     naturalOrderBy: FileNaturalOrderBy,
     getParameterizedWhereClause: (params: xFileFilterParams, clientIntention: db3.xTableClientUsageContext): (Prisma.FileWhereInput[]) => {
         const ret: Prisma.FileWhereInput[] = [];
@@ -439,14 +346,6 @@ export const xFile = new db3.xTable({
         if (params.fileId !== undefined) {
             ret.push({ id: params.fileId, });
         }
-
-        if (clientIntention.intention === "user") {
-            // apply soft delete
-            ret.push({ isDeleted: { equals: false } });
-        }
-
-        db3.ApplySoftDeleteWhereClause(ret, clientIntention);
-        db3.ApplyVisibilityWhereClause(ret, clientIntention, "createdByUserId");
         return ret;
     },
     getRowInfo: (row: FilePayload) => ({
@@ -460,12 +359,22 @@ export const xFile = new db3.xTable({
         new GenericStringField({
             columnName: "storedLeafName",
             allowNull: false,
-            format: "plain",
+            format: "raw",
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+        }),
+        new GenericStringField({
+            columnName: "mimeType",
+            allowNull: true,
+            format: "raw",
+        }),
+        new GenericStringField({
+            columnName: "previewData",
+            allowNull: true,
+            format: "raw",
         }),
         MakeCreatedAtField("uploadedAt"),
         new BoolField({ columnName: "isDeleted", defaultValue: false }),
@@ -485,8 +394,8 @@ export const xFile = new db3.xTable({
             associationForeignObjectMember: "fileTag",
             associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableSpec: xFileTagAssignment,
-            foreignTableSpec: xFileTag,
+            associationTableID: "FileTagAssignment",
+            foreignTableID: "FileTag",
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 tags: {
                     some: {
@@ -510,8 +419,8 @@ export const xFile = new db3.xTable({
             associationForeignObjectMember: "user",
             associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableSpec: xFileUserTag,
-            foreignTableSpec: xUser,
+            associationTableID: "FileUserTag",
+            foreignTableID: "User",
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedUsers: {
                     some: {
@@ -532,8 +441,8 @@ export const xFile = new db3.xTable({
             associationForeignObjectMember: "song",
             associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableSpec: xFileSongTag,
-            foreignTableSpec: xSong,
+            associationTableID: "FileSongTag",
+            foreignTableID: "Song",
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedSongs: {
                     some: {
@@ -554,8 +463,8 @@ export const xFile = new db3.xTable({
             associationForeignObjectMember: "event",
             associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableSpec: xFileEventTag,
-            foreignTableSpec: xEvent,
+            associationTableID: "FileEventTag",
+            foreignTableID: "Event",
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedEvents: {
                     some: {
@@ -576,8 +485,8 @@ export const xFile = new db3.xTable({
             associationForeignObjectMember: "instrument",
             associationLocalIDMember: "fileId",
             associationLocalObjectMember: "file",
-            associationTableSpec: xFileInstrumentTag,
-            foreignTableSpec: xInstrument,
+            associationTableID: "FileInstrumentTag",
+            foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedInstruments: {
                     some: {
@@ -599,4 +508,147 @@ export const xFile = new db3.xTable({
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// export const xTestFile = new db3.xTable({
+//     tableName: "File",
+//     tableUniqueName: "testFile",
+//     editPermission: Permission.login,
+//     viewPermission: Permission.login,
+//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInclude => {
+//         return FileArgs.include;
+//     },
+//     naturalOrderBy: FileNaturalOrderBy,
+//     // softDeleteSpec: {
+//     //     isDeletedColumnName: "isDeleted",
+//     // },
+//     // visibilitySpec: {
+//     //     ownerUserIDColumnName: "uploadedByUserId",
+//     //     visiblePermissionIDColumnName: "visiblePermissionId",
+//     // },
+//     getRowInfo: (row: FilePayload) => ({
+//         name: row.fileLeafName,
+//         description: row.description,
+//     }),
+//     columns: [
+//         new PKField({ columnName: "id" }),
+//         new BoolField({ columnName: "isDeleted", defaultValue: false }),
+//         new CreatedByUserField({
+//             columnName: "uploadedByUser",
+//             fkMember: "uploadedByUserId",
+//         }),
+//         new VisiblePermissionField({
+//             columnName: "visiblePermission",
+//             fkMember: "visiblePermissionId",
+//         }),
+//         new TagsField<FileEventTag>({
+//             columnName: "taggedEvents",
+//             associationTableID: "testFileEventTag",
+//             foreignTableID: "testEvent",
+//             associationForeignIDMember: "eventId",
+//             associationForeignObjectMember: "event",
+//             associationLocalIDMember: "fileId",
+//             associationLocalObjectMember: "file",
+//             getQuickFilterWhereClause: (query: string) => false,
+//             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
+//         }), // column: taggedEvents
+//     ]
+
+// });
+
+
+// export const xTestFileEventTag = new db3.xTable({
+//     tableName: "FileEventTag",
+//     tableUniqueName: "TestFileEventTag",
+//     editPermission: Permission.login,
+//     viewPermission: Permission.login,
+//     naturalOrderBy: FileEventTagNaturalOrderBy,
+//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileEventTagInclude => {
+//         return FileEventTagArgs.include;
+//     },
+//     getRowInfo: (row: FileEventTagPayload) => {
+//         return {
+//             name: row.event.name,
+//         };
+//     },
+//     columns: [
+//         new PKField({ columnName: "id" }),
+//         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
+//             columnName: "event",
+//             fkMember: "eventId",
+//             allowNull: false,
+//             foreignTableID: "testEvent",
+//             getQuickFilterWhereClause: (query: string) => false,
+//         }),
+//         new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+//             columnName: "file",
+//             fkMember: "fileId",
+//             allowNull: false,
+//             foreignTableID: "testFile",
+//             getQuickFilterWhereClause: (query: string) => false,
+//         }),
+//     ]
+// });
+
+
+
+// export const TestEventArgs = Prisma.validator<Prisma.EventArgs>()({
+//     include: {
+//         visiblePermission: VisiblePermissionInclude,
+//         fileTags: {
+//             include: {
+//                 file: true,
+//             },
+//         },
+//     },
+// });
+
+
+// export const xTestEvent = new db3.xTable({
+//     tableName: "event",
+//     tableUniqueName: "testEvent",
+//     editPermission: Permission.admin_general,
+//     viewPermission: Permission.view_general_info,
+//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
+//         return TestEventArgs.include;
+//     },
+//     // softDeleteSpec: {
+//     //     isDeletedColumnName: "isDeleted",
+//     // },
+//     // visibilitySpec: {
+//     //     ownerUserIDColumnName: "createdByUserId",
+//     //     visiblePermissionIDColumnName: "visiblePermissionId",
+//     // },
+//     getRowInfo: (row: EventPayloadClient) => ({
+//         name: row.name,
+//         description: row.description,
+//         color: gGeneralPaletteList.findEntry(row.type?.color || null),
+//     }),
+//     columns: [
+//         new PKField({ columnName: "id" }),
+//         new TagsField<EventTaggedFilesPayload>({
+//             columnName: "fileTags",
+//             foreignTableID: "testFile",
+//             associationTableID: "testFileEventTag",
+//             associationForeignIDMember: "fileId",
+//             associationForeignObjectMember: "file",
+//             associationLocalIDMember: "eventId",
+//             associationLocalObjectMember: "event",
+//             getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput | boolean => false,
+//             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventWhereInput | boolean => false,
+//         }), // tags
+//     ]
+// });
 

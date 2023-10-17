@@ -116,7 +116,7 @@ class UsersAPI {
     };
 
     getPublicPermission = () => {
-        return this.getPermission(Permission.visibility_all);
+        return this.getPermission(Permission.visibility_all)!;
     };
 
     getVisibilityInfo = <T extends { visiblePermission: db3.PermissionPayloadMinimum | null },>(item: T) => {
@@ -125,7 +125,7 @@ class UsersAPI {
         const cssClasses: string[] = [];
         if (isPrivate) cssClasses.push("visibility-private");
         if (isPublic) cssClasses.push("visibility-public");
-        if (!isPrivate) cssClasses.push(`visiblePermission-${item.visiblePermission.name}`);
+        if (!isPrivate) cssClasses.push(`visiblePermission-${item.visiblePermission!.name}`);
 
         return {
             isPrivate,

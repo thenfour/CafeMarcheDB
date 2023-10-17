@@ -11,42 +11,8 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, KeysOf, TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakeTitleField } from "../db3basicFields";
+import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, UserPayload } from "./prismArgs";
 
-
-////////////////////////////////////////////////////////////////
-export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
-    include: {
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
-        tags: {
-            include: {
-                tag: true, // include foreign object
-            }
-        },
-    }
-});
-
-export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
-export type SongPayloadMinimum = Prisma.SongGetPayload<{}>;
-
-
-////////////////////////////////////////////////////////////////
-const InstrumentFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentFunctionalGroupArgs>()({
-    include: {
-        instruments: true,
-    },
-});
-
-export type InstrumentFunctionalGroupPayload = Prisma.InstrumentFunctionalGroupGetPayload<typeof InstrumentFunctionalGroupArgs>;
-
-export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { name: 'asc' },
-    { id: 'asc' },
-];
 
 export const xInstrumentFunctionalGroup = new db3.xTable({
     editPermission: Permission.admin_general,
@@ -54,8 +20,6 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupInclude => {
         return InstrumentFunctionalGroupArgs.include;
     },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrumentFunctionalGroup",
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
     getRowInfo: (row: InstrumentFunctionalGroupPayload) => ({
@@ -88,20 +52,6 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     ]
 });
 
-////////////////////////////////////////////////////////////////
-const InstrumentTagArgs = Prisma.validator<Prisma.InstrumentTagArgs>()({
-    include: {
-        instruments: true,
-    }
-});
-
-export type InstrumentTagPayload = Prisma.InstrumentTagGetPayload<typeof InstrumentTagArgs>;
-
-export const InstrumentTagNaturalOrderBy: Prisma.InstrumentTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { text: 'asc' },
-    { id: 'asc' },
-];
 
 // https://stackoverflow.com/questions/76518631/typescript-return-the-enum-values-in-parameter-using-a-generic-enum-type-method
 // interesting that const objects are preferred over enums. but yea for populating datagrid single select options i agree.
@@ -116,8 +66,6 @@ export const xInstrumentTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagInclude => {
         return InstrumentTagArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrumentTag",
     naturalOrderBy: InstrumentTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
@@ -162,21 +110,6 @@ export const xInstrumentTag = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 
-const InstrumentTagAssociationArgs = Prisma.validator<Prisma.InstrumentTagAssociationArgs>()({
-    include: {
-        instrument: true,
-        tag: true,
-    }
-});
-
-export type InstrumentTagAssociationPayload = Prisma.InstrumentTagAssociationGetPayload<typeof InstrumentTagAssociationArgs>;
-
-const InstrumentTagAssociationNaturalOrderBy: Prisma.InstrumentTagAssociationOrderByWithRelationInput[] = [
-    { tag: { sortOrder: 'desc' } },
-    { tag: { text: 'asc' } },
-    { tag: { id: 'asc' } },
-];
-
 // this is mostly only in order to define the tags field in xInstruments.
 export const xInstrumentTagAssociation = new db3.xTable({
     tableName: "InstrumentTagAssociation",
@@ -185,8 +118,6 @@ export const xInstrumentTagAssociation = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationInclude => {
         return InstrumentTagAssociationArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
     getRowInfo: (row: InstrumentTagAssociationPayload) => ({
         name: row.tag.text,
@@ -202,38 +133,13 @@ export const xInstrumentTagAssociation = new db3.xTable({
             columnName: "tag",
             fkMember: "tagId",
             allowNull: false,
-            foreignTableSpec: xInstrumentTag,
+            foreignTableID: "InstrumentTag",
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
 });
 
 ////////////////////////////////////////////////////////////////
-export const InstrumentArgs = Prisma.validator<Prisma.InstrumentArgs>()({
-    include: {
-        functionalGroup: true,
-        instrumentTags: {
-            include: {
-                tag: true,
-            },
-            orderBy: InstrumentTagAssociationNaturalOrderBy
-        }
-    }
-});
-
-export type InstrumentPayload = Prisma.InstrumentGetPayload<typeof InstrumentArgs>;
-
-// order by functional group, then by instrument.
-export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput[] = [
-    {
-        functionalGroup: {
-            sortOrder: 'desc',
-        }
-    },
-    { sortOrder: 'desc' },
-    { name: 'asc' },
-    { id: 'asc' },
-];
 
 export const xInstrument = new db3.xTable({
     editPermission: Permission.admin_general,
@@ -241,8 +147,6 @@ export const xInstrument = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentInclude => {
         return InstrumentArgs.include;
     },
-    applyIncludeFilteringForExtraColumns: (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { },
     tableName: "instrument",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({
@@ -270,7 +174,7 @@ export const xInstrument = new db3.xTable({
         new ForeignSingleField<InstrumentFunctionalGroupPayload>({
             columnName: "functionalGroup",
             fkMember: "functionalGroupId",
-            foreignTableSpec: xInstrumentFunctionalGroup,
+            foreignTableID: "InstrumentFunctionalGroup",
             allowNull: false,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
@@ -284,8 +188,8 @@ export const xInstrument = new db3.xTable({
             associationForeignObjectMember: "tag",
             associationLocalIDMember: "instrumentId",
             associationLocalObjectMember: "instrument",
-            associationTableSpec: xInstrumentTagAssociation,
-            foreignTableSpec: xInstrumentTag,
+            associationTableID: "InstrumentTagAssociation",
+            foreignTableID: "InstrumentTag",
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 instrumentTags: {
                     some: {
@@ -310,42 +214,6 @@ export const xInstrument = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()({
-    include: {
-        instrument: InstrumentArgs,
-        //user: true,
-    }
-});
-
-export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserInstrumentArgs>;
-
-export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
-    { instrument: { sortOrder: 'desc' } },
-    { instrument: { name: 'asc' } },
-    { instrument: { id: 'asc' } },
-];
-
-export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
-
-export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
-    include: {
-        role: {
-            include: {
-                permissions: true,
-            }
-        },
-        instruments: UserInstrumentArgs,
-    }
-});
-
-export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
-
-export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
-    { name: 'asc' },
-    { id: 'asc' },
-];
-
-
 
 export const getUserPrimaryInstrument = (user: UserPayload): (InstrumentPayload | null) => {
     if (user.instruments.length < 1) return null;

@@ -361,7 +361,7 @@ export interface EventTypeValueProps {
     type: db3.EventTypePayload | null;
 };
 export const EventTypeValue = (props: EventTypeValueProps) => {
-    return !props.type ? (<Button>Set event type</Button>) : (<CMStatusIndicator model={props.type} onClick={props.onClick} />);
+    return !props.type ? (<Button onClick={props.onClick}>Set event type</Button>) : (<CMStatusIndicator model={props.type} onClick={props.onClick} />);
 };
 
 export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
@@ -415,7 +415,7 @@ export interface EventStatusValueProps {
     status: db3.EventStatusPayload | null;
 };
 export const EventStatusValue = (props: EventStatusValueProps) => {
-    return !props.status ? (<Button>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o.label} />);
+    return !props.status ? (<Button onClick={props.onClick}>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o.label} />);
 };
 
 export const EventStatusControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
@@ -506,10 +506,10 @@ export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.Eve
             eventId: event.id,
             name: newValue,
         }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated event location" });
+            showSnackbar({ severity: "success", children: "Successfully updated event title" });
         }).catch(e => {
             console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event location" });
+            showSnackbar({ severity: "error", children: "error updating event title" });
         }).finally(() => {
             refetch();
         });
@@ -534,6 +534,8 @@ export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.Eve
 
 
 ////////////////////////////////////////////////////////////////
+// todo: 1. link to location with a link icon
+// 2. allow editing link uri
 export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
     const locationKnown = !IsNullOrWhitespace(event.locationDescription);
     const mutationToken = API.events.updateEventBasicFields.useToken();

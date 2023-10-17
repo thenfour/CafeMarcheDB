@@ -11,6 +11,8 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { IsEntirelyIntegral } from "shared/utils";
 import { Suspense } from "react";
+import { InspectObject } from "src/core/components/CMCoreComponents";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 
 const MyComponent = () => {
     const params = useParams();
@@ -22,9 +24,16 @@ const MyComponent = () => {
         throw new Error(`unauthorized`);
     }
 
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = {
+        intention: 'user',
+        mode: 'primary',
+        currentUser: currentUser,
+    };
+
     const queryArgs: DB3Client.xTableClientArgs = {
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: "user", mode: 'primary' },
+        clientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
             columns: [
@@ -41,7 +50,7 @@ const MyComponent = () => {
     if (IsEntirelyIntegral(idOrSlug)) {
         queryArgs.filterModel!.tableParams!.eventId = parseInt(idOrSlug);
     } else {
-        queryArgs.filterModel!.tableParams!.eventSlug = params.idOrSlug;
+        queryArgs.filterModel!.tableParams!.eventSlug = idOrSlug;
     }
 
     let initialTabIndex: undefined | number = undefined;
@@ -53,10 +62,23 @@ const MyComponent = () => {
         }
     }
 
+    const where = db3.xEventVerbose.CalculateWhereClause({
+        clientIntention,
+        filterModel: queryArgs.filterModel!,
+    });
+
+    //console.log(`[[[ calling calculateInclude`);
+    // const include = db3.xEventVerbose.CalculateInclude(clientIntention);
+    // console.log(`]]] calling calculateInclude`);
+
+    //console.log(`filtermodel: ${JSON.stringify(queryArgs.filterModel)}, params:${JSON.stringify(params)}, idOrSlug:${idOrSlug}, tabIdOrSlug:${tabIdOrSlug}`);
+
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
 
     return <div>
+        {/* <InspectObject src={where || {}} tooltip="where" /> */}
+        {/* <InspectObject src={include} tooltip="include" /> */}
         {event && <>
             <EventBreadcrumbs event={event} />
             <EventDetail verbosity="verbose" event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} allowRouterPush={true} />

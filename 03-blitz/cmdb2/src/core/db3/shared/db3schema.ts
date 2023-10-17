@@ -22,13 +22,11 @@ export const xSetting = new xTable({
     editPermission: Permission.admin_settings,
     viewPermission: Permission.admin_settings,
     getInclude: (clientIntention) => ({}),
-    tableName: "setting",
+    tableName: "Setting",
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({
         name: row.name
     }),
-    applyIncludeFilteringForExtraColumns: () => { },
-    applyExtraColumnsToNewObject: (obj: TAnyModel, clientIntention: xTableClientUsageContext) => { },
     columns: [
         new PKField({ columnName: "id" }),
         new GenericStringField({

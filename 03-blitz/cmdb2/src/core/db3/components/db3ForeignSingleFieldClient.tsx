@@ -110,7 +110,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             return <>--</>;
         }
 
-        const rowInfo = this.typedSchemaColumn.foreignTableSpec.getRowInfo(args.value);
+        const rowInfo = this.typedSchemaColumn.getForeignTableSchema().getRowInfo(args.value);
 
         const style: React.CSSProperties = {};
         const color = rowInfo.color;
@@ -146,18 +146,18 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
             const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember]);
 
             const queryInput: db3.QueryInput = {
-                tableID: this.typedSchemaColumn.foreignTableSpec.tableID,
-                tableName: this.typedSchemaColumn.foreignTableSpec.tableName,
+                tableID: this.typedSchemaColumn.getForeignTableSchema().tableID,
+                tableName: this.typedSchemaColumn.getForeignTableSchema().tableName,
                 orderBy: undefined,
                 clientIntention: this.args.clientIntention,
                 filter: {
                     items: [{
-                        field: this.typedSchemaColumn.foreignTableSpec.pkMember,
+                        field: this.typedSchemaColumn.getForeignTableSchema().pkMember,
                         operator: "equals",
                         value: fkid,
                     }]
                 },
-                cmdbQueryContext: `ForeignSingleFieldClient querying table ${this.typedSchemaColumn.foreignTableSpec.tableName} for table.column ${this.schemaTable.tableName}.${this.columnName}`
+                cmdbQueryContext: `ForeignSingleFieldClient querying table ${this.typedSchemaColumn.getForeignTableSchema().tableName} for table.column ${this.schemaTable.tableName}.${this.columnName}`
             };
 
             const [{ items }, { refetch }] = useQuery(db3queries, queryInput, gQueryOptions.default);
@@ -210,7 +210,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
         // for NEW items, use the fixed value passed in as table params.
         // so when you filter by some master object (editing event segments for event XYZ), the master object is a fixed and pre-selected.
         if (this.fixedValue != null) {
-            const foreignPkMember = this.typedSchemaColumn.foreignTableSpec.pkMember;
+            const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
             //console.log(`rendering new dlg for foreign single`);
             const currentVal = params.row[this.typedSchemaColumn.member];
             if (currentVal === null || (this.fixedValue[foreignPkMember] !== currentVal[foreignPkMember])) {
@@ -263,8 +263,8 @@ export class ForeignSingleFieldRenderContext<TForeign> {
         }
 
         const [{ items }, { refetch }] = useQuery(db3queries, {
-            tableID: args.spec.typedSchemaColumn.foreignTableSpec.tableID,
-            tableName: args.spec.typedSchemaColumn.foreignTableSpec.tableName,
+            tableID: args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
+            tableName: args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
             orderBy: undefined,
             clientIntention: args.clientIntention,
             filter: { items: [] },
@@ -275,12 +275,12 @@ export class ForeignSingleFieldRenderContext<TForeign> {
     }
 
     doInsertFromString = async (userInput: string): Promise<TForeign> => {
-        console.assert(!!this.args.spec.typedSchemaColumn.foreignTableSpec.createInsertModelFromString);
-        const insertModel = this.args.spec.typedSchemaColumn.foreignTableSpec.createInsertModelFromString!(userInput);
+        console.assert(!!this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString);
+        const insertModel = this.args.spec.typedSchemaColumn.getForeignTableSchema().createInsertModelFromString!(userInput);
         try {
             return await this.mutateFn({
-                tableID: this.args.spec.typedSchemaColumn.foreignTableSpec.tableID,
-                tableName: this.args.spec.typedSchemaColumn.foreignTableSpec.tableName,
+                tableID: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
+                tableName: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
                 insertModel,
                 clientIntention: this.args.clientIntention,
             }) as TForeign;
