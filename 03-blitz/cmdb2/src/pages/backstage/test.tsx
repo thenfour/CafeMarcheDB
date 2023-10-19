@@ -428,6 +428,28 @@ const DayControl = (props: DayControlProps) => {
 
 
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface CMDBSelectProps<T> {
+    value: T;
+    onChange: (newValue: T) => void;
+    options: T[];
+    getOptionString: (option: T) => string;
+    getOptionID: (option: T) => string;
+    className?: string;
+};
+
+const CMDBSelect = <T,>(props: CMDBSelectProps<T>) => {
+    return <select className={props.className} onChange={(e) => {
+        const f = props.options.find(o => props.getOptionID(o) === e.target.value);
+        if (!f) throw new Error(`couldn't find option ${e.target.value}`);
+        props.onChange(f);
+    }} value={props.getOptionID(props.value)}>
+        {props.options.map(v => (<option value={props.getOptionID(v)}>{props.getOptionString(v)}</option>))}
+    </select>
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface DateTimeRangeControlProps {
     value: DateTimeRange;
@@ -492,16 +514,18 @@ const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlProps) =>
         props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: newStartDateTime, durationMillis }));
     };
 
-    // changing time implies duration-based (not end-time-based)
-    const handleChangeStartTime = (newTimeIndex: number) => {
-        const newTime = startTimeOptions.getOptions()[newTimeIndex]!;
+    const handleChangeStartTime2 = (newTime: TimeOption) => {
         const newDateTime = combineDateAndTime(coalescedStartDateTime, newTime.time);
         props.onChange(new DateTimeRange({ ...value.getSpec(), startsAtDateTime: newDateTime }));
     };
 
-    const handleChangeEndTime = (newTimeIndex: number) => {
-        const newTime = endTimeOptions.getOptions()[newTimeIndex]!;
-        //const newDateTime = combineDateAndTime(coalescedEndDateTime, newTime.time);
+    // const handleChangeEndTime = (newTimeIndex: number) => {
+    //     const newTime = endTimeOptions.getOptions()[newTimeIndex]!;
+    //     props.onChange(new DateTimeRange({ ...value.getSpec(), durationMillis: newTime.millisSinceStart }));
+    // };
+
+    const handleChangeEndTime2 = (newTime: TimeOption) => {
+        //const newTime = endTimeOptions.getOptions()[newTimeIndex]!;
         props.onChange(new DateTimeRange({ ...value.getSpec(), durationMillis: newTime.millisSinceStart }));
     };
 
@@ -521,13 +545,9 @@ const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlProps) =>
                     <>
                         {!value.isAllDay() && !value.isTBD() && (
                             <div className="timePart field">
-                                <Select
-                                    value={startTime.index}
-                                    onChange={(e) => handleChangeStartTime(CoerceToNumber(e.target.value))}
-                                    renderValue={(v) => (startTimeOptions.getOptions()[v]!.label)}
-                                >
-                                    {startTimeOptions.getOptions().map(v => <MenuItem key={v.label} value={v.index}>{v.label}</MenuItem>)}
-                                </Select>
+
+                                <CMDBSelect className="interactable startTime" value={startTime} onChange={handleChangeStartTime2} getOptionID={o => `id_${o.index}`} options={startTimeOptions.getOptions()} getOptionString={o => o.label} />
+
                             </div>
                         )}
 
@@ -537,19 +557,13 @@ const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlProps) =>
 
                         {!value.isAllDay() && !value.isTBD() && (
                             <div className="timePart field">
-                                <Select
-                                    value={endTime.index}
-                                    onChange={(e) => handleChangeEndTime(CoerceToNumber(e.target.value))}
-                                    renderValue={(v) => (endTimeOptions.getOptions()[v]!.label)}
-                                >
-                                    {endTimeOptions.getOptions().map(v => <MenuItem key={v.index} value={v.index}>{v.labelWithDuration}</MenuItem>)}
-                                </Select>
+                                <CMDBSelect className="interactable endTime" value={endTime} onChange={handleChangeEndTime2} getOptionID={o => `id_${o.index}`} options={endTimeOptions.getOptions()} getOptionString={o => o.labelWithDuration} />
                             </div>
                         )}
 
-                        <div className="duration field">
+                        {value.isAllDay() && <div className="duration field">
                             ({formatMillisecondsToDHMS(value.getDurationMillis())})
-                        </div>
+                        </div>}
                     </>
                 )/* isTBD */}
 
