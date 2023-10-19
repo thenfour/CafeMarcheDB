@@ -13,6 +13,7 @@ import { xSong } from "./song";
 import { DateRangeInfo, EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient, EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadFromEvent, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, InstrumentArgs, InstrumentPayload, UserPayload } from "./prismArgs";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
+import { DateRange, IsEarlierDateWithLateNull, MinDateOrLateNull, getDateRangeInfo } from "shared/time";
 
 /*
 
@@ -49,30 +50,6 @@ leave all that for later.
 // const x : Prisma.EventInclude = {
 
 // };
-
-////////////////////////////////////////////////////////////////
-export const IsEarlierDateWithLateNull = (a: Date | null, b: Date | null) => {
-    if (a === null) {
-        return false;// a is null; b must be earlier.
-    }
-    if (b === null) {
-        return true; // b null; a must be earlier.
-    }
-    return a < b; // no nulls; return earliest date.
-}
-
-export const MinDateOrLateNull = (a: Date | null, b: Date | null) => {
-    if (a === null) {
-        if (b === null) {
-            return null; // both null; forced null return.
-        }
-        return b;// a is null; b must be earlier.
-    }
-    if (b === null) {
-        return a; // b null; a must be earlier.
-    }
-    return a < b ? a : b; // no nulls; return earliest date.
-}
 
 export const getEventSegmentMinDate = (event: EventPayload) => {
     return event.segments.reduce((acc, seg) => {
@@ -235,40 +212,6 @@ export const xEventTagAssignment = new db3.xTable({
 
 
 
-
-
-export interface DateRange {
-    startsAt: Date | null,
-    endsAt: Date | null,
-}
-
-// formats a single date; date must be valid.
-function formatDate(date: Date): string {
-    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-    return date.toLocaleDateString(undefined, options);
-}
-
-
-export function getDateRangeInfo(dateRange: DateRange): DateRangeInfo {
-    if (!dateRange.startsAt) {
-        if (!dateRange.endsAt) {
-            return { formattedDateRange: "Date TBD", formattedYear: "TBD" };
-        }
-        return { formattedDateRange: `Until ${formatDate(dateRange.endsAt!)}`, formattedYear: `${dateRange.endsAt!.getFullYear()}` };
-    }
-    if (!dateRange.endsAt) {
-        return { formattedDateRange: `From ${formatDate(dateRange.startsAt!)}`, formattedYear: `${dateRange.startsAt!.getFullYear()}` };
-    }
-    if (dateRange.startsAt.toDateString() === dateRange.endsAt.toDateString()) {
-        return { formattedDateRange: formatDate(dateRange.startsAt), formattedYear: `${dateRange.startsAt.getFullYear()}` };
-    }
-
-    // todo: when components are the same, unify.
-    // so instead of 
-    // 11 July 2023 - 12 July 2023
-    // just do 11-12 July 2023.
-    return { formattedDateRange: `${formatDate(dateRange.startsAt)} - ${formatDate(dateRange.endsAt)}`, formattedYear: `${dateRange.startsAt.getFullYear()}` };
-}
 
 export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
     constructor() {

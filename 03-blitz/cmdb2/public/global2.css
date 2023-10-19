@@ -174,6 +174,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .freeButton:hover {
     /* background-color: rgb(75, 106, 138); */
     color: #08f;
+    text-decoration: underline;
 }
 
 .interactableWithBorder:hover {
@@ -641,4 +642,141 @@ li.songDropdownOption {
 
 .EventFileValue .audioPreviewGatewayContainer .audioPreviewGatewayButton:hover {
     color: #08f;
+}
+
+
+/* - DateTimeRangeControl --------------------------------- */
+.DateTimeRangeControl {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.DateTimeRangeControl div {
+    /* padding: 0px;
+    margin: 0px;
+    background-color: #88f2; */
+}
+
+
+.DateTimeRangeControl .row {
+    display: flex;
+    align-items: center;
+}
+
+.DateTimeRangeControl .tbdControl {
+    width: 70px;
+}
+
+.DateTimeRangeControl .datePart {
+    width: 200px;
+}
+
+.DateTimeRangeControl .row>.field {
+    /* better vertical centering*/
+    display: flex;
+    font-size: 17px;
+    white-space: nowrap;
+    font-weight: bold;
+    font-family: monospace;
+    margin: 0px 2px;
+}
+
+.EventCalendarMonth {
+    --range-border-size: 6px;
+    --range-border-radius-size: 8px;
+}
+
+.EventCalendarMonth .MuiDayCalendar-weekContainer {
+    /* can't have margin / padding for rows, to allow weekend highlighting to flow*/
+    margin: 0;
+    padding: 0;
+}
+
+.EventCalendarMonth .day {}
+
+.EventCalendarMonth .MuiDayCalendar-weekDayLabel {
+    /* workaround for https://github.com/mui/material-ui/issues/28688
+    if days have 0 margin (allowing clean range highlighting), weekdays also need 0 margin. but can only be done in css.
+    */
+    margin: 0;
+}
+
+.EventCalendarMonth .day.MuiPickersDay-today {
+    border: 0;
+    background-color: #eee;
+}
+
+.EventCalendarMonth .day.Mui-selected {
+    color: unset;
+    background-color: unset;
+}
+
+.EventCalendarMonth .day.past {
+    opacity: 30%;
+}
+
+.EventCalendarMonth .day.weekend {
+    color: #aaa;
+    border-radius: 0;
+    background-color: #f0f0f0;
+}
+
+
+.EventCalendarMonth .day.event {
+    text-decoration: underline;
+    background-color: #0cf5;
+}
+
+
+
+.EventCalendarMonth .day.inRange {
+    background-color: #cfc6;
+    border-radius: 0;
+    border-bottom: 2px solid #0803;
+}
+
+.EventCalendarMonth .day.rangeEnd {
+    border-top-right-radius: var(--range-border-radius-size);
+    border-bottom-right-radius: var(--range-border-radius-size);
+}
+
+.EventCalendarMonth .day.rangeStart {
+    border-top-left-radius: var(--range-border-radius-size);
+    border-bottom-left-radius: var(--range-border-radius-size);
+}
+
+
+.EventCalendarMonth .day.otherSelected {
+    /* color: #fff; */
+    /* background-color: #088; */
+}
+
+.EventCalendarMonth .day.otherSelected.rangeEnd {
+    border-right: var(--range-border-size) solid #0803;
+}
+
+.EventCalendarMonth .day.otherSelected.rangeStart {
+    border-left: var(--range-border-size) solid #0803;
+}
+
+
+.EventCalendarMonth .day.selected {
+    background-color: #0f9;
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.EventCalendarMonth .day.selected.rangeEnd {
+    border-right: var(--range-border-size) solid #0803;
+}
+
+.EventCalendarMonth .day.selected.rangeStart {
+    border-left: var(--range-border-size) solid #0803;
+}
+
+
+
+.EventCalendarMonth .day:hover {
+    background-color: #088;
 }

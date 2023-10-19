@@ -1,6 +1,7 @@
 import db, { Prisma } from "db";
 import { TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
+import { DateRangeInfo } from "shared/time";
 
 /*
 
@@ -652,10 +653,6 @@ export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[]
 
 
 
-export interface DateRangeInfo {
-    formattedDateRange: string;
-    formattedYear: string;
-};
 export interface EventClientPayloadExtras {
     dateRangeInfo: DateRangeInfo;
 };

@@ -212,6 +212,10 @@ export const CoerceToNumberOrNull = (value): number | null => {
     return value;
 };
 
+export const CoerceToNumber = (value): number => {
+    return CoerceToNumberOrNull(value) || 0;
+};
+
 export const ValidateNullableInt = (arg) => {
     return arg === null || Number.isInteger(arg);
 };
@@ -272,67 +276,6 @@ export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
 export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
 export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
 
-
-
-// https://github.com/thenfour/digifujam/blob/7dece20f483270650ad995b54d3b8fafaf3009c1/source/DFcommon/dfutil.js#L20C1-L67C1
-// another way of getting time duration info
-export class TimeSpan {
-    __totalMilliseconds: number;
-    __totalSeconds: number;
-    __totalMinutes: number;
-    __totalHours: number;
-    __totalDays: number;
-    __secondsPart: number;
-    __minutesPart: number;
-    __hoursPart: number;
-
-    __shortString: string;
-    __longString: string;
-
-    constructor(ms) {
-        //const Sign = Math.sign(ms);
-        //ms = Math.abs(ms);
-        // if (ms < 0) // why? negative timespans are just fine.
-        //   ms = 0;
-        this.__totalMilliseconds = ms;
-        this.__totalSeconds = Math.floor(ms / 1000);
-        this.__totalMinutes = Math.floor(ms / 60000);
-        this.__totalHours = Math.floor(ms / (60000 * 60));
-        this.__totalDays = Math.floor(ms / (60000 * 60 * 24));
-        this.__secondsPart = this.__totalSeconds % 60;
-        this.__minutesPart = this.__totalMinutes % 60;
-        this.__hoursPart = this.__totalHours % 24;
-        this.__shortString = `${this.__totalHours}h ${this.__minutesPart}m ${this.__secondsPart}s`;
-        if (!this.__totalHours && !!this.__minutesPart) {
-            this.__shortString = `${this.__minutesPart}m ${this.__secondsPart}s`;
-        } else if (!this.__totalHours && !this.__minutesPart) {
-            this.__shortString = `${this.__secondsPart}s`;
-        }
-
-        this.__longString = `${this.__totalDays} days ${this.__hoursPart} hours ${this.__minutesPart} min ${this.__secondsPart} sec`;
-        if (!this.__totalDays) {
-            this.__longString = `${this.__hoursPart} hours ${this.__minutesPart} min ${this.__secondsPart} sec`;
-            if (!this.__hoursPart) {
-                this.__longString = `${this.__minutesPart} min ${this.__secondsPart} sec`;
-                if (!this.__minutesPart) {
-                    this.__longString = `${this.__secondsPart} sec`;
-                }
-            }
-        }
-    } // ctor
-
-    get totalMilliseconds() { return this.__totalMilliseconds; }
-    get totalSeconds() { return this.__totalSeconds; }
-    get totalMinutes() { return this.__totalMinutes; }
-    get totalHours() { return this.__totalHours; }
-    get totalDays() { return this.__totalDays; }
-    get secondsPart() { return this.__secondsPart; }
-    get minutesPart() { return this.__minutesPart; }
-    get hoursPart() { return this.__hoursPart; }
-    get shortString() { return this.__shortString; }
-    get longString() { return this.__longString; }
-
-}; // TimeSpan
 
 export function lerp(a, b, alpha) {
     if (Math.abs(b - a) < 0.0001) return a;
@@ -452,19 +395,6 @@ export function isEmptyArray(obj: any) {
     return 0 === ((obj as any[]).length);
 }
 
-export function formatSongLength(seconds: number): string {
-    if (isNaN(seconds) || seconds < 0) {
-        return "Invalid duration";
-    }
-
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-
-    const formattedMinutes = String(minutes).padStart(2, '0');
-    const formattedSeconds = String(remainingSeconds).padStart(2, '0');
-
-    return `${formattedMinutes}:${formattedSeconds}`;
-}
 
 export function moveItemInArray<T>(array: T[], oldIndex: number, newIndex: number): T[] {
     if (oldIndex === newIndex) {
@@ -530,6 +460,11 @@ export function parseMimeType(mimeTypeStringOrNullish: string | null | undefined
         parameters,
     };
 }
+
+
+export const isBetween = (number: number, a: number, b: number): boolean => {
+    return number >= Math.min(a, b) && number <= Math.max(a, b);
+};
 
 
 
