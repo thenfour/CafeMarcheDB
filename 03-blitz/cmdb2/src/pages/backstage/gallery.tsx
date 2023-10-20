@@ -20,29 +20,9 @@ import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import * as db3 from "src/core/db3/db3";
 import { gGeneralPaletteList } from "shared/color";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
+import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
 
 const MainContent = () => {
-
-    const MockUserInstruments = [{
-        id: 1,
-        name: "flute",
-        description: "a description",
-        color: "yes",
-    }, {
-        id: 2,
-        name: "soprano saxophone",
-        description: "antother description",
-        color: "no",
-    }];
-    const MockAssociationSchema = {
-        associationTableSpec: {
-            getRowInfo: (row): db3.RowInfo => ({
-                name: row.name,
-                description: row.description,
-                color: gGeneralPaletteList.findEntry(row.color),
-            })
-        }
-    };
 
     return <>
         <Divider />
@@ -61,15 +41,6 @@ const MainContent = () => {
             <ThumbUpIcon />
             <div>CMCoreComponents.CMBigChip</div>
         </CMCoreComponents.CMBigChip>
-
-        <h3>CMTag</h3>
-        <div>renders a column value using a default chip render method.</div>
-        <CMCoreComponents.CMTag colorVariant="strong" tagAssociation={MockUserInstruments[0] as any} columnSchema={MockAssociationSchema as any} />
-
-        <h3>CMTagList</h3>
-        <div></div>
-        <CMCoreComponents.CMTagList colorVariant="strong" columnSchema={MockAssociationSchema as any} tagAssociations={MockUserInstruments as any} />
-
 
         <Divider />
 
@@ -134,6 +105,13 @@ const MainContent = () => {
         <div>
             <IconEditCell validationError={null} onOK={() => { }} value={null} />
         </div>
+
+
+        <h3>DateTimeRange</h3>
+        <div>
+            <DateTimeRangeControlExample />
+        </div>
+
     </>;
 };
 

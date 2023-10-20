@@ -175,49 +175,6 @@ export const CMBigChip = (props: React.PropsWithChildren<CMBigChipProps>) => {
 };
 
 ////////////////////////////////////////////////////////////////
-// little tag chip
-export interface ITagAssociation {
-    id: number;
-};
-
-export interface CMTagProps<TagAssignmentModel> {
-    tagAssociation: ITagAssociation;
-    columnSchema: db3.TagsField<unknown>,
-    colorVariant: ColorVariationOptions;
-};
-
-export const CMTag = (props: CMTagProps<TAnyModel>) => {
-    return DB3Client.DefaultRenderAsChip({
-        value: props.tagAssociation,
-        colorVariant: props.colorVariant,
-        columnSchema: props.columnSchema,
-        // onclick
-        // ondelete
-    });
-};
-
-export interface CMTagListProps<TagAssignmentModel> {
-    tagAssociations: ITagAssociation[],
-    columnSchema: db3.TagsField<unknown>,
-    colorVariant: ColorVariationOptions;
-};
-
-
-export const CMTagList = (props: CMTagListProps<TAnyModel>) => {
-    //console.log(props.tagAssociations);
-    return <div className="chipContainer">
-        {props.tagAssociations.map(tagAssociation => <CMTag
-            key={tagAssociation.id}
-            tagAssociation={tagAssociation}
-            columnSchema={props.columnSchema}
-            //tagsFieldClient={props.tagsFieldClient}
-            colorVariant={props.colorVariant}
-        />)}
-    </div>
-};
-
-
-////////////////////////////////////////////////////////////////
 // wraps <Dialog> except with mobile responsiveness
 export interface ReactiveInputDialogProps {
     onCancel: () => void;

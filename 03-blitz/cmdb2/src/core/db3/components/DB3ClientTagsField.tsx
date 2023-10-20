@@ -293,6 +293,12 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
     if (!args.value) {
         return <>--</>;
     }
+    if (!args.columnSchema) {
+        throw new Error(`columnSchema is not set for DefaultRenderAsChip.`);
+    }
+    if (!args.columnSchema.getAssociationTableShema) {
+        throw new Error(`columnSchema is missing getAssociationTableShema.`);
+    }
     const rowInfo = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
     const style: React.CSSProperties = {};
     const color = rowInfo.color;

@@ -32,7 +32,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import { CMStatusIndicator, CMTagList, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
+import { CMChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceSummary } from './EventAttendanceComponents';
@@ -151,12 +151,15 @@ export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => 
                     </div> */}
 
                     {/* <div className="info">43 photos uploaded</div> */}
-                    <CMTagList
+                    <CMChipContainer>
+                        {props.event.tags.map(a => <CMStandardDBChip model={a.eventTag} variant='weak' />)}
+                    </CMChipContainer>
+                    {/* <CMTagList
                         tagAssociations={props.event.tags}
                         columnSchema={db3.xEvent.getColumn("tags") as db3.TagsField<db3.EventTagAssignmentPayload>}
                         //tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}
                         colorVariant="weak"
-                    />
+                    /> */}
                 </div>
             </div>
         </CardActionArea>

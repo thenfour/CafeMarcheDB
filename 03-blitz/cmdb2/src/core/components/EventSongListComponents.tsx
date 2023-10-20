@@ -4,23 +4,21 @@
 // clipboard custom formats
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
-import React, { FC, Suspense } from "react"
-import db, { Prisma } from "db";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { API, APIQueryResult } from '../db3/clientAPI';
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { CMChip, CMChipContainer, CMStandardDBChip, CMTagList, EditTextField, InspectObject, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
-import { Markdown } from "./RichTextEditor";
-import { Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, Menu, MenuItem, TextField } from "@mui/material";
-import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { CMTextField } from "./CMTextField";
-import { TAnyModel, formatSongLength, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, Menu, MenuItem } from "@mui/material";
+import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
+import React from "react";
 import { Container, Draggable, DropResult } from "react-smooth-dnd";
+import { TAnyModel, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
+import { API } from '../db3/clientAPI';
+import { gIconMap } from "../db3/components/IconSelectDialog";
+import { CMChipContainer, CMStandardDBChip, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
+import { Markdown } from "./RichTextEditor";
+import { formatSongLength } from 'shared/time';
 
 /*
 similar to other tab contents structures (see also EventSegmentComponents, EventCommentComponents...)

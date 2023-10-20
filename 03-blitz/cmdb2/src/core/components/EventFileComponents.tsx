@@ -7,28 +7,19 @@
 // - preview images (+ thumbnail)
 // - avoid downloading all media just for preview. i'm thinking pre-render the peaks as a thumbnail, and only download when clicked
 
-import React, { DragEventHandler, FC, Suspense } from "react"
-import db, { Prisma } from "db";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { API, APIQueryResult } from '../db3/clientAPI';
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { AudioPreview, AudioPreviewBehindButton, CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CMTagList, CircularProgressWithLabel, EditTextField, EventChip, InspectObject, InstrumentChip, ReactiveInputDialog, SongChip, UserChip, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
-import { Markdown } from "./RichTextEditor";
-import { Box, Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, Menu, MenuItem, TextField, Typography } from "@mui/material";
-import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { CMTextField } from "./CMTextField";
-import { TAnyModel, formatSongLength, getUniqueNegativeID, moveItemInArray, parseMimeType } from "shared/utils";
-import { Container, Draggable, DropResult } from "react-smooth-dnd";
-import FileUploadIcon from '@mui/icons-material/FileUpload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { getAntiCSRFToken } from "@blitzjs/auth"
-import { TClientUploadFileArgs } from "../db3/shared/apiTypes";
-import CircularProgress, { CircularProgressProps } from '@mui/material/CircularProgress';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
+import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import React from "react";
+import { TAnyModel, parseMimeType } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
+import { API } from '../db3/clientAPI';
+import { gIconMap } from "../db3/components/IconSelectDialog";
+import { AudioPreviewBehindButton, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InstrumentChip, ReactiveInputDialog, SongChip, UserChip, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
+import { Markdown } from "./RichTextEditor";
 
 
 /*

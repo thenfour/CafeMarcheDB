@@ -7,7 +7,7 @@ export const gMillisecondsPerDay = 24 * gMillisecondsPerHour;
 
 export function formatMillisecondsToDHMS(milliseconds: number): string {
     if (milliseconds === 0) {
-        return "No duration";
+        return "--";
     }
 
     const days = Math.floor(milliseconds / 86400000); // 86400000 milliseconds in a day
@@ -37,6 +37,13 @@ export function formatMillisecondsToDHMS(milliseconds: number): string {
 
     return parts.join(' ');
 }
+
+// for debugging
+export const DateToString = (x: Date | null | undefined) => {
+    if (!x) return "<null>";
+    return `${x.toDateString()} ${x.toTimeString()}`;
+}
+
 
 export function formatSongLength(seconds: number): string {
     if (isNaN(seconds) || seconds < 0) {

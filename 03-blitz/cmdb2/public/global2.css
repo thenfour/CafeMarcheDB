@@ -651,6 +651,9 @@ li.songDropdownOption {
     flex-direction: column;
 }
 
+.DateTimeRangeControl * {
+    /* background-color: #00f2; */
+}
 
 .DateTimeRangeControl div {
     /* padding: 0px;
@@ -671,31 +674,36 @@ li.songDropdownOption {
     white-space: nowrap;
     font-weight: bold;
     font-family: monospace;
-    margin: 0px 2px;
+    margin: 0px 10px;
 }
 
 .DateTimeRangeControl .tbdControl {
-    width: 70px;
+    /* width: 70px; */
 }
 
 .DateTimeRangeControl .datePart {
-    width: 200px;
+    /* width: 200px; */
 }
 
 .DateTimeRangeControl .timePart select {
-    width: 180px;
+    /* width: 180px; */
     font-size: 17px;
     font-weight: bold;
     font-family: monospace;
     margin: 0px 2px;
     border: 0;
-    padding: 5px;
+    /* padding: 5px; */
     /* text-align: center; */
     appearance: none;
 }
 
 .DateTimeRangeControl .timePart select.startTime {
-    width: 120px;
+    /* width: 120px; */
+}
+
+
+.DateTimeRangeControl .allDayControl .MuiFormControlLabel-label {
+    white-space: nowrap;
 }
 
 

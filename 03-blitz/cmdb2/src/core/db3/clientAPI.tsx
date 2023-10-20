@@ -19,6 +19,7 @@ import updateEventSongListMutation from "./mutations/updateEventSongListMutation
 import { Permission } from "shared/permissions";
 import { Prisma } from "db";
 import insertEvent from "./mutations/insertEvent";
+import { getDateRangeInfo } from "shared/time";
 
 
 export interface APIQueryArgs {
@@ -148,7 +149,7 @@ class EventsAPI {
     }
 
     getEventSegmentDateInfo(segment: db3.EventSegmentPayloadFromEvent) {
-        return db3.getDateRangeInfo({
+        return getDateRangeInfo({
             startsAt: segment.startsAt,
             endsAt: segment.endsAt,
         });
