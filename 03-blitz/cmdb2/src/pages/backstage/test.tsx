@@ -8,132 +8,55 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { InspectObject } from "src/core/components/CMCoreComponents";
-import { Autocomplete, AutocompleteRenderInputParams, FormControlLabel, FormGroup, InputBase, MenuItem, NoSsr, Popover, Popper, Select, Switch, TextField, Tooltip } from "@mui/material";
+import { Autocomplete, AutocompleteRenderInputParams, Badge, FormControlLabel, FormGroup, InputBase, MenuItem, NoSsr, Popover, Popper, Select, Switch, TextField, Tooltip } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
-import { DateTimeRange, DateTimeRangeSpec, TimeOption, TimeOptionsGenerator, combineDateAndTime, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMillis, getTimeOfDayInMinutes } from "shared/time";
+import { DateTimeRange, DateTimeRangeHitTestResult, DateTimeRangeSpec, TimeOption, TimeOptionsGenerator, combineDateAndTime, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMillis, getTimeOfDayInMinutes } from "shared/time";
 import { CoerceToNumber, CoerceToNumberOrNull, isBetween } from "shared/utils";
 
-
-// some notes about dates & times...
-// there are a lot of POSSIBLE options, but we should not present them. nobody wants to think that much about dates.
-// we just want to select the date.
-// and it wants to be done in a natural way as possible for all scenarios.
-// for example,
-// this is bad:
-
-// Start Date: [ ] TBD [wednesday october 5, 2023]  [_] all-day [10:15 pm]
-// End Date  : [ ] TBD [wednesday october 8, 2023]  [x] all-day
-
-// it reads very awkwardly. even "start date TBD" is just ugly. and while in theory, indeterminate endpoints are interesting,
-// like "starting from 5 Oct" when end date is null.
-// it's totally impractical to impose this rare edge case on the everyday experience.
-// similarly it's not practical to specify "all-day" for one endpoint but not the other.
-
-// [_] Date TBD
-// [_] All-day
-// [wednesday october 5, 2023] [10:15 pm] - [wednesday october 8, 2023] [12:30pm]
-
-// further, "all-day" suggests a lot about whether it's multi-day or not. it's pretty rare to specify times for both dates.
-// it's not impossible though (11pm - 2am concerts are possible) maybe hide it behind an advanced option.
-
-// and "TBD" doesn't need to be on all the time. here's disabled:
-
-// [_] Date TBD
-//
-// then click it, it's replaced by:
-//
-// [x] [ 10/5/2023 ] [10:15 pm] -- [11:15pm]
-//     [ ] All-day
-//     [ ] Different start & end days
-//
-// now click all-day event
-// [x] [ 10/5/2023 ] -- [ 10/5/2023 ]
-//     [x] All-day event
-//
-// Or, click "different start & end days"
-// [x] [ 10/5/2023 ] [10:15 pm] -- [ 10/5/2023 ] [11:15pm]
-//     [ ] All-day
-//     [x] Different start & end days
-//
-//
-// OR, assuming days which specify times never exceed 24 hours, it's quite simple... i mean, we don't have events that last more than 24 hours like that.
-// especially not in eventsegments.
-
-
-
-
-
-
-// SINGLE DAY, ALL-DAY
-//     [ ] TBD [wednesday october 5, 2023]
-
-//     [x] TBD [ to be determined        ]
-
-// SINGLE DAY, WITH TIME
-//     Starts at: [ ] TBD [wednesday october 5, 2023] [ 08:45 ]
-//     Ends at  : [ ] TBD                             [ ----- ]
-
-// MULTI-DAY
-//     starts: [wednesday october 5, 2023] [ 08:45 ] [ ] TBD
-//     ends:   [wednesday october 6, 2023] [ 08:45 ] [ ] TBD
-
-//     starts: [ to be determined        ] [       ] [x] TBD
-//     ends:   [wednesday october 6, 2023] [ 08:45 ] [ ] TBD
-
-//type DateTimeRangeEndpointOption = keyof (Pick<DateTimeRangeSpec, "endsAtDateTime" | "startsAtDateTime">);
-
-class CalendarEventSpec {
+interface CalendarEventSpec {
+    id: string;
     dateRange: DateTimeRange;
     title: string;
-    constructor(args: { dateRange: DateTimeRange, title: string }) {
-        this.dateRange = args.dateRange;
-        this.title = args.title;
-    }
-    touchesDay(day: Dayjs) {
-        const startDate = this.dateRange.getStartDateTime();
-        if (!startDate) return false;
-        const endBound = this.dateRange.getEndBoundDay()!;
-        if (day.isSame(endBound, "day") || day.isAfter(endBound, "day")) return false;
-        if (day.isBefore(startDate, "day")) return false;
-        return true;
-    }
+    color: string;
 }
 
 interface DaySlotProps extends PickersDayProps<Dayjs> {
     otherDay: Dayjs | null;
+    range: DateTimeRange;
     selectedDay: Dayjs;
     items: CalendarEventSpec[];
 };
 
-function DaySlot({ day, selectedDay, otherDay, items, ...other }: DaySlotProps) {
+function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlotProps) {
     const now = dayjs();
     const classes: string[] = [
         "day",
     ];
 
-    let rangeBegin: Dayjs | null = null;
-    let rangeEnd: Dayjs | null = null;
-    if (otherDay) { // if other date is not specified, no range to be shown.
-        if (selectedDay.isAfter(otherDay, "day")) {
-            rangeBegin = otherDay;
-            rangeEnd = selectedDay;
-        } else {
-            rangeBegin = selectedDay;
-            rangeEnd = otherDay;
-        }
-    }
-
     const tooltips: string[] = [];
+    type MatchingEvent = {
+        className: string;
+        eventSpec: CalendarEventSpec;
+        hitTest: DateTimeRangeHitTestResult;
+    };
+    const matchingEvents: MatchingEvent[] = [];
 
     for (let i = 0; i < items.length; ++i) {
         const item = items[i]!;
-        if (item.touchesDay(day)) {
-            classes.push("event");
+        const ht = item.dateRange.hitTestDay(day);
+        if (ht.inRange) {
+            let className = "otherEvent otherEventInRange";
+            //classes.push("otherEventInRange");
             tooltips.push(item.title);
+            // if (ht.rangeEnd) classes.push("otherEventRangeEnd");
+            // if (ht.rangeStart) classes.push("otherEventRangeStart");
+            if (ht.rangeEnd) className += (" otherEventRangeEnd");
+            if (ht.rangeStart) className += (" otherEventRangeStart");
+            matchingEvents.push({ eventSpec: item, hitTest: ht, className });
         }
     }
 
@@ -142,24 +65,48 @@ function DaySlot({ day, selectedDay, otherDay, items, ...other }: DaySlotProps) 
     if (day.isBefore(now, "day")) { classes.push("past"); tooltips.push("This date is in the past"); }
     if (otherDay && day.isSame(otherDay, "day")) classes.push("otherSelected");
 
-    if (rangeBegin && rangeBegin.isSame(day, "day")) classes.push("inRange rangeStart");
-    if (rangeEnd && rangeEnd.isSame(day, "day")) classes.push("inRange rangeEnd");
-    if (otherDay && isBetween(day.valueOf(), otherDay.valueOf(), selectedDay.valueOf())) classes.push("inRange");
+    const hitTest = range.hitTestDay(day);
+    if (hitTest.inRange) {
+        classes.push("inRange");
+        if (hitTest.rangeEnd) classes.push("rangeEnd");
+        if (hitTest.rangeStart) classes.push("rangeStart");
+    }
 
-    if (day.day() === 0 || day.day() === 6) { classes.push("weekend"); tooltips.push("This is a weekend") };// Check if the day is a weekend (Saturday or Sunday) and add the "weekend" class.
+    if (day.day() === 0 || day.day() === 6) {
+        classes.push("weekend");
+        //        tooltips.push("This is a weekend");
+    };
 
     // https://stackoverflow.com/questions/42282698/how-do-i-set-multiple-lines-to-my-tooltip-text-for-material-ui-iconbutton
-    // unfortunately i'm unable to get Tootltip to work with the PickersDay component. oh well another day.
-    // return <Tooltip title={tooltips.length ? <div style={{ whiteSpace: 'pre-line' }}>{tooltips.join(` \r\n`)}</div> : null}>
-    return <PickersDay disableMargin className={classes.join(" ")} day={day} {...other} />
-    //</Tooltip>;
-}
 
+    console.log(other);
+
+    return <div
+        key={day.toString()}
+        className={`dayContainer ${classes.join(" ")}`}
+    >
+        <Tooltip
+            title={tooltips.length ? <div style={{ whiteSpace: 'pre-line' }}>{tooltips.join(` \r\n`)}</div> : null}
+            arrow
+        >
+            <div className="pickersContainer">{/* https://stackoverflow.com/a/73492810/402169 PickersDay wrapped in Tootlip somehow doesn't work, but adding a div here fixes it. */}
+                <PickersDay {...other} disableMargin day={day} disableHighlightToday disableRipple />
+            </div>
+        </Tooltip>
+        <div className="dayCustomArea">
+            {
+                matchingEvents.length > 0 && <div style={{ ["--event-color"]: matchingEvents[0]!.eventSpec.color } as any} key={matchingEvents[0]!.eventSpec.id} className={matchingEvents[0]!.className}></div>
+            }
+        </div>
+        <div className="dayGridLines"></div>
+    </div>
+}
 
 interface EventCalendarMonthProps {
     value: Date;
     onChange: (value: Date) => void;
     otherDay: Date | null;
+    range: DateTimeRange;
     items: CalendarEventSpec[];
 };
 
@@ -177,191 +124,11 @@ export const EventCalendarMonth = (props: EventCalendarMonthProps) => {
                 selectedDay: djs,
                 otherDay: otherDjs,
                 items: props.items,
+                range: props.range,
             } as any,
         }}
     />;
 };
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// interface DateTimeEndpointControlProps {
-//     value: DateTimeRangeSpec;
-//     onChange: (newValue: DateTimeRangeSpec) => void;
-//     member: DateTimeRangeEndpointOption;
-//     label: string;
-//     dayEditable: boolean; // for "single day" events, we show 2 controls (start, end). but the "end" control should not display the day.
-//     showMultidayControl: boolean; // similar for end date, this is available.
-//     showAllDayControl: boolean;
-// };
-
-
-// // SINGLE DAY, ALL-DAY
-// //     [wednesday october 5, 2023] [ ] TBD
-// //     [ to be determined        ] [x] TBD
-
-// // SINGLE DAY, WITH TIME
-// //     [wednesday october 5, 2023] [ 08:45 ] [ ] TBD
-// //     [ to be determined        ] [       ] [x] TBD
-
-// const DateTimeEndpointControl = (props: DateTimeEndpointControlProps) => {
-//     const [timeOptions, setTimeOptions] = React.useState(() => new TimeOptionsGenerator(15));
-//     const [now] = React.useState(() => new Date());
-
-//     //const [showingCalendar, setShowingCalendar] = React.useState<boolean>(false);
-
-//     const inputDateTime: Date | null = props.value[props.member];
-//     const isTBD = inputDateTime === null;
-
-//     // internal value that the user has selected, to be used when the externally-visible value goes NULL, we can still revert back to this.
-//     const [fallbackDay, setFallbackDay] = React.useState<Date>(inputDateTime || now);
-//     const shownDay: Date = inputDateTime || fallbackDay;
-
-//     // required because selectedTime
-//     // 'value' just has a time. this is the corresponding time option. to be populated when timeOptions is initialized.
-//     const selectedTime = timeOptions.findTime(inputDateTime || now);
-
-//     const [calendarAnchorEl, setCalendarAnchorEl] = React.useState<null | HTMLElement>(null);
-
-//     const handleDateClick = (event: React.MouseEvent<HTMLElement>) => {
-//         if (!props.dayEditable) return;
-//         // clicking on the date, show the date picker.
-//         setCalendarAnchorEl(event.currentTarget);
-//     };
-
-//     const handleChangeDay = (newDay: Date) => {
-//         const newDateTime = combineDateAndTime(newDay, selectedTime.time);
-//         setFallbackDay(newDay);
-//         props.onChange({ ...props.value, [props.member]: newDateTime });
-//         setCalendarAnchorEl(null);
-//     };
-
-//     const handleCalendarClose = () => {
-//         setCalendarAnchorEl(null);
-//     };
-
-//     const handleChangeTime = (newTimeLabel: string) => {
-//         const newTime = timeOptions.getOptions().find(o => o.label === newTimeLabel)!;
-//         if (newTime === null) return;
-//         const newDateTime = combineDateAndTime(shownDay, newTime.time);
-//         setFallbackDay(newDateTime);
-//         props.onChange({ ...props.value, [props.member]: newDateTime });
-//         console.log(`user selected time: ${newTimeLabel} => new time: ${newDateTime.toTimeString()}`);
-//     };
-
-//     if (!timeOptions) {
-//         // don't render if we haven't initialized.
-//         return null;
-//     }
-
-//     return <div className={`DateTimeEndpoint ${props.member}`}>
-//         <div className="endpointLabel">{props.label}</div>
-//         <FormControlLabel
-//             control={<Switch checked={isTBD} onChange={(e) => {
-//                 if (e.target.checked) {
-//                     props.value[props.member] = null;// TBD; make it null.
-//                 } else {
-//                     props.value[props.member] = shownDay;
-//                 }
-//                 props.onChange({ ...props.value });
-
-//             }} />}
-//             label="TBD"
-//         />
-
-//         <div className="multidayOption">
-//             {props.showMultidayControl &&
-//                 <FormControlLabel
-//                     control={<Switch checked={props.value.isMultiDay} onChange={(e) => {
-//                         props.value.isMultiDay = e.target.checked;
-//                         props.onChange({ ...props.value });
-//                     }} />}
-//                     label="Multi-day"
-//                 />
-//             }
-//         </div>
-
-//         {isTBD ? (
-//             <div className={`datePart interactable tbd"}`} onClick={handleDateClick}>{gIconMap.CalendarMonth()}To be determined</div>
-//         ) : (
-//             <div className={`datePart determined ${props.dayEditable ? "interactable editable" : "readonly"}`} onClick={handleDateClick}>{gIconMap.CalendarMonth()}{shownDay.toLocaleDateString()}</div>
-//         )}
-
-
-//         <div className="allDayControl">
-//             {props.showAllDayControl && (<FormControlLabel
-//                 control={<Switch checked={props.value.isAllDay} onChange={(e) => {
-//                     props.value.isAllDay = e.target.checked;
-//                     props.onChange({ ...props.value });
-//                 }} />}
-//                 label="All-day"
-//                 labelPlacement="top"
-//             />)}
-//         </div>
-
-//         {!props.value.isAllDay && !isTBD && (
-//             <div className="timePart">
-//                 <Select
-//                     value={selectedTime!.label}
-//                     label="Time of day"
-//                     onChange={(e) => handleChangeTime(e.target.value)}
-//                 >
-//                     {timeOptions.getOptions().map(v => <MenuItem key={v.label} value={v.label}>{v.label}</MenuItem>)}
-//                 </Select>
-//             </div>
-//         )}
-
-
-
-//         {calendarAnchorEl &&
-//             <Popover
-//                 open={true}
-//                 anchorEl={calendarAnchorEl}
-//                 onClose={handleCalendarClose}
-//                 anchorOrigin={{
-//                     vertical: 'bottom',
-//                     horizontal: 'left',
-//                 }}
-//             >
-//                 <EventCalendarMonth value={shownDay} range={props.value} onChange={handleChangeDay} />
-//             </Popover>
-//         }
-
-//     </div>;
-// };
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// interface DateTimeRangeControlProps {
-//     value: DateTimeRangeSpec;
-//     onChange: (newValue: DateTimeRangeSpec) => void;
-// };
-
-// const DateTimeRangeControl = (props: DateTimeRangeControlProps) => {
-
-//     const handleChange = (newValue: DateTimeRangeSpec) => {
-//         const nv: DateTimeRangeSpec = { ...newValue };
-//         if (!newValue.isMultiDay) {
-//             if (!!nv.startsAt && !!nv.endsAt) {
-//                 console.log(`correcting ends at date [${nv.startsAt.toDateString()}, ${nv.endsAt.toDateString()}] =>`);
-//                 nv.endsAt = combineDateAndTime(nv.startsAt, nv.endsAt); // use date of start, preserve time.
-//                 console.log(`                    ==> [${nv.startsAt.toDateString()}, ${nv.endsAt.toDateString()}]`);
-//             }
-//         }
-
-//         props.onChange(nv);
-//     };
-
-//     // NoSsr because without it, the dates will cause hydration errors due to server/client mismatches.
-//     return <NoSsr>
-//         <div className="DateTimeRangeControl">
-//             <DateTimeEndpointControl value={props.value} member="startsAt" label="Start time" onChange={handleChange} dayEditable={true} showMultidayControl={false} showAllDayControl={true} />
-//             <DateTimeEndpointControl value={props.value} member="endsAt" label="End time" onChange={handleChange} dayEditable={props.value.isMultiDay} showMultidayControl={true} showAllDayControl={false} />
-//         </div>
-//     </NoSsr>;
-// };
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 
 
@@ -374,6 +141,7 @@ interface DayControlProps {
     onChange: (newValue: Date) => void;
     readonly: boolean;
     items: CalendarEventSpec[];
+    range: DateTimeRange;
 };
 const DayControl = (props: DayControlProps) => {
 
@@ -419,7 +187,7 @@ const DayControl = (props: DayControlProps) => {
                     horizontal: 'left',
                 }}
             >
-                <EventCalendarMonth value={coalescedDay} onChange={handleCalendarChangeDay} otherDay={props.otherValue} items={props.items} />
+                <EventCalendarMonth value={coalescedDay} onChange={handleCalendarChangeDay} otherDay={props.otherValue} items={props.items} range={props.range} />
             </Popover >
         }
 
@@ -446,7 +214,7 @@ const CMDBSelect = <T,>(props: CMDBSelectProps<T>) => {
         if (!f) throw new Error(`couldn't find option ${e.target.value}`);
         props.onChange(f);
     }} value={props.getOptionID(props.value)}>
-        {props.options.map(v => (<option value={props.getOptionID(v)}>{props.getOptionString(v)}</option>))}
+        {props.options.map(v => (<option key={props.getOptionID(v)} value={props.getOptionID(v)}>{props.getOptionString(v)}</option>))}
     </select>
 };
 
@@ -539,7 +307,7 @@ const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlProps) =>
                     }} />
                 </div>
 
-                <DayControl readonly={false} onChange={handleStartDateChange} value={value.getStartDateTime()} coalescedFallbackValue={coalescedFallbackStartDay} otherValue={value.getEndDateTime()} items={props.items} />
+                <DayControl readonly={false} onChange={handleStartDateChange} value={value.getStartDateTime()} coalescedFallbackValue={coalescedFallbackStartDay} otherValue={value.getEndDateTime()} items={props.items} range={value} />
 
                 {!value.isTBD() && (
                     <>
@@ -553,7 +321,7 @@ const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlProps) =>
 
                         <div className="ndash field">&nbsp;&ndash;&nbsp;</div>
 
-                        {value.isAllDay() && <DayControl readonly={false} onChange={handleEndDateChange} value={value.getEndDateTime()} coalescedFallbackValue={value.getEndDateTime(coalescedFallbackStartDay)} otherValue={value.getStartDateTime()} items={props.items} />}
+                        {value.isAllDay() && <DayControl readonly={false} onChange={handleEndDateChange} value={value.getEndDateTime()} coalescedFallbackValue={value.getEndDateTime(coalescedFallbackStartDay)} otherValue={value.getStartDateTime()} items={props.items} range={value} />}
 
                         {!value.isAllDay() && !value.isTBD() && (
                             <div className="timePart field">
@@ -612,7 +380,9 @@ const TestPageContent = () => {
     };
 
     const events: CalendarEventSpec[] = [
-        new CalendarEventSpec({
+        ({
+            id: "1",
+            color: "red",
             title: "a single-day all day event",
             dateRange: new DateTimeRange({
                 durationMillis: gMillisecondsPerDay,
@@ -620,7 +390,9 @@ const TestPageContent = () => {
                 startsAtDateTime: MakeDay(2, 0),
             }),
         }),
-        new CalendarEventSpec({
+        ({
+            id: "2",
+            color: "blue",
             title: "a single-day all day event but with incorrect duration",
             dateRange: new DateTimeRange({
                 durationMillis: gMillisecondsPerHour,
@@ -628,7 +400,9 @@ const TestPageContent = () => {
                 startsAtDateTime: MakeDay(4, 0),
             }),
         }),
-        new CalendarEventSpec({
+        ({
+            id: "3",
+            color: "green",
             title: "a single-day event within a day",
             dateRange: new DateTimeRange({
                 durationMillis: gMillisecondsPerMinute * 15,
@@ -636,7 +410,9 @@ const TestPageContent = () => {
                 startsAtDateTime: MakeDay(6, gMillisecondsPerHour * 13),
             }),
         }),
-        new CalendarEventSpec({
+        ({
+            id: "4",
+            color: "yellow",
             title: "two-day event",
             dateRange: new DateTimeRange({
                 durationMillis: gMillisecondsPerDay * 2,
@@ -644,12 +420,34 @@ const TestPageContent = () => {
                 startsAtDateTime: MakeDay(9, 0),
             }),
         }),
-        new CalendarEventSpec({
+        ({
+            id: "5",
+            color: "cyan",
             title: "an event that starts at 11:30 for 2 hours, spanning 2 days",
             dateRange: new DateTimeRange({
                 durationMillis: gMillisecondsPerHour * 2,
                 isAllDay: false,
                 startsAtDateTime: MakeDayTime(13, 11, 30),
+            }),
+        }),
+        ({
+            id: "6",
+            color: "orange",
+            title: "an event that spans 10 days",
+            dateRange: new DateTimeRange({
+                durationMillis: gMillisecondsPerDay * 10,
+                isAllDay: false,
+                startsAtDateTime: MakeDay(16, 0),
+            }),
+        }),
+        ({
+            id: "7",
+            color: "purple",
+            title: "a 2nd event that spans 10 days",
+            dateRange: new DateTimeRange({
+                durationMillis: gMillisecondsPerDay * 10,
+                isAllDay: false,
+                startsAtDateTime: MakeDay(17, 0),
             }),
         }),
     ];

@@ -1,4 +1,5 @@
 import dayjs, { Dayjs } from "dayjs";
+import { isBetween } from "./utils";
 
 export const gMillisecondsPerMinute = 60 * 1000;
 export const gMillisecondsPerHour = 60 * gMillisecondsPerMinute;
@@ -205,6 +206,12 @@ export interface DateTimeRangeSpec {
     isAllDay: boolean; // care about time or ignore it?
 };
 
+export interface DateTimeRangeHitTestResult {
+    inRange: boolean,
+    rangeStart: boolean,
+    rangeEnd: boolean,
+}
+
 export class DateTimeRange {
     private spec: DateTimeRangeSpec;
     constructor(args?: DateTimeRangeSpec) {
@@ -292,6 +299,36 @@ export class DateTimeRange {
         return a;
     }
 
+    // test a DAY and report significance
+    hitTestDay(day: Dayjs): DateTimeRangeHitTestResult {
+        const ret = {
+            inRange: false,
+            rangeStart: false,
+            rangeEnd: false,
+        };
+
+        const rangeBeginDate = this.getStartDateTime();
+        if (!rangeBeginDate) return ret;
+        const rangeBeginDjs = dayjs(rangeBeginDate);
+
+        const rangeEndDate = this.getEndDateTime();
+        if (!rangeEndDate) return ret;
+        const rangeEndDjs = dayjs(rangeEndDate);
+
+        if (rangeBeginDjs.isSame(day, "day")) {
+            ret.inRange = true;
+            ret.rangeStart = true;
+        }
+        if (rangeEndDjs.isSame(day, "day")) {
+            ret.inRange = true;
+            ret.rangeEnd = true;
+        }
+        if (isBetween(day.valueOf(), rangeBeginDate.valueOf(), rangeEndDate.valueOf())) {
+            ret.inRange = true;
+        }
+
+        return ret;
+    }
 
 };
 

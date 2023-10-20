@@ -698,10 +698,22 @@ li.songDropdownOption {
     width: 120px;
 }
 
+
+/*
+
+<div.EventCalendarMonth.MuiDateCalendar-root>
+    ...
+    <div.MuiDayCalendar-weekContainer>
+        <div.day.dayContainer>
+            <div.dayCustomArea>
+            <div.
+
+*/
+
 .EventCalendarMonth {
-    --range-border-size: 6px;
-    --range-border-radius-size: 8px;
+    --range-border-radius-size: 50%;
 }
+
 
 .EventCalendarMonth .MuiDayCalendar-weekContainer {
     /* can't have margin / padding for rows, to allow weekend highlighting to flow*/
@@ -709,7 +721,13 @@ li.songDropdownOption {
     padding: 0;
 }
 
-.EventCalendarMonth .day {}
+
+.EventCalendarMonth .dayContainer div {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-sizing: border-box;
+}
 
 .EventCalendarMonth .MuiDayCalendar-weekDayLabel {
     /* workaround for https://github.com/mui/material-ui/issues/28688
@@ -718,15 +736,65 @@ li.songDropdownOption {
     margin: 0;
 }
 
-.EventCalendarMonth .day.MuiPickersDay-today {
-    border: 0;
-    background-color: #eee;
+.EventCalendarMonth .dayContainer {
+    position: relative;
 }
 
-.EventCalendarMonth .day.Mui-selected {
+.EventCalendarMonth .dayContainer .dayCustomArea,
+.EventCalendarMonth .dayContainer .dayGridLines,
+.EventCalendarMonth .dayContainer .pickersContainer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+}
+
+.EventCalendarMonth .dayContainer .dayCustomArea {
+    top: 20px;
+    opacity: 20%;
+    z-index: 2;
+}
+
+
+.EventCalendarMonth .dayContainer .dayGridLines {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #eee;
+    border-top: 0;
+    border-left: 0;
+    z-index: 1;
+}
+
+.EventCalendarMonth .dayContainer:first-child {
+    border-left: 1px solid #eee;
+}
+
+.EventCalendarMonth .dayContainer .pickersContainer {
+    z-index: 3;
+    position: relative;
+}
+
+
+
+.EventCalendarMonth .MuiPickersDay-root.Mui-selected {
+    /* by default MUI styles the current selection on the pickers button itself; we want to style differently so revert their stylings */
     color: unset;
     background-color: unset;
 }
+
+.EventCalendarMonth button.MuiPickersDay-root:hover {
+    background-color: unset;
+}
+
+
+
+/* 
+.EventCalendarMonth .day.MuiPickersDay-today {
+    border: 0;
+    background-color: #eee;
+} */
 
 .EventCalendarMonth .day.past {
     opacity: 30%;
@@ -739,22 +807,9 @@ li.songDropdownOption {
 }
 
 
-.EventCalendarMonth .day.event {
-    text-decoration: underline;
-    background-color: #0cf5;
-}
-
-
-
 .EventCalendarMonth .day.inRange {
-    background-color: #cfc6;
+    background-color: #cecc;
     border-radius: 0;
-    border-bottom: 2px solid #0803;
-}
-
-.EventCalendarMonth .day.rangeEnd {
-    border-top-right-radius: var(--range-border-radius-size);
-    border-bottom-right-radius: var(--range-border-radius-size);
 }
 
 .EventCalendarMonth .day.rangeStart {
@@ -762,37 +817,86 @@ li.songDropdownOption {
     border-bottom-left-radius: var(--range-border-radius-size);
 }
 
+.EventCalendarMonth .day.rangeEnd {
+    border-top-right-radius: var(--range-border-radius-size);
+    border-bottom-right-radius: var(--range-border-radius-size);
+}
 
 .EventCalendarMonth .day.otherSelected {
-    /* color: #fff; */
-    /* background-color: #088; */
+    /* color: #fff;
+    background-color: #088; */
 }
 
 .EventCalendarMonth .day.otherSelected.rangeEnd {
-    border-right: var(--range-border-size) solid #0803;
+    /* border-right: var(--range-border-size) solid #0803; */
 }
 
 .EventCalendarMonth .day.otherSelected.rangeStart {
-    border-left: var(--range-border-size) solid #0803;
+    /* border-left: var(--range-border-size) solid #0803; */
 }
 
+.EventCalendarMonth .day.selected {}
 
-.EventCalendarMonth .day.selected {
-    background-color: #0f9;
+.EventCalendarMonth .day.selected .MuiPickersDay-root {
+    border: 2px solid black;
+    background-color: #0f98;
     font-weight: bold;
-    text-decoration: underline;
 }
 
 .EventCalendarMonth .day.selected.rangeEnd {
-    border-right: var(--range-border-size) solid #0803;
+    /* border-right: var(--range-border-size) solid #0803; */
 }
 
 .EventCalendarMonth .day.selected.rangeStart {
-    border-left: var(--range-border-size) solid #0803;
+    /* border-left: var(--range-border-size) solid #0803; */
+}
+
+/* 
+.EventCalendarMonth .day:hover {
+    background-color: #cfc;
+} */
+
+
+.EventCalendarMonth {
+    --other-event-lane-height: 4px;
+    --other-event-border-radius: 2px;
+}
+
+.EventCalendarMonth .dayContainer .otherEvent {
+    --event-color: #ccc;
+    height: var(--other-event-lane-height);
+    background-color: var(--event-color);
+    width: auto;
+}
+
+.EventCalendarMonth .dayContainer .otherEventRangeStart {
+    margin-left: 7px;
+    border-top-left-radius: var(--other-event-border-radius);
+    border-bottom-left-radius: var(--other-event-border-radius);
+}
+
+.EventCalendarMonth .dayContainer .otherEventRangeEnd {
+    margin-right: 7px;
+    border-top-right-radius: var(--other-event-border-radius);
+    border-bottom-right-radius: var(--other-event-border-radius);
+}
+
+.EventCalendarMonth .dayContainer .dayCustomArea {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.EventCalendarMonth button.MuiPickersDay-root {
+    /* day numbers top-align*/
+    display: flex;
+    align-items: flex-start;
 }
 
 
 
-.EventCalendarMonth .day:hover {
-    background-color: #088;
+.EventCalendarMonth button.MuiPickersDay-root {
+    /* day numbers top-align*/
+    display: flex;
+    align-items: flex-start;
 }
