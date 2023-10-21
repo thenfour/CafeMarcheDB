@@ -649,25 +649,20 @@ li.songDropdownOption {
 .DateTimeRangeControl {
     display: flex;
     flex-direction: column;
+    padding: 5px;
 }
 
-.DateTimeRangeControl * {
-    /* background-color: #00f2; */
+.DateTimeRangeControl .interactable {
+    color: #08f;
 }
-
-.DateTimeRangeControl div {
-    /* padding: 0px;
-    margin: 0px;
-    background-color: #88f2; */
-}
-
 
 .DateTimeRangeControl .row {
     display: flex;
     align-items: center;
 }
 
-.DateTimeRangeControl .row>.field {
+.DateTimeRangeControl .row>.field,
+.DateTimeRangeControl .row>.field>.field {
     /* better vertical centering*/
     display: flex;
     font-size: 17px;
@@ -677,12 +672,10 @@ li.songDropdownOption {
     margin: 0px 10px;
 }
 
-.DateTimeRangeControl .tbdControl {
-    /* width: 70px; */
-}
 
-.DateTimeRangeControl .datePart {
-    /* width: 200px; */
+.DateTimeRangeControl .row>.field.dateSelection {
+    /* fixed-width in order for the "all-day" control to stay in place */
+    width: 520px;
 }
 
 .DateTimeRangeControl .timePart select {
@@ -750,6 +743,8 @@ li.songDropdownOption {
 
 .EventCalendarMonth .dayContainer .dayCustomArea,
 .EventCalendarMonth .dayContainer .dayGridLines,
+.EventCalendarMonth .dayContainer .selectionIndicator,
+.EventCalendarMonth .dayContainer .selectionBackground,
 .EventCalendarMonth .dayContainer .pickersContainer {
     position: absolute;
     width: 100%;
@@ -759,9 +754,22 @@ li.songDropdownOption {
     box-sizing: border-box;
 }
 
+.EventCalendarMonth .dayContainer .pickersContainer {
+    z-index: 5;
+    position: relative;
+}
+
 .EventCalendarMonth .dayContainer .dayCustomArea {
     top: 20px;
-    opacity: 20%;
+    opacity: 40%;
+    z-index: 4;
+}
+
+.EventCalendarMonth .dayContainer .selectionIndicator {
+    z-index: 3;
+}
+
+.EventCalendarMonth .dayContainer .selectionBackground {
     z-index: 2;
 }
 
@@ -769,6 +777,7 @@ li.songDropdownOption {
 .EventCalendarMonth .dayContainer .dayGridLines {
     width: 100%;
     height: 100%;
+    background-color: #FFF;
     border: 1px solid #eee;
     border-top: 0;
     border-left: 0;
@@ -777,11 +786,6 @@ li.songDropdownOption {
 
 .EventCalendarMonth .dayContainer:first-child {
     border-left: 1px solid #eee;
-}
-
-.EventCalendarMonth .dayContainer .pickersContainer {
-    z-index: 3;
-    position: relative;
 }
 
 
@@ -804,66 +808,64 @@ li.songDropdownOption {
     background-color: #eee;
 } */
 
-.EventCalendarMonth .day.past {
-    opacity: 30%;
+.EventCalendarMonth .dayContainer .day {
+    /* background-color: #fff; */
 }
 
-.EventCalendarMonth .day.weekend {
+.EventCalendarMonth .MuiDayCalendar-monthContainer {
+    background-color: #ccc;
+}
+
+.EventCalendarMonth .day button {
+    border-radius: 0;
+}
+
+.EventCalendarMonth .dayContainer.day.past .dayGridLines {
+    background-color: #f8f8f8;
+}
+
+.EventCalendarMonth .dayContainer.day.past button {
+    color: #ddd;
+}
+
+.EventCalendarMonth .dayContainer.day.weekend {
     color: #aaa;
     border-radius: 0;
-    background-color: #f0f0f0;
+    background-color: #f8f8f8;
 }
 
+/* 
+.EventCalendarMonth .dayContainer.day.dayOutsideMonth .dayGridLines {
+    background-color: #ddd;
+}
 
-.EventCalendarMonth .day.inRange {
+.EventCalendarMonth .dayContainer.day.dayOutsideMonth button {
+    color: #aaa;
+} */
+
+
+
+.EventCalendarMonth .dayContainer.day.inRange .selectionBackground {
     background-color: #cecc;
     border-radius: 0;
 }
 
-.EventCalendarMonth .day.rangeStart {
+.EventCalendarMonth .dayContainer.day.rangeStart .selectionBackground {
     border-top-left-radius: var(--range-border-radius-size);
     border-bottom-left-radius: var(--range-border-radius-size);
 }
 
-.EventCalendarMonth .day.rangeEnd {
+.EventCalendarMonth .dayContainer.day.rangeEnd .selectionBackground {
     border-top-right-radius: var(--range-border-radius-size);
     border-bottom-right-radius: var(--range-border-radius-size);
 }
 
-.EventCalendarMonth .day.otherSelected {
-    /* color: #fff;
-    background-color: #088; */
-}
-
-.EventCalendarMonth .day.otherSelected.rangeEnd {
-    /* border-right: var(--range-border-size) solid #0803; */
-}
-
-.EventCalendarMonth .day.otherSelected.rangeStart {
-    /* border-left: var(--range-border-size) solid #0803; */
-}
-
-.EventCalendarMonth .day.selected {}
-
-.EventCalendarMonth .day.selected .MuiPickersDay-root {
+.EventCalendarMonth .dayContainer.day.selected .selectionIndicator {
     border: 2px solid black;
     background-color: #0f98;
     font-weight: bold;
+    border-radius: 50%;
 }
-
-.EventCalendarMonth .day.selected.rangeEnd {
-    /* border-right: var(--range-border-size) solid #0803; */
-}
-
-.EventCalendarMonth .day.selected.rangeStart {
-    /* border-left: var(--range-border-size) solid #0803; */
-}
-
-/* 
-.EventCalendarMonth .day:hover {
-    background-color: #cfc;
-} */
-
 
 .EventCalendarMonth {
     --other-event-lane-height: 4px;

@@ -246,13 +246,13 @@ export class DateTimeRange {
 
     getDurationMillis() {
         if (this.isAllDay()) {
-            // will most always be aligned to day
             if (!this.spec.startsAtDateTime) {
                 return 0;
             }
+            // will most always be aligned to day
             const start = this.getStartDateTime()!;
             const end = this.getEndDateTime()!;
-            return end.valueOf() - start.valueOf() + gMillisecondsPerDay;
+            return (Math.round((end.valueOf() - start.valueOf()) / gMillisecondsPerDay) + 1) * gMillisecondsPerDay;
         }
         return this.spec.durationMillis;
     }

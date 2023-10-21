@@ -9,7 +9,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { InspectObject } from "src/core/components/CMCoreComponents";
 import { Autocomplete, AutocompleteRenderInputParams, Badge, FormControlLabel, FormGroup, InputBase, MenuItem, NoSsr, Popover, Popper, Select, Switch, TextField, Tooltip } from "@mui/material";
-import { LocalizationProvider } from "@mui/x-date-pickers";
+import { DateView, LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs, { Dayjs } from "dayjs";
 import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -29,6 +29,7 @@ export interface DaySlotProps extends PickersDayProps<Dayjs> {
     range: DateTimeRange;
     selectedDay: Dayjs;
     items: CalendarEventSpec[];
+    //tooltipRef: HTMLDivElement | null;
 };
 
 export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlotProps) {
@@ -65,6 +66,8 @@ export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: 
         }
     }
 
+    if (other.outsideCurrentMonth) classes.push(`dayOutsideMonth`);
+
     const hitTest = range.hitTestDay(day);
     if (hitTest.inRange) {
         classes.push("inRange");
@@ -86,11 +89,14 @@ export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: 
         <Tooltip
             title={tooltips.length ? <div style={{ whiteSpace: 'pre-line' }}>{tooltips.join(` \r\n`)}</div> : null}
             arrow
+            disableInteractive
         >
             <div className="pickersContainer">{/* https://stackoverflow.com/a/73492810/402169 PickersDay wrapped in Tootlip somehow doesn't work, but adding a div here fixes it. */}
                 <PickersDay {...other} disableMargin day={day} disableHighlightToday disableRipple />
             </div>
         </Tooltip>
+        <div className="selectionIndicator"></div>
+        <div className="selectionBackground"></div>
         <div className="dayCustomArea">
             {
                 matchingEvents.length > 0 && <div style={{ ["--event-color"]: matchingEvents[0]!.eventSpec.color } as any} key={matchingEvents[0]!.eventSpec.id} className={matchingEvents[0]!.className}></div>
@@ -111,21 +117,32 @@ export interface EventCalendarMonthProps {
 export const EventCalendarMonth = (props: EventCalendarMonthProps) => {
     const djs = dayjs(props.value);
     const otherDjs = props.otherDay === null ? null : dayjs(props.otherDay);
-    return <DateCalendar
-        className="EventCalendarMonth"
-        defaultValue={djs} views={["day", "year"]}
-        value={djs}
-        onChange={v => props.onChange(v?.toDate()!)}
-        slots={{ day: DaySlot }}
-        slotProps={{
-            day: {
-                selectedDay: djs,
-                otherDay: otherDjs,
-                items: props.items,
-                range: props.range,
-            } as any,
-        }}
-    />;
+    const [view, setView] = React.useState<DateView>("day");
+    return <div className="EventCalendarMonthContainer">
+        <DateCalendar
+            showDaysOutsideCurrentMonth
+            className="EventCalendarMonth"
+            defaultValue={djs} views={["day", "year"]}
+            value={djs}
+            view={view}
+            onViewChange={(view) => {
+                setView(view);
+            }}
+            onChange={(v, state) => {
+                //console.log(state);
+                props.onChange(v?.toDate()!);
+            }}
+            slots={{ day: DaySlot }}
+            slotProps={{
+                day: {
+                    selectedDay: djs,
+                    otherDay: otherDjs,
+                    items: props.items,
+                    range: props.range,
+                } as any,
+            }}
+        />
+    </div>;
 };
 
 
@@ -161,7 +178,7 @@ export const DayControl = (props: DayControlProps) => {
 
     const handleCalendarChangeDay = (newDay: Date) => {
         props.onChange(newDay);
-        setCalendarAnchorEl(null); // close calendar upon selecting
+        //setCalendarAnchorEl(null); // close calendar upon selecting
     };
 
     const handleCalendarClose = () => {
@@ -176,7 +193,7 @@ export const DayControl = (props: DayControlProps) => {
                 {gIconMap.CalendarMonth()}
                 {coalescedDay.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: "numeric" })}
                 {props.showDuration && <div className="duration">
-                    ({formatMillisecondsToDHMS(props.range.getDurationMillis())})
+                    &nbsp;({formatMillisecondsToDHMS(props.range.getDurationMillis())})
                 </div>}
 
             </div>
@@ -192,7 +209,13 @@ export const DayControl = (props: DayControlProps) => {
                     horizontal: 'left',
                 }}
             >
-                <EventCalendarMonth value={coalescedDay} onChange={handleCalendarChangeDay} otherDay={props.otherValue} items={props.items} range={props.range} />
+                <EventCalendarMonth
+                    value={coalescedDay}
+                    onChange={handleCalendarChangeDay}
+                    otherDay={props.otherValue}
+                    items={props.items}
+                    range={props.range}
+                />
             </Popover >
         }
 
@@ -318,52 +341,55 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                     <Switch size="small" checked={!value.isTBD()} onChange={handleTBDChange} />
                 </div>
 
-                <DayControl
-                    readonly={false}
-                    onChange={handleStartDateChange}
-                    value={value.getStartDateTime()}
-                    coalescedFallbackValue={coalescedFallbackStartDay}
-                    otherValue={value.getEndDateTime()}
-                    items={props.items}
-                    range={value}
-                    showDuration={false}
-                    className="datePart field startDate"
-                />
+                <div className="dateSelection field">
 
-                {!value.isTBD() && (
-                    <>
-                        {!value.isAllDay() && !value.isTBD() && (
-                            <div className="timePart field">
+                    <DayControl
+                        readonly={false}
+                        onChange={handleStartDateChange}
+                        value={value.getStartDateTime()}
+                        coalescedFallbackValue={coalescedFallbackStartDay}
+                        otherValue={value.getEndDateTime()}
+                        items={props.items}
+                        range={value}
+                        showDuration={false}
+                        className="datePart field startDate"
+                    />
 
-                                <CMDBSelect className="interactable startTime" value={startTime} onChange={handleChangeStartTime2} getOptionID={o => `id_${o.index}`} options={startTimeOptions.getOptions()} getOptionString={o => o.label} />
+                    {!value.isTBD() && (
+                        <>
+                            {!value.isAllDay() && !value.isTBD() && (<>
+                                @
+                                <div className="timePart field">
 
-                            </div>
-                        )}
+                                    <CMDBSelect className="interactable startTime" value={startTime} onChange={handleChangeStartTime2} getOptionID={o => `id_${o.index}`} options={startTimeOptions.getOptions()} getOptionString={o => o.label} />
 
-                        <div className="ndash field">&ndash;</div>
+                                </div>
+                            </>)}
 
-                        {value.isAllDay() && <DayControl
-                            readonly={false}
-                            onChange={handleEndDateChange}
-                            value={value.getEndDateTime()}
-                            coalescedFallbackValue={value.getEndDateTime(coalescedFallbackStartDay)}
-                            otherValue={value.getStartDateTime()}
-                            items={props.items}
-                            range={value}
-                            showDuration={true}
-                            className="datePart field endDate"
-                        />}
+                            <div className="ndash field">&ndash;</div>
 
-                        {!value.isAllDay() && !value.isTBD() && (
-                            <div className="timePart field">
-                                <CMDBSelect className="interactable endTime" value={endTime} onChange={handleChangeEndTime2} getOptionID={o => `id_${o.index}`} options={endTimeOptions.getOptions()} getOptionString={o => o.labelWithDuration} />
-                            </div>
-                        )}
+                            {value.isAllDay() && <DayControl
+                                readonly={false}
+                                onChange={handleEndDateChange}
+                                value={value.getEndDateTime()}
+                                coalescedFallbackValue={value.getEndDateTime(coalescedFallbackStartDay)}
+                                otherValue={value.getStartDateTime()}
+                                items={props.items}
+                                range={value}
+                                showDuration={true}
+                                className="datePart field endDate"
+                            />}
 
-                    </>
-                )/* isTBD */}
+                            {!value.isAllDay() && !value.isTBD() && (
+                                <div className="timePart field">
+                                    <CMDBSelect className="interactable endTime" value={endTime} onChange={handleChangeEndTime2} getOptionID={o => `id_${o.index}`} options={endTimeOptions.getOptions()} getOptionString={o => o.labelWithDuration} />
+                                </div>
+                            )}
 
+                        </>
+                    )/* isTBD */}
 
+                </div>
 
                 {!value.isTBD() && (<>
                     <div className="allDayControl">
