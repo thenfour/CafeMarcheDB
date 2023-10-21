@@ -4,9 +4,9 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { Button, CardContent, FormControl, FormHelperText, Input, InputLabel, Typography } from "@mui/material";
+import { Button, CardContent, FormControl, FormHelperText, Input, InputLabel, TextField, Typography } from "@mui/material";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
-import { ButtonSelectControl, ButtonSelectOption, MutationButtonSelectControl, MutationTextControl } from "src/core/components/CMTextField";
+import { ButtonSelectControl, ButtonSelectOption, CMTextField, MutationButtonSelectControl, MutationTextControl } from "src/core/components/CMTextField";
 import { useMutation } from "@blitzjs/rpc";
 import updateBasicProfileFields from "../api/user/mutations/updateBasicProfileFields";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -18,8 +18,74 @@ import { useDebounce } from "shared/useDebounce";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import React from "react";
 import { API, APIQueryResult } from 'src/core/db3/clientAPI';
+import LabeledTextField from "src/core/components/LabeledTextField";
+import { Form } from "react-final-form";
+import * as schemas from "src/auth/schemas"
+import { useRouter } from "next/router"
+import changePassword from "src/auth/mutations/changePassword"
+import { assert } from "blitz"
+import { SafeParseReturnType } from "zod";
 
+export const ResetOwnPasswordControl = () => {
+    //const router = useRouter();
+    //const token = router.query.token?.toString();
+    const [changePasswordMutation, { isSuccess }] = useMutation(changePassword);
+    //const [currentPassword, setCurrentPassword] = React.useState<string>("");
+    const [newPassword, setNewPassword] = React.useState<string>("");
+    const [newPasswordConfirmation, setNewPasswordConfirmation] = React.useState<string>("");
 
+    const [newPasswordValidationResult, setNewPasswordValidationResult] = React.useState<SafeParseReturnType<string, string> | null>(null);
+
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const onSubmit = () => {
+        changePasswordMutation({ currentPassword: "unused", newPassword }).then(() => {
+            showSnackbar({ severity: "success", children: "password updated" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating password" });
+        });
+    };
+
+    const handleChange = () => {
+        const r = schemas.password.safeParse(newPassword);
+        console.log(r);
+        setNewPasswordValidationResult(r);
+    }
+
+    return <div className="resetPasswordControlContainer formFieldContainer">
+        <div className="title">Change your password</div>
+        {/* <TextField
+            className="passwordField currentPassword"
+            label="Current password"
+            type="password"
+            value={currentPassword}
+            onChange={(v) => setCurrentPassword(v.target.value)}
+        /> */}
+        <TextField
+            label="New Password"
+            className="passwordField newPassword"
+            type="password"
+            error={!newPasswordValidationResult?.success}
+            helperText={(newPasswordValidationResult?.success === false) && newPasswordValidationResult.error.flatten().formErrors.toLocaleString()}
+            size="small"
+            margin="dense"
+            value={newPassword}
+            onChange={(v) => { setNewPassword(v.target.value); handleChange() }}
+        />
+        <TextField
+            label="Confirm new password"
+            className="passwordField newPasswordConfirmation"
+            type="password"
+            size="small"
+            margin="dense"
+            error={newPassword !== newPasswordConfirmation}
+            value={newPasswordConfirmation}
+            onChange={(v) => { setNewPasswordConfirmation(v.target.value); handleChange() }}
+        />
+        <Button onClick={onSubmit}>Submit</Button>
+    </div>;
+};
 
 
 
@@ -181,7 +247,7 @@ const OwnInstrumentsControl = () => {
         row={row}
         value={row.instruments}
         refetch={tableClient.refetch}
-        onChange={(value: db3.xUserInstrument[]) => {
+        onChange={(value: db3.UserInstrumentPayload[]) => {
             const updateObj = {
                 id: currentUser!.id,
                 instruments: value,
@@ -217,6 +283,7 @@ const MainContent = () => {
                     <OwnProfileBasicFieldControl member="email" label="Email" helperText="" />
                     <OwnActiveControl />
                     <OwnInstrumentsControl />
+                    <ResetOwnPasswordControl />
                 </FormControl>
 
             </div>

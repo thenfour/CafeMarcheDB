@@ -25,7 +25,7 @@ export const googleId = z
 
 export const password = z
   .string()
-  .min(4)
+  .min(8)
   .max(100)
   .transform((str) => str.trim())
 

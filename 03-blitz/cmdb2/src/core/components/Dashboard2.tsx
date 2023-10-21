@@ -205,7 +205,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     >
                         Café Marché Backstage
                     </Typography>
-                    <Search>
+                    {(session.userId != null) && <Search>
                         <SearchIconWrapper>
                             <SearchIcon />
                         </SearchIconWrapper>
@@ -213,17 +213,20 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             placeholder="Search…"
                             inputProps={{ 'aria-label': 'search' }}
                         />
-                    </Search>
+                    </Search>}
                     {(session.impersonatingFromUserId != null) && (
                         <Button size="small" variant="contained" onClick={onClickStopImpersonating}>Stop impersonating</Button>
                     )}
                     <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
-                    <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
-                        <AppBarUserIcon_Desktop />
-                    </Box>
-                    <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-                        <AppBarUserIcon_Mobile />
-                    </Box>
+
+                    {(session.userId != null) && <>
+                        <Box sx={{ display: { xs: 'none', md: 'flex' } }}>
+                            <AppBarUserIcon_Desktop />
+                        </Box>
+                        <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
+                            <AppBarUserIcon_Mobile />
+                        </Box>
+                    </>}
                 </Toolbar>
             </AppBar>
         </>

@@ -8,6 +8,7 @@ export const RoleClientSchema = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+        new DB3Client.BoolColumnClient({ columnName: "isRoleForNewUsers" }),
         new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 300, allowDeleteFromCell: false }),
     ],
 });

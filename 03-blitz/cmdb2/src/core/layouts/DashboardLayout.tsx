@@ -33,21 +33,21 @@ const LoginSignup = () => {
     );
 };
 
-const DashboardLayout2 = ({ children }) => {
+const DashboardLayout2 = ({ children, disableLoginRedirect }) => {
     const [currentUser] = useCurrentUser();
-    //const isAuthorized = useAuthorization("DashboardLayout2", Permission.can_edit_users);
 
     return <Dashboard2>
         {
-            !!currentUser ? children : (<LoginSignup></LoginSignup>)
+            (!!currentUser || disableLoginRedirect) ? children : (<LoginSignup></LoginSignup>)
         }
     </Dashboard2>
         ;
 };
 
-const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode }> = ({
+const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode, disableLoginRedirect?: boolean }> = ({
     title,
     children,
+    disableLoginRedirect,
 }) => {
 
     const fallback =
@@ -65,7 +65,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode 
             </Head>
 
             <Suspense fallback={fallback}>
-                <DashboardLayout2>{children}</DashboardLayout2>
+                <DashboardLayout2 disableLoginRedirect={disableLoginRedirect}>{children}</DashboardLayout2>
             </Suspense>
 
         </>

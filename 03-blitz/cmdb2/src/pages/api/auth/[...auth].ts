@@ -6,6 +6,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20"
 import { Strategy as Auth0Strategy } from 'passport-auth0';
 import signupMutation from "src/auth/mutations/signup"
 import { CreatePublicData } from "types";
+import { nanoid } from 'nanoid'
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
@@ -65,7 +66,7 @@ export default api(
                 } else {
                   // i should just create separate schema validation/mutation for when a user uses a password vs. external auth.
                   // but whatever; simpler to just supply a password that will never be used.
-                  user = await signupMutation({ email, googleId, password: "1234567890!@#$%^&aoeuAOEU", name: displayName }, ctx);
+                  user = await signupMutation({ email, googleId, password: "1234567890!@#$%^&aoeuAOEU" + nanoid(), name: displayName }, ctx);
                 }
               }
 

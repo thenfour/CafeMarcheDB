@@ -121,6 +121,21 @@ seems like it happens often when I add `useQuery()` or `useMutation()` or other 
   * http://localhost:3000/auth/logout
 
 
+
+# initial site setup
+
+  * edit `.env.local`
+  * create roles, be sure to specify a default for new users
+
+
+# user login/signup/accounts/google
+
+  * any user can create an account, and they will be assigned to a default role.
+  * sign in with google will create your default account for you
+    * if you already have a password-based account, it can automatically be logged-in with google auth
+    * if you signed up with a google account, you won't have an initial password. you may reset it though to be able to log in via password.
+
+
 # how: build / deployment?
 
   * `npm run lint`

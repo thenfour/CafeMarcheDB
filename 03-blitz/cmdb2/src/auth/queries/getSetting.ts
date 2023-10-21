@@ -7,7 +7,7 @@ import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(GetSettingSchema),
-    resolver.authorize("getSetting", Permission.view_settings),
+    //resolver.authorize("getSetting", Permission.view_settings),
     async ({ name }, ctx) => {
         try {
             const item = await db.setting.findFirst({

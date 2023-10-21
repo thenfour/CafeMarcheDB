@@ -801,16 +801,11 @@ li.songDropdownOption {
 }
 
 
-
 /* 
 .EventCalendarMonth .day.MuiPickersDay-today {
     border: 0;
     background-color: #eee;
 } */
-
-.EventCalendarMonth .dayContainer .day {
-    /* background-color: #fff; */
-}
 
 .EventCalendarMonth .MuiDayCalendar-monthContainer {
     background-color: #ccc;
@@ -867,6 +862,12 @@ li.songDropdownOption {
     border-radius: 50%;
 }
 
+.EventCalendarMonth .dayContainer.day:hover .selectionIndicator {
+    /* border: 2px solid #888; */
+    background-color: #8ff4;
+    border-radius: 50%;
+}
+
 .EventCalendarMonth {
     --other-event-lane-height: 4px;
     --other-event-border-radius: 2px;
@@ -909,4 +910,12 @@ li.songDropdownOption {
     /* day numbers top-align*/
     display: flex;
     align-items: flex-start;
+}
+
+
+/* - profile - change password form --------------------------------- */
+.resetPasswordControlContainer {
+    display: flex;
+    flex-direction: column;
+
 }

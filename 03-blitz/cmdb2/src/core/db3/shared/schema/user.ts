@@ -202,6 +202,10 @@ export const xRole = new db3.xTable({
             allowNull: false,
             format: "markdown",
         }),
+        new BoolField({
+            columnName: "isRoleForNewUsers",
+            defaultValue: false,
+        }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
@@ -212,7 +216,7 @@ export const xRole = new db3.xTable({
             associationForeignObjectMember: "permission",
             associationLocalIDMember: "roleId",
             associationLocalObjectMember: "role",
-            associationTableID: "RolePermissionAssociation",
+            associationTableID: "RolePermission",
             foreignTableID: "Permission",
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({

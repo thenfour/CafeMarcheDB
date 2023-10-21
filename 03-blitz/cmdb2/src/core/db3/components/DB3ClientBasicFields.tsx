@@ -10,7 +10,7 @@
 
 import React from "react";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { TAnyModel, TIconOptions, TimeSpan, gNullValue } from "shared/utils";
+import { TAnyModel, TIconOptions, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
@@ -20,6 +20,7 @@ import * as db3fields from "../shared/db3basicFields";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from "dayjs";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
+import { formatMillisecondsToDHMS, formatTimeSpan } from "shared/time";
 
 
 
@@ -684,15 +685,15 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
             renderCell: (params: GridRenderCellParams) => {
                 const value = params.value as Date;
                 const now = new Date();
-                const age = new TimeSpan(now.valueOf() - value.valueOf());
-                const ageStr = `(${age.shortString} ago)`;
+                //const age = new TimeSpan(now.valueOf() - value.valueOf());
+                const ageStr = `(${formatTimeSpan(value, now)} ago)`;
                 return <>{value.toTimeString()} {ageStr}</>; // todo
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const value = params.value as Date;
                 const now = new Date();
-                const age = new TimeSpan(now.valueOf() - value.valueOf());
-                const ageStr = `(${age.shortString} ago)`;
+                //const age = new TimeSpan(now.valueOf() - value.valueOf());
+                const ageStr = `(${formatTimeSpan(now, value)} ago)`;
                 return <>{value.toTimeString()} {ageStr}</>; // todo
             },
         };
@@ -708,8 +709,8 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
 
         const value = vr.parsedValue as Date;
         const now = new Date();
-        const age = new TimeSpan(now.valueOf() - value.valueOf());
-        const ageStr = `(${age.shortString} ago)`;
+        //const age = new TimeSpan(now.valueOf() - value.valueOf());
+        const ageStr = `(${formatTimeSpan(now, value)} ago)`;
         return <>{value.toTimeString()} {ageStr}</>; // todo
     };
 };

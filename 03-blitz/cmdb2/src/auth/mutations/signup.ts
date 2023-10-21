@@ -3,9 +3,9 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import utils, { ChangeAction, CreateChangeContext } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
-type CreateInput = Prisma.UserCreateInput & {
+type CreateInput = Prisma.UserUncheckedCreateInput & {
   password?: string;
 };
 
@@ -16,6 +16,17 @@ export default resolver.pipe(
     delete fields.password;
     fields.email = fields.email.toLowerCase().trim();
     fields.isSysAdmin = (fields.email == process.env.ADMIN_EMAIL);
+
+    const role = await db.role.findFirst({
+      where: {
+        isRoleForNewUsers: true
+      }
+    });
+
+    if (role) {
+      fields.roleId = role.id;
+    }
+
     try {
       const user = await db.user.create({
         data: fields,
@@ -23,7 +34,7 @@ export default resolver.pipe(
       });
 
 
-      await utils.RegisterChange({
+      await RegisterChange({
         action: ChangeAction.insert,
         changeContext: CreateChangeContext("signupMutation"),
         table: "user",

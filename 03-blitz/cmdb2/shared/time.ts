@@ -38,6 +38,11 @@ export function formatMillisecondsToDHMS(milliseconds: number): string {
     return parts.join(' ');
 }
 
+export function formatTimeSpan(a: Date | null | undefined, b: Date | null | undefined): string {
+    if (!a || !b) return "-";
+    return formatMillisecondsToDHMS(Math.abs(b.valueOf() - a.valueOf()));
+}
+
 // for debugging
 export const DateToString = (x: Date | null | undefined) => {
     if (!x) return "<null>";

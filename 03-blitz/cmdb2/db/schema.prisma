@@ -44,12 +44,13 @@ generator client {
 // --------------------------------------
 
 model Role {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique
-  description String?
-  sortOrder   Int              @default(0)
-  permissions RolePermission[]
-  User        User[]
+  id                Int              @id @default(autoincrement())
+  name              String           @unique
+  isRoleForNewUsers Boolean          @default(false)
+  description       String?
+  sortOrder         Int              @default(0)
+  permissions       RolePermission[]
+  User              User[]
 }
 
 model Permission {

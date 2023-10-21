@@ -18,19 +18,19 @@ export default resolver.pipe(
   resolver.authorize(Permission.login),
   async ({ currentPassword, newPassword }, ctx) => {
 
-    CMDBAuthorizeOrThrow("ChangePassword", Permission.change_own_password, ctx);
+    //CMDBAuthorizeOrThrow("ChangePassword", Permission.change_own_password, ctx);
 
     const user = await db.user.findFirst({ where: { id: ctx.session.userId } })
     if (!user) throw new NotFoundError()
 
-    try {
-      await authenticateUser(user.email, currentPassword)
-    } catch (error) {
-      if (error instanceof AuthenticationError) {
-        throw new Error("Invalid Password")
-      }
-      throw error
-    }
+    // try {
+    //   await authenticateUser(user.email, currentPassword)
+    // } catch (error) {
+    //   if (error instanceof AuthenticationError) {
+    //     throw new Error("Invalid Password")
+    //   }
+    //   throw error
+    // }
 
     const hashedPassword = await SecurePassword.hash(newPassword.trim());
     const oldUser = await db.user.findFirst({
