@@ -141,12 +141,14 @@ seems like it happens often when I add `useQuery()` or `useMutation()` or other 
   * `npm run lint`
   * `npm run build`
 
+  * `blitz build` - builds for prod [docs](https://blitzjs.com/docs/cli-build)
+  * `blitz start` - starts prod server [docs](https://blitzjs.com/docs/cli-start)
+
   * things i need to work out:
     * debugging prod? - will i be able to breakpoint? inspect much at all?
       * we can enable inspection directly on the GUI via `<InspectObject src={eventInfo} />`
-    * testing prod build on dev machine
     * updating prod database (how do migrations work)
     * logging: viewing
     * certainly more admin tools would be needed
-    * tests / CI
+      * inspecting activity / changes etc
 
