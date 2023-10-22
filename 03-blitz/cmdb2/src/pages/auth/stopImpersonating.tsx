@@ -12,8 +12,8 @@ const MainContent = () => {
     const session = useSession();
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
 
-    const onClickStopImpersonating = () => {
-        stopImpersonatingMutation();
+    const onClickStopImpersonating = async () => {
+        await stopImpersonatingMutation();
     };
 
     if (session.impersonatingFromUserId == null) {

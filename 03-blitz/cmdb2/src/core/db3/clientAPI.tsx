@@ -10,9 +10,6 @@ import { TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventArgs, TinsertE
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
-import insertEventComment from "./mutations/insertEventComment";
-import updateEventComment from "./mutations/updateEventComment";
-import deleteEventComment from "./mutations/deleteEventComment";
 import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
 import deleteEventSongList from "./mutations/deleteEventSongList";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
@@ -144,18 +141,18 @@ const gUsersAPI = new UsersAPI();
 
 class EventsAPI {
 
-    getEventSegmentFormattedDateRange(segment: db3.EventSegmentPayloadFromEvent) {
+    getEventSegmentFormattedDateRange(segment: db3.EventVerbose_EventSegmentPayload) {
         return "daterangehere";
     }
 
-    getEventSegmentDateInfo(segment: db3.EventSegmentPayloadFromEvent) {
+    getEventSegmentDateInfo(segment: db3.EventVerbose_EventSegmentPayload) {
         return getDateRangeInfo({
             startsAt: segment.startsAt,
             endsAt: segment.endsAt,
         });
     }
 
-    getEventInfoForUser(args: { event: db3.EventPayloadClient, user: db3.UserPayload }) {
+    getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserPayload }) {
         const i = new db3.EventInfoForUser({ event: args.event, user: args.user });
         return i;
     }
@@ -252,10 +249,6 @@ class EventsAPI {
 
     updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
     updateEventBasicFields = CreateAPIMutationFunction<TupdateEventBasicFieldsArgs, typeof updateEventBasicFields>(updateEventBasicFields);
-
-    insertEventCommentMutation = CreateAPIMutationFunction<TinsertEventCommentArgs, typeof insertEventComment>(insertEventComment);
-    deleteEventCommentMutation = CreateAPIMutationFunction<TdeleteEventCommentArgs, typeof deleteEventComment>(deleteEventComment);
-    updateEventCommentMutation = CreateAPIMutationFunction<TupdateEventCommentArgs, typeof updateEventComment>(updateEventComment);
 
     // lol consistent naming
     insertEventSongListx = CreateAPIMutationFunction<TinsertOrUpdateEventSongListArgs, typeof insertEventSongListMutation>(insertEventSongListMutation);

@@ -7,7 +7,7 @@ import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(GetObjectByNullableIdSchema),
-    resolver.authorize("getRole", Permission.view_roles),
+    resolver.authorize(Permission.view_roles),
     async ({ id }, ctx) => {
         if (id == null) return null;
         try {

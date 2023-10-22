@@ -305,6 +305,14 @@ export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelat
     { instrument: { id: 'asc' } },
 ];
 
+export type UserPayload_Name = Prisma.UserGetPayload<{
+    select: {
+        name: true,
+        compactName: true,
+    }
+}>;
+
+
 export type UserMinimumPayload = Prisma.UserGetPayload<{}>;
 
 export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
@@ -558,6 +566,12 @@ export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelatio
 ];
 
 
+export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
+    { startsAt: "asc" },
+    { id: "asc" },
+];
+
+
 
 // all info that will appear on an event detail page
 export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
@@ -581,11 +595,26 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
             orderBy: { file: { uploadedAt: 'desc' } }
         },
         segments: {
-            orderBy: { startsAt: "desc" },
+            orderBy: EventSegmentNaturalOrderBy,
             include: EventSegmentArgs.include,
         },
     }
 });
+
+export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
+
+// export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<{
+//     include: {
+//         responses: {
+//             include: {
+//                 attendance: true,
+//                 user: true,
+//                 instrument: typeof InstrumentArgs,
+//             }
+//         },
+//     }
+// }>;
+
 
 export type EventClientPayload_Verbose = EventClientPayloadExtras & Prisma.EventGetPayload<typeof EventArgs_Verbose>;
 
@@ -618,7 +647,6 @@ export const EventSongListSongArgs = Prisma.validator<Prisma.EventSongListSongAr
     }
 });
 
-//export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof EventSongListSongArgs>;
 export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof EventSongListSongArgs>;
 
 
@@ -847,31 +875,6 @@ export const EventTagNaturalOrderBy: Prisma.EventTagOrderByWithRelationInput[] =
 
 
 
-// when an event segment is fetched from an event, this is the payload type
-export type EventSegmentPayloadFromEvent = Prisma.EventSegmentGetPayload<{
-    include: {
-        responses: {
-            include: {
-                attendance: true,
-                user: true,
-                instrument: typeof InstrumentArgs,
-            }
-        },
-    }
-}>;
-
-
-export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
-    { startsAt: "asc" },
-    { id: "asc" },
-];
-
-
-
-// export const EventCommentNaturalOrderBy: Prisma.EventCommentOrderByWithRelationInput[] = [
-//     { createdAt: "asc" },
-//     { id: "asc" },
-// ];
 
 
 export const EventAttendanceArgs = Prisma.validator<Prisma.EventAttendanceArgs>()({

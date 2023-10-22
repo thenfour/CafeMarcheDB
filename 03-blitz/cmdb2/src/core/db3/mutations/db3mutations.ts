@@ -9,7 +9,7 @@ import * as mutationCore from "../server/db3mutationCore"
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize("db3mutations", Permission.login),
+    resolver.authorize(Permission.login),
     async (input: db3.MutatorInput, ctx: AuthenticatedMiddlewareCtx) => {
         const table = db3.GetTableById(input.tableID);
 

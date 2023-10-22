@@ -348,7 +348,7 @@ export const EventAttendanceFrame = (props: EventAttendanceFrameProps) => {
 // frame for event:
 // big attendance alert (per event, multiple segments)
 export interface EventAttendanceAlertControlProps {
-    event: db3.EventPayloadClient,
+    event: db3.EventClientPayload_Verbose,
     onRefetch: () => void,
 };
 
@@ -378,7 +378,7 @@ export const EventAttendanceAlertControl = (props: EventAttendanceAlertControlPr
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceSummaryProps {
-    event: db3.EventPayloadClient,
+    event: db3.EventClientPayload_Verbose,
 };
 
 export const EventAttendanceSummary = (props: EventAttendanceSummaryProps) => {

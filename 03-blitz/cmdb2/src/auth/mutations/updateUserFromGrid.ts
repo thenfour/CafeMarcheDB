@@ -6,7 +6,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(UpdateUserFromGrid),
-    resolver.authorize("adminUpdateUser", Permission.admin_users),
+    resolver.authorize(Permission.admin_users),
     async ({ id, ...data }, ctx) => {
         try {
             const oldValues = await db.user.findFirst({ where: { id } });

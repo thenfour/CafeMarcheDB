@@ -6,7 +6,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(CreateSettingSchema),
-    resolver.authorize("insertSettingMutation", Permission.admin_settings),
+    resolver.authorize(Permission.admin_settings),
     async (fields, ctx) => {
         try {
             const obj = await db.setting.create({

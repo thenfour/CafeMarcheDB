@@ -11,7 +11,7 @@ interface QueryParams
 
 
 export default resolver.pipe(
-    resolver.authorize("getRoles", Permission.view_roles),
+    resolver.authorize(Permission.view_roles),
     async (params: QueryParams, ctx) => {
         try {
             const items = await db.role.findMany({

@@ -12,8 +12,8 @@ const tableSpec = new DB3Client.xTableClientSpec({
     table: db3.xUserInstrument,
     columns: [
         new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 180, clientIntention: { intention: "admin" } }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 180, clientIntention: { intention: "admin" } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 180, clientIntention: { intention: "admin", mode: "primary" } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 180, clientIntention: { intention: "admin", mode: "primary" } }),
         new DB3Client.BoolColumnClient({ columnName: "isPrimary" }),
     ],
 });

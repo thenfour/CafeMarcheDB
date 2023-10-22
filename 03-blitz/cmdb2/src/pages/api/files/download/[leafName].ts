@@ -48,7 +48,8 @@ export default api(async (req, res, origCtx: Ctx) => {
                 return;
             }
 
-            const contentType = mime.getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
+            // for some reason requires "as any" to workaround broken types.
+            const contentType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
             if (contentType) {
                 res.setHeader("Content-Type", contentType);
             } else {

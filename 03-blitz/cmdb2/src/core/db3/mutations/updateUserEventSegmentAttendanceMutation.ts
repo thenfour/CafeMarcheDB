@@ -8,7 +8,7 @@ import { TupdateUserEventSegmentAttendanceMutationArgs } from "../shared/apiType
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize("updateUserEventSegmentAttendanceMutation", Permission.login),
+    resolver.authorize(Permission.login),
     async (args: TupdateUserEventSegmentAttendanceMutationArgs, ctx: AuthenticatedMiddlewareCtx) => {
         const existing = await db.eventSegmentUserResponse.findFirst({
             where: {

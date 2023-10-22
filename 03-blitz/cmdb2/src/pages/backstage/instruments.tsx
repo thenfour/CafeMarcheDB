@@ -11,25 +11,27 @@ import PageviewIcon from '@mui/icons-material/Pageview';
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
 
-const tableSpec = new DB3Client.xTableClientSpec({
-    table: db3.xInstrument,
-    columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-        new DB3Client.GenericStringColumnClient({ columnName: "slug", cellWidth: 150 }),
-        new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-        new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupPayload>({ columnName: "functionalGroup", cellWidth: 200, clientIntention: { intention: "admin", mode: "primary" } }),
-        new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName: "instrumentTags", cellWidth: 220, clientIntention: { intention: "admin", mode: "primary" } }),
-    ],
-});
-
-
 const InstrumentListContent = () => {
     if (!useAuthorization("admin instruments page", Permission.admin_general)) {
         throw new Error(`unauthorized`);
     }
     const router = useRouter();
+
+
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xInstrument,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "slug", cellWidth: 150 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+            new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupPayload>({ columnName: "functionalGroup", cellWidth: 200, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName: "instrumentTags", cellWidth: 220, allowDeleteFromCell: false }),
+        ],
+    });
+
+
     return <>
         <SettingMarkdown settingName="instrumentList_markdown"></SettingMarkdown>
         <DB3EditGrid
@@ -40,7 +42,7 @@ const InstrumentListContent = () => {
                 label="View"
                 color="inherit"
                 onClick={() => {
-                    router.push(`/backstage/instrument/${args.row["slug"]}`);
+                    void router.push(`/backstage/instrument/${args.row["slug"]}`);
                 }}
             />}
         />

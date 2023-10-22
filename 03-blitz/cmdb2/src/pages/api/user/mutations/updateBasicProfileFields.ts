@@ -9,7 +9,7 @@ import { TupdateBasicProfileFieldsArgs } from "../types";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize("updateBasicProfileFields", Permission.change_own_userInfo),
+    resolver.authorize(Permission.change_own_userInfo),
     async (args: TupdateBasicProfileFieldsArgs, ctx: AuthenticatedMiddlewareCtx) => {
 
         if (args.userId != ctx.session.userId) {
@@ -24,7 +24,14 @@ export default resolver.pipe(
             isActive: args.isActive,
         };
 
-        mutationCore.updateImpl(db3.xUser, args.userId, fields, ctx);
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        const clientIntention: db3.xTableClientUsageContext = {
+            intention: "user",
+            mode: "primary",
+            currentUser,
+        };
+
+        await mutationCore.updateImpl(db3.xUser, args.userId, fields, ctx, clientIntention);
 
         return args;// blitz is weird and wants the return type to be the same as the input type.
     }

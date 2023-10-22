@@ -27,7 +27,7 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
     const router = useRouter();
     return <>
         <Button onClick={() => {
-            router.push({
+            void router.push({
                 pathname: '/backstage/editEventSongListSongs',
                 query: { eventSongListId: gridArgs.row.id },
             });

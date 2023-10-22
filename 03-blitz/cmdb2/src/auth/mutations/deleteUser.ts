@@ -6,7 +6,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(GetObjectByIdSchema),
-    resolver.authorize("SoftDeleteUserMutation", Permission.admin_users),
+    resolver.authorize(Permission.admin_users),
     async ({ id }, ctx) => {
         try {
 

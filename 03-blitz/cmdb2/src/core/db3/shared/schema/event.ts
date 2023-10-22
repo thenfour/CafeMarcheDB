@@ -10,7 +10,10 @@ import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
-import { DateRangeInfo, EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient, EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadFromEvent, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, InstrumentArgs, InstrumentPayload, UserPayload } from "./prismArgs";
+import {
+    EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
+    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload
+} from "./prismArgs";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
 import { DateRange, IsEarlierDateWithLateNull, MinDateOrLateNull, getDateRangeInfo } from "shared/time";
@@ -734,12 +737,12 @@ export const xEventSongListSong = new db3.xTable({
 // unfortunately we're not there yet. helper functions like this exist.
 export interface CalculateEventInfoForUserArgs {
     user: UserPayload;
-    event: EventPayloadClient;
+    event: EventClientPayload_Verbose;
 }
 
 export interface SegmentAndResponse {
     event: EventPayloadClient;
-    segment: EventSegmentPayloadFromEvent;
+    segment: EventVerbose_EventSegmentPayload;
     response: EventSegmentUserResponsePayload;
     instrument: InstrumentPayload | null;
 };
@@ -759,7 +762,7 @@ export const getInstrumentForEventSegmentUserResponse = (response: EventSegmentU
 
 export class EventInfoForUser {
     user: UserPayload;
-    event: EventPayloadClient;
+    event: EventClientPayload_Verbose;
     segments: SegmentAndResponse[];  //{ [segmentId: number]: EventSegmentUserResponse }; // all segments in order, together with response. response ALWAYS there for simplicity.
 
     // (todo) when there is only 1 response type for all segments (1 segment, or all the same), then this will contain that singular one.
@@ -777,7 +780,7 @@ export class EventInfoForUser {
                 return {
                     event: args.event,
                     segment: seg,
-                    response: response as EventSegmentUserResponsePayload,
+                    response: response,
                     instrument: getInstrumentForEventSegmentUserResponse(response, args.user),
                 };
             }
@@ -791,7 +794,7 @@ export class EventInfoForUser {
                 eventSegment: seg,
                 expectAttendance: false, // no response object means the user is not expected
                 id: -1,
-                user: this.user as any,
+                user: this.user,
                 userId: this.user.id,
                 instrument: null,
                 instrumentId: null,

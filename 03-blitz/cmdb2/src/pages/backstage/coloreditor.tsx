@@ -1,15 +1,9 @@
-import React, { FC, Suspense } from "react"
-import { BlitzPage, useParams } from "@blitzjs/next";
+import { BlitzPage } from "@blitzjs/next";
+import { Button, Radio } from "@mui/material";
+import React from "react";
+import { ColorPaletteArgs, ColorPaletteEntry, PaletteGenParamGroup, PaletteGenParams, PaletteGenValue, gGeneralPaletteList } from "shared/color";
+import { ColorPaletteGrid, ColorPaletteListComponent, ColorPick } from "src/core/components/Color";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { Breadcrumbs, Button, Checkbox, Link, List, ListItem, Radio, Typography } from "@mui/material";
-import HomeIcon from '@mui/icons-material/Home';
-import { EventDetail } from "src/core/components/CMMockupComponents";
-import { ColorPalette, ColorPaletteArgs, ColorPaletteEntry, CreateColorPaletteEntry, PaletteGenParamGroup, PaletteGenParams, PaletteGenValue, gGeneralPaletteList } from "shared/color";
-import { ColorPaletteGrid, ColorPaletteListComponent, ColorPick, ColorSwatch } from "src/core/components/Color";
-import { TAnyModel, clamp01, gNullValue, lerp } from "shared/utils";
 
 // hue 0-360
 // sat 0-100%
@@ -247,9 +241,8 @@ const MyComponent = () => {
 
     const onCopy = async () => {
         const txt = JSON.stringify(genParams);
-        navigator.clipboard.writeText(txt).then(() => {
-            alert(`copied ${txt.length} chars`);
-        });
+        await navigator.clipboard.writeText(txt);
+        alert(`copied ${txt.length} chars`);
     };
 
     const onCopyPalette = async () => {
@@ -259,9 +252,8 @@ const MyComponent = () => {
             defaultIndex: 0,
         }
         const txt = JSON.stringify(exp);
-        navigator.clipboard.writeText(txt).then(() => {
-            alert(`copied ${txt.length} chars`);
-        });
+        await navigator.clipboard.writeText(txt);
+        alert(`copied ${txt.length} chars`);
     };
 
     const onPaste = async () => {
@@ -295,7 +287,7 @@ const MyComponent = () => {
             setDumDum(dumdum + 1);
         }} />
 
-        <ColorPaletteGrid palette={palette} onClick={(e) => { }} showNull={true} />
+        <ColorPaletteGrid palette={palette} onClick={(e) => { }} showNull={true} showStrong={true} showWeak={true} />
     </div>;
 };
 

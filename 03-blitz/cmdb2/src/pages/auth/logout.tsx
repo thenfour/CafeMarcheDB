@@ -10,7 +10,7 @@ const LogoutPage: BlitzPage = () => {
         const fn = async () => {
             await logoutMutation();
         };
-        fn();
+        void fn();
     }, []);
 
     return (<>logging you out...</>

@@ -196,7 +196,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
                     readOnly={false} // always allow switching this; for admin purposes makes sense
                     value={params.value}
                     onChange={(value) => {
-                        params.api.setEditCellValue({ id: params.id, field: this.args.columnName, value });//.then(() => {
+                        void params.api.setEditCellValue({ id: params.id, field: this.args.columnName, value });//.then(() => {
                     }}
                 />;
             },

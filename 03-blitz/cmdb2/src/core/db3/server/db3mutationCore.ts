@@ -141,9 +141,9 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         const dbTableClient = db[table.tableName]; // the prisma interface
 
         // delete any associations for this item first.
-        table.columns.forEach(column => {
+        table.columns.forEach(async (column) => {
             if (column.fieldTableAssociation !== "associationRecord") { return; }
-            UpdateAssociations({
+            await UpdateAssociations({
                 changeContext,
                 ctx,
                 localId: id,
@@ -209,10 +209,10 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         });
 
         // now update any associations
-        table.columns.forEach(column => {
+        table.columns.forEach(async (column) => {
             if (column.fieldTableAssociation !== "associationRecord") { return; }
             if (!associationFields[column.member]) { return; }
-            UpdateAssociations({
+            await UpdateAssociations({
                 changeContext,
                 ctx,
                 localId: obj[table.pkMember],
@@ -271,10 +271,10 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         });
 
         // now update any associations
-        table.columns.forEach(column => {
+        table.columns.forEach(async (column) => {
             if (column.fieldTableAssociation !== "associationRecord") { return; }
             if (!associationFields[column.member]) { return; }
-            UpdateAssociations({
+            await UpdateAssociations({
                 changeContext,
                 ctx,
                 localId: obj[table.pkMember],

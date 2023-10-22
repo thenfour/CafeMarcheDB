@@ -8,7 +8,7 @@ import * as db3 from "../../../../core/db3/db3";
 import * as mutationCore from "../../../../core/db3/server/db3mutationCore";
 
 export default resolver.pipe(
-    resolver.authorize("db3query", Permission.login),
+    resolver.authorize(Permission.login),
     async (input: {}, ctx: AuthenticatedMiddlewareCtx) => {
     }
 );

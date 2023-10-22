@@ -7,7 +7,7 @@ import { Permission } from "shared/permissions";
 import * as mutationCore from "../server/db3mutationCore"
 
 export default resolver.pipe(
-    resolver.authorize("db3paginatedQuery", Permission.login),
+    resolver.authorize(Permission.login),
     async (input: db3.PaginatedQueryInput, ctx: AuthenticatedMiddlewareCtx) => {
         try {
             const table = db3.GetTableById(input.tableID);

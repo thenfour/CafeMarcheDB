@@ -72,9 +72,10 @@ export default api(async (req, res, origCtx: Ctx) => {
                             // relative to current working dir.
                             const newpath = path.resolve(`${process.env.FILE_UPLOAD_PATH}`, leaf);
 
-                            const mimeType = mime.getType(file.originalFilename); // requires a leaf only, for some reason explicitly fails on a full path.
+                            // workaround broken
+                            const mimeType = (mime as any).getType(file.originalFilename); // requires a leaf only, for some reason explicitly fails on a full path.
 
-                            const fields: Prisma.FileUncheckedCreateInput = {
+                            const fields: Record<string, any> = { // similar to: Prisma.FileUncheckedCreateInput = {
                                 fileLeafName: file.originalFilename,
                                 uploadedAt: new Date(),
                                 uploadedByUserId: currentUser.id,

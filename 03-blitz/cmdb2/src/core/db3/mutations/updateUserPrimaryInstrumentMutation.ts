@@ -8,7 +8,7 @@ import { TupdateUserPrimaryInstrumentMutationArgs } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize("updateUserPrimaryInstrumentMutation", Permission.login),
+    resolver.authorize(Permission.login),
     async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: AuthenticatedMiddlewareCtx) => {
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);

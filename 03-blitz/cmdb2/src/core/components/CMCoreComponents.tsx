@@ -630,7 +630,7 @@ export const AudioPreviewBehindButton = (props: AudioPreviewBehindButtonProps) =
 
 
 export interface UserChipProps {
-    value: db3.UserMinimumPayload;
+    value: db3.UserPayload_Name;
     variant?: ColorVariationOptions;
     size?: CMChipSizeOptions;
     onClick?: () => void;

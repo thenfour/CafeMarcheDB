@@ -6,12 +6,25 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { RoleClientSchema } from "src/core/db3/DB3ClientSchema";
 
 const MainContent = () => {
     if (!useAuthorization("admin roles page", Permission.admin_auth)) {
         throw new Error(`unauthorized`);
     }
+
+
+    const RoleClientSchema = new DB3Client.xTableClientSpec({
+        table: db3.xRole,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+            new DB3Client.BoolColumnClient({ columnName: "isRoleForNewUsers" }),
+            new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 300, allowDeleteFromCell: false }),
+        ],
+    });
+
     return <>
         <SettingMarkdown settingName="RolesAdminPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={RoleClientSchema} />

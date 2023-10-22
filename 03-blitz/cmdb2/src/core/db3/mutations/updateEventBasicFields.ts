@@ -9,7 +9,7 @@ import { TupdateEventBasicFieldsArgs } from "../shared/apiTypes";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize("updateEventBasicFields", Permission.change_own_userInfo),
+    resolver.authorize(Permission.change_own_userInfo),
     async (args: TupdateEventBasicFieldsArgs, ctx: AuthenticatedMiddlewareCtx) => {
 
         // verbose on purpose in order to validate args type against UncheckedUpdateInput

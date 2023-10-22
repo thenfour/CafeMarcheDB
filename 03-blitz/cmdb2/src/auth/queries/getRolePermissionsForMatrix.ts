@@ -14,7 +14,7 @@ interface QueryInput
     > { }
 
 export default resolver.pipe(
-    resolver.authorize("getRolePermissionsForMatrix", Permission.view_roles),
+    resolver.authorize(Permission.view_roles),
     async ({ where, orderBy, skip = 0, take = 100 }: QueryInput, ctx) => {
         try {
             const roles = await db.role.findMany({});

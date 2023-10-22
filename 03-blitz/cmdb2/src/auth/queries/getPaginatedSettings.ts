@@ -14,7 +14,7 @@ interface GetInput__
     > { }
 
 export default resolver.pipe(
-    resolver.authorize("getPaginatedSettings", Permission.view_settings),
+    resolver.authorize(Permission.view_settings),
     async ({ where, orderBy, skip, take }: GetInput__, ctx) => {
         try {
             const {

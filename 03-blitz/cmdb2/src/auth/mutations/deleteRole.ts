@@ -13,7 +13,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(DeleteRoleSchema),
-    resolver.authorize("deleteRoleMutation", Permission.admin_auth),
+    resolver.authorize(Permission.admin_auth),
     async ({ id }, ctx) => {
         try {
 

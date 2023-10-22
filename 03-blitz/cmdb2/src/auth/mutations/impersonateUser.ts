@@ -11,7 +11,7 @@ export const ImpersonateUserInput = z.object({
 
 export default resolver.pipe(
     resolver.zod(ImpersonateUserInput),
-    resolver.authorize("impersonateUser", Permission.impersonate_user),
+    resolver.authorize(Permission.impersonate_user),
     async ({ userId }, ctx) => {
         const user = await db.user.findFirst({
             where: { id: userId },

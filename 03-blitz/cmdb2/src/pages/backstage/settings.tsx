@@ -33,7 +33,7 @@ const SettingsControls = (props) => {
     const onCopy = async () => {
         const txt = JSON.stringify(items);
         console.log(items);
-        navigator.clipboard.writeText(txt);
+        await navigator.clipboard.writeText(txt);
         showSnackbar({ severity: "success", children: `Copied ${items.length} settings to clipboard (${txt.length} characters)` });
     };
 
@@ -51,7 +51,7 @@ const SettingsControls = (props) => {
 
             await updateBulkSettingsMutation(obj);
             showSnackbar({ severity: "success", children: `Updated ${items.length} settings` });
-            refetch();
+            void refetch();
 
         } catch (e) {
             console.log(e);

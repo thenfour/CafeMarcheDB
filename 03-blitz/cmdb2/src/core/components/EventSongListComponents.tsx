@@ -8,17 +8,39 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, Menu, MenuItem } from "@mui/material";
 import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
 import React from "react";
-import { Container, Draggable, DropResult } from "react-smooth-dnd";
+import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { TAnyModel, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import db, { Prisma } from "db";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { CMChipContainer, CMStandardDBChip, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
 import { formatSongLength } from 'shared/time';
+
+// https://github.com/kutlugsahin/react-smooth-dnd/issues/88
+const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {
+    return <ReactSmoothDnd.Container {...props as any} />;
+}
+const ReactSmoothDndDraggable = (props: React.PropsWithChildren<any>) => {
+    return <ReactSmoothDnd.Draggable {...props as any} />;
+}
+
+// make song nullable for "add new item" support
+type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
+    select: {
+        eventSongListId: true,
+        subtitle: true,
+        id: true,
+        sortOrder: true,
+    }
+}> & {
+    songId: null | number;
+    song: null | db3.SongPayload;
+};
 
 /*
 similar to other tab contents structures (see also EventSegmentComponents, EventCommentComponents...)
@@ -286,9 +308,9 @@ export const SongAutocomplete = (props: SongAutocompleteProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueEditorRowProps {
     index: number;
-    value: db3.EventSongListSongPayload;
+    value: EventSongListNullableSong;
     showTags: boolean;
-    onChange: (newValue: db3.EventSongListSongPayload) => void;
+    onChange: (newValue: EventSongListNullableSong) => void;
     onDelete: () => void;
 };
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
@@ -357,7 +379,7 @@ interface EventSongListValueEditorProps {
 // state managed internally.
 export const EventSongListValueEditor = (props: EventSongListValueEditorProps) => {
 
-    const ensureHasNewRow = (list: db3.EventSongListSongPayload[]) => {
+    const ensureHasNewRow = (list: EventSongListNullableSong[]) => {
         // make sure there is at least 1 "new" item.
         if (!list.some(s => !s.songId)) {
             const id = getUniqueNegativeID(); // make sure all objects have IDs, for tracking changes
@@ -422,7 +444,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         setValue(n);
     };
 
-    const onDrop = (args: DropResult) => {
+    const onDrop = (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
@@ -492,18 +514,18 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                 </div>
                             </div>
                         </div>
-                        <Container
+                        <ReactSmoothDndContainer
                             dragHandleSelector=".dragHandle"
                             lockAxis="y"
                             onDrop={onDrop}
                         >
                             {
-                                value.songs.map((s, index) => <Draggable key={s.id}>
+                                value.songs.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
                                     <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} showTags={showTags} />
-                                </Draggable>
+                                </ReactSmoothDndDraggable>
                                 )
                             }
-                        </Container>
+                        </ReactSmoothDndContainer>
                     </div>
 
                     <div className="stats">

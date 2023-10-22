@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.zod(DeleteByIdSchema),
-    resolver.authorize("deleteSettingMutation", Permission.admin_settings),
+    resolver.authorize(Permission.admin_settings),
     async ({ id }, ctx) => {
         try {
             const oldValues = await db.setting.findFirst({ where: { id } });

@@ -5,7 +5,7 @@ import { AuthenticatedMiddlewareCtx } from "blitz";
 import { CMDBAuthorizeOrThrow } from "types";
 
 export default resolver.pipe(
-    resolver.authorize("getPopularEventTags", Permission.login),
+    resolver.authorize(Permission.login),
     async (args, ctx: AuthenticatedMiddlewareCtx) => {
         try {
             const contextDesc = `getPopularEventTags`;

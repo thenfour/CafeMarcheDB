@@ -20,6 +20,7 @@ import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 
 // effectively there are a couple variants of an "event":
 // x 1. grid row, for admins
@@ -121,7 +122,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new");
 
     const handleSaveClick = () => {
-        const payload = {
+        const payload: TinsertEventArgs = {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),
         };

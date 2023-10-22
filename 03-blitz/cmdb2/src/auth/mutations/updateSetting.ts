@@ -12,7 +12,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(UpdateSettingSchema),
-    resolver.authorize("updateSetting", Permission.admin_settings),
+    resolver.authorize(Permission.admin_settings),
     async (args, ctx) => {
         try {
             const oldValues = await db.setting.findFirst({ where: { name: args.name } });

@@ -28,8 +28,8 @@ import { EventAttendanceFrame } from './EventAttendanceComponents';
 
 ////////////////////////////////////////////////////////////////
 interface EventSegmentEditDialogProps {
-    initialValue: db3.EventSegmentPayloadFromEvent;
-    onSave: (newValue: db3.EventSegmentPayloadFromEvent, tableRenderClient: DB3Client.xTableRenderClient) => void;
+    initialValue: db3.EventVerbose_EventSegmentPayload;
+    onSave: (newValue: db3.EventVerbose_EventSegmentPayload, tableRenderClient: DB3Client.xTableRenderClient) => void;
     onCancel: () => void;
     onDelete?: (tableRenderClient: DB3Client.xTableRenderClient) => void;
 };

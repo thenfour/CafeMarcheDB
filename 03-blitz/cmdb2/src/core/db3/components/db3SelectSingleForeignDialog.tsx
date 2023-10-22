@@ -64,7 +64,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
         if (anull && bnull) return true;
         if (anull !== bnull) return false;
         // both non-null.
-        return a![props.spec.typedSchemaColumn.foreignTableSpec.pkMember] === b![props.spec.typedSchemaColumn.foreignTableSpec.pkMember];
+        return a![props.spec.typedSchemaColumn.getForeignTableSchema().pkMember] === b![props.spec.typedSchemaColumn.getForeignTableSchema().pkMember];
     };
 
     const handleItemClick = (value) => {

@@ -14,7 +14,7 @@ interface GetRolesInput
     > { }
 
 export default resolver.pipe(
-    resolver.authorize("getPaginatedRoles", Permission.view_roles),
+    resolver.authorize(Permission.view_roles),
     async ({ where, orderBy, skip = 0, take = 100 }: GetRolesInput, ctx) => {
         try {
             const {

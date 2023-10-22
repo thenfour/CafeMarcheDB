@@ -15,7 +15,7 @@ const contextDesc = "updateRoleMutation";
 
 export default resolver.pipe(
     resolver.zod(UpdateRoleSchema),
-    resolver.authorize(contextDesc, Permission.admin_auth),
+    resolver.authorize(Permission.admin_auth),
     async ({ id, ...data }, ctx) => {
         try {
             const oldValues = await db.role.findFirst({ where: { id } });

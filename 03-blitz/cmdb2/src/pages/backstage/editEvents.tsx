@@ -20,11 +20,11 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
         new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
         new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
-        new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin" } }),
-        new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin" } }),
-        new DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin" } }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin" } }),
+        new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
+        new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
+        new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
     ],
 });
 
@@ -32,13 +32,13 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
     const router = useRouter();
     return <>
         <Button onClick={() => {
-            router.push({
+            void router.push({
                 pathname: '/backstage/editEventSegments',
                 query: { eventId: gridArgs.row.id },
             });
         }}>Segments</Button>
         <Button onClick={() => {
-            router.push({
+            void router.push({
                 pathname: '/backstage/editEventSongLists',
                 query: { eventId: gridArgs.row.id },
             });
