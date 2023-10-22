@@ -18,18 +18,18 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 const DynamicContent = () => {
 
-  const tableClient = DB3Client.useTableRenderContext({
-    requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
-    clientIntention: { intention: "user", mode: 'primary' },
-    tableSpec: new DB3Client.xTableClientSpec({
-      table: db3.xEvent,
-      columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-      ],
-    }),
+  // const tableClient = DB3Client.useTableRenderContext({
+  //   requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.Query,
+  //   clientIntention: { intention: "user", mode: 'primary' },
+  //   tableSpec: new DB3Client.xTableClientSpec({
+  //     table: db3.xEvent,
+  //     columns: [
+  //       new DB3Client.PKColumnClient({ columnName: "id" }),
+  //     ],
+  //   }),
 
 
-  });
+  // });
 
 
   // what needs alerts?
@@ -43,11 +43,14 @@ const DynamicContent = () => {
     </CMSinglePageSurface> */}
 
     {/* <CMSinglePageSurface> */}
-    {(tableClient.items as db3.EventPayloadClient[]).filter(event => event.segments.length > 0).map((row, index) => <EventAttendanceAlertControl
+
+    {/* {(tableClient.items as db3.EventPayloadClient[]).filter(event => event.segments.length > 0).map((row, index) => <EventAttendanceAlertControl
       key={index}
       event={row as any}
       onRefetch={tableClient.refetch}
-    />)}
+    />)} */}
+
+
     {/* </CMSinglePageSurface > */}
     {/* 
     <CMSinglePageSurface>
@@ -63,7 +66,7 @@ const DynamicContent = () => {
         <SettingMarkdown settingName="root_markdown" />
       </CardContent>
     </CMSinglePageSurfaceCard> */}
-
+    {/* 
     <CMSinglePageSurfaceCard>
       <div className="content">
         <Typography gutterBottom variant="h4" component="div">
@@ -87,7 +90,7 @@ const DynamicContent = () => {
         </div>
       </div>
     </CMSinglePageSurfaceCard>
-
+ */}
 
 
 
