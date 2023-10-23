@@ -135,3 +135,25 @@ export interface TClientUpdateFile {
     taggedEventIds?: number[];
     taggedInstrumentIds?: number[];
 };
+
+
+
+// window.CMconfig.posts ....
+export interface HomepageGalleryItemSpec {
+    descriptionMarkdown: string;
+    uri: string;
+};
+export interface HomepageAgendaItemSpec {
+    date?: string | null;
+    title?: string | null;
+    location?: string | null;
+    locationURI?: string | null;
+    time?: string | null;
+    tags?: string | null;
+    detailsMarkdown?: string | null;
+};
+export interface HomepageContentSpec {
+    agenda: HomepageAgendaItemSpec[];
+    gallery: HomepageGalleryItemSpec[];
+};
+

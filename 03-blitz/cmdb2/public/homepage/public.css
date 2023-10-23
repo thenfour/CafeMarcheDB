@@ -1,0 +1,449 @@
+/* @import url(https://db.onlinewebfonts.com/c/1cf07fdc01da97ba3a1410d18951d28f?family=DIN+1451+Std); */
+
+@font-face {
+    font-family: 'DIN 1451 Std';
+    /* src: url(https://db.onlinewebfonts.com/t/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2'); */
+    src: url(./1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2');
+}
+
+:root {
+    --z-index-gallery: 100;
+    --z-index-chrome: 200;
+    --z-index-agenda-back: 50;
+    --z-index-agenda-front: 200;
+
+    --cm-yellow: #ede331;
+    --cm-blue: #344873;
+    --cm-red: #831012;
+
+    --font-display: "DIN 1451 Std", Arial, sans-serif;
+}
+
+* {
+    font-family: var(--font-display);
+    box-sizing: border-box;
+}
+
+body,
+html {
+    position: absolute;
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background-color: var(--cm-yellow);
+
+    /*a bit shameful; should figure out why the page is too wide.*/
+    overflow-x: hidden;
+}
+
+@media only screen and (orientation: portrait) {
+    :root {
+        --z-index-gallery: 180;
+        --z-index-chrome: 200;
+        --z-index-agenda-back: 50;
+        --z-index-agenda-front: 100;
+    }
+
+}
+
+#root,
+#__next {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+
+#root2 {
+    /* position: absolute;
+    top: 0;
+    left: 0; */
+    /* width: 100%;
+    height: 100%; */
+}
+
+#headerchrome {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+}
+
+#svgtoprighttitle {
+    width: 100%;
+}
+
+#svgtoprighttitle>svg {
+    width: 100%;
+}
+
+#toprighttitle {
+    flex: 1 1;
+    display: flex;
+    z-index: var(--z-index-chrome);
+    flex-direction: column;
+    margin-top: 20px;
+    margin-right: 15px;
+    justify-content: flex-start;
+    align-items: flex-end;
+    align-content: flex-end;
+    /* border: 2px solid red; */
+    /* background-color: cyan; */
+    margin-left: 32vw;
+    /* space for cm logo*/
+    /* -webkit-text-stroke: 1px var(--cm-yellow);
+    text-stroke: 1px var(--cm-yellow); */
+    text-shadow: 0 0 2px var(--cm-yellow);
+}
+
+#subtitle1 {
+    color: var(--cm-blue);
+    font-size: 35px;
+    text-align: right;
+    word-break: break-word;
+    /* border: 2px solid green; */
+}
+
+#subtitle2 {
+    color: var(--cm-red);
+    font-size: 32px;
+    text-align: right;
+    /* width: 263px; */
+    word-break: break-word;
+    /* border: 2px solid green; */
+}
+
+#socicons {
+    color: var(--cm-blue);
+    font-size: 40px;
+    /* display: inline-block; */
+    white-space: nowrap;
+    display: inline-flex;
+    /* border: 2px solid white; */
+}
+
+#socicons a {
+    display: flex;
+    flex-direction: row;
+    vertical-align: middle;
+    /* border: 2px solid red; */
+}
+
+.socicon {
+    width: 30pt;
+    fill: var(--cm-blue);
+    /* vertical-align: middle; */
+    margin-left: 14px;
+    object-fit: contain;
+    height: 30pt;
+}
+
+
+
+.nowrap {
+    white-space: nowrap;
+    vertical-align: top;
+}
+
+#middleContent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#galleryContainer {
+    z-index: 0;
+}
+
+/* for vert, stretch to fill width. for horiz, height */
+#galleryContainer svg {
+    width: 100vw;
+    /* indeed some mgmt of size would be helpful here for very tall aspects*/
+    /* min-width: 100vh; */
+}
+
+@media only screen and (orientation: landscape) {
+    #galleryContainer svg {
+        /* ensures that for wide layouts, it doesn't get unreasonably huge*/
+        height: 100vh;
+    }
+
+}
+
+#galleryOrange {
+    fill: #da8049;
+}
+
+#galleryPink {
+    fill: #e7aca7;
+}
+
+#galleryBlue {
+    fill: #00aeef;
+}
+
+
+#agendaBack {
+    fill: #a1ba51;
+}
+
+
+#agendaFore {
+    fill: #edee7d;
+}
+
+
+#photoCaptionContainer {
+    position: absolute;
+    overflow: hidden;
+    padding-left: 5px;
+}
+
+#photoCaptionContainerWrapShape {
+    float: right;
+    width: 100%;
+    z-index: 1;
+    height: 100%;
+    shape-outside: polygon(0% 0%, 100% 0%, 100% 100%);
+}
+
+#photoCaption {
+    font-size: 24px;
+    text-shadow: 0 0 2px #fff4;
+}
+
+#photoCaption p {
+    margin: 0;
+}
+
+
+
+#photoSelectContainer {
+    position: absolute;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+
+
+
+#photoSelectContainer svg.photoSelectHex {
+    /* width: 28px; */
+    /* height: 28px; */
+    fill: none;
+    width: 100%;
+}
+
+#photoSelectContainer svg.photoSelectHex.selected polygon.photoSelectHexShape1 {
+    fill: white;
+}
+
+#photoSelectContainer svg.photoSelectHex polygon.photoSelectHexShape2 {
+    stroke: white;
+    stroke-width: 25px;
+    cursor: pointer;
+}
+
+#photoSelectContainer svg.photoSelectHex polygon.photoSelectHexShape1 {
+    stroke: #0003;
+    stroke-width: 50px;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+
+    /*https://stackoverflow.com/questions/17233804/how-to-prevent-sticky-hover-effects-for-buttons-on-touch-devices */
+    #photoSelectContainer svg.photoSelectHex:hover polygon.photoSelectHexShape1 {
+        fill: #da8049;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+#photoSelectContainer ul#photoSelector {
+    list-style-type: none;
+    display: flex;
+    margin: 0;
+    /* overflow: hidden; */
+    /* max-width: 326px; */
+    /* flex: 1 1; */
+    padding: 0;
+    align-items: flex-end;
+    justify-content: center;
+    /* width: 100%; */
+    /* flex-grow: 1; */
+    --count: 2;
+    padding: 0 41px;
+    transform: translateY(21px);
+}
+
+#photoSelectContainer ul#photoSelector li {
+    /* flex: 1 1; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(100% / var(--count));
+    padding: 1px;
+    min-width: 20px;
+    max-width: 30px;
+}
+
+#agendaContent {
+    font-size: 20px;
+    position: absolute;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+#agendaBack2 {
+    fill: #edee7d;
+    stroke: #a1ba51;
+    stroke-width: 4px;
+}
+
+#backstageContainer {
+    padding-top: 200px;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+#backstageContainer img {
+    width: 223px;
+}
+
+#photoBackForwardContainer {
+    /* position: absolute; */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    overflow: visible;
+}
+
+#photoBackForwardContainer #photoBack,
+#photoBackForwardContainer #photoForward {
+    /* padding-left:10px;
+    padding-right:10px; */
+    cursor: pointer;
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-content: center;
+    /* width: fit-content; */
+    opacity: 0%;
+    transition: opacity .4s;
+    width: 15%;
+}
+
+@media (hover: hover) {
+
+    /*https://stackoverflow.com/questions/17233804/how-to-prevent-sticky-hover-effects-for-buttons-on-touch-devices */
+    #photoBackForwardContainer #photoBack:hover,
+    #photoBackForwardContainer #photoForward:hover {
+        transition: opacity 0s;
+        opacity: 100%;
+    }
+}
+
+#photoBackForwardContainer #photoBack {
+    background: linear-gradient(.25turn, #fff6, #fff0);
+}
+
+#photoBackForwardContainer #photoForward {
+    background: linear-gradient(.25turn, #fff0, #fff6);
+}
+
+
+
+
+#galleryPhoto1,
+#galleryPhoto2 {
+    transition: opacity 2.5s;
+}
+
+
+.agendaPost p {
+    margin: 0;
+}
+
+.agendaPost {
+    margin-bottom: 43px;
+    color: var(--cm-blue);
+    font-size: 24px;
+}
+
+
+.agendaTitle {
+    color: var(--cm-red);
+    font-size: 40px;
+    line-height: 42px;
+}
+
+.agendaPost i.material-icons {
+    vertical-align: middle;
+    margin-right: 7px;
+}
+
+.agendaPost .agendaTags {
+    font-size: 20px;
+    letter-spacing: .5px;
+}
+
+.agendaDetails {
+    margin-left: 32px;
+}
+
+
+.agendaDetails a:link {
+    color: var(--cm-red);
+    text-decoration: none;
+}
+
+#errorlog,
+#errorlog * {
+    position: absolute;
+    background-color: #da8049;
+    color: var(--cm-blue);
+    font-family: monospace;
+    font-size: 18px;
+    top: 0;
+    left: 0;
+    padding: 10px;
+}
+
+#sponsorsContent {
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+    margin-right: 25%;
+    margin-top: -33px;
+    z-index: 100;
+}
+
+.widthConstraint {
+    max-width: 1200px;
+}
+
+.flexShrink {
+    flex-shrink: 1;
+}

@@ -466,5 +466,10 @@ export const isBetween = (number: number, a: number, b: number): boolean => {
     return number >= Math.min(a, b) && number <= Math.max(a, b);
 };
 
+// retains repeating pattern into the negative.
+export function modulo(x: number, n: number): number {
+    return ((x % n) + n) % n;
+};
+
 
 

@@ -26,12 +26,12 @@ import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const Markdown = (props: { markdown: string | null }) => {
+export const Markdown = (props: { markdown: string | null, id?: string, className?: string }) => {
     const md = new MarkdownIt;
     if (props.markdown == null) return <></>;
     if (props.markdown.trim().length < 1) return <></>;
-    return <div className='markdown renderedContent'>
-        <div dangerouslySetInnerHTML={{ __html: md.render(props.markdown || "") }}></div>
+    return <div className={`markdown renderedContent ${props.className || ""}`}>
+        <div id={props.id} dangerouslySetInnerHTML={{ __html: md.render(props.markdown || "") }}></div>
     </div >;
 };
 

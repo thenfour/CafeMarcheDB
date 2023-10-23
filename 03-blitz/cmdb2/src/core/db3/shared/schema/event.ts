@@ -146,6 +146,7 @@ export const xEventStatus = new db3.xTable({
 
 export const EventTagSignificance = {
     Majorettes: "Majorettes",
+    Public: "Public",
 } as const satisfies Record<string, string>;
 
 export const xEventTag = new db3.xTable({

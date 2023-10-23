@@ -17,6 +17,7 @@ import { Permission } from "shared/permissions";
 import { Prisma } from "db";
 import insertEvent from "./mutations/insertEvent";
 import { getDateRangeInfo } from "shared/time";
+import frontpageContentQuery from "./queries/frontpageContentQuery";
 
 
 export interface APIQueryArgs {
@@ -284,6 +285,16 @@ class SongsAPI {
         return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
     }
 
+};
+
+
+
+export const useFrontpageData = (): HomepageContentSpec => {
+    // events
+    // photo gallery
+
+    const [ret] = useQuery(frontpageContentQuery);
+    return ret
 };
 
 export const API = {
