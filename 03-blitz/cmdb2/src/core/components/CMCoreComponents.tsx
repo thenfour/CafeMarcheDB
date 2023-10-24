@@ -266,6 +266,7 @@ export const EditTextDialog = (props: EditTextDialogProps) => {
 
 ////////////////////////////////////////////////////////////////
 // this control is a button which pops up a dialog.
+// JUST the button.
 export interface EditTextDialogButtonProps {
     value: string;
     readOnly: boolean;

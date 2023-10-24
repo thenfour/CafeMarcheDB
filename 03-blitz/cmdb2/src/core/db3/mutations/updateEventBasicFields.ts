@@ -24,6 +24,15 @@ export default resolver.pipe(
             isDeleted: args.isDeleted,
             statusId: args.statusId,
             createdByUserId: args.createdByUserId, // TODO: validate client info
+
+            frontpageVisible: args.frontpageVisible,
+            frontpageDate: args.frontpageDate,
+            frontpageTime: args.frontpageTime,
+            frontpageTitle: args.frontpageTitle,
+            frontpageDetails: args.frontpageDetails,
+            frontpageLocation: args.frontpageLocation,
+            frontpageLocationURI: args.frontpageLocationURI,
+            frontpageTags: args.frontpageTags,
         };
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);

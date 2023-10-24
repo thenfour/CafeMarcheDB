@@ -1,7 +1,9 @@
 import React, { Suspense } from "react";
-import { modulo } from "shared/utils";
+import { IsNullOrWhitespace, modulo } from "shared/utils";
 import { Markdown } from "./RichTextEditor";
-import { API, HomepageAgendaItemSpec, HomepageContentSpec, HomepageGalleryItemSpec, useFrontpageData } from "../db3/clientAPI";
+import { API, useFrontpageData } from "../db3/clientAPI";
+import { HomepageAgendaItemSpec, HomepageContentSpec, HomepageGalleryItemSpec } from "../db3/shared/apiTypes";
+import { gIconMap } from "../db3/components/IconSelectDialog";
 
 function logRect(label: string, x?: DOMRect | null) {
     if (!x) {
@@ -189,11 +191,11 @@ class Gallery {
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface AgendaItemProps {
+export interface AgendaItemProps {
     item: HomepageAgendaItemSpec;
 };
 
-class AgendaItem extends React.Component<AgendaItemProps> {
+export class AgendaItem extends React.Component<AgendaItemProps> {
 
     constructor(props: AgendaItemProps) {
         super(props);
@@ -203,13 +205,13 @@ class AgendaItem extends React.Component<AgendaItemProps> {
     render() {
         const post = this.props.item;
         return (<div className="agendaPost">
-            {!!post.date && <div className="agendaDate">{post.date}</div>}
-            {!!post.title && <div className="agendaTitle">{post.title}</div>}
-            {!!post.location && !!post.locationURI && <a target="_blank" href={post.locationURI}><div className="agendaLocation"><i className="material-icons">pin_drop</i>{post.location}</div></a>}
-            {!!post.location && !post.locationURI && <div className="agendaLocation"><i className="material-icons">pin_drop</i>{post.location}</div>}
-            {!!post.time && <div className="agendaTime"><i className="material-icons">access_time</i>{post.time}</div>}
-            {!!post.tags && <div className="agendaTags">{post.tags}</div>}
-            {!!post.detailsMarkdown && <Markdown markdown={post.detailsMarkdown} className="agendaDetails" />}
+            {!IsNullOrWhitespace(post.date) && <div className="agendaDate">{post.date}</div>}
+            {!IsNullOrWhitespace(post.title) && <div className="agendaTitle">{post.title}</div>}
+            {!IsNullOrWhitespace(post.location) && !IsNullOrWhitespace(post.locationURI) && <a target="_blank" href={post.locationURI || ""}><div className="agendaLocation">{gIconMap.Place()}{post.location}</div></a>}
+            {!IsNullOrWhitespace(post.location) && IsNullOrWhitespace(post.locationURI) && <div className="agendaLocation">{gIconMap.Place()}{post.location}</div>}
+            {!IsNullOrWhitespace(post.time) && <div className="agendaTime">{gIconMap.Schedule()}{post.time}</div>}
+            {!IsNullOrWhitespace(post.tags) && <div className="agendaTags">{post.tags}</div>}
+            {!IsNullOrWhitespace(post.detailsMarkdown) && <Markdown markdown={post.detailsMarkdown || ""} className="agendaDetails" />}
 
         </div>
         );
@@ -328,11 +330,14 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
 
     updateLayout = () => {
         setTimeout(() => { // necessary to let the browser shuffle the layout.
+
             this.correctLayoutFromRef('photoCaptionRef', 'photoCaptionContainer', 'middleContent');
             this.correctLayoutFromRef('photoSelectRef', 'photoSelectContainer', 'middleContent');
             this.correctLayoutFromRef('agendaRef', 'agendaContent', 'middleContent');
             this.setState({});
             this.gallery.applyStateToDOM();
+
+            (document.querySelector("#root2") as HTMLElement).style.opacity = "100%";
         }, 50);
     }
 
@@ -533,7 +538,7 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
                         {photoSelector}
                     </div>
 
-                    <div id="agendaContent">
+                    <div id="agendaContent" className="frontpageAgendaContent">
                         {agendaBody}
                     </div>
 

@@ -25,6 +25,17 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+
+        new DB3Client.BoolColumnClient({ columnName: "frontpageVisible" }),
+        new DB3Client.GenericStringColumnClient({ columnName: "frontpageDate", cellWidth: 150 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "frontpageTime", cellWidth: 150 }),
+        new DB3Client.MarkdownStringColumnClient({ columnName: "frontpageDetails", cellWidth: 150 }),
+
+        new DB3Client.GenericStringColumnClient({ columnName: "frontpageTitle", cellWidth: 150 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "frontpageLocation", cellWidth: 150 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "frontpageLocationURI", cellWidth: 150 }),
+        new DB3Client.GenericStringColumnClient({ columnName: "frontpageTags", cellWidth: 150 }),
+
     ],
 });
 

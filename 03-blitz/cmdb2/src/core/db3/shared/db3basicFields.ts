@@ -1007,6 +1007,18 @@ export const MakePlainTextField = (columnName: string) => (
         allowNull: false,
         format: "plain",
     }));
+export const MakeNullableRawTextField = (columnName: string) => (
+    new GenericStringField({
+        columnName: columnName,
+        allowNull: true,
+        format: "raw",
+    }));
+export const MakeRawTextField = (columnName: string) => (
+    new GenericStringField({
+        columnName: columnName,
+        allowNull: false,
+        format: "raw",
+    }));
 export const MakeMarkdownTextField = (columnName: string) => (
     new GenericStringField({
         columnName,

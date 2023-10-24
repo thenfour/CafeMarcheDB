@@ -40,6 +40,7 @@ import { SegmentList } from './EventSegmentComponents';
 import { MutationMarkdownControl } from './SettingMarkdown';
 import { EventSongListTabContent } from './EventSongListComponents';
 import { EventFilesTabContent } from './EventFileComponents';
+import { EventFrontpageTabContent } from './EventFrontpageComponents';
 
 ////////////////////////////////////////////////////////////////
 // TODO: generic big status
@@ -581,6 +582,7 @@ export const gEventDetailTabSlugIndices = {
     "attendance": 2,
     "completeness": 3,
     "files": 4,
+    "frontpage": 5,
 } as const;
 
 
@@ -692,6 +694,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                         <Tab label={`Attendance ${formattedAttendeeRange}`} {...TabA11yProps('event', 2)} />
                         <Tab label={`Completeness`} {...TabA11yProps('event', 3)} />
                         <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
+                        <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />
                     </Tabs>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
@@ -763,6 +766,10 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
                         <EventFilesTabContent event={event} refetch={tableClient.refetch} />
+                    </CustomTabPanel>
+
+                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
+                        <EventFrontpageTabContent event={event} refetch={tableClient.refetch} />
                     </CustomTabPanel>
 
                 </>

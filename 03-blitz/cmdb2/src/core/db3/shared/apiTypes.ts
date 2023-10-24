@@ -20,6 +20,15 @@ export interface TupdateEventBasicFieldsArgs {
     statusId?: number;
     visiblePermissionId?: number | null;
     createdByUserId?: number;
+
+    frontpageVisible?: boolean;
+    frontpageDate?: string;  // e.g. "Zaterdag 11 november"
+    frontpageTime?: string; // e.g. 14u
+    frontpageTitle?: string | null; // null = use normal one
+    frontpageDetails?: string;
+    frontpageLocation?: string | null; // null = use normal
+    frontpageLocationURI?: string | null; // null = use normal
+    frontpageTags?: string | null; // null, use normal
 }
 
 export interface TupdateUserPrimaryInstrumentMutationArgs {
@@ -145,15 +154,20 @@ export interface HomepageGalleryItemSpec {
 };
 export interface HomepageAgendaItemSpec {
     date?: string | null;
+    time?: string | null;
     title?: string | null;
+    detailsMarkdown?: string | null;
     location?: string | null;
     locationURI?: string | null;
-    time?: string | null;
     tags?: string | null;
-    detailsMarkdown?: string | null;
 };
 export interface HomepageContentSpec {
     agenda: HomepageAgendaItemSpec[];
     gallery: HomepageGalleryItemSpec[];
 };
+
+export interface FilePreviewData {
+    // variations ?
+};
+
 

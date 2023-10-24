@@ -22,6 +22,7 @@ import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import LinkIcon from '@mui/icons-material/Link';
 import MicIcon from '@mui/icons-material/Mic';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import TagIcon from '@mui/icons-material/Tag';
 import NightlifeIcon from '@mui/icons-material/Nightlife';
 import PersonIcon from '@mui/icons-material/Person';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
@@ -55,7 +56,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
-
+import ScheduleIcon from '@mui/icons-material/Schedule';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -107,10 +108,12 @@ export const gIconMap /*: IIconMap*/ = {
     QuestionMark: () => <QuestionMarkIcon />,
     RemoveCircleOutline: () => <RemoveCircleOutlineIcon />,
     Save: () => <SaveIcon />,
+    Schedule: () => <ScheduleIcon />,
     Search: () => <SearchIcon />,
     Security: () => <SecurityIcon />,
     Settings: () => <SettingsIcon />,
     Stars: () => <StarsIcon />,
+    Tag: () => <TagIcon />,
     ThumbDown: () => <ThumbDownIcon />,
     ThumbUp: () => <ThumbUpIcon />,
     Tune: () => <TuneIcon />,

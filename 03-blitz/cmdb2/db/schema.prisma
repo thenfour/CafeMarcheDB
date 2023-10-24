@@ -383,6 +383,15 @@ model Event {
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
+  frontpageVisible     Boolean @default(false)
+  frontpageDate        String  @default("") // e.g. "Zaterdag 11 november"
+  frontpageTime        String  @default("") // e.g. 14u
+  frontpageDetails     String  @default("")
+  frontpageTitle       String? // null = use normal one
+  frontpageLocation    String? // null = use normal
+  frontpageLocationURI String? // null = use normal
+  frontpageTags        String? // null, use normal
+
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
   comments  EventComment[]
@@ -432,13 +441,14 @@ model EventStatus {
 }
 
 model EventTag {
-  id           Int                  @id @default(autoincrement())
-  text         String
-  description  String               @default("")
-  color        String?
-  significance String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
-  sortOrder    Int                  @default(0)
-  events       EventTagAssignment[]
+  id                 Int                  @id @default(autoincrement())
+  text               String
+  description        String               @default("")
+  color              String?
+  significance       String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
+  sortOrder          Int                  @default(0)
+  visibleOnFrontpage Boolean              @default(false)
+  events             EventTagAssignment[]
 }
 
 model EventTagAssignment {

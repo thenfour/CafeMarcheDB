@@ -6,7 +6,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
+import { HomepageAgendaItemSpec, HomepageContentSpec, TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
@@ -141,6 +141,33 @@ const gUsersAPI = new UsersAPI();
 
 
 class EventsAPI {
+
+    getAgendaItem(event: db3.EventClientPayload_Verbose): HomepageAgendaItemSpec {
+        const fallbacks = this.getAgendaItemFallbackValues(event);
+        const ret: HomepageAgendaItemSpec = {
+            date: event.frontpageDate || fallbacks.date || "",
+            time: event.frontpageTime || fallbacks.time || "",
+            detailsMarkdown: event.frontpageDetails || fallbacks.detailsMarkdown || "",
+            location: event.frontpageLocation || fallbacks.location || "",
+            locationURI: event.frontpageLocationURI || fallbacks.locationURI || "",
+            tags: event.frontpageTags || fallbacks.tags || "",
+            title: event.frontpageTitle || fallbacks.title || "",
+        }
+        return ret;
+    }
+
+    getAgendaItemFallbackValues(event: db3.EventClientPayload_Verbose): HomepageAgendaItemSpec {
+        const ret: HomepageAgendaItemSpec = {
+            date: "",
+            time: "",
+            detailsMarkdown: "",
+            location: event.locationDescription,
+            locationURI: event.locationURL,
+            tags: event.tags.filter(a => a.eventTag.visibleOnFrontpage).map(a => `#${a.eventTag.text}`).join(" "),
+            title: event.name,
+        };
+        return ret;
+    }
 
     getEventSegmentFormattedDateRange(segment: db3.EventVerbose_EventSegmentPayload) {
         return "daterangehere";
@@ -293,7 +320,7 @@ export const useFrontpageData = (): HomepageContentSpec => {
     // events
     // photo gallery
 
-    const [ret] = useQuery(frontpageContentQuery);
+    const [ret] = useQuery(frontpageContentQuery, {}, gQueryOptions.default);
     return ret
 };
 

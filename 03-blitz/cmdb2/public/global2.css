@@ -919,3 +919,82 @@ li.songDropdownOption {
     flex-direction: column;
 
 }
+
+/* - event detail: frontpage agenda preview --------------------------------- */
+.frontpageAgendaPreviewContainer {
+    /* background-color: #eee; */
+    border: 10px dashed #edee7d;
+    padding: 10px;
+    max-width: 500px;
+    margin: 10px;
+}
+
+.frontpageAgendaPreviewContainer .previewCaption {
+    color: #edee7d;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+
+.EventFrontpageTabContent {}
+
+
+.EventFrontpageTabContent .fieldContainer {
+    display: flex;
+}
+
+.EventFrontpageTabContent .fieldContainer .label {
+    color: black;
+    white-space: nowrap;
+    width: 130px;
+    display: flex;
+    /* border: 2px solid red; */
+}
+
+.EventFrontpageTabContent .fieldContainer .label .text {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    text-align: right;
+    flex-grow: 1;
+    ;
+}
+
+
+.EventFrontpageTabContent .fieldContainer .nullContainer {
+    width: 100px;
+    display: flex;
+}
+
+
+.EventFrontpageTabContent .fieldContainer .value {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    width: 340px;
+    padding: 3px;
+    margin: 2px;
+    background-color: white;
+    border: 1px solid #333;
+    color: #aaa;
+}
+
+
+
+.EventFrontpageTabContent .fieldContainer .value.faded {
+    border: 1px solid #555;
+    background-color: #ccc;
+    color: #aaa;
+}
+
+.EventFrontpageTabContent .fieldContainer .autoLabel {
+    color: #888;
+    font-style: italic;
+}
+
+.EventFrontpageTabContent .fieldContainer.frontpageVisible .value {
+    border: 0;
+}
+
+
+.EventFrontpageTabContent .fieldContainer.faded {
+    opacity: 40%;
+}

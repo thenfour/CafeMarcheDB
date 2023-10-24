@@ -7,7 +7,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField, MakeNullableRawTextField, MakeRawTextField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
 import {
@@ -104,6 +104,7 @@ export const xEventType = new db3.xTable({
 export const EventStatusSignificance = {
     New: "New",
     Cancelled: "Cancelled",
+    FinalConfirmation: "FinalConfirmation",
 } as const satisfies Record<string, string>;
 
 export const xEventStatus = new db3.xTable({
@@ -146,7 +147,7 @@ export const xEventStatus = new db3.xTable({
 
 export const EventTagSignificance = {
     Majorettes: "Majorettes",
-    Public: "Public",
+    Frontpage: "Frontpage",
 } as const satisfies Record<string, string>;
 
 export const xEventTag = new db3.xTable({
@@ -174,6 +175,7 @@ export const xEventTag = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("text"),
+        new BoolField({ columnName: "visibleOnFrontpage", defaultValue: false }),
         MakeMarkdownTextField("description"),
         MakeSortOrderField("sortOrder"),
         MakeColorField("color"),
@@ -366,6 +368,17 @@ const xEventArgs_Base: db3.TableDesc = {
             foreignTableID: "EventStatus",
             getQuickFilterWhereClause: (query: string) => false,
         }),
+
+        new BoolField({ columnName: "frontpageVisible", defaultValue: false }),
+        MakeRawTextField("frontpageDate"),
+        MakeRawTextField("frontpageTime"),
+        MakeRawTextField("frontpageDetails"),
+
+        MakeNullableRawTextField("frontpageTitle"),
+        MakeNullableRawTextField("frontpageLocation"),
+        MakeNullableRawTextField("frontpageLocationURI"),
+        MakeNullableRawTextField("frontpageTags"),
+
         new TagsField<EventTagAssignmentPayload>({
             columnName: "tags",
             associationForeignIDMember: "eventTagId",

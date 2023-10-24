@@ -1,24 +1,5 @@
 /* @import url(https://db.onlinewebfonts.com/c/1cf07fdc01da97ba3a1410d18951d28f?family=DIN+1451+Std); */
 
-@font-face {
-    font-family: 'DIN 1451 Std';
-    /* src: url(https://db.onlinewebfonts.com/t/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2'); */
-    src: url(./1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2');
-}
-
-:root {
-    --z-index-gallery: 100;
-    --z-index-chrome: 200;
-    --z-index-agenda-back: 50;
-    --z-index-agenda-front: 200;
-
-    --cm-yellow: #ede331;
-    --cm-blue: #344873;
-    --cm-red: #831012;
-
-    --font-display: "DIN 1451 Std", Arial, sans-serif;
-}
-
 * {
     font-family: var(--font-display);
     box-sizing: border-box;
@@ -63,6 +44,15 @@ html {
     left: 0; */
     /* width: 100%;
     height: 100%; */
+
+    /* because of runtime layout adjustment, delayed presentation is needed */
+    opacity: 0%;
+    transition: opacity .5s;
+}
+
+
+#root2.visible {
+    opacity: 100%;
 }
 
 #headerchrome {
@@ -193,10 +183,10 @@ html {
     fill: #a1ba51;
 }
 
-
+/* 
 #agendaFore {
     fill: #edee7d;
-}
+} */
 
 
 #photoCaptionContainer {
@@ -306,19 +296,6 @@ html {
     max-width: 30px;
 }
 
-#agendaContent {
-    font-size: 20px;
-    position: absolute;
-    overflow-y: auto;
-    padding: 15px;
-}
-
-#agendaBack2 {
-    fill: #edee7d;
-    stroke: #a1ba51;
-    stroke-width: 4px;
-}
-
 #backstageContainer {
     padding-top: 200px;
     width: 100%;
@@ -382,42 +359,6 @@ html {
 }
 
 
-.agendaPost p {
-    margin: 0;
-}
-
-.agendaPost {
-    margin-bottom: 43px;
-    color: var(--cm-blue);
-    font-size: 24px;
-}
-
-
-.agendaTitle {
-    color: var(--cm-red);
-    font-size: 40px;
-    line-height: 42px;
-}
-
-.agendaPost i.material-icons {
-    vertical-align: middle;
-    margin-right: 7px;
-}
-
-.agendaPost .agendaTags {
-    font-size: 20px;
-    letter-spacing: .5px;
-}
-
-.agendaDetails {
-    margin-left: 32px;
-}
-
-
-.agendaDetails a:link {
-    color: var(--cm-red);
-    text-decoration: none;
-}
 
 #errorlog,
 #errorlog * {
