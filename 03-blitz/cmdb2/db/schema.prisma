@@ -409,8 +409,15 @@ model EventSegment {
   name        String
   description String // short description, like 
 
+// conform to DateTimeRangeSpec
+    // startsAtDateTime: Date | null; // date or null = TBD
+    // durationMillis: number;
+    // isAllDay: boolean; // care about time or ignore it?
+
   startsAt DateTime? // date null means TBD
-  endsAt   DateTime?
+  durationMillis Int
+  isAllDay Boolean @default(true)
+  //endsAt   DateTime?
 
   responses EventSegmentUserResponse[]
 }

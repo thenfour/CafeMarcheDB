@@ -10,36 +10,33 @@ export default resolver.pipe(
     async (input: {}, ctx: Ctx) => {
 
 
-        // db.event.findMany({
-        //     where: {
-        //         AND: [
-        //             {
-        //                 // tagged for use on front page
-        //                 tags: {
-        //                     some: {
-        //                         eventTag: {
-        //                             significance: db3.EventTagSignificance.Frontpage,
-        //                         }
-        //                     }
-        //                 }
-        //             },
-        //             {
-        //                 // tagged as confirmed
-        //                 status: {
-        //                     significance: db3.EventStatusSignificance.FinalConfirmation,
-        //                 }
-        //             },
-        //             {
-        //                 // only use events ending in the future, or TBD
-        //                 segments: {
-        //                     some: {
-        //                         //
-        //                     }
-        //                 }
-        //             }]
-        //     }
+        const events = await db.event.findMany({
+            where: {
+                AND: [
+                    {
+                        frontpageVisible: true,
+                    },
+                    {
+                        visiblePermission: {
+                            name: Permission.visibility_all,
+                        }
+                    },
+                    {
+                        // tagged as confirmed
+                        status: {
+                            significance: db3.EventStatusSignificance.FinalConfirmation,
+                        }
+                    },
+                    {
+                        // only use events ending in the future, or TBD
+                        segments: {
+                            some: {
+                            }
+                        }
+                    }]
+            }
 
-        // });
+        });
 
 
 

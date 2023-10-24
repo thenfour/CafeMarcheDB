@@ -125,6 +125,7 @@ seems like it happens often when I add `useQuery()` or `useMutation()` or other 
 # initial site setup
 
   * edit `.env.local`
+  * initial db setup?
   * create roles, be sure to specify a default for new users
 
 
