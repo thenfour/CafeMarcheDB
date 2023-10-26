@@ -1,6 +1,7 @@
 
 import AddIcon from '@mui/icons-material/Add';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CelebrationIcon from '@mui/icons-material/Celebration';
@@ -67,6 +68,7 @@ export const gIconMap /*: IIconMap*/ = {
     Add: () => <AddIcon />,
     AttachFile: () => <AttachFileIcon />,
     AddCircleOutline: () => <AddCircleOutlineIcon />,
+    AutoAwesome: () => <AutoAwesomeIcon />,
     CalendarMonth: () => <CalendarMonthIcon />,
     Campaign: () => <CampaignIcon />,
     Cancel: () => <CancelIcon />,

@@ -3,8 +3,13 @@
 export enum Permission {
     login = "login", // basic permission to access the site at all.
 
-    visibility_restricted = "visibility_restricted",
-    visibility_all = "visibility_all",
+    // for user-created objects like events / files, they have the ability to specify a permission that dictates who can
+    // see the object. visibility permissions should be marked as such in the permissions table.
+    // it's actually important that these are named "visibility_*" because of how the db is seeded
+    visibility_editors = "visibility_editors",
+    visibility_members = "visibility_members",
+    visibility_logged_in_users = "visibility_logged_in_users",
+    visibility_public = "visibility_public",
 
     admin_auth = "admin_auth", // roles, permissions
     impersonate_user = "impersonate_user",

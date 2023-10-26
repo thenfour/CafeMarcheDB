@@ -43,6 +43,7 @@ const MainContent = () => {
             new DB3Client.BoolColumnClient({ columnName: "isVisibility" }),
             new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 120 }),
             new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120 }),
+            new DB3Client.TagsFieldClient({ columnName: "roles", cellWidth: 300, allowDeleteFromCell: false }),
         ],
     });
 
@@ -50,9 +51,9 @@ const MainContent = () => {
     return <>
         <SettingMarkdown settingName="rolePermissionsMatrixPage_markdown"></SettingMarkdown>
         <DB3AssociationMatrix
-            localTableSpec={RoleClientSchema}
-            foreignTableSpec={PermissionClientSchema}
-            tagsField={RoleClientSchema.getColumn("permissions") as DB3Client.TagsFieldClient<db3.RolePermissionAssociationPayload>}
+            localTableSpec={PermissionClientSchema}
+            foreignTableSpec={RoleClientSchema}
+            tagsField={PermissionClientSchema.getColumn("roles") as DB3Client.TagsFieldClient<db3.RolePermissionAssociationPayload>}
         />
     </>;
 };

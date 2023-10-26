@@ -368,13 +368,25 @@ export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValu
         visInfo.className,
     ];
 
-    let tooltipTitle = "Public visibility: Everyone can see this.";
-    if (visInfo.isPublic) {
-        //
-    } else if (visInfo.isPrivate) {
-        tooltipTitle = "Private visibility: Only you can see this. You'll have to change this in order for others to view.";
-    } else {
-        tooltipTitle = `Restricted visibility: This is visible only to members of ${permission!.name}`;
+    let tooltipTitle = "?";
+    switch (permission?.name) {
+        case null:
+            tooltipTitle = "Private visibility: Only you can see this. You'll have to change this in order for others to view.";
+            break;
+        case Permission.visibility_public:
+            tooltipTitle = "Public visibility: Everyone can see this.";
+            break;
+        case Permission.visibility_editors:
+            tooltipTitle = `Restricted visibility: This is visible only to site editors`;
+            break;
+        case Permission.visibility_logged_in_users:
+            tooltipTitle = `Semi-public visibility: This is visible to all logged-in users`;
+            break;
+        case Permission.visibility_members:
+            tooltipTitle = `Semi-public visibility: this is visible to all members.`;
+            break;
+        default:
+            break;
     }
 
     return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={style} onClick={onClick}>

@@ -10,7 +10,7 @@ import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, UserPayload } from "./prismArgs";
+import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance, UserPayload } from "./prismArgs";
 
 
 export const xInstrumentFunctionalGroup = new db3.xTable({
@@ -51,13 +51,6 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     ]
 });
 
-
-// https://stackoverflow.com/questions/76518631/typescript-return-the-enum-values-in-parameter-using-a-generic-enum-type-method
-// interesting that const objects are preferred over enums. but yea for populating datagrid single select options i agree.
-export const InstrumentTagSignificance = {
-    PowerRequired: "PowerRequired",
-    Big: "Big",
-} as const satisfies Record<string, string>;
 
 export const xInstrumentTag = new db3.xTable({
     editPermission: Permission.admin_general,

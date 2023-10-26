@@ -79,10 +79,10 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         // use the table's natural sort
     });
 
-    const rowWhere = props.localTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
-    const rowInclude = props.localTableSpec.args.table.CalculateInclude(clientIntention);
-    const columnWhere = props.foreignTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
-    const columnInclude = props.foreignTableSpec.args.table.CalculateInclude(clientIntention);
+    // const rowWhere = props.localTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
+    // const rowInclude = props.localTableSpec.args.table.CalculateInclude(clientIntention);
+    // const columnWhere = props.foreignTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
+    // const columnInclude = props.foreignTableSpec.args.table.CalculateInclude(clientIntention);
 
     const columns: GridColDef[] = [{
         field: "id",
@@ -93,6 +93,7 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
     }, {
         field: "name",
         editable: false,
+        width: 200,
         valueGetter: (params) => {
             const info = props.localTableSpec.args.table.getRowInfo(params.row);
             return info.name;
@@ -102,12 +103,15 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         field: `id:${tag[props.foreignTableSpec.args.table.pkMember]}`,
         editable: false,
         headerName: props.foreignTableSpec.args.table.getRowInfo(tag).name,
-        width: 80,
+        width: 120,
         sortable: false,
         disableColumnMenu: true,
         renderCell: (params) => {
             const tagId = tag[props.foreignTableSpec.args.table.pkMember];
             const fieldVal = params.row[props.tagsField.columnName] as TAssociation[];
+            if (!fieldVal) {
+                throw new Error(`property '${props.tagsField.columnName}' was not found on the row; maybe your query didn't include it?`);
+            }
             const association = fieldVal.find(a => a[props.tagsField.associationForeignIDMember] === tagId); // find the association for this tag.
             return <div className='MuiDataGrid-cellContent'><Checkbox
                 checked={!!association}
@@ -143,12 +147,12 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
 
 
     return (<>
-        <InspectObject src={rowWhere} tooltip="ROW WHERE" />
+        {/* <InspectObject src={rowWhere} tooltip="ROW WHERE" />
         <InspectObject src={rowInclude} tooltip="ROW INCLUDE" />
         <InspectObject src={columnWhere} tooltip="COLUMN WHERE" />
         <InspectObject src={columnInclude} tooltip="COLUMN INCLUDE" />
         <InspectObject src={dbColumns.items} tooltip="COLUMN RESULTS" />
-        <InspectObject src={dbColumns.remainingQueryResults} tooltip="COLUMN extra results" />
+        <InspectObject src={dbColumns.remainingQueryResults} tooltip="COLUMN extra results" /> */}
 
         <DataGrid
             // basic config

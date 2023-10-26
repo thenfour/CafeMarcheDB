@@ -109,6 +109,18 @@ export const xPermissionBaseArgs: db3.TableDesc = {
         }),
         MakeColorField("color"),
         MakeIconField("iconName", gIconOptions),
+        new TagsField<RolePermissionAssociationPayload>({
+            columnName: "roles",
+            associationForeignIDMember: "roleId",
+            associationForeignObjectMember: "role",
+            associationLocalIDMember: "permissionId",
+            associationLocalObjectMember: "permission",
+            associationTableID: "RolePermission",
+            foreignTableID: "Role",
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel) => false,
+            getQuickFilterWhereClause: (query: string): Prisma.PermissionWhereInput | boolean => false,
+        }),
+
     ]
 };
 
@@ -155,16 +167,19 @@ export const xRolePermissionAssociation = new db3.xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new ForeignSingleField<RolePermissionAssociationPayload>({
+        new ForeignSingleField<PermissionPayload>({
             columnName: "permission",
             fkMember: "permissionId",
             allowNull: false,
             foreignTableID: "Permission",
-            getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
-                functionalGroup: {
-                    name: { contains: query }
-                }
-            }),
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<RolePayload>({
+            columnName: "role",
+            fkMember: "roleId",
+            allowNull: false,
+            foreignTableID: "Role",
+            getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
 });

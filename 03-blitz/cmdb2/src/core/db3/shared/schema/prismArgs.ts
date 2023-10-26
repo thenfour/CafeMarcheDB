@@ -91,6 +91,45 @@ export interface FileTypes extends DBTypes {
 
 
 
+////////////////////////////////////////////////////////////////
+export const EventTypeSignificance = {
+    Concert: "Concert",
+    Rehearsal: "Rehearsal",
+    Weekend: "Weekend",
+} as const satisfies Record<string, string>;
+
+export const EventStatusSignificance = {
+    New: "New",
+    Cancelled: "Cancelled",
+    FinalConfirmation: "FinalConfirmation",
+} as const satisfies Record<string, string>;
+
+export const EventTagSignificance = {
+    Majoretteketet: "Majoretteketet",
+    TownHall: "TownHall",
+} as const satisfies Record<string, string>;
+
+export const FileTagSignificance = {
+    Partition: "Partition",
+    Recording: "Recording",
+    Rider: "Rider",
+} as const satisfies Record<string, string>;
+
+export const SongTagSignificance = {
+    Improvisation: "Improvisation",
+    VocalSolo: "VocalSolo",
+    ByHeart: "ByHeart",
+    Street: "Street",
+    Majoretteketet: "Majoretteketet",
+} as const satisfies Record<string, string>;
+
+// https://stackoverflow.com/questions/76518631/typescript-return-the-enum-values-in-parameter-using-a-generic-enum-type-method
+// interesting that const objects are preferred over enums. but yea for populating datagrid single select options i agree.
+export const InstrumentTagSignificance = {
+    NeedsPower: "NeedsPower",
+} as const satisfies Record<string, string>;
+
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -651,11 +690,6 @@ export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof
 
 
 ////////////////////////////////////////////////////////////////
-export const EventTypeSignificance = {
-    Concert: "Concert",
-    Rehearsal: "Rehearsal",
-    Weekend: "Weekend",
-} as const satisfies Record<string, string>;
 
 export const EventTypeArgs = Prisma.validator<Prisma.EventTypeArgs>()({
     include: {

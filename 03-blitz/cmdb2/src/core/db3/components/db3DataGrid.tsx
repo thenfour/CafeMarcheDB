@@ -39,9 +39,46 @@ import * as DB3Client from "../DB3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 import { TAnyModel } from 'shared/utils';
 import * as db3 from '../db3';
+import { InspectObject } from 'src/core/components/CMCoreComponents';
+import { gIconMap } from './IconSelectDialog';
+import { separateMutationValues } from '../server/db3mutationCore';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
+
+
+interface ClipboardControlsProps {
+    client: DB3Client.xTableRenderClient;
+};
+
+const ClipboardControls = (props: ClipboardControlsProps) => {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const onCopy = async () => {
+
+        const rows = props.client.items.map(row => {
+            const x = props.client.prepareInsertMutation(row);
+            const { localFields, ..._ } = separateMutationValues({ table: props.client.schema, fields: x });
+            return localFields;
+        });
+
+        const txt = JSON.stringify(rows, null, 2);
+        console.log(rows);
+        await navigator.clipboard.writeText(txt);
+        showSnackbar({ severity: "success", children: `Copied ${rows.length} settings to clipboard (${txt.length} characters)` });
+    };
+
+    return (
+        <>
+            <Button onClick={onCopy} startIcon={gIconMap.ContentCopy()}>Copy for seeding</Button>
+        </>
+    );
+}
+
+
+
+
+
 
 function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSpec: DB3Client.xTableClientSpec }) {
     return (
@@ -356,6 +393,9 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 }
             }}
         />}
+
+        <ClipboardControls client={tableClient} />
+
         <DataGrid
             // basic config
             editMode="row"

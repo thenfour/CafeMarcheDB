@@ -12,7 +12,7 @@ import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "
 import { xSong } from "./song";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
-    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload
+    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload
 } from "./prismArgs";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
@@ -101,11 +101,6 @@ export const xEventType = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 
-export const EventStatusSignificance = {
-    New: "New",
-    Cancelled: "Cancelled",
-    FinalConfirmation: "FinalConfirmation",
-} as const satisfies Record<string, string>;
 
 export const xEventStatus = new db3.xTable({
     editPermission: Permission.admin_general,
@@ -144,11 +139,6 @@ export const xEventStatus = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-
-export const EventTagSignificance = {
-    Majorettes: "Majorettes",
-    Frontpage: "Frontpage",
-} as const satisfies Record<string, string>;
 
 export const xEventTag = new db3.xTable({
     tableName: "EventTag",

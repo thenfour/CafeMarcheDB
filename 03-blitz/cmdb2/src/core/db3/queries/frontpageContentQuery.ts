@@ -18,7 +18,7 @@ export default resolver.pipe(
                     },
                     {
                         visiblePermission: {
-                            name: Permission.visibility_all,
+                            name: Permission.visibility_public,
                         }
                     },
                     {

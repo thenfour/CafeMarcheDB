@@ -9,15 +9,10 @@ import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/utils";
 import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload } from "./prismArgs";
+import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 
 
-
-export const SongTagSignificance = {
-    Improvisation: "Improvisation",
-    VocalSolo: "VocalSolo",
-} as const satisfies Record<string, string>;
 
 export const xSongTag = new db3.xTable({
     editPermission: Permission.admin_general,

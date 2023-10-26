@@ -386,7 +386,7 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
     const [progress, setProgress] = React.useState<number | null>(null);
     const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const publicPermissionId = API.users.getPublicPermission().id;
+    const permissionId = API.users.getDefaultVisibilityPermission().id;
 
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
@@ -394,7 +394,7 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
             CMDBUploadFile({
                 fields: {
                     taggedEventId: props.event.id,
-                    visiblePermissionId: publicPermissionId,
+                    visiblePermissionId: permissionId,
                 },
                 files,
                 onProgress: (prog01, uploaded, total) => {

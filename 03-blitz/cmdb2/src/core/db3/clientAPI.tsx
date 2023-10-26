@@ -115,21 +115,31 @@ class UsersAPI {
         return (this.getAllPermissions().items as Prisma.PermissionGetPayload<{}>[]).find(p => p.name === q);
     };
 
-    getPublicPermission = () => {
-        return this.getPermission(Permission.visibility_all)!;
+    getDefaultVisibilityPermission = () => {
+        return this.getPermission(Permission.visibility_members)!;
     };
 
     getVisibilityInfo = <T extends { visiblePermission: db3.PermissionPayloadMinimum | null },>(item: T) => {
-        const isPrivate = item.visiblePermission === null;
-        const isPublic = item.visiblePermission?.name === Permission.visibility_all;
+        const publicPerms = [
+            Permission.visibility_public,
+            Permission.visibility_members,
+            Permission.visibility_logged_in_users
+        ];
+        const restrictedPerms = [
+            Permission.visibility_editors,
+        ];
+        const isPublic = publicPerms.find(p => item.visiblePermission?.name === p);
+        const isPrivate = item.visiblePermission === null; //
+        const isRestricted = restrictedPerms.find(p => item.visiblePermission?.name === p);
         const cssClasses: string[] = [];
-        if (isPrivate) cssClasses.push("visibility-private");
-        if (isPublic) cssClasses.push("visibility-public");
-        if (!isPrivate) cssClasses.push(`visiblePermission-${item.visiblePermission!.name}`);
+        if (isPrivate) cssClasses.push(`visibility-private`);
+        if (isPublic) cssClasses.push(`visibility-public  visiblePermission-${item.visiblePermission!.name}`);
+        if (isRestricted) cssClasses.push(`visibility-restricted visiblePermission-${item.visiblePermission!.name}`);
 
         return {
             isPrivate,
             isPublic,
+            isRestricted,
             className: cssClasses.join(" "),
         }
     }

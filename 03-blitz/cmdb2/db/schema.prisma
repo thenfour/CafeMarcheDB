@@ -293,7 +293,7 @@ model SongTagAssociation {
 // individual instruments are user-managed.
 model InstrumentFunctionalGroup {
   id          Int          @id @default(autoincrement())
-  name        String
+  name        String       @unique
   description String       @default("")
   sortOrder   Int
   color       String?
@@ -302,7 +302,7 @@ model InstrumentFunctionalGroup {
 
 model Instrument {
   id                Int                        @id @default(autoincrement())
-  name              String
+  name              String                     @unique
   slug              String                     @default("")
   description       String                     @default("")
   sortOrder         Int
@@ -409,15 +409,15 @@ model EventSegment {
   name        String
   description String // short description, like 
 
-// conform to DateTimeRangeSpec
-    // startsAtDateTime: Date | null; // date or null = TBD
-    // durationMillis: number;
-    // isAllDay: boolean; // care about time or ignore it?
+  // conform to DateTimeRangeSpec
+  // startsAtDateTime: Date | null; // date or null = TBD
+  // durationMillis: number;
+  // isAllDay: boolean; // care about time or ignore it?
 
-  startsAt DateTime? // date null means TBD
+  startsAt       DateTime? // date null means TBD
   durationMillis Int
-  isAllDay Boolean @default(true)
-  //endsAt   DateTime?
+  isAllDay       Boolean   @default(true)
+  endsAt         DateTime?
 
   responses EventSegmentUserResponse[]
 }

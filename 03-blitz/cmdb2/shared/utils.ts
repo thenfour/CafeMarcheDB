@@ -298,6 +298,7 @@ export const gIconOptions = {
     Add: "Add",
     AddCircleOutline: "AddCircleOutline",
     AttachFile: "AttachFile",
+    AutoAwesome: "AutoAwesome",
     CalendarMonth: "CalendarMonth",
     Campaign: "Campaign",
     Cancel: "Cancel",

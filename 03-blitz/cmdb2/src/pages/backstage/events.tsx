@@ -136,7 +136,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     };
 
     const renderColumn = (table: DB3Client.xTableClientSpec, colName: string, row: TAnyModel, validationResult: db3.ValidateAndComputeDiffResult, api: DB3Client.NewDialogAPI) => {
-        console.log(`col :${colName}`);
         return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName] });
     };
 

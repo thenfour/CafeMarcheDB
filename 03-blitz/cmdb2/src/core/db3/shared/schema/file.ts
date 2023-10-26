@@ -4,7 +4,7 @@ import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { BoolField, ForeignSingleField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload } from "./prismArgs";
+import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 //import { xEvent } from "./event";
 
@@ -21,15 +21,6 @@ import { CreatedByUserField, VisiblePermissionField } from "./user";
 //     fileAssignments       FileTagAssignment[]
 //   }
 
-
-export const FileTagSignificance = {
-    Partition: "Partition",
-    Invoice: "Invoice",
-    Recording: "Recording",
-    Video: "Video",
-    Rider: "Rider",
-    Email: "Email",
-} as const satisfies Record<string, string>;
 
 export const xFileTag = new db3.xTable({
     editPermission: Permission.admin_general,
