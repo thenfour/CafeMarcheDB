@@ -7,7 +7,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, DateTimeField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField, MakeNullableRawTextField, MakeRawTextField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField, MakeNullableRawTextField, MakeRawTextField, EventStartsAtField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import { xSong } from "./song";
 import {
@@ -16,7 +16,7 @@ import {
 } from "./prismArgs";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
-import { DateRange, IsEarlierDateWithLateNull, MinDateOrLateNull, getDateRangeInfo } from "shared/time";
+import { IsEarlierDateWithLateNull, MinDateOrLateNull } from "shared/time";
 
 /*
 
@@ -205,67 +205,6 @@ export const xEventTagAssignment = new db3.xTable({
 });
 
 
-
-
-
-
-export class CalculatedEventDateRangeField extends db3.FieldBase<DateRange> {
-    constructor() {
-        super({
-            member: "dateRange",
-            fieldTableAssociation: "calculated",
-            defaultValue: { startsAt: null, endsAt: null },
-            label: "Date range",
-        });
-    }
-
-    connectToTable = (table: db3.xTable) => { };
-
-    // prevent from sending to mutations by saying it's always the same.
-    isEqual = (a: DateRange, b: DateRange) => {
-        return true;
-    };
-
-    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
-    getCustomFilterWhereClause = (query) => false;
-    getOverallWhereClause = (clientIntention: db3.xTableClientUsageContext): TAnyModel | boolean => false;
-
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: db3.DB3RowMode) => { };
-
-    ApplyToNewRow = (args: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
-        args[this.member] = this.defaultValue;
-    };
-
-    // this column type has no sub-items; no filtering to do.
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: db3.xTableClientUsageContext) => { };
-
-    ValidateAndParse = (val: db3.ValidateAndParseArgs<DateRange>): db3.ValidateAndParseResult<DateRange | null> => {
-        return db3.SuccessfulValidateAndParseResult(val.value);
-    };
-
-    ApplyDbToClient = (dbModel: EventPayload, clientModel: TAnyModel, mode: db3.DB3RowMode) => {
-        const ret: DateRange = { startsAt: null, endsAt: null };
-        if (!dbModel.segments) return;
-        dbModel.segments.forEach(seg => {
-            console.assert(seg.startsAt !== undefined);
-            console.assert(seg.endsAt !== undefined);
-            if (seg.startsAt !== null) {
-                if (ret.startsAt === null || (seg.startsAt < ret.startsAt)) {
-                    ret.startsAt = seg.startsAt;
-                }
-            }
-            if (seg.endsAt !== null) {
-                if (ret.endsAt === null || (seg.endsAt > ret.endsAt)) {
-                    ret.endsAt = seg.endsAt;
-                }
-            }
-        });
-        clientModel[this.member] = ret;
-        clientModel.dateRangeInfo = getDateRangeInfo(ret);
-    }
-};
-
-
 const xEventArgs_Base: db3.TableDesc = {
     tableName: "event",
     editPermission: Permission.admin_general,
@@ -334,7 +273,7 @@ const xEventArgs_Base: db3.TableDesc = {
         new BoolField({ columnName: "isDeleted", defaultValue: false }),
         MakePlainTextField("locationDescription"),
         MakePlainTextField("locationURL"),
-        new CalculatedEventDateRangeField(),
+        //new CalculatedEventDateRangeField(),
         MakeCreatedAtField("createdAt"),
         new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
             columnName: "type",
@@ -458,16 +397,19 @@ export const xEventSegment = new db3.xTable({
             format: "plain",
         }),
         MakeMarkdownTextField("description"),
-        new DateTimeField({
+        new EventStartsAtField({
             allowNull: true,
             columnName: "startsAt",
-            granularity: "minute",
         }),
-        new DateTimeField({
-            allowNull: true,
-            columnName: "endsAt",
-            granularity: "minute",
+        new GenericIntegerField({
+            allowNull: false,
+            columnName: "durationMillis",
         }),
+        new BoolField({
+            columnName: "isAllDay",
+            defaultValue: true,
+        }),
+
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
             fkMember: "eventId",

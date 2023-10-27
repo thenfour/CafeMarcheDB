@@ -384,31 +384,31 @@ const main = async () => {
   await UpdateTable("permission", "name", prisma.permission, [
     {
       "name": "visibility_editors",
-      "description": "auto-inserted by server",
-      "sortOrder": 100,
+      "description": `Restricted visibility: This is visible only to site editors`,
+      "sortOrder": 130,
       "isVisibility": true,
       "color": null,
       "iconName": "Lock"
     },
     {
-      "name": "visibility_logged_in_users",
-      "description": "auto-inserted by server",
-      "sortOrder": 100,
+      "name": "visibility_members",
+      "description": `Semi-public visibility: this is visible to all members.`,
+      "sortOrder": 120,
       "isVisibility": true,
       "color": null,
       "iconName": "Public"
     },
     {
-      "name": "visibility_members",
-      "description": "auto-inserted by server",
-      "sortOrder": 100,
+      "name": "visibility_logged_in_users",
+      "description": `Semi-public visibility: This is visible to all logged-in users`,
+      "sortOrder": 110,
       "isVisibility": true,
       "color": null,
       "iconName": "Public"
     },
     {
       "name": "visibility_public",
-      "description": "auto-inserted by server",
+      "description": "Public visibility: Everyone can see this.",
       "sortOrder": 100,
       "isVisibility": true,
       "color": null,

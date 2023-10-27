@@ -249,7 +249,7 @@ export class DateTimeRange {
         return this.spec.isAllDay;
     }
 
-    getDurationMillis() {
+    getDurationMillis(): number {
         if (this.isAllDay()) {
             if (!this.spec.startsAtDateTime) {
                 return 0;
@@ -260,6 +260,33 @@ export class DateTimeRange {
             return (Math.round((end.valueOf() - start.valueOf()) / gMillisecondsPerDay) + 1) * gMillisecondsPerDay;
         }
         return this.spec.durationMillis;
+    }
+
+    toString() {
+        if (this.isTBD()) {
+            return "TBD";
+        }
+        if (this.isAllDay()) {
+            return `${formatDate(this.getStartDateTime(new Date()))} - ${formatDate(this.getEndDateTime(new Date()))}`;
+        }
+        return `${formatDate(this.getStartDateTime(new Date()))} - ${formatDate(this.getEndDateTime(new Date()))}`;
+        // Monday 4 October 2023, 18-19h
+        // Monday 4 October 2023 - Wednesday 6 October 2023
+    }
+
+    durationToString() {
+        return formatMillisecondsToDHMS(this.getDurationMillis());
+    }
+
+    isLessThan(rhs: DateTimeRange | null): boolean {
+        if (this.isTBD()) return false; // TBD is considered late; in all cases it cannot be EARLIER (less than) rhs.
+        if (rhs === null || rhs.isTBD()) {
+            return true; // we have a date, but RHS does not. this < RHS always.
+        }
+        // both dates exist; no point in being more detailed than just comparing the start times.
+        const lhsStart = this.getStartDateTime()!;
+        const rhsStart = rhs.getStartDateTime()!;
+        return lhsStart.valueOf() < rhsStart.valueOf();
     }
 
     getStartDateTime<T extends Date | undefined>(fallbackValue?: T): T extends Date ? Date : Date | null {
@@ -342,41 +369,41 @@ export class DateTimeRange {
         return ret;
     }
 
-};
+    unionWith(rhs: DateTimeRange): DateTimeRange {
+        // between TBD and isAllDay, and the fact that our spec cannot represent certain things
+        // (like known beginning but no known end, or different all-day-ness between start & end),
+        // there's some discretion in doing this.
 
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// todo: obsolete this for DateTimeRange
-export interface DateRange {
-    startsAt: Date | null,
-    endsAt: Date | null,
-}
-
-export interface DateRangeInfo {
-    formattedDateRange: string;
-    formattedYear: string;
-};
-
-export function getDateRangeInfo(dateRange: DateRange): DateRangeInfo {
-    if (!dateRange.startsAt) {
-        if (!dateRange.endsAt) {
-            return { formattedDateRange: "Date TBD", formattedYear: "TBD" };
+        if (rhs.isTBD()) {
+            if (this.isTBD()) {
+                return new DateTimeRange({ startsAtDateTime: null, isAllDay: true, durationMillis: 0 }); // both TBD.
+            }
+            // RHS is TBD but this is not. just return the range which is known.
+            return new DateTimeRange(this.spec);
+        } else {
+            if (this.isTBD()) {
+                // this is TBD but RHS is not.
+                return new DateTimeRange(rhs.getSpec());
+            }
         }
-        return { formattedDateRange: `Until ${formatDate(dateRange.endsAt!)}`, formattedYear: `${dateRange.endsAt!.getFullYear()}` };
-    }
-    if (!dateRange.endsAt) {
-        return { formattedDateRange: `From ${formatDate(dateRange.startsAt!)}`, formattedYear: `${dateRange.startsAt!.getFullYear()}` };
-    }
-    if (dateRange.startsAt.toDateString() === dateRange.endsAt.toDateString()) {
-        return { formattedDateRange: formatDate(dateRange.startsAt), formattedYear: `${dateRange.startsAt.getFullYear()}` };
-    }
 
-    // todo: when components are the same, unify.
-    // so instead of 
-    // 11 July 2023 - 12 July 2023
-    // just do 11-12 July 2023.
-    return { formattedDateRange: `${formatDate(dateRange.startsAt)} - ${formatDate(dateRange.endsAt)}`, formattedYear: `${dateRange.startsAt.getFullYear()}` };
-}
+        // no TBD.
+        const now = new Date();
+        const laterEndBound = Math.max(this.getEndBound(now).valueOf(), rhs.getEndBound(now).valueOf());
+        const earlierStartBound = Math.max(this.getStartDateTime(now).valueOf(), rhs.getStartDateTime(now).valueOf());
+        return new DateTimeRange({
+            startsAtDateTime: new Date(earlierStartBound),
+            durationMillis: laterEndBound - earlierStartBound,
+            isAllDay: this.isAllDay() || rhs.isAllDay(), // if either is all-day, then the union becomes all-day.
+        });
+    }
+};
 
+// true if lhs < rhs.
+// NULL is considered LATE, because it suggests TBD in the future.
+export const DateTimeRangeLessThan = (lhs: DateTimeRange | null, rhs: DateTimeRange | null): boolean => {
+    if (lhs === null) {
+        return false; // if LHS is null, it is either equalt to rhs (null) or later than it. either case, it's not less than (earlier).
+    }
+    return lhs.isLessThan(rhs);
+};

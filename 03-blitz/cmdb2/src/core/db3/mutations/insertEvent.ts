@@ -41,7 +41,8 @@ export default resolver.pipe(
             description: args.segment.description,
             eventId: newEvent.id,
             startsAt: args.segment.startsAt,
-            endsAt: args.segment.endsAt,
+            durationMillis: args.segment.durationMillis,
+            isAllDay: args.segment.isAllDay,
         };
 
         // create the initial segment.

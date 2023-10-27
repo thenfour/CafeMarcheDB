@@ -98,8 +98,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         table: db3.xEventSegment,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.DateTimeColumn({ columnName: "startsAt", cellWidth: 180 }),
-            new DB3Client.DateTimeColumn({ columnName: "endsAt", cellWidth: 180 }),
+            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
         ],
     });
 
@@ -163,7 +162,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                     {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI)}
 
                     {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI)}
-                    {renderColumn(segmentTableSpec, "endsAt", segmentValue, segmentValidationResult, segmentAPI)}
 
                 </div>
             </DialogContent>

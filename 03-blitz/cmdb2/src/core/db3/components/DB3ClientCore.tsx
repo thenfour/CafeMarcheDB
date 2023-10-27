@@ -25,7 +25,6 @@ import { ColorPaletteEntry } from "shared/color";
 import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import db3queries from "../queries/db3queries";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { T } from "@blitzjs/auth/dist/index-19e2d23c";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {

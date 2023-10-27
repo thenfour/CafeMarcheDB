@@ -21,6 +21,7 @@ import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared
 import { TAnyModel } from "shared/utils";
 import { CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
 import { ApplyIncludeFilteringToRelation } from "../db3";
+import { DateTimeRange, DateTimeRangeSpec } from "shared/time";
 
 ////////////////////////////////////////////////////////////////
 // field types
@@ -746,30 +747,25 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     };
 };
 
-export type DateTimeFieldGranularity = "year" | "day" | "minute" | "second";
 
-// this is specifically for fields which care about date + time, OR date-only.
-// for date-only, the idea is that 2 fields are considered the same even if the time is different.
-export interface DateTimeFieldArgs {
+export interface EventStartsAtFieldArgs {
     columnName: string;
+
     allowNull: boolean;
-    granularity: DateTimeFieldGranularity;
 };
 
-export class DateTimeField extends FieldBase<Date> {
+export class EventStartsAtField extends FieldBase<Date> {
 
     allowNull: boolean;
-    granularity: DateTimeFieldGranularity;
 
-    constructor(args: DateTimeFieldArgs) {
+    constructor(args: EventStartsAtFieldArgs) {
         super({
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : new Date(),
-            label: args.columnName,
+            label: "date/time",
         });
         this.allowNull = args.allowNull;
-        this.granularity = args.granularity;
     }
 
     connectToTable = (table: xTable) => { };
@@ -818,20 +814,11 @@ export class DateTimeField extends FieldBase<Date> {
     };
 
     isEqual = (a: Date, b: Date) => {
-        switch (this.granularity) {
-            case "year":
-                // y[mdhmsm]
-                return a.getFullYear() === b.getFullYear();
-            case "day":
-                // ymd[hmsm]
-                return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDay() === b.getDay();
-            case "minute":
-            case "second": // TODO
-                // ymdhm[sm]
-                return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDay() === b.getDay() && a.getHours() === b.getHours() && a.getMinutes() === b.getMinutes();
-            default:
-                throw new Error(`unknown granularity specified for column '${this.member}': ${this.granularity}`);
-        }
+        return a.getFullYear() === b.getFullYear() &&
+            a.getMonth() === b.getMonth() &&
+            a.getDay() === b.getDay() &&
+            a.getHours() === b.getHours() &&
+            a.getMinutes() === b.getMinutes();
     };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {

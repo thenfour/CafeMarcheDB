@@ -16,7 +16,7 @@ import updateEventSongListMutation from "./mutations/updateEventSongListMutation
 import { Permission } from "shared/permissions";
 import { Prisma } from "db";
 import insertEvent from "./mutations/insertEvent";
-import { getDateRangeInfo } from "shared/time";
+import { DateTimeRange } from "shared/time";
 import frontpageContentQuery from "./queries/frontpageContentQuery";
 
 
@@ -179,15 +179,25 @@ class EventsAPI {
         return ret;
     }
 
-    getEventSegmentFormattedDateRange(segment: db3.EventVerbose_EventSegmentPayload) {
-        return "daterangehere";
+    getEventSegmentDateTimeRange(segment: db3.EventSegmentPayload) {
+        return new DateTimeRange({
+            startsAtDateTime: segment.startsAt,
+            durationMillis: segment.durationMillis,
+            isAllDay: segment.isAllDay,
+        });
     }
 
-    getEventSegmentDateInfo(segment: db3.EventVerbose_EventSegmentPayload) {
-        return getDateRangeInfo({
-            startsAt: segment.startsAt,
-            endsAt: segment.endsAt,
-        });
+    getEventSegmentFormattedDateRange(segment: db3.EventSegmentPayload) {
+        return this.getEventSegmentDateTimeRange(segment).toString();
+        //return "daterangehere";
+    }
+
+    getEventDateRange(event: db3.EventClientPayload_Verbose) {
+        let ret = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
+        for (const segment of event.segments) {
+            ret = ret.unionWith(this.getEventSegmentDateTimeRange(segment));
+        }
+        return ret;
     }
 
     getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserPayload }) {

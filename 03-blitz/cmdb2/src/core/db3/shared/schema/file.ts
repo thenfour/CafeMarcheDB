@@ -360,7 +360,7 @@ export const xFile = new db3.xTable({
             format: "raw",
         }),
         new GenericStringField({
-            columnName: "previewData",
+            columnName: "customData",
             allowNull: true,
             format: "raw",
         }),
@@ -374,6 +374,21 @@ export const xFile = new db3.xTable({
         new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
+        }),
+
+        new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
+            columnName: "previewFile",
+            fkMember: "previewFileId",
+            allowNull: true,
+            foreignTableID: "File",
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
+            columnName: "parentFile",
+            fkMember: "parentFileId",
+            allowNull: true,
+            foreignTableID: "File",
+            getQuickFilterWhereClause: (query: string) => false,
         }),
 
         new TagsField<FileTagAssignmentPayload>({

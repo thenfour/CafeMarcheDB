@@ -56,7 +56,8 @@ export interface TinsertEventArgs {
     },
     segment: {
         startsAt: Date | null,
-        endsAt: Date | null,
+        durationMillis: number,
+        isAllDay: boolean,
         name: string,
         description: string,
     }
@@ -166,7 +167,7 @@ export interface HomepageContentSpec {
     gallery: HomepageGalleryItemSpec[];
 };
 
-export interface FilePreviewData {
+export interface FileCustomData {
     // variations ?
 };
 

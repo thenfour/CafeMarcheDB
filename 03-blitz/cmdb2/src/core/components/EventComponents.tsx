@@ -106,67 +106,6 @@ export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
 
 
 
-
-// ////////////////////////////////////////////////////////////////
-// // non-interactive-feeling card; it's meant as a gateway to something else with very little very curated information.
-// export interface NoninteractiveCardEventProps {
-//     event: db3.EventClientPayload_Verbose,
-//     //tableClient: DB3Client.xTableRenderClient,
-// };
-
-// export const NoninteractiveCardEvent = (props: NoninteractiveCardEventProps) => {
-
-//     // the rotation is cool looking but maybe just too much
-//     // const maxRotation = 2;
-//     // const rotate = `${((Math.random() * maxRotation)) - (maxRotation * .5)}deg`;
-//     // const maxMargin = 30;
-//     // const marginLeft = `${(Math.random() * maxMargin) + 25}px`;
-//     // style={{ rotate, marginLeft }}
-
-//     // find your attendance record.
-//     const [user] = useCurrentUser();
-//     if (!user || !user.id) throw new Error(`no current user`);
-
-//     return <Card className="cmcard event concert" elevation={5} >
-//         <CardActionArea className="actionArea" href={API.events.getURIForEvent(props.event)}>
-//             <div className="cardContent">
-//                 <div className="left"><div className="leftVertText">{props.event.dateRangeInfo.formattedYear}</div></div>
-//                 <div className="image"></div>
-//                 <div className="hcontent">
-//                     <div className="date">{props.event.dateRangeInfo.formattedDateRange}</div>
-//                     <div className="name">{props.event.name}</div>
-
-//                     <CMEventBigStatus event={props.event} />
-//                     {/* 
-//                     <CMBigChip color={sampleColor} variant='strong'>
-//                         <ThumbUpIcon />
-//                         You are coming!
-//                     </CMBigChip> */}
-
-//                     <EventAttendanceSummary event={props.event} />
-
-//                     {/* 
-//                     <div className="attendance yes">
-//                         <div className="chip">
-//                         </div>
-//                     </div> */}
-
-//                     {/* <div className="info">43 photos uploaded</div> */}
-//                     <CMChipContainer>
-//                         {props.event.tags.map(a => <CMStandardDBChip key={a.id} model={a.eventTag} variant='weak' />)}
-//                     </CMChipContainer>
-//                     {/* <CMTagList
-//                         tagAssociations={props.event.tags}
-//                         columnSchema={db3.xEvent.getColumn("tags") as db3.TagsField<db3.EventTagAssignmentPayload>}
-//                         //tagsFieldClient={props.tableClient.args.tableSpec.getColumn("tags") as DB3Client.TagsFieldClient<db3.EventTagAssignmentModel>}
-//                         colorVariant="weak"
-//                     /> */}
-//                 </div>
-//             </div>
-//         </CardActionArea>
-//     </Card>
-// };
-
 ////////////////////////////////////////////////////////////////
 export interface EventBreadcrumbProps {
     event: db3.EventPayloadClient,
@@ -654,7 +593,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             <div className="infoLine">
                 <div className="date smallInfoBox">
                     <CalendarMonthIcon className="icon" />
-                    <span className="text">{event.dateRangeInfo.formattedDateRange}</span>
+                    <span className="text">{API.events.getEventDateRange(event).durationToString()}</span>
                 </div>
 
                 <EventLocationControl event={event} refetch={tableClient.refetch} />

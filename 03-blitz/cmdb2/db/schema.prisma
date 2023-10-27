@@ -410,14 +410,9 @@ model EventSegment {
   description String // short description, like 
 
   // conform to DateTimeRangeSpec
-  // startsAtDateTime: Date | null; // date or null = TBD
-  // durationMillis: number;
-  // isAllDay: boolean; // care about time or ignore it?
-
   startsAt       DateTime? // date null means TBD
   durationMillis Int
   isAllDay       Boolean   @default(true)
-  endsAt         DateTime?
 
   responses EventSegmentUserResponse[]
 }
@@ -582,8 +577,17 @@ model File {
   visiblePermissionId Int?
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
-  mimeType    String?
-  previewData String? // JSON that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
+  mimeType   String?
+  customData String? // JSON that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
+
+  // a file (which should be a child) which serves as a preview. for example if the audio file is some huge .wav, this can be a lower-quality download-friendly MP3 version
+  // or for huge photos, this is a low-bandwidth small preview.
+  previewFileId Int?
+  previewFile   File? @relation("previewFiles", fields: [previewFileId], references: [id], onDelete: SetNull)
+
+  // if this file was generated from another file, this forms that relationship.
+  parentFileId Int?
+  parentFile   File? @relation("fileHierarchy", fields: [parentFileId], references: [id], onDelete: SetNull)
 
   tags                  FileTagAssignment[]
   taggedUsers           FileUserTag[]
@@ -591,6 +595,9 @@ model File {
   taggedEvents          FileEventTag[]
   taggedInstruments     FileInstrumentTag[]
   frontpageGalleryItems FrontpageGalleryItem[]
+
+  previewForFile File[] @relation("previewFiles")
+  childFiles     File[] @relation("fileHierarchy")
 }
 
 model FileUserTag {

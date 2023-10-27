@@ -655,7 +655,7 @@ export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<typ
 // }>;
 
 
-export type EventClientPayload_Verbose = EventClientPayloadExtras & Prisma.EventGetPayload<typeof EventArgs_Verbose>;
+export type EventClientPayload_Verbose = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
 
 export type EventTaggedFilesPayload = Prisma.FileEventTagGetPayload<{
     include: {
@@ -715,10 +715,7 @@ export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[]
 
 
 
-export interface EventClientPayloadExtras {
-    dateRangeInfo: DateRangeInfo;
-};
-export type EventPayloadClient = EventPayload & EventClientPayloadExtras;
+export type EventPayloadClient = EventPayload; // used to include calculated fields
 
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
     // while you can order by relation (ex orderByRelation): https://github.com/prisma/prisma/issues/5008

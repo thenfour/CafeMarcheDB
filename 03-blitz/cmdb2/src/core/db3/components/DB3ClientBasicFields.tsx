@@ -9,7 +9,7 @@
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
 import React from "react";
-import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
+import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
 import { TAnyModel, TIconOptions, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
@@ -21,6 +21,9 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from "dayjs";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
 import { formatMillisecondsToDHMS, formatTimeSpan } from "shared/time";
+import { DateTimeRangeControl } from "src/core/components/DateTimeRangeControl";
+import { API } from '../clientAPI';
+import * as db3 from "../db3";
 
 
 
@@ -575,87 +578,86 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface DateTimeColumnArgs {
-    columnName: string;
-    cellWidth: number;
+
+
+export interface EventDateRangeColumnArgs {
+    startsAtColumnName: string;
+    durationMillisColumnName: string;
+    isAllDayColumnName: string;
 };
+export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
+    startsAtSchemaColumn: db3fields.EventStartsAtField;
+    durationMillisSchemaColumn: db3fields.GenericIntegerField;
+    isAllDaySchemaColumn: db3fields.BoolField;
 
+    args: EventDateRangeColumnArgs;
 
-export class DateTimeColumn extends DB3ClientCore.IColumnClient {
-    typedSchemaColumn: db3fields.DateTimeField;
-
-    constructor(args: DateTimeColumnArgs) {
+    constructor(args: EventDateRangeColumnArgs) {
         super({
-            columnName: args.columnName,
+            columnName: args.startsAtColumnName,
             editable: true,
-            headerName: args.columnName,
-            width: args.cellWidth,
+            headerName: "",
+            width: 250,
         });
+        this.args = args;
     }
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
-        this.typedSchemaColumn = this.schemaColumn as db3fields.DateTimeField;
+        this.startsAtSchemaColumn = this.schemaColumn as db3fields.EventStartsAtField;
+        this.durationMillisSchemaColumn = tableClient.schema.getColumn(this.args.durationMillisColumnName) as db3fields.GenericIntegerField;
+        this.isAllDaySchemaColumn = tableClient.schema.getColumn(this.args.isAllDayColumnName) as db3fields.BoolField;
+
         this.GridColProps = {
-            type: "dateTime",
+            type: "custom",
             renderCell: (params: GridRenderCellParams) => {
-                if (params.value == null) {
-                    return <>--</>;
-                }
-                const value = params.value as Date;
-                if (isNaN(value.valueOf())) {
-                    return <>---</>; // treat as null.
-                }
-                const d = dayjs(value);
-                return <>{d.toString()}</>;
+                return <div>{API.events.getEventSegmentFormattedDateRange(params.row)}</div>;
+                // if (params.value == null) {
+                //     return <>--</>;
+                // }
+                // const value = params.value as Date;
+                // if (isNaN(value.valueOf())) {
+                //     return <>---</>; // treat as null.
+                // }
+                // const d = dayjs(value);
+                // return <>{d.toString()}</>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
-                // regarding validation, the date picker kinda has its own way of doing validation and maybe i'll work with that in the future.
-                const granularity = this.typedSchemaColumn.granularity;
-                switch (granularity) {
-                    case "year": // todo
-                    case "day": // todo
-                    case "minute":
-                    case "second":
-                        return <CMDatePicker
-                            allowNull={this.typedSchemaColumn.allowNull}
-                            autoFocus={params.hasFocus}
-                            label={this.typedSchemaColumn.label}
-                            value={params.value}
-                            onChange={(value: Date | null) => {
-                                void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
-                            }}
-                        />;
-                    default:
-                        throw new Error(`unknown granularity`);
-                }
+                return <DateTimeRangeControl
+                    items={[]}
+                    onChange={(newValue) => {
+                        const spec = newValue.getSpec();
+                        params.api.setEditCellValue({ id: params.id, field: this.args.startsAtColumnName, value: spec.startsAtDateTime }).then(() => {
+                            params.api.setEditCellValue({ id: params.id, field: this.args.durationMillisColumnName, value: spec.durationMillis }).then(() => {
+                                params.api.setEditCellValue({ id: params.id, field: this.args.isAllDayColumnName, value: spec.isAllDay }).then(() => {
+
+                                });
+                            });
+                        });
+                    }}
+                    value={API.events.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
+                />;
             },
         };
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
-        // regarding validation, the date picker kinda has its own way of doing validation and maybe i'll work with that in the future.
-        const granularity = this.typedSchemaColumn.granularity;
-        switch (granularity) {
-            case "year": // todo
-            case "day": // todo
-            case "minute":
-            case "second":
-                return <CMDatePicker
-                    allowNull={this.typedSchemaColumn.allowNull}
-                    autoFocus={false}
-                    label={this.typedSchemaColumn.label}
-                    value={params.value as Date | null}
-                    onChange={(value: Date | null) => {
-                        params.api.setFieldValues({ [this.columnName]: value });
-                    }}
-                />;
-            default:
-                throw new Error(`unknown granularity`);
-        }
+        return <DateTimeRangeControl
+            items={[]}
+            onChange={(newValue) => {
+                const spec = newValue.getSpec();
+                params.api.setFieldValues({
+                    [this.args.startsAtColumnName]: spec.startsAtDateTime,
+                    [this.args.durationMillisColumnName]: spec.durationMillis,
+                    [this.args.isAllDayColumnName]: spec.isAllDay,
+                });
+            }}
+            value={API.events.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
+        />;
     };
 };
+
+
+
 
 
 
