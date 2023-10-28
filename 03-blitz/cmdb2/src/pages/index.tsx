@@ -2,15 +2,47 @@ import { BlitzPage, Routes } from "@blitzjs/next";
 import { NoSsr } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { FC, Suspense } from "react"
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { InspectObject } from "src/core/components/CMCoreComponents";
 import { HomepageMain } from "src/core/components/homepageComponents";
-import { useFrontpageData } from "src/core/db3/clientAPI";
+import { API, useFrontpageData } from "src/core/db3/clientAPI";
+import * as db3 from "src/core/db3/db3";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { HomepageAgendaItemSpec, HomepageContentSpec } from "src/core/db3/shared/apiTypes";
 
 const MainContent = () => {
-    const router = useRouter();
-    const content = useFrontpageData();
-    //<a href="/backstage">go backstage...</a>
+    const eventsTableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xEvent,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+        ],
+    });
 
-return <NoSsr>
+    const clientIntention: db3.xTableClientUsageContext = { intention: "public", mode: "primary" };
+
+    const eventsFilterModel: db3.CMDBTableFilterModel = {
+        items: [
+            {
+                field: "frontpageVisible",
+                operator: "equals",
+                value: true
+            }
+        ],
+    };
+
+    const eventsClient = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        tableSpec: eventsTableSpec,
+        filterModel: eventsFilterModel,
+    });
+
+    const content : HomepageContentSpec = {
+        gallery: [],
+        agenda: (eventsClient.items as db3.EventPayload[]).map((x) : HomepageAgendaItemSpec => API.events.getAgendaItem(x)),
+    };
+
+    return <NoSsr>
     <div className="flexShrink"></div>
     <HomepageMain content={content}/>
     <div className="flexShrink"></div>

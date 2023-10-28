@@ -540,6 +540,21 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
 export type EventPayload = Prisma.EventGetPayload<typeof EventArgs>;
 
 
+
+export const EventWithTagsArgs = Prisma.validator<Prisma.EventArgs>()({
+    include: {
+        tags: {
+            orderBy: EventTagAssignmentNaturalOrderBy,
+            include: {
+                eventTag: true,
+            }
+        },
+    },
+});
+
+export type EventWithTagsPayload = Prisma.EventGetPayload<typeof EventWithTagsArgs>;
+
+
 ////////////////////////////////////////////////////////////////
 export const EventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseArgs>()({
     include: {

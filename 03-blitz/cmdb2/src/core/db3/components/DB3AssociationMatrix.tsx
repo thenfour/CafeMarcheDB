@@ -79,11 +79,6 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         // use the table's natural sort
     });
 
-    // const rowWhere = props.localTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
-    // const rowInclude = props.localTableSpec.args.table.CalculateInclude(clientIntention);
-    // const columnWhere = props.foreignTableSpec.args.table.CalculateWhereClause({ filterModel: convertedFilter, clientIntention });
-    // const columnInclude = props.foreignTableSpec.args.table.CalculateInclude(clientIntention);
-
     const columns: GridColDef[] = [{
         field: "id",
         editable: false,

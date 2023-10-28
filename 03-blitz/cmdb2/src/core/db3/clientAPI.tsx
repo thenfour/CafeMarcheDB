@@ -152,7 +152,7 @@ const gUsersAPI = new UsersAPI();
 
 class EventsAPI {
 
-    getAgendaItem(event: db3.EventClientPayload_Verbose): HomepageAgendaItemSpec {
+    getAgendaItem(event: db3.EventWithTagsPayload): HomepageAgendaItemSpec {
         const fallbacks = this.getAgendaItemFallbackValues(event);
         const ret: HomepageAgendaItemSpec = {
             date: event.frontpageDate || fallbacks.date || "",
@@ -166,7 +166,7 @@ class EventsAPI {
         return ret;
     }
 
-    getAgendaItemFallbackValues(event: db3.EventClientPayload_Verbose): HomepageAgendaItemSpec {
+    getAgendaItemFallbackValues(event: db3.EventWithTagsPayload): HomepageAgendaItemSpec {
         const ret: HomepageAgendaItemSpec = {
             date: "",
             time: "",

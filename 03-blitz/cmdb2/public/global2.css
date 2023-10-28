@@ -946,7 +946,7 @@ li.songDropdownOption {
 .EventFrontpageTabContent .fieldContainer .label {
     color: black;
     white-space: nowrap;
-    width: 130px;
+    width: 140px;
     display: flex;
     /* border: 2px solid red; */
 }
@@ -958,6 +958,11 @@ li.songDropdownOption {
     flex-grow: 1;
     ;
 }
+
+.EventFrontpageTabContent .fieldContainer .label .icon {
+    margin: 0px 6px;
+}
+
 
 
 .EventFrontpageTabContent .fieldContainer .nullContainer {
@@ -972,15 +977,14 @@ li.songDropdownOption {
     width: 340px;
     padding: 3px;
     margin: 2px;
-    background-color: white;
-    border: 1px solid #333;
-    color: #aaa;
+    background-color: #0606060d;
+    /* border: 1px solid #333; */
+    color: #444;
 }
 
 
-
 .EventFrontpageTabContent .fieldContainer .value.faded {
-    border: 1px solid #555;
+    /* border: 1px solid #555; */
     background-color: #ccc;
     color: #aaa;
 }
@@ -992,6 +996,7 @@ li.songDropdownOption {
 
 .EventFrontpageTabContent .fieldContainer.frontpageVisible .value {
     border: 0;
+    background-color: transparent;
 }
 
 

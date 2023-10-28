@@ -32,7 +32,7 @@ export default api(async (req, res, origCtx: Ctx) => {
 
             const fileIncludeFilters: Prisma.FileWhereInput[] = [];
             db3.ApplySoftDeleteWhereClause(fileIncludeFilters, clientIntention);
-            db3.ApplyVisibilityWhereClause(fileIncludeFilters, clientIntention, "uploadedByUserId");
+            await db3.ApplyVisibilityWhereClause(fileIncludeFilters, clientIntention, "uploadedByUserId");
 
             const dbfile = await db.file.findFirst({
                 where: {

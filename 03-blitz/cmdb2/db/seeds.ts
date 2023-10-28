@@ -331,6 +331,7 @@ const main = async () => {
   await SeedTable("instrument", prisma.instrument, instrumentSeed);
 
   const adminRoleName = "Admin";
+  const publicRoleName = "Public";
 
   await SeedTable("role", prisma.role, [
     {
@@ -364,9 +365,10 @@ const main = async () => {
       "sortOrder": 10
     },
     {
-      "name": "Public",
+      "name": publicRoleName,
       "description": "not even logged in",
       "isRoleForNewUsers": false,
+      "isPublicRole": true,
       "sortOrder": 0
     }
   ]);
@@ -388,7 +390,7 @@ const main = async () => {
       "sortOrder": 130,
       "isVisibility": true,
       "color": null,
-      "iconName": "Lock"
+      "iconName": "Lock",
     },
     {
       "name": "visibility_members",
@@ -429,6 +431,9 @@ const main = async () => {
       }
     });
   }
+
+  // todo: grant public perms to public, remaining mappings
+  // 
 
 }
 

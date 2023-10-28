@@ -23,7 +23,7 @@ export default resolver.pipe(
             }
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             clientIntention.currentUser = currentUser;
-            const where = table.CalculateWhereClause({
+            const where = await table.CalculateWhereClause({
                 clientIntention,
                 filterModel: input.filter,
             });

@@ -221,6 +221,11 @@ export const xRole = new db3.xTable({
             columnName: "isRoleForNewUsers",
             defaultValue: false,
         }),
+        new BoolField({
+            columnName: "isPublicRole",
+            defaultValue: false,
+        }),
+
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,

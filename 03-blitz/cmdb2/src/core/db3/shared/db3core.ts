@@ -2,6 +2,7 @@ import { ColorPaletteEntry } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel, isEmptyArray } from "shared/utils";
 import db, { Prisma } from "db";
+import { assert } from "blitz";
 
 
 // server-side code for db schema expression.
@@ -256,7 +257,7 @@ export interface xTableClientUsageContext {
     // but it's going to bleed too much logic and annoyance into here.
     // then, more generally "UserCreate" vs. "AdminCreate"
     // but the "create" now becomes pretty much redundant with the requestedcaps. Therefore leave the actual operation out, just focus on the domain.
-    intention: "user" | "admin";
+    intention: "public" | "user" | "admin";
 
     // visibility is different depending on where the object is within a query.
     // if you're viewing a list of Songs, we want to exclude ones which are deleted.
@@ -428,7 +429,7 @@ export class xTable implements TableDesc {
     };
 
     // TODO: unify all this mess. Custom vs. Global vs. QuickFilter vs. Parameterized whatever man.
-    CalculateWhereClause = ({ filterModel, clientIntention }: CalculateWhereClauseArgs) => {
+    CalculateWhereClause = async ({ filterModel, clientIntention }: CalculateWhereClauseArgs) => {
         const and: any[] = [];
 
         // QUICK FILTER
@@ -474,23 +475,40 @@ export class xTable implements TableDesc {
 
         // and visibility
         if (this.visibilitySpec) {
-            const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
-                OR: [
-                    {
-                        // current user has access to the specified visibile permission
-                        [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: clientIntention.currentUser?.role?.permissions.map(p => p.permissionId) }
+            if (clientIntention.intention === "public") {
+                const publicRole = await db.role.findFirst({
+                    where: {
+                        isPublicRole: true,
                     },
-                    {
-                        // private visibility and you are the creator
-                        AND: [
-                            { [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: null },
-                            { [this.visibilitySpec.ownerUserIDColumnName || "createdByUserId"]: clientIntention.currentUser?.id }
-                        ]
+                    include: {
+                        permissions: true,
                     }
-                ]
-            };
-
-            and.push(spec);
+                });
+                assert(!!publicRole, "expecting a public role to be assigned in the db");
+                const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
+                    // current user has access to the specified visibile permission
+                    [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: publicRole.permissions.map(p => p.permissionId) }
+                };
+                and.push(spec);
+            } else {
+                assert(!!clientIntention.currentUser, "current user is required in this line.");
+                const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
+                    OR: [
+                        {
+                            // current user has access to the specified visibile permission
+                            [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) }
+                        },
+                        {
+                            // private visibility and you are the creator
+                            AND: [
+                                { [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: null },
+                                { [this.visibilitySpec.ownerUserIDColumnName || "createdByUserId"]: clientIntention.currentUser!.id }
+                            ]
+                        }
+                    ]
+                };
+                and.push(spec);
+            }
         }
 
         const ret = (and.length > 0) ? { AND: and } : undefined;
@@ -575,7 +593,7 @@ export const GetTableById = (tableID: string): xTable => {
 //let gIndent = 0;
 
 ////////////////////////////////////////////////////////////////
-export const ApplyIncludeFilteringToRelation = (include: TAnyModel, memberName: string, localTableName: string, foreignMemberOnAssociation: string, foreignTableID: string, clientIntention: xTableClientUsageContext) => {
+export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, localTableName: string, foreignMemberOnAssociation: string, foreignTableID: string, clientIntention: xTableClientUsageContext) => {
     // console.log(`${"--".repeat(gIndent)}{{ ApplyIncludeFilteringToRelation(${localTableName}.${memberName}, foreign:${foreignTableID}) incoming include:`);
     // console.log(include);
     // gIndent++;
@@ -609,7 +627,7 @@ export const ApplyIncludeFilteringToRelation = (include: TAnyModel, memberName: 
         member: memberName,
     });
 
-    const where = foreignTable.CalculateWhereClause({
+    const where = await foreignTable.CalculateWhereClause({
         clientIntention: newClientIntention,
         filterModel: { // clobber the filter; we don't propagate any filter values through relations for this.
             items: [],
@@ -656,7 +674,7 @@ export const ApplySoftDeleteWhereClause = (ret: Array<any>, clientIntention: xTa
 ////////////////////////////////////////////////////////////////
 // apply conditions for visibility. usually columns visiblePermissionId + createdByUserId.
 // NOT applying a clause means always visible.
-export const ApplyVisibilityWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, createdByUserIDColumnName: string) => {
+export const ApplyVisibilityWhereClause = async (ret: Array<any>, clientIntention: xTableClientUsageContext, createdByUserIDColumnName: string) => {
     // for admin grids, always show admins the items. they see the IsDeleted / visibility columns there.
     if (clientIntention.intention === "admin") {
         if (clientIntention.currentUser!.isSysAdmin) return; // sys admins 
@@ -669,30 +687,49 @@ export const ApplyVisibilityWhereClause = (ret: Array<any>, clientIntention: xTa
     // make user-looking functions operate as close to user as possible.
     //if (clientIntention.currentUser!.isSysAdmin) return; // sys admins can always see everything.
 
-    // intention is user, so apply visibility
-
-    ret.push({
-        OR: [
-            {
-                // current user has access to the specified visibile permission
-                visiblePermissionId: { in: clientIntention.currentUser?.role?.permissions.map(p => p.permissionId) }
+    if (clientIntention.intention === "public") {
+        const publicRole = await db.role.findFirst({
+            where: {
+                isPublicRole: true,
             },
-            {
-                // private visibility and you are the creator
-                AND: [
-                    { visiblePermissionId: null },
-                    { [createdByUserIDColumnName]: clientIntention.currentUser?.id }
-                ]
+            include: {
+                permissions: true,
             }
-        ]
-    });
+        });
+        assert(!!publicRole, "expecting a public role to be assigned in the db");
+        const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
+            // current user has access to the specified visibile permission
+            visiblePermissionId: { in: publicRole.permissions.map(p => p.permissionId) }
+        };
+        ret.push(spec);
+    } else {
+        // intention is user
+        assert(clientIntention.intention === "user", "checking we're handling all cases");
+        assert(!!clientIntention.currentUser, "current user is required in this line.");
+
+        ret.push({
+            OR: [
+                {
+                    // current user has access to the specified visibile permission
+                    visiblePermissionId: { in: clientIntention.currentUser?.role?.permissions.map(p => p.permissionId) }
+                },
+                {
+                    // private visibility and you are the creator
+                    AND: [
+                        { visiblePermissionId: null },
+                        { [createdByUserIDColumnName]: clientIntention.currentUser?.id }
+                    ]
+                }
+            ]
+        });
+    }
 };
 
 
 ////////////////////////////////////////////////////////////////
-export const ApplyVisibilityWhereClauseIndirectly = (ret: Array<any>, clientIntention: xTableClientUsageContext, foreignMemberName: string, createdByUserIDColumnName: string) => {
+export const ApplyVisibilityWhereClauseIndirectly = async (ret: Array<any>, clientIntention: xTableClientUsageContext, foreignMemberName: string, createdByUserIDColumnName: string) => {
     const foreignFilter = [];
-    ApplyVisibilityWhereClause(foreignFilter, clientIntention, createdByUserIDColumnName);
+    await ApplyVisibilityWhereClause(foreignFilter, clientIntention, createdByUserIDColumnName);
     if (foreignFilter.length) {
         // a where clause was constructed. now form it into an indirect one.
         const x: Prisma.EventSongListSongWhereInput = {

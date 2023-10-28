@@ -62,10 +62,10 @@ const MyComponent = () => {
         }
     }
 
-    const where = db3.xEventVerbose.CalculateWhereClause({
-        clientIntention,
-        filterModel: queryArgs.filterModel!,
-    });
+    // const where = await db3.xEventVerbose.CalculateWhereClause({
+    //     clientIntention,
+    //     filterModel: queryArgs.filterModel!,
+    // });
 
     //console.log(`[[[ calling calculateInclude`);
     // const include = db3.xEventVerbose.CalculateInclude(clientIntention);

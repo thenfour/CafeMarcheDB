@@ -9,7 +9,6 @@ import { HomepageContentSpec } from "../shared/apiTypes";
 export default resolver.pipe(
     async (input: {}, ctx: Ctx) => {
 
-
         const events = await db.event.findMany({
             where: {
                 AND: [

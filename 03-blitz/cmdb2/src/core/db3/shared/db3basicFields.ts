@@ -716,8 +716,8 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getCustomFilterWhereClause = (query: CMDBTableFilterModel) => this.getCustomFilterWhereClause__(query);
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
-    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => {
-        ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.associationForeignObjectMember, this.foreignTableID, clientIntention);
+    ApplyIncludeFiltering = async (include: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        await ApplyIncludeFilteringToRelation(include, this.member, this.localTableSpec.tableName, this.associationForeignObjectMember, this.foreignTableID, clientIntention);
     };
 
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {

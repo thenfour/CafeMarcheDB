@@ -27,8 +27,14 @@ export default resolver.pipe(
                 throw new Error(`client intention is required; context: ${input.cmdbQueryContext}.`);
             }
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
-            clientIntention.currentUser = currentUser;
-            const where = table.CalculateWhereClause({
+            if (clientIntention.intention === "public") {
+                // for public intentions, no user should be used.
+                clientIntention.currentUser = undefined;
+            }
+            else {
+                clientIntention.currentUser = currentUser;
+            }
+            const where = await table.CalculateWhereClause({
                 clientIntention,
                 filterModel: input.filter,
             });

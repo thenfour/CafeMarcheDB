@@ -60,8 +60,8 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     return <div className={`fieldContainer ${props.fieldSpec.fieldName} ${props.event.frontpageVisible ? "" : "faded"}`}>
 
         <div className='label'>
-            <div className='icon'>{props.fieldSpec.renderIcon()}</div>
             <div className='text'>{props.fieldSpec.fieldLabel}</div>
+            <div className='icon'>{props.fieldSpec.renderIcon()}</div>
         </div>
         <div className='nullContainer'>
             {props.fieldSpec.nullable &&
@@ -70,7 +70,6 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                     {isNull && <div className="autoLabel">(auto)</div>}
                 </>
             }</div>
-        <div className={`value ${isNull ? "faded" : ""}`}>{value || defaultValue}</div>
         <div className='editButtonContainer'>
             <EditTextDialogButton
                 columnSpec={db3.xEvent.getColumn(props.fieldSpec.fieldName)! as db3.FieldBase<string>}
@@ -82,6 +81,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                 onChange={handleChange}
             />
         </div>
+        <div className={`value ${isNull ? "faded" : ""}`}>{value || defaultValue}</div>
     </div>;
 };
 
@@ -126,7 +126,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             </div>
             <div className='nullContainer'>
             </div>
-            <div className={`value`}>
+            <div className={`value frontpageVisible`}>
 
                 <FormControlLabel
                     control={<Switch size="small" checked={props.event.frontpageVisible} onChange={handleVisibilityChange} />}
