@@ -13,6 +13,28 @@ export interface Coord2D {
     y: number;
 };
 
+export const MulSize = (a: Size, f: number): Size => {
+    return {
+        width: a.width * f,
+        height: a.height * f,
+    }
+};
+
+export const MulSizeBySize = (a: Size, f: Size): Size => {
+    return {
+        width: a.width * f.width,
+        height: a.height * f.height,
+    }
+};
+
+//
+export const SubCoord2D = (begin: Coord2D, end: Coord2D): Size => {
+    return {
+        width: end.x - begin.x,
+        height: end.y - begin.y,
+    }
+};
+
 // // immutable. without clean function overloading it's hard to implement this.
 // export class CCoord2D implements Coord2D {
 //     x: number;
@@ -239,12 +261,20 @@ export const MakeDefaultServerImageFileEditParams = (): ServerImageFileEditParam
 });
 
 export interface GalleryImageDisplayParams {
+    scaledSize: Size; // specify the size of the image, in pixels. for mocked-up images this is going to be physical file * scaling. for 
+    cropOffset01: Coord2D; // factor of scaledsize, specifies the offset used to place the object within scaledSize, accounting for cropping. generally this would be the same as ServerImageFileEditParams.cropBegin01.
     // the image will be centered here.
     rotationDegrees: number;
     position01: Coord2D; // factor of scaled size
 };
 
 export const MakeDefaultGalleryImageDisplayParams = (): GalleryImageDisplayParams => ({
+    scaledSize: {
+        width: 10, height: 10,
+    },
+    cropOffset01: {
+        x: 0, y: 0,
+    },
     rotationDegrees: 0,
     position01: {
         x: 0, y: 0,
@@ -271,7 +301,7 @@ export interface FileCustomData {
     // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
     relationToParent?: "thumbnail" | "forkedImage";
     forkedImage?: { // when relationToParent is forkedImage.
-        editParams: ServerImageFileEditParams,
+        editParams: ServerImageFileEditParams, // the parameters that were used to generate this forked image.
     };
     imageMetadata?: {
         width?: number | undefined;

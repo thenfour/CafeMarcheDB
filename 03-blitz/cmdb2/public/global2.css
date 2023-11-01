@@ -1003,3 +1003,69 @@ li.songDropdownOption {
 .EventFrontpageTabContent .fieldContainer.faded {
     opacity: 40%;
 }
+
+/* - image editor --------------------------------- */
+.ImageEditor.editorMain {
+    margin: 10px;
+    border: 5px solid black;
+    width: fit-content;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ImageEditor.editorMain .toolbar {
+    padding: 0;
+}
+
+.ImageEditor.editorMain .toolbar .toolbutton {
+    border: 2px solid transparent;
+    background-color: #0002;
+    margin: 0px 2px;
+    border-top-left-radius: 4;
+    border-top-right-radius: 4;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+
+    width: 100px;
+}
+
+.ImageEditor.editorMain .toolbar .toolbutton.resetIcon {
+    background-color: #eee;
+    border-radius: 0;
+    /* height: 12px; */
+    border: 0;
+    /* line-height: 10px; */
+    color: #0004;
+}
+
+
+.ImageEditor.editorMain .toolbar .toolbutton.selected {
+    border-color: red;
+    background-color: #f002;
+}
+
+
+.ImageEditor.editorMain .toolbar .toolbutton:hover {
+    border-color: blue;
+    background-color: #00f2;
+}
+
+.dashed-grid-paper {
+    --grid-size-x: 60px;
+    --grid-size-y: 60px;
+    --grid-strength: 1px;
+    --grid-dash: 1px;
+    --grid-gap: 5px;
+    --grid-color: #8888;
+    --paper-color: transparent;
+
+    background-color: var(--paper-color);
+    background-size: var(--grid-dash) var(--grid-dash), var(--grid-size-x) var(--grid-size-y);
+    background-image:
+        linear-gradient(to bottom, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
+        linear-gradient(to right, var(--grid-color) var(--grid-strength), transparent var(--grid-strength)),
+        linear-gradient(to right, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
+        linear-gradient(to bottom, var(--grid-color) var(--grid-strength), transparent var(--grid-strength));
+}
