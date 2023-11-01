@@ -576,6 +576,7 @@ export class xTable implements TableDesc {
         });
         return ret;
     }
+
 }
 
 
@@ -740,4 +741,3 @@ export const ApplyVisibilityWhereClauseIndirectly = async (ret: Array<any>, clie
         ret.push(x);
     }
 };
-

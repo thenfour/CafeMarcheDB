@@ -1,4 +1,41 @@
+
+import { Prisma } from "db";
+
 // types used by mutations and other blitzy-things which can't export more than 1 thing.
+
+export interface Size {
+    width: number;
+    height: number;
+}
+
+export interface Coord2D {
+    x: number;
+    y: number;
+};
+
+// // immutable. without clean function overloading it's hard to implement this.
+// export class CCoord2D implements Coord2D {
+//     x: number;
+//     y: number;
+//     constructor(a?: Coord2D) {
+//         if (!a) {
+//             this.x = 0;
+//             this.y = 0;
+//             return;
+//         }
+//         this.x = a.x;
+//         this.y = a.y;
+//     }
+//     add(n: number): CCoord2D {
+//         return new CCoord2D({ x: this.x + n, y: this.y + n });
+//     }
+//     add(n: Coord2D): CCoord2D {
+//         return new CCoord2D({ x: this.x + n.x, y: this.y + n.y });
+//     }
+//     mul(n: number): CCoord2D {
+//         return new CCoord2D({ x: this.x * n, y: this.y * n });
+//     }
+// };
 
 export interface TupdateUserEventSegmentAttendanceMutationArgs {
     userId: number;
@@ -167,8 +204,108 @@ export interface HomepageContentSpec {
     gallery: HomepageGalleryItemSpec[];
 };
 
-export interface FileCustomData {
-    // variations ?
+
+
+// https://stackoverflow.com/questions/36836011/checking-validity-of-string-literal-union-type-at-runtime
+export const ImageFileFormatOptions = {
+    "png": {},
+    "jpg": {},
+    "heic": {},
+    "webp": {},
+} as const;
+
+export type ImageFileFormat = keyof typeof ImageFileFormatOptions;
+
+
+// reasons to use 01 coords rather than absolute pixels:
+// - i can create defaults that are static and work for any image
+// - if i change order of operations things should be less broken.
+// - for galleryimagedisplayparams, it feels safer if the viewport changes shape/size.
+export interface ServerImageFileEditParams {
+    //scaleOrigin01: Coord2D; // of original dimensions.... never needed because these params are for a static file operation. the idea of scaling around a point means nothing. the dimensions change, no movement is done.
+    scale: number;// even this is a factor rather than pixels, to avoid having to know the original dimensions.
+    cropBegin01: Coord2D; // top/left, of scaled dimensions
+    cropEnd01: Coord2D;  // bottom/right of scaled dimensions.
 };
 
+export const MakeDefaultServerImageFileEditParams = (): ServerImageFileEditParams => ({
+    scale: 1,
+    cropBegin01: {
+        x: 0, y: 0,
+    },
+    cropEnd01: {
+        x: 1, y: 1,
+    },
+});
+
+export interface GalleryImageDisplayParams {
+    // the image will be centered here.
+    rotationDegrees: number;
+    position01: Coord2D; // factor of scaled size
+};
+
+export const MakeDefaultGalleryImageDisplayParams = (): GalleryImageDisplayParams => ({
+    rotationDegrees: 0,
+    position01: {
+        x: 0, y: 0,
+    },
+});
+
+
+export interface ForkImageParams {
+    parentFileLeaf: string;
+    outputType: ImageFileFormat;
+    editParams: ServerImageFileEditParams;
+};
+
+
+// because of how this is used, returns all options filled with NOP values, rather than undefined..
+export const MakeDefaultForkImageParams = (parentFile: Prisma.FileGetPayload<{}>): ForkImageParams => ({
+    outputType: "png",
+    parentFileLeaf: parentFile.storedLeafName,
+    editParams: MakeDefaultServerImageFileEditParams(),
+});
+
+export interface FileCustomData {
+    // each physical file gets its own File record, therefore this should explain what its relationship is to its parent / related file(s).
+    // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
+    relationToParent?: "thumbnail" | "forkedImage";
+    forkedImage?: { // when relationToParent is forkedImage.
+        editParams: ServerImageFileEditParams,
+    };
+    imageMetadata?: {
+        width?: number | undefined;
+        height?: number | undefined;
+    };
+    audioMetadata?: {
+        bitrate: string;
+        lengthMillis?: number;
+    };
+};
+
+export const MakeDefaultFileCustomData = (): FileCustomData => ({});
+
+
+// always returns valid due to having createDefault
+export const parsePayloadJSON = <T,>(value: null | undefined | string, createDefault: (val: null | undefined | string) => T, onError?: (e) => void): T => {
+    if (value === null || value === undefined || (typeof value !== 'string')) {
+        return createDefault(value);
+    }
+    try {
+        return JSON.parse(value) as T;
+    } catch (err) {
+        if (onError) onError(err);
+        console.log(err);
+        return createDefault(value);
+    }
+};
+
+
+
+// always returns valid
+export const getFileCustomData = (f: Prisma.FileGetPayload<{}>): FileCustomData => {
+    return parsePayloadJSON<FileCustomData>(f.customData, MakeDefaultFileCustomData, (e) => {
+        console.log(`failed to parse file custom data for file id ${f.id}, storedLeafName:${f.storedLeafName}, mime:${f.mimeType}`);
+    });
+};
 

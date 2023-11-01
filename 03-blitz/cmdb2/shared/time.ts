@@ -44,9 +44,14 @@ export function formatTimeSpan(a: Date | null | undefined, b: Date | null | unde
 }
 
 // for debugging
-export const DateToString = (x: Date | null | undefined) => {
+export const DateToDebugString = (x: Date | null | undefined) => {
     if (!x) return "<null>";
     return `${x.toDateString()} ${x.toTimeString()}`;
+}
+
+export const DateToYYYYMMDDHHMMSS = (x: Date) => {
+    // https://stackoverflow.com/questions/19448436/how-to-create-date-in-yyyymmddhhmmss-format-using-javascript    
+    return x.toISOString().replace(/[^0-9]/gm, "").substr(0, 14);
 }
 
 

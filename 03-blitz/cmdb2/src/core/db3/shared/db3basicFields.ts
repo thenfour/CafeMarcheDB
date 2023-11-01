@@ -19,8 +19,7 @@
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
-import { CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
-import { ApplyIncludeFilteringToRelation } from "../db3";
+import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
 import { DateTimeRange, DateTimeRangeSpec } from "shared/time";
 
 ////////////////////////////////////////////////////////////////
@@ -1071,3 +1070,49 @@ export const MakeCreatedAtField = (columnName: string) => (
 
 
 
+
+
+
+export interface separateMutationValuesArgs {
+    table: xTable;
+    fields: TAnyModel;
+};
+export interface separateMutationValuesResult {
+    associationFields: TAnyModel;
+    localFields: TAnyModel;
+};
+export const separateMutationValues = ({ table, fields }: separateMutationValuesArgs) => {
+    const ret: separateMutationValuesResult = {
+        associationFields: {},
+        localFields: {},
+    };
+
+    table.columns.forEach(column => {
+        switch (column.fieldTableAssociation) {
+            case "tableColumn":
+                if (fields[column.member] !== undefined) {
+                    ret.localFields[column.member] = fields[column.member];
+                }
+                break;
+            case "foreignObject":
+                // foreign objects come in with a different member than column.member (FK member, not object member)
+                const typedColumn = column as ForeignSingleField<TAnyModel>;
+                if (fields[typedColumn.fkMember] !== undefined) {
+                    ret.localFields[typedColumn.fkMember] = fields[typedColumn.fkMember];
+                }
+                break;
+            case "associationRecord":
+                if (fields[column.member] !== undefined) {
+                    ret.associationFields[column.member] = fields[column.member];
+                }
+                break;
+            case "calculated":
+                // strip calculated values from any mutation
+                break;
+            default:
+                throw new Error(`unknown field table association; field:${column.member}`);
+                break;
+        }
+    });
+    return ret;
+};

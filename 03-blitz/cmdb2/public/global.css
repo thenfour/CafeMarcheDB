@@ -18,6 +18,10 @@
 
   --visibility-other-bgcolor: #ecc;
   --visibility-other-color: #000;
+
+  --crop-mask-color: #f00c;
+  --frame-mask-color: #000c;
+
 }
 
 a,

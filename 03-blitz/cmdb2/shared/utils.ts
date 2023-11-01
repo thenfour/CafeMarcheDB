@@ -197,12 +197,10 @@ export async function RegisterActivity(args: RegisterActionArgs) {
 }
 
 
-// for use in Zod schemas like
-// export const InstrumentTagSortOrderSchema = z.preprocess(utils.CoerceToNumberOrNull, z.number().refine(utils.ValidateInt));
-export const CoerceToNumberOrNull = (value): number | null => {
+export const CoerceToNumberOr = <Tfallback,>(value, fallbackValue: Tfallback): number | Tfallback => {
     if (typeof value === "string") {
         if (value.trim() === "") {
-            return null;
+            return fallbackValue;
         }
         const asNumber = parseFloat(value);
         if (!isNaN(asNumber)) {
@@ -212,8 +210,19 @@ export const CoerceToNumberOrNull = (value): number | null => {
     return value;
 };
 
+
+
+// for use in Zod schemas like
+// export const InstrumentTagSortOrderSchema = z.preprocess(utils.CoerceToNumberOrNull, z.number().refine(utils.ValidateInt));
+export const CoerceToNumberOrNull = (value): number | null => {
+    return CoerceToNumberOr(value, null);
+};
 export const CoerceToNumber = (value): number => {
-    return CoerceToNumberOrNull(value) || 0;
+    return CoerceToNumberOr(value, 0);
+};
+
+export const CoerceToString = (value: any): string => {
+    return `${value}`;
 };
 
 export const ValidateNullableInt = (arg) => {
@@ -225,6 +234,23 @@ export const ValidateNullableInt = (arg) => {
 export const ValidateInt = (arg) => {
     return Number.isInteger(arg);
 };
+
+
+// see:
+// const ImageFileFormatOptions = {
+//     "png": {},
+// ...
+// } as const;
+// validateStringOption(input, ImageFileFormatOptions)
+export function validateStringOption<ToptionsObj extends Record<string, any>>(input: string, validOptions: ToptionsObj): keyof ToptionsObj {
+    if (!(typeof validOptions).includes(input)) {
+        throw new Error(`Invalid input: ${input}`);
+    }
+    return input;
+}
+
+
+
 
 // permissively converts a string or number to integer.
 export const parseIntOrNull = (s): (number | null) => {
@@ -290,6 +316,12 @@ export const getNextSequenceId = () => {
 export const clamp01 = (x) => {
     if (x < 0) return 0;
     if (x > 1) return 1;
+    return x;
+}
+
+export const Clamp = (x, low, hi) => {
+    if (x < low) return low;
+    if (x > hi) return hi;
     return x;
 }
 
@@ -464,6 +496,8 @@ export function parseMimeType(mimeTypeStringOrNullish: string | null | undefined
     };
 }
 
+export const areAllEqual = <T,>(arr: T[]): boolean => arr.every(v => v === arr[0]);
+
 
 export const isBetween = (number: number, a: number, b: number): boolean => {
     return number >= Math.min(a, b) && number <= Math.max(a, b);
@@ -474,5 +508,34 @@ export function modulo(x: number, n: number): number {
     return ((x % n) + n) % n;
 };
 
+export function Coalesce<T>(value: null | undefined | T, defaultValue: T) {
+    if (value === null) return defaultValue;
+    if (value === undefined) return defaultValue;
+    return value;
+}
+
+// export function formatFileSize(bytes: number): string {
+//     if (bytes === 0) {
+//       return 'empty';
+//     }
+
+//     const units = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+//     const k = 1024;
+//     const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+//     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + units[i];
+//   }
 
 
+export function formatFileSize(bytes: number): string {
+    if (bytes < 1024) {
+        return bytes + ' Bytes';
+    }
+    if (bytes < 1024 * 1024) {
+        return (bytes / 1024).toFixed(2) + ' KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+}

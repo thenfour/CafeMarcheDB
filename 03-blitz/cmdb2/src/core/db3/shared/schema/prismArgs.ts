@@ -1,7 +1,8 @@
 import db, { Prisma } from "db";
 import { TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
-import { DateRangeInfo } from "shared/time";
+import { GalleryImageDisplayParams, MakeDefaultGalleryImageDisplayParams, parsePayloadJSON } from "../apiTypes";
+//import { DateRangeInfo } from "shared/time";
 
 /*
 
@@ -862,10 +863,16 @@ export const FileArgs = Prisma.validator<Prisma.FileArgs>()({
 });
 
 export type FilePayload = Prisma.FileGetPayload<typeof FileArgs>;
+export type FilePayloadMinimum = Prisma.FileGetPayload<{}>;
 
 export const FileNaturalOrderBy: Prisma.FileOrderByWithRelationInput[] = [
     { uploadedAt: 'desc' }
 ];
+
+
+////////////////////////////////////////////////////////////////
+
+
 
 ////////////////////////////////////////////////////////////////
 export const InstrumentTagArgs = Prisma.validator<Prisma.InstrumentTagArgs>()({
@@ -949,6 +956,40 @@ export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResp
 
 
 
+
+////////////////////////////////////////////////////////////////
+export const FrontpageGalleryItemArgs = Prisma.validator<Prisma.FrontpageGalleryItemArgs>()({
+    include: {
+        file: {
+            include: {
+                visiblePermission: {
+                    include: {
+                        roles: true
+                    }
+                },
+            }
+        },
+    },
+});
+export type FrontpageGalleryItemPayload = Prisma.FrontpageGalleryItemGetPayload<typeof FrontpageGalleryItemArgs>;
+
+export const FrontpageGalleryItemNaturalOrderBy: Prisma.FrontpageGalleryItemOrderByWithRelationInput[] = [
+    { sortOrder: 'asc' },
+    { id: 'asc' },
+];
+
+// always returns valid
+export const getGalleryImageDisplayParams = (f: FrontpageGalleryItemPayload): GalleryImageDisplayParams => {
+    return parsePayloadJSON<GalleryImageDisplayParams>(f.displayParams, MakeDefaultGalleryImageDisplayParams, (e) => {
+        console.log(`failed to parse display param data for gallery item id ${f.id}`);
+    });
+};
+
+
+
+
+
+////////////////////////////////////////////////////////////////
 
 // TODO:
 

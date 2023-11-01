@@ -4,7 +4,7 @@ import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { BoolField, ForeignSingleField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload } from "./prismArgs";
+import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 //import { xEvent } from "./event";
 
@@ -514,144 +514,54 @@ export const xFile = new db3.xTable({
 
 
 
+// model FrontpageGalleryItem {
+//     id        Int     @id @default(autoincrement())
+//     isDeleted Boolean @default(false)
+//     caption   String // markdown
+//     sortOrder Int     @default(0)
+//     fileId    Int
+//     file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+//     displayParams String // JSON of GalleryImageDisplayParams
+//   }
 
+export const xFrontpageGalleryItem = new db3.xTable({
+    tableName: "FrontpageGalleryItem",
+    editPermission: Permission.login,
+    viewPermission: Permission.login,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemInclude => {
+        return FrontpageGalleryItemArgs.include;
+    },
+    softDeleteSpec: {
+        isDeletedColumnName: "isDeleted",
+    },
+    naturalOrderBy: FrontpageGalleryItemNaturalOrderBy,
+    getParameterizedWhereClause: (params: any, clientIntention: db3.xTableClientUsageContext): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
+    getRowInfo: (row: FrontpageGalleryItemPayload) => ({
+        name: row.caption,
+        description: row.caption,
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false }),
+        new GenericStringField({
+            columnName: "caption",
+            allowNull: false,
+            format: "markdown",
+        }),
+        MakeSortOrderField("sortOrder"),
+        new GenericStringField({
+            columnName: "displayParams",
+            allowNull: false,
+            format: "raw",
+        }),
+        new ForeignSingleField<Prisma.FileGetPayload<{}>>({
+            columnName: "file",
+            fkMember: "fileId",
+            allowNull: false,
+            foreignTableID: "File",
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
 
+    ]
 
-
-
-
-
-
-
-
-
-// export const xTestFile = new db3.xTable({
-//     tableName: "File",
-//     tableUniqueName: "testFile",
-//     editPermission: Permission.login,
-//     viewPermission: Permission.login,
-//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInclude => {
-//         return FileArgs.include;
-//     },
-//     naturalOrderBy: FileNaturalOrderBy,
-//     // softDeleteSpec: {
-//     //     isDeletedColumnName: "isDeleted",
-//     // },
-//     // visibilitySpec: {
-//     //     ownerUserIDColumnName: "uploadedByUserId",
-//     //     visiblePermissionIDColumnName: "visiblePermissionId",
-//     // },
-//     getRowInfo: (row: FilePayload) => ({
-//         name: row.fileLeafName,
-//         description: row.description,
-//     }),
-//     columns: [
-//         new PKField({ columnName: "id" }),
-//         new BoolField({ columnName: "isDeleted", defaultValue: false }),
-//         new CreatedByUserField({
-//             columnName: "uploadedByUser",
-//             fkMember: "uploadedByUserId",
-//         }),
-//         new VisiblePermissionField({
-//             columnName: "visiblePermission",
-//             fkMember: "visiblePermissionId",
-//         }),
-//         new TagsField<FileEventTag>({
-//             columnName: "taggedEvents",
-//             associationTableID: "testFileEventTag",
-//             foreignTableID: "testEvent",
-//             associationForeignIDMember: "eventId",
-//             associationForeignObjectMember: "event",
-//             associationLocalIDMember: "fileId",
-//             associationLocalObjectMember: "file",
-//             getQuickFilterWhereClause: (query: string) => false,
-//             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
-//         }), // column: taggedEvents
-//     ]
-
-// });
-
-
-// export const xTestFileEventTag = new db3.xTable({
-//     tableName: "FileEventTag",
-//     tableUniqueName: "TestFileEventTag",
-//     editPermission: Permission.login,
-//     viewPermission: Permission.login,
-//     naturalOrderBy: FileEventTagNaturalOrderBy,
-//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileEventTagInclude => {
-//         return FileEventTagArgs.include;
-//     },
-//     getRowInfo: (row: FileEventTagPayload) => {
-//         return {
-//             name: row.event.name,
-//         };
-//     },
-//     columns: [
-//         new PKField({ columnName: "id" }),
-//         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
-//             columnName: "event",
-//             fkMember: "eventId",
-//             allowNull: false,
-//             foreignTableID: "testEvent",
-//             getQuickFilterWhereClause: (query: string) => false,
-//         }),
-//         new ForeignSingleField<Prisma.FileGetPayload<{}>>({
-//             columnName: "file",
-//             fkMember: "fileId",
-//             allowNull: false,
-//             foreignTableID: "testFile",
-//             getQuickFilterWhereClause: (query: string) => false,
-//         }),
-//     ]
-// });
-
-
-
-// export const TestEventArgs = Prisma.validator<Prisma.EventArgs>()({
-//     include: {
-//         visiblePermission: VisiblePermissionInclude,
-//         fileTags: {
-//             include: {
-//                 file: true,
-//             },
-//         },
-//     },
-// });
-
-
-// export const xTestEvent = new db3.xTable({
-//     tableName: "event",
-//     tableUniqueName: "testEvent",
-//     editPermission: Permission.admin_general,
-//     viewPermission: Permission.view_general_info,
-//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
-//         return TestEventArgs.include;
-//     },
-//     // softDeleteSpec: {
-//     //     isDeletedColumnName: "isDeleted",
-//     // },
-//     // visibilitySpec: {
-//     //     ownerUserIDColumnName: "createdByUserId",
-//     //     visiblePermissionIDColumnName: "visiblePermissionId",
-//     // },
-//     getRowInfo: (row: EventPayloadClient) => ({
-//         name: row.name,
-//         description: row.description,
-//         color: gGeneralPaletteList.findEntry(row.type?.color || null),
-//     }),
-//     columns: [
-//         new PKField({ columnName: "id" }),
-//         new TagsField<EventTaggedFilesPayload>({
-//             columnName: "fileTags",
-//             foreignTableID: "testFile",
-//             associationTableID: "testFileEventTag",
-//             associationForeignIDMember: "fileId",
-//             associationForeignObjectMember: "file",
-//             associationLocalIDMember: "eventId",
-//             associationLocalObjectMember: "event",
-//             getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput | boolean => false,
-//             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventWhereInput | boolean => false,
-//         }), // tags
-//     ]
-// });
-
+});

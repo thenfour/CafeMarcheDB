@@ -326,6 +326,7 @@ const gMenuItems: MenuItemSpec[] = [
     { type: "sectionHeader", sectionName: "Admin Files" },
     { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.AttachFile },
     { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile },
+    { type: "link", path: "/backstage/editFrontpageGalleryItems", linkCaption: "Front page gallery", renderIcon: gIconMap.AttachFile },
 
     { type: "divider" },
     { type: "sectionHeader", sectionName: "Admin Settings" },

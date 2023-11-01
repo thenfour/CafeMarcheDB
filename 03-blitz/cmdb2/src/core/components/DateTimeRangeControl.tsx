@@ -1,21 +1,12 @@
-import { BlitzPage } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
-import { Suspense } from "react";
-import getAllRoles from "src/auth/queries/getAllRoles";
-import getTestQuery from "src/auth/queries/getTestQuery";
 import * as React from 'react';
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { InspectObject } from "src/core/components/CMCoreComponents";
-import { Autocomplete, AutocompleteRenderInputParams, Badge, FormControlLabel, FormGroup, InputBase, MenuItem, NoSsr, Popover, Popper, Select, Switch, TextField, Tooltip } from "@mui/material";
-import { DateView, LocalizationProvider } from "@mui/x-date-pickers";
-import dayjs, { Dayjs } from "dayjs";
-import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
+//import * as DB3Client from "src/core/db3/DB3Client";
+import { FormControlLabel, NoSsr, Popover, Switch, Tooltip } from "@mui/material";
+import { DateCalendar, DateView, LocalizationProvider, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs, { Dayjs } from "dayjs";
+import { DateTimeRange, DateTimeRangeHitTestResult, DateToDebugString, TimeOption, TimeOptionsGenerator, combineDateAndTime, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
+import { InspectObject } from "src/core/components/CMCoreComponents";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
-import { DateTimeRange, DateTimeRangeHitTestResult, DateTimeRangeSpec, DateToString, TimeOption, TimeOptionsGenerator, combineDateAndTime, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMillis, getTimeOfDayInMinutes } from "shared/time";
-import { CoerceToNumber, CoerceToNumberOrNull, isBetween } from "shared/utils";
 
 export interface CalendarEventSpec {
     id: string;
@@ -522,12 +513,12 @@ export const DateTimeRangeControlExample = () => {
                 <DateTimeRangeControl value={value} onChange={handleChange} items={events} />
             </div>
             <InspectObject src={value} />
-            <div>starts at: {DateToString(value.getSpec().startsAtDateTime)} </div>
+            <div>starts at: {DateToDebugString(value.getSpec().startsAtDateTime)} </div>
             <div>raw duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
-            <div>getStartDateTime: {DateToString(value.getStartDateTime())}</div>
-            <div>getEndDateTime: {DateToString(value.getEndDateTime())}</div>
-            <div>getEndBound: {DateToString(value.getEndBound())}</div>
-            <div>getEndBoundDay: {DateToString(value.getEndBoundDay())}</div>
+            <div>getStartDateTime: {DateToDebugString(value.getStartDateTime())}</div>
+            <div>getEndDateTime: {DateToDebugString(value.getEndDateTime())}</div>
+            <div>getEndBound: {DateToDebugString(value.getEndBound())}</div>
+            <div>getEndBoundDay: {DateToDebugString(value.getEndBoundDay())}</div>
             <div>getDuration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
         </NoSsr>
     </LocalizationProvider>;

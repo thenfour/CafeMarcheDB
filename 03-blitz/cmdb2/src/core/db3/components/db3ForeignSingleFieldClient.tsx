@@ -2,17 +2,32 @@
 
 import React from "react";
 import * as db3 from "../db3";
-import * as DB3Client from "../DB3Client";
-import { Button, Chip, FormControl, FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
-import { TAnyModel, gNullValue, gQueryOptions, parseIntOrNull } from "shared/utils";
-import { GridFilterModel, GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { SelectSingleForeignDialog } from "./db3SelectSingleForeignDialog";
+//import * as DB3Client from "../DB3Client";
+import { Button, Chip, FormHelperText } from "@mui/material";
+import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
+import { gQueryOptions, parseIntOrNull } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import db3mutations from "../mutations/db3mutations";
-import db3queries from "../queries/db3queries";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { ColorVariationOptions } from "src/core/components/Color";
+import db3mutations from "../mutations/db3mutations";
+import db3queries from "../queries/db3queries";
+import { IColumnClient, RenderForNewItemDialogArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
+import {
+    Add as AddIcon,
+    Search as SearchIcon
+} from '@mui/icons-material';
+import {
+    Box,
+    DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Divider,
+    InputBase,
+    List,
+    ListItemButton
+} from "@mui/material";
+import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+
 
 
 export type InsertFromStringParams = {
@@ -88,7 +103,7 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
 };
 
 // the client-side description of the field, used in xTableClient construction.
-export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient {
+export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
     typedSchemaColumn: db3.ForeignSingleField<TForeign>;
     args: ForeignSingleFieldClientArgs<TForeign>;
 
@@ -139,7 +154,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
         </li>
     };
 
-    onSchemaConnected = (tableClient: DB3Client.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
 
         if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember] != null) {
@@ -203,7 +218,7 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
         };
     };
 
-    renderForNewDialog = (params: DB3Client.RenderForNewItemDialogArgs) => {
+    renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
 
         let value = params.value;
 
@@ -241,6 +256,10 @@ export class ForeignSingleFieldClient<TForeign> extends DB3Client.IColumnClient 
     };
 };
 
+
+
+
+
 export interface ForeignSingleFieldRenderContextArgs<TForeign> {
     spec: ForeignSingleFieldClient<TForeign>;
     filterText: string;
@@ -250,7 +269,7 @@ export interface ForeignSingleFieldRenderContextArgs<TForeign> {
 // the "live" adapter handling server-side comms.
 export class ForeignSingleFieldRenderContext<TForeign> {
     args: ForeignSingleFieldRenderContextArgs<TForeign>;
-    mutateFn: DB3Client.TMutateFn;
+    mutateFn: TMutateFn;
 
     items: TForeign[];
     refetch: () => void;
@@ -259,7 +278,7 @@ export class ForeignSingleFieldRenderContext<TForeign> {
         this.args = args;
 
         if (this.args.spec.typedSchemaColumn.allowInsertFromString) {
-            this.mutateFn = useMutation(db3mutations)[0] as DB3Client.TMutateFn;
+            this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
         }
 
         const [{ items }, { refetch }] = useQuery(db3queries, {
@@ -294,4 +313,151 @@ export class ForeignSingleFieldRenderContext<TForeign> {
 export const useForeignSingleFieldRenderContext = <TForeign,>(args: ForeignSingleFieldRenderContextArgs<TForeign>) => {
     return new ForeignSingleFieldRenderContext<TForeign>(args);
 };
+
+
+
+
+export interface SelectSingleForeignDialogProps<TForeign> {
+    value: TForeign | null;
+    spec: ForeignSingleFieldClient<TForeign>;
+    clientIntention: db3.xTableClientUsageContext,
+
+    onOK: (value: TForeign | null) => void;
+    onCancel: () => void;
+    closeOnSelect: boolean;
+};
+
+export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
+    const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
+    const [filterText, setFilterText] = React.useState("");
+
+    const db3Context = useForeignSingleFieldRenderContext({
+        filterText,
+        spec: props.spec,
+        clientIntention: props.clientIntention,
+    });
+    const items = db3Context.items;
+
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const onNewClicked = (e) => {
+        db3Context.doInsertFromString(filterText)//.then(updatedObj)
+            .then((updatedObj) => {
+                setSelectedObj(updatedObj);
+                showSnackbar({ children: "created new success", severity: 'success' });
+                db3Context.refetch();
+            }).catch((err => {
+                showSnackbar({ children: "create error", severity: 'error' });
+                db3Context.refetch(); // should revert the data.
+            }));
+    };
+
+    const isEqual = (a: TForeign | null, b: TForeign | null) => {
+        const anull = (a === null || a === undefined);
+        const bnull = (b === null || b === undefined);
+        if (anull && bnull) return true;
+        if (anull !== bnull) return false;
+        // both non-null.
+        return a![props.spec.typedSchemaColumn.getForeignTableSchema().pkMember] === b![props.spec.typedSchemaColumn.getForeignTableSchema().pkMember];
+    };
+
+    const handleItemClick = (value) => {
+        if (isEqual(value, selectedObj)) {
+            setSelectedObj(null);
+            return;
+        }
+        setSelectedObj(value);
+        if (props.closeOnSelect) {
+            props.onOK(value);
+        }
+    };
+
+    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
+    return <>
+        <DialogTitle>
+            select {props.spec.schemaColumn.label}
+            <Box sx={{ p: 0 }}>
+                Selected: {props.spec.args.renderAsChip!({
+                    colorVariant: "strong",
+                    value: selectedObj || null,
+                    onDelete: () => {
+                        setSelectedObj(null);
+                    }
+                })}
+            </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+            <DialogContentText>
+                To subscribe to this website, please enter your email address here. We
+                will send updates occasionally.
+            </DialogContentText>
+
+            <Box>
+                <InputBase
+                    size="small"
+                    placeholder="Filter"
+                    sx={{
+                        backgroundColor: "#f0f0f0",
+                        borderRadius: 3,
+                    }}
+                    value={filterText}
+                    onChange={(e) => setFilterText(e.target.value)}
+                    startAdornment={<SearchIcon />}
+                />
+            </Box>
+
+            {
+                !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
+                    <Box><Button
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={onNewClicked}
+                    >
+                        add {filterText}
+                    </Button>
+                    </Box>
+                )
+            }
+
+            {
+                (items.length == 0) ?
+                    <Box>Nothing here</Box>
+                    :
+                    <List>
+                        {
+                            items.map(item => {
+                                const selected = isEqual(item, selectedObj);
+                                return (
+                                    <React.Fragment key={item[props.spec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
+                                        <ListItemButton selected onClick={e => { handleItemClick(item) }}>
+                                            {props.spec.args.renderAsListItem!({}, item, selected)}
+                                        </ListItemButton>
+                                        <Divider></Divider>
+                                    </React.Fragment>
+                                );
+                            })
+                        }
+                    </List>
+            }
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onCancel}>Cancel</Button>
+            <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
+        </DialogActions>
+    </>;
+};
+
+
+export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
+    return (
+        <ReactiveInputDialog
+            onCancel={props.onCancel}
+        >
+            <SelectSingleForeignDialogInner {...props} />
+        </ReactiveInputDialog>
+
+    );
+}
+
+
 

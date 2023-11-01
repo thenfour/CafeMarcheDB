@@ -28,22 +28,19 @@ export default api(async (req, res, origCtx: Ctx) => {
             }
             const leaf = leafRaw as string;
 
-            const fullpath = path.resolve(`${process.env.FILE_UPLOAD_PATH}`, leaf || "");
+            const fullpath = mutationCore.GetFileServerStoragePath(leaf || "");
 
-            const fileIncludeFilters: Prisma.FileWhereInput[] = [];
-            db3.ApplySoftDeleteWhereClause(fileIncludeFilters, clientIntention);
-            await db3.ApplyVisibilityWhereClause(fileIncludeFilters, clientIntention, "uploadedByUserId");
-
-            const dbfile = await db.file.findFirst({
-                where: {
-                    AND: [
-                        { storedLeafName: leaf },
-                        ...fileIncludeFilters,
-                    ]
+            const { item } = await mutationCore.queryFirstImpl({
+                clientIntention, ctx, schema: db3.xFile, filterModel: {
+                    items: [{
+                        operator: "equals",
+                        field: "storedLeafName",
+                        value: leaf,
+                    }]
                 }
             });
 
-            if (!dbfile) {
+            if (!item) {
                 reject(`file not found`);
                 return;
             }
@@ -58,7 +55,7 @@ export default api(async (req, res, origCtx: Ctx) => {
 
             const fileStream = fs.createReadStream(fullpath);
             // content disposition "attachment" would prompt users to save the file instead of displaying in browser.
-            res.setHeader("Content-Disposition", `inline; filename=${dbfile.fileLeafName}`) // Specify the filename for download
+            res.setHeader("Content-Disposition", `inline; filename=${item.fileLeafName}`) // Specify the filename for download
 
             fileStream.pipe(res);
             fileStream.on("close", () => {

@@ -1,11 +1,9 @@
-'use client';
-
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { Button, Chip, FormHelperText } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React from "react";
-import * as DB3Client from "../DB3Client";
+//import * as DB3Client from "../DB3Client";
 import * as db3 from "../db3";
 import {
     Add as AddIcon,
@@ -27,6 +25,8 @@ import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import { ColorVariationOptions } from 'src/core/components/Color';
+import { IColumnClient, RenderForNewItemDialogArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
+import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 
 
 const gMaxVisibleTags = 6;
@@ -261,7 +261,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
 export interface TagsViewProps<TAssociation> {
     value: TAssociation[],
     associationForeignIDMember: string,
-    renderAsChip: (args: DB3Client.RenderAsChipParams<TAssociation>) => React.ReactElement;
+    renderAsChip: (args: RenderAsChipParams<TAssociation>) => React.ReactElement;
 };
 export const TagsView = <TAssociation,>(props: TagsViewProps<TAssociation>) => {
     const [open, setOpen] = React.useState<boolean>(false);
@@ -332,18 +332,18 @@ export interface TagsFieldClientArgs<TAssociation> {
     cellWidth: number;
     allowDeleteFromCell: boolean,
 
-    renderAsChip?: (args: DB3Client.RenderAsChipParams<TAssociation>) => React.ReactElement;
+    renderAsChip?: (args: RenderAsChipParams<TAssociation>) => React.ReactElement;
 
     // should render a <li {...props}> for autocomplete
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TAssociation, selected: boolean) => React.ReactElement;
 };
 
 // the client-side description of the field, used in xTableClient construction.
-export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
+export class TagsFieldClient<TAssociation> extends IColumnClient {
     typedSchemaColumn: db3.TagsField<TAssociation>;
     args: TagsFieldClientArgs<TAssociation>;
 
-    renderAsChipForCell = (args: DB3Client.RenderAsChipParams<TAssociation>) => {
+    renderAsChipForCell = (args: RenderAsChipParams<TAssociation>) => {
         if (this.args.allowDeleteFromCell) {
             return this.args.renderAsChip!(args);
         }
@@ -369,7 +369,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         if (this.args.allowDeleteFromCell === undefined) this.args.allowDeleteFromCell = true;
     }
 
-    defaultRenderAsChip = (args: DB3Client.RenderAsChipParams<TAssociation>) => {
+    defaultRenderAsChip = (args: RenderAsChipParams<TAssociation>) => {
         return DefaultRenderAsChip({ ...args, columnSchema: this.typedSchemaColumn });
     };
 
@@ -386,11 +386,11 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         </li>
     };
 
-    onSchemaConnected = (tableClient: DB3Client.xTableRenderClient) => {
+    onSchemaConnected = (tableClient: xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.TagsField<TAssociation>;
 
         if (!this.args.renderAsChip) {
-            this.args.renderAsChip = (args: DB3Client.RenderAsChipParams<TAssociation>) => this.defaultRenderAsChip(args);
+            this.args.renderAsChip = (args: RenderAsChipParams<TAssociation>) => this.defaultRenderAsChip(args);
         }
         if (!this.args.renderAsListItem) {
             this.args.renderAsListItem = (props, value, selected) => this.defaultRenderAsListItem(props, value, selected);
@@ -420,7 +420,7 @@ export class TagsFieldClient<TAssociation> extends DB3Client.IColumnClient {
         };
     };
 
-    renderForNewDialog = (params: DB3Client.RenderForNewItemDialogArgs) => {
+    renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
         const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
         return <TagsFieldInput
             spec={this}
@@ -451,7 +451,7 @@ export interface TagsCreateFromStringArgs {
 // the "live" adapter handling server-side comms.
 export class TagsFieldRenderContext<TAssociation> {
     args: TagsFieldRenderContextArgs<TAssociation>;
-    mutateFn: DB3Client.TMutateFn;
+    mutateFn: TMutateFn;
 
     options: TAssociation[];
     refetch: () => void;
@@ -460,7 +460,7 @@ export class TagsFieldRenderContext<TAssociation> {
         this.args = args;
 
         if (this.args.spec.typedSchemaColumn.allowInsertFromString) {
-            this.mutateFn = useMutation(db3mutations)[0] as DB3Client.TMutateFn;
+            this.mutateFn = useMutation(db3mutations)[0] as TMutateFn;
         }
 
         // returns the foreign items.

@@ -57,44 +57,53 @@ export default api(async (req, res, origCtx: Ctx) => {
                             const file = field[iFile];
                             const oldpath = file.filepath; // temp location that formidable has saved it to. 'C:\Users\carl\AppData\Local\Temp\2e3b4218f38f5aedcf765f801'
 
+                            const fields = mutationCore.PrepareNewFileRecord({
+                                humanReadableLeafName: file.originalFilename,
+                                sizeBytes: file.size,
+                                uploadedByUserId: currentUser.id,
+                                visiblePermissionId: args.visiblePermissionId || null,
+                            }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
+
                             // generate a new unique filename given to the file. like a GUID. "2e3b4218f38f5aedcf765f801"
                             // file.newFilename is already done for us, though it doesn't seem very secure. i want to avoid using sequential IDs to avoid scraping.
                             // so generate a new guid.
-                            const filename = nanoid();//file.newFilename;
+                            //const filename = nanoid();//file.newFilename;
 
                             // keeping the extension is actually important for mime-type serving. or, save mime-type in db?
-                            const extension = path.extname(file.originalFilename); // includes dot. ".pdf"
-                            const leaf = `${filename}${extension?.length ? extension : ".bin"}`;
+                            //const extension = path.extname(file.originalFilename); // includes dot. ".pdf"
+                            //const leaf = `${filename}${extension?.length ? extension : ".bin"}`;
 
                             // also we have some metadata...
-                            const size = file.size; // sizeBytes seems to exist but is not populated afaik
+                            //const size = file.size; // sizeBytes seems to exist but is not populated afaik
 
                             // relative to current working dir.
-                            const newpath = path.resolve(`${process.env.FILE_UPLOAD_PATH}`, leaf);
+                            const newpath = mutationCore.GetFileServerStoragePath(fields.storedLeafName);
 
                             // workaround broken
-                            const mimeType = (mime as any).getType(file.originalFilename); // requires a leaf only, for some reason explicitly fails on a full path.
+                            //const mimeType = (mime as any).getType(file.originalFilename); // requires a leaf only, for some reason explicitly fails on a full path.
 
-                            const fields: Record<string, any> = { // similar to: Prisma.FileUncheckedCreateInput = {
-                                fileLeafName: file.originalFilename,
-                                uploadedAt: new Date(),
-                                uploadedByUserId: currentUser.id,
-                                description: "",
-                                storedLeafName: leaf,
-                                isDeleted: false,
-                                visiblePermissionId: args.visiblePermissionId,
-                                sizeBytes: size,
-                                mimeType,
-                            }
+                            // const fields: Record<string, any> = { // similar to: Prisma.FileUncheckedCreateInput = {
+                            //     fileLeafName: file.originalFilename,
+                            //     uploadedAt: new Date(),
+                            //     uploadedByUserId: currentUser.id,
+                            //     description: "",
+                            //     storedLeafName: leaf,
+                            //     isDeleted: false,
+                            //     visiblePermissionId: args.visiblePermissionId,
+                            //     sizeBytes: size,
+                            //     mimeType,
+                            // }
 
                             if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
                             if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
                             if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
 
-                            await mutationCore.insertImpl(db3.xFile, fields, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
 
                             await rename(oldpath, newpath);
+
+                            await mutationCore.PostProcessFile(newFile);
                         }
                     });
                     res.write(`Files uploaded successfully; cur user : ${ctx.session.$publicData.userId}`);

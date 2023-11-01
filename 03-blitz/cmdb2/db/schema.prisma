@@ -567,7 +567,7 @@ model FileTagAssignment {
 model File {
   id             Int     @id @default(autoincrement())
   fileLeafName   String // the name of the file as it was uploaded, visible to (& editable) users. IMG20113.jpg for example.
-  storedLeafName String // a unique filename used in server storage; a guid probably.
+  storedLeafName String  @unique // a unique filename used in server storage; a guid probably. this is also what is used in params for identifying files.
   description    String
   isDeleted      Boolean @default(false)
   sizeBytes      Int
@@ -579,7 +579,7 @@ model File {
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
   mimeType   String?
-  customData String? // JSON that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
+  customData String? // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
 
   // a file (which should be a child) which serves as a preview. for example if the audio file is some huge .wav, this can be a lower-quality download-friendly MP3 version
   // or for huge photos, this is a low-bandwidth small preview.
@@ -643,10 +643,11 @@ model FileInstrumentTag {
 }
 
 model FrontpageGalleryItem {
-  id        Int     @id @default(autoincrement())
-  isDeleted Boolean @default(false)
-  caption   String // markdown
-  sortOrder Int     @default(0)
-  fileId    Int
-  file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  id            Int     @id @default(autoincrement())
+  isDeleted     Boolean @default(false)
+  caption       String // markdown
+  sortOrder     Int     @default(0)
+  fileId        Int
+  file          File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  displayParams String // JSON of GalleryImageDisplayParams
 }

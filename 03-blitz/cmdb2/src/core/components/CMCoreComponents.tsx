@@ -2,26 +2,23 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import React, { FC, Suspense } from "react"
-import { ColorPaletteEntry } from 'shared/color';
-import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
-import db, { Prisma } from "db";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { Box, Button, Card, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
-import { TAnyModel } from "shared/utils";
+import { getAntiCSRFToken } from "@blitzjs/auth";
+import { Box, Button, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { CMTextField } from "./CMTextField";
-import dynamic from 'next/dynamic'
-import { API, APIQueryResult } from '../db3/clientAPI';
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
-import { ChoiceEditCell } from "./ChooseItemDialog";
+import { nanoid } from 'nanoid';
+import dynamic from 'next/dynamic';
+import React, { Suspense } from "react";
+import { ColorPaletteEntry } from 'shared/color';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { Permission } from "shared/permissions";
-import { TClientUploadFileArgs } from "../db3/shared/apiTypes";
-import { getAntiCSRFToken } from "@blitzjs/auth"
+import * as db3 from "src/core/db3/db3";
 import WaveSurfer from "wavesurfer.js";
-import { nanoid } from 'nanoid'
+import { API } from '../db3/clientAPI';
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
+import { Coord2D, TClientUploadFileArgs } from "../db3/shared/apiTypes";
+import { CMTextField } from "./CMTextField";
+import { ChoiceEditCell } from "./ChooseItemDialog";
+import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
+import { Coalesce } from "shared/utils";
 
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
@@ -36,8 +33,6 @@ export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren) => {
     // return <Card className='singlePageSurface'>{props.children}</Card>;
     return <div className="contentSection">{props.children}</div>;
 };
-
-
 
 ////////////////////////////////////////////////////////////////
 // rethinking "variant"... for component coloring variations, there are
@@ -710,3 +705,126 @@ export const SongChip = (props: SongChipProps) => {
         {props.value.name}
     </CMChip>
 }
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+export type JoystickDivDragState = "idle" | "dragging";
+export interface JoystickDivProps {
+    enabled?: boolean;
+    className?: string;
+    style?: React.CSSProperties & Record<string, any>;
+    onDragStateChange?: (newState: JoystickDivDragState, oldState: JoystickDivDragState) => void;
+    onDragMove?: (delta: Coord2D) => void;
+};
+
+export const JoystickDiv = ({ enabled, children, className, ...props }: React.PropsWithChildren<JoystickDivProps>) => {
+    const [containerRef, setContainerRef] = React.useState<HTMLDivElement | null>(null);
+    const [touchIdentifier, setTouchIdentifier] = React.useState<number | null>(null);
+    const [prevPagePos, setPrevPagePos] = React.useState<Coord2D | null>(null);
+    const isDragging = !!prevPagePos;
+    enabled = Coalesce(enabled, true);
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!enabled) return;
+        if (!containerRef) return;
+        setPrevPagePos({
+            x: e.pageX,
+            y: e.pageY,
+        });
+
+        containerRef.setPointerCapture(e.pointerId);
+        props.onDragStateChange && props.onDragStateChange("dragging", "idle");
+        //console.log(`handlePointerDown, pointerid ${e.pointerId}`);
+    };
+
+    const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!containerRef) return;
+        containerRef.releasePointerCapture(e.pointerId);
+        setTouchIdentifier(null);
+        setPrevPagePos(null);
+        props.onDragStateChange && props.onDragStateChange("idle", "dragging");
+        //console.log(`handlePointerUp pointerid ${e.pointerId}`);
+    };
+
+    const handleTouchUp = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (!containerRef) return;
+        setTouchIdentifier(null);
+        setPrevPagePos(null);
+        props.onDragStateChange && props.onDragStateChange("idle", "dragging");
+        //console.log(`handleTouchUp`);
+    };
+
+    const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        if (!enabled) return;
+        if (touchIdentifier) return; // if touch-dragging, stick with touch behavior. don't double-process.
+
+        const dx = e.pageX - prevPagePos.x;
+        const dy = e.pageY - prevPagePos.y;
+        //console.log(`handlePointerMove d:[${dx}, ${dy}]`);
+
+        setPrevPagePos({
+            x: e.pageX,
+            y: e.pageY,
+        });
+        props.onDragMove && props.onDragMove({ x: dx, y: dy });
+    };
+
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (!enabled) return;
+        if (!containerRef) return;
+        if (e.touches?.length !== 1) return;
+
+        const touch = e.touches[0]!;
+        setTouchIdentifier(touch.identifier);
+
+        setPrevPagePos({
+            x: touch.pageX,
+            y: touch.pageY,
+        });
+
+        props.onDragStateChange && props.onDragStateChange("dragging", "idle");
+
+        //console.log(`handleTouchStart, identifier ${touch.identifier}`);
+    }
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (!isDragging) return;
+        if (!enabled) return;
+        if (e.touches?.length !== 1) return;
+        const touch = e.touches[0]!;
+        if (touch.identifier !== touchIdentifier) return;
+
+        const dx = touch.pageX - prevPagePos.x;
+        const dy = touch.pageY - prevPagePos.y;
+        console.log(`handleTouchMove d:[${dx}, ${dy}]`);
+
+        setPrevPagePos({
+            x: touch.pageX,
+            y: touch.pageY,
+        });
+
+        props.onDragMove && props.onDragMove({ x: dx, y: dy });
+    };
+
+    const containerStyle: React.CSSProperties & Record<string, any> = {
+        cursor: isDragging ? "grabbing" : "grab",
+        touchAction: "none",
+        userSelect: "none",
+        ...props.style,
+    };
+
+    return <div className={className} style={containerStyle}
+        ref={(r) => setContainerRef(r)}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchUp}
+    >
+        {children}
+    </div>;
+
+};

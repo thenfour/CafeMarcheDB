@@ -1,12 +1,23 @@
+//'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
+
 import { resolver } from "@blitzjs/rpc"
 import db, { Prisma } from "db";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel } from "shared/utils"
+import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel, areAllEqual } from "shared/utils"
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
-import { AuthenticatedMiddlewareCtx } from "blitz";
-import { TinsertOrUpdateEventSongListSong } from "../shared/apiTypes";
+import { AuthenticatedMiddlewareCtx, assert } from "blitz";
+import { FileCustomData, ForkImageParams, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
+import { nanoid } from 'nanoid'
+import * as mime from 'mime';
+import sharp from "sharp";
+import * as mm from 'music-metadata';
+
+var path = require('path');
+var fs = require('fs');
+//const util = require('util');
+//const rename = util.promisify(fs.rename);
 
 export const getCurrentUserCore = async (ctx: AuthenticatedMiddlewareCtx) => {
     const currentUser = await db.user.findFirst({
@@ -22,49 +33,6 @@ export const getCurrentUserCore = async (ctx: AuthenticatedMiddlewareCtx) => {
     return currentUser;
 };
 
-export interface separateMutationValuesArgs {
-    table: db3.xTable;
-    fields: TAnyModel;
-};
-export interface separateMutationValuesResult {
-    associationFields: TAnyModel;
-    localFields: TAnyModel;
-};
-export const separateMutationValues = ({ table, fields }: separateMutationValuesArgs) => {
-    const ret: separateMutationValuesResult = {
-        associationFields: {},
-        localFields: {},
-    };
-
-    table.columns.forEach(column => {
-        switch (column.fieldTableAssociation) {
-            case "tableColumn":
-                if (fields[column.member] !== undefined) {
-                    ret.localFields[column.member] = fields[column.member];
-                }
-                break;
-            case "foreignObject":
-                // foreign objects come in with a different member than column.member (FK member, not object member)
-                const typedColumn = column as db3.ForeignSingleField<TAnyModel>;
-                if (fields[typedColumn.fkMember] !== undefined) {
-                    ret.localFields[typedColumn.fkMember] = fields[typedColumn.fkMember];
-                }
-                break;
-            case "associationRecord":
-                if (fields[column.member] !== undefined) {
-                    ret.associationFields[column.member] = fields[column.member];
-                }
-                break;
-            case "calculated":
-                // strip calculated values from any mutation
-                break;
-            default:
-                throw new Error(`unknown field table association; field:${column.member}`);
-                break;
-        }
-    });
-    return ret;
-};
 
 export interface UpdateAssociationsArgs {
     ctx: AuthenticatedMiddlewareCtx;
@@ -190,7 +158,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             throw new Error(`validation failed; log contains details.`);
         }
 
-        const { localFields, associationFields } = separateMutationValues({ table, fields });
+        const { localFields, associationFields } = db3.separateMutationValues({ table, fields });
 
         // at this point `fields` should not be used because it mixes foreign associations with local values
 
@@ -247,7 +215,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             throw new Error(`validation failed; log contains details.`);
         }
 
-        const { localFields, associationFields } = separateMutationValues({ table, fields });
+        const { localFields, associationFields } = db3.separateMutationValues({ table, fields });
         // at this point `fields` should not be used.
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
@@ -440,3 +408,307 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     }
 
 };
+
+
+export interface QueryImplArgs {
+    schema: db3.xTable;
+    clientIntention: db3.xTableClientUsageContext;
+    filterModel: db3.CMDBTableFilterModel;
+    ctx: AuthenticatedMiddlewareCtx;
+};
+
+export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
+    const currentUser = await getCurrentUserCore(ctx);
+    if (clientIntention.intention === "public") {
+        clientIntention.currentUser = undefined;// for public intentions, no user should be used.
+    }
+    else {
+        clientIntention.currentUser = currentUser;
+    }
+    const where = await args.schema.CalculateWhereClause({
+        clientIntention,
+        filterModel,
+    });
+
+    const include = args.schema.CalculateInclude(clientIntention);
+
+    const items = await db[args.schema.tableName].findMany({
+        where,
+        orderBy: args.schema.naturalOrderBy,
+        include,
+        //take: input.take,
+    }) as TitemPayload[];
+
+    return {
+        items,
+        where,
+        include,
+        clientIntention,
+    };
+
+};
+
+export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
+    const currentUser = await getCurrentUserCore(ctx);
+    if (clientIntention.intention === "public") {
+        clientIntention.currentUser = undefined;// for public intentions, no user should be used.
+    }
+    else {
+        clientIntention.currentUser = currentUser;
+    }
+    const where = await args.schema.CalculateWhereClause({
+        clientIntention,
+        filterModel,
+    });
+
+    const include = args.schema.CalculateInclude(clientIntention);
+
+    const item = await db[args.schema.tableName].findFirst({
+        where,
+        orderBy: args.schema.naturalOrderBy,
+        include,
+        //take: input.take,
+    }) as (TitemPayload | null);
+
+    return {
+        item,
+        where,
+        include,
+        clientIntention,
+    };
+
+};
+
+
+
+export const GetFileServerStoragePath = (storedLeafName: string) => {
+    return path.resolve(`${process.env.FILE_UPLOAD_PATH}`, storedLeafName);
+}
+
+
+export interface PrepareNewFileRecordArgs {
+    uploadedByUserId: number;
+    humanReadableLeafName: string;
+    sizeBytes: number;
+    visiblePermissionId: number | null;
+    parentFileId?: number;
+    previewFileId?: number;
+};
+export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, sizeBytes, visiblePermissionId, previewFileId, parentFileId }: PrepareNewFileRecordArgs): Prisma.FileUncheckedCreateInput {
+    //const file = field[iFile];
+    //const oldpath = file.filepath; // temp location that formidable has saved it to. 'C:\Users\carl\AppData\Local\Temp\2e3b4218f38f5aedcf765f801'
+
+    // generate a new unique filename given to the file. like a GUID. "2e3b4218f38f5aedcf765f801"
+    // file.newFilename is already done for us, though it doesn't seem very secure. i want to avoid using sequential IDs to avoid scraping.
+    // so generate a new guid.
+    const filename = nanoid();//file.newFilename;
+
+    // keeping the extension is actually important for mime-type serving. or, save mime-type in db?
+    const extension = path.extname(humanReadableLeafName); // includes dot. ".pdf"
+    const storedLeafName = `${filename}${extension?.length ? extension : ".bin"}`;
+
+    // also we have some metadata...
+    //const size = file.size; // sizeBytes seems to exist but is not populated afaik
+
+    // relative to current working dir.
+    //const newpath = path.resolve(`${process.env.FILE_UPLOAD_PATH}`, leaf);
+
+    // workaround broken
+    const mimeType = (mime as any).getType(humanReadableLeafName); // requires a leaf only, for some reason explicitly fails on a full path.
+
+    const fields: Prisma.FileUncheckedCreateInput = {
+        fileLeafName: humanReadableLeafName,
+        uploadedAt: new Date(),
+        uploadedByUserId,
+        description: "",
+        storedLeafName,
+        isDeleted: false,
+        sizeBytes, // temp value
+        visiblePermissionId,
+        mimeType,
+        previewFileId,
+        parentFileId,
+    };
+    return fields;
+};
+
+
+export interface QueryFileArgs {
+    ctx: AuthenticatedMiddlewareCtx;
+    storedLeafName: string;
+    clientIntention: db3.xTableClientUsageContext;
+};
+
+export interface QueryFileByLeafOrIdResult {
+    dbFile: db3.FilePayload;
+    fullPath: string;
+};
+
+export const QueryFileByStoredLeaf = async ({ clientIntention, storedLeafName, ctx }: QueryFileArgs): Promise<null | QueryFileByLeafOrIdResult> => {
+
+    const { item } = await queryFirstImpl<db3.FilePayload>({
+        clientIntention,
+        ctx,
+        schema: db3.xFile,
+        filterModel: {
+            items: [{
+                operator: "equals",
+                field: "storedLeafName",
+                value: storedLeafName,
+            }]
+        }
+    });
+
+    if (!item) {
+        throw new Error(`file not found`);
+    }
+
+    const fullPath = GetFileServerStoragePath(item.storedLeafName || "");
+
+    return {
+        fullPath,
+        dbFile: item,
+    };
+};
+
+
+export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedMiddlewareCtx) => {
+    // validate params
+    if (!params.parentFileLeaf) {
+        throw new Error(`invalid params`);
+    }
+
+    const currentUser = await getCurrentUserCore(ctx);
+    const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+
+    // get the parent file record
+    const parentFile = await QueryFileByStoredLeaf({ clientIntention, storedLeafName: params.parentFileLeaf, ctx });
+    if (!parentFile) {
+        throw new Error(`parent file not found`);
+    }
+
+    // new filename will be same as old, with new extension and add a tag.
+    const parsedPath = path.parse(parentFile.dbFile.fileLeafName);
+    // path.parse('/home/user/dir/file.txt');
+    // Returns:
+    //   base: 'file.txt',
+    //   ext: '.txt',
+    //   name: 'file'
+    const newLeaf = `${parsedPath.name}_.${params.outputType}`;
+
+    const newFile = PrepareNewFileRecord({
+        humanReadableLeafName: newLeaf,
+        sizeBytes: 0, // fill in later when it's known!
+        uploadedByUserId: currentUser.id,
+        visiblePermissionId: parentFile.dbFile.visiblePermissionId, // theoretically this can result in issues if original uploader is not the same as the new uploader and this is NULL. however NULL implies it's not meant to be seen by others so i don't think it's something that needs to be fixed.
+        parentFileId: parentFile.dbFile.id,
+    });// as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
+
+    // perform the adjustments on parent image + save on disk
+    const outputPath = GetFileServerStoragePath(newFile.storedLeafName);
+    const customData: FileCustomData = {
+        relationToParent: "forkedImage",
+        forkedImage: {
+            editParams: { ...params.editParams },
+        }
+    };
+    newFile.customData = JSON.stringify(customData);
+
+    let newImage = sharp(parentFile.fullPath);
+    const parentMetadata = await newImage.metadata();
+    if (parentMetadata.width === undefined) throw new Error(`unable to access parent image dimensions; invalid file? obsolete file? not actually an image?`);
+    if (parentMetadata.height === undefined) throw new Error(`width was fine but height isn't? I'm not even sure what this is.`);
+
+    // TODO: use EXIF orientation otherwise it will be lost...
+    // https://stackoverflow.com/questions/48716266/sharp-image-library-rotates-image-when-resizing
+
+    // perform crop
+    const left = Math.floor(params.editParams.cropBeginX01 * parentMetadata.width);
+    const right = Math.floor(params.editParams.cropEndX01! * parentMetadata.width);
+    const top = Math.floor(params.editParams.cropBeginY01! * parentMetadata.height);
+    const bottom = Math.floor(params.editParams.cropEndY01! * parentMetadata.height);
+    if (left >= right) throw new Error(`Invalid crop dimensions (left > right)`);
+    if (top >= bottom) throw new Error(`Invalid crop dimensions (top > bottom)`);
+    if (left < 0) throw new Error(`Invalid crop dimensions (left < 0)`);
+    if (top < 0) throw new Error(`Invalid crop dimensions (top < 0)`);
+    if (params.editParams.cropEndX01! > 1) throw new Error(`Invalid crop dimensions (params.cropEndX01! > 1)`);
+    if (params.editParams.cropEndY01! > 1) throw new Error(`Invalid crop dimensions (params.cropEndY01! > 1)`);
+    newImage = await newImage.extract({
+        left: left,
+        top: top,
+        width: right - left,
+        height: bottom - top,
+    });
+
+    // resize
+    newImage = newImage.resize({
+        position: `${params.editParams.scaleOriginX01 * parentMetadata.width}px ${params.editParams.scaleOriginY01 * parentMetadata.height}px`,
+        width: parentMetadata.width * params.editParams.scale,
+        height: parentMetadata.height * params.editParams.scale,
+        // default fit: "cover",
+        //position: "attention",
+        //position defaults to center
+    });
+
+    // save
+    await newImage.toFile(outputPath);
+
+    // update size now that it can be known
+    // Get the new file size
+    const stats = await fs.stat(outputPath);
+    newFile.sizeBytes = stats.size;
+
+    // save to db
+    const ret = await insertImpl(db3.xFile, newFile, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+
+    await PostProcessFile(ret);
+
+    return ret;
+};
+
+export const PostProcessFile = async (file: Prisma.FileGetPayload<{}>) => {
+    const path = GetFileServerStoragePath(file.storedLeafName);
+    const fileCustomData = getFileCustomData(file);
+    if ((file.mimeType || "").toLowerCase().startsWith("image")) {
+        // gather metadata
+        try {
+            let img = sharp(path);
+            const metadata = await img.metadata();
+            if (metadata.width !== undefined && metadata.height !== undefined) {
+                fileCustomData.imageMetadata = {
+                    width: metadata.width!,
+                    height: metadata.height!,
+                }
+            }
+
+            await db.file.update({
+                where: { id: file.id },
+                data: {
+                    customData: JSON.stringify(fileCustomData),
+                }
+            });
+        } catch (e) {
+            console.log(`Error reading image metadata for file ${path}; ${e.message}`);
+            console.log(e);
+        }
+
+        // decide to create preview if file size is too big
+        return;
+    }
+    if ((file.mimeType || "").toLowerCase().startsWith("audio")) {
+        try {
+            // gather metadata
+            const metadata = await mm.parseFile(path);
+            console.log(metadata);
+            // TODO
+        } catch (e) {
+            console.log(`Error reading audio metadata for file ${path}; ${e.message}`);
+            console.log(e);
+        }
+
+        // create preview if file size is too big. for audio this might be a very lengthy process; some kind of separate worker process would be a better fit for file post-processing tbh.
+        return;
+    }
+};
+
+

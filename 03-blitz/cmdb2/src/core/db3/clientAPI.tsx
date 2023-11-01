@@ -1,8 +1,5 @@
-'use client';
-
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
@@ -18,6 +15,8 @@ import { Prisma } from "db";
 import insertEvent from "./mutations/insertEvent";
 import { DateTimeRange } from "shared/time";
 import frontpageContentQuery from "./queries/frontpageContentQuery";
+import * as DB3ClientCore from './components/DB3ClientCore';
+import * as DB3ClientFields from './components/DB3ClientBasicFields';
 
 
 export interface APIQueryArgs {
@@ -98,14 +97,14 @@ class UsersAPI {
     };
 
     getAllPermissions = () => {
-        return DB3Client.useTableRenderContext({
-            tableSpec: new DB3Client.xTableClientSpec({
+        return DB3ClientCore.useTableRenderContext({
+            tableSpec: new DB3ClientCore.xTableClientSpec({
                 table: db3.xPermission,
                 columns: [
-                    new DB3Client.PKColumnClient({ columnName: "id" }),
+                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
                 ],
             }),
-            requestedCaps: DB3Client.xTableClientCaps.Query,
+            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
             clientIntention: { intention: 'user', mode: 'primary' },
         });
 
@@ -239,27 +238,27 @@ class EventsAPI {
     }
 
     getEventTypesClient() {
-        return DB3Client.useTableRenderContext({
-            tableSpec: new DB3Client.xTableClientSpec({
+        return DB3ClientCore.useTableRenderContext({
+            tableSpec: new DB3ClientCore.xTableClientSpec({
                 table: db3.xEventType,
                 columns: [
-                    new DB3Client.PKColumnClient({ columnName: "id" }),
+                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
                 ],
             }),
-            requestedCaps: DB3Client.xTableClientCaps.Query,
+            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
             clientIntention: { intention: 'user', mode: 'primary' },
         });
     }
 
     getEventStatusesClient() {
-        return DB3Client.useTableRenderContext({
-            tableSpec: new DB3Client.xTableClientSpec({
+        return DB3ClientCore.useTableRenderContext({
+            tableSpec: new DB3ClientCore.xTableClientSpec({
                 table: db3.xEventStatus,
                 columns: [
-                    new DB3Client.PKColumnClient({ columnName: "id" }),
+                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
                 ],
             }),
-            requestedCaps: DB3Client.xTableClientCaps.Query,
+            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
             clientIntention: { intention: 'user', mode: 'primary' },
         });
     }

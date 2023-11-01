@@ -172,6 +172,32 @@ To get `db seed` to work,
     * if you signed up with a google account, you won't have an initial password. you may reset it though to be able to log in via password.
 
 
+# circular import dependency detection
+
+in any project, especially when it's a lot of prototyping and evolving semantics, circular dependencies can cause unpredictable problems.
+
+`madge` or `dpdm` are tools to statically detect them, but i couldn't get either to work with this project.
+
+````
+.eslintrc.js:
+
+    rules: {
+        "import/no-cycle": "error",
+    },
+
+````
+
+this works well, but makes linting take like 5 minutes.
+
+there is then [`skott`](https://www.npmjs.com/package/skott) which seems very comfy and quality.
+
+````
+skott --showCircularDependencies
+````
+
+will show clearly on the command line.
+
+
 # how: build / deployment?
 
   * `npm run lint`

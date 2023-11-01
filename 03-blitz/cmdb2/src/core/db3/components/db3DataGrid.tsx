@@ -41,7 +41,7 @@ import { TAnyModel } from 'shared/utils';
 import * as db3 from '../db3';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { gIconMap } from './IconSelectDialog';
-import { separateMutationValues } from '../server/db3mutationCore';
+//import { separateMutationValues } from '../server/db3mutationCore';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -58,7 +58,7 @@ const ClipboardControls = (props: ClipboardControlsProps) => {
 
         const rows = props.client.items.map(row => {
             const x = props.client.prepareInsertMutation(row);
-            const { localFields, ..._ } = separateMutationValues({ table: props.client.schema, fields: x });
+            const { localFields, ..._ } = db3.separateMutationValues({ table: props.client.schema, fields: x });
             return localFields;
         });
 
