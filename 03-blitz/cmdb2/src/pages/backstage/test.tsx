@@ -33,29 +33,16 @@ why when cropping does the position change? because position is 01 based off ser
             */
 
 import { BlitzPage } from "@blitzjs/next";
-// import { useQuery } from "@blitzjs/rpc";
 import { Suspense } from "react";
-// import getAllRoles from "src/auth/queries/getAllRoles";
-// import getTestQuery from "src/auth/queries/getTestQuery";
 import * as React from 'react';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as DB3Client from "src/core/db3/DB3Client";
-// import { InspectObject } from "src/core/components/CMCoreComponents";
-// import { Autocomplete, AutocompleteRenderInputParams, Badge, FormControlLabel, FormGroup, InputBase, MenuItem, NoSsr, Popover, Popper, Select, Switch, TextField, Tooltip } from "@mui/material";
-// import { LocalizationProvider } from "@mui/x-date-pickers";
-// import dayjs, { Dayjs } from "dayjs";
-// import { DateCalendar, PickersDay, PickersDayProps } from '@mui/x-date-pickers';
-// import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-// import { gIconMap } from "src/core/db3/components/IconSelectDialog";
-// import { DateTimeRange, DateTimeRangeHitTestResult, DateTimeRangeSpec, TimeOption, TimeOptionsGenerator, combineDateAndTime, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMillis, getTimeOfDayInMinutes } from "shared/time";
-// import { CoerceToNumber, CoerceToNumberOrNull, isBetween } from "shared/utils";
-// import { CalendarEventSpec, DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
-import { Coord2D, FileCustomData, ForkImageParams, GalleryImageDisplayParams, MakeDefaultForkImageParams, MakeDefaultGalleryImageDisplayParams, MakeDefaultServerImageFileEditParams, MulSize, MulSizeBySize, ServerImageFileEditParams, Size, SubCoord2D, getFileCustomData } from "src/core/db3/shared/apiTypes";
+import { Button, Tooltip } from "@mui/material";
+import { Clamp, formatFileSize } from "shared/utils";
+import { JoystickDiv } from "src/core/components/CMCoreComponents";
 import { API } from "src/core/db3/clientAPI"; // this line causes an exception . uh oh some circular reference.
 import * as db3 from "src/core/db3/db3";
-import { Button, Tooltip } from "@mui/material";
-import { Clamp, Coalesce, formatFileSize } from "shared/utils";
-import { JoystickDiv, JoystickDivDragState } from "src/core/components/CMCoreComponents";
+import { Coord2D, GalleryImageDisplayParams, MakeDefaultGalleryImageDisplayParams, MakeDefaultServerImageFileEditParams, MulSize, MulSizeBySize, ServerImageFileEditParams, Size, SubCoord2D, getFileCustomData } from "src/core/db3/shared/apiTypes";
 
 ////////////////////////////////////////////////////////////////
 // const getImageDimensions = (url: string): Promise<Size> => {
@@ -103,6 +90,13 @@ const getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
 
 
 
+// when you know that the server params are correct, then correct the gallery params.
+const correctGalleryParams = (gi: db3.FrontpageGalleryItemPayload, mutableGp: GalleryImageDisplayParams, fp: ServerImageFileEditParams) => {
+    // assumes the file dimensions are pre-server-effects.
+    const fileDimensions = getImageFileDimensions(gi.file)
+    mutableGp.cropOffset01 = { ...fp.cropBegin01 };
+    mutableGp.scaledSize = MulSize(fileDimensions, fp.scale);
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // represents the image as it's coming from the server. therefore does not apply final rotate/positioning.
@@ -252,6 +246,7 @@ const GalleryImageFrame = (props: GalleryImageFrameProps) => {
         position: "relative",
         width: `100%`,
         height: `100%`,
+        backgroundColor: "#f0f",
         //border: `${props.maskSize}px solid var(--frame-mask-color)`,
         boxSizing: "content-box",
         zIndex: 6,
@@ -303,6 +298,7 @@ const GalleryImageFrame = (props: GalleryImageFrameProps) => {
         //boxSizing: "content-box", // we're setting width & height; let the border not interfere with the dimensions.
         transformOrigin: `50% 50%`,//${viewportSize.width * 0.5}px ${viewportSize.height * 0.5}px`,
         transform: `${galleryTranslatePos} ${galleryRotate} ${centerToUL}`,
+        //transform: `${galleryTranslatePos}  ${galleryRotate}`,
     };
 
     return <div className="galleryImage serverFileWithMaskContainer" style={mainStyle}>
@@ -320,7 +316,7 @@ const GalleryImageFrame = (props: GalleryImageFrameProps) => {
 // take an existing file record, allow editing and forking.
 // a parent control should also account for re-editing. So if you choose to "EDIT" a file that has a parent, better to traverse
 // up and edit from the original. its crop params are specified in its customData field so it can be re-processed.
-type SelectedTool = "CropBegin" | "CropEnd" | "Scale" | "Rotate" | "Move" | "WindowSize" | "MaskSize";
+type SelectedTool = "CropSize" | "CropMove" | "Scale" | "Rotate" | "Move" | "WindowSize" | "MaskSize";
 
 interface ImageEditorProps {
     galleryItem: db3.FrontpageGalleryItemPayload;
@@ -333,74 +329,158 @@ interface ImageEditorProps {
 
 const ImageEditor = (props: ImageEditorProps) => {
     const [viewportSize, setViewportSize] = React.useState<Size>({ width: 600, height: 500 });
-    const [viewportMaskSize, setViewportMaskSize] = React.useState<number>(40);
+    const [viewportMaskSize, setViewportMaskSize] = React.useState<number>(100);
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
+    const [cropSize01, setCropSize01] = React.useState<{ factor: number }>({ factor: 1.05 }); // use an object so we can easier trigger the react effect.
+    const [cropMove01, setCropMove01] = React.useState<Coord2D>({ x: 0, y: 0 });
     const fileDimensions = getImageFileDimensions(props.galleryItem.file)
 
     const handleFork = () => {
-
+        // perform fork mutation
+        // then, update gallery record
+        // then, reset params.
     };
+
+    // const handleAutoCrop = () => {
+    //     // viewport-sized crop area so just take the proportion to scaled.
+    //     const scaledSize = props.galleryParams.scaledSize;
+    //     const cropSizeOfScaled: Size = {
+    //         width: viewportSize.width / scaledSize.width,
+    //         height: viewportSize.height / scaledSize.height,
+    //     };
+
+    //     // expand based on rotation? probably not necessary.
+
+    //     // and center it over the center+offset
+    //     let cropBegin01: Coord2D = {
+    //         x: .5 - props.galleryParams.position01.x - (cropSizeOfScaled.width / 2),
+    //         y: .5 - props.galleryParams.position01.y - (cropSizeOfScaled.height / 2),
+    //     };
+    //     let cropEnd01: Coord2D = {
+    //         x: .5 - props.galleryParams.position01.x + (cropSizeOfScaled.width / 2),
+    //         y: .5 - props.galleryParams.position01.y + (cropSizeOfScaled.height / 2),
+    //     };
+
+    //     const minDimensionX01 = 10 / scaledSize.width; // min 10 pixels ok?
+    //     const minDimensionY01 = 10 / scaledSize.height; // min 10 pixels ok?
+    //     cropBegin01 = {
+    //         x: Clamp(cropBegin01.x, 0, 1 - minDimensionX01),
+    //         y: Clamp(cropBegin01.y, 0, 1 - minDimensionY01),
+    //     };
+    //     cropEnd01 = {
+    //         x: Clamp(cropEnd01.x, cropBegin01.x + minDimensionX01, 1),
+    //         y: Clamp(cropEnd01.y, cropBegin01.y + minDimensionY01, 1),
+    //     };
+
+    //     props.onFileParamsChange({ ...props.fileParams, cropBegin01, cropEnd01 });
+    // };
+
+    React.useEffect(() => {
+        // viewport-sized crop area so just take the proportion to scaled.
+        const scaledSize = props.galleryParams.scaledSize;
+        const cropSizeOfScaled: Size = {
+            width: (viewportSize.width / scaledSize.width) * cropSize01.factor,
+            height: (viewportSize.height / scaledSize.height) * cropSize01.factor,
+        };
+
+        // and center it over the center+offset
+        let cropBegin01: Coord2D = {
+            x: .5 - props.galleryParams.position01.x - (cropSizeOfScaled.width / 2) + cropMove01.x,
+            y: .5 - props.galleryParams.position01.y - (cropSizeOfScaled.height / 2) + cropMove01.y,
+        };
+        let cropEnd01: Coord2D = {
+            x: .5 - props.galleryParams.position01.x + (cropSizeOfScaled.width / 2) + cropMove01.x,
+            y: .5 - props.galleryParams.position01.y + (cropSizeOfScaled.height / 2) + cropMove01.y,
+        };
+
+        const minDimensionX01 = 10 / scaledSize.width; // min 10 pixels ok?
+        const minDimensionY01 = 10 / scaledSize.height; // min 10 pixels ok?
+        cropBegin01 = {
+            x: Clamp(cropBegin01.x, 0, 1 - minDimensionX01),
+            y: Clamp(cropBegin01.y, 0, 1 - minDimensionY01),
+        };
+        cropEnd01 = {
+            x: Clamp(cropEnd01.x, cropBegin01.x + minDimensionX01, 1),
+            y: Clamp(cropEnd01.y, cropBegin01.y + minDimensionY01, 1),
+        };
+
+        props.onFileParamsChange({ ...props.fileParams, cropBegin01, cropEnd01 });
+
+    }, [cropSize01, cropMove01]);
 
     const handleDragMove = (delta: Coord2D) => {
 
         switch (selectedTool) {
-            case "CropBegin":
-                {
-                    const minDimensionX01 = 10 / props.galleryParams.scaledSize.width; // min 10 pixels ok?
-                    const minDimensionY01 = 10 / props.galleryParams.scaledSize.height; // min 10 pixels ok?
+            // case "CropBegin":
+            //     {
+            //         const minDimensionX01 = 10 / props.galleryParams.scaledSize.width; // min 10 pixels ok?
+            //         const minDimensionY01 = 10 / props.galleryParams.scaledSize.height; // min 10 pixels ok?
 
-                    let newCropBeginX01 = props.fileParams.cropBegin01.x + delta.x / viewportSize.width;
-                    newCropBeginX01 = Clamp(newCropBeginX01, 0, 1 - minDimensionX01);
+            //         let newCropBeginX01 = props.fileParams.cropBegin01.x + delta.x / props.galleryParams.scaledSize.width;
+            //         newCropBeginX01 = Clamp(newCropBeginX01, 0, 1 - minDimensionX01);
 
-                    let newCropBeginY01 = props.fileParams.cropBegin01.y + delta.y / viewportSize.height;
-                    newCropBeginY01 = Clamp(newCropBeginY01, 0, 1 - minDimensionY01);
+            //         let newCropBeginY01 = props.fileParams.cropBegin01.y + delta.y / props.galleryParams.scaledSize.height;
+            //         newCropBeginY01 = Clamp(newCropBeginY01, 0, 1 - minDimensionY01);
 
-                    // make sure image always has a valid dimension by also adjusting other rect if needed.
-                    let newCropEndX01 = Clamp(props.fileParams.cropEnd01.x, newCropBeginX01 + minDimensionX01, 1);
-                    let newCropEndY01 = Clamp(props.fileParams.cropEnd01.y, newCropBeginY01 + minDimensionY01, 1);
+            //         // make sure image always has a valid dimension by also adjusting other rect if needed.
+            //         let newCropEndX01 = Clamp(props.fileParams.cropEnd01.x, newCropBeginX01 + minDimensionX01, 1);
+            //         let newCropEndY01 = Clamp(props.fileParams.cropEnd01.y, newCropBeginY01 + minDimensionY01, 1);
 
-                    props.onFileParamsChange({
-                        ...props.fileParams,
-                        cropBegin01: {
-                            x: newCropBeginX01,
-                            y: newCropBeginY01,
-                        },
-                        cropEnd01: {
-                            x: newCropEndX01,
-                            y: newCropEndY01,
-                        },
-                    });
-                    break;
-                }
-            case "CropEnd":
-                {
-                    const minDimensionX01 = 10 / props.galleryParams.scaledSize.width; // min 10 pixels ok?
-                    const minDimensionY01 = 10 / props.galleryParams.scaledSize.height; // min 10 pixels ok?
+            //         props.onFileParamsChange({
+            //             ...props.fileParams,
+            //             cropBegin01: {
+            //                 x: newCropBeginX01,
+            //                 y: newCropBeginY01,
+            //             },
+            //             cropEnd01: {
+            //                 x: newCropEndX01,
+            //                 y: newCropEndY01,
+            //             },
+            //         });
+            //         break;
+            //     }
+            // case "CropEnd":
+            //     {
+            //         const minDimensionX01 = 10 / props.galleryParams.scaledSize.width; // min 10 pixels ok?
+            //         const minDimensionY01 = 10 / props.galleryParams.scaledSize.height; // min 10 pixels ok?
 
-                    let newCropEndX01 = props.fileParams.cropEnd01.x + delta.x / viewportSize.width;
-                    newCropEndX01 = Clamp(newCropEndX01, minDimensionX01, 1);
+            //         let newCropEndX01 = props.fileParams.cropEnd01.x + delta.x / props.galleryParams.scaledSize.width;
+            //         newCropEndX01 = Clamp(newCropEndX01, minDimensionX01, 1);
 
-                    let newCropEndY01 = props.fileParams.cropEnd01.y + delta.y / viewportSize.height;
-                    newCropEndY01 = Clamp(newCropEndY01, minDimensionY01, 1);
+            //         let newCropEndY01 = props.fileParams.cropEnd01.y + delta.y / props.galleryParams.scaledSize.height;
+            //         newCropEndY01 = Clamp(newCropEndY01, minDimensionY01, 1);
 
-                    // make sure image always has a valid dimension by also adjusting other rect if needed.
-                    let newCropBeginX01 = Clamp(props.fileParams.cropBegin01.x, 0, newCropEndX01 - minDimensionX01);
+            //         // make sure image always has a valid dimension by also adjusting other rect if needed.
+            //         let newCropBeginX01 = Clamp(props.fileParams.cropBegin01.x, 0, newCropEndX01 - minDimensionX01);
 
-                    let newCropBeginY01 = Clamp(props.fileParams.cropBegin01.y, 0, newCropEndY01 - minDimensionY01);
+            //         let newCropBeginY01 = Clamp(props.fileParams.cropBegin01.y, 0, newCropEndY01 - minDimensionY01);
 
-                    props.onFileParamsChange({
-                        ...props.fileParams,
-                        cropBegin01: {
-                            x: newCropBeginX01,
-                            y: newCropBeginY01,
-                        },
-                        cropEnd01: {
-                            x: newCropEndX01,
-                            y: newCropEndY01,
-                        }
-                    });
-                    break;
-                }
+            //         props.onFileParamsChange({
+            //             ...props.fileParams,
+            //             cropBegin01: {
+            //                 x: newCropBeginX01,
+            //                 y: newCropBeginY01,
+            //             },
+            //             cropEnd01: {
+            //                 x: newCropEndX01,
+            //                 y: newCropEndY01,
+            //             }
+            //         });
+            //         break;
+            //     }
+            case "CropSize": {
+                let newFactor = cropSize01.factor + 0.003 * ((delta.x + delta.y) * .5);
+                newFactor = Clamp(newFactor, 0.05, 1.4);
+                setCropSize01({ factor: newFactor });
+                break;
+            }
+            case "CropMove": {
+                setCropMove01({
+                    x: cropMove01.x + delta.x / props.galleryParams.scaledSize.width,
+                    y: cropMove01.y + delta.y / props.galleryParams.scaledSize.height,
+                });
+                break;
+            }
             case "Scale":
                 {
                     let newSizeFactor = props.fileParams.scale + 0.003 * ((delta.x + delta.y) * .5);
@@ -457,6 +537,9 @@ const ImageEditor = (props: ImageEditorProps) => {
             crop: [{(props.fileParams.cropBegin01.x).toFixed(2)},{(props.fileParams.cropBegin01.y).toFixed(2)}] - [{(props.fileParams.cropEnd01.x).toFixed(2)},{(props.fileParams.cropEnd01.y).toFixed(2)}]
         </div>
         <div>
+            auto-crop size: {cropSize01.factor.toFixed(2)}
+        </div>
+        <div>
             Position: [{(props.galleryParams.position01.x).toFixed(2)},{(props.galleryParams.position01.y).toFixed(2)}]
         </div>
         <div>
@@ -464,27 +547,35 @@ const ImageEditor = (props: ImageEditorProps) => {
         </div>
         <div className="ImageEditor editorMain">
             <div className="ImageEditor toolbar">
-                <Button onClick={() => setSelectedTool("Scale")} className={`toolbutton ${selectedTool === "Scale" && "selected"}`}>Scale</Button>
+                <Button onClick={() => setSelectedTool("Scale")} className={`toolbutton ${selectedTool === "Scale" && "selected"}`}>Z</Button>
+                <Button onClick={() => setSelectedTool("Move")} className={`toolbutton ${selectedTool === "Move" && "selected"}`}>XY</Button>
                 <Button onClick={() => setSelectedTool("Rotate")} className={`toolbutton ${selectedTool === "Rotate" && "selected"}`}>Rotate</Button>
-                <Button onClick={() => setSelectedTool("Move")} className={`toolbutton ${selectedTool === "Move" && "selected"}`}>Move</Button>
-                <Button onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>Crop TL</Button>
-                <Button onClick={() => setSelectedTool("CropEnd")} className={`toolbutton ${selectedTool === "CropEnd" && "selected"}`}>Crop BR</Button>
+                {/* <Button onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>Crop TL</Button>
+                <Button onClick={() => setSelectedTool("CropEnd")} className={`toolbutton ${selectedTool === "CropEnd" && "selected"}`}>Crop BR</Button> */}
+                <Button onClick={() => setSelectedTool("CropSize")} className={`toolbutton ${selectedTool === "CropSize" && "selected"}`}>Crop Z</Button>
+                <Button onClick={() => setSelectedTool("CropMove")} className={`toolbutton ${selectedTool === "CropMove" && "selected"}`}>Crop XY</Button>
             </div>
             <div className="ImageEditor toolbar">
                 <Button onClick={() => {
                     props.onFileParamsChange({ ...props.fileParams, scale: 1 });
                 }} className={`toolbutton resetIcon`}>⟲</Button>
                 <Button onClick={() => {
-                    props.onGalleryParamsChange({ ...props.galleryParams, rotationDegrees: 0 });
-                }} className={`toolbutton resetIcon`}>⟲</Button>
-                <Button onClick={() => {
                     props.onGalleryParamsChange({ ...props.galleryParams, position01: { x: 0, y: 0 } });
                 }} className={`toolbutton resetIcon`}>⟲</Button>
                 <Button onClick={() => {
+                    props.onGalleryParamsChange({ ...props.galleryParams, rotationDegrees: 0 });
+                }} className={`toolbutton resetIcon`}>⟲</Button>
+                {/* <Button onClick={() => {
                     props.onFileParamsChange({ ...props.fileParams, cropBegin01: { x: 0, y: 0 } });
                 }} className={`toolbutton resetIcon`}>⟲</Button>
                 <Button onClick={() => {
                     props.onFileParamsChange({ ...props.fileParams, cropEnd01: { x: 1, y: 1 } });
+                }} className={`toolbutton resetIcon`}>⟲</Button> */}
+                <Button onClick={() => {
+                    setCropSize01({ factor: 1.05 });
+                }} className={`toolbutton resetIcon`}>⟲</Button>
+                <Button onClick={() => {
+                    setCropMove01({ x: 0, y: 0 });
                 }} className={`toolbutton resetIcon`}>⟲</Button>
             </div>
             <JoystickDiv className="ImageEditor GalleryImageFrameContainer" style={containerWrapperStyle} enabled={true} onDragMove={handleDragMove}>
@@ -499,7 +590,11 @@ const ImageEditor = (props: ImageEditorProps) => {
             <div className="ImageEditor toolbar">
                 <Button onClick={() => setSelectedTool("WindowSize")} className={`toolbutton ${selectedTool === "WindowSize" && "selected"}`}>WindowSize</Button>
                 <Button onClick={() => setSelectedTool("MaskSize")} className={`toolbutton ${selectedTool === "MaskSize" && "selected"}`}>MaskSize</Button>
-                <Button onClick={props.onReset}>Reset</Button>
+                <Button onClick={() => {
+                    props.onReset();
+                    setCropSize01({ factor: 1.05 });
+                    setCropMove01({ x: 0, y: 0 });
+                }}>Reset</Button>
                 <Tooltip title={"Fork the image in order to crop & resize it, optimizing it for presentation."}><Button onClick={handleFork}>Fork</Button></Tooltip>
             </div>
             <div>
@@ -510,12 +605,7 @@ const ImageEditor = (props: ImageEditorProps) => {
 };
 
 
-const correctGalleryParams = (gi: db3.FrontpageGalleryItemPayload, mutableGp: GalleryImageDisplayParams, fp: ServerImageFileEditParams) => {
-    // assumes the file dimensions are pre-server-effects.
-    const fileDimensions = getImageFileDimensions(gi.file)
-    mutableGp.cropOffset01 = { ...fp.cropBegin01 };
-    mutableGp.scaledSize = MulSize(fileDimensions, fp.scale);
-};
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // has a save button, keeps temporary state.
 interface ImageEditControlProps {
@@ -524,7 +614,11 @@ interface ImageEditControlProps {
 
 const ImageEditControl = (props: ImageEditControlProps) => {
     const [fileParams, setFileParams] = React.useState<ServerImageFileEditParams>(() => getCropParamsForFile(props.galleryItem.file));
-    const [galleryParams, setGalleryParams] = React.useState<GalleryImageDisplayParams>(() => db3.getGalleryImageDisplayParams(props.galleryItem));
+    const [galleryParams, setGalleryParams] = React.useState<GalleryImageDisplayParams>(() => {
+        const gp = db3.getGalleryImageDisplayParams(props.galleryItem);
+        correctGalleryParams(props.galleryItem, gp, fileParams);
+        return gp;
+    });
 
     const handleFileParamsChange = (newFileParams: ServerImageFileEditParams) => {
         const newGalleryParams: GalleryImageDisplayParams = { ...galleryParams };
@@ -556,25 +650,7 @@ const ImageEditControl = (props: ImageEditControlProps) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const TestPageContent = () => {
 
