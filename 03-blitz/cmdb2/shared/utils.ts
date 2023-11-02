@@ -514,19 +514,6 @@ export function Coalesce<T>(value: null | undefined | T, defaultValue: T) {
     return value;
 }
 
-// export function formatFileSize(bytes: number): string {
-//     if (bytes === 0) {
-//       return 'empty';
-//     }
-
-//     const units = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-//     const k = 1024;
-//     const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-//     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + units[i];
-//   }
-
-
 export function formatFileSize(bytes: number): string {
     if (bytes < 1024) {
         return bytes + ' Bytes';
@@ -539,3 +526,17 @@ export function formatFileSize(bytes: number): string {
     }
     return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
 }
+
+
+////////////////////////////////////////////////////////////////
+// const getImageDimensions = (url: string): Promise<Size> => {
+//     return new Promise((resolve, reject) => {
+//         const img = new Image();
+//         img.onload = () => resolve({
+//             width: img.width,
+//             height: img.height,
+//         });
+//         img.onerror = (error) => reject(error);
+//         img.src = url;
+//     });
+// };

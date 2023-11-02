@@ -18,7 +18,7 @@ import frontpageContentQuery from "./queries/frontpageContentQuery";
 import * as DB3ClientCore from './components/DB3ClientCore';
 import * as DB3ClientFields from './components/DB3ClientBasicFields';
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
     filterModel?: GridFilterModel,
     tableParams?: TAnyModel,
@@ -76,6 +76,7 @@ export interface SongListStats {
     // tags?
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class FilesAPI {
     getURIForFile = (file: Prisma.FileGetPayload<{}>) => {
         return `/api/files/download/${file.storedLeafName}`;
@@ -84,6 +85,7 @@ class FilesAPI {
 
 const gFilesAPI = new FilesAPI();
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class UsersAPI {
     // returns an instrument payload, or null if the user has no instruments.
     // primary instrument is defined as either teh 1st instrument marked as primary, or if none are primary, the 1st instrument period.
@@ -149,6 +151,7 @@ class UsersAPI {
 const gUsersAPI = new UsersAPI();
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class EventsAPI {
 
     getAgendaItem(event: db3.EventWithTagsPayload): HomepageAgendaItemSpec {
@@ -303,6 +306,7 @@ class EventsAPI {
     updateEventSongListx = CreateAPIMutationFunction<TinsertOrUpdateEventSongListArgs, typeof updateEventSongListMutation>(updateEventSongListMutation);
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 class SongsAPI {
 
     getURIForSong(songOrIdOrSlug: number | string | db3.SongPayloadMinimum) {
@@ -334,18 +338,36 @@ class SongsAPI {
 };
 
 
-
-export const useFrontpageData = (): HomepageContentSpec => {
-    // events
-    // photo gallery
-
-    const [ret] = useQuery(frontpageContentQuery, {}, gQueryOptions.default);
-    return ret
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// export interface HomepageGalleryItemSpec {
+//     descriptionMarkdown: string;
+//     uri: string;
+// };
+export interface HomepageAgendaItemSpec {
+    date?: string | null;
+    time?: string | null;
+    title?: string | null;
+    detailsMarkdown?: string | null;
+    location?: string | null;
+    locationURI?: string | null;
+    tags?: string | null;
 };
+export interface HomepageContentSpec {
+    agenda: HomepageAgendaItemSpec[];
+    gallery: db3.FrontpageGalleryItemPayload[];
+};
+
+
+
+class FrontpageAPI {
+
+};
+
 
 export const API = {
     events: new EventsAPI(),
     songs: new SongsAPI(),
+    frontpage: new FrontpageAPI(),
     users: gUsersAPI,
     files: gFilesAPI,
 };

@@ -1,8 +1,19 @@
 /* @import url(https://db.onlinewebfonts.com/c/1cf07fdc01da97ba3a1410d18951d28f?family=DIN+1451+Std); */
 
+/* also see frontpage.css which contains some more styling for frontpage (that's used by the backstage) */
+
+:root {
+    --gallery-photo-transition: 1.0s;
+}
+
 * {
     font-family: var(--font-display);
     box-sizing: border-box;
+}
+
+.nowrap {
+    white-space: nowrap;
+    vertical-align: top;
 }
 
 body,
@@ -14,9 +25,6 @@ html {
     padding: 0;
     border: 0;
     background-color: var(--cm-yellow);
-
-    /*a bit shameful; should figure out why the page is too wide.*/
-    overflow-x: hidden;
 }
 
 @media only screen and (orientation: portrait) {
@@ -26,42 +34,71 @@ html {
         --z-index-agenda-back: 50;
         --z-index-agenda-front: 100;
     }
-
 }
 
-#root,
+/* ---- whole page layout stuff --------------------------------------------------------------*/
+.flexSpacer {
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
 #__next {
+    /* this is the whole page */
     width: 100%;
     height: 100%;
     display: flex;
     justify-content: center;
 }
 
-
+/*
+root2 contains the page content; no real content is outside of it.
+children:
+- #headerChrome,
+- #middleContent
+*/
 #root2 {
-    /* position: absolute;
-    top: 0;
-    left: 0; */
-    /* width: 100%;
-    height: 100%; */
-
     /* because of runtime layout adjustment, delayed presentation is needed */
     opacity: 0%;
     transition: opacity .5s;
+    /* at the top level, a max width is necessary so the page doesn't feel too in-your-face at big sizes. */
+    max-width: 1500px;
+    /* and a min-width is also necessary to make sure our ever-resizing SVG content doesn't get too out of sync with static HTML content.
+    also don't allow the min to be bigger than the screen. for small screens,especially in portrait, avoid horiz scrolling.
+     */
+    min-width: calc(min(850px, 100vw));
+    /* because middle content is absolutely positioned (so it can live in harmony with headerchrome) */
+    position: relative;
+    /* ensures it tries to be big, rather than sharing equal space with the spacers*/
+    flex-grow: 1;
+    /* as layout changes,the SVG can become wildly different sizes and various page elements should be scaled to match.*/
+    --page-zoom: 100%;
 }
-
 
 #root2.visible {
     opacity: 100%;
 }
 
-#headerchrome {
+/* ---- --------------------------------------------------------------*/
+#headerChrome {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    width: 100%;
+    /* border: 2px solid red; */
+    justify-content: flex-end;
 }
 
+/* middleContent contains all dynamically-placed page elements*/
+
+#middleContent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    /* border: 2px solid red; */
+}
+
+
+/* ---- TOP RIGHT --------------------------------------------------------------*/
 #svgtoprighttitle {
     width: 100%;
 }
@@ -71,22 +108,20 @@ html {
 }
 
 #toprighttitle {
-    flex: 1 1;
     display: flex;
     z-index: var(--z-index-chrome);
     flex-direction: column;
-    margin-top: 20px;
-    margin-right: 15px;
+    margin-top: 15px;
+    margin-right: 10px;
     justify-content: flex-start;
     align-items: flex-end;
     align-content: flex-end;
-    /* border: 2px solid red; */
-    /* background-color: cyan; */
-    margin-left: 32vw;
+
+    zoom: var(--page-zoom);
     /* space for cm logo*/
     /* -webkit-text-stroke: 1px var(--cm-yellow);
     text-stroke: 1px var(--cm-yellow); */
-    text-shadow: 0 0 2px var(--cm-yellow);
+    /* text-shadow: 0 0 2px var(--cm-yellow); */
 }
 
 #subtitle1 {
@@ -131,29 +166,15 @@ html {
     height: 30pt;
 }
 
-
-
-.nowrap {
-    white-space: nowrap;
-    vertical-align: top;
-}
-
-#middleContent {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-
+/* ---- TOP RIGHT --------------------------------------------------------------*/
 #galleryContainer {
+    /* */
     z-index: 0;
 }
 
 /* for vert, stretch to fill width. for horiz, height */
 #galleryContainer svg {
-    width: 100vw;
+    /* width: 100vw; */
     /* indeed some mgmt of size would be helpful here for very tall aspects*/
     /* min-width: 100vh; */
 }
@@ -161,7 +182,7 @@ html {
 @media only screen and (orientation: landscape) {
     #galleryContainer svg {
         /* ensures that for wide layouts, it doesn't get unreasonably huge*/
-        height: 100vh;
+        /* height: 100vh; */
     }
 
 }
@@ -178,9 +199,12 @@ html {
     fill: #00aeef;
 }
 
-
 #agendaBack {
     fill: #a1ba51;
+}
+
+.agendaContentContainer {
+    zoom: var(--page-zoom);
 }
 
 /* 
@@ -192,6 +216,7 @@ html {
 #photoCaptionContainer {
     position: absolute;
     overflow: hidden;
+    text-overflow: ellipsis;
     padding-left: 5px;
 }
 
@@ -206,6 +231,7 @@ html {
 #photoCaption {
     font-size: 24px;
     text-shadow: 0 0 2px #fff4;
+    zoom: var(--page-zoom);
 }
 
 #photoCaption p {
@@ -296,17 +322,6 @@ html {
     max-width: 30px;
 }
 
-#backstageContainer {
-    padding-top: 200px;
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-}
-
-#backstageContainer img {
-    width: 223px;
-}
-
 #photoBackForwardContainer {
     /* position: absolute; */
     flex-grow: 1;
@@ -355,7 +370,28 @@ html {
 
 #galleryPhoto1,
 #galleryPhoto2 {
-    transition: opacity 2.5s;
+    transition: opacity var(--gallery-photo-transition);
+}
+
+
+#backstageContainer {
+    padding-top: 200px;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+#backstageContainer img {
+    width: 223px;
+}
+
+#sponsorsContent {
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+    margin-right: 25%;
+    margin-top: -33px;
+    z-index: 100;
 }
 
 
@@ -370,21 +406,4 @@ html {
     top: 0;
     left: 0;
     padding: 10px;
-}
-
-#sponsorsContent {
-    display: flex;
-    width: 100%;
-    justify-content: flex-end;
-    margin-right: 25%;
-    margin-top: -33px;
-    z-index: 100;
-}
-
-.widthConstraint {
-    max-width: 1200px;
-}
-
-.flexShrink {
-    flex-shrink: 1;
 }

@@ -206,28 +206,6 @@ export interface TClientUpdateFile {
 };
 
 
-
-// window.CMconfig.posts ....
-export interface HomepageGalleryItemSpec {
-    descriptionMarkdown: string;
-    uri: string;
-};
-export interface HomepageAgendaItemSpec {
-    date?: string | null;
-    time?: string | null;
-    title?: string | null;
-    detailsMarkdown?: string | null;
-    location?: string | null;
-    locationURI?: string | null;
-    tags?: string | null;
-};
-export interface HomepageContentSpec {
-    agenda: HomepageAgendaItemSpec[];
-    gallery: HomepageGalleryItemSpec[];
-};
-
-
-
 // https://stackoverflow.com/questions/36836011/checking-validity-of-string-literal-union-type-at-runtime
 export const ImageFileFormatOptions = {
     "png": {},

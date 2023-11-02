@@ -1,28 +1,25 @@
 /*
 
-
-in order,
-each 01 size/dimensions are the size of the previous transform.
-
 [SERVER EDITS:] (original size)
-- translate origin 01 (of original size)
 - scale (x) -> (scaled size)
 - crop 01 of scaled (cropped size)
 
+then the file gets baked in, and <GalleryImage> presents itself the same way as <FakeGalleryImage> by presenting in uncropped dimensions.
+
 [GALLERY TRANSFORMS:] - these don't need to be precise 01 coordinates because it's all CSS; no translation between systems needs to be done.
-- translate origin px
-- position01 px 
 - rotate (deg)
+- position01 px - goes after rotate for a more pleasant ux.
 
-crop, resize, rotate, position.
+why is this so freakin specialized? why doesn't it work just like normal editors?
+1. i want this to be more mobile-friendly, so less modifiers like shift+ etc.
+2. you actually need control over which operations are done on the server and client.
+3. i don't want to make a detailed sophisticated UI with drag handles and stuff. hence the odd cropping experience.
+4. editing is not a generic list of operations, it's fixed and therefore the workflow is a bit fixed.
 
-so, i think rotate & position will need to be separate gallery params. for saving image variations, it will just be cropping and resizing.
-so for the editor, we need to simulate the result of cropping and resizing the image, and then treat that like an image itself.
-
-
-so the "background" image will be of the original size, with a mask overlay
-
-why when cropping does the position change? because position is 01 based off server image size. that size will change when cropping changes.
+why does <FakeGalleryImage> present itself with full uncropped dimensions?
+because it's a very jolting UX when, by cropping (and thus changing presented dimensions), the image is moving all over the place.
+could be compensated but it's not very simple or easy, and makes the whole edit system more complex.
+cropping is meant to be somtehing after you have positioned the image, it should not change positioning.
 
 <control container wrapper> - can add things like padding/margin.
     <control container> - required to have no margin etc and serve as the relative positioning box.
@@ -44,38 +41,11 @@ import { API } from "src/core/db3/clientAPI"; // this line causes an exception .
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, GalleryImageDisplayParams, MakeDefaultGalleryImageDisplayParams, MakeDefaultServerImageFileEditParams, MulSize, MulSizeBySize, ServerImageFileEditParams, Size, SubCoord2D, getFileCustomData } from "src/core/db3/shared/apiTypes";
 
-////////////////////////////////////////////////////////////////
-// const getImageDimensions = (url: string): Promise<Size> => {
-//     return new Promise((resolve, reject) => {
-//         const img = new Image();
-//         img.onload = () => resolve({
-//             width: img.width,
-//             height: img.height,
-//         });
-//         img.onerror = (error) => reject(error);
-//         img.src = url;
-//     });
-// };
-
 // returns a valid ForkImageParams
 const getCropParamsForFile = (f: db3.FilePayloadMinimum): ServerImageFileEditParams => {
     const customData = getFileCustomData(f);
     return customData.forkedImage?.editParams || MakeDefaultServerImageFileEditParams();
 };
-
-// const getImageFileDimensions = (file: db3.FilePayloadMinimum): Promise<Size> => {
-//     const uri = API.files.getURIForFile(file);
-//     const customData = getFileCustomData(file);
-//     if (customData.imageMetadata?.height != null && customData.imageMetadata?.width != null) {
-//         return new Promise((resolve, reject) => {
-//             resolve({
-//                 width: customData.imageMetadata!.width!,
-//                 height: customData.imageMetadata!.height!,
-//             });
-//         });
-//     }
-//     return getImageDimensions(uri);
-// };
 
 const getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
     const customData = getFileCustomData(file);
@@ -282,7 +252,9 @@ const GalleryImageFrame = (props: GalleryImageFrameProps) => {
         "--grid-size-y": `${props.size.height / 3}px`,
     };
 
-    const centerToUL = `translate(${(props.size.width - scaledSize.width) * .5}px, ${(props.size.height - scaledSize.height) * .5}px)`;
+    //const halfViewportTranslateNEG = `translate(${props.size.width * -.5}px, ${props.size.height * -.5}px)`;
+    //const halfViewportTranslatePOS = `translate(${props.size.width * .5}px, ${props.size.height * .5}px)`;
+    const centerImage = `translate(${(props.size.width - scaledSize.width) * .5}px, ${(props.size.height - scaledSize.height) * .5}px)`;
     const galleryRotate = `rotate(${props.galleryParams.rotationDegrees}deg)`;
     const galleryTranslatePos = `translate(${props.galleryParams.position01.x * scaledSize.width}px, ${props.galleryParams.position01.y * scaledSize.height}px)`;
 
@@ -296,8 +268,11 @@ const GalleryImageFrame = (props: GalleryImageFrameProps) => {
         //overflow: "hidden",
         boxSizing: "border-box",
         //boxSizing: "content-box", // we're setting width & height; let the border not interfere with the dimensions.
-        transformOrigin: `50% 50%`,//${viewportSize.width * 0.5}px ${viewportSize.height * 0.5}px`,
-        transform: `${galleryTranslatePos} ${galleryRotate} ${centerToUL}`,
+        //transformOrigin: `50% 50%`,//${viewportSize.width * 0.5}px ${viewportSize.height * 0.5}px`,
+        //transformOrigin: `${props.size.width * 0.5 + props.maskSize}px ${props.size.height * 0.5 + + props.maskSize}px`,
+        //transformOrigin: `0 0`,
+        //transform: `${galleryTranslatePos} ${halfViewportTranslateNEG} ${galleryRotate} ${halfViewportTranslatePOS} ${centerToUL}`,
+        transform: `${galleryTranslatePos} ${galleryRotate} ${centerImage}`,
         //transform: `${galleryTranslatePos}  ${galleryRotate}`,
     };
 
@@ -341,40 +316,6 @@ const ImageEditor = (props: ImageEditorProps) => {
         // then, reset params.
     };
 
-    // const handleAutoCrop = () => {
-    //     // viewport-sized crop area so just take the proportion to scaled.
-    //     const scaledSize = props.galleryParams.scaledSize;
-    //     const cropSizeOfScaled: Size = {
-    //         width: viewportSize.width / scaledSize.width,
-    //         height: viewportSize.height / scaledSize.height,
-    //     };
-
-    //     // expand based on rotation? probably not necessary.
-
-    //     // and center it over the center+offset
-    //     let cropBegin01: Coord2D = {
-    //         x: .5 - props.galleryParams.position01.x - (cropSizeOfScaled.width / 2),
-    //         y: .5 - props.galleryParams.position01.y - (cropSizeOfScaled.height / 2),
-    //     };
-    //     let cropEnd01: Coord2D = {
-    //         x: .5 - props.galleryParams.position01.x + (cropSizeOfScaled.width / 2),
-    //         y: .5 - props.galleryParams.position01.y + (cropSizeOfScaled.height / 2),
-    //     };
-
-    //     const minDimensionX01 = 10 / scaledSize.width; // min 10 pixels ok?
-    //     const minDimensionY01 = 10 / scaledSize.height; // min 10 pixels ok?
-    //     cropBegin01 = {
-    //         x: Clamp(cropBegin01.x, 0, 1 - minDimensionX01),
-    //         y: Clamp(cropBegin01.y, 0, 1 - minDimensionY01),
-    //     };
-    //     cropEnd01 = {
-    //         x: Clamp(cropEnd01.x, cropBegin01.x + minDimensionX01, 1),
-    //         y: Clamp(cropEnd01.y, cropBegin01.y + minDimensionY01, 1),
-    //     };
-
-    //     props.onFileParamsChange({ ...props.fileParams, cropBegin01, cropEnd01 });
-    // };
-
     React.useEffect(() => {
         // viewport-sized crop area so just take the proportion to scaled.
         const scaledSize = props.galleryParams.scaledSize;
@@ -411,63 +352,6 @@ const ImageEditor = (props: ImageEditorProps) => {
     const handleDragMove = (delta: Coord2D) => {
 
         switch (selectedTool) {
-            // case "CropBegin":
-            //     {
-            //         const minDimensionX01 = 10 / props.galleryParams.scaledSize.width; // min 10 pixels ok?
-            //         const minDimensionY01 = 10 / props.galleryParams.scaledSize.height; // min 10 pixels ok?
-
-            //         let newCropBeginX01 = props.fileParams.cropBegin01.x + delta.x / props.galleryParams.scaledSize.width;
-            //         newCropBeginX01 = Clamp(newCropBeginX01, 0, 1 - minDimensionX01);
-
-            //         let newCropBeginY01 = props.fileParams.cropBegin01.y + delta.y / props.galleryParams.scaledSize.height;
-            //         newCropBeginY01 = Clamp(newCropBeginY01, 0, 1 - minDimensionY01);
-
-            //         // make sure image always has a valid dimension by also adjusting other rect if needed.
-            //         let newCropEndX01 = Clamp(props.fileParams.cropEnd01.x, newCropBeginX01 + minDimensionX01, 1);
-            //         let newCropEndY01 = Clamp(props.fileParams.cropEnd01.y, newCropBeginY01 + minDimensionY01, 1);
-
-            //         props.onFileParamsChange({
-            //             ...props.fileParams,
-            //             cropBegin01: {
-            //                 x: newCropBeginX01,
-            //                 y: newCropBeginY01,
-            //             },
-            //             cropEnd01: {
-            //                 x: newCropEndX01,
-            //                 y: newCropEndY01,
-            //             },
-            //         });
-            //         break;
-            //     }
-            // case "CropEnd":
-            //     {
-            //         const minDimensionX01 = 10 / props.galleryParams.scaledSize.width; // min 10 pixels ok?
-            //         const minDimensionY01 = 10 / props.galleryParams.scaledSize.height; // min 10 pixels ok?
-
-            //         let newCropEndX01 = props.fileParams.cropEnd01.x + delta.x / props.galleryParams.scaledSize.width;
-            //         newCropEndX01 = Clamp(newCropEndX01, minDimensionX01, 1);
-
-            //         let newCropEndY01 = props.fileParams.cropEnd01.y + delta.y / props.galleryParams.scaledSize.height;
-            //         newCropEndY01 = Clamp(newCropEndY01, minDimensionY01, 1);
-
-            //         // make sure image always has a valid dimension by also adjusting other rect if needed.
-            //         let newCropBeginX01 = Clamp(props.fileParams.cropBegin01.x, 0, newCropEndX01 - minDimensionX01);
-
-            //         let newCropBeginY01 = Clamp(props.fileParams.cropBegin01.y, 0, newCropEndY01 - minDimensionY01);
-
-            //         props.onFileParamsChange({
-            //             ...props.fileParams,
-            //             cropBegin01: {
-            //                 x: newCropBeginX01,
-            //                 y: newCropBeginY01,
-            //             },
-            //             cropEnd01: {
-            //                 x: newCropEndX01,
-            //                 y: newCropEndY01,
-            //             }
-            //         });
-            //         break;
-            //     }
             case "CropSize": {
                 let newFactor = cropSize01.factor + 0.003 * ((delta.x + delta.y) * .5);
                 newFactor = Clamp(newFactor, 0.05, 1.4);
@@ -489,7 +373,7 @@ const ImageEditor = (props: ImageEditorProps) => {
                     break;
                 }
             case "Rotate":
-                props.onGalleryParamsChange({ ...props.galleryParams, rotationDegrees: props.galleryParams.rotationDegrees + 0.1 * ((delta.x + delta.y) * .5) });
+                props.onGalleryParamsChange({ ...props.galleryParams, rotationDegrees: props.galleryParams.rotationDegrees + 0.1 * ((delta.x - delta.y) * .5) });
                 break;
             case "Move":
                 props.onGalleryParamsChange({

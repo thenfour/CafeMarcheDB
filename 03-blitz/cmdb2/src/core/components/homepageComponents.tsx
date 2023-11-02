@@ -1,52 +1,30 @@
 import React, { Suspense } from "react";
 import { IsNullOrWhitespace, modulo } from "shared/utils";
 import { Markdown } from "./RichTextEditor";
-import { API, useFrontpageData } from "../db3/clientAPI";
-import { HomepageAgendaItemSpec, HomepageContentSpec, HomepageGalleryItemSpec } from "../db3/shared/apiTypes";
+import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
+import * as db3 from "../db3/db3";
 
-function logRect(label: string, x?: DOMRect | null) {
-    if (!x) {
-        console.log(`${label}: --`);
-        return;
-    }
-    console.log(`${label}: [${x.width}, ${x.height}]`);
-}
+
+// function logRect(label: string, x?: DOMRect | null) {
+//     if (!x) {
+//         console.log(`${label}: --`);
+//         return;
+//     }
+//     console.log(`${label}: [${x.width}, ${x.height}]`);
+// }
+
+
+
+//const zoomFact = horizOrientation ? (root2.clientWidth / 1200) : (root2.clientWidth / 830);
 
 const gSettings = {
-    // urlPrefix: `https://cafemarche.be/wp-json/wp/v2/`,
-    backstageURL: `/backstage`,//`/backstage/backstage.html`,
-    // agendaCategorySlug: "agenda",
-    // galleryCategorySlug: "gallery",
+    backstageURL: `/backstage`,
     photoCarrouselAutoPlayIntervalMS: 10000,
+    portraitNaturalWidth: 830, // vert
+    landscapeNaturalWidth: 1500, // horiz
 };
 
-// // window.CMconfig.posts ....
-// interface HomepageGalleryItemSpec {
-//     descriptionMarkdown: string;
-// };
-// interface HomepageAgendaItemSpec {
-//     titleMarkdown: string;
-//     date?: string | null;
-//     title?: string | null;
-//     location?: string | null;
-//     time?: string | null;
-//     tags?: string | null;
-//     details?: string | null;
-// };
-// interface HomepageContentSpec {
-//     agenda: HomepageAgendaItemSpec[];
-//     gallery: HomepageGalleryItemSpec[];
-// };
-
-// const gCMContent: HomepageContentSpec = {
-//     agenda: [],
-//     gallery: [
-//         {
-//             descriptionMarkdown: "<div>hi</div>",
-//         }
-//     ],
-// };
 
 function InstallOrientationChangeListener(proc) {
     // https://stackoverflow.com/questions/44709114/javascript-screen-orientation-on-safari
@@ -104,9 +82,9 @@ function InstallOrientationChangeListener(proc) {
 //     return post._embedded['wp:featuredmedia'][0].media_details.sizes.full.source_url;
 // }
 
-function GetImageURI(post: HomepageGalleryItemSpec): string {
-    return "/images/card.jpg";
-}
+// function GetImageURI(post: db3.FrontpageGalleryItemPayload): string {
+//     return "/images/card.jpg";
+// }
 
 class Gallery {
 
@@ -140,8 +118,11 @@ class Gallery {
     };
 
     applyStateToDOM() {
-        if (!this.content) return;
-        if (this.content.gallery.length < 1) return;
+        if (!this.content || (this.content.gallery.length < 1)) {
+            const a = document.getElementById("galleryPhoto2");
+            if (a) a.setAttribute("fill", `#0008`);
+            return;
+        }
 
         const posts = this.content.gallery;
         const indexInRange = this.bringIndexIntoRange(this.selectedIdx);
@@ -149,8 +130,8 @@ class Gallery {
         const nextPostID = this.bringIndexIntoRange(this.selectedIdx + 1);
         const nextPost = posts[nextPostID]!;
 
-        document.getElementById(`galleryPatternImage${indexInRange}`)!.setAttribute('href', GetImageURI(post));
-        document.getElementById(`galleryPatternImage${nextPostID}`)!.setAttribute('href', GetImageURI(nextPost));
+        document.getElementById(`galleryPatternImage${indexInRange}`)!.setAttribute('href', API.files.getURIForFile(post.file));
+        document.getElementById(`galleryPatternImage${nextPostID}`)!.setAttribute('href', API.files.getURIForFile(nextPost.file));
 
         const a = document.getElementById(this.ab ? "galleryPhoto2" : "galleryPhoto1")!;
         const b = document.getElementById(this.ab ? "galleryPhoto1" : "galleryPhoto2")!;
@@ -166,7 +147,7 @@ class Gallery {
         b.style.opacity = "0%";
     }
 
-    getSelectedPost(): HomepageGalleryItemSpec | null {
+    getSelectedPost(): db3.FrontpageGalleryItemPayload | null {
         if (!this.content) return null;
         return this.content.gallery[this.bringIndexIntoRange(this.selectedIdx)]!;
     }
@@ -218,39 +199,39 @@ export class AgendaItem extends React.Component<AgendaItemProps> {
     }
 }
 
-const TopRight = () => {
-    return <div id="svgtoprighttitle">
-        <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="#fff" />
+// const TopRight = () => {
+//     return <div id="svgtoprighttitle">
+//         <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+//             <rect width="100%" height="100%" fill="#fff" />
 
-            {/* <!-- Title --> */}
-            <text id="subtitle1" x="20" y="30" font-size="24">
-                NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL
-            </text>
+//             {/* <!-- Title --> */}
+//             <text id="subtitle1" x="20" y="30" font-size="24">
+//                 NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL
+//             </text>
 
-            {/* <!-- Subtitle 2 --> */}
-            <text x="20" y="90" font-size="18" font-family="Arial" fill="#000">
-                BOOK US! PLAY WITH US! COME SEE US!
-            </text>
+//             {/* <!-- Subtitle 2 --> */}
+//             <text x="20" y="90" font-size="18" font-family="Arial" fill="#000">
+//                 BOOK US! PLAY WITH US! COME SEE US!
+//             </text>
 
-            {/* <!-- Social Icons --> */}
-            <a href="https://www.instagram.com/cafemarche_bxl/" target="_blank">
-                <rect x="220" y="30" width="40" height="40" fill="#405DE6" />
-                {/* <!-- Add the Instagram logo path here --> */}
-            </a>
+//             {/* <!-- Social Icons --> */}
+//             <a href="https://www.instagram.com/cafemarche_bxl/" target="_blank">
+//                 <rect x="220" y="30" width="40" height="40" fill="#405DE6" />
+//                 {/* <!-- Add the Instagram logo path here --> */}
+//             </a>
 
-            <a href="https://www.facebook.com/orkest.cafe.marche/" target="_blank">
-                <rect x="270" y="30" width="40" height="40" fill="#1877F2" />
-                {/* <!-- Add the Facebook logo path here --> */}
-            </a>
+//             <a href="https://www.facebook.com/orkest.cafe.marche/" target="_blank">
+//                 <rect x="270" y="30" width="40" height="40" fill="#1877F2" />
+//                 {/* <!-- Add the Facebook logo path here --> */}
+//             </a>
 
-            <a href="mailto:cafemarche@cafemarche.be">
-                <rect x="320" y="30" width="40" height="40" fill="#000">
-                    {/* <!-- Add the email image or icon here --> */}
-                </rect>
-            </a>
-        </svg></div>;
-};
+//             <a href="mailto:cafemarche@cafemarche.be">
+//                 <rect x="320" y="30" width="40" height="40" fill="#000">
+//                     {/* <!-- Add the email image or icon here --> */}
+//                 </rect>
+//             </a>
+//         </svg></div>;
+// };
 
 const TopRight2 = () => {
     return <div id="toprighttitle">
@@ -320,11 +301,12 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
         this.mounted = true;
         this.galleryTimer = setTimeout(this.galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS);
 
-        setTimeout(this.correctTriangleWrappedText, 18);
+        //setTimeout(this.correctTriangleWrappedText, 18);
     }
 
     componentWillUnmount() {
         window.removeEventListener("resize", this.onWindowResize);
+        clearTimeout(this.galleryTimer || undefined);
         this.mounted = false;
     }
 
@@ -337,17 +319,21 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
             this.setState({});
             this.gallery.applyStateToDOM();
 
-            (document.querySelector("#root2") as HTMLElement).style.opacity = "100%";
+            const root2 = document.querySelector("#root2") as HTMLElement;
+            const horizOrientation = (window.innerHeight < window.innerWidth);
+            // because the overall page layout depends on orientation, the natural width changes depending on orient. so use different default widths.
+            const zoomFact = horizOrientation ? (root2.clientWidth / gSettings.landscapeNaturalWidth) : (root2.clientWidth / gSettings.portraitNaturalWidth);
+
+
+            root2.style.setProperty("--page-zoom", `${(zoomFact * 100).toFixed(2)}%`);
+            root2.style.opacity = "100%";
         }, 50);
     }
 
     onSelectPhoto = (i) => {
         this.gallery.setSelectedIdx(i);
 
-        // reset timer
-        if (this.galleryTimer) {
-            clearTimeout(this.galleryTimer);
-        }
+        clearTimeout(this.galleryTimer || undefined);
         this.galleryTimer = setTimeout(this.galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS);
         this.setState({});
     }
@@ -392,26 +378,6 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
         //console.log(`set to [${trgel.style.getPropertyValue('--left')}, ${trgel.style.getPropertyValue('--top')}] - [${trgel.style.getPropertyValue('--height')}, ${trgel.style.getPropertyValue('--width')}]`);
     }
 
-    correctTriangleWrappedText = () => {
-        const containerHeight = document.getElementById('photoCaptionContainer')?.offsetHeight;
-        if (!containerHeight) return;
-        const textContainer = document.getElementById('photoCaption');
-        if (!textContainer) return;
-
-        textContainer.style.paddingTop = "0px";
-        let paddingPx = 0;
-
-        // this is not an exact science. changing the padding means the height can change.
-        // a reasonable compromise is to just do it a few times, letting the browser re-layout each time.
-        // hopefully we settle somewhere reasonable.
-
-        for (var i = 0; i < 3; ++i) {
-            var oldHeight = textContainer.offsetHeight - paddingPx;
-            paddingPx = (containerHeight - oldHeight);
-            textContainer.style.paddingTop = paddingPx + "px";
-        }
-    };
-
     render() {
 
         const photoSelector = (
@@ -432,7 +398,7 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
                 {
                     this.content.gallery.map((post, idx) => {
                         //if (!post.CMRelevant) return null;
-                        let wpimagesource = GetImageURI(post);
+                        let wpimagesource = API.files.getURIForFile(post.file);
 
                         // preserving aspect ratio of these:
                         // https://stackoverflow.com/questions/22883994/crop-to-fit-an-svg-pattern
@@ -446,17 +412,13 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
             </defs>
         );
 
-        //const agendaCatID = window.CMconfig.categories.find(c => c.slug === gSettings.agendaCategorySlug).id;
-        // const agendaPosts = window.CMconfig.posts.filter(p => PostMatchesCategorySlug(p, gSettings.agendaCategorySlug));// !!p.categories.find(c => c === agendaCatID));
         const agendaBody = this.content.agenda.map((p, i) => {
-            //console.log(`rendering agenda item ${p}, ${i}`);
             return <AgendaItem key={i} item={p} />;
         });
-        //const agendaBody = <div>TODO: agenda</div>;
 
         const bothSvgParams = {
             landscape: {
-                svgViewBox: "0 0 2072 1496",
+                svgViewBox: "0 0 2130 1496",//svgViewBox: "0 0 2072 1496",
             },
             portrait: {
                 svgViewBox: "0 0 1086 2200",
@@ -465,20 +427,17 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
 
         const svgParams = (window.innerHeight < window.innerWidth) ? bothSvgParams.landscape : bothSvgParams.portrait;
 
-        setTimeout(this.correctTriangleWrappedText, 18);
-
         return (
-            <div id="root2" className="widthConstraint">
-                <div id="headerchrome" className="widthConstraint">
+            <div id="root2">
+                <div id="headerChrome">
                     <TopRight2 />
                 </div>
 
-                <div id="middleContent" className="widthConstraint">
-
+                <div id="middleContent">
                     <div id="galleryContainer">
-                        <svg viewBox={svgParams.svgViewBox} preserveAspectRatio="xMidYMid meet">
+                        <svg viewBox={svgParams.svgViewBox} preserveAspectRatio="xMinYMin meet">
                             {galleryPatternDefs}
-                            {(window.innerHeight < window.innerWidth) ? // landscape
+                            {(window.innerHeight < window.innerWidth) ? // landscape (horiz)
                                 (<g>
                                     <polygon points="894,385 2106,296 2020,1398 1074,1496" id="agendaBack" />
                                     <polygon points="1089,383 2072,383 2072,1438 1089,1438" id="agendaBack2" />
@@ -494,7 +453,7 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
                                     </foreignObject>
                                     <foreignObject x="1089" y="383" width="983" height="1055" id="agendaRef">
                                     </foreignObject>
-                                </g>) :
+                                </g>) : // portrait (vert)
                                 (<g>
                                     <polygon points="0,385 1064,296 978,1398 32,1496" id="agendaBack" transform="translate(0 474)" />
                                     <polygon points="47,837 1030,837 1030,1892 47,1892" id="agendaBack2" transform="translate(0 20)" />
@@ -524,8 +483,7 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
                     }
                     <div id="photoCaptionContainer">
                         <div id="photoCaptionContainerWrapShape"></div>
-                        <Markdown id="photoCaption" markdown={this.gallery.getSelectedPost()?.descriptionMarkdown || ""} />
-                        {/* <div id="photoCaption" dangerouslySetInnerHTML={{ __html: this.gallery.selectedPost.innerHTML }}> */}
+                        <Markdown id="photoCaption" markdown={this.gallery.getSelectedPost()?.caption || ""} />
                     </div>
 
                     <div id="photoSelectContainer">
@@ -538,8 +496,10 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
                         {photoSelector}
                     </div>
 
-                    <div id="agendaContent" className="frontpageAgendaContent">
-                        {agendaBody}
+                    <div id="agendaContent" className="frontpageAgendaContentWrapper">
+                        <div className="agendaContentContainer">
+                            {agendaBody}
+                        </div>
                     </div>
 
                     <div id="sponsorsContent">
@@ -552,52 +512,4 @@ export class HomepageMain extends React.Component<HomepageMainProps> {
         );
     }
 }
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// let m1 = Date.now();
-
-// async function WPGet(x) {
-//     const url = gSettings.urlPrefix + x;
-//     return new Promise((resolve, reject) => {
-//         fetch(url)
-//             .then(r => {
-//                 r.json().then(json => {
-//                     resolve(json);
-//                 })
-//                     .catch(reason => {
-//                         console.error(`Error parsing as JSON ${url}`);
-//                         console.error(reason);
-//                         reject(reason);
-//                     });
-//             })
-//             .catch(reason => {
-//                 console.error(`Error fetching ${url}`);
-//                 console.error(reason)
-//             });
-//     });
-// }
-
-// const gLoadJSON = Promise.all([
-//     WPGet("posts?_embed=1&per_page=100"),
-// ])
-//     .then(x => {
-//         window.CMconfig = {
-//             posts: x[0],
-//         };
-//     });
-
-// async function winmain() {
-//     await gLoadJSON;
-
-//     ReactDOM.render((<Main />), document.getElementById('root'));
-// };
-
-// if (document.readyState === 'complete') { // https://stackoverflow.com/questions/13364613/how-to-know-if-window-load-event-was-fired-already
-//     winmain();
-// } else {
-//     window.addEventListener("load", winmain);
-// }
-
 
