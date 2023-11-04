@@ -142,28 +142,6 @@ export interface TdeleteEventCommentArgs {
 };
 
 
-
-
-/*
-model EventSongList {
-  id          Int    @id @default(autoincrement())
-  sortOrder   Int    @default(0)
-  name        String
-  description String @default("")
-  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  eventId Int
-}
-
-model EventSongListSong {
-  id        Int     @id @default(autoincrement())
-  subtitle  String? // could be a small comment like "short version"
-  sortOrder Int     @default(0)
-  songId Int
-  eventSongListId Int
-}
-*/
-
 export interface TinsertOrUpdateEventSongListSong {
     id?: number;
     // don't rely on array ordering because it's shuffled etc during the change plan computation

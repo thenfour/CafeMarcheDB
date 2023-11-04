@@ -3,7 +3,7 @@ import * as db3 from "src/core/db3/db3";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { HomepageAgendaItemSpec, HomepageContentSpec, TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
+import { TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";

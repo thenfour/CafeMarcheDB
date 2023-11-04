@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'DIN 1451 Std';
+  /* src: url(https://db.onlinewebfonts.com/t/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2'); */
+  src: url(/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2');
+}
+
 :root {
   --drawer-paper-width: 100px;
   --data-grid-column-header-background-color: #f0f0f0;
@@ -22,6 +28,11 @@
   --crop-mask-color: #f00c;
   --frame-mask-color: #000c;
 
+  --cm-yellow: #ede331;
+  --cm-blue: #344873;
+  --cm-red: #831012;
+
+  --font-homepage: "DIN 1451 Std", Arial, sans-serif;
 }
 
 a,
