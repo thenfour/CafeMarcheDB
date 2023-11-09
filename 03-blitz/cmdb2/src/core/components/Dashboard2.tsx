@@ -273,9 +273,12 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
 };
 
 const gMenuItems: MenuItemSpec[] = [
+    { type: "sectionHeader", sectionName: "Public Homepage" },
     { type: "link", path: "/", linkCaption: "Public Home", renderIcon: () => gIconMap.Public() },
+    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Photo gallery", renderIcon: () => gIconMap.Image() },
 
     { type: "divider" },
+    { type: "sectionHeader", sectionName: "Backstage" },
     { type: "link", path: "/backstage", linkCaption: "Backstage Home", renderIcon: () => <HomeIcon /> },
     { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
     { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },

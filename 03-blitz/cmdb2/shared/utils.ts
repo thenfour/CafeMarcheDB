@@ -355,6 +355,7 @@ export const gIconOptions = {
     HighlightOff: "HighlightOff",
     Help: "Help",
     Home: "Home",
+    Image: "Image",
     Info: "Info",
     Launch: "Launch",
     LibraryMusic: "LibraryMusic",

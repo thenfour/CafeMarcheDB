@@ -3,7 +3,7 @@
 import formidable, { PersistentFile } from 'formidable';
 import { api } from "src/blitz-server"
 import { Ctx } from "@blitzjs/next";
-import { TClientUploadFileArgs } from 'src/core/db3/shared/apiTypes';
+import { TClientUploadFileArgs, UploadResponsePayload } from 'src/core/db3/shared/apiTypes';
 import { CoerceToNumberOrNull, sleep } from 'shared/utils';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -37,6 +37,11 @@ export default api(async (req, res, origCtx: Ctx) => {
         if (req.method == 'POST') {
             const form = formidable({});
             await form.parse(req, async (err, fields, files) => {
+                const responsePayload: UploadResponsePayload = {
+                    files: [],
+                    isSuccess: true,
+                };
+
                 try {
                     // fields comes across with keys corresponding to TClientUploadFileArgs
                     // except the values are arrays of string (length 1), rather than number.
@@ -52,7 +57,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                     //await sleep(1000);
 
                     // each field can contain multiple files
-                    Object.values(files).forEach(async (field: PersistentFile) => {
+                    const promises = Object.values(files).map(async (field: PersistentFile) => {
                         for (let iFile = 0; iFile < field.length; ++iFile) {
                             const file = field[iFile];
                             const oldpath = file.filepath; // temp location that formidable has saved it to. 'C:\Users\carl\AppData\Local\Temp\2e3b4218f38f5aedcf765f801'
@@ -104,15 +109,25 @@ export default api(async (req, res, origCtx: Ctx) => {
                             await rename(oldpath, newpath);
 
                             await mutationCore.PostProcessFile(newFile);
+
+                            responsePayload.files.push(newFile);
                         }
                     });
-                    res.write(`Files uploaded successfully; cur user : ${ctx.session.$publicData.userId}`);
+
+                    await Promise.all(promises);
+
+                    res.json(responsePayload);
+                    //res.write(`Files uploaded successfully; cur user : ${ctx.session.$publicData.userId}`);
                     res.end(() => {
                         resolve(undefined);
                     });
                 } catch (e) {
-                    res.writeHead(500, { 'Content-Type': 'text/html' });
-                    res.write(`error`);
+                    debugger;
+                    responsePayload.errorMessage = e.message;
+                    responsePayload.isSuccess = false;
+                    res.writeHead(500);
+                    res.json(responsePayload);
+                    //res.write(`error`);
                     res.end(() => {
                         reject(undefined);
                     });

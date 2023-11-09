@@ -197,34 +197,52 @@ export type ImageFileFormat = keyof typeof ImageFileFormatOptions;
 
 // reasons to use 01 coords rather than absolute pixels:
 // - i can create defaults that are static and work for any image
+// - adjusting scale doesn't require readjusting every trickle down value
 // - if i change order of operations things should be less broken.
 // - for galleryimagedisplayparams, it feels safer if the viewport changes shape/size.
-export interface ServerImageFileEditParams {
-    //scaleOrigin01: Coord2D; // of original dimensions.... never needed because these params are for a static file operation. the idea of scaling around a point means nothing. the dimensions change, no movement is done.
-    scale: number;// even this is a factor rather than pixels, to avoid having to know the original dimensions.
-    cropBegin01: Coord2D; // top/left, of scaled dimensions
-    cropEnd01: Coord2D;  // bottom/right of scaled dimensions.
+// export interface ServerImageFileEditParams {
+//     //scaleOrigin01: Coord2D; // of original dimensions.... never needed because these params are for a static file operation. the idea of scaling around a point means nothing. the dimensions change, no movement is done.
+//     scale: number;// even this is a factor rather than pixels, to avoid having to know the original dimensions.
+//     //cropBegin01: Coord2D; // top/left, of scaled dimensions
+//     //cropEnd01: Coord2D;  // bottom/right of scaled dimensions.
+// };
+
+// export const MakeDefaultServerImageFileEditParams = (): ServerImageFileEditParams => ({
+//     scale: 1,
+//     cropBegin01: {
+//         x: 0, y: 0,
+//     },
+//     cropEnd01: {
+//         x: 1, y: 1,
+//     },
+// });
+
+// export interface GalleryImageDisplayParams {
+//     scaledSize: Size; // specify the size of the image, in pixels. for mocked-up images this is going to be physical file * scaling. for 
+//     cropOffset01: Coord2D; // factor of scaledsize, specifies the offset used to place the object within scaledSize, accounting for cropping. generally this would be the same as ServerImageFileEditParams.cropBegin01.
+//     // the image will be centered here.
+//     rotationDegrees: number;
+//     position01: Coord2D; // factor of scaled size
+// };
+
+// export const MakeDefaultGalleryImageDisplayParams = (): GalleryImageDisplayParams => ({
+//     scaledSize: {
+//         width: 10, height: 10,
+//     },
+//     cropOffset01: {
+//         x: 0, y: 0,
+//     },
+//     rotationDegrees: 0,
+//     position01: {
+//         x: 0, y: 0,
+//     },
+// });
+
+export interface ImageEditParams {
+
 };
 
-export const MakeDefaultServerImageFileEditParams = (): ServerImageFileEditParams => ({
-    scale: 1,
-    cropBegin01: {
-        x: 0, y: 0,
-    },
-    cropEnd01: {
-        x: 1, y: 1,
-    },
-});
-
-export interface GalleryImageDisplayParams {
-    scaledSize: Size; // specify the size of the image, in pixels. for mocked-up images this is going to be physical file * scaling. for 
-    cropOffset01: Coord2D; // factor of scaledsize, specifies the offset used to place the object within scaledSize, accounting for cropping. generally this would be the same as ServerImageFileEditParams.cropBegin01.
-    // the image will be centered here.
-    rotationDegrees: number;
-    position01: Coord2D; // factor of scaled size
-};
-
-export const MakeDefaultGalleryImageDisplayParams = (): GalleryImageDisplayParams => ({
+export const MakeDefaultImageEditParams = (): ImageEditParams => ({
     scaledSize: {
         width: 10, height: 10,
     },
@@ -237,19 +255,17 @@ export const MakeDefaultGalleryImageDisplayParams = (): GalleryImageDisplayParam
     },
 });
 
-
 export interface ForkImageParams {
     parentFileLeaf: string;
     outputType: ImageFileFormat;
-    editParams: ServerImageFileEditParams;
+    editParams: ImageEditParams;
 };
-
 
 // because of how this is used, returns all options filled with NOP values, rather than undefined..
 export const MakeDefaultForkImageParams = (parentFile: Prisma.FileGetPayload<{}>): ForkImageParams => ({
     outputType: "png",
     parentFileLeaf: parentFile.storedLeafName,
-    editParams: MakeDefaultServerImageFileEditParams(),
+    editParams: MakeDefaultImageEditParams(),
 });
 
 export interface FileCustomData {
@@ -257,7 +273,7 @@ export interface FileCustomData {
     // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
     relationToParent?: "thumbnail" | "forkedImage";
     forkedImage?: { // when relationToParent is forkedImage.
-        editParams: ServerImageFileEditParams, // the parameters that were used to generate this forked image.
+        creationEditParams: ImageEditParams, // the parameters that were used to generate this forked image.
     };
     imageMetadata?: {
         width?: number | undefined;
@@ -271,10 +287,9 @@ export interface FileCustomData {
 
 export const MakeDefaultFileCustomData = (): FileCustomData => ({});
 
-
 // always returns valid due to having createDefault
 export const parsePayloadJSON = <T,>(value: null | undefined | string, createDefault: (val: null | undefined | string) => T, onError?: (e) => void): T => {
-    if (value === null || value === undefined || (typeof value !== 'string')) {
+    if (value === null || value === undefined || (typeof value !== 'string') || value.trim() === "") {
         return createDefault(value);
     }
     try {
@@ -286,12 +301,30 @@ export const parsePayloadJSON = <T,>(value: null | undefined | string, createDef
     }
 };
 
-
-
 // always returns valid
 export const getFileCustomData = (f: Prisma.FileGetPayload<{}>): FileCustomData => {
     return parsePayloadJSON<FileCustomData>(f.customData, MakeDefaultFileCustomData, (e) => {
         console.log(`failed to parse file custom data for file id ${f.id}, storedLeafName:${f.storedLeafName}, mime:${f.mimeType}`);
     });
 };
+
+export interface TupdateGenericSortOrderArgs {
+    tableID: string;
+    tableName: string;
+    movingItemId: number; // pk of the item being moved
+    newPositionItemId: number; // pk of the item this should replace.
+};
+
+
+export interface UploadResponsePayload {
+    files: Prisma.FileGetPayload<{}>[];
+    isSuccess: boolean;
+    errorMessage?: string;
+};
+
+export const MakeErrorUploadResponsePayload = (errorMessage: string): UploadResponsePayload => ({
+    files: [],
+    isSuccess: false,
+    errorMessage,
+});
 

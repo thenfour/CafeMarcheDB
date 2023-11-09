@@ -11,7 +11,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
 import React from "react";
-import { TAnyModel, parseMimeType } from "shared/utils";
+import { TAnyModel, formatFileSize, parseMimeType } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -105,7 +105,7 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
                 {isAudio && <AudioPreviewBehindButton value={file} />}
             </div>
             <div className="stats">
-                {file.sizeBytes} bytes,
+                {formatFileSize(file.sizeBytes)},
                 uploaded at {file.uploadedAt.toISOString()},
                 {file.mimeType && <>type: {file.mimeType}</>}
             </div>

@@ -141,6 +141,7 @@ export class xTableRenderClient {
     items: TAnyModel[];
     rowCount: number;
     remainingQueryResults: any;
+    remainingQueryStatus: any;
     refetch: () => void;
 
     get schema() {
@@ -193,9 +194,10 @@ export class xTableRenderClient {
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
             };
 
-            const [{ items, count, ...remainingQueryResults }, { refetch }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
+            const [{ items, count, ...remainingQueryResults }, { refetch, ...queryOutput }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
             items_ = items as TAnyModel[];
             this.rowCount = count;
+            this.remainingQueryStatus = queryOutput;
             this.remainingQueryResults = remainingQueryResults;
             this.refetch = refetch;
         }
@@ -221,6 +223,7 @@ export class xTableRenderClient {
             // console.log(`filtermodel:`);
             // console.log(args.filterModel);
 
+            this.remainingQueryStatus = queryOutput;
             this.remainingQueryResults = remainingQueryResults;
             this.rowCount = items.length;
             this.refetch = refetch;

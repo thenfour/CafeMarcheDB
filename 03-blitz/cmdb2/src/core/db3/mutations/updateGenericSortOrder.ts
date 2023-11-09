@@ -1,0 +1,92 @@
+// updateGenericSortOrder
+import { resolver } from "@blitzjs/rpc";
+import { AuthenticatedMiddlewareCtx, assert } from "blitz";
+import db, { Prisma } from "db";
+import { Permission } from "shared/permissions";
+import * as db3 from "../db3";
+import * as mutationCore from "../server/db3mutationCore";
+import { TupdateGenericSortOrderArgs } from "../shared/apiTypes";
+import { ChangeAction, CreateChangeContext, RegisterChange, moveItemInArray } from "shared/utils";
+
+// ASSUMES that the table's sort order column is called "sortOrder"
+// ASSUMES that the table is not that big; we will update ALL sort orders here.
+export default resolver.pipe(
+    resolver.authorize(Permission.login),
+    async (args: TupdateGenericSortOrderArgs, ctx: AuthenticatedMiddlewareCtx) => {
+
+        // TODO
+        //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)
+        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+
+        if (args.movingItemId === args.newPositionItemId) {
+            //moving an item to the same place 
+            return args;
+        }
+
+        const clientIntention: db3.xTableClientUsageContext = {
+            intention: "user",
+            mode: "primary",
+            currentUser,
+        };
+
+        const table = db3.GetTableById(args.tableID);
+        const dbTableClient = db[table.tableName] as typeof db.frontpageGalleryItem; // the prisma interface. for convenience of intellisense cast to something known.
+
+        const items = await dbTableClient.findMany({
+            select: {
+                id: true,
+                sortOrder: true,
+            },
+            orderBy: {
+                sortOrder: "asc",
+            },
+        });
+
+        assert(items.length > 1, "can't move items when there's only 1");
+
+        const indexToMove = items.findIndex(i => i.id === args.movingItemId);
+        const destIndex = items.findIndex(i => i.id === args.newPositionItemId);
+        assert(indexToMove !== -1 && destIndex !== -1, `specified items weren't found movingItemId:${args.movingItemId}, newPositionItemId:${args.newPositionItemId}`);
+
+        const newItems = moveItemInArray(items, indexToMove, destIndex);
+
+        // items are now in order. correct their sort orders so they're in order.
+        // in order to not have to update ALL rows all the time, just check if things are in order. if they're not, correct that item only and continue.
+        let prevSortOrder = newItems[0]!.sortOrder;
+        let oldValues: { id: number, sortOrder: number }[] = [];
+        let newValues: { id: number, sortOrder: number }[] = [];
+        for (let i = 1; i < newItems.length; ++i) {
+            const item = newItems[i]!;
+            if (item.sortOrder <= prevSortOrder) {
+                // sort order is out of ascending order; this item needs correction
+                prevSortOrder++; // make a new correct sort order
+                oldValues.push({ id: item.id, sortOrder: item.sortOrder });
+                newValues.push({ id: item.id, sortOrder: prevSortOrder });
+                //update
+                item.sortOrder = prevSortOrder;
+                await dbTableClient.update({
+                    data: { sortOrder: item.sortOrder },
+                    where: { id: item.id },
+                });
+            } else {
+                prevSortOrder = item.sortOrder;
+            }
+        }
+
+        const contextDesc = `updateSortOrder:${table.tableName}`;
+        const changeContext = CreateChangeContext(contextDesc);
+
+        await RegisterChange({
+            action: ChangeAction.update,
+            changeContext,
+            table: args.tableName,
+            pkid: 0,
+            oldValues,
+            newValues,
+            ctx,
+        });
+
+        return args;// blitz is weird and wants the return type to be the same as the input type.
+    }
+);
+

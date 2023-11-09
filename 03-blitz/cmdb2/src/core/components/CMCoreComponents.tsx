@@ -14,13 +14,24 @@ import * as db3 from "src/core/db3/db3";
 import WaveSurfer from "wavesurfer.js";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
-import { Coord2D, TClientUploadFileArgs } from "../db3/shared/apiTypes";
+import { Coord2D, MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadResponsePayload } from "../db3/shared/apiTypes";
 import { CMTextField } from "./CMTextField";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
 import { Coalesce } from "shared/utils";
+import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
+
+
+// https://github.com/kutlugsahin/react-smooth-dnd/issues/88
+export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {
+    return <ReactSmoothDnd.Container {...props as any} />;
+}
+export const ReactSmoothDndDraggable = (props: React.PropsWithChildren<any>) => {
+    return <ReactSmoothDnd.Draggable {...props as any} />;
+}
+
 
 ////////////////////////////////////////////////////////////////
 
@@ -345,7 +356,7 @@ export const InspectObject = (props: { src: any, tooltip?: string }) => {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-type VisibilityControlValue = (db3.PermissionPayload | null);
+export type VisibilityControlValue = (db3.PermissionPayload | null);
 
 export interface VisibilityValueProps {
     permission: db3.PermissionPayload | null;
@@ -389,7 +400,7 @@ interface VisibilityControlProps {
 };
 export const VisibilityControl = (props: VisibilityControlProps) => {
     const permissions = API.users.getAllPermissions();
-    const variant = props.variant || "minimal";
+    const variant = props.variant || "verbose";
     const [currentUser] = useCurrentUser();
     const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => {
         return p.isVisibility && p.roles.some(r => r.roleId === currentUser?.roleId);
@@ -410,7 +421,8 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
             }}
             renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
                 return <li {...chprops}>
-                    <VisibilityValue permission={value} variant={variant} /></li>;
+                    <VisibilityValue permission={value} variant={"verbose"} />
+                </li>;
             }}
             renderValue={(args) => {
                 return <VisibilityValue permission={args.value} variant={variant} onClick={args.handleEnterEdit} />;
@@ -478,7 +490,7 @@ export interface CMDBUploadFilesArgs {
     onProgress: (progress01: number, uploaded: number, total: number) => void;
 };
 
-export async function CMDBUploadFile(args: CMDBUploadFilesArgs) {
+export async function CMDBUploadFile(args: CMDBUploadFilesArgs): Promise<UploadResponsePayload> {
     const formData = new FormData();
     for (let i = 0; i < args.files.length; ++i) {
         formData.append(`file_${i}`, args.files[i]!);
@@ -496,16 +508,18 @@ export async function CMDBUploadFile(args: CMDBUploadFilesArgs) {
         xhr.addEventListener("loadend", () => {
             if (xhr.readyState === 4 && xhr.status === 200) {
                 // success
-                resolve(true);
+                const resp = JSON.parse(xhr.responseText) as UploadResponsePayload;
+                resolve(resp);
             } else {
-                reject(xhr.responseText);
+                reject(MakeErrorUploadResponsePayload(`loadend state error ${xhr.responseText}`));
             }
         });
         xhr.upload.addEventListener("error", (e) => {
-            reject(`upload error`);
+            //reject(`upload error`);
+            reject(MakeErrorUploadResponsePayload(`upload error event`));
         });
         xhr.addEventListener("error", (e) => {
-            reject(xhr.responseText);
+            reject(MakeErrorUploadResponsePayload(`read response error ${xhr.responseText}`));
         });
 
         // add form fields

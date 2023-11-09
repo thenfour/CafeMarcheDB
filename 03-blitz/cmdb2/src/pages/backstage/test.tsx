@@ -40,207 +40,157 @@ import { JoystickDiv } from "src/core/components/CMCoreComponents";
 import { API, HomepageContentSpec } from "src/core/db3/clientAPI"; // this line causes an exception . uh oh some circular reference.
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, GalleryImageDisplayParams, MakeDefaultGalleryImageDisplayParams, MakeDefaultServerImageFileEditParams, MulSize, MulSizeBySize, ServerImageFileEditParams, Size, SubCoord2D, getFileCustomData } from "src/core/db3/shared/apiTypes";
-import { HomepageMain } from "src/core/components/homepageComponents";
+import { HomepageMain, HomepagePhotoPattern, generateHomepageId } from "src/core/components/homepageComponents";
 import { nanoid } from 'nanoid';
 
-// returns a valid ForkImageParams
-const getCropParamsForFile = (f: db3.FilePayloadMinimum): ServerImageFileEditParams => {
-    const customData = getFileCustomData(f);
-    return customData.forkedImage?.editParams || MakeDefaultServerImageFileEditParams();
-};
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// // represents the image as it's coming from the server. therefore does not apply final rotate/positioning.
+// // parameterized for editing.
+// interface FakeGalleryImageProps {
+//     // do not use the edit params from this, because they are the params that were used to create this image. not params to apply to this image.
+//     // we do however need the image dimensions.
+//     galleryItem: db3.FrontpageGalleryItemPayload;
 
-const getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
-    const customData = getFileCustomData(file);
-    if (customData.imageMetadata?.height != null && customData.imageMetadata?.width != null) {
-        return {
-            width: customData.imageMetadata!.width!,
-            height: customData.imageMetadata!.height!,
-        };
-    }
-    return { width: 10, height: 10 };
-};
+//     //imageSize: Size; // the gallery item file URI dimensions.
+//     fileParams: ServerImageFileEditParams; // 
+//     style?: React.CSSProperties;
+// };
 
+// const FakeGalleryImage = ({ fileParams, ...props }: FakeGalleryImageProps) => {
+//     const uri = API.files.getURIForFile(props.galleryItem.file);
+//     const fileDimensions = API.files.getImageFileDimensions(props.galleryItem.file)
+//     const scaledUncroppedSize = MulSize(fileDimensions, fileParams.scale); // scaled & uncropped.
 
+//     // this is the size of the image we imagine the server would return to us. the size of this component.
+//     //const mockImageDimensions: Size = MulSizeBySize(scaledSize, SubCoord2D(fileParams.cropEnd01, fileParams.cropBegin01))
+//     const scaleTx = `scale(${fileParams.scale})`;
+//     //const cropCompTx = `translate(${cropCompensation.x}px, ${cropCompensation.y}px)`;
 
-// when you know that the server params are correct, then correct the gallery params.
-const correctGalleryParams = (gi: db3.FrontpageGalleryItemPayload, mutableGp: GalleryImageDisplayParams, fp: ServerImageFileEditParams) => {
-    // assumes the file dimensions are pre-server-effects.
-    const fileDimensions = getImageFileDimensions(gi.file)
-    mutableGp.cropOffset01 = { ...fp.cropBegin01 };
-    mutableGp.scaledSize = MulSize(fileDimensions, fp.scale);
-};
+//     const commonStyle: React.CSSProperties = {
+//         position: "absolute",
+//         left: 0,
+//         top: 0,
+//         touchAction: "none", // important so dragging touch doesn't use gesture behavior like scrolling the page.
+//         pointerEvents: "none", // important for overflow behavior (which i'll probably hide eventually)
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// represents the image as it's coming from the server. therefore does not apply final rotate/positioning.
-// parameterized for editing.
-interface FakeGalleryImageProps {
-    // do not use the edit params from this, because they are the params that were used to create this image. not params to apply to this image.
-    // we do however need the image dimensions.
-    galleryItem: db3.FrontpageGalleryItemPayload;
+//         // transforms...
+//         width: `${fileDimensions.width}px`, // css transform works AFTER width/height, so this should be the original dimensions.
+//         height: `${fileDimensions.height}px`,
+//         transformOrigin: `0 0`, // because the resulting image should be like an image file from 0,0, the scale origin should be about 0,0
+//     }
 
-    //imageSize: Size; // the gallery item file URI dimensions.
-    fileParams: ServerImageFileEditParams; // 
-    style?: React.CSSProperties;
-};
+//     const maskStyle: React.CSSProperties = {
+//         zIndex: 3,
+//         backgroundColor: "transparent",
 
-const FakeGalleryImage = ({ fileParams, ...props }: FakeGalleryImageProps) => {
-    const uri = API.files.getURIForFile(props.galleryItem.file);
-    //const customData = getFileCustomData(props.galleryItem.file);
-    const fileDimensions = getImageFileDimensions(props.galleryItem.file)
-    //const imageSize = db3.getGalleryImageDisplayParams(props.galleryItem).scaledSize;
-    const scaledSize = MulSize(fileDimensions, fileParams.scale);
+//         // transform is *applied to the border* so these need to be original dimensions not scaled.
+//         boxSizing: "border-box",
+//         borderLeft: `${fileDimensions.width * fileParams.cropBegin01.x}px solid var(--crop-mask-color)`,
+//         borderTop: `${fileDimensions.height * fileParams.cropBegin01.y}px solid var(--crop-mask-color)`,
+//         borderRight: `${fileDimensions.width * (1 - fileParams.cropEnd01.x)}px solid var(--crop-mask-color)`,
+//         borderBottom: `${fileDimensions.height * (1 - fileParams.cropEnd01.y)}px solid var(--crop-mask-color)`,
+//         transform: `${scaleTx}`,
+//         ...commonStyle,
+//     }
 
-    // offset, in post-scaled (screen) pixels, to offset the image to simulate crop
-    // we don't need to compensate for crop, because the f act that we're already using the original image does it automatically.
-    // we do a theoretical shift RIGHT to crop,
-    // but because this is a mockup, we shift LEFT back to compensate for the crop.
-    // const cropCompensation: Coord2D = {
-    //     x: -scaledSize.width * fileParams.cropBegin01.x,
-    //     y: -scaledSize.height * fileParams.cropBegin01.y,
-    // };
+//     const imageStyle: React.CSSProperties = {
+//         zIndex: 2,
+//         backgroundImage: `url(${uri})`,
+//         //transform: `${cropCompTx} ${scaleTx}`,
+//         transform: `${scaleTx}`,
+//         ...commonStyle,
+//         //border: `20px dashed green`,
+//     }
 
-    // this is the size of the image we imagine the server would return to us. the size of this component.
-    const mockImageDimensions: Size = MulSizeBySize(scaledSize, SubCoord2D(fileParams.cropEnd01, fileParams.cropBegin01))
-    const scaleTx = `scale(${fileParams.scale})`;
-    //const cropCompTx = `translate(${cropCompensation.x}px, ${cropCompensation.y}px)`;
+//     const containerStyle: React.CSSProperties = {
+//         width: `${scaledUncroppedSize.width}px`,
+//         height: `${scaledUncroppedSize.height}px`,
+//         //border: `3px dashed blue`,
+//         position: "relative",
+//     };
 
-    const commonStyle: React.CSSProperties = {
-        position: "absolute",
-        left: 0,
-        top: 0,
-        touchAction: "none", // important so dragging touch doesn't use gesture behavior like scrolling the page.
-        pointerEvents: "none", // important for overflow behavior (which i'll probably hide eventually)
-
-        // transforms...
-        width: `${fileDimensions.width}px`, // css transform works AFTER width/height, so this should be the original dimensions.
-        height: `${fileDimensions.height}px`,
-        transformOrigin: `0 0`, // because the resulting image should be like an image file from 0,0, the scale origin should be about 0,0
-    }
-
-    const maskStyle: React.CSSProperties = {
-        zIndex: 3,
-        backgroundColor: "transparent",
-
-        // transform is *applied to the border* so these need to be original dimensions not scaled.
-        boxSizing: "border-box",
-        borderLeft: `${fileDimensions.width * fileParams.cropBegin01.x}px solid var(--crop-mask-color)`,
-        borderTop: `${fileDimensions.height * fileParams.cropBegin01.y}px solid var(--crop-mask-color)`,
-        borderRight: `${fileDimensions.width * (1 - fileParams.cropEnd01.x)}px solid var(--crop-mask-color)`,
-        borderBottom: `${fileDimensions.height * (1 - fileParams.cropEnd01.y)}px solid var(--crop-mask-color)`,
-        transform: `${scaleTx}`,
-        ...commonStyle,
-    }
-
-    const imageStyle: React.CSSProperties = {
-        zIndex: 2,
-        backgroundImage: `url(${uri})`,
-        //transform: `${cropCompTx} ${scaleTx}`,
-        transform: `${scaleTx}`,
-        ...commonStyle,
-        //border: `20px dashed green`,
-    }
-
-    const containerStyle: React.CSSProperties = {
-        width: `${mockImageDimensions.width}px`,
-        height: `${mockImageDimensions.height}px`,
-        //border: `3px dashed blue`,
-        position: "relative",
-    };
-
-    return <div className="ImageEditor cropMockupContainer" style={{ ...containerStyle, ...props.style }}>
-        <div className="ImageEditor cropMockup Image" style={imageStyle}></div>
-        <div className="ImageEditor cropMockup Mask" style={maskStyle}></div>
-    </div >;
-}
+//     return <div className="ImageEditor cropMockupContainer" style={{ ...containerStyle, ...props.style }}>
+//         <div className="ImageEditor cropMockup Image" style={imageStyle}></div>
+//         <div className="ImageEditor cropMockup Mask" style={maskStyle}></div>
+//     </div >;
+// }
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// represents the image as it's coming from the server. therefore does not apply final rotate/positioning.
-// parameterized for editing.
-interface RealGalleryImageProps {
-    // do not use the edit params from this, because they are the params that were used to create this image. not params to apply to this image.
-    // we do however need the image dimensions.
-    galleryItem: db3.FrontpageGalleryItemPayload;
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// // represents the image as it's coming from the server. therefore does not apply final rotate/positioning.
+// // parameterized for editing.
+// interface RealGalleryImageProps {
+//     // do not use the edit params from this, because they are the params that were used to create this image. not params to apply to this image.
+//     // we do however need the image dimensions.
+//     galleryItem: db3.FrontpageGalleryItemPayload;
 
-    //imageSize: Size; // the gallery item file URI dimensions.
-    //fileParams: ServerImageFileEditParams; // 
-    style?: React.CSSProperties;
-};
+//     //imageSize: Size; // the gallery item file URI dimensions.
+//     //fileParams: ServerImageFileEditParams; // 
+//     style?: React.CSSProperties;
+// };
 
-const RealGalleryImage = (props: RealGalleryImageProps) => {
-    const uri = API.files.getURIForFile(props.galleryItem.file);
-    //const customData = getFileCustomData(props.galleryItem.file);
-    const fileDimensions = getImageFileDimensions(props.galleryItem.file)
-    //const imageSize = db3.getGalleryImageDisplayParams(props.galleryItem).scaledSize;
-    //const scaledSize = MulSize(fileDimensions, fileParams.scale);
+// const RealGalleryImage = (props: RealGalleryImageProps) => {
+//     const uri = API.files.getURIForFile(props.galleryItem.file);
+//     //const customData = getFileCustomData(props.galleryItem.file);
+//     const fileDimensions = getImageFileDimensions(props.galleryItem.file)
+//     //const imageSize = db3.getGalleryImageDisplayParams(props.galleryItem).scaledSize;
+//     //const scaledSize = MulSize(fileDimensions, fileParams.scale);
 
-    // this is the size of the image we imagine the server would return to us. the size of this component.
-    //const mockImageDimensions: Size = MulSizeBySize(scaledSize, SubCoord2D(fileParams.cropEnd01, fileParams.cropBegin01))
-    //const scaleTx = `scale(${fileParams.scale})`;
-    //const cropCompTx = `translate(${cropCompensation.x}px, ${cropCompensation.y}px)`;
+//     // this is the size of the image we imagine the server would return to us. the size of this component.
+//     //const mockImageDimensions: Size = MulSizeBySize(scaledSize, SubCoord2D(fileParams.cropEnd01, fileParams.cropBegin01))
+//     //const scaleTx = `scale(${fileParams.scale})`;
+//     //const cropCompTx = `translate(${cropCompensation.x}px, ${cropCompensation.y}px)`;
 
-    const commonStyle: React.CSSProperties = {
-        position: "absolute",
-        left: 0,
-        top: 0,
-        touchAction: "none", // important so dragging touch doesn't use gesture behavior like scrolling the page.
-        pointerEvents: "none", // important for overflow behavior (which i'll probably hide eventually)
+//     const commonStyle: React.CSSProperties = {
+//         position: "absolute",
+//         left: 0,
+//         top: 0,
+//         touchAction: "none", // important so dragging touch doesn't use gesture behavior like scrolling the page.
+//         pointerEvents: "none", // important for overflow behavior (which i'll probably hide eventually)
 
-        // transforms...
-        width: `${fileDimensions.width}px`, // css transform works AFTER width/height, so this should be the original dimensions.
-        height: `${fileDimensions.height}px`,
-        //transformOrigin: `0 0`, // because the resulting image should be like an image file from 0,0, the scale origin should be about 0,0
-    }
+//         // transforms...
+//         width: `${fileDimensions.width}px`, // css transform works AFTER width/height, so this should be the original dimensions.
+//         height: `${fileDimensions.height}px`,
+//         //transformOrigin: `0 0`, // because the resulting image should be like an image file from 0,0, the scale origin should be about 0,0
+//     }
 
-    const imageStyle: React.CSSProperties = {
-        zIndex: 2,
-        backgroundImage: `url(${uri})`,
-        //transform: `${cropCompTx} ${scaleTx}`,
-        //transform: `${scaleTx}`,
-        ...commonStyle,
-        //border: `20px dashed green`,
-    }
+//     const imageStyle: React.CSSProperties = {
+//         zIndex: 2,
+//         backgroundImage: `url(${uri})`,
+//         //transform: `${cropCompTx} ${scaleTx}`,
+//         //transform: `${scaleTx}`,
+//         ...commonStyle,
+//         //border: `20px dashed green`,
+//     }
 
-    const containerStyle: React.CSSProperties = {
-        width: `${fileDimensions.width}px`,
-        height: `${fileDimensions.height}px`,
-        //border: `3px dashed blue`,
-        position: "relative",
-    };
+//     const containerStyle: React.CSSProperties = {
+//         width: `${fileDimensions.width}px`,
+//         height: `${fileDimensions.height}px`,
+//         //border: `3px dashed blue`,
+//         position: "relative",
+//     };
 
-    return <div className="ImageEditor cropMockupContainer" style={{ ...containerStyle, ...props.style }}>
-        <div className="ImageEditor cropMockup Image" style={imageStyle}></div>
-    </div >;
-}
+//     return <div className="ImageEditor cropMockupContainer" style={{ ...containerStyle, ...props.style }}>
+//         <div className="ImageEditor cropMockup Image" style={imageStyle}></div>
+//     </div >;
+// }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface CalcGalleryImageTransformArgs {
-    viewportSize: Size;
-    galleryParams: GalleryImageDisplayParams;
-};
 
-const CalcGalleryImageTransform = (args: CalcGalleryImageTransformArgs) => {
-    const scaledSize = args.galleryParams.scaledSize;
-    const centerImage = `translate(${(args.viewportSize.width - scaledSize.width) * .5}px, ${(args.viewportSize.height - scaledSize.height) * .5}px)`;
-    const galleryRotate = `rotate(${args.galleryParams.rotationDegrees}deg)`;
-    const galleryTranslatePos = `translate(${args.galleryParams.position01.x * scaledSize.width}px, ${args.galleryParams.position01.y * scaledSize.height}px)`;
-    return `${galleryTranslatePos} ${galleryRotate} ${centerImage}`;
-};
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interface GalleryImageFrameProps {
+//     galleryItem: db3.FrontpageGalleryItemPayload; // do not use the edit params from this, because they are the params that were used to create this image. not params to apply to this image.
+//     //imageSize: Size; // the gallery item file URI dimensions.
+//     fileParams?: ServerImageFileEditParams | null; // if null, this is a "real" image and not a faked one.
+//     galleryParams: GalleryImageDisplayParams;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface GalleryImageFrameProps {
-    galleryItem: db3.FrontpageGalleryItemPayload; // do not use the edit params from this, because they are the params that were used to create this image. not params to apply to this image.
-    //imageSize: Size; // the gallery item file URI dimensions.
-    fileParams?: ServerImageFileEditParams | null; // if null, this is a "real" image and not a faked one.
-    galleryParams: GalleryImageDisplayParams;
+//     size: Size; // size of this (viewport)
+//     maskSize: number; // size of a mask around the viewport.
 
-    size: Size; // size of this (viewport)
-    maskSize: number; // size of a mask around the viewport.
-
-    //style?: React.CSSProperties;
-};
+//     //style?: React.CSSProperties;
+// };
 
 /*
 
@@ -281,85 +231,110 @@ interface GalleryImageFrameProps {
 // file dimensions     file           file*scale
 // cropBegin01         galleryParams  fileparams
 // scaled size         galleryParams  fileparams
-const GalleryImageFrame = (props: GalleryImageFrameProps) => {
-    //const cropOffset01 = props.galleryParams.cropOffset01;
-    const scaledSize = props.galleryParams.scaledSize;
+// const GalleryImageFrame = (props: GalleryImageFrameProps) => {
+//     //const cropOffset01 = props.galleryParams.cropOffset01;
+//     const scaledSize = props.galleryParams.scaledSize;
 
-    const mainStyle: React.CSSProperties = {
-        position: "relative",
-        width: `100%`,
-        height: `100%`,
-        backgroundColor: "#f0f",
-        //border: `${props.maskSize}px solid var(--frame-mask-color)`,
-        boxSizing: "content-box",
-        zIndex: 6,
-        touchAction: "none",
-        pointerEvents: "none",
+//     const mainStyle: React.CSSProperties = {
+//         position: "relative",
+//         width: `100%`,
+//         height: `100%`,
+//         backgroundColor: "#f0f",
+//         //border: `${props.maskSize}px solid var(--frame-mask-color)`,
+//         boxSizing: "content-box",
+//         zIndex: 6,
+//         touchAction: "none",
+//         pointerEvents: "none",
+//     };
+
+//     const maskStyle: React.CSSProperties = {
+//         position: "absolute",
+//         top: 0,
+//         left: 0,
+//         width: `100%`,
+//         height: `100%`,
+//         border: `${props.maskSize}px solid var(--frame-mask-color)`,
+//         boxSizing: "border-box",
+//         zIndex: 5,
+//         touchAction: "none",
+//         pointerEvents: "none",
+//     };
+
+//     const gridStyle: React.CSSProperties & Record<string, string> = {
+//         position: "absolute",
+//         top: "0",
+//         left: "0",
+//         width: `100%`,
+//         height: `100%`,
+//         border: `${props.maskSize}px solid transparent`,
+//         boxSizing: "border-box",
+//         zIndex: "7",
+//         touchAction: "none",
+//         pointerEvents: "none",
+//         "--grid-size-x": `${props.size.width / 3}px`,
+//         "--grid-size-y": `${props.size.height / 3}px`,
+//     };
+
+//     const imageWrapperStyle: React.CSSProperties = {
+//         width: `${props.size.width + props.maskSize * 2}px`,
+//         height: `${props.size.height + props.maskSize * 2}px`,
+//         touchAction: "none",
+//         userSelect: "none",
+//         border: `${props.maskSize}px solid transparent`,
+//         position: "relative",
+//         //overflow: "hidden",
+//         boxSizing: "border-box",
+//         //boxSizing: "content-box", // we're setting width & height; let the border not interfere with the dimensions.
+//         //transformOrigin: `50% 50%`,//${viewportSize.width * 0.5}px ${viewportSize.height * 0.5}px`,
+//         //transformOrigin: `${props.size.width * 0.5 + props.maskSize}px ${props.size.height * 0.5 + + props.maskSize}px`,
+//         //transformOrigin: `0 0`,
+//         //transform: `${galleryTranslatePos} ${halfViewportTranslateNEG} ${galleryRotate} ${halfViewportTranslatePOS} ${centerToUL}`,
+//         transform: CalcGalleryImageTransform({ galleryParams: props.galleryParams, viewportSize: props.size }),// `${galleryTranslatePos} ${galleryRotate} ${centerImage}`,
+//         //transform: `${galleryTranslatePos}  ${galleryRotate}`,
+//     };
+
+//     return <div className="galleryImage serverFileWithMaskContainer" style={mainStyle}>
+//         <div className="galleryImage serverFileMask" style={maskStyle}></div>
+//         <div className="galleryImage serverFileGrid dashed-grid-paper" style={gridStyle}></div>
+//         <div className="galleryImage serverFileWrapper" style={imageWrapperStyle}>
+//             {!!props.fileParams ? (
+//                 <FakeGalleryImage fileParams={props.fileParams} galleryItem={props.galleryItem} />
+//             ) : (
+//                 <RealGalleryImage galleryItem={props.galleryItem} />
+//             )}
+//         </div>
+//     </div>;
+// }
+
+
+// this is a viewport-sized frame that hosts the image pattern.
+// it should pass on the transformation stuff to the <HomepagePhotoPattern> element.
+interface GalleryImagePreviewFrameProps {
+    galleryItem: db3.FrontpageGalleryItemPayload; // do not use the edit params from this, because they are the params that were used to create this image. not params to apply to this image.
+    fileParams: ServerImageFileEditParams;
+    galleryParams: GalleryImageDisplayParams;
+
+    viewportSize: Size;
+    maskSize: number; // size of a mask around the viewport.
+    instanceKey: string;
+};
+
+const GalleryImagePreviewFrame = (props: GalleryImagePreviewFrameProps) => {
+    const svgStyle: React.CSSProperties = {
+        width: `${props.viewportSize.width}px`,
+        height: `${props.viewportSize.height}px`,
     };
 
-    const maskStyle: React.CSSProperties = {
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: `100%`,
-        height: `100%`,
-        border: `${props.maskSize}px solid var(--frame-mask-color)`,
-        boxSizing: "border-box",
-        zIndex: 5,
-        touchAction: "none",
-        pointerEvents: "none",
-    };
-
-    const gridStyle: React.CSSProperties & Record<string, string> = {
-        position: "absolute",
-        top: "0",
-        left: "0",
-        width: `100%`,
-        height: `100%`,
-        border: `${props.maskSize}px solid transparent`,
-        boxSizing: "border-box",
-        zIndex: "7",
-        touchAction: "none",
-        pointerEvents: "none",
-        "--grid-size-x": `${props.size.width / 3}px`,
-        "--grid-size-y": `${props.size.height / 3}px`,
-    };
-
-    //const halfViewportTranslateNEG = `translate(${props.size.width * -.5}px, ${props.size.height * -.5}px)`;
-    // //const halfViewportTranslatePOS = `translate(${props.size.width * .5}px, ${props.size.height * .5}px)`;
-    // const centerImage = `translate(${(props.size.width - scaledSize.width) * .5}px, ${(props.size.height - scaledSize.height) * .5}px)`;
-    // const galleryRotate = `rotate(${props.galleryParams.rotationDegrees}deg)`;
-    // const galleryTranslatePos = `translate(${props.galleryParams.position01.x * scaledSize.width}px, ${props.galleryParams.position01.y * scaledSize.height}px)`;
-
-    const imageWrapperStyle: React.CSSProperties = {
-        width: `${props.size.width + props.maskSize * 2}px`,
-        height: `${props.size.height + props.maskSize * 2}px`,
-        touchAction: "none",
-        userSelect: "none",
-        border: `${props.maskSize}px solid transparent`,
-        position: "relative",
-        //overflow: "hidden",
-        boxSizing: "border-box",
-        //boxSizing: "content-box", // we're setting width & height; let the border not interfere with the dimensions.
-        //transformOrigin: `50% 50%`,//${viewportSize.width * 0.5}px ${viewportSize.height * 0.5}px`,
-        //transformOrigin: `${props.size.width * 0.5 + props.maskSize}px ${props.size.height * 0.5 + + props.maskSize}px`,
-        //transformOrigin: `0 0`,
-        //transform: `${galleryTranslatePos} ${halfViewportTranslateNEG} ${galleryRotate} ${halfViewportTranslatePOS} ${centerToUL}`,
-        transform: CalcGalleryImageTransform({ galleryParams: props.galleryParams, viewportSize: props.size }),// `${galleryTranslatePos} ${galleryRotate} ${centerImage}`,
-        //transform: `${galleryTranslatePos}  ${galleryRotate}`,
-    };
-
-    return <div className="galleryImage serverFileWithMaskContainer" style={mainStyle}>
-        <div className="galleryImage serverFileMask" style={maskStyle}></div>
-        <div className="galleryImage serverFileGrid dashed-grid-paper" style={gridStyle}></div>
-        <div className="galleryImage serverFileWrapper" style={imageWrapperStyle}>
-            {!!props.fileParams ? (
-                <FakeGalleryImage fileParams={props.fileParams} galleryItem={props.galleryItem} />
-            ) : (
-                <RealGalleryImage galleryItem={props.galleryItem} />
-            )}
-        </div>
-    </div>;
+    return <svg style={svgStyle} viewBox={`0 0 ${props.viewportSize.width} ${props.viewportSize.height}`}>
+        <defs>
+            <HomepagePhotoPattern instanceKey={props.instanceKey} post={props.galleryItem} fileParams={props.fileParams} />
+        </defs>
+        <rect
+            fill={`url(#${generateHomepageId("galleryPattern", props.instanceKey, props.galleryItem.id)})`}
+            height={props.viewportSize.height} // pre-transform!
+            width={props.viewportSize.width}
+        />
+    </svg>;
 }
 
 
@@ -385,7 +360,8 @@ const ImageEditor = (props: ImageEditorProps) => {
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
     const [cropSize01, setCropSize01] = React.useState<{ factor: number }>({ factor: 1.05 }); // use an object so we can easier trigger the react effect.
     const [cropMove01, setCropMove01] = React.useState<Coord2D>({ x: 0, y: 0 });
-    const fileDimensions = getImageFileDimensions(props.galleryItem.file)
+    const fileDimensions = API.files.getImageFileDimensions(props.galleryItem.file)
+    const [instanceKey] = React.useState<string>(() => nanoid());
 
     const handleFork = () => {
         // perform fork mutation
@@ -540,12 +516,13 @@ const ImageEditor = (props: ImageEditorProps) => {
                 }} className={`toolbutton resetIcon`}>⟲</Button>
             </div>
             <JoystickDiv className="ImageEditor GalleryImageFrameContainer" style={containerWrapperStyle} enabled={true} onDragMove={handleDragMove}>
-                <GalleryImageFrame
+                <GalleryImagePreviewFrame
                     fileParams={props.fileParams}
                     galleryItem={props.galleryItem}
                     galleryParams={props.galleryParams}
                     maskSize={viewportMaskSize}
-                    size={viewportSize}
+                    viewportSize={viewportSize}
+                    instanceKey={instanceKey}
                 />
             </JoystickDiv>
             <div className="ImageEditor toolbar">
@@ -574,10 +551,10 @@ interface ImageEditControlProps {
 };
 
 const ImageEditControl = (props: ImageEditControlProps) => {
-    const [fileParams, setFileParams] = React.useState<ServerImageFileEditParams>(() => getCropParamsForFile(props.galleryItem.file));
+    const [fileParams, setFileParams] = React.useState<ServerImageFileEditParams>(() => API.files.getCropParamsForFile(props.galleryItem.file));
     const [galleryParams, setGalleryParams] = React.useState<GalleryImageDisplayParams>(() => {
         const gp = db3.getGalleryImageDisplayParams(props.galleryItem);
-        correctGalleryParams(props.galleryItem, gp, fileParams);
+        API.files.correctGalleryParams(props.galleryItem, gp, fileParams);
         return gp;
     });
     const [instanceKey, setInstanceKey] = React.useState<string>(() => nanoid());
@@ -585,7 +562,7 @@ const ImageEditControl = (props: ImageEditControlProps) => {
     const handleFileParamsChange = (newFileParams: ServerImageFileEditParams) => {
         const newGalleryParams: GalleryImageDisplayParams = { ...galleryParams };
         newGalleryParams.cropOffset01 = { ...fileParams.cropBegin01 };
-        correctGalleryParams(props.galleryItem, newGalleryParams, newFileParams);
+        API.files.correctGalleryParams(props.galleryItem, newGalleryParams, newFileParams);
         setGalleryParams(newGalleryParams);
         setFileParams(newFileParams);
     };
@@ -605,7 +582,7 @@ const ImageEditControl = (props: ImageEditControlProps) => {
             onReset={() => {
                 const fp = MakeDefaultServerImageFileEditParams();
                 const gp = MakeDefaultGalleryImageDisplayParams();
-                correctGalleryParams(props.galleryItem, gp, fp);
+                API.files.correctGalleryParams(props.galleryItem, gp, fp);
                 setGalleryParams(gp);
                 setFileParams(fp);
             }}
@@ -613,7 +590,7 @@ const ImageEditControl = (props: ImageEditControlProps) => {
         />
         <div>
 
-            <HomepageMain content={content} fullPage={false} className="embeddedPreview" />
+            <HomepageMain content={content} fullPage={false} className="embeddedPreview" fileParamsOverride={fileParams} />
         </div>
     </div>;
 

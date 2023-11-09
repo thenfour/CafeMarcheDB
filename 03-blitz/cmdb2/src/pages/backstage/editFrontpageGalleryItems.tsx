@@ -23,15 +23,10 @@ const MainContent = () => {
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         ],
     });
-
-    // isDeleted Boolean @default(false)
-    // caption   String // markdown
-    // sortOrder Int     @default(0)
-    // fileId    Int
-    // file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
-
 
     return <>
         <SettingMarkdown settingName="EditFrontpageGalleryItemsPage_markdown"></SettingMarkdown>

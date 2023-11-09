@@ -17,17 +17,9 @@ import * as db3 from "src/core/db3/db3";
 import db, { Prisma } from "db";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
-import { CMChipContainer, CMStandardDBChip, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
+import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
 import { formatSongLength } from 'shared/time';
-
-// https://github.com/kutlugsahin/react-smooth-dnd/issues/88
-const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => {
-    return <ReactSmoothDnd.Container {...props as any} />;
-}
-const ReactSmoothDndDraggable = (props: React.PropsWithChildren<any>) => {
-    return <ReactSmoothDnd.Draggable {...props as any} />;
-}
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{

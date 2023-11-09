@@ -513,23 +513,30 @@ export const xFile = new db3.xTable({
 
 
 
-
 // model FrontpageGalleryItem {
-//     id        Int     @id @default(autoincrement())
-//     isDeleted Boolean @default(false)
-//     caption   String // markdown
-//     sortOrder Int     @default(0)
-//     fileId    Int
-//     file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+//     id            Int     @id @default(autoincrement())
+//     isDeleted     Boolean @default(false) //  soft delete. when hidden, users won't see them.
+//     caption       String // markdown
+//     sortOrder     Int     @default(0)
+//     fileId        Int
+//     file          File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
 //     displayParams String // JSON of GalleryImageDisplayParams
-//   }
 
+//     createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
+//     createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+//     visiblePermissionId Int?
+//     visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+//   }
 export const xFrontpageGalleryItem = new db3.xTable({
     tableName: "FrontpageGalleryItem",
     editPermission: Permission.login,
     viewPermission: Permission.login,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FrontpageGalleryItemInclude => {
         return FrontpageGalleryItemArgs.include;
+    },
+    visibilitySpec: {
+        ownerUserIDColumnName: "createdByUserId",
+        visiblePermissionIDColumnName: "visiblePermissionId",
     },
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
@@ -543,6 +550,7 @@ export const xFrontpageGalleryItem = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         new BoolField({ columnName: "isDeleted", defaultValue: false }),
+        //new BoolField({ columnName: "isPublished", defaultValue: false }),
         new GenericStringField({
             columnName: "caption",
             allowNull: false,
@@ -560,6 +568,15 @@ export const xFrontpageGalleryItem = new db3.xTable({
             allowNull: false,
             foreignTableID: "File",
             getQuickFilterWhereClause: (query: string) => false,
+        }),
+
+        new CreatedByUserField({
+            columnName: "createdByUser",
+            fkMember: "createdByUserId",
+        }),
+        new VisiblePermissionField({
+            columnName: "visiblePermission",
+            fkMember: "visiblePermissionId",
         }),
 
     ]

@@ -63,13 +63,14 @@ model Permission {
   color        String?
   iconName     String?
 
-  roles                       RolePermission[]
-  visibilityForSongs          Song[]
-  visibilityForSongComments   SongComment[]
-  visibilityForEvents         Event[]
-  visibilityForEventComments  EventComment[]
-  visibilityForEventSongLists EventSongList[]
-  visibilityForFiles          File[]
+  roles                              RolePermission[]
+  visibilityForSongs                 Song[]
+  visibilityForSongComments          SongComment[]
+  visibilityForEvents                Event[]
+  visibilityForEventComments         EventComment[]
+  visibilityForEventSongLists        EventSongList[]
+  visibilityForFiles                 File[]
+  visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
 }
 
 model RolePermission {
@@ -112,9 +113,10 @@ model User {
   songComments          SongComment[]
   instruments           UserInstrument[]
 
-  creatorForSongs          Song[]
-  creatorForEvents         Event[]
-  creatorForEventSongLists EventSongList[]
+  creatorForSongs                Song[]
+  creatorForEvents               Event[]
+  creatorForEventSongLists       EventSongList[]
+  creatorForFrontpageGalleryItem FrontpageGalleryItem[]
 }
 
 model Setting {
@@ -644,10 +646,15 @@ model FileInstrumentTag {
 
 model FrontpageGalleryItem {
   id            Int     @id @default(autoincrement())
-  isDeleted     Boolean @default(false)
+  isDeleted     Boolean @default(false) //  soft delete. when hidden, users won't see them.
   caption       String // markdown
   sortOrder     Int     @default(0)
   fileId        Int
   file          File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   displayParams String // JSON of GalleryImageDisplayParams
+
+  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+  visiblePermissionId Int?
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 }

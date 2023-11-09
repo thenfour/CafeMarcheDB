@@ -1,7 +1,7 @@
 import db, { Prisma } from "db";
 import { TAnyModel } from "shared/utils";
 import * as db3 from "../db3core";
-import { GalleryImageDisplayParams, MakeDefaultGalleryImageDisplayParams, parsePayloadJSON } from "../apiTypes";
+import { ImageEditParams, MakeDefaultImageEditParams, parsePayloadJSON } from "../apiTypes";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -960,6 +960,11 @@ export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResp
 ////////////////////////////////////////////////////////////////
 export const FrontpageGalleryItemArgs = Prisma.validator<Prisma.FrontpageGalleryItemArgs>()({
     include: {
+        visiblePermission: {
+            include: {
+                roles: true
+            }
+        },
         file: {
             include: {
                 visiblePermission: {
@@ -972,6 +977,10 @@ export const FrontpageGalleryItemArgs = Prisma.validator<Prisma.FrontpageGallery
     },
 });
 export type FrontpageGalleryItemPayload = Prisma.FrontpageGalleryItemGetPayload<typeof FrontpageGalleryItemArgs>;
+export type FrontpageGalleryItemPayloadMinimum = Prisma.FrontpageGalleryItemGetPayload<{}>;
+export type FrontpageGalleryItemPayloadForUpload = Prisma.FrontpageGalleryItemGetPayload<{
+    include: { file: true }
+}>;
 
 export const FrontpageGalleryItemNaturalOrderBy: Prisma.FrontpageGalleryItemOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
@@ -979,8 +988,8 @@ export const FrontpageGalleryItemNaturalOrderBy: Prisma.FrontpageGalleryItemOrde
 ];
 
 // always returns valid
-export const getGalleryImageDisplayParams = (f: FrontpageGalleryItemPayload): GalleryImageDisplayParams => {
-    return parsePayloadJSON<GalleryImageDisplayParams>(f.displayParams, MakeDefaultGalleryImageDisplayParams, (e) => {
+export const getGalleryImageDisplayParams = (f: FrontpageGalleryItemPayload): ImageEditParams => {
+    return parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
         console.log(`failed to parse display param data for gallery item id ${f.id}`);
     });
 };

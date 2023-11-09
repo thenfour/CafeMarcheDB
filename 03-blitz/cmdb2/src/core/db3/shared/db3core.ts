@@ -428,7 +428,6 @@ export class xTable implements TableDesc {
         });
     };
 
-    // TODO: unify all this mess. Custom vs. Global vs. QuickFilter vs. Parameterized whatever man.
     CalculateWhereClause = async ({ filterModel, clientIntention }: CalculateWhereClauseArgs) => {
         const and: any[] = [];
 
@@ -468,7 +467,7 @@ export class xTable implements TableDesc {
 
         // add soft delete clause.
         if (this.softDeleteSpec) {
-            if (clientIntention.intention === "user") {
+            if (clientIntention.intention !== "admin") {
                 and.push({ [this.softDeleteSpec.isDeletedColumnName || "isDeleted"]: false });
             }
         }

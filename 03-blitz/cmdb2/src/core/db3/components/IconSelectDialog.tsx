@@ -18,6 +18,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import GroupsIcon from '@mui/icons-material/Groups';
 import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
+import ImageIcon from '@mui/icons-material/Image';
 import HelpIcon from '@mui/icons-material/Help';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import LinkIcon from '@mui/icons-material/Link';
@@ -92,6 +93,7 @@ export const gIconMap /*: IIconMap*/ = {
     Help: () => <HelpIcon />,
     HighlightOff: () => <HighlightOffIcon />,
     Home: () => <HomeIcon />,
+    Image: () => <ImageIcon />,
     Info: () => <InfoIcon />,
     Launch: () => <LaunchIcon />,
     LibraryMusic: () => <LibraryMusicIcon />,

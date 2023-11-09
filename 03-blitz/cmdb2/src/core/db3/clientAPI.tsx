@@ -1,22 +1,22 @@
-import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
-import * as db3 from "src/core/db3/db3";
-import { TAnyModel, gQueryOptions } from "shared/utils";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
-import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
-import { TGeneralDeleteArgs, TdeleteEventCommentArgs, TinsertEventArgs, TinsertEventCommentArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateEventCommentArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs } from "./shared/apiTypes";
-import updateEventBasicFields from "./mutations/updateEventBasicFields";
-import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
-import getPopularEventTags from "src/auth/queries/getPopularEventTags";
-import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
-import deleteEventSongList from "./mutations/deleteEventSongList";
-import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
-import { Permission } from "shared/permissions";
+import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
-import insertEvent from "./mutations/insertEvent";
+import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import frontpageContentQuery from "./queries/frontpageContentQuery";
-import * as DB3ClientCore from './components/DB3ClientCore';
+import { TAnyModel, gQueryOptions } from "shared/utils";
+import getPopularEventTags from "src/auth/queries/getPopularEventTags";
+import * as db3 from "src/core/db3/db3";
 import * as DB3ClientFields from './components/DB3ClientBasicFields';
+import * as DB3ClientCore from './components/DB3ClientCore';
+import deleteEventSongList from "./mutations/deleteEventSongList";
+import insertEvent from "./mutations/insertEvent";
+import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
+import updateEventBasicFields from "./mutations/updateEventBasicFields";
+import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
+import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
+import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
+import { MulSize, Size, TGeneralDeleteArgs, TinsertEventArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateGenericSortOrderArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs, getFileCustomData } from "./shared/apiTypes";
+import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -81,6 +81,36 @@ class FilesAPI {
     getURIForFile = (file: Prisma.FileGetPayload<{}>) => {
         return `/api/files/download/${file.storedLeafName}`;
     }
+
+    // returns a valid ForkImageParams
+    // getCropParamsForFile = (f: db3.FilePayloadMinimum): ServerImageFileEditParams => {
+    //     const customData = getFileCustomData(f);
+    //     return customData.forkedImage?.editParams || MakeDefaultServerImageFileEditParams();
+    // };
+
+    getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
+        const customData = getFileCustomData(file);
+        if (customData.imageMetadata?.height != null && customData.imageMetadata?.width != null) {
+            return {
+                width: customData.imageMetadata!.width!,
+                height: customData.imageMetadata!.height!,
+            };
+        }
+        return { width: 10, height: 10 };
+    };
+
+
+
+
+    // // when you know that the server params are correct, then correct the gallery params.
+    // correctGalleryParams = (gi: db3.FrontpageGalleryItemPayload, mutableGp: GalleryImageDisplayParams, fp: ServerImageFileEditParams) => {
+    //     // assumes the file dimensions are pre-server-effects.
+    //     const fileDimensions = this.getImageFileDimensions(gi.file)
+    //     mutableGp.cropOffset01 = { ...fp.cropBegin01 };
+    //     mutableGp.scaledSize = MulSize(fileDimensions, fp.scale);
+    // };
+
+
 };
 
 const gFilesAPI = new FilesAPI();
@@ -363,6 +393,11 @@ class FrontpageAPI {
 
 };
 
+class OtherAPI {
+    updateGenericSortOrderMutation = CreateAPIMutationFunction<TupdateGenericSortOrderArgs, typeof updateGenericSortOrder>(updateGenericSortOrder);
+};
+
+
 
 export const API = {
     events: new EventsAPI(),
@@ -370,4 +405,5 @@ export const API = {
     frontpage: new FrontpageAPI(),
     users: gUsersAPI,
     files: gFilesAPI,
+    other: new OtherAPI(),
 };
