@@ -134,6 +134,8 @@ interface DebouncedControlProps {
     debounceMilliseconds?: number,
     className?: string,
     render: (showingEditor: boolean, value, onChange: (value) => void) => React.ReactElement,
+    editButtonText?: string,
+    closeButtonText?: string,
 }
 
 export function DebouncedControl(props: DebouncedControlProps) {
@@ -160,8 +162,8 @@ export function DebouncedControl(props: DebouncedControlProps) {
     return (
         <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
             <div className='editControlsContainer'>
-                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Edit</Button>}
-                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >Close</Button>}
+                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.editButtonText ?? "Edit"}</Button>}
+                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.closeButtonText ?? "Close"}</Button>}
                 {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
                     isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
                         <></>
@@ -183,6 +185,8 @@ interface MarkdownControlProps {
     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
     isSaving: boolean, // show the value as saving in progress
     debounceMilliseconds: number,
+    editButtonText?: string,
+    closeButtonText?: string,
 }
 
 export function MarkdownControl(props: MarkdownControlProps) {
@@ -192,6 +196,8 @@ export function MarkdownControl(props: MarkdownControlProps) {
         isSaving={props.isSaving}
         onValueChanged={props.onValueChanged}
         className="richTextContainer"
+        editButtonText={props.editButtonText}
+        closeButtonText={props.closeButtonText}
         render={(showingEditor, value, onChange) => {
             return <div className='richTextContentContainer'>
                 {showingEditor && <MarkdownEditor value={value} onValueChanged={onChange} />}

@@ -39,7 +39,7 @@ import { Clamp, formatFileSize } from "shared/utils";
 import { JoystickDiv } from "src/core/components/CMCoreComponents";
 import { API, HomepageContentSpec } from "src/core/db3/clientAPI"; // this line causes an exception . uh oh some circular reference.
 import * as db3 from "src/core/db3/db3";
-import { Coord2D, GalleryImageDisplayParams, MakeDefaultGalleryImageDisplayParams, MakeDefaultServerImageFileEditParams, MulSize, MulSizeBySize, ServerImageFileEditParams, Size, SubCoord2D, getFileCustomData } from "src/core/db3/shared/apiTypes";
+import { Coord2D, MulSize, MulSizeBySize, Size, SubCoord2D, getFileCustomData } from "src/core/db3/shared/apiTypes";
 import { HomepageMain, HomepagePhotoPattern, generateHomepageId } from "src/core/components/homepageComponents";
 import { nanoid } from 'nanoid';
 

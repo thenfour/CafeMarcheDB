@@ -13,13 +13,13 @@ import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 
 // on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
-export default api(async (req, res, origCtx: Ctx) => {
+export default api(async (req, res, ctx: Ctx) => {
     return new Promise(async (resolve, reject) => {
         try {
-            origCtx.session.$authorize(Permission.login);
-            const ctx: AuthenticatedMiddlewareCtx = origCtx as any; // authorize ensures this.
+            let clientIntention: db3.xTableClientUsageContext | null = null;
+
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
-            const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+            clientIntention = { currentUser, intention: currentUser ? "user" : "public", mode: 'primary' };
 
             const leafRaw = req.query.leafName;
             if (!leafRaw || (typeof (leafRaw) !== 'string')) {
@@ -30,7 +30,8 @@ export default api(async (req, res, origCtx: Ctx) => {
 
             const fullpath = mutationCore.GetFileServerStoragePath(leaf || "");
 
-            const { item } = await mutationCore.queryFirstImpl({
+            const { item } = await mutationCore.queryFirstImpl<db3.FilePayloadMinimum>({
+                skipVisibilityCheck: true,
                 clientIntention, ctx, schema: db3.xFile, filterModel: {
                     items: [{
                         operator: "equals",

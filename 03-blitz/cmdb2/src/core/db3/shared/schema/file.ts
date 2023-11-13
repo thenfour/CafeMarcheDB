@@ -328,8 +328,8 @@ export const xFile = new db3.xTable({
     getParameterizedWhereClause: (params: xFileFilterParams, clientIntention: db3.xTableClientUsageContext): (Prisma.FileWhereInput[]) => {
         const ret: Prisma.FileWhereInput[] = [];
 
-        console.assert(clientIntention.currentUser?.id !== undefined);
-        console.assert(clientIntention.currentUser?.role?.permissions !== undefined);
+        // console.assert(clientIntention.currentUser?.id !== undefined);
+        // console.assert(clientIntention.currentUser?.role?.permissions !== undefined);
 
         if (params.fileId !== undefined) {
             ret.push({ id: params.fileId, });

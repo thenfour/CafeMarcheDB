@@ -52,25 +52,42 @@ export default resolver.pipe(
 
         // items are now in order. correct their sort orders so they're in order.
         // in order to not have to update ALL rows all the time, just check if things are in order. if they're not, correct that item only and continue.
-        let prevSortOrder = newItems[0]!.sortOrder;
+        // it's safe to assume sorted array index === sort order. it's tempting to try and retain weird sort orders like if you make manual adjustments or something,
+        // but it just gets more complex than it's worth.
+        //let prevSortOrder = newItems[0]!.sortOrder;
         let oldValues: { id: number, sortOrder: number }[] = [];
         let newValues: { id: number, sortOrder: number }[] = [];
+        // for (let i = 1; i < newItems.length; ++i) {
+        //     const item = newItems[i]!;
+        //     if (item.id === args.movingItemId) {
+        //         // the item to be moved we already know will be an incorrect sort order.
+        //     }
+        //     else if (item.sortOrder <= prevSortOrder) {
+        //         // sort order is out of ascending order; this item needs correction
+        //         prevSortOrder++; // make a new correct sort order
+        //         oldValues.push({ id: item.id, sortOrder: item.sortOrder });
+        //         newValues.push({ id: item.id, sortOrder: prevSortOrder });
+        //         //update
+        //         item.sortOrder = prevSortOrder;
+        //         await dbTableClient.update({
+        //             data: { sortOrder: item.sortOrder },
+        //             where: { id: item.id },
+        //         });
+        //     } else {
+        //         prevSortOrder = item.sortOrder;
+        //     }
+        // }
+
         for (let i = 1; i < newItems.length; ++i) {
             const item = newItems[i]!;
-            if (item.sortOrder <= prevSortOrder) {
-                // sort order is out of ascending order; this item needs correction
-                prevSortOrder++; // make a new correct sort order
-                oldValues.push({ id: item.id, sortOrder: item.sortOrder });
-                newValues.push({ id: item.id, sortOrder: prevSortOrder });
-                //update
-                item.sortOrder = prevSortOrder;
-                await dbTableClient.update({
-                    data: { sortOrder: item.sortOrder },
-                    where: { id: item.id },
-                });
-            } else {
-                prevSortOrder = item.sortOrder;
-            }
+            if (item.sortOrder === i) continue;
+            oldValues.push({ id: item.id, sortOrder: item.sortOrder });
+            newValues.push({ id: item.id, sortOrder: i });
+            item.sortOrder = i;
+            await dbTableClient.update({
+                data: { sortOrder: item.sortOrder },
+                where: { id: item.id },
+            });
         }
 
         const contextDesc = `updateSortOrder:${table.tableName}`;

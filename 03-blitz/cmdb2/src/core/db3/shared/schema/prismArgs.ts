@@ -988,14 +988,25 @@ export const FrontpageGalleryItemNaturalOrderBy: Prisma.FrontpageGalleryItemOrde
 ];
 
 // always returns valid
-export const getGalleryImageDisplayParams = (f: FrontpageGalleryItemPayload): ImageEditParams => {
-    return parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
-        console.log(`failed to parse display param data for gallery item id ${f.id}`);
+// export const getGalleryImageDisplayParams = (f: FrontpageGalleryItemPayload): ImageEditParams => {
+//     return parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
+//         console.log(`failed to parse display param data for gallery item id ${f.id}`);
+//     });
+// };
+
+
+
+// always returns valid
+export const getGalleryItemDisplayParams = (f: Prisma.FrontpageGalleryItemGetPayload<{}>): ImageEditParams => {
+    const ret = parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
+        console.log(`failed to parse gallery item display params for gallery item id ${f.id}, val:${f.displayParams}`);
     });
+    // validate since this is coming from db.
+    if (!ret.cropBegin) ret.cropBegin = { x: 0, y: 0 };
+    if (!ret.rotate) ret.rotate = 0;
+    if (!ret.cropSize) ret.cropSize = null;
+    return ret;
 };
-
-
-
 
 
 ////////////////////////////////////////////////////////////////

@@ -265,7 +265,7 @@ export interface xTableClientUsageContext {
     mode: "relation" | "primary";
 
     // will be filled in by the table client so not necessary from client code.
-    currentUser?: UserWithRolesPayload;
+    currentUser?: UserWithRolesPayload | null;
 
     // does your xTable need to act differently when it's being used to populate a dropdown for a related key of some field? use this to do whatever.
     customContext?: xTableClientUsageCustomContextBase;
@@ -290,6 +290,7 @@ export interface RowInfo {
 export interface CalculateWhereClauseArgs {
     filterModel: CMDBTableFilterModel;
     clientIntention: xTableClientUsageContext;
+    skipVisibilityCheck?: boolean;
 };
 
 export interface SoftDeleteSpec {
@@ -428,8 +429,9 @@ export class xTable implements TableDesc {
         });
     };
 
-    CalculateWhereClause = async ({ filterModel, clientIntention }: CalculateWhereClauseArgs) => {
+    CalculateWhereClause = async ({ filterModel, clientIntention, skipVisibilityCheck }: CalculateWhereClauseArgs) => {
         const and: any[] = [];
+        skipVisibilityCheck = !!skipVisibilityCheck; // default to false.
 
         // QUICK FILTER
         if (filterModel && filterModel.quickFilterValues) { // quick filtering
@@ -473,7 +475,7 @@ export class xTable implements TableDesc {
         }
 
         // and visibility
-        if (this.visibilitySpec) {
+        if (this.visibilitySpec && !skipVisibilityCheck) {
             if (clientIntention.intention === "public") {
                 const publicRole = await db.role.findFirst({
                     where: {
@@ -628,6 +630,7 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
     });
 
     const where = await foreignTable.CalculateWhereClause({
+        skipVisibilityCheck: false,
         clientIntention: newClientIntention,
         filterModel: { // clobber the filter; we don't propagate any filter values through relations for this.
             items: [],

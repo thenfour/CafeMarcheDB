@@ -1021,14 +1021,15 @@ li.songDropdownOption {
 .ImageEditor.editorMain .toolbar .toolbutton {
     border: 2px solid transparent;
     background-color: #0002;
-    margin: 0px 2px;
-    border-top-left-radius: 4;
-    border-top-right-radius: 4;
+    margin: 0px 5px;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-bottom: none;
+    padding: 0px 10px;
+    /* width: 100px; */
 
-    width: 100px;
 }
 
 .ImageEditor.editorMain .toolbar .toolbutton.resetIcon {
@@ -1068,4 +1069,30 @@ li.songDropdownOption {
         linear-gradient(to right, var(--grid-color) var(--grid-strength), transparent var(--grid-strength)),
         linear-gradient(to right, transparent var(--grid-gap), var(--paper-color) var(--grid-gap)),
         linear-gradient(to bottom, var(--grid-color) var(--grid-strength), transparent var(--grid-strength));
+}
+
+
+/* - gallery items --------------------------------- */
+.contentSection.GalleryItem {
+    border-left: solid 16px var(--primary-color);
+}
+
+.contentSection.GalleryItem .header {}
+
+
+.contentSection.GalleryItem .dragHandle {
+    /* make drag handle the whole header and push visibility to the right*/
+    flex-grow: 1;
+}
+
+.contentSection.GalleryItem .imageEditControlContainer {
+    border: 2px dashed #ccc;
+    padding: 10px 10px;
+    width: min-content;
+}
+
+.galleryPatternMask {}
+
+.galleryPatternMask .mask {
+    fill: #000c;
 }

@@ -34,6 +34,20 @@ export const SubCoord2D = (begin: Coord2D, end: Coord2D): Size => {
         height: end.y - begin.y,
     }
 };
+export const AddCoord2D = (a: Coord2D, b: Coord2D): Coord2D => {
+    return {
+        x: a.x + b.x,
+        y: a.y + b.y,
+    }
+};
+
+export const AddCoord2DSize = (a: Coord2D, b: Size): Coord2D => {
+    return {
+        x: a.x + b.width,
+        y: a.y + b.height,
+    }
+};
+
 
 // // immutable. without clean function overloading it's hard to implement this.
 // export class CCoord2D implements Coord2D {
@@ -239,31 +253,39 @@ export type ImageFileFormat = keyof typeof ImageFileFormatOptions;
 // });
 
 export interface ImageEditParams {
-
+    cropBegin: Coord2D;
+    cropSize: Size | null; // if null use image end bound.
+    rotate: number;
 };
 
 export const MakeDefaultImageEditParams = (): ImageEditParams => ({
-    scaledSize: {
-        width: 10, height: 10,
-    },
-    cropOffset01: {
-        x: 0, y: 0,
-    },
-    rotationDegrees: 0,
-    position01: {
-        x: 0, y: 0,
-    },
+    cropBegin: { x: 0, y: 0 },
+    cropSize: null,
+    rotate: 0
+    //scale: 1,
+    // scaledSize: {
+    //     width: 10, height: 10,
+    // },
+    // cropOffset01: {
+    //     x: 0, y: 0,
+    // },
+    // rotationDegrees: 0,
+    // position01: {
+    //     x: 0, y: 0,
+    // },
 });
 
 export interface ForkImageParams {
     parentFileLeaf: string;
     outputType: ImageFileFormat;
+    quality: number; // 0-100 corresponds with jpeg quality / https://sharp.pixelplumbing.com/api-output options.quality.
     editParams: ImageEditParams;
 };
 
 // because of how this is used, returns all options filled with NOP values, rather than undefined..
 export const MakeDefaultForkImageParams = (parentFile: Prisma.FileGetPayload<{}>): ForkImageParams => ({
     outputType: "png",
+    quality: 80,
     parentFileLeaf: parentFile.storedLeafName,
     editParams: MakeDefaultImageEditParams(),
 });

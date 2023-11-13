@@ -1,11 +1,11 @@
-import React, { Suspense } from "react";
-import { IsNullOrWhitespace, modulo } from "shared/utils";
-import { Markdown } from "./RichTextEditor";
+import { nanoid } from 'nanoid';
+import React from "react";
+import { Clamp, IsNullOrWhitespace, modulo } from "shared/utils";
 import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import * as db3 from "../db3/db3";
-import { nanoid } from 'nanoid';
-import { ForkImageParams, GalleryImageDisplayParams, MulSize, ServerImageFileEditParams, Size } from "../db3/shared/apiTypes";
+import { AddCoord2DSize, Coord2D, Size } from "../db3/shared/apiTypes";
+import { Markdown } from "./RichTextEditor";
 
 const gSettings = {
     backstageURL: `/backstage`,
@@ -16,162 +16,180 @@ const gSettings = {
 
 export const generateHomepageId = (n: string, instanceKey: string, postId: number) => `${n}_${instanceKey}_${postId}`;
 
+export const GetGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayload) => {
+    const imageURI = API.files.getURIForFile(post.file);
+    const fileDimensions = API.files.getImageFileDimensions(post.file)
 
-// interface CalcGalleryImageTransformArgs {
-//     viewportSize: Size;
-//     galleryParams: GalleryImageDisplayParams;
-// };
+    const displayParams = db3.getGalleryItemDisplayParams(post);
 
-// const CalcGalleryImageTransform = (args: CalcGalleryImageTransformArgs) => {
-//     const scaledSize = args.galleryParams.scaledSize;
-//     const centerImage = `translate(${(args.viewportSize.width - scaledSize.width) * .5}px ${(args.viewportSize.height - scaledSize.height) * .5}px)`;
-//     const galleryRotate = `rotate(${args.galleryParams.rotationDegrees}deg)`;
-//     const galleryTranslatePos = `translate(${args.galleryParams.position01.x * scaledSize.width}px ${args.galleryParams.position01.y * scaledSize.height}px)`;
-//     return `${galleryTranslatePos} ${galleryRotate} ${centerImage}`;
-// };
+    // don't allow <0 crop origin
+    const cropBegin: Coord2D = {
+        x: displayParams.cropBegin.x < 0 ? 0 : displayParams.cropBegin.x,
+        y: displayParams.cropBegin.y < 0 ? 0 : displayParams.cropBegin.y,
+    };
 
-// interface CalcFileTransformArgs {
-//     viewportSize: Size;
-//     fileParams?: ServerImageFileEditParams | null;
-// };
+    const cropSize: Size = displayParams.cropSize ? displayParams.cropSize : fileDimensions;
+    // if the cropsize would put cropend beyond the image, clamp it.
+    if (cropSize.width + displayParams.cropBegin.x > fileDimensions.width) {
+        cropSize.width = fileDimensions.width - displayParams.cropBegin.x;
+    }
+    if (cropSize.height + displayParams.cropBegin.y > fileDimensions.height) {
+        cropSize.height = fileDimensions.height - displayParams.cropBegin.y;
+    }
+    const cropEnd = AddCoord2DSize(displayParams.cropBegin, cropSize);
+    const cropCenter: Coord2D = {
+        x: (displayParams.cropBegin.x + cropEnd.x) / 2,
+        y: (displayParams.cropBegin.y + cropEnd.y) / 2,
+    };
 
-// const CalcFileTransform = (args: CalcFileTransformArgs) => {
-//     if (!args.fileParams) return "translate(0)";
-//     const scaledSize = args.galleryParams.scaledSize;
-//     const centerImage = `translate(${(args.viewportSize.width - scaledSize.width) * .5}px ${(args.viewportSize.height - scaledSize.height) * .5}px)`;
-//     const galleryRotate = `rotate(${args.galleryParams.rotationDegrees}deg)`;
-//     const galleryTranslatePos = `translate(${args.galleryParams.position01.x * scaledSize.width}px ${args.galleryParams.position01.y * scaledSize.height}px)`;
-//     return `${galleryTranslatePos} ${galleryRotate} ${centerImage}`;
-// };
+    const rotate = displayParams.rotate;
 
+    const maskTopHeight = displayParams.cropBegin.y;
+    const maskBottomHeight = fileDimensions.height - cropEnd.y;
+    const maskRightWidth = fileDimensions.width - cropEnd.x;
+    const maskLeftWidth = displayParams.cropBegin.x;
+
+    return {
+        imageURI,
+        fileDimensions,
+        displayParams,
+        cropBegin,
+        cropEnd,
+        cropCenter,
+        cropSize,
+        rotate,
+        maskTopHeight,
+        maskBottomHeight,
+        maskRightWidth,
+        maskLeftWidth,
+    };
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface HomepagePhotoPatternProps {
     post: db3.FrontpageGalleryItemPayload;
-    fileParams: ServerImageFileEditParams;
+    editable?: boolean;
+    //rotate?: number;
     instanceKey: string; // unique-to-page instance key for generating IDs.
 };
 
-export const HomepagePhotoPattern = ({ post, fileParams, ...props }: HomepagePhotoPatternProps) => {
-    //const virtualViewportSize: Size = { width: 500, height: 500 };
-    //const galleryTransform = CalcGalleryImageTransform({ virtualViewportSize, galleryParams })
-    // const galleryStyle: React.CSSProperties = {
-    //     transform: CalcGalleryImageTransform({ viewportSize: { width: 800, height: 500 }, galleryParams }),
-    // };
-
-    //const uri = API.files.getURIForFile(props.galleryItem.file);
-
-    // this is the size of the image we imagine the server would return to us. the size of this component.
-    //const mockImageDimensions: Size = MulSizeBySize(scaledSize, SubCoord2D(fileParams.cropEnd01, fileParams.cropBegin01))
-    //const scaleTx = `scale(${fileParams.scale})`;
-    //const cropCompTx = `translate(${cropCompensation.x}px, ${cropCompensation.y}px)`;
-
-    // const commonStyle: React.CSSProperties = {
-    //     // position: "absolute",
-    //     // left: 0,
-    //     // top: 0,
-    //     // touchAction: "none", // important so dragging touch doesn't use gesture behavior like scrolling the page.
-    //     // pointerEvents: "none", // important for overflow behavior (which i'll probably hide eventually)
-
-    //     // // transforms...
-    //     // width: `${fileDimensions.width}px`, // css transform works AFTER width/height, so this should be the original dimensions.
-    //     // height: `${fileDimensions.height}px`,
-    //     // transformOrigin: `0 0`, // because the resulting image should be like an image file from 0,0, the scale origin should be about 0,0
-    // }
-
-    // const imageStyle: React.CSSProperties = {
-    //     zIndex: 2,
-    //     backgroundImage: `url(${uri})`,
-    //     //transform: `${cropCompTx} ${scaleTx}`,
-    //     transform: `${scaleTx}`,
-    //     ...commonStyle,
-    //     //border: `20px dashed green`,
-    // }
-
-    // const containerStyle: React.CSSProperties = {
-    //     //width: `${scaledUncroppedSize.width}px`,
-    //     //height: `${scaledUncroppedSize.height}px`,
-    //     //border: `3px dashed blue`,
-    //     //position: "relative",
-    //     transform: `translate(${-fileParams.cropBegin01.x} ${-fileParams.cropBegin01.y})`,
-    // };
-
-    // for processed final images, 0,0 will be at cropbegin. and fileparams will be 0,0
-    // for non-processed images (faked), 0,0 will be at some (x,y) point outside cropbegin. and fileparams will be x,y.
-    // for masking purposes, leave the image at this incorrect position to give mask a place to live.
-    // that's why we have container; to shift everything into correct preview location.
-    // const imageStyle: React.CSSProperties = {
-    //     transform: `scale(${fileParams.scale})`,
-    // };
-    // return <pattern key={post.id} id={`galleryPattern_${props.instanceKey}_${post.id}`} height="100%" width="100%" patternContentUnits="objectBoundingBox" viewBox={`0 0 ${scaledUncroppedSize.width} ${scaledUncroppedSize.height}`} preserveAspectRatio="xMidYMid slice">
-    //     <g style={galleryStyle}>
-    //         <g style={containerStyle}>{/* applies fake transforms to make <image> look like final, or NOP for prod */}
-    //             <image href={wpimagesource} id={`galleryPatternImage_${props.instanceKey}_${post.id}`} style={imageStyle} />
-    //         </g>
-    //     </g>
-    // </pattern>;
-
-    // <
+export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
     const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
 
-    let wpimagesource = API.files.getURIForFile(post.file);
-    const galleryParams = db3.getGalleryImageDisplayParams(post);
-    const fileDimensions = API.files.getImageFileDimensions(post.file)
-    const scaledUncroppedSize = MulSize(fileDimensions, fileParams.scale); // scaled & uncropped.
+    const info = GetGalleryItemImageInfo(post);
 
-    const transformParts = [
-        `translate(${fileDimensions.width * -.5} ${fileDimensions.height * -.5})`, // transform origin to center of physical file
-        `scale(${fileParams.scale.toFixed(2)})`, // apply scale
-        `rotate(${galleryParams.rotationDegrees})`,// apply rotation
-        `translate(${fileDimensions.width * .5} ${fileDimensions.height * .5})`, // transform origin to center of physical file. we need to move it twice as far because dimensions are scaled, but dimensions are also twice as big so qty stays the same.
-        //`translate(${fileDimensions.width * .5} ${fileDimensions.height * .5})`, // transform origin to center of physical file. why are these not in scaled dimensions? not sure but ok.
+    // let wpimagesource = API.files.getURIForFile(post.file);
+    // const fileDimensions = API.files.getImageFileDimensions(post.file)
 
-        //`translate(${fileDimensions.width * fileParams.cropBegin01.x} ${fileDimensions.height * fileParams.cropBegin01.y})`, // apply cropping
-        //`translate(${(scaledUncroppedSize.width * .5).toFixed(2)} ${(scaledUncroppedSize.height * .5).toFixed(2)})`// undo transform origin
-    ];
+    // const displayParams = db3.getGalleryItemDisplayParams(post);
 
-    console.log(transformParts);
-    // viewbox describes the pattern's child size.
-    // height/width 100% means when the pattern is used in a parent element, it will be 100%/100% of the size
-    // the parent container is actually an svg polygon, so we assume we have no idea what the aspect is.
-    // then  preserveAspectRatio="xMidYMid slice" ensures the image will be enlarged to fit the parent container, not shrunk.
+    // const viewBoxPos: Coord2D = {
+    //     x: displayParams.cropBegin.x,
+    //     y: displayParams.cropBegin.y,
+    // };
+    // const cropSize: Size = displayParams.cropSize ? displayParams.cropSize : fileDimensions;
+    // // if the cropsize would put cropend beyond the image, clamp it.
+    // if (cropSize.width + displayParams.cropBegin.x > fileDimensions.width) {
+    //     cropSize.width = fileDimensions.width - displayParams.cropBegin.x;
+    // }
+    // if (cropSize.height + displayParams.cropBegin.y > fileDimensions.height) {
+    //     cropSize.height = fileDimensions.height - displayParams.cropBegin.y;
+    // }
+    // const viewBoxSize: Size = displayParams.cropSize || fileDimensions;
+    // const cropEnd = displayParams.cropSize ? AddCoord2DSize(displayParams.cropBegin, displayParams.cropSize) : AddCoord2DSize(displayParams.cropBegin, fileDimensions);
+    // const cropCenter: Coord2D = {
+    //     x: (displayParams.cropBegin.x + cropEnd.x) / 2,
+    //     y: (displayParams.cropBegin.y + cropEnd.y) / 2,
+    // };
 
-    // because this gets scaled to the parent container, viewbox & image size can't be the same or it will always just match 100%.
+    // const rotate = props.rotate || displayParams.rotate;
+
+    return <pattern
+        id={id("galleryPattern")}
+        height="100%" width="100%"
+        viewBox={`${info.cropBegin.x} ${info.cropBegin.y} ${info.cropSize.width} ${info.cropSize.height}`}
+        preserveAspectRatio="xMidYMid slice"
+    >
+        {props.editable && <>
+            <rect x={info.cropBegin.x} y={info.cropBegin.y} height={info.cropSize.height} width={info.cropSize.width} style={{ fill: "#f0f" }} />
+        </>}
+        <image
+            href={info.imageURI}
+            x={0} y={0}
+            id={id(`galleryPatternImage`)}
+            transform={` translate(${info.cropCenter.x} ${info.cropCenter.y}) rotate(${info.rotate}) translate(${-info.cropCenter.x} ${-info.cropCenter.y})`}
+        />
+    </pattern>;
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// displays the photo in its original file form, and shows cropping mask. ignores post-effects like rotate.
+// the point is to show what the final image would look like if you baked it.
+export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
+
+    const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
+    const info = GetGalleryItemImageInfo(post);
+
+    // let wpimagesource = API.files.getURIForFile(post.file);
+    // const fileDimensions = API.files.getImageFileDimensions(post.file)
+
+    // const displayParams = db3.getGalleryItemDisplayParams(post);
+
+    // const cropSize: Size = displayParams.cropSize ? displayParams.cropSize : fileDimensions;
+    // const cropEnd = AddCoord2DSize(displayParams.cropBegin, cropSize);
+
+    /*
+        (0,0)+-------------------------------+ (fdwidth, 0)          <- y= 0
+             | (cropBegin)                   |
+             |  +---------------------+      |                       <- cropTop
+             |  |                     |      |
+             |  |                     |      |
+             |  +---------------------+      |                       <- cropBottom
+             |                     (cropEnd) |
+             +-------------------------------+ (fdwidth, fdheight)
+             |  |                     |
+             ^------- 0               |
+                ^---- cropLeft        |
+                                      ^ cropRight
+        .
+    */
+
+    // const maskTopHeight = displayParams.cropBegin.y;
+    // const maskBottomHeight = fileDimensions.height - cropEnd.y;
+    // const maskRightWidth = fileDimensions.width - cropEnd.x;
+    // const maskLeftWidth = displayParams.cropBegin.x;
+
     return <>
-        {/* the raw image file. */}
-        {/* <pattern id={id("galleryPatternImageFile")} viewBox={`0 0 ${fileDimensions.width} ${fileDimensions.height}`} preserveAspectRatio="xMidYMid slice">
-            <image href={wpimagesource} id={id("galleryPatternImage")} width={fileDimensions.width} height={fileDimensions.height} />
+        <pattern
+            id={id("galleryPatternMask")}
+            height="100%" width="100%"
+            viewBox={`0 0 ${info.fileDimensions.width} ${info.fileDimensions.height}`}
+            className='galleryPatternMask'
+        >
+            <image
+                href={info.imageURI}
+                x={0} y={0}
+                id={id(`galleryPatternImage`)}
+            />
+            {/* TOP mask */}
+            {info.maskTopHeight > 0 && <rect x="0" y="0" width={info.fileDimensions.width} height={info.maskTopHeight} className='mask' />}
+            {/* BOTTOM mask */}
+            {info.maskBottomHeight > 0 && <rect x="0" y={info.cropEnd.y} width={info.fileDimensions.width} height={info.maskBottomHeight} className='mask' />}
+            {/* LEFT mask */}
+            {info.maskLeftWidth > 0 && info.cropSize.height > 0 && <rect x="0" y={info.displayParams.cropBegin.y} width={info.maskLeftWidth} height={info.cropSize.height} className='mask' />}
+            {/* RIGHT mask */}
+            {info.maskRightWidth > 0 && info.cropSize.height > 0 && <rect x={info.cropEnd.x} y={info.displayParams.cropBegin.y} width={info.maskRightWidth} height={info.cropSize.height} className='mask' />}
         </pattern>
-
-        {/* the file scaled & shifted accounting for cropbegin */}
-        {/* <pattern id={id("galleryPatternImageServerTransform")} viewBox={`0 0 ${scaledUncroppedSize.width} ${scaledUncroppedSize.height}`} preserveAspectRatio="xMidYMid slice">
-            <rect transform={`translate(${-fileParams.cropBegin01.x} ${-fileParams.cropBegin01.y} scale(${fileParams.scale})`} fill={`url(#${id("galleryPatternImageFile")})`} width={scaledUncroppedSize.width} height={scaledUncroppedSize.height} />
-        </pattern> */}
-
-        {/* contered, then with rotation & positioning.
-        note that svg transform-origin coords are the parent ("canvas") coords, not coords of the element itself.
-<svg width="400" height="400" style="background-color:#f00;"}>
-  <rect x="100" y="100" width="200" height="200" transform="rotate(45)" transform-origin="200 200" />
-</svg>
-        */}
-        {/* <pattern id={id("galleryPattern")} height="100%" width="100%" viewBox={`0 0 ${scaledUncroppedSize.width} ${scaledUncroppedSize.height}`} preserveAspectRatio="xMidYMid slice">
-            <rect fill={`url(#${id("galleryPatternImageFile")})`} />
-        </pattern> */}
-
-        <pattern id={id("galleryPattern")} height="100%" width="100%" viewBox={`0 0 ${fileDimensions.width} ${fileDimensions.height}`} preserveAspectRatio="xMidYMid slice">
-            <image href={wpimagesource} x={0} y={0} id={id(`galleryPatternImage`)} transform={transformParts.reverse().join(" ")} />
-        </pattern>
-
-
     </>;
-
-
 };
 
 
 
 
-
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface MainSVGRefs {
     photoCaptionRef: SVGForeignObjectElement | null;
     photoSelectRef: SVGForeignObjectElement | null;
@@ -364,7 +382,8 @@ const TopRight2 = () => {
 export interface MainSVGComponentProps {
     content: HomepageContentSpec;
     instanceKey: string; // unique-to-page instance key for generating IDs.
-    fileParamsOverride?: ServerImageFileEditParams | null;
+    editable?: boolean;
+    //rotate?: number;
     onRefsChanged: (refs: MainSVGRefs) => void;
 };
 export const MainSVGComponent = (props: MainSVGComponentProps) => {
@@ -402,17 +421,26 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
 
     const svgParams = (window.innerHeight < window.innerWidth) ? bothSvgParams.landscape : bothSvgParams.portrait;
 
-    const fileParams: ServerImageFileEditParams = props.fileParamsOverride || {
-        cropBegin01: { x: 0, y: 0 },
-        cropEnd01: { x: 1, y: 1 },
-        scale: 1,
-    };
-
     return <div className="galleryContainer">
         <svg viewBox={svgParams.svgViewBox} preserveAspectRatio="xMinYMin meet">
             <defs>
                 {
-                    props.content.gallery.map((post, idx) => <HomepagePhotoPattern key={post.id} instanceKey={props.instanceKey} post={post} fileParams={fileParams} />)
+                    props.content.gallery.map((post, idx) => <HomepagePhotoPattern
+                        key={post.id}
+                        instanceKey={props.instanceKey}
+                        post={post}
+                        editable={props.editable}
+                    //rotate={props.rotate}
+                    />)
+                }
+                {
+                    props.content.gallery.map((post, idx) => <HomepagePhotoMaskPattern
+                        key={post.id}
+                        instanceKey={props.instanceKey}
+                        post={post}
+                        editable={props.editable}
+                    //rotate={props.rotate}
+                    />)
                 }
             </defs>
 
@@ -478,12 +506,12 @@ export interface HomepageMainProps {
     content: HomepageContentSpec;
     className?: string;
     fullPage: boolean; //
-    fileParamsOverride?: ServerImageFileEditParams | null;
-    //root2Ref: HTMLDivElement | null;
+    editable?: boolean;
+    //rotate?: number;
 };
 
 //export class HomepageMain extends React.Component<HomepageMainProps> {
-export const HomepageMain = ({ content, className, fullPage, fileParamsOverride }: HomepageMainProps) => {
+export const HomepageMain = ({ content, className, fullPage, editable }: HomepageMainProps) => {
     const [gallery, setGallery] = React.useState<Gallery>(() => new Gallery());
     gallery.setContent(content);
 
@@ -597,13 +625,14 @@ export const HomepageMain = ({ content, className, fullPage, fileParamsOverride 
         <div className="middleContent" ref={middleContentRef}>
             <MainSVGComponent
                 content={content}
+                editable={editable}
+                //rotate={rotate}
                 onRefsChanged={(val) => {
                     svgRefs.current = val;
                     updateLayout();
                     syncGalleryParams();
                 }}
                 instanceKey={instanceKey}
-                fileParamsOverride={fileParamsOverride}
             />
 
             {
@@ -642,6 +671,12 @@ export const HomepageMain = ({ content, className, fullPage, fileParamsOverride 
                     {content.agenda.map((p, i) => {
                         return <AgendaItem key={i} item={p} />;
                     })}
+                    {editable && (
+                        <svg width="100%" height="500">
+                            <rect width="100%" height="100%" fill="black"></rect>
+                            <rect width="100%" height="100%" fill={`url(#galleryPatternMask_${instanceKey}_${content.gallery[0]?.id})`}></rect>
+                        </svg>
+                    )}
                 </div>
             </div>
 

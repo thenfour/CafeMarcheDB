@@ -7,7 +7,7 @@ import { Permission } from "shared/permissions";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel, areAllEqual } from "shared/utils"
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
-import { AuthenticatedMiddlewareCtx, assert } from "blitz";
+import { AuthenticatedMiddlewareCtx, Ctx, assert } from "blitz";
 import { FileCustomData, ForkImageParams, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
 import { nanoid } from 'nanoid'
 import * as mime from 'mime';
@@ -19,18 +19,22 @@ var fs = require('fs');
 //const util = require('util');
 //const rename = util.promisify(fs.rename);
 
-export const getCurrentUserCore = async (ctx: AuthenticatedMiddlewareCtx) => {
-    const currentUser = await db.user.findFirst({
-        ...db3.UserWithRolesArgs,
-        where: {
-            id: ctx.session.userId,
-        }
-    });
+export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
+    try {
+        // attempt to get authenticated ctx. public access will have none.
+        unauthenticatedCtx.session.$authorize(Permission.visibility_public);
+        const ctx: AuthenticatedMiddlewareCtx = unauthenticatedCtx as any; // authorize ensures this.
+        const currentUser = await db.user.findFirst({
+            ...db3.UserWithRolesArgs,
+            where: {
+                id: ctx.session.userId,
+            }
+        });
 
-    if (currentUser == null) {
-        throw new Error(`current user not found`);
+        return currentUser;
+    } catch (e) {
+        return null; // public. no logged in user.
     }
-    return currentUser;
 };
 
 
@@ -414,7 +418,12 @@ export interface QueryImplArgs {
     schema: db3.xTable;
     clientIntention: db3.xTableClientUsageContext;
     filterModel: db3.CMDBTableFilterModel;
-    ctx: AuthenticatedMiddlewareCtx;
+    // when records are fetched internally it's important sometimes to bypass visibility check.
+    // case: gallery items reference files. both gallery items and files have visibility checks.
+    // if the gallery item passes, but file fails, what should be done? well that's too edgy of a case to care about.
+    // better to just have 1 check: the gallery item
+    skipVisibilityCheck: boolean;
+    ctx: Ctx;
 };
 
 export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
@@ -428,6 +437,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
     const where = await args.schema.CalculateWhereClause({
         clientIntention,
         filterModel,
+        skipVisibilityCheck: args.skipVisibilityCheck,
     });
 
     const include = args.schema.CalculateInclude(clientIntention);
@@ -448,7 +458,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
 
 };
 
-export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
+export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, skipVisibilityCheck, ...args }: QueryImplArgs) => {
     const currentUser = await getCurrentUserCore(ctx);
     if (clientIntention.intention === "public") {
         clientIntention.currentUser = undefined;// for public intentions, no user should be used.
@@ -456,9 +466,11 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
     else {
         clientIntention.currentUser = currentUser;
     }
+
     const where = await args.schema.CalculateWhereClause({
         clientIntention,
         filterModel,
+        skipVisibilityCheck,
     });
 
     const include = args.schema.CalculateInclude(clientIntention);
@@ -536,6 +548,7 @@ export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, 
 export interface QueryFileArgs {
     ctx: AuthenticatedMiddlewareCtx;
     storedLeafName: string;
+    skipVisibilityCheck: boolean;
     clientIntention: db3.xTableClientUsageContext;
 };
 
@@ -544,12 +557,13 @@ export interface QueryFileByLeafOrIdResult {
     fullPath: string;
 };
 
-export const QueryFileByStoredLeaf = async ({ clientIntention, storedLeafName, ctx }: QueryFileArgs): Promise<null | QueryFileByLeafOrIdResult> => {
+export const QueryFileByStoredLeaf = async ({ clientIntention, storedLeafName, ctx, skipVisibilityCheck }: QueryFileArgs): Promise<null | QueryFileByLeafOrIdResult> => {
 
     const { item } = await queryFirstImpl<db3.FilePayload>({
         clientIntention,
         ctx,
         schema: db3.xFile,
+        skipVisibilityCheck,
         filterModel: {
             items: [{
                 operator: "equals",

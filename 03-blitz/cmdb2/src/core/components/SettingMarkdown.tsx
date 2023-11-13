@@ -14,6 +14,8 @@ interface MutationMarkdownControlProps {
     successMessage?: string,
     errorMessage?: string,
     debounceMilliseconds?: number,
+    editButtonText?: string,
+    closeButtonText?: string,
 };
 
 export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => {
@@ -39,6 +41,8 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
         isSaving={isSaving}
         onValueChanged={onValueChanged}
         debounceMilliseconds={props.debounceMilliseconds || 1200}
+        editButtonText={props.editButtonText}
+        closeButtonText={props.closeButtonText}
     />;
 };
 
