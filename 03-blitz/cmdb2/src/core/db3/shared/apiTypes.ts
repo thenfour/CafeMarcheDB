@@ -8,10 +8,18 @@ export interface Size {
     height: number;
 }
 
+export const SizeToString = (x: Size): string => {
+    return `[${x.width.toFixed(0)} x ${x.height.toFixed(0)}]`;
+}
+
 export interface Coord2D {
     x: number;
     y: number;
 };
+
+export const Coord2DToString = (x: Coord2D): string => {
+    return `(${x.x.toFixed(0)}, ${x.y.toFixed(0)})`;
+}
 
 export const MulSize = (a: Size, f: number): Size => {
     return {

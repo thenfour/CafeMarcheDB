@@ -21,7 +21,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API, HomepageContentSpec, gMinImageDimension } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
-import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size } from "src/core/db3/shared/apiTypes";
+import { Coord2D, Coord2DToString, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, SizeToString } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
@@ -119,7 +119,7 @@ export const GalleryItemDescriptionControl = (props: GalleryItemDescriptionContr
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-type SelectedTool = "CropBegin" | "CropEnd" | "Move" | "Rotate";
+type SelectedTool = "CropBegin" | "CropEnd" | "Move" | "Scale" | "Rotate";
 
 export interface GalleryItemImageControlProps {
     value: db3.FrontpageGalleryItemPayload;
@@ -131,11 +131,6 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
     const [editParams, setEditParams] = React.useState<ImageEditParams>(() => db3.getGalleryItemDisplayParams(props.value));
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
     const info = API.files.getGalleryItemImageInfo(props.value, editParams);
-
-    // const cropSize = editParams.cropSize || {
-    //     width: fileDimensions.width - editParams.cropBegin.x,
-    //     height: fileDimensions.height - editParams.cropBegin.y,
-    // };
 
     const enterEditMode = () => {
         // when entering edit mode, refer to the ORIGINAL image, not this one.
@@ -158,8 +153,6 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         // so the fork can be from EDITINGIMGFILE (maybe parent) -> NEWIMAGEFILE
         // and gallery item references ORIGINALIMAGEFILE -> NEWIMAGEFILE.
         // when ORIGINALIMAGEFILE gets orphaned and isn't an original, can be deleted. hm it's not so easy. maybe better to create a "clean up orphaned files" page.
-
-
 
         // const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, isDeleted: true };
         // props.client.doUpdateMutation(newrow).then(() => {
@@ -188,19 +181,37 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
                     x: Clamp(editParams.cropBegin.x + delta.x, 0, info.fileDimensions.width - gMinImageDimension),
                     y: Clamp(editParams.cropBegin.y + delta.y, 0, info.fileDimensions.height - gMinImageDimension),
                 };
-                setEditParams({ ...editParams, cropBegin });
+                const cropSize: Size = editParams.cropSize || info.cropSize;
+                cropSize.width -= delta.x;
+                cropSize.height -= delta.y;
+                setEditParams({ ...editParams, cropBegin, cropSize });
                 break;
             }
             case "CropEnd": {
                 // the idea is to keep crop begin the same.
                 const cropSize: Size = editParams.cropSize || info.cropSize;
-                cropSize.width = Clamp(cropSize.width + delta.x, gMinImageDimension, info.fileDimensions.width - editParams.cropBegin.x);
-                cropSize.height = Clamp(cropSize.height + delta.y, gMinImageDimension, info.fileDimensions.height - editParams.cropBegin.y);
+                cropSize.width = cropSize.width + delta.x;
+                cropSize.height = cropSize.height + delta.y;
                 setEditParams({ ...editParams, cropSize });
                 break;
-            } case "Rotate": {
+            }
+            case "Rotate": {
                 let a = editParams.rotate + 0.02 * (delta.x - delta.y);
                 setEditParams({ ...editParams, rotate: a });
+                break;
+            }
+            case "Scale": {
+                // scale will adjust both cropbegin + cropsize, attempt to approximate a "scaling" behavior centered around the cropcenter.
+                const cropSize: Size = info.cropSize; // use stuff from info because it feels more stable and predictable than using the potentially-oob values in editParams
+                const sizeDelta = (delta.x + delta.y) * -0.01;
+                const cropSizeDelta = MulSize(cropSize, sizeDelta); // abs amount to adjust size
+                const cropBegin: Coord2D = {
+                    x: info.cropBegin.x - cropSizeDelta.width,
+                    y: info.cropBegin.y - cropSizeDelta.height,
+                };
+                cropSize.width += cropSizeDelta.width * 2;
+                cropSize.height += cropSizeDelta.height * 2;
+                setEditParams({ ...editParams, cropBegin, cropSize });
                 break;
             }
         };
@@ -229,7 +240,8 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         <div className="ImageEditor toolbar">
             <Button onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>begin</Button>
             <Button onClick={() => setSelectedTool("CropEnd")} className={`toolbutton ${selectedTool === "CropEnd" && "selected"}`}>end</Button>
-            <Button onClick={() => setSelectedTool("Move")} className={`toolbutton ${selectedTool === "Move" && "selected"}`}>XY</Button>
+            <Button onClick={() => setSelectedTool("Move")} className={`toolbutton ${selectedTool === "Move" && "selected"}`}>Move</Button>
+            <Button onClick={() => setSelectedTool("Scale")} className={`toolbutton ${selectedTool === "Scale" && "selected"}`}>Scale</Button>
             <Button onClick={() => setSelectedTool("Rotate")} className={`toolbutton ${selectedTool === "Rotate" && "selected"}`}>Rotate</Button>
             <Button onClick={() => {
                 setEditParams(MakeDefaultImageEditParams());

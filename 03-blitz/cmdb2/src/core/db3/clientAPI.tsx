@@ -109,13 +109,31 @@ class FilesAPI {
 
         const displayParams = editParams || db3.getGalleryItemDisplayParams(post);
 
-        // don't allow <0 crop origin
-        const cropBegin: Coord2D = {
-            x: Clamp(displayParams.cropBegin.x, 0, fileDimensions.width - gMinImageDimension),
-            y: Clamp(displayParams.cropBegin.y, 0, fileDimensions.height - gMinImageDimension),
-        };
+        const cropBegin: Coord2D = { ...displayParams.cropBegin };
 
         const cropSize: Size = displayParams.cropSize ? { ...displayParams.cropSize } : { ...fileDimensions };
+        // crop size needs to be adjusted if we clamped cropbegin.
+        if (cropBegin.x < 0) {
+            cropSize.width += displayParams.cropBegin.x;
+            cropBegin.x = 0;
+        }
+        if (cropBegin.y < 0) {
+            cropSize.height += displayParams.cropBegin.y;
+            cropBegin.y = 0;
+        }
+        const cropMax: Coord2D = {
+            x: fileDimensions.width - gMinImageDimension,
+            y: fileDimensions.height - gMinImageDimension,
+        }
+        if (cropBegin.x > cropMax.x) {
+            cropSize.width -= cropMax.x - cropBegin.x;
+            cropBegin.x = cropMax.x;
+        }
+        if (cropBegin.y > cropMax.y) {
+            cropSize.height -= cropMax.y - cropBegin.y;
+            cropBegin.y = cropMax.y;
+        }
+
         // if the cropsize would put cropend beyond the image, clamp it.
         cropSize.width = Clamp(cropSize.width, gMinImageDimension, fileDimensions.width - cropBegin.x);
         cropSize.height = Clamp(cropSize.height, gMinImageDimension, fileDimensions.height - cropBegin.y);
