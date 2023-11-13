@@ -203,7 +203,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
             case "Scale": {
                 // scale will adjust both cropbegin + cropsize, attempt to approximate a "scaling" behavior centered around the cropcenter.
                 const cropSize: Size = info.cropSize; // use stuff from info because it feels more stable and predictable than using the potentially-oob values in editParams
-                const sizeDelta = (delta.x + delta.y) * -0.01;
+                const sizeDelta = (delta.x + delta.y) * -0.001;
                 const cropSizeDelta = MulSize(cropSize, sizeDelta); // abs amount to adjust size
                 const cropBegin: Coord2D = {
                     x: info.cropBegin.x - cropSizeDelta.width,
