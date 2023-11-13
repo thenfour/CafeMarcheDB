@@ -16,60 +16,10 @@ const gSettings = {
 
 export const generateHomepageId = (n: string, instanceKey: string, postId: number) => `${n}_${instanceKey}_${postId}`;
 
-export const GetGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayload) => {
-    const imageURI = API.files.getURIForFile(post.file);
-    const fileDimensions = API.files.getImageFileDimensions(post.file)
-
-    const displayParams = db3.getGalleryItemDisplayParams(post);
-
-    // don't allow <0 crop origin
-    const cropBegin: Coord2D = {
-        x: displayParams.cropBegin.x < 0 ? 0 : displayParams.cropBegin.x,
-        y: displayParams.cropBegin.y < 0 ? 0 : displayParams.cropBegin.y,
-    };
-
-    const cropSize: Size = displayParams.cropSize ? displayParams.cropSize : fileDimensions;
-    // if the cropsize would put cropend beyond the image, clamp it.
-    if (cropSize.width + displayParams.cropBegin.x > fileDimensions.width) {
-        cropSize.width = fileDimensions.width - displayParams.cropBegin.x;
-    }
-    if (cropSize.height + displayParams.cropBegin.y > fileDimensions.height) {
-        cropSize.height = fileDimensions.height - displayParams.cropBegin.y;
-    }
-    const cropEnd = AddCoord2DSize(displayParams.cropBegin, cropSize);
-    const cropCenter: Coord2D = {
-        x: (displayParams.cropBegin.x + cropEnd.x) / 2,
-        y: (displayParams.cropBegin.y + cropEnd.y) / 2,
-    };
-
-    const rotate = displayParams.rotate;
-
-    const maskTopHeight = displayParams.cropBegin.y;
-    const maskBottomHeight = fileDimensions.height - cropEnd.y;
-    const maskRightWidth = fileDimensions.width - cropEnd.x;
-    const maskLeftWidth = displayParams.cropBegin.x;
-
-    return {
-        imageURI,
-        fileDimensions,
-        displayParams,
-        cropBegin,
-        cropEnd,
-        cropCenter,
-        cropSize,
-        rotate,
-        maskTopHeight,
-        maskBottomHeight,
-        maskRightWidth,
-        maskLeftWidth,
-    };
-};
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface HomepagePhotoPatternProps {
     post: db3.FrontpageGalleryItemPayload;
     editable?: boolean;
-    //rotate?: number;
     instanceKey: string; // unique-to-page instance key for generating IDs.
 };
 
@@ -77,33 +27,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 
     const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
 
-    const info = GetGalleryItemImageInfo(post);
-
-    // let wpimagesource = API.files.getURIForFile(post.file);
-    // const fileDimensions = API.files.getImageFileDimensions(post.file)
-
-    // const displayParams = db3.getGalleryItemDisplayParams(post);
-
-    // const viewBoxPos: Coord2D = {
-    //     x: displayParams.cropBegin.x,
-    //     y: displayParams.cropBegin.y,
-    // };
-    // const cropSize: Size = displayParams.cropSize ? displayParams.cropSize : fileDimensions;
-    // // if the cropsize would put cropend beyond the image, clamp it.
-    // if (cropSize.width + displayParams.cropBegin.x > fileDimensions.width) {
-    //     cropSize.width = fileDimensions.width - displayParams.cropBegin.x;
-    // }
-    // if (cropSize.height + displayParams.cropBegin.y > fileDimensions.height) {
-    //     cropSize.height = fileDimensions.height - displayParams.cropBegin.y;
-    // }
-    // const viewBoxSize: Size = displayParams.cropSize || fileDimensions;
-    // const cropEnd = displayParams.cropSize ? AddCoord2DSize(displayParams.cropBegin, displayParams.cropSize) : AddCoord2DSize(displayParams.cropBegin, fileDimensions);
-    // const cropCenter: Coord2D = {
-    //     x: (displayParams.cropBegin.x + cropEnd.x) / 2,
-    //     y: (displayParams.cropBegin.y + cropEnd.y) / 2,
-    // };
-
-    // const rotate = props.rotate || displayParams.rotate;
+    const info = API.files.getGalleryItemImageInfo(post);
 
     return <pattern
         id={id("galleryPattern")}
@@ -131,15 +55,7 @@ export const HomepagePhotoPattern = ({ post, ...props }: HomepagePhotoPatternPro
 export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatternProps) => {
 
     const id = (name: string) => generateHomepageId(name, props.instanceKey, post.id);// `${n}_${props.instanceKey}_${post.id}`;
-    const info = GetGalleryItemImageInfo(post);
-
-    // let wpimagesource = API.files.getURIForFile(post.file);
-    // const fileDimensions = API.files.getImageFileDimensions(post.file)
-
-    // const displayParams = db3.getGalleryItemDisplayParams(post);
-
-    // const cropSize: Size = displayParams.cropSize ? displayParams.cropSize : fileDimensions;
-    // const cropEnd = AddCoord2DSize(displayParams.cropBegin, cropSize);
+    const info = API.files.getGalleryItemImageInfo(post);
 
     /*
         (0,0)+-------------------------------+ (fdwidth, 0)          <- y= 0
@@ -156,11 +72,6 @@ export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatter
                                       ^ cropRight
         .
     */
-
-    // const maskTopHeight = displayParams.cropBegin.y;
-    // const maskBottomHeight = fileDimensions.height - cropEnd.y;
-    // const maskRightWidth = fileDimensions.width - cropEnd.x;
-    // const maskLeftWidth = displayParams.cropBegin.x;
 
     return <>
         <pattern
@@ -507,11 +418,11 @@ export interface HomepageMainProps {
     className?: string;
     fullPage: boolean; //
     editable?: boolean;
-    //rotate?: number;
+    additionalAgendaChildren?: React.ReactNode;
 };
 
 //export class HomepageMain extends React.Component<HomepageMainProps> {
-export const HomepageMain = ({ content, className, fullPage, editable }: HomepageMainProps) => {
+export const HomepageMain = ({ content, className, fullPage, editable, ...props }: HomepageMainProps) => {
     const [gallery, setGallery] = React.useState<Gallery>(() => new Gallery());
     gallery.setContent(content);
 
@@ -671,6 +582,7 @@ export const HomepageMain = ({ content, className, fullPage, editable }: Homepag
                     {content.agenda.map((p, i) => {
                         return <AgendaItem key={i} item={p} />;
                     })}
+                    {props.additionalAgendaChildren}
                     {editable && (
                         <svg width="100%" height="500">
                             <rect width="100%" height="100%" fill="black"></rect>

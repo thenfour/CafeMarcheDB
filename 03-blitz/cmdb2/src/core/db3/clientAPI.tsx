@@ -3,7 +3,7 @@ import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { TAnyModel, gQueryOptions } from "shared/utils";
+import { Clamp, TAnyModel, gQueryOptions } from "shared/utils";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
 import * as db3 from "src/core/db3/db3";
 import * as DB3ClientFields from './components/DB3ClientBasicFields';
@@ -15,8 +15,11 @@ import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
-import { MulSize, Size, TGeneralDeleteArgs, TinsertEventArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateGenericSortOrderArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs, getFileCustomData } from "./shared/apiTypes";
+import { AddCoord2DSize, Coord2D, ImageEditParams, MulSize, Size, TGeneralDeleteArgs, TinsertEventArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateGenericSortOrderArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs, getFileCustomData } from "./shared/apiTypes";
 import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
+
+export const gMinImageDimension = 10;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -96,9 +99,54 @@ class FilesAPI {
                 height: customData.imageMetadata!.height!,
             };
         }
-        return { width: 10, height: 10 };
+        return { width: gMinImageDimension, height: gMinImageDimension };
     };
 
+    // if editParams is omitted, use the ones embedded in the post.
+    getGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayload, editParams?: ImageEditParams) => {
+        const imageURI = API.files.getURIForFile(post.file);
+        const fileDimensions = API.files.getImageFileDimensions(post.file)
+
+        const displayParams = editParams || db3.getGalleryItemDisplayParams(post);
+
+        // don't allow <0 crop origin
+        const cropBegin: Coord2D = {
+            x: Clamp(displayParams.cropBegin.x, 0, fileDimensions.width - gMinImageDimension),
+            y: Clamp(displayParams.cropBegin.y, 0, fileDimensions.height - gMinImageDimension),
+        };
+
+        const cropSize: Size = displayParams.cropSize ? { ...displayParams.cropSize } : { ...fileDimensions };
+        // if the cropsize would put cropend beyond the image, clamp it.
+        cropSize.width = Clamp(cropSize.width, gMinImageDimension, fileDimensions.width - cropBegin.x);
+        cropSize.height = Clamp(cropSize.height, gMinImageDimension, fileDimensions.height - cropBegin.y);
+        const cropEnd = AddCoord2DSize(cropBegin, cropSize);
+        const cropCenter: Coord2D = {
+            x: (cropBegin.x + cropEnd.x) / 2,
+            y: (cropBegin.y + cropEnd.y) / 2,
+        };
+
+        const rotate = displayParams.rotate;
+
+        const maskTopHeight = cropBegin.y;
+        const maskBottomHeight = fileDimensions.height - cropEnd.y;
+        const maskRightWidth = fileDimensions.width - cropEnd.x;
+        const maskLeftWidth = cropBegin.x;
+
+        return {
+            imageURI,
+            fileDimensions, // raw
+            displayParams, // raw from db
+            cropBegin, // clamped / sanitized
+            cropEnd,// clamped / sanitized
+            cropCenter,// clamped / sanitized
+            cropSize,// coalesced / clamped / sanitized
+            rotate,
+            maskTopHeight, // some precalcs for mask display
+            maskBottomHeight,
+            maskRightWidth,
+            maskLeftWidth,
+        };
+    };
 
 
 

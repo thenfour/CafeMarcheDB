@@ -2,6 +2,7 @@ import { Ctx } from "@blitzjs/next";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 import { randomUUID } from "crypto";
 import db from "db"
+import { Size } from "src/core/db3/shared/apiTypes";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
@@ -541,3 +542,24 @@ export function formatFileSize(bytes: number): string {
 //         img.src = url;
 //     });
 // };
+
+
+
+export const gDefaultImageArea = 1500000; // 1500 x 1000
+
+////////////////////////////////////////////////////////////////
+export function calculateNewDimensions(originalDimensions: Size, maxArea: number): Size {
+    const originalArea = originalDimensions.width * originalDimensions.height;
+    if (originalArea <= maxArea) {
+        return { ...originalDimensions };
+    }
+
+    // Calculate the scaling factor to maintain the aspect ratio
+    const scalingFactor = Math.sqrt(maxArea / originalArea);
+    const newWidth = originalDimensions.width * scalingFactor;
+    const newHeight = originalDimensions.height * scalingFactor;
+
+    return { width: newWidth, height: newHeight };
+}
+
+

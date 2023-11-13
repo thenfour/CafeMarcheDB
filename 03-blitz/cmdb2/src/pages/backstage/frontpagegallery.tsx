@@ -10,7 +10,7 @@ import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
-import { Clamp, formatFileSize } from "shared/utils";
+import { Clamp, calculateNewDimensions, formatFileSize, gDefaultImageArea } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMDBUploadFile, CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, VisibilityControl, VisibilityControlValue } from "src/core/components/CMCoreComponents";
 import { UploadFileComponent } from "src/core/components/EventFileComponents";
@@ -18,14 +18,12 @@ import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/Se
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
+import { API, HomepageContentSpec, gMinImageDimension } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
-
-const minDimension = 10;
 
 
 ////////////////////////////////////////////////////////////////
@@ -132,18 +130,12 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [editParams, setEditParams] = React.useState<ImageEditParams>(() => db3.getGalleryItemDisplayParams(props.value));
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
-    const fileDimensions = API.files.getImageFileDimensions(props.value.file);
+    const info = API.files.getGalleryItemImageInfo(props.value, editParams);
 
-    const cropSize = editParams.cropSize || {
-        width: fileDimensions.width - editParams.cropBegin.x,
-        height: fileDimensions.height - editParams.cropBegin.y,
-    };
-
-    //const [scale, setScale] = React.useState<number>(1);
-    // const [rotate, setRotate] = React.useState<number>(() => {
-    //     const displayParams = db3.getGalleryItemDisplayParams(props.value);
-    //     return displayParams.rotate;
-    // });
+    // const cropSize = editParams.cropSize || {
+    //     width: fileDimensions.width - editParams.cropBegin.x,
+    //     height: fileDimensions.height - editParams.cropBegin.y,
+    // };
 
     const enterEditMode = () => {
         // when entering edit mode, refer to the ORIGINAL image, not this one.
@@ -158,9 +150,16 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
 
     const handleSaveClick = () => {
 
-        // save the rotation param
-        // create a fork of the image
-        // associate with the new forked file.
+        // this should be done in a mutation because it's many db operations intertwined.
+        // fork the image to get a new file
+        // update the gallery item with new editparams + forked image file.
+        //
+        // delete the orphaned file if it's not referenced anywhere....
+        // so the fork can be from EDITINGIMGFILE (maybe parent) -> NEWIMAGEFILE
+        // and gallery item references ORIGINALIMAGEFILE -> NEWIMAGEFILE.
+        // when ORIGINALIMAGEFILE gets orphaned and isn't an original, can be deleted. hm it's not so easy. maybe better to create a "clean up orphaned files" page.
+
+
 
         // const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, isDeleted: true };
         // props.client.doUpdateMutation(newrow).then(() => {
@@ -173,80 +172,31 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         // });
     };
 
-    // 
-    const setCropFromScale = (p: ImageEditParams) => {
-        // when changing scale or crop stuff, we need to set the crop size based on scale. putting this in a fn for reuse
-        //p.cropSize = MulSize(fileDimensions, 1.0 / scale);
-        p.cropBegin.x = Clamp(p.cropBegin.x, 0, fileDimensions.width - minDimension);
-        p.cropBegin.y = Clamp(p.cropBegin.y, 0, fileDimensions.height - minDimension);
-        cropSize.width = Clamp(cropSize.width, minDimension, fileDimensions.width - p.cropBegin.x);
-        cropSize.height = Clamp(cropSize.height, minDimension, fileDimensions.height - p.cropBegin.y);
-        setEditParams({ ...p, cropSize });
-    };
-
     const handleDragMove = (delta: Coord2D) => {
         switch (selectedTool) {
-            // case "Scale": {
-            //     let newScale = scale + 0.003 * ((delta.x + delta.y) * .5);
-            //     newScale = Clamp(newScale, 0.05, 10);
-            //     setScale(newScale);
-            //     setCropFromScale(editParams);
-            //     break;
-            // }
             case "Move": {
                 const cropBegin: Coord2D = {
                     x: editParams.cropBegin.x - delta.x,
                     y: editParams.cropBegin.y - delta.y,
                 };
-                setCropFromScale({ ...editParams, cropBegin });
+                setEditParams({ ...editParams, cropBegin });
                 break;
             }
             case "CropBegin": {
                 // the idea is to keep crop end the same.
                 const cropBegin: Coord2D = {
-                    x: editParams.cropBegin.x + delta.x,
-                    y: editParams.cropBegin.y + delta.y,
+                    x: Clamp(editParams.cropBegin.x + delta.x, 0, info.fileDimensions.width - gMinImageDimension),
+                    y: Clamp(editParams.cropBegin.y + delta.y, 0, info.fileDimensions.height - gMinImageDimension),
                 };
-                let cropSize: Size = {
-                    width: 0,
-                    height: 0,
-                };
-                if (editParams.cropSize) {
-                    cropSize = {
-                        width: editParams.cropSize.width - delta.x,
-                        height: editParams.cropSize.height - delta.y,
-                    }
-                } else {
-                    cropSize = {
-                        width: fileDimensions.width - delta.x,
-                        height: fileDimensions.height - delta.y,
-                    }
-                }
-                setCropFromScale({ ...editParams, cropBegin, cropSize });
+                setEditParams({ ...editParams, cropBegin });
                 break;
             }
             case "CropEnd": {
                 // the idea is to keep crop begin the same.
-                // const cropBegin: Coord2D = {
-                //     x: editParams.cropBegin.x - delta.x,
-                //     y: editParams.cropBegin.y - delta.y,
-                // };
-                let cropSize: Size = {
-                    width: 0,
-                    height: 0,
-                };
-                if (editParams.cropSize) {
-                    cropSize = {
-                        width: editParams.cropSize.width + delta.x,
-                        height: editParams.cropSize.height + delta.y,
-                    }
-                } else {
-                    cropSize = {
-                        width: fileDimensions.width + delta.x,
-                        height: fileDimensions.height + delta.y,
-                    }
-                }
-                setCropFromScale({ ...editParams, cropSize });
+                const cropSize: Size = editParams.cropSize || info.cropSize;
+                cropSize.width = Clamp(cropSize.width + delta.x, gMinImageDimension, info.fileDimensions.width - editParams.cropBegin.x);
+                cropSize.height = Clamp(cropSize.height + delta.y, gMinImageDimension, info.fileDimensions.height - editParams.cropBegin.y);
+                setEditParams({ ...editParams, cropSize });
                 break;
             } case "Rotate": {
                 let a = editParams.rotate + 0.02 * (delta.x - delta.y);
@@ -264,20 +214,17 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         gallery: [internalValue],
     };
 
-    const origArea = fileDimensions.width * fileDimensions.height;
-    const croppedArea = cropSize.width * cropSize.height;
+    const origArea = info.fileDimensions.width * info.fileDimensions.height;
+    const croppedArea = info.cropSize.width * info.cropSize.height;
     const croppedSizeP = croppedArea / origArea;
+    const reducedDimensions = calculateNewDimensions(info.cropSize, gDefaultImageArea);
+    const reducedArea = reducedDimensions.width * reducedDimensions.height;
+    const reducedSizeP = reducedArea / origArea;
 
     return editMode ? (<div className="imageEditControlContainer ImageEditor editorMain">
         <div className="buttonRow">
             <Button onClick={handleSaveClick} startIcon={gIconMap.Edit()}>Save</Button>
             <Button onClick={() => setEditMode(false)} startIcon={gIconMap.Edit()}>Cancel</Button>
-        </div>
-        <div>
-            {JSON.stringify(editParams)}
-        </div>
-        <div>
-            {formatFileSize(props.value.file.sizeBytes)} (cropped: {(croppedSizeP * 100).toFixed(0)}%, {formatFileSize(props.value.file.sizeBytes * croppedSizeP)} cropped)
         </div>
         <div className="ImageEditor toolbar">
             <Button onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>begin</Button>
@@ -305,6 +252,20 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
                 fullPage={false}
                 className="embeddedPreview"
                 editable={true}
+                additionalAgendaChildren={
+                    <>
+                        <div>
+                            [{info.cropBegin.x.toFixed(0)},{info.cropBegin.y.toFixed(0)}]-[{info.cropEnd.x.toFixed(0)},{info.cropEnd.y.toFixed(0)}]
+                            ({info.cropSize.width.toFixed(0)} x {info.cropSize.height.toFixed(0)})
+                            or optimized: ({reducedDimensions.width.toFixed(0)} x {reducedDimensions.height.toFixed(0)})
+                        </div>
+                        <div>
+                            {formatFileSize(props.value.file.sizeBytes)}<br />
+                            (cropped: {(croppedSizeP * 100).toFixed(0)}%, {formatFileSize(props.value.file.sizeBytes * croppedSizeP)})<br />
+                            (reduced: {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize(props.value.file.sizeBytes * reducedSizeP)})
+                        </div>
+                    </>
+                }
             />
         </JoystickDiv>
 
