@@ -21,7 +21,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
-import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
+import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams, getFileCustomData } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
@@ -121,38 +121,65 @@ export const GalleryItemDescriptionControl = (props: GalleryItemDescriptionContr
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 type SelectedTool = "CropBegin" | "CropEnd" | "Move" | "Scale" | "Rotate";
 
-export interface GalleryItemImageControlProps {
+// uncontrolled pattern... so upon mount, we create our own editable version of the value.
+export interface GalleryItemImageEditControlProps {
     value: db3.FrontpageGalleryItemPayload;
     client: DB3Client.xTableRenderClient;
+    onExitEditMode: () => void;
 };
-export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => {
-    const [editMode, setEditMode] = React.useState<boolean>(false);
+export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const [editParams, setEditParams] = React.useState<ImageEditParams>(() => db3.getGalleryItemDisplayParams(props.value));
-    const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
-    const info = API.files.getGalleryItemImageInfo(props.value, editParams);
     const updateImageMutation = API.files.updateGalleryItemImageMutation.useToken();
+    const [editingValue, setEditingValue] = React.useState<db3.FrontpageGalleryItemPayloadWithAncestorFile>(() => {
+        const ev: db3.FrontpageGalleryItemPayloadWithAncestorFile = { ...props.value }; // create our own copy of the item, for live editing
+        let editParams: ImageEditParams = MakeDefaultImageEditParams();
+
+        if (!!props.value.file.parentFile && !!props.value.file.parentFileId) {
+            // file has a parent. we should operate on the parent not the child which has been cropped/edited/whatev.
+
+            // use the params which were used to CREATE the current file
+            const cd = getFileCustomData(ev.file);
+            if (cd.forkedImage) {
+                editParams = { ...cd.forkedImage.creationEditParams };
+            }
+
+            ev.file = props.value.file.parentFile!;
+            ev.fileId = props.value.file.parentFileId!;
+
+            console.log(`grafting parent file ${ev.file.storedLeafName}`);
+        } else {
+            const info = API.files.getGalleryItemImageInfo(props.value);
+            editParams = { ...info.displayParams }; // we need to adjust the file & edit params; start with a copy of existing edit params
+        }
+
+        if (!editParams.cropSize) {// coalesce cropSize for convenience / simplicity.
+            editParams.cropSize = { ...info.fileDimensions };
+        }
+        ev.displayParams = JSON.stringify(editParams);
+
+        return { ...ev };
+    });
+
+    console.log(`editing file: ${editingValue.file.storedLeafName}`);
+
+    const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
+    const info = API.files.getGalleryItemImageInfo(editingValue);
 
     const reducedDimensions = calculateNewDimensions(info.cropSize, gDefaultImageArea);
 
-    React.useEffect(() => {
-        // just to coalesce(cropsize, filedimensions)
-        if (!editParams.cropSize) {
-            editParams.cropSize = info.fileDimensions;
-            setEditParams({ ...editParams });
-        }
-    }, [editParams]);
+    const setEditParams = (editParams: ImageEditParams) => {
+        setEditingValue({ ...editingValue, displayParams: JSON.stringify(editParams) });
+    };
 
     const handleSaveClick = () => {
-        console.log(`invoking updateImageMutation`);
         const args: UpdateGalleryItemImageParams = {
-            galleryItemId: props.value.id,
+            galleryItemId: editingValue.id,
             imageParams: {
                 quality: 80,
                 outputType: "jpg",
-                parentFileId: props.value.fileId,
+                parentFileId: editingValue.fileId,
                 newDimensions: { ...reducedDimensions },
-                editParams,
+                editParams: info.displayParams,
             },
         };
         updateImageMutation.invoke(args).then((r) => {
@@ -167,11 +194,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
     };
 
     const handleSaveRotationClick = () => {
-        const newRow = {
-            ...props.value,
-            displayParams: JSON.stringify(editParams),
-        };
-        props.client.doUpdateMutation(newRow).then((r) => {
+        props.client.doUpdateMutation(editingValue).then((r) => {
             showSnackbar({ severity: "success", children: `params updated.` });
         }).catch((e) => {
             console.log(e);
@@ -185,36 +208,36 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         switch (selectedTool) {
             case "Move": {
                 const cropBegin: Coord2D = {
-                    x: editParams.cropBegin.x - delta.x,
-                    y: editParams.cropBegin.y - delta.y,
+                    x: info.displayParams.cropBegin.x - delta.x,
+                    y: info.displayParams.cropBegin.y - delta.y,
                 };
-                setEditParams({ ...editParams, cropBegin });
+                setEditParams({ ...info.displayParams, cropBegin });
                 break;
             }
             case "CropBegin": {
                 // the idea is to keep crop end the same.
                 const cropBegin: Coord2D = {
-                    x: editParams.cropBegin.x + delta.x,
-                    y: editParams.cropBegin.y + delta.y,
+                    x: info.displayParams.cropBegin.x + delta.x,
+                    y: info.displayParams.cropBegin.y + delta.y,
                 };
-                const cropSize: Size = { ...editParams.cropSize! };
+                const cropSize: Size = { ...info.displayParams.cropSize! };
                 cropSize.width -= delta.x;
                 cropSize.height -= delta.y;
-                const newEditParams = { ...editParams, cropBegin, cropSize };
+                const newEditParams = { ...info.displayParams, cropBegin, cropSize };
                 setEditParams(newEditParams);
                 break;
             }
             case "CropEnd": {
                 // the idea is to keep crop begin the same.
-                const cropSize: Size = { ...editParams.cropSize! };
+                const cropSize: Size = { ...info.displayParams.cropSize! };
                 cropSize.width = cropSize.width + delta.x;
                 cropSize.height = cropSize.height + delta.y;
-                setEditParams({ ...editParams, cropSize });
+                setEditParams({ ...info.displayParams, cropSize });
                 break;
             }
             case "Rotate": {
-                let a = editParams.rotate + 0.02 * (delta.x - delta.y);
-                setEditParams({ ...editParams, rotate: a });
+                let a = info.displayParams.rotate + 0.02 * (delta.x - delta.y);
+                setEditParams({ ...info.displayParams, rotate: a });
                 break;
             }
             case "Scale": {
@@ -230,18 +253,18 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
                 };
                 cropSize.width += cropSizeDelta.width * 2;
                 cropSize.height += cropSizeDelta.height * 2;
-                setEditParams({ ...editParams, cropBegin, cropSize });
+                setEditParams({ ...info.displayParams, cropBegin, cropSize });
                 break;
             }
         };
 
     };
 
-    const internalValue: db3.FrontpageGalleryItemPayload = { ...props.value, displayParams: JSON.stringify(editParams) };
+    //const internalValue: db3.FrontpageGalleryItemPayload = { ...props.value, displayParams: JSON.stringify(editParams) };
 
     const content: HomepageContentSpec = {
         agenda: [],
-        gallery: [internalValue],
+        gallery: [editingValue],
     };
 
     const origArea = info.fileDimensions.width * info.fileDimensions.height;
@@ -254,7 +277,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
     // console.log(info);
     // console.log(`hasCroppingApplied=${hasCroppingApplied}`);
 
-    return editMode ? (<div className="imageEditControlContainer ImageEditor editorMain">
+    return (<div className="imageEditControlContainer ImageEditor editorMain">
         <div className="ImageEditor toolbar">
             <Button onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>begin</Button>
             <Button onClick={() => setSelectedTool("CropEnd")} className={`toolbutton ${selectedTool === "CropEnd" && "selected"}`}>end</Button>
@@ -267,7 +290,9 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
                 }} className={`toolbutton resetIcon`}>⟲</Button>
             </Tooltip>
             <Tooltip title={"Click here to process the image with cropping. The idea is your crops probably result in a smaller image for more efficient page download. If you didn't crop anything don't bother with this. 'Bake' and 'Save' result in the same for public users, but bake generates a new smaller image file. Do this if you are sure you're done with edits."}>
-                <Button disabled={!hasCroppingApplied} onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</Button>
+                <span>
+                    <Button disabled={!hasCroppingApplied} onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</Button>
+                </span>
             </Tooltip>
             <Tooltip title={"Click here to save your edits. The underlying image file won't be modified but the edits will be updated for the public homepage. Do this if you didn't perform any cropping, or if you are just tweaking the image a little bit. Avoids creating a new image file."}>
                 <Button onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</Button>
@@ -275,7 +300,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
             <Tooltip title={"This file is an edited form of another image. Click here to base your edits off the original image."}>
                 <Button onClick={handleSaveClick} className={`toolbutton save`}>&#x2191; Use parent image</Button>
             </Tooltip>
-            <Button onClick={() => setEditMode(false)} startIcon={gIconMap.Edit()}>Cancel</Button>
+            <Button onClick={props.onExitEditMode} startIcon={gIconMap.Edit()}>Cancel</Button>
         </div>
         <JoystickDiv
             enabled={true}
@@ -283,37 +308,55 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         >
             <HomepageMain
                 content={content}
-                //rotate={rotate}
                 fullPage={false}
                 className="embeddedPreview"
                 editable={true}
                 additionalAgendaChildren={
                     <>
                         <div>
-                            [{info.cropBegin.x.toFixed(0)},{info.cropBegin.y.toFixed(0)}]-[{info.cropEnd.x.toFixed(0)},{info.cropEnd.y.toFixed(0)}]
-                            ({info.cropSize.width.toFixed(0)} x {info.cropSize.height.toFixed(0)})
-                            or optimized: ({reducedDimensions.width.toFixed(0)} x {reducedDimensions.height.toFixed(0)})
+                            {editingValue.file.fileLeafName}<br />
+                            {editingValue.file.storedLeafName}<br />
+                            crop: [{info.cropBegin.x.toFixed(0)},{info.cropBegin.y.toFixed(0)}]-[{info.cropEnd.x.toFixed(0)},{info.cropEnd.y.toFixed(0)}]
+                            ({info.cropSize.width.toFixed(0)} x {info.cropSize.height.toFixed(0)}) <br />
+                            optimized: ({reducedDimensions.width.toFixed(0)} x {reducedDimensions.height.toFixed(0)}) <br />
                         </div>
                         <div>
-                            {formatFileSize(props.value.file.sizeBytes)}<br />
-                            (cropped: {(croppedSizeP * 100).toFixed(0)}%, {formatFileSize(props.value.file.sizeBytes * croppedSizeP)})<br />
-                            (reduced: {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize(props.value.file.sizeBytes * reducedSizeP)})
+                            {formatFileSize(editingValue.file.sizeBytes)}<br />
+                            (cropped: {(croppedSizeP * 100).toFixed(0)}%, {formatFileSize(editingValue.file.sizeBytes * croppedSizeP)})<br />
+                            (reduced: {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize(editingValue.file.sizeBytes * reducedSizeP)})
                         </div>
                         <div>
-                            rotate: {editParams.rotate.toFixed(2)} deg
+                            rotate: {info.displayParams.rotate.toFixed(2)} deg
                         </div>
                     </>
                 }
             />
         </JoystickDiv>
 
-    </div>) : (<div className="imageEditControlContainer">
-        <div className="buttonRow">
-            <Button onClick={() => setEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
-        </div>
-        <img src={API.files.getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
     </div>);
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export interface GalleryItemImageControlProps {
+    value: db3.FrontpageGalleryItemPayload;
+    client: DB3Client.xTableRenderClient;
+};
+export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => {
+    const [editMode, setEditMode] = React.useState<boolean>(false);
+
+    return editMode ? (
+        <GalleryItemImageEditControl client={props.client} value={props.value} onExitEditMode={() => setEditMode(false)} />
+    ) : (
+        <div className="imageEditControlContainer">
+            <div className="buttonRow">
+                <Button onClick={() => setEditMode(true)} startIcon={gIconMap.Edit()}>Edit image</Button>
+            </div>
+            <img src={API.files.getURIForFile(props.value.file)} style={{ maxWidth: 200, maxHeight: 150 }} />
+        </div>
+    );
+};
+
 
 
 ////////////////////////////////////////////////////////////////

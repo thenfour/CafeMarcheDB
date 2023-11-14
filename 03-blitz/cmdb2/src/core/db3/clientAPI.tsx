@@ -95,7 +95,8 @@ class FilesAPI {
     };
 
     // if editParams is omitted, use the ones embedded in the post.
-    getGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayload, editParams?: ImageEditParams) => {
+    // using FrontpageGalleryItemPayloadWithAncestorFile because it has looser requirements than others
+    getGalleryItemImageInfo = (post: db3.FrontpageGalleryItemPayloadWithAncestorFile, editParams?: ImageEditParams) => {
         const imageURI = API.files.getURIForFile(post.file);
         const fileDimensions = API.files.getImageFileDimensions(post.file)
 
@@ -433,7 +434,7 @@ export interface HomepageAgendaItemSpec {
 };
 export interface HomepageContentSpec {
     agenda: HomepageAgendaItemSpec[];
-    gallery: db3.FrontpageGalleryItemPayload[];
+    gallery: db3.FrontpageGalleryItemPayloadWithAncestorFile[];
 };
 
 
