@@ -132,6 +132,14 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
     const info = API.files.getGalleryItemImageInfo(props.value, editParams);
 
+    React.useEffect(() => {
+        // just to coalesce(cropsize, filedimensions)
+        if (!editParams.cropSize) {
+            editParams.cropSize = info.fileDimensions;
+            setEditParams({ ...editParams });
+        }
+    }, [editParams]);
+
     const enterEditMode = () => {
         // when entering edit mode, refer to the ORIGINAL image, not this one.
         // now, if we go all the way back to the root image, it means having to aggregate the ancestry of image edit params to represent direct SRC -> this.
@@ -178,18 +186,19 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
             case "CropBegin": {
                 // the idea is to keep crop end the same.
                 const cropBegin: Coord2D = {
-                    x: Clamp(editParams.cropBegin.x + delta.x, 0, info.fileDimensions.width - gMinImageDimension),
-                    y: Clamp(editParams.cropBegin.y + delta.y, 0, info.fileDimensions.height - gMinImageDimension),
+                    x: editParams.cropBegin.x + delta.x,
+                    y: editParams.cropBegin.y + delta.y,
                 };
-                const cropSize: Size = editParams.cropSize || info.cropSize;
+                const cropSize: Size = { ...editParams.cropSize! };
                 cropSize.width -= delta.x;
                 cropSize.height -= delta.y;
-                setEditParams({ ...editParams, cropBegin, cropSize });
+                const newEditParams = { ...editParams, cropBegin, cropSize };
+                setEditParams(newEditParams);
                 break;
             }
             case "CropEnd": {
                 // the idea is to keep crop begin the same.
-                const cropSize: Size = editParams.cropSize || info.cropSize;
+                const cropSize: Size = { ...editParams.cropSize! };
                 cropSize.width = cropSize.width + delta.x;
                 cropSize.height = cropSize.height + delta.y;
                 setEditParams({ ...editParams, cropSize });
@@ -202,7 +211,9 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
             }
             case "Scale": {
                 // scale will adjust both cropbegin + cropsize, attempt to approximate a "scaling" behavior centered around the cropcenter.
-                const cropSize: Size = info.cropSize; // use stuff from info because it feels more stable and predictable than using the potentially-oob values in editParams
+                // use stuff from info because it feels more stable and predictable than using the potentially-oob values in editParams
+                // the reason is that the cropbegin/cropsize is used to determine the crop center. and if it's way off in the negative this just feels awful
+                const cropSize: Size = { ...info.cropSize };
                 const sizeDelta = (delta.x + delta.y) * -0.001;
                 const cropSizeDelta = MulSize(cropSize, sizeDelta); // abs amount to adjust size
                 const cropBegin: Coord2D = {
