@@ -3,7 +3,7 @@ import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { Clamp, TAnyModel, gQueryOptions } from "shared/utils";
+import { Clamp, TAnyModel, gMinImageDimension, gQueryOptions } from "shared/utils";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
 import * as db3 from "src/core/db3/db3";
 import * as DB3ClientFields from './components/DB3ClientBasicFields';
@@ -13,13 +13,11 @@ import insertEvent from "./mutations/insertEvent";
 import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
 import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
+import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
+import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
-import { AddCoord2DSize, Coord2D, ImageEditParams, MulSize, Size, TGeneralDeleteArgs, TinsertEventArgs, TinsertOrUpdateEventSongListArgs, TupdateEventBasicFieldsArgs, TupdateGenericSortOrderArgs, TupdateUserEventSegmentAttendanceMutationArgs, TupdateUserPrimaryInstrumentMutationArgs, getFileCustomData } from "./shared/apiTypes";
-import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
-
-export const gMinImageDimension = 10;
-
+import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -33,37 +31,37 @@ export interface APIQueryResult<TClientPayload> {
     refetch: () => void,
 };
 
-interface APIMutationToken<TData> {
-    mutateFn: (inp: TData) => Promise<TData>; // black box
-    invoke: (args: TData) => Promise<TData>; // for clients to invoke the mutation (alias of APIMutationFunction.invoke)
+interface APIMutationToken<TArgs, TReturn> {
+    mutateFn: (inp: TArgs) => Promise<TReturn>; // black box
+    invoke: (args: TArgs) => Promise<TReturn>; // for clients to invoke the mutation (alias of APIMutationFunction.invoke)
 };
 
-class APIMutationFunction<TData, TMutation extends MutationFunction<TData>> {
-    mutation: TMutation;
+class APIMutationFunction<TArgs, TReturn> {
+    mutation: MutationFunction<TReturn, TArgs>;
 
-    constructor(mutation: TMutation) {
+    constructor(mutation: MutationFunction<TReturn, TArgs>) {
         this.mutation = mutation;
     }
 
     useToken() {
         const [mutateFn] = useMutation(this.mutation);
-        const ret: APIMutationToken<TData> = {
+        const ret: APIMutationToken<TArgs, TReturn> = {
             mutateFn,
-            invoke: async (args: TData) => {
+            invoke: async (args: TArgs) => {
                 return await mutateFn(args);
             }
         };
         return ret;
     }
 
-    async invoke(token: APIMutationToken<TData>, args: TData): Promise<TData> {
+    async invoke(token: APIMutationToken<TArgs, TReturn>, args: TArgs): Promise<TReturn> {
         return await token.mutateFn(args);
     }
 };
 
 // helps deduce types
-function CreateAPIMutationFunction<TData, TMutation extends MutationFunction<TData>>(mutation: TMutation) {
-    return new APIMutationFunction<TData, TMutation>(mutation);
+function CreateAPIMutationFunction<TArgs, TReturn>(mutation: MutationFunction<TReturn, TArgs>) {
+    return new APIMutationFunction<TArgs, TReturn>(mutation);
 }
 
 export interface EventMinMaxAttendeesResult {
@@ -84,12 +82,6 @@ class FilesAPI {
     getURIForFile = (file: Prisma.FileGetPayload<{}>) => {
         return `/api/files/download/${file.storedLeafName}`;
     }
-
-    // returns a valid ForkImageParams
-    // getCropParamsForFile = (f: db3.FilePayloadMinimum): ServerImageFileEditParams => {
-    //     const customData = getFileCustomData(f);
-    //     return customData.forkedImage?.editParams || MakeDefaultServerImageFileEditParams();
-    // };
 
     getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
         const customData = getFileCustomData(file);
@@ -166,16 +158,7 @@ class FilesAPI {
         };
     };
 
-
-
-    // // when you know that the server params are correct, then correct the gallery params.
-    // correctGalleryParams = (gi: db3.FrontpageGalleryItemPayload, mutableGp: GalleryImageDisplayParams, fp: ServerImageFileEditParams) => {
-    //     // assumes the file dimensions are pre-server-effects.
-    //     const fileDimensions = this.getImageFileDimensions(gi.file)
-    //     mutableGp.cropOffset01 = { ...fp.cropBegin01 };
-    //     mutableGp.scaledSize = MulSize(fileDimensions, fp.scale);
-    // };
-
+    updateGalleryItemImageMutation = CreateAPIMutationFunction(updateGalleryItemImage);
 
 };
 
@@ -241,7 +224,7 @@ class UsersAPI {
         }
     }
 
-    updateUserPrimaryInstrument = CreateAPIMutationFunction<TupdateUserPrimaryInstrumentMutationArgs, typeof updateUserPrimaryInstrumentMutation>(updateUserPrimaryInstrumentMutation);
+    updateUserPrimaryInstrument = CreateAPIMutationFunction(updateUserPrimaryInstrumentMutation);
 };
 
 const gUsersAPI = new UsersAPI();
@@ -391,15 +374,15 @@ class EventsAPI {
         }, initialValue);
     };
 
-    newEventMutation = CreateAPIMutationFunction<TinsertEventArgs, typeof insertEvent>(insertEvent);
+    newEventMutation = CreateAPIMutationFunction(insertEvent);
 
-    updateUserEventSegmentAttendance = CreateAPIMutationFunction<TupdateUserEventSegmentAttendanceMutationArgs, typeof updateUserEventSegmentAttendanceMutation>(updateUserEventSegmentAttendanceMutation);
-    updateEventBasicFields = CreateAPIMutationFunction<TupdateEventBasicFieldsArgs, typeof updateEventBasicFields>(updateEventBasicFields);
+    updateUserEventSegmentAttendance = CreateAPIMutationFunction(updateUserEventSegmentAttendanceMutation);
+    updateEventBasicFields = CreateAPIMutationFunction(updateEventBasicFields);
 
     // lol consistent naming
-    insertEventSongListx = CreateAPIMutationFunction<TinsertOrUpdateEventSongListArgs, typeof insertEventSongListMutation>(insertEventSongListMutation);
-    deleteEventSongListx = CreateAPIMutationFunction<TGeneralDeleteArgs, typeof deleteEventSongList>(deleteEventSongList);
-    updateEventSongListx = CreateAPIMutationFunction<TinsertOrUpdateEventSongListArgs, typeof updateEventSongListMutation>(updateEventSongListMutation);
+    insertEventSongListx = CreateAPIMutationFunction(insertEventSongListMutation);
+    deleteEventSongListx = CreateAPIMutationFunction(deleteEventSongList);
+    updateEventSongListx = CreateAPIMutationFunction(updateEventSongListMutation);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -460,7 +443,7 @@ class FrontpageAPI {
 };
 
 class OtherAPI {
-    updateGenericSortOrderMutation = CreateAPIMutationFunction<TupdateGenericSortOrderArgs, typeof updateGenericSortOrder>(updateGenericSortOrder);
+    updateGenericSortOrderMutation = CreateAPIMutationFunction(updateGenericSortOrder);
 };
 
 

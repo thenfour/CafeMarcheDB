@@ -283,20 +283,18 @@ export const MakeDefaultImageEditParams = (): ImageEditParams => ({
     // },
 });
 
-export interface ForkImageParams {
-    parentFileLeaf: string;
-    outputType: ImageFileFormat;
-    quality: number; // 0-100 corresponds with jpeg quality / https://sharp.pixelplumbing.com/api-output options.quality.
-    editParams: ImageEditParams;
-};
+// // because of how this is used, returns all options filled with NOP values, rather than undefined..
+// export const MakeDefaultForkImageParams = (parentFile: Prisma.FileGetPayload<{}>): ForkImageParams => ({
+//     outputType: "png",
+//     quality: 80,
+//     parentFileLeaf: parentFile.storedLeafName,
+//     editParams: MakeDefaultImageEditParams(),
+// });
 
-// because of how this is used, returns all options filled with NOP values, rather than undefined..
-export const MakeDefaultForkImageParams = (parentFile: Prisma.FileGetPayload<{}>): ForkImageParams => ({
-    outputType: "png",
-    quality: 80,
-    parentFileLeaf: parentFile.storedLeafName,
-    editParams: MakeDefaultImageEditParams(),
-});
+export interface ImageMetadata {
+    width?: number | undefined;
+    height?: number | undefined;
+};
 
 export interface FileCustomData {
     // each physical file gets its own File record, therefore this should explain what its relationship is to its parent / related file(s).
@@ -305,10 +303,7 @@ export interface FileCustomData {
     forkedImage?: { // when relationToParent is forkedImage.
         creationEditParams: ImageEditParams, // the parameters that were used to generate this forked image.
     };
-    imageMetadata?: {
-        width?: number | undefined;
-        height?: number | undefined;
-    };
+    imageMetadata?: ImageMetadata;
     audioMetadata?: {
         bitrate: string;
         lengthMillis?: number;
@@ -358,3 +353,16 @@ export const MakeErrorUploadResponsePayload = (errorMessage: string): UploadResp
     errorMessage,
 });
 
+
+export interface ForkImageParams {
+    parentFileId: number; // which image file to use. for gallery items it may be different than the previous one.
+    outputType: ImageFileFormat;
+    quality: number; // 0-100 corresponds with jpeg quality / https://sharp.pixelplumbing.com/api-output options.quality.
+    editParams: ImageEditParams;
+    newDimensions?: Size;
+};
+
+export interface UpdateGalleryItemImageParams {
+    galleryItemId: number;
+    imageParams: ForkImageParams;
+};

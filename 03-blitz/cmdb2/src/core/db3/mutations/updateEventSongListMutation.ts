@@ -43,7 +43,7 @@ export default resolver.pipe(
 
         await mutationCore.UpdateEventSongListSongs({ changeContext, ctx, songListID: newObject.id, desiredValues: args.songs });
 
-        return args;// blitz is weird and wants the return type to be the same as the input type.
+        return args;
     }
 );
 

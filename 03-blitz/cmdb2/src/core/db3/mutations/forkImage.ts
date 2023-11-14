@@ -5,13 +5,12 @@ import { CoerceToNumberOr, CoerceToString, validateStringOption } from 'shared/u
 import * as db3 from 'src/core/db3/db3';
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { ForkImageParams, ImageFileFormatOptions } from 'src/core/db3/shared/apiTypes';
-import { TinsertEventArgs } from "../shared/apiTypes";
 
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TForkImageParams, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: ForkImageParams, ctx: AuthenticatedMiddlewareCtx) => {
 
         // TODO
         //CMDBAuthorizeOrThrow("insertEvent", Permission.comm)
@@ -19,17 +18,17 @@ export default resolver.pipe(
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
 
-        const params: ForkImageParams = {
-            parentFileLeaf: CoerceToString(fields.parentFileId),
-            outputType: validateStringOption(CoerceToString(fields.outputType), ImageFileFormatOptions),
-            editParams: {
-                cropBeginX01: CoerceToNumberOr(fields.cropBeginX01, 0),
-                cropBeginY01: CoerceToNumberOr(fields.cropBeginY01, 0),
-                cropEndX01: CoerceToNumberOr(fields.cropEndX01, 1),
-                cropEndY01: CoerceToNumberOr(fields.cropEndY01, 1),
-                newSizeFactor: CoerceToNumberOr(fields.newSizeFactor, 1),
-            },
-        };
+        // const params: ForkImageParams = {
+        //     parentFileLeaf: CoerceToString(fields.parentFileId),
+        //     outputType: validateStringOption(CoerceToString(fields.outputType), ImageFileFormatOptions),
+        //     editParams: {
+        //         cropBeginX01: CoerceToNumberOr(fields.cropBeginX01, 0),
+        //         cropBeginY01: CoerceToNumberOr(fields.cropBeginY01, 0),
+        //         cropEndX01: CoerceToNumberOr(fields.cropEndX01, 1),
+        //         cropEndY01: CoerceToNumberOr(fields.cropEndY01, 1),
+        //         newSizeFactor: CoerceToNumberOr(fields.newSizeFactor, 1),
+        //     },
+        // };
 
         const newFile = await mutationCore.ForkImageImpl(params, ctx);
         return newFile;

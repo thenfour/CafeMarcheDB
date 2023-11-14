@@ -10,7 +10,7 @@ import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
-import { Clamp, calculateNewDimensions, formatFileSize, gDefaultImageArea } from "shared/utils";
+import { calculateNewDimensions, formatFileSize, gDefaultImageArea } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMDBUploadFile, CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, VisibilityControl, VisibilityControlValue } from "src/core/components/CMCoreComponents";
 import { UploadFileComponent } from "src/core/components/EventFileComponents";
@@ -18,10 +18,10 @@ import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/Se
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API, HomepageContentSpec, gMinImageDimension } from "src/core/db3/clientAPI";
+import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
-import { Coord2D, Coord2DToString, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, SizeToString } from "src/core/db3/shared/apiTypes";
+import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
@@ -131,6 +131,9 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
     const [editParams, setEditParams] = React.useState<ImageEditParams>(() => db3.getGalleryItemDisplayParams(props.value));
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
     const info = API.files.getGalleryItemImageInfo(props.value, editParams);
+    const updateImageMutation = API.files.updateGalleryItemImageMutation.useToken();
+
+    const reducedDimensions = calculateNewDimensions(info.cropSize, gDefaultImageArea);
 
     React.useEffect(() => {
         // just to coalesce(cropsize, filedimensions)
@@ -140,37 +143,42 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
         }
     }, [editParams]);
 
-    const enterEditMode = () => {
-        // when entering edit mode, refer to the ORIGINAL image, not this one.
-        // now, if we go all the way back to the root image, it means having to aggregate the ancestry of image edit params to represent direct SRC -> this.
-        // that's not even close to worth it, esp. considering we're likely not going to have multiple generations.
-        // likely the workflow is
-        // user uploads A
-        // edits and saves B ( A->B )
-        // edits B which operates on parent, A.
-        // so unless there are other ways to fork images, we're always going to be working with the source image.
+    const handleSaveClick = () => {
+        console.log(`invoking updateImageMutation`);
+        const args: UpdateGalleryItemImageParams = {
+            galleryItemId: props.value.id,
+            imageParams: {
+                quality: 80,
+                outputType: "jpg",
+                parentFileId: props.value.fileId,
+                newDimensions: { ...reducedDimensions },
+                editParams,
+            },
+        };
+        updateImageMutation.invoke(args).then((r) => {
+            showSnackbar({ severity: "success", children: `image updated.` });
+            setEditParams({ ...r.newDisplayParams });
+        }).catch((e) => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: `error updating: ${e}` });
+        }).finally(() => {
+            props.client.refetch();
+        });
     };
 
-    const handleSaveClick = () => {
-
-        // this should be done in a mutation because it's many db operations intertwined.
-        // fork the image to get a new file
-        // update the gallery item with new editparams + forked image file.
-        //
-        // delete the orphaned file if it's not referenced anywhere....
-        // so the fork can be from EDITINGIMGFILE (maybe parent) -> NEWIMAGEFILE
-        // and gallery item references ORIGINALIMAGEFILE -> NEWIMAGEFILE.
-        // when ORIGINALIMAGEFILE gets orphaned and isn't an original, can be deleted. hm it's not so easy. maybe better to create a "clean up orphaned files" page.
-
-        // const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, isDeleted: true };
-        // props.client.doUpdateMutation(newrow).then(() => {
-        //     showSnackbar({ severity: "success", children: `item soft-deleted.` });
-        // }).catch(e => {
-        //     console.log(e);
-        //     showSnackbar({ severity: "error", children: `error deleting: ${e}` });
-        // }).finally(() => {
-        //     props.client.refetch();
-        // });
+    const handleSaveRotationClick = () => {
+        const newRow = {
+            ...props.value,
+            displayParams: JSON.stringify(editParams),
+        };
+        props.client.doUpdateMutation(newRow).then((r) => {
+            showSnackbar({ severity: "success", children: `params updated.` });
+        }).catch((e) => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: `error updating: ${e}` });
+        }).finally(() => {
+            props.client.refetch();
+        });
     };
 
     const handleDragMove = (delta: Coord2D) => {
@@ -239,31 +247,35 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
     const origArea = info.fileDimensions.width * info.fileDimensions.height;
     const croppedArea = info.cropSize.width * info.cropSize.height;
     const croppedSizeP = croppedArea / origArea;
-    const reducedDimensions = calculateNewDimensions(info.cropSize, gDefaultImageArea);
     const reducedArea = reducedDimensions.width * reducedDimensions.height;
     const reducedSizeP = reducedArea / origArea;
 
+    const hasCroppingApplied = info.cropBegin.x !== 0 || info.cropBegin.y !== 0 || info.cropSize.width !== info.fileDimensions.width || info.cropSize.height !== info.fileDimensions.height;
+    // console.log(info);
+    // console.log(`hasCroppingApplied=${hasCroppingApplied}`);
+
     return editMode ? (<div className="imageEditControlContainer ImageEditor editorMain">
-        <div className="buttonRow">
-            <Button onClick={handleSaveClick} startIcon={gIconMap.Edit()}>Save</Button>
-            <Button onClick={() => setEditMode(false)} startIcon={gIconMap.Edit()}>Cancel</Button>
-        </div>
         <div className="ImageEditor toolbar">
             <Button onClick={() => setSelectedTool("CropBegin")} className={`toolbutton ${selectedTool === "CropBegin" && "selected"}`}>begin</Button>
             <Button onClick={() => setSelectedTool("CropEnd")} className={`toolbutton ${selectedTool === "CropEnd" && "selected"}`}>end</Button>
             <Button onClick={() => setSelectedTool("Move")} className={`toolbutton ${selectedTool === "Move" && "selected"}`}>Move</Button>
             <Button onClick={() => setSelectedTool("Scale")} className={`toolbutton ${selectedTool === "Scale" && "selected"}`}>Scale</Button>
             <Button onClick={() => setSelectedTool("Rotate")} className={`toolbutton ${selectedTool === "Rotate" && "selected"}`}>Rotate</Button>
-            <Button onClick={() => {
-                setEditParams(MakeDefaultImageEditParams());
-                //setScale(1);
-            }} className={`toolbutton resetIcon`}>⟲</Button>
-            <Tooltip title={"Click here to process the image with cropping; the idea is to reduce file size by chopping out material the user won't see."}>
-                <Button onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Crop image</Button>
+            <Tooltip title={"Reset edits"}>
+                <Button onClick={() => {
+                    setEditParams(MakeDefaultImageEditParams());
+                }} className={`toolbutton resetIcon`}>⟲</Button>
+            </Tooltip>
+            <Tooltip title={"Click here to process the image with cropping. The idea is your crops probably result in a smaller image for more efficient page download. If you didn't crop anything don't bother with this. 'Bake' and 'Save' result in the same for public users, but bake generates a new smaller image file. Do this if you are sure you're done with edits."}>
+                <Button disabled={!hasCroppingApplied} onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</Button>
+            </Tooltip>
+            <Tooltip title={"Click here to save your edits. The underlying image file won't be modified but the edits will be updated for the public homepage. Do this if you didn't perform any cropping, or if you are just tweaking the image a little bit. Avoids creating a new image file."}>
+                <Button onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</Button>
             </Tooltip>
             <Tooltip title={"This file is an edited form of another image. Click here to base your edits off the original image."}>
                 <Button onClick={handleSaveClick} className={`toolbutton save`}>&#x2191; Use parent image</Button>
             </Tooltip>
+            <Button onClick={() => setEditMode(false)} startIcon={gIconMap.Edit()}>Cancel</Button>
         </div>
         <JoystickDiv
             enabled={true}
@@ -286,6 +298,9 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
                             {formatFileSize(props.value.file.sizeBytes)}<br />
                             (cropped: {(croppedSizeP * 100).toFixed(0)}%, {formatFileSize(props.value.file.sizeBytes * croppedSizeP)})<br />
                             (reduced: {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize(props.value.file.sizeBytes * reducedSizeP)})
+                        </div>
+                        <div>
+                            rotate: {editParams.rotate.toFixed(2)} deg
                         </div>
                     </>
                 }
@@ -367,7 +382,7 @@ const MainContent = () => {
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption", cellWidth: 120 }),
-            //new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention }),
         ],

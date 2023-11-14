@@ -7,6 +7,9 @@ import { Size } from "src/core/db3/shared/apiTypes";
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
 
+
+export const gMinImageDimension = 10;
+
 let gUniqueNegativeID = -1;
 
 export function getUniqueNegativeID() {

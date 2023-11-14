@@ -1093,6 +1093,18 @@ li.songDropdownOption {
 
 .galleryPatternMask {}
 
+.galleryPatternMask .imageStroke {
+    stroke-width: 10px;
+    stroke: #f80c;
+    fill: transparent;
+}
+
 .galleryPatternMask .mask {
-    fill: #000c;
+    fill: #200d;
+}
+
+.galleryPatternMask .cropStroke {
+    stroke-width: 10px;
+    stroke: #c00d;
+    fill: transparent;
 }

@@ -599,7 +599,8 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   /* spacing is already provided by parent layout*/
   /* margin: 20px; */
   padding: 0px;
-  padding-bottom: 20px;
+  /* don't put too much; gallery items are presented as a list so many should be visibile */
+  padding-bottom: 14px;
   border-radius: 4px;
   background-color: white;
   margin-bottom: 40px;

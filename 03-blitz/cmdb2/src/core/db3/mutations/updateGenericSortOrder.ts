@@ -103,7 +103,7 @@ export default resolver.pipe(
             ctx,
         });
 
-        return args;// blitz is weird and wants the return type to be the same as the input type.
+        return args;
     }
 );
 

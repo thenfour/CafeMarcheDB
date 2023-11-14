@@ -87,7 +87,7 @@ export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatter
                 x={0} y={0}
                 id={id(`galleryPatternImage`)}
             />
-            <rect x="0" y="0" width={info.fileDimensions.width} height={info.fileDimensions.height} className='mask' style={{ fill: "transparent", stroke: "#f00", strokeWidth: "10px" }} />}
+            <rect x="0" y="0" width={info.fileDimensions.width} height={info.fileDimensions.height} className='imageStroke' />}
             {/* TOP mask */}
             {info.maskTopHeight > 0 && <rect x="0" y="0" width={info.fileDimensions.width} height={info.maskTopHeight} className='mask' />}
             {/* BOTTOM mask */}
@@ -96,6 +96,7 @@ export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatter
             {info.maskLeftWidth > 0 && info.cropSize.height > 0 && <rect x="0" y={info.cropBegin.y} width={info.maskLeftWidth} height={info.cropSize.height} className='mask' />}
             {/* RIGHT mask */}
             {info.maskRightWidth > 0 && info.cropSize.height > 0 && <rect x={info.cropEnd.x} y={info.cropBegin.y} width={info.maskRightWidth} height={info.cropSize.height} className='mask' />}
+            <rect x={info.cropBegin.x} y={info.cropBegin.y} width={info.cropSize.width} height={info.cropSize.height} className='cropStroke' />
         </pattern>
     </>;
 };

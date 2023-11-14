@@ -8,16 +8,18 @@ import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyM
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
 import { AuthenticatedMiddlewareCtx, Ctx, assert } from "blitz";
-import { FileCustomData, ForkImageParams, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
+import { FileCustomData, ForkImageParams, ImageMetadata, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
 import { nanoid } from 'nanoid'
 import * as mime from 'mime';
 import sharp from "sharp";
 import * as mm from 'music-metadata';
+import { SharedAPI } from "../shared/sharedAPI";
 
 var path = require('path');
 var fs = require('fs');
-//const util = require('util');
+const util = require('util');
 //const rename = util.promisify(fs.rename);
+const stat = util.promisify(fs.stat);
 
 export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
     try {
@@ -545,64 +547,81 @@ export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, 
 };
 
 
-export interface QueryFileArgs {
-    ctx: AuthenticatedMiddlewareCtx;
-    storedLeafName: string;
-    skipVisibilityCheck: boolean;
-    clientIntention: db3.xTableClientUsageContext;
-};
+// export interface QueryFileArgs {
+//     ctx: AuthenticatedMiddlewareCtx;
+//     storedLeafName: string;
+//     skipVisibilityCheck: boolean;
+//     clientIntention: db3.xTableClientUsageContext;
+// };
 
-export interface QueryFileByLeafOrIdResult {
-    dbFile: db3.FilePayload;
-    fullPath: string;
-};
+// export interface QueryFileByLeafOrIdResult {
+//     dbFile: db3.FilePayload;
+//     fullPath: string;
+// };
 
-export const QueryFileByStoredLeaf = async ({ clientIntention, storedLeafName, ctx, skipVisibilityCheck }: QueryFileArgs): Promise<null | QueryFileByLeafOrIdResult> => {
+// export const QueryFileByStoredLeaf = async ({ clientIntention, storedLeafName, ctx, skipVisibilityCheck }: QueryFileArgs): Promise<null | QueryFileByLeafOrIdResult> => {
 
-    const { item } = await queryFirstImpl<db3.FilePayload>({
-        clientIntention,
-        ctx,
-        schema: db3.xFile,
-        skipVisibilityCheck,
-        filterModel: {
-            items: [{
-                operator: "equals",
-                field: "storedLeafName",
-                value: storedLeafName,
-            }]
+//     const { item } = await queryFirstImpl<db3.FilePayload>({
+//         clientIntention,
+//         ctx,
+//         schema: db3.xFile,
+//         skipVisibilityCheck,
+//         filterModel: {
+//             items: [{
+//                 operator: "equals",
+//                 field: "storedLeafName",
+//                 value: storedLeafName,
+//             }]
+//         }
+//     });
+
+//     if (!item) {
+//         throw new Error(`file not found`);
+//     }
+
+//     const fullPath = GetFileServerStoragePath(item.storedLeafName || "");
+
+//     return {
+//         fullPath,
+//         dbFile: item,
+//     };
+// };
+
+
+export const GetImageMetadata = async (img: sharp.Sharp): Promise<ImageMetadata> => {
+    return new Promise(async (resolve, reject) => {
+        const metadata = await img.metadata();
+        if (metadata.width !== undefined && metadata.height !== undefined) {
+            resolve({
+                width: metadata.width!,
+                height: metadata.height!,
+            });
+            return;
         }
+        resolve({
+            // unknown.
+        });
+        return;
     });
-
-    if (!item) {
-        throw new Error(`file not found`);
-    }
-
-    const fullPath = GetFileServerStoragePath(item.storedLeafName || "");
-
-    return {
-        fullPath,
-        dbFile: item,
-    };
 };
-
 
 export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedMiddlewareCtx) => {
-    // validate params
-    if (!params.parentFileLeaf) {
-        throw new Error(`invalid params`);
-    }
-
     const currentUser = await getCurrentUserCore(ctx);
+    if (!currentUser) {
+        throw new Error(`public cannot create files`);
+    }
     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
 
     // get the parent file record
-    const parentFile = await QueryFileByStoredLeaf({ clientIntention, storedLeafName: params.parentFileLeaf, ctx });
+    const parentFile = await db.file.findFirst({
+        where: { id: params.parentFileId }
+    });  //await QueryFileByStoredLeaf({ clientIntention, storedLeafName: params.parentFileLeaf, ctx });
     if (!parentFile) {
         throw new Error(`parent file not found`);
     }
 
     // new filename will be same as old, with new extension and add a tag.
-    const parsedPath = path.parse(parentFile.dbFile.fileLeafName);
+    const parsedPath = path.parse(parentFile.fileLeafName); // user-friendly name
     // path.parse('/home/user/dir/file.txt');
     // Returns:
     //   base: 'file.txt',
@@ -614,65 +633,58 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedM
         humanReadableLeafName: newLeaf,
         sizeBytes: 0, // fill in later when it's known!
         uploadedByUserId: currentUser.id,
-        visiblePermissionId: parentFile.dbFile.visiblePermissionId, // theoretically this can result in issues if original uploader is not the same as the new uploader and this is NULL. however NULL implies it's not meant to be seen by others so i don't think it's something that needs to be fixed.
-        parentFileId: parentFile.dbFile.id,
+        visiblePermissionId: parentFile.visiblePermissionId, // theoretically this can result in issues if original uploader is not the same as the new uploader and this is NULL. however NULL implies it's not meant to be seen by others so i don't think it's something that needs to be fixed.
+        parentFileId: parentFile.id,
     });// as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
 
     // perform the adjustments on parent image + save on disk
+    const parentFullPath = GetFileServerStoragePath(parentFile.storedLeafName);
     const outputPath = GetFileServerStoragePath(newFile.storedLeafName);
     const customData: FileCustomData = {
         relationToParent: "forkedImage",
         forkedImage: {
-            editParams: { ...params.editParams },
+            creationEditParams: { ...params.editParams },
         }
+        // image metadata will be populated later in post-processing.
     };
-    newFile.customData = JSON.stringify(customData);
 
-    let newImage = sharp(parentFile.fullPath);
-    const parentMetadata = await newImage.metadata();
-    if (parentMetadata.width === undefined) throw new Error(`unable to access parent image dimensions; invalid file? obsolete file? not actually an image?`);
-    if (parentMetadata.height === undefined) throw new Error(`width was fine but height isn't? I'm not even sure what this is.`);
+    let newImage = sharp(parentFullPath);
+    // const parentMetadata = await newImage.metadata();
+    // if (parentMetadata.width === undefined) throw new Error(`unable to access parent image dimensions; invalid file? obsolete file? not actually an image?`);
+    // if (parentMetadata.height === undefined) throw new Error(`width was fine but height isn't? I'm not even sure what this is.`);
 
     // TODO: use EXIF orientation otherwise it will be lost...
     // https://stackoverflow.com/questions/48716266/sharp-image-library-rotates-image-when-resizing
 
+    const info = SharedAPI.files.getImageFileEditInfo(parentFile, params.editParams);
+
     // perform crop
-    const left = Math.floor(params.editParams.cropBeginX01 * parentMetadata.width);
-    const right = Math.floor(params.editParams.cropEndX01! * parentMetadata.width);
-    const top = Math.floor(params.editParams.cropBeginY01! * parentMetadata.height);
-    const bottom = Math.floor(params.editParams.cropEndY01! * parentMetadata.height);
-    if (left >= right) throw new Error(`Invalid crop dimensions (left > right)`);
-    if (top >= bottom) throw new Error(`Invalid crop dimensions (top > bottom)`);
-    if (left < 0) throw new Error(`Invalid crop dimensions (left < 0)`);
-    if (top < 0) throw new Error(`Invalid crop dimensions (top < 0)`);
-    if (params.editParams.cropEndX01! > 1) throw new Error(`Invalid crop dimensions (params.cropEndX01! > 1)`);
-    if (params.editParams.cropEndY01! > 1) throw new Error(`Invalid crop dimensions (params.cropEndY01! > 1)`);
     newImage = await newImage.extract({
-        left: left,
-        top: top,
-        width: right - left,
-        height: bottom - top,
+        left: Math.round(info.cropBegin.x),
+        top: Math.round(info.cropBegin.y),
+        width: Math.round(info.cropSize.width),
+        height: Math.round(info.cropSize.height),
     });
 
     // resize
-    newImage = newImage.resize({
-        position: `${params.editParams.scaleOriginX01 * parentMetadata.width}px ${params.editParams.scaleOriginY01 * parentMetadata.height}px`,
-        width: parentMetadata.width * params.editParams.scale,
-        height: parentMetadata.height * params.editParams.scale,
-        // default fit: "cover",
-        //position: "attention",
-        //position defaults to center
-    });
+    if (params.newDimensions) {
+        newImage = await newImage.resize({
+            // position is only used when aspect ratio changes and there would potentially be overflow or border.
+            width: Math.round(params.newDimensions.width),
+            height: Math.round(params.newDimensions.height),
+        });
+    }
 
     // save
     await newImage.toFile(outputPath);
 
     // update size now that it can be known
-    // Get the new file size
-    const stats = await fs.stat(outputPath);
+    const stats = await stat(outputPath);
     newFile.sizeBytes = stats.size;
 
-    // save to db
+    // seems natural to gather the metadata right now, however it gets done in post-processing so it's not necessary.
+    newFile.customData = JSON.stringify(customData);
+
     const ret = await insertImpl(db3.xFile, newFile, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
 
     await PostProcessFile(ret);
@@ -680,6 +692,9 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedM
     return ret;
 };
 
+// WHY have such a function?
+// 1. it's for all files not just images
+// 2. it will take action depending on the format. there are various ways of uploading images, this is a singular place to take care of sorting out details like thumbnail creation.
 export const PostProcessFile = async (file: Prisma.FileGetPayload<{}>) => {
     const path = GetFileServerStoragePath(file.storedLeafName);
     const fileCustomData = getFileCustomData(file);
@@ -687,14 +702,7 @@ export const PostProcessFile = async (file: Prisma.FileGetPayload<{}>) => {
         // gather metadata
         try {
             let img = sharp(path);
-            const metadata = await img.metadata();
-            if (metadata.width !== undefined && metadata.height !== undefined) {
-                fileCustomData.imageMetadata = {
-                    width: metadata.width!,
-                    height: metadata.height!,
-                }
-            }
-
+            fileCustomData.imageMetadata = await GetImageMetadata(img);
             await db.file.update({
                 where: { id: file.id },
                 data: {
