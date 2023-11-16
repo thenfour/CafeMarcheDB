@@ -3,6 +3,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { NavRealm } from "src/core/components/Dashboard2";
 
 
 const MyComponent = () => {
@@ -18,7 +19,7 @@ const SongPage: BlitzPage = () => {
     // }
     //const params = useParams();
     return (
-        <DashboardLayout title="Song">
+        <DashboardLayout title="Song" navRealm={NavRealm.songs}>
             <MyComponent></MyComponent>
         </DashboardLayout>
     )

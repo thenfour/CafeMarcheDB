@@ -13,6 +13,7 @@ import { IsEntirelyIntegral } from "shared/utils";
 import { Suspense } from "react";
 import { InspectObject } from "src/core/components/CMCoreComponents";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { NavRealm } from "src/core/components/Dashboard2";
 
 const MyComponent = () => {
     const params = useParams();
@@ -89,7 +90,7 @@ const MyComponent = () => {
 
 const EventDetailPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event">
+        <DashboardLayout title="Event" navRealm={NavRealm.events}>
             <Suspense>
                 <MyComponent></MyComponent>
             </Suspense>

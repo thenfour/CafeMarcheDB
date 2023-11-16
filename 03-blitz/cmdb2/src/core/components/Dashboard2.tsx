@@ -29,6 +29,10 @@ import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import CollectionsIcon from '@mui/icons-material/Collections';
 import { gIconMap } from "../db3/components/IconSelectDialog";
+import { Permission } from "shared/permissions";
+import { CMAuthorize } from "types";
+import { API } from "../db3/clientAPI";
+import { assert } from "blitz";
 
 const drawerWidth = 300;
 
@@ -170,6 +174,7 @@ interface PrimarySearchAppBarProps {
 
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const theme = useTheme();
+    const router = useRouter();
 
     const session = useSession();
     let backgroundColor: string | undefined = undefined;
@@ -203,7 +208,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         component="div"
                         sx={{ display: { xs: 'none', sm: 'block' } }}
                     >
-                        Café Marché Backstage
+                        <a href={"/backstage"} className="logo">Café Marché Backstage</a>
                     </Typography>
                     {(session.userId != null) && <Search>
                         <SearchIconWrapper>
@@ -240,105 +245,191 @@ interface MenuItemSectionHeader {
     type: "sectionHeader";
     sectionName: string;
 };
+
+
+
+export enum NavRealm {
+    events = "events",
+    songs = "songs",
+};
+
+
+
 interface MenuItemLink {
     type: "link";
+    permission: Permission;
+    className?: string;
     linkCaption: string;
     path: string;
+    realm?: NavRealm;
     renderIcon: () => React.ReactElement;
 };
 
 type MenuItemSpec = MenuItemDivider | MenuItemSectionHeader | MenuItemLink;
 
+interface MenuItemGroup {
+    name: string | null;
+    className?: string;
+    items: MenuItemSpec[];
+};
+
+type MenuItemAndGroup = { group: MenuItemGroup, item: MenuItemSpec };
+
 interface MenuItemComponentProps {
-    item: MenuItemSpec
+    item: MenuItemAndGroup;
+    realm: NavRealm | undefined;
 };
 
 const MenuItemComponent = (props: MenuItemComponentProps) => {
     const router = useRouter();
-    if (props.item.type === "divider") {
-        return <Divider />;
+    if (props.item.item.type === "divider") {
+        return <Divider className={props.item.group.className} />;
     }
-    if (props.item.type === "sectionHeader") {
-        return (<ListSubheader component="div">
-            <Typography variant="button" noWrap>{props.item.sectionName}</Typography>
+    if (props.item.item.type === "sectionHeader") {
+        return (<ListSubheader component="div" className={props.item.group.className}>
+            <Typography variant="button" noWrap>{props.item.item.sectionName}</Typography>
         </ListSubheader>);
     }
-    if (props.item.type === "link") {
-        return (<ListItemButton component={Link} href={props.item.path!} selected={router.pathname == props.item.path}>
-            {props.item.renderIcon && <ListItemIcon>{props.item.renderIcon()}</ListItemIcon>}
-            <ListItemText primary={props.item.linkCaption} />
+    if (props.item.item.type === "link") {
+
+        let selected = false;
+        if (router.pathname == props.item.item.path) selected = true;
+        if ((props.item.item.realm !== undefined) && (props.realm !== undefined) && (props.item.item.realm === props.realm)) selected = true;
+
+        return (<ListItemButton component={Link} href={props.item.item.path!} selected={selected} className={`${props.item.group.className} ${props.item.item.className}`}>
+            {props.item.item.renderIcon && <ListItemIcon>{props.item.item.renderIcon()}</ListItemIcon>}
+            <ListItemText primary={props.item.item.linkCaption} />
         </ListItemButton>);
     }
     return <>??</>;
 };
 
-const gMenuItems: MenuItemSpec[] = [
-    { type: "sectionHeader", sectionName: "Public Homepage" },
-    { type: "link", path: "/", linkCaption: "Public Home", renderIcon: () => gIconMap.Public() },
-    { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Photo gallery", renderIcon: () => gIconMap.Image() },
+const gMenuItemGroups: MenuItemGroup[] = [
+    {
+        name: "Public",
+        className: "public",
+        items: [
+            { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public, },
+            { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Photo gallery", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
+        ],
+    },
+    {
+        name: "Backstage",
+        className: "backstage",
+        items: [
+            { type: "link", path: "/backstage", linkCaption: "Home", renderIcon: () => <HomeIcon />, permission: Permission.backstage_user },
+            { type: "link", path: "/backstage/events", realm: NavRealm.events, linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.backstage_user },
+            { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.backstage_user },
+            { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon />, permission: Permission.backstage_user },
+            { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.backstage_user },
+        ],
+    },
+    {
+        name: "Admin Users",
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/users", linkCaption: "Users", renderIcon: () => <PersonIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/permissions", linkCaption: "Permissions", renderIcon: () => <SecurityIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon />, permission: Permission.sysadmin },
+        ],
+    },
 
-    { type: "divider" },
-    { type: "sectionHeader", sectionName: "Backstage" },
-    { type: "link", path: "/backstage", linkCaption: "Backstage Home", renderIcon: () => <HomeIcon /> },
-    { type: "link", path: "/backstage/events", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "link", path: "/backstage/songs", linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon /> },
-    { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon /> },
-    { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon /> },
+    {
+        name: "Admin Instruments",
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+        ],
+    },
+    {
+        name: null,
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+        ],
+    },
 
-    { type: "divider" },
-    { type: "sectionHeader", sectionName: "Admin Auth" },
-    { type: "link", path: "/backstage/users", linkCaption: "Users", renderIcon: () => <PersonIcon /> },
-    { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon /> },
-    { type: "link", path: "/backstage/permissions", linkCaption: "Permissions", renderIcon: () => <SecurityIcon /> },
-    { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon /> },
+    {
+        name: "Admin Songs",
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editSongComments", linkCaption: "Song Comments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+        ],
+    },
+    {
+        name: null,
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Credit Types", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
+        ],
+    },
 
-    { type: "divider" },
-    { type: "sectionHeader", sectionName: "Admin Instruments" },
-    { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon /> },
-    { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon /> },
-    { type: "divider" },
-    { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon /> },
-    { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => <MusicNoteIcon /> },
+    {
+        name: "Admin Events",
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventSegments", linkCaption: "Event Segments", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
+        ],
+    },
+    {
+        name: null,
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/editEventSongLists", linkCaption: "Event Song Lists", renderIcon: () => <FormatListNumberedIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventSongListSongs", linkCaption: "Event Song List Songs", renderIcon: () => <FormatListNumberedIcon />, permission: Permission.sysadmin },
+        ],
+    },
+    {
+        name: null,
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/editEventUserResponses", linkCaption: "Event User Responses", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventComments", linkCaption: "Event comments", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
+        ],
+    },
+    {
+        name: null,
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
 
-    { type: "divider" },
-    { type: "sectionHeader", sectionName: "Admin Songs" },
-    { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon /> },
-    { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon /> },
-    { type: "link", path: "/backstage/editSongComments", linkCaption: "Song Comments", renderIcon: () => <MusicNoteIcon /> },
-    { type: "divider" },
-    { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => <MusicNoteIcon /> },
-    { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Credit Types", renderIcon: () => <MusicNoteIcon /> },
+        ],
+    },
 
-    { type: "divider" },
-    { type: "sectionHeader", sectionName: "Admin Events" },
-    { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "link", path: "/backstage/editEventSegments", linkCaption: "Event Segments", renderIcon: () => <CalendarMonthOutlinedIcon /> },
-    { type: "divider" },
-    { type: "link", path: "/backstage/editEventUserResponses", linkCaption: "Event User Responses", renderIcon: () => <CommentIcon /> },
-    { type: "link", path: "/backstage/editEventComments", linkCaption: "Event comments", renderIcon: () => <CommentIcon /> },
-    { type: "divider" },
-    { type: "link", path: "/backstage/editEventSongLists", linkCaption: "Event Song Lists", renderIcon: () => <FormatListNumberedIcon /> },
-    { type: "link", path: "/backstage/editEventSongListSongs", linkCaption: "Event Song List Songs", renderIcon: () => <FormatListNumberedIcon /> },
-    { type: "divider" },
-    { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon /> },
-    { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon /> },
-    { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => <SettingsIcon /> },
-    { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon /> },
+    {
+        name: "Admin Files",
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editFrontpageGalleryItems", linkCaption: "Front page gallery", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
+        ],
+    },
+    {
+        name: "Admin Settings",
+        className: "admin",
+        items: [
+            { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
+        ],
+    },
+];
 
-    { type: "divider" },
-    { type: "sectionHeader", sectionName: "Admin Files" },
-    { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.AttachFile },
-    { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile },
-    { type: "link", path: "/backstage/editFrontpageGalleryItems", linkCaption: "Front page gallery", renderIcon: gIconMap.AttachFile },
+const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
 
-    { type: "divider" },
-    { type: "sectionHeader", sectionName: "Admin Settings" },
-    { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon /> },
-    { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon /> },
-    { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon /> },
-]
-
-const Dashboard2 = ({ children }) => {
+    const session = useSession();
+    session.permissions
 
     React.useEffect(() => {
         document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
@@ -361,6 +452,46 @@ const Dashboard2 = ({ children }) => {
         setOpen(!open);
     };
 
+    // flatten our list of menu groups & items based on permissions.
+    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
+    for (let iGroup = 0; iGroup < gMenuItemGroups.length; ++iGroup) {
+        const g = gMenuItemGroups[iGroup]!;
+        let firstItemInGroup: boolean = true;
+        for (let iItem = 0; iItem < g.items.length; ++iItem) {
+            const item = g.items[iItem] as MenuItemLink;
+            assert(g.items[iItem]?.type === "link", "only link menu items should be added here; other types are created dynamically");
+            if (API.users.isAuthorizedFor(session, item.permission)) {
+                // add it to the flat list.
+                if (firstItemInGroup) {
+                    if (menuItems.length) {
+                        // add a divider because we know other items are already there.
+                        menuItems.push({
+                            group: g,
+                            item: {
+                                type: "divider",
+                            }
+                        });
+                    }
+                    // add the group heading
+                    if (g.name) {
+                        menuItems.push({
+                            group: g,
+                            item: {
+                                type: "sectionHeader",
+                                sectionName: g.name,
+                            }
+                        });
+                    }
+                    firstItemInGroup = false;
+                }
+                menuItems.push({
+                    group: g,
+                    item,
+                });
+            }
+        }
+    }
+
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box sx={{ display: "flex" }} className="CMDashboard2">
@@ -376,9 +507,9 @@ const Dashboard2 = ({ children }) => {
                     onClose={toggleDrawer}
                 >
                     <Box sx={{ ...theme.mixins.toolbar }} />
-                    <List component="nav">
+                    <List component="nav" className="CMMenu">
                         {
-                            gMenuItems.map((item, index) => <MenuItemComponent key={index} item={item} />)
+                            menuItems.map((item, index) => <MenuItemComponent key={index} item={item} realm={navRealm} />)
                         }
                         <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
                     </List>

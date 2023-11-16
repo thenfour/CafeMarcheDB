@@ -297,9 +297,6 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
             <Tooltip title={"Click here to save your edits. The underlying image file won't be modified but the edits will be updated for the public homepage. Do this if you didn't perform any cropping, or if you are just tweaking the image a little bit. Avoids creating a new image file."}>
                 <Button onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</Button>
             </Tooltip>
-            <Tooltip title={"This file is an edited form of another image. Click here to base your edits off the original image."}>
-                <Button onClick={handleSaveClick} className={`toolbutton save`}>&#x2191; Use parent image</Button>
-            </Tooltip>
             <Button onClick={props.onExitEditMode} startIcon={gIconMap.Edit()}>Cancel</Button>
         </div>
         <JoystickDiv

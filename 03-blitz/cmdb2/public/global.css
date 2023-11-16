@@ -43,6 +43,13 @@ a:visited {
 }
 
 
+a.logo,
+a.logo:link,
+a.logo:hover,
+a.logo:visited {
+  color: var(--cm-yellow);
+}
+
 /* typically h1 at the top of a section doesn't need any padding or it looks awkwardly pushed down */
 h1:first-child {
   padding-top: 0;

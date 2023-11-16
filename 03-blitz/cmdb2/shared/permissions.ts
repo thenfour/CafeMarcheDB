@@ -9,7 +9,14 @@ export enum Permission {
     visibility_editors = "visibility_editors",
     visibility_members = "visibility_members",
     visibility_logged_in_users = "visibility_logged_in_users",
-    visibility_public = "visibility_public",
+    visibility_public = "visibility_public",// this is the only permission which is special-case in that EVERYONE will be authorized for it, no exceptions. so there are special cases for it like if you have no user object or no session.
+
+    edit_public_homepage = "edit_public_homepage",
+    backstage_user = "backstage_user",
+    sysadmin = "sysadmin",
+
+
+    ////////////
 
     admin_auth = "admin_auth", // roles, permissions
     impersonate_user = "impersonate_user",

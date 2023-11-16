@@ -1108,3 +1108,12 @@ li.songDropdownOption {
     stroke: #c00d;
     fill: transparent;
 }
+
+
+/* - dashboard menu --------------------------------- */
+
+
+.CMMenu .admin {
+    color: #a40;
+    background-color: #eee;
+}

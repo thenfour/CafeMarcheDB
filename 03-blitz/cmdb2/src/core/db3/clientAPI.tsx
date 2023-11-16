@@ -18,6 +18,7 @@ import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
+import { ClientSession } from "@blitzjs/auth";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -198,6 +199,14 @@ class UsersAPI {
 
     getDefaultVisibilityPermission = () => {
         return this.getPermission(Permission.visibility_members)!;
+    };
+
+    // useSession -> this
+    isAuthorizedFor = (session: ClientSession | null | undefined, q: Permission) => {
+        // public
+        if (!session || !session.permissions) return q === Permission.visibility_public;
+        if (session.isSysAdmin) return true;
+        return session.permissions.some(v => v === q);
     };
 
     getVisibilityInfo = <T extends { visiblePermission: db3.PermissionPayloadMinimum | null },>(item: T) => {
