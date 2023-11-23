@@ -429,15 +429,20 @@ const gMenuItemGroups: MenuItemGroup[] = [
 const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
 
     const session = useSession();
-    session.permissions
+    //session.permissions
 
     React.useEffect(() => {
         document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
     }, []);
 
     const theme = useTheme();
+    //console.log(theme.direction);
+    //const isPortrait = useMediaQuery({ orientation: 'portrait' }, true);
+    //useResponsiveQuery();
+    //console.log(`isportrait: ${isPortrait}`);
+
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-    const router = useRouter();
+    //const router = useRouter();
 
     const [open, setOpen] = React.useState(false);
 

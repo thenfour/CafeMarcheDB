@@ -153,6 +153,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
         }
 
         if (!editParams.cropSize) {// coalesce cropSize for convenience / simplicity.
+            const info = API.files.getGalleryItemImageInfo(props.value);
             editParams.cropSize = { ...info.fileDimensions };
         }
         ev.displayParams = JSON.stringify(editParams);
@@ -160,7 +161,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
         return { ...ev };
     });
 
-    console.log(`editing file: ${editingValue.file.storedLeafName}`);
+    //console.log(`editing file: ${editingValue.file.storedLeafName}`);
 
     const [selectedTool, setSelectedTool] = React.useState<SelectedTool>("Move");
     const info = API.files.getGalleryItemImageInfo(editingValue);
@@ -312,17 +313,20 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
                     <>
                         <div>
                             {editingValue.file.fileLeafName}<br />
-                            {editingValue.file.storedLeafName}<br />
+
+                            {editingValue.file.storedLeafName}
+                            ({info.fileDimensions.width.toFixed(0)} x {info.fileDimensions.height.toFixed(0)})
+                            - {formatFileSize(editingValue.file.sizeBytes)}<br />
+
                             crop: [{info.cropBegin.x.toFixed(0)},{info.cropBegin.y.toFixed(0)}]-[{info.cropEnd.x.toFixed(0)},{info.cropEnd.y.toFixed(0)}]
-                            ({info.cropSize.width.toFixed(0)} x {info.cropSize.height.toFixed(0)}) <br />
-                            optimized: ({reducedDimensions.width.toFixed(0)} x {reducedDimensions.height.toFixed(0)}) <br />
-                        </div>
-                        <div>
-                            {formatFileSize(editingValue.file.sizeBytes)}<br />
-                            (cropped: {(croppedSizeP * 100).toFixed(0)}%, {formatFileSize(editingValue.file.sizeBytes * croppedSizeP)})<br />
-                            (reduced: {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize(editingValue.file.sizeBytes * reducedSizeP)})
-                        </div>
-                        <div>
+                            {(croppedSizeP * 100).toFixed(0)}%
+                            ({info.cropSize.width.toFixed(0)} x {info.cropSize.height.toFixed(0)})
+                            {formatFileSize(editingValue.file.sizeBytes * croppedSizeP)}
+                            <br />
+
+                            optimized: ({reducedDimensions.width.toFixed(0)} x {reducedDimensions.height.toFixed(0)})
+                            {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize(editingValue.file.sizeBytes * reducedSizeP)}
+                            <br />
                             rotate: {info.displayParams.rotate.toFixed(2)} deg
                         </div>
                     </>

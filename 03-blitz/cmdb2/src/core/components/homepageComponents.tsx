@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import React from "react";
-import { Clamp, IsNullOrWhitespace, modulo } from "shared/utils";
+import { Clamp, IsNullOrWhitespace, getNextSequenceId, modulo } from "shared/utils";
 import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import * as db3 from "../db3/db3";
@@ -87,7 +87,7 @@ export const HomepagePhotoMaskPattern = ({ post, ...props }: HomepagePhotoPatter
                 x={0} y={0}
                 id={id(`galleryPatternImage`)}
             />
-            <rect x="0" y="0" width={info.fileDimensions.width} height={info.fileDimensions.height} className='imageStroke' />}
+            <rect x="0" y="0" width={info.fileDimensions.width} height={info.fileDimensions.height} className='imageStroke' />
             {/* TOP mask */}
             {info.maskTopHeight > 0 && <rect x="0" y="0" width={info.fileDimensions.width} height={info.maskTopHeight} className='mask' />}
             {/* BOTTOM mask */}
@@ -430,12 +430,14 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
     const [gallery, setGallery] = React.useState<Gallery>(() => new Gallery());
     gallery.setContent(content);
 
-    const [galleryTimer, setGalleryTimer] = React.useState<NodeJS.Timeout | null>(null);
+    const galleryTimer = React.useRef<NodeJS.Timeout | null>(null);
 
     const [instanceKey, setInstanceKey] = React.useState<string>(() => nanoid());
 
-    //const [mounted, setMounted] = React.useState<boolean>(false);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);// to induce re-render, increment
+    const [layoutUpdateTimer, setLayoutUpdateTimer] = React.useState<NodeJS.Timeout | null>(null);
+
+    //console.log(`render - serial:${0}`);
 
     const svgRefs = React.useRef<MainSVGRefs>({
         photoCaptionRef: null,
@@ -463,33 +465,47 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
     }, [svgRefs, instanceKey, content, photoSelectorRef.current]);
 
     const updateLayout = () => {
-        setTimeout(() => { // necessary to let the browser shuffle the layout.
+        if (layoutUpdateTimer) {
+            clearTimeout(layoutUpdateTimer);
+        }
+        const t = setTimeout(() => { // necessary to let the browser shuffle the layout.
             const root2 = root2Ref.current;
             const psvgRefs = svgRefs.current;
             correctLayoutFromRef(psvgRefs.photoCaptionRef, photoCaptionContainerRef.current, middleContentRef.current);
             correctLayoutFromRef(psvgRefs.photoSelectRef, photoSelectContainerRef.current, middleContentRef.current);
             correctLayoutFromRef(psvgRefs.agendaRef, agendaContentRef.current, middleContentRef.current);
 
-            setRefreshSerial(refreshSerial + 1);
             gallery.applyStateToDOM();
 
             if (root2) {
                 //const root2 = document.querySelector(".root2") as HTMLElement;
                 const horizOrientation = (window.innerHeight < window.innerWidth);
+                //console.log(`update layout ${getNextSequenceId()} - orient:${horizOrientation} (${window.innerHeight} x ${window.innerWidth}) - serial:${0 + 1}`);
                 // because the overall page layout depends on orientation, the natural width changes depending on orient. so use different default widths.
                 const zoomFact = horizOrientation ? (root2.clientWidth / gSettings.landscapeNaturalWidth) : (root2.clientWidth / gSettings.portraitNaturalWidth);
                 root2.style.setProperty("--page-zoom", `${(zoomFact * 100).toFixed(2)}%`);
                 root2.style.opacity = "100%";
             }
-        }, 50);
+            //setRefreshSerial(refreshSerial + 1);
+            setLayoutUpdateTimer(null);
+        }, 100);
+        setLayoutUpdateTimer(t);
     }
+
+    const resetGalleryTimer = () => {
+        if (galleryTimer.current !== null) {
+            console.log(`resetGalleryTimer: clearing gallery timer ${galleryTimer.current}`);
+            clearTimeout(galleryTimer.current);
+        }
+        const t = setTimeout(galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS);
+        console.log(`resetGalleryTimer: ${gSettings.photoCarrouselAutoPlayIntervalMS} -> new timer ${t}`);
+        galleryTimer.current = t;
+    };
 
     const onSelectPhoto = (i) => {
         gallery.setSelectedIdx(i);
-
-        clearTimeout(galleryTimer || undefined);
-        setGalleryTimer(setTimeout(galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS));
-        setRefreshSerial(refreshSerial + 1);
+        resetGalleryTimer();
+        //setRefreshSerial(refreshSerial + 1);
     }
 
     const onClickPhotoNext = () => {
@@ -505,7 +521,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
     const galleryTimerProc = () => {
         if (!isMounted) return;
         onClickPhotoNext();
-        setGalleryTimer(setTimeout(galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS));
+        resetGalleryTimer();
     }
 
     // https://stackoverflow.com/questions/58831750/how-to-add-event-in-react-functional-component
@@ -526,8 +542,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
 
     React.useEffect(() => {
         updateLayout();
-        setGalleryTimer(setTimeout(galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS));
-
+        resetGalleryTimer();
         return () => {
             clearTimeout(galleryTimer || undefined);
         };
@@ -608,55 +623,4 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
     </div>
     );
 };
-
-
-
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export interface HomepageMainProps {
-//     content: HomepageContentSpec;
-// };
-
-// export const HomepageMain = ({ content }: HomepageMainProps) => {
-//     //const root2Ref = React.useRef<HTMLDivElement | null>(null);
-//     //const [refreshSerial, setRefreshSerial] = React.useState<number>(0);// to induce re-render, increment
-
-//     // const updateLayout = () => {
-//     //     setTimeout(() => { // necessary to let the browser shuffle the layout.
-//     //         if (root2Ref.current) {
-//     //             //const root2 = document.querySelector(".root2") as HTMLElement;
-//     //             const horizOrientation = (window.innerHeight < window.innerWidth);
-//     //             // because the overall page layout depends on orientation, the natural width changes depending on orient. so use different default widths.
-//     //             const zoomFact = horizOrientation ? (root2Ref.current.clientWidth / gSettings.landscapeNaturalWidth) : (root2Ref.current.clientWidth / gSettings.portraitNaturalWidth);
-//     //             root2Ref.current.style.setProperty("--page-zoom", `${(zoomFact * 100).toFixed(2)}%`);
-//     //             root2Ref.current.style.opacity = "100%";
-//     //         }
-//     //     }, 50);
-//     // }
-
-//     // https://stackoverflow.com/questions/58831750/how-to-add-event-in-react-functional-component
-//     // even though this is working fine (so far) i am concerned about the removal of event listeners for local const functions. if tehy have a capture,
-//     // then how does this possibly work?
-//     // React.useEffect(() => {
-//     //     window.addEventListener("resize", updateLayout);
-//     //     InstallOrientationChangeListener(updateLayout);
-//     //     setTimeout(updateLayout, 1);
-
-//     //     return () => {
-//     //         window.removeEventListener("resize", updateLayout);
-//     //         UninstallOrientationChangeListener(updateLayout);
-//     //     };
-//     // }, []);
-
-//     return (
-//         <div className="root2" ref={(ref) => {
-//             root2Ref.current = ref;
-//             //setRefreshSerial(refreshSerial + 1);
-//         }}>
-//             <div className="headerChrome">
-//                 <TopRight2 />
-//             </div>
-//             <HomepageMiddleContent content={content} root2Ref={root2Ref.current} />
-//         </div>
-//     );
-// };
 
