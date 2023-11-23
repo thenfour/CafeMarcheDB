@@ -1113,7 +1113,24 @@ li.songDropdownOption {
 /* - dashboard menu --------------------------------- */
 
 
+.CMMenu .public {
+    color: #080;
+    background-color: #eee;
+}
+
+.CMMenu .public.linkMenuItem:hover {
+    background-color: #ccc;
+}
+
 .CMMenu .admin {
     color: #a40;
     background-color: #eee;
+}
+
+.CMMenu .admin.events {
+    color: #008;
+}
+
+.CMMenu .admin.linkMenuItem:hover {
+    background-color: #ccc;
 }

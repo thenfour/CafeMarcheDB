@@ -283,10 +283,10 @@ interface MenuItemComponentProps {
 const MenuItemComponent = (props: MenuItemComponentProps) => {
     const router = useRouter();
     if (props.item.item.type === "divider") {
-        return <Divider className={props.item.group.className} />;
+        return <Divider className={`${props.item.group.className} divider`} />;
     }
     if (props.item.item.type === "sectionHeader") {
-        return (<ListSubheader component="div" className={props.item.group.className}>
+        return (<ListSubheader component="div" className={`${props.item.group.className} sectionHeader`}>
             <Typography variant="button" noWrap>{props.item.item.sectionName}</Typography>
         </ListSubheader>);
     }
@@ -296,7 +296,7 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
         if (router.pathname == props.item.item.path) selected = true;
         if ((props.item.item.realm !== undefined) && (props.realm !== undefined) && (props.item.item.realm === props.realm)) selected = true;
 
-        return (<ListItemButton component={Link} href={props.item.item.path!} selected={selected} className={`${props.item.group.className} ${props.item.item.className}`}>
+        return (<ListItemButton component={Link} href={props.item.item.path!} selected={selected} className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}>
             {props.item.item.renderIcon && <ListItemIcon>{props.item.item.renderIcon()}</ListItemIcon>}
             <ListItemText primary={props.item.item.linkCaption} />
         </ListItemButton>);
@@ -326,7 +326,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
     {
         name: "Admin Users",
-        className: "admin",
+        className: "admin users",
         items: [
             { type: "link", path: "/backstage/users", linkCaption: "Users", renderIcon: () => <PersonIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.sysadmin },
@@ -337,7 +337,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
 
     {
         name: "Admin Instruments",
-        className: "admin",
+        className: "admin instruments",
         items: [
             { type: "link", path: "/backstage/instruments", linkCaption: "Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/userInstruments", linkCaption: "User Instruments", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
@@ -345,7 +345,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
     {
         name: null,
-        className: "admin",
+        className: "admin instruments",
         items: [
             { type: "link", path: "/backstage/instrumentFunctionalGroups", linkCaption: "Functional Groups", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/instrumentTags", linkCaption: "Tags", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
@@ -354,7 +354,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
 
     {
         name: "Admin Songs",
-        className: "admin",
+        className: "admin songs",
         items: [
             { type: "link", path: "/backstage/editSongs", linkCaption: "Songs", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editSongCredits", linkCaption: "Song Credits", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
@@ -363,7 +363,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
     {
         name: null,
-        className: "admin",
+        className: "admin songs",
         items: [
             { type: "link", path: "/backstage/editSongTags", linkCaption: "Song Tags", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editSongCreditTypes", linkCaption: "Credit Types", renderIcon: () => <MusicNoteIcon />, permission: Permission.sysadmin },
@@ -372,7 +372,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
 
     {
         name: "Admin Events",
-        className: "admin",
+        className: "admin events",
         items: [
             { type: "link", path: "/backstage/editEvents", linkCaption: "Events", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventSegments", linkCaption: "Event Segments", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.sysadmin },
@@ -380,7 +380,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
     {
         name: null,
-        className: "admin",
+        className: "admin events",
         items: [
             { type: "link", path: "/backstage/editEventSongLists", linkCaption: "Event Song Lists", renderIcon: () => <FormatListNumberedIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventSongListSongs", linkCaption: "Event Song List Songs", renderIcon: () => <FormatListNumberedIcon />, permission: Permission.sysadmin },
@@ -388,7 +388,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
     {
         name: null,
-        className: "admin",
+        className: "admin events",
         items: [
             { type: "link", path: "/backstage/editEventUserResponses", linkCaption: "Event User Responses", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventComments", linkCaption: "Event comments", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
@@ -396,7 +396,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
     {
         name: null,
-        className: "admin",
+        className: "admin events",
         items: [
             { type: "link", path: "/backstage/editEventTypes", linkCaption: "Event Types", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
@@ -408,7 +408,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
 
     {
         name: "Admin Files",
-        className: "admin",
+        className: "admin files",
         items: [
             { type: "link", path: "/backstage/editFileTags", linkCaption: "File Tags", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editFiles", linkCaption: "Files", renderIcon: gIconMap.AttachFile, permission: Permission.sysadmin },
@@ -417,7 +417,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
     {
         name: "Admin Settings",
-        className: "admin",
+        className: "admin settings",
         items: [
             { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },

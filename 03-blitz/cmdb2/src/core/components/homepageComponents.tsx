@@ -494,11 +494,11 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
 
     const resetGalleryTimer = () => {
         if (galleryTimer.current !== null) {
-            console.log(`resetGalleryTimer: clearing gallery timer ${galleryTimer.current}`);
+            //console.log(`resetGalleryTimer: clearing gallery timer ${galleryTimer.current}`);
             clearTimeout(galleryTimer.current);
         }
         const t = setTimeout(galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS);
-        console.log(`resetGalleryTimer: ${gSettings.photoCarrouselAutoPlayIntervalMS} -> new timer ${t}`);
+        //console.log(`resetGalleryTimer: ${gSettings.photoCarrouselAutoPlayIntervalMS} -> new timer ${t}`);
         galleryTimer.current = t;
     };
 
