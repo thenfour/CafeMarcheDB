@@ -4,9 +4,10 @@ import { FormControlLabel, NoSsr, Popover, Switch, Tooltip } from "@mui/material
 import { DateCalendar, DateView, LocalizationProvider, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
-import { DateTimeRange, DateTimeRangeHitTestResult, DateToDebugString, TimeOption, TimeOptionsGenerator, combineDateAndTime, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
+import { DateTimeRange, DateTimeRangeHitTestResult, DateToDebugString, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorToDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
 import { InspectObject } from "src/core/components/CMCoreComponents";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { assert } from 'blitz';
 
 export interface CalendarEventSpec {
     id: string;
@@ -51,8 +52,8 @@ export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: 
             tooltips.push(item.title);
             // if (ht.rangeEnd) classes.push("otherEventRangeEnd");
             // if (ht.rangeStart) classes.push("otherEventRangeStart");
-            if (ht.rangeEnd) className += (" otherEventRangeEnd");
-            if (ht.rangeStart) className += (" otherEventRangeStart");
+            if (ht.isLastDay) className += (" otherEventRangeEnd");
+            if (ht.isFirstDay) className += (" otherEventRangeStart");
             matchingEvents.push({ eventSpec: item, hitTest: ht, className });
         }
     }
@@ -62,8 +63,8 @@ export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: 
     const hitTest = range.hitTestDay(day);
     if (hitTest.inRange) {
         classes.push("inRange");
-        if (hitTest.rangeEnd) classes.push("rangeEnd");
-        if (hitTest.rangeStart) classes.push("rangeStart");
+        if (hitTest.isLastDay) classes.push("rangeEnd");
+        if (hitTest.isFirstDay) classes.push("rangeStart");
     }
 
     if (day.day() === 0 || day.day() === 6) {
@@ -121,6 +122,7 @@ export const EventCalendarMonth = (props: EventCalendarMonthProps) => {
             }}
             onChange={(v, state) => {
                 //console.log(state);
+                //console.log(`clicked a date: ${DateToDebugString(v?.toDate()!)}`);
                 props.onChange(v?.toDate()!);
             }}
             slots={{ day: DaySlot }}
@@ -271,7 +273,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
     const endTimeOptions = new TimeOptionsGenerator(15, getTimeOfDayInMinutes(coalescedStartDateTime));
 
     const startTime = startTimeOptions.findTime(coalescedStartDateTime);
-    const endTime = endTimeOptions.findTime(value.getEndDateTime(coalescedStartDateTime));
+    const endTime = endTimeOptions.findTime(value.getEndDateTime(coalescedStartDateTime)); // selecting the end time will be EXCLUSIVE. so you select a 1-hour 10am-11am event, and the END time will be 11am; last time = 10:59.59.999
 
     const [coalescedFallbackStartDay, setCoalescedFallbackStartDay] = React.useState<Date>(coalescedStartDateTime);
 
@@ -281,6 +283,9 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
     };
 
     const handleEndDateChange = (newEndDate: Date) => {
+        assert(value.isAllDay(), "setting end date only makes sense for all-day events");
+        newEndDate = floorToDay(newEndDate); // ignore whatever time component the datepicker hands us; we know it should be midnight.
+
         // swap start/end if needed.
         let newStartDateTime = coalescedStartDateTime;
         if (newEndDate < newStartDateTime) {
@@ -289,6 +294,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
         }
 
         setCoalescedFallbackStartDay(newStartDateTime);
+
 
         // convert to duration. if you select the same as the start, you want that to actually represent a duration of 1 day.
         // assume these are aligned to day.
@@ -339,7 +345,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                         onChange={handleStartDateChange}
                         value={value.getStartDateTime()}
                         coalescedFallbackValue={coalescedFallbackStartDay}
-                        otherValue={value.getEndDateTime()}
+                        otherValue={value.getLastDateTime()} // use LAST time so it doesn't spill into next day.
                         items={props.items}
                         range={value}
                         showDuration={false}
@@ -360,10 +366,11 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                             <div className="ndash field">&ndash;</div>
 
                             {value.isAllDay() && <DayControl
+                                // for all-day events, selecting the end time means selecting the LAST day, not the "end". would not make sense to have to select 12-oct for an event that only exists on 11-oct.
                                 readonly={false}
                                 onChange={handleEndDateChange}
-                                value={value.getEndDateTime()}
-                                coalescedFallbackValue={value.getEndDateTime(coalescedFallbackStartDay)}
+                                value={value.getLastDateTime()}
+                                coalescedFallbackValue={value.getLastDateTime(coalescedFallbackStartDay)}
                                 otherValue={value.getStartDateTime()}
                                 items={props.items}
                                 range={value}
@@ -517,8 +524,7 @@ export const DateTimeRangeControlExample = () => {
             <div>raw duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
             <div>getStartDateTime: {DateToDebugString(value.getStartDateTime())}</div>
             <div>getEndDateTime: {DateToDebugString(value.getEndDateTime())}</div>
-            <div>getEndBound: {DateToDebugString(value.getEndBound())}</div>
-            <div>getEndBoundDay: {DateToDebugString(value.getEndBoundDay())}</div>
+            <div>getLastDateTime: {DateToDebugString(value.getLastDateTime())}</div>
             <div>getDuration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
         </NoSsr>
     </LocalizationProvider>;

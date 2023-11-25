@@ -1,5 +1,6 @@
 import dayjs, { Dayjs } from "dayjs";
-import { isBetween } from "./utils";
+import { assert } from "blitz";
+import { isInRange } from "./utils";
 
 export const gMillisecondsPerMinute = 60 * 1000;
 export const gMillisecondsPerHour = 60 * gMillisecondsPerMinute;
@@ -218,21 +219,47 @@ export class TimeOptionsGenerator {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeRangeSpec {
-    startsAtDateTime: Date | null; // date or null = TBD
+    startsAtDateTime: Date | null; // date or null = TBD. if isAllDay, then the time part is ignored.
+    // the idea is that startDateTime + durationDays = END time (exclusive).
+    // for isAllDay=false, that's obvious.
+    // for isAllDay=true, this should be treated as (durationDays * gMillisecondsPerDay). it is NOT safe to just add startDateTime + durationMillis in this case, 
+    // because not all days are exactly the same duration, but for isAllDay=true, we want to always land on day boundaries.
     durationMillis: number;
-    isAllDay: boolean; // care about time or ignore it?
+    isAllDay: boolean;
 };
 
 export interface DateTimeRangeHitTestResult {
-    inRange: boolean,
-    rangeStart: boolean,
-    rangeEnd: boolean,
+    inRange: boolean, // is the given datetime in the range? (false for TBD)
+    isFirstDay: boolean, // does the given day represent the DAY of the beginning of the range?
+    isLastDay: boolean, // does the given day represent the DAY of the end of the range? for a 1-day event on 12 Oct, testing any datetime with 12 Oct as the day will return true.
 }
 
 export class DateTimeRange {
     private spec: DateTimeRangeSpec;
     constructor(args?: DateTimeRangeSpec) {
-        if (args) this.spec = { ...args };
+        if (args) {
+            // sanitize spec to conform to assertions.
+
+            // all-day events have duration of 1-day increments always.
+            const durationMillis = (args.isAllDay) ? (
+                Math.round(args.durationMillis / gMillisecondsPerDay) * gMillisecondsPerDay
+            ) : (
+                args.durationMillis
+            );
+
+            // all-day events also must start at midnight.
+            const startsAtDateTime = (args.startsAtDateTime && args.isAllDay) ? (
+                floorToDay(args.startsAtDateTime)
+            ) : (
+                args.startsAtDateTime
+            );
+
+            this.spec = {
+                durationMillis,
+                startsAtDateTime,
+                isAllDay: args.isAllDay,
+            };
+        }
         else {
             this.spec = {
                 durationMillis: gMillisecondsPerHour,
@@ -254,17 +281,32 @@ export class DateTimeRange {
         return this.spec.isAllDay;
     }
 
+    // returns the same concept as spec.durationMillis really.
     getDurationMillis(): number {
-        if (this.isAllDay()) {
-            if (!this.spec.startsAtDateTime) {
-                return 0;
-            }
-            // will most always be aligned to day
-            const start = this.getStartDateTime()!;
-            const end = this.getEndDateTime()!;
-            return (Math.round((end.valueOf() - start.valueOf()) / gMillisecondsPerDay) + 1) * gMillisecondsPerDay;
+        if (!this.spec.startsAtDateTime) {
+            return 0; // TBD should probably return null, but this seems reasonable too.
         }
+        if (!this.isAllDay()) {
+            return this.spec.durationMillis;
+        }
+        // all-day event. means the duration should be aligned to day.
+        assert(this.spec.durationMillis % gMillisecondsPerDay === 0, "for all-day events, durationMillis is expected to be aligned to day-long intervals.");
         return this.spec.durationMillis;
+        // const start = this.getStartDateTime()!;
+        // const end = this.getEndDateTime()!;
+        //return (Math.round((end.valueOf() - start.valueOf()) / gMillisecondsPerDay) + 1) * gMillisecondsPerDay;
+    }
+
+    getDurationDays(): number {
+        if (!this.spec.startsAtDateTime) {
+            return 0; // TBD should probably return null, but this seems reasonable too.
+        }
+        // all-day event. means the duration should be aligned to day.
+        if (this.isAllDay()) {
+            assert(this.spec.durationMillis % gMillisecondsPerDay === 0, "for all-day events, durationMillis is expected to be aligned to day-long intervals.");
+        }
+
+        return this.spec.durationMillis / gMillisecondsPerDay;
     }
 
     toString() {
@@ -294,6 +336,9 @@ export class DateTimeRange {
         return lhsStart.valueOf() < rhsStart.valueOf();
     }
 
+    // returns a datetime representing the start date + time.
+    // returns null if "TBD"
+    // if all-day, date part is correct and time is midnight.
     getStartDateTime<T extends Date | undefined>(fallbackValue?: T): T extends Date ? Date : Date | null {
         if (!this.spec.startsAtDateTime) {
             return fallbackValue || null as any;
@@ -304,70 +349,85 @@ export class DateTimeRange {
         return this.spec.startsAtDateTime as T extends Date ? Date : Date | null;
     }
 
-    // returns the advertised end date (for 1 day events it will be the same as start date)
+    // returns a valid date/time for the end of the period.
+    // it's trickier than it seems, because "end" can sometimes want to be inclusive or exclusive depending on how it's to be used.
+    // for example a 1-day all-day event that starts on 12-Oct. Is the "end" midnight of 13-oct? Or 11:59.59.999 of 12-Oct?
+    // this will follow idiomatic "END" meaning. therefore it returns effectively (startDateTime + days(durationMillis/gMillisecondsPerDay))
+    // and this date will always fall JUST past the end of the range.
     getEndDateTime<T extends Date | undefined>(fallbackStartDate?: T): T extends Date ? Date : Date | null {
         const startDate = this.getStartDateTime(fallbackStartDate);
         if (!startDate) {
             return null as any;
         }
-        const ret = new Date(startDate.valueOf() + this.spec.durationMillis);
-        if (this.isAllDay()) {
-            const x = ceilToDay(ret);
-            x.setDate(x.getDate() - 1); // -1 to day
-            return x;
+        if (!this.isAllDay()) {
+            return new Date(startDate.valueOf() + this.spec.durationMillis);
         }
-        return ret;
+
+        const durationDays = this.getDurationDays();
+        let ret = dayjs(startDate);
+        ret = ret.add(durationDays, "day");
+        return ret.toDate();
     }
 
-    // returns the theoretical, comparable, end boundary time. this represents like C++ iterators the first value which is out of the range's bounds.
-    getEndBound<T extends Date | undefined>(fallbackStartDate?: T): T extends Date ? Date : Date | null {
+    // returns a valid date/time for the last valid time of the period (this date will be IN range)
+    getLastDateTime<T extends Date | undefined>(fallbackStartDate?: T): T extends Date ? Date : Date | null {
         const startDate = this.getStartDateTime(fallbackStartDate);
         if (!startDate) {
             return null as any;
         }
-        const ret = new Date(startDate.valueOf() + this.getDurationMillis());
-        return ret;
-    }
-
-    // for day comparisons, returns the 1st DAY which does not touch this range
-    getEndBoundDay<T extends Date | undefined>(fallbackStartDate?: T): T extends Date ? Date : Date | null {
-        if (this.spec.isAllDay) return this.getEndBound(fallbackStartDate); // for all-day, the normal getEndBound lands on midnight and represents this fine.
-        const startDate = this.getStartDateTime(fallbackStartDate);
-        if (!startDate) {
-            return null as any;
+        if (!this.isAllDay()) {
+            // console.log(`getLastDateTime: not all day`);
+            return new Date(startDate.valueOf() + this.spec.durationMillis - 1);
         }
-        const end = new Date(startDate.valueOf() + this.spec.durationMillis);
-        // chop down to midnight, then add a day.
-        const a = floorToDay(end);
-        a.setDate(a.getDate() + 1);
-        return a;
+
+        const durationDays = this.getDurationDays();
+        let ret = dayjs(startDate);
+        ret = ret.add(durationDays, "day");
+
+        // console.log(`getLastDateTime: duration days: ${durationDays}`);
+        // console.log(`getLastDateTime: start date: ${startDate.toISOString()}`);
+        // console.log(`getLastDateTime: END date (+days): ${ret.toISOString()}`);
+
+        assert(ret.millisecond() === 0, "expecting this time to land on a midnight boundary.");
+        assert(ret.second() === 0, "expecting this time to land on a midnight boundary.");
+        assert(ret.minute() === 0, "expecting this time to land on a midnight boundary.");
+        assert(ret.hour() === 0, "expecting this time to land on a midnight boundary.");
+
+        ret = ret.add(-1, "millisecond");
+        // console.log(`getLastDateTime: return date: ${ret.toISOString()}`);
+
+        return ret.toDate();
     }
 
     // test a DAY and report significance
     hitTestDay(day: Dayjs): DateTimeRangeHitTestResult {
-        const ret = {
+        const ret: DateTimeRangeHitTestResult = {
             inRange: false,
-            rangeStart: false,
-            rangeEnd: false,
+            isFirstDay: false,
+            isLastDay: false,
         };
 
         const rangeBeginDate = this.getStartDateTime();
         if (!rangeBeginDate) return ret;
         const rangeBeginDjs = dayjs(rangeBeginDate);
 
+        const rangeLastDate = this.getLastDateTime();
+        if (!rangeLastDate) return ret;
+        const rangeLastDjs = dayjs(rangeLastDate);
+
         const rangeEndDate = this.getEndDateTime();
         if (!rangeEndDate) return ret;
-        const rangeEndDjs = dayjs(rangeEndDate);
+        //const rangeEndDjs = dayjs(rangeEndDate);
 
         if (rangeBeginDjs.isSame(day, "day")) {
-            ret.inRange = true;
-            ret.rangeStart = true;
+            //ret.inRange = true;
+            ret.isFirstDay = true;
         }
-        if (rangeEndDjs.isSame(day, "day")) {
-            ret.inRange = true;
-            ret.rangeEnd = true;
+        if (rangeLastDjs.isSame(day, "day")) {
+            //ret.inRange = true;
+            ret.isLastDay = true;
         }
-        if (isBetween(day.valueOf(), rangeBeginDate.valueOf(), rangeEndDate.valueOf())) {
+        if (isInRange(day.valueOf(), rangeBeginDate.valueOf(), rangeEndDate.valueOf())) {
             ret.inRange = true;
         }
 
@@ -394,12 +454,36 @@ export class DateTimeRange {
 
         // no TBD.
         const now = new Date();
-        const laterEndBound = Math.max(this.getEndBound(now).valueOf(), rhs.getEndBound(now).valueOf());
-        const earlierStartBound = Math.max(this.getStartDateTime(now).valueOf(), rhs.getStartDateTime(now).valueOf());
+
+        // success of this function is mesaured in some specific cases:
+        // - identical 1-day events == the same 1-day event
+        // - a 1-day event + similar <1day event == a 1-day event. (1-day + [midnight - 11:59] = 1-day.)
+        // - ...
+        const earliestStart = Math.min(this.getStartDateTime(now).valueOf(), rhs.getStartDateTime(now).valueOf());
+        const isAllDay = this.isAllDay() || rhs.isAllDay(); // if either is all-day, then the union becomes all-day.
+
+        if (isAllDay) {
+            const latestLast = Math.max(this.getLastDateTime(now).valueOf(), rhs.getLastDateTime(now).valueOf());
+            // operate in all-day terms. how do we convert a range from !allday to all-day?
+            // look at the days it touches. if it even covers 1 millisecond of a day, include that day.
+            let startdjs = new Dayjs(earliestStart);
+            let enddjs = new Dayjs(latestLast);
+            // count days in duration, ceil, convert to duration millis
+            let durationDays = startdjs.diff(enddjs, "day");
+            durationDays = Math.ceil(durationDays);
+
+            return new DateTimeRange({
+                startsAtDateTime: new Date(earliestStart),
+                isAllDay: true,
+                durationMillis: durationDays * gMillisecondsPerDay,
+            });
+        }
+
+        const latestEnd = Math.max(this.getEndDateTime(now).valueOf(), rhs.getEndDateTime(now).valueOf());
         return new DateTimeRange({
-            startsAtDateTime: new Date(earlierStartBound),
-            durationMillis: laterEndBound - earlierStartBound,
-            isAllDay: this.isAllDay() || rhs.isAllDay(), // if either is all-day, then the union becomes all-day.
+            startsAtDateTime: new Date(earliestStart),
+            isAllDay: false,
+            durationMillis: latestEnd - earliestStart,
         });
     }
 };

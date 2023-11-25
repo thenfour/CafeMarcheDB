@@ -504,8 +504,9 @@ export function parseMimeType(mimeTypeStringOrNullish: string | null | undefined
 export const areAllEqual = <T,>(arr: T[]): boolean => arr.every(v => v === arr[0]);
 
 
-export const isBetween = (number: number, a: number, b: number): boolean => {
-    return number >= Math.min(a, b) && number <= Math.max(a, b);
+// tests >= start and < end. start and end can be swapped
+export const isInRange = (number: number, a: number, b: number): boolean => {
+    return number >= Math.min(a, b) && number < Math.max(a, b);
 };
 
 // retains repeating pattern into the negative.
