@@ -24,6 +24,7 @@ import DoneIcon from '@mui/icons-material/Done';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
+import { getNextSequenceId } from "shared/utils";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const Markdown = (props: { markdown: string | null, id?: string, className?: string }) => {
@@ -140,14 +141,10 @@ interface DebouncedControlProps {
 
 export function DebouncedControl(props: DebouncedControlProps) {
     const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
-    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
-    const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
+    const [debouncedValue, { isDebouncing, isFirstUpdate }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
 
     const saveNow = () => {
-        if (firstUpdate && debouncedValue === props.initialValue) {
-            setFirstUpdate(false);
-            return; // avoid onchange when the control first loads and sets debounced state.
-        }
+        if (isFirstUpdate) return;
         props.onValueChanged(debouncedValue);
     };
 

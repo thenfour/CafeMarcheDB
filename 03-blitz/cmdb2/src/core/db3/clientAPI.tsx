@@ -19,6 +19,8 @@ import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEven
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
 import { ClientSession } from "@blitzjs/auth";
+import { GetStyleVariablesForColor } from "../components/Color";
+import { gGeneralPaletteList, gPrivateVisibilityColorId } from "shared/color";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -166,6 +168,11 @@ class FilesAPI {
 
 const gFilesAPI = new FilesAPI();
 
+interface ObjectWithVisiblePermission {
+    visiblePermissionId: number | null;
+    visiblePermission: db3.PermissionPayloadMinimum | null;
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class UsersAPI {
     // returns an instrument payload, or null if the user has no instruments.
@@ -209,30 +216,48 @@ class UsersAPI {
         return session.permissions.some(v => v === q);
     };
 
-    getVisibilityInfo = <T extends { visiblePermission: db3.PermissionPayloadMinimum | null },>(item: T) => {
+    getVisibilityInfo = <T extends ObjectWithVisiblePermission,>(item: T) => {
+        const visPerm = item.visiblePermission;
         const publicPerms = [
             Permission.visibility_public,
+        ];
+        const userPerms = [
             Permission.visibility_members,
             Permission.visibility_logged_in_users
         ];
-        const restrictedPerms = [
+        const editorPerms = [
             Permission.visibility_editors,
         ];
-        const isPublic = publicPerms.find(p => item.visiblePermission?.name === p);
-        const isPrivate = item.visiblePermission === null; //
-        const isRestricted = restrictedPerms.find(p => item.visiblePermission?.name === p);
+        const isPrivate = visPerm === null; //
+        const isForEditors = editorPerms.find(p => visPerm?.name === p);
+        const isForUsers = userPerms.find(p => visPerm?.name === p);
+        const isPublic = publicPerms.find(p => visPerm?.name === p);
         const cssClasses: string[] = [];
         if (isPrivate) cssClasses.push(`visibility-private`);
-        if (isPublic) cssClasses.push(`visibility-public  visiblePermission-${item.visiblePermission!.name}`);
-        if (isRestricted) cssClasses.push(`visibility-restricted visiblePermission-${item.visiblePermission!.name}`);
+        if (isPublic) cssClasses.push(`visibility-public visiblePermission-${visPerm!.name}`);
+        if (isForEditors) cssClasses.push(`visibility-editors visiblePermission-${visPerm!.name}`);
+        if (isForUsers) cssClasses.push(`visibility-users visiblePermission-${visPerm!.name}`);
+
+        let colorId = visPerm?.color;
+        if (colorId == null) {
+            colorId = gPrivateVisibilityColorId;
+        }
+
+        const style = GetStyleVariablesForColor(colorId);
 
         return {
             isPrivate,
             isPublic,
-            isRestricted,
+            isForEditors,
+            isForUsers,
+            style,
             className: cssClasses.join(" "),
         }
     }
+
+    isPublic = <T extends ObjectWithVisiblePermission,>(item: T) => {
+        return this.getVisibilityInfo(item).isPublic;
+    };
 
     updateUserPrimaryInstrument = CreateAPIMutationFunction(updateUserPrimaryInstrumentMutation);
 };

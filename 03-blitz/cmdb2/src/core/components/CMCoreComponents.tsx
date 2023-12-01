@@ -365,10 +365,11 @@ export interface VisibilityValueProps {
 };
 
 export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValueProps) => {
-    const style = GetStyleVariablesForColor(permission?.color);
-    const visInfo = API.users.getVisibilityInfo({ visiblePermission: permission });
+    //const style = GetStyleVariablesForColor(permission?.color);
+    const visInfo = API.users.getVisibilityInfo({ visiblePermission: permission, visiblePermissionId: permission?.id || null });
     const classes: string[] = [
-        "visibilityValue eventVisibilityValue",
+        "visibilityValue",
+        "applyColor-strong",
         onClick ? "interactable" : "",
         variant,
         visInfo.className,
@@ -382,7 +383,7 @@ export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValu
         tooltipTitle = permission!.description || "";
     }
 
-    return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={style} onClick={onClick}>
+    return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={visInfo.style} onClick={onClick}>
         {variant === "minimal" ? (
             permission === null ? <>{gIconMap.Lock()}</> : RenderMuiIcon(permission?.iconName)
         ) : (

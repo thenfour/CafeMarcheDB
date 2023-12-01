@@ -580,7 +580,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     const visInfo = API.users.getVisibilityInfo(event);
 
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
-        <div className='header'>
+        <div className='header applyColor-weak' style={visInfo.style}>
             <div className='flex-spacer'></div>
             <Suspense>
                 <EventVisibilityControl event={event} refetch={tableClient.refetch} />

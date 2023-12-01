@@ -118,9 +118,6 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const fallbackValues = API.events.getAgendaItemFallbackValues(props.event);
 
     return <div className='EventFrontpageTabContent'>
-        {/* <InspectObject src={props.event} /> */}
-
-
         <div className={`fieldContainer frontpageVisible`}>
             <div className='label'>
             </div>
@@ -133,6 +130,8 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                     label="Show this event on the front page?"
                 //labelPlacement="end"
                 />
+
+                {!API.users.isPublic(props.event) && <div className="warning">This event still won't be visible, because it has restricted visibility</div>}
 
             </div>
             <div className='editButtonContainer'>

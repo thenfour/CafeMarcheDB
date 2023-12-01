@@ -421,3 +421,4 @@ export const gGeneralPaletteList = new ColorPaletteList([
     new ColorPalette({ ...generalPaletteArgs, corrections: generalPaletteManualCorrections }),
 ]);
 
+export const gPrivateVisibilityColorId = "pink";

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 
 export interface DebounceInfo<T> {
     isDebouncing: boolean;
+    isFirstUpdate: boolean;
 };
 
 export type DebounceResult<T> = [
@@ -15,8 +16,16 @@ export type DebounceResult<T> = [
 export function useDebounce<T>(value: T, delay?: number): DebounceResult<T> {
     const [debouncedValue, setDebouncedValue] = useState<T>(value)
     const [isDebouncing, setIsDebouncing] = useState<boolean>(false);
+    const [isFirstUpdate, setIsFirstUpdate] = useState<boolean>(true);
 
     useEffect(() => {
+        // don't debounce the initialization of values. there is nothing to save and we don't want activity indicators to be spinning on load.
+        if (isFirstUpdate) {
+            setIsFirstUpdate(false);
+            setIsDebouncing(false);
+            setDebouncedValue(value)
+            return;
+        }
         setIsDebouncing(true);
         const timer = setTimeout(() => {
             setIsDebouncing(false);
@@ -32,7 +41,7 @@ export function useDebounce<T>(value: T, delay?: number): DebounceResult<T> {
 
     return [
         debouncedValue,
-        { isDebouncing },
+        { isDebouncing, isFirstUpdate },
     ];
 };
 

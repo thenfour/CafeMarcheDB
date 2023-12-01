@@ -15,14 +15,16 @@
 
   --general-interactable-bgcolor: #79b;
   --general-interactable-color: #eee;
-
+  /* 
   --visibility-public-bgcolor: #cec;
   --visibility-public-color: #484;
+
+   */
 
   --visibility-private-bgcolor: #ecc;
   --visibility-private-color: #c00;
 
-  --visibility-other-bgcolor: #ecc;
+  --visibility-other-bgcolor: #ccc;
   --visibility-other-color: #000;
 
   --crop-mask-color: #f00c;
@@ -654,21 +656,16 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   border-left: solid 16px var(--primary-color);
 }
 
-.contentSection.event>.header {
-  background-color: var(--visibility-other-bgcolor);
-}
-
 .contentSection.event.visibility-private>.header {
   background-color: var(--visibility-private-bgcolor);
   color: var(--visibility-private-color);
 }
 
+/* 
 .contentSection.event.visibility-public>.header {
   background-color: #eee;
   color: black;
-  /* background-color: var(--visibility-public-bgcolor);
-  color: var(--visibility-public-color); */
-}
+} */
 
 
 .contentSection .statusIndicator {

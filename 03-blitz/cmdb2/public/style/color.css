@@ -21,8 +21,9 @@
 
 /* generic color application */
 .applyColor-strong {
-    background-color: var(--strong-color);
-    color: var(--strong-contrast-color);
+    /* !important because sometimes default styling has stronger matching, but if you apply this it's really meant to override any other styling */
+    background-color: var(--strong-color) !important;
+    color: var(--strong-contrast-color) !important;
     border: 1px var(--strong-border-style) var(--strong-contrast-color);
 }
 
@@ -39,8 +40,8 @@
 }
 
 .applyColor-weak {
-    background-color: var(--weak-color);
-    color: var(--weak-contrast-color);
+    background-color: var(--weak-color) !important;
+    color: var(--weak-contrast-color) !important;
     border: 1px var(--weak-border-style) var(--weak-contrast-color);
 }
 

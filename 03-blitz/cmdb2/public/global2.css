@@ -443,7 +443,7 @@ or,
     padding: 0 15px;
 }
 
-
+/* 
 .EventSongListValue.visibility-public {
     border: 2px solid var(--visibility-public-bgcolor);
 }
@@ -452,6 +452,8 @@ or,
     background-color: var(--visibility-public-bgcolor);
 }
 
+ */
+
 .EventSongListValue.visibility-private {
     border: 2px solid var(--visibility-private-bgcolor);
 }
@@ -459,8 +461,6 @@ or,
 .EventSongListValue.visibility-private>.header {
     background-color: var(--visibility-private-bgcolor);
 }
-
-
 
 
 .EventSongListValue>.content {
@@ -494,18 +494,22 @@ li.songDropdownOption {
     padding: 2px 7px;
     user-select: none;
 
-    background-color: #ccc;
-    color: #000;
+    /* background-color: #ccc;
+    color: #000; */
+
+    /* background-color: var(--strong-color);
+    color: var(--strong-contrast-color); */
 }
 
-.visibilityValue.visibility-private {
-    background-color: var(--visibility-private-bgcolor);
-    color: var(--visibility-private-color);
-}
+/* 
 
 .visibilityValue.visibility-public {
     background-color: var(--visibility-public-bgcolor);
     color: var(--visibility-public-color);
+} */
+.visibilityValue.visibility-private {
+    background-color: var(--visibility-private-bgcolor);
+    color: var(--visibility-private-color);
 }
 
 .flex-spacer {
