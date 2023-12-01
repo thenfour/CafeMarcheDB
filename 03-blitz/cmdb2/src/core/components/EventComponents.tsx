@@ -32,7 +32,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import { CMChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
+import { CMChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceSummary } from './EventAttendanceComponents';
@@ -438,21 +438,76 @@ export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPay
 
 
 
+// ////////////////////////////////////////////////////////////////
+// export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
+//     const mutationToken = API.events.updateEventBasicFields.useToken();
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+//     const handleChange = (newValue: string) => {
+//         mutationToken.invoke({
+//             eventId: event.id,
+//             name: newValue,
+//         }).then(() => {
+//             showSnackbar({ severity: "success", children: "Successfully updated event title" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: "error updating event title" });
+//         }).finally(() => {
+//             refetch();
+//         });
+//     };
+
+//     return <div className="titleText">
+//         <Link href={eventURI} className="titleLink">
+//             {event.name}
+//         </Link>
+//         <EditTextDialogButton
+//             columnSpec={db3.xEvent.getColumn("name")! as db3.FieldBase<string>}
+//             dialogTitle='name dlg title'
+//             readOnly={false} // todo
+//             renderDialogDescription={() => <>description here</>}
+//             selectButtonLabel='edit name'
+//             value={event.name}
+//             onChange={handleChange}
+//         />
+//     </div>;
+
+// };
+
+
+type EventEditableTitlePayload = Prisma.EventGetPayload<{
+    select: {
+        id: true,
+        slug: true,
+        name: true,
+    }
+}>
+
 ////////////////////////////////////////////////////////////////
 export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
-    const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const router = useRouter();
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xEvent,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
+            new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
+        ],
+    });
 
-    const handleChange = (newValue: string) => {
-        mutationToken.invoke({
-            eventId: event.id,
-            name: newValue,
-        }).then(() => {
+    const onOK = (obj: EventEditableTitlePayload, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+        api.close();
+        tableClient.doUpdateMutation(obj).then(() => {
             showSnackbar({ severity: "success", children: "Successfully updated event title" });
+            // if you update the event slug it may cause you to be on an obsolete URI.
+            // it's not clear to me the best way to handle this, because we need to know if we're on the events page or not, and is it even a good idea then to redirect? best to just give a message.
+            //console.log(`oldslug: ${event.slug} newslug: ${obj.slug}, routerpath: ${router.pathname}`);
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "error updating event title" });
         }).finally(() => {
+            api.close();
             refetch();
         });
     };
@@ -461,18 +516,23 @@ export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.Eve
         <Link href={eventURI} className="titleLink">
             {event.name}
         </Link>
-        <EditTextDialogButton
-            columnSpec={db3.xEvent.getColumn("name")! as db3.FieldBase<string>}
+        <EditFieldsDialogButton
+            tableSpec={tableSpec}
             dialogTitle='name dlg title'
             readOnly={false} // todo
             renderDialogDescription={() => <>description here</>}
             selectButtonLabel='edit name'
             value={event.name}
-            onChange={handleChange}
+            initialValue={event}
+            onCancel={() => { }}
+            onOK={onOK}
         />
     </div>;
 
 };
+
+
+
 
 
 ////////////////////////////////////////////////////////////////

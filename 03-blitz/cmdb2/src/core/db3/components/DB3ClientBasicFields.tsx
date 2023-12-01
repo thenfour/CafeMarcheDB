@@ -7,7 +7,7 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { Button, Checkbox, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
+import { Button, Checkbox, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack, Switch } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs, { Dayjs } from "dayjs";
@@ -143,22 +143,50 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         if (!this.schemaColumn) throw new Error(`no schemacolumn for slug column '${this.columnName}'`);
         const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
 
+        //const [isEditable, setIsEditable] = React.useState<boolean>(false);
+        //const [customValue, setCustomValue] = React.useState<string>("");
+
         // set the calculated value in the object.
         if (params.value !== vr.parsedValue) {
             params.api.setFieldValues({ [this.schemaColumn.member]: vr.parsedValue });
         }
-        return <CMTextField
-            readOnly={true}
-            key={params.key}
-            autoFocus={false}
-            label={this.headerName}
-            //validationError={null} // don't show validation errors for fields you can't edit.
-            //validationError={vr.errorMessage || null}
-            value={vr.parsedValue as string}
-            onChange={(e, val) => {
-                //params.api.setFieldValues({ [this.columnName]: val });
-            }}
-        />;
+
+        // NOTE: do not bother with custom-editable slugs.
+        // it causes complications not worth the effort WRT
+        // - gui. need more controls and explanation
+        // - validation needs to know if you've edited the value by hand because of how the field is populated
+        // - it will lead to more confusion than anything.
+        // simplest is to always calculate based on name, and just SHOW the slug in readonly state
+        // next-simplest may be to have a button to regenerate the slug on demand, and otherwise never change it.
+
+        // const handleEditableChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        //     if (e.target.checked) {
+        //         // switching to manual mode; initialize custom value with current value.
+        //         setCustomValue(vr.parsedValue as string);
+        //     }
+        //     setIsEditable(e.target.checked);
+        // };
+
+        return <div className="slugEditField">
+            {/* <FormControlLabel
+                control={<Switch size="small" checked={isEditable} onChange={handleEditableChange} />}
+                label="Manual edit"
+                labelPlacement="end"
+            /> */}
+            <CMTextField
+                readOnly={true}
+                key={params.key}
+                autoFocus={false}
+                label={this.headerName}
+                //validationError={null} // don't show validation errors for fields you can't edit.
+                //validationError={vr.errorMessage || null}
+                value={vr.parsedValue as string}
+                onChange={(e, val) => {
+                    //params.api.setFieldValues({ [this.columnName]: val });
+                }}
+            />
+
+        </div>;
     };
 };
 

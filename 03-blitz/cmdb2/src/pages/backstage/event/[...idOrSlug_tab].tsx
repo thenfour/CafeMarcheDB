@@ -19,7 +19,7 @@ const MyComponent = () => {
     const params = useParams();
     const [idOrSlug, tabIdOrSlug] = params.idOrSlug_tab as string[];
 
-    if (!idOrSlug) return <div>not found</div>;
+    if (!idOrSlug) return <div>no event specified</div>;
 
     if (!useAuthorization(`event page: ${idOrSlug}`, Permission.view_events)) {
         throw new Error(`unauthorized`);
@@ -80,9 +80,15 @@ const MyComponent = () => {
     return <div>
         {/* <InspectObject src={where || {}} tooltip="where" /> */}
         {/* <InspectObject src={include} tooltip="include" /> */}
-        {event && <>
+        {event ? <>
             <EventBreadcrumbs event={event} />
             <EventDetail verbosity="verbose" event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} allowRouterPush={true} />
+        </> : <>
+            no event was found. some possibilities:
+            <ul>
+                <li>the event was deleted or you don't have permission to view it</li>
+                <li>the event's slug (title) or ID changed.</li>
+            </ul>
         </>}
     </div>;
 };

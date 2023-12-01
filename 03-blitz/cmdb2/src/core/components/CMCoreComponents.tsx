@@ -18,8 +18,10 @@ import { Coord2D, MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadR
 import { CMTextField } from "./CMTextField";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
-import { Coalesce } from "shared/utils";
+import { Coalesce, TAnyModel } from "shared/utils";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
 
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
@@ -303,6 +305,52 @@ export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
         }
     </>;
 };
+
+
+
+
+////////////////////////////////////////////////////////////////
+// this control is a button which pops up a dialog.
+// the dialog hosts a db3 client edit form
+export interface EditFieldsDialogButtonApi {
+    close: () => void;
+};
+export interface EditFieldsDialogButtonProps<TRowModel> {
+    value: string;
+    readOnly: boolean;
+    tableSpec: DB3Client.xTableClientSpec;
+    selectButtonLabel: string;
+    onCancel: () => void;
+    onOK: (obj: TRowModel, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => void;
+    initialValue: TRowModel;
+    dialogTitle: string;
+    renderDialogDescription: () => React.ReactElement;
+};
+export const EditFieldsDialogButton = <TRowModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
+    const [isOpen, setIsOpen] = React.useState<boolean>(false);
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    return <>
+        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>
+        {isOpen && !props.readOnly && <DB3EditObjectDialog
+            initialValue={props.initialValue as TAnyModel}
+            onCancel={() => {
+                props.onCancel();
+                setIsOpen(false);
+            }}
+            onOK={(obj, tableClient) => {
+                props.onOK(obj as TRowModel, tableClient, {
+                    close: () => setIsOpen(false),
+                });
+            }}
+            table={props.tableSpec}
+            clientIntention={clientIntention}
+        />
+        }
+    </>;
+};
+
+
 
 
 
