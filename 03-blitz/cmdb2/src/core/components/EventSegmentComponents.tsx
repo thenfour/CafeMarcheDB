@@ -45,7 +45,6 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
 
             new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
-            //new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         ],
     });
 

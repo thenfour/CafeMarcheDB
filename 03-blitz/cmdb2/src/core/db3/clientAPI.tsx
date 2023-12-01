@@ -311,7 +311,11 @@ class EventsAPI {
     getEventDateRange(event: db3.EventClientPayload_Verbose) {
         let ret = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
         for (const segment of event.segments) {
-            ret = ret.unionWith(this.getEventSegmentDateTimeRange(segment));
+            const r = this.getEventSegmentDateTimeRange(segment);
+            //console.log(`union with ${r.toString()} segcount:${event.segments.length}`);
+            //console.log(`union with:`);
+            //console.log(segment);
+            ret = ret.unionWith(r);
         }
         return ret;
     }

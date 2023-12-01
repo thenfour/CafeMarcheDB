@@ -574,7 +574,8 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         // mutations want ONLY the id, not the object.
         const foreign = clientModel[this.member];
-        if (foreign == null) {
+        if (foreign === undefined) return;
+        if (foreign === null) {
             mutationModel[this.fkMember] = null;
             return;
         }
@@ -1114,5 +1115,9 @@ export const separateMutationValues = ({ table, fields }: separateMutationValues
                 break;
         }
     });
+
+
+    // fields which are not known to the schema will be ignored / discarded by the result
+
     return ret;
 };

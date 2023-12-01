@@ -653,7 +653,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             <div className="infoLine">
                 <div className="date smallInfoBox">
                     <CalendarMonthIcon className="icon" />
-                    <span className="text">{API.events.getEventDateRange(event).durationToString()}</span>
+                    <span className="text">{API.events.getEventDateRange(event).toString()}</span>
                 </div>
 
                 <EventLocationControl event={event} refetch={tableClient.refetch} />

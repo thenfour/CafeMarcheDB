@@ -5,7 +5,7 @@ import * as db3 from "../db3";
 //import * as DB3Client from "../DB3Client";
 import { Button, Chip, FormHelperText } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { gQueryOptions, parseIntOrNull } from "shared/utils";
+import { TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
@@ -119,6 +119,11 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
         this.args = args;
         this.fixedValue = undefined; // for the moment it's not known.
     }
+
+    ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
+        updateModel[this.typedSchemaColumn.fkMember] = clientRow[this.typedSchemaColumn.fkMember];
+        updateModel[this.columnName] = clientRow[this.columnName];
+    };
 
     defaultRenderAsChip = (args: RenderAsChipParams<TForeign>) => {
         if (!args.value) {

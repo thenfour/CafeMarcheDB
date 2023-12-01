@@ -1138,3 +1138,10 @@ li.songDropdownOption {
 .CMMenu .admin.linkMenuItem:hover {
     background-color: #ccc;
 }
+
+
+/* for some reason default dialogs like to be max-width:600px. this overrides that to let edit dialogs to be wide enough for contents.
+in particular the date range picker is wide.*/
+.MuiDialog-container.MuiDialog-scrollPaper .MuiPaper-root {
+    max-width: 95vw;
+}

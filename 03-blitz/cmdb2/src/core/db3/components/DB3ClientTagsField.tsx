@@ -343,6 +343,8 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
     typedSchemaColumn: db3.TagsField<TAssociation>;
     args: TagsFieldClientArgs<TAssociation>;
 
+    ApplyClientToPostClient = undefined;
+
     renderAsChipForCell = (args: RenderAsChipParams<TAssociation>) => {
         if (this.args.allowDeleteFromCell) {
             return this.args.renderAsChip!(args);

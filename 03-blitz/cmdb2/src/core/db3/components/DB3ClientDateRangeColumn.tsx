@@ -13,6 +13,7 @@ import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { API } from '../clientAPI';
 import * as db3 from "../db3";
+import { TAnyModel } from "shared/utils";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,6 +77,15 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
                 />;
             },
         };
+    };
+
+    ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
+        updateModel[this.args.startsAtColumnName] = clientRow[this.args.startsAtColumnName];
+        updateModel[this.args.durationMillisColumnName] = clientRow[this.args.durationMillisColumnName];
+        updateModel[this.args.isAllDayColumnName] = clientRow[this.args.isAllDayColumnName];
+        // console.log(`ApplyClientToPostClient`);
+        // console.log(clientRow);
+        // console.log(updateModel);
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {

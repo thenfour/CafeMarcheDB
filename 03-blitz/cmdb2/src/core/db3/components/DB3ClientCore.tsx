@@ -58,6 +58,7 @@ export abstract class IColumnClient {
     GridColProps?: Partial<GridColDef>;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+    abstract ApplyClientToPostClient?: (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => void; // applies the values from the client object to a db-compatible object.
     abstract onSchemaConnected(tableClient: xTableRenderClient): void;
 
     schemaTable: db3.xTable;
@@ -252,38 +253,84 @@ export class xTableRenderClient {
 
     }; // ctor
 
+    prepareMutation = <T extends TAnyModel,>(row: T, mode: db3.DB3RowMode) => {
+        const postClientModel = {}; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
+        const dbModel = {};
+
+        this.clientColumns.forEach(clientCol => {
+            // seems to be an eternal problem; probably a bad design in general. well,
+            // the case for using client schema is for EventDateRangeColumn, where the single "client" field consists of 3 underlying schema columns.
+            // so the client column types need the ability to prepare things for update.
+            if (clientCol.ApplyClientToPostClient) {
+                clientCol.ApplyClientToPostClient(row, postClientModel, mode);
+            } else {
+                postClientModel[clientCol.columnName] = row[clientCol.columnName]; // by default just copy the value.
+            }
+        });
+
+        this.schema.columns.forEach(schemaCol => {
+            schemaCol.ApplyClientToDb(postClientModel, dbModel, mode);
+        });
+        return dbModel;
+    };
+
     // the row as returned by the db is not the same model as the one to be passed in for updates / creation / etc.
     // all the columns in our spec though represent logical values which can be passed into mutations.
     // that is, all the columns comprise the updation model completely.
     // for things like FK, 
     doUpdateMutation = async (row: TAnyModel) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
-        const updateModel = {};
-        // this.schema.columns.forEach(col => { // why does insert use schema, and this uses client? hm it's hard to know which is ideal. seems like schema should be used, and just make sure they gracefully handle not being present in the model.
-        //     col.ApplyClientToDb(row, updateModel, "update");
+        // const postClientModel = {}; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
+        // const updateModel = {};
+
+        // this.clientColumns.forEach(clientCol => {
+        //     // seems to be an eternal problem; probably a bad design in general. well,
+        //     // the case for using client schema is for EventDateRangeColumn, where the single "client" field consists of 3 underlying schema columns.
+        //     // so the client column types need the ability to prepare things for update.
+        //     if (clientCol.ApplyClientToPostClient) {
+        //         clientCol.ApplyClientToPostClient(row, postClientModel, "update");
+        //     } else {
+        //         postClientModel[clientCol.columnName] = row[clientCol.columnName]; // by default just copy the value.
+        //     }
         // });
-        this.clientColumns.forEach(clientCol => {
-            clientCol.schemaColumn.ApplyClientToDb(row, updateModel, "update");
-        });
+
+        // this.schema.columns.forEach(schemaCol => {
+        //     schemaCol.ApplyClientToDb(postClientModel, updateModel, "update");
+        // });
+
+        const dbModel = this.prepareMutation(row, "update");
+
         const ret = await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            updateModel,
+            updateModel: dbModel,
             updateId: row[this.schema.pkMember],
             clientIntention: this.args.clientIntention,
         });
-        // console.log(`doUpdateMutation [clientomdel, dbmodel]`);
-        // console.log(row);
-        // console.log(updateModel);
         this.refetch();
         return ret;
     };
 
     prepareInsertMutation = <T extends TAnyModel,>(row: TAnyModel) => {
-        const dbModel: T = {} as T;
-        this.schema.columns.forEach(col => {
-            col.ApplyClientToDb(row, dbModel, "new");
-        });
+        const dbModel = this.prepareMutation(row, "new");
+
+        // const postClientModel: T = {} as T;
+        // const dbModel: T = {} as T;
+
+        // this.clientColumns.forEach(clientCol => {
+        //     if (clientCol.ApplyClientToPostClient) {
+        //         // 2-stage processing
+        //         clientCol.ApplyClientToPostClient(row, postClientModel, "new");
+        //         clientCol.schemaColumn.ApplyClientToDb(postClientModel, dbModel, "new");
+        //     } else {
+        //         // 1-stage processing
+        //         clientCol.schemaColumn.ApplyClientToDb(row, dbModel, "new");
+        //     }
+        // });
+
+        // this.schema.columns.forEach(col => {
+        //     col.ApplyClientToDb(row, dbModel, "new");
+        // });
         return dbModel;
     };
 
