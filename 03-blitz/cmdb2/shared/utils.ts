@@ -514,6 +514,7 @@ export function modulo(x: number, n: number): number {
     return ((x % n) + n) % n;
 };
 
+// using x || v with booleans is not going to work. but the intention is good. use this.
 export function Coalesce<T>(value: null | undefined | T, defaultValue: T) {
     if (value === null) return defaultValue;
     if (value === undefined) return defaultValue;

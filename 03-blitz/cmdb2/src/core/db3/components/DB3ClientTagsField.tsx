@@ -366,6 +366,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             headerName: args.columnName,
             editable: true,
             width: args.cellWidth,
+            visible: true,
         });
         this.args = args;
         if (this.args.allowDeleteFromCell === undefined) this.args.allowDeleteFromCell = true;

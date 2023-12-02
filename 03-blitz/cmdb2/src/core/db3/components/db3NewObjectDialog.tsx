@@ -181,7 +181,7 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
                     <FormControl>
 
                         {
-                            tableClient.clientColumns.map(column => {
+                            tableClient.clientColumns.filter(c => c.visible).map(column => {
                                 return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
                                     key: column.columnName,
                                     api,

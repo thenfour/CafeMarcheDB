@@ -36,6 +36,7 @@ interface EventSegmentEditDialogProps {
 
 export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
     const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSegment,
@@ -45,13 +46,16 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
 
             new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
+
+            // this must specify all the columns which are required for insertion as well.
+            new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention, visible: false }),
         ],
     });
 
     return <DB3EditObjectDialog
         initialValue={props.initialValue}
         onDelete={props.onDelete}
-        clientIntention={{ intention: "user", mode: 'primary', currentUser }}
+        clientIntention={clientIntention}
         onCancel={props.onCancel}
         onOK={props.onSave}
         table={tableSpec}

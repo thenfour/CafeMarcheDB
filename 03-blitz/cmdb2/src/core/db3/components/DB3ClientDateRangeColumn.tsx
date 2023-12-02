@@ -37,6 +37,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: "",
             width: 250,
+            visible: true,
         });
         this.args = args;
     }

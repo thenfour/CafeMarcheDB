@@ -466,8 +466,8 @@ export class DateTimeRange {
             const latestLast = Math.max(this.getLastDateTime(now).valueOf(), rhs.getLastDateTime(now).valueOf());
             // operate in all-day terms. how do we convert a range from !allday to all-day?
             // look at the days it touches. if it even covers 1 millisecond of a day, include that day.
-            let startdjs = new Dayjs(earliestStart);
-            let enddjs = new Dayjs(latestLast);
+            let startdjs = dayjs(earliestStart);
+            let enddjs = dayjs(latestLast);
             // count days in duration, ceil, convert to duration millis
             let durationDays = startdjs.diff(enddjs, "day");
             durationDays = Math.ceil(durationDays);

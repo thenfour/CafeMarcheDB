@@ -18,13 +18,14 @@ import * as db3 from "../db3"
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
-import { HasFlag, TAnyModel, gNullValue, gQueryOptions } from "shared/utils";
+import { Coalesce, HasFlag, TAnyModel, gNullValue, gQueryOptions } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { ColorPaletteEntry } from "shared/color";
 import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import db3queries from "../queries/db3queries";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { assert } from "blitz";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
@@ -41,18 +42,22 @@ export interface RenderForNewItemDialogArgs {
 };
 
 export interface IColumnClientArgs {
+    // NB: keep IColumnClient in sync with these fields.
     columnName: string;
     headerName: string;
     editable: boolean;
+    visible: boolean;
     width: number;
 
     GridColProps?: Partial<GridColDef>;
 };
 
 export abstract class IColumnClient {
+    // IColumnClientArgs here...
     columnName: string;
     headerName: string;
     editable: boolean;
+    visible: boolean;
     width: number;
 
     GridColProps?: Partial<GridColDef>;
@@ -66,6 +71,9 @@ export abstract class IColumnClient {
 
     constructor(args: IColumnClientArgs) {
         Object.assign(this, args);
+        // safety.
+        assert(this.visible !== undefined, "visible is required; maybe a column client type forgot to include this in the ctor?");
+        this.visible = Coalesce(this.visible, true);
     }
 
     // called when the table client is initialized to make sure this column object knows about its sibling column in the schema.

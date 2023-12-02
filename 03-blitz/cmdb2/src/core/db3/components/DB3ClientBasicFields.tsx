@@ -36,6 +36,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: false,
             headerName: args.columnName,
+            visible: true,
             width: 40,
             GridColProps: {
                 type: "number",
@@ -45,6 +46,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
 
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
     onSchemaConnected() { };
+    ApplyClientToPostClient = undefined;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,8 +64,11 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            visible: true,
         });
     }
+
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
@@ -115,8 +120,10 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            visible: true,
         });
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.SlugField;
@@ -206,8 +213,10 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            visible: true,
         });
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
@@ -264,8 +273,10 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            visible: true,
         });
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.GridColProps = {
@@ -315,8 +326,10 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: 80,//args.cellWidth,
+            visible: true,
         });
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.GridColProps = {
@@ -363,6 +376,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            visible: true,
             GridColProps: {
                 renderCell: (args: GridRenderCellParams) => {
                     return <div className='MuiDataGrid-cellContent'><ColorSwatch selected={true} color={args.value} showStrong={true} showWeak={true} /></div>; // colorswatch must be aware of null values.
@@ -381,6 +395,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
             }
         });
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected() { };
 
@@ -415,8 +430,10 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             headerName: args.columnName,
             editable: true,
             width: args.cellWidth,
+            visible: true,
         });
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
@@ -477,6 +494,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
     constructor(args: ConstEnumStringFieldClientArgs) {
         super(args);
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
         super.onSchemaConnected(tableClient);
@@ -621,8 +639,10 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            visible: true,
         });
     }
+    ApplyClientToPostClient = undefined;
 
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.CreatedAtField;

@@ -5,7 +5,7 @@ import * as db3 from "../db3";
 //import * as DB3Client from "../DB3Client";
 import { Button, Chip, FormHelperText } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
+import { Coalesce, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
@@ -100,6 +100,8 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
 
     // should render a <li {...props}> for autocomplete
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactElement;
+
+    visible?: boolean;
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -115,7 +117,9 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             headerName: args.columnName,
             editable: true,
             width: args.cellWidth,
+            visible: Coalesce(args.visible, true),
         });
+
         this.args = args;
         this.fixedValue = undefined; // for the moment it's not known.
     }
