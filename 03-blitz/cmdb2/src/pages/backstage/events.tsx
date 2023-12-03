@@ -388,7 +388,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
             page: 0,
             pageSize: filterSpec.recordCount,
         },
-        requestedCaps: DB3Client.xTableClientCaps.Query,
+        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         clientIntention,
         queryOptions: gQueryOptions.liveData,
     });

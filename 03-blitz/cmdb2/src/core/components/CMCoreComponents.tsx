@@ -193,7 +193,7 @@ export const ReactiveInputDialog = (props: React.PropsWithChildren<ReactiveInput
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     return (
         <Dialog
-            className={props.className}
+            className={`ReactiveInputDialog ${props.className}`}
             open={true}
             onClose={props.onCancel}
             scroll="paper"

@@ -25,7 +25,7 @@ import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Card, CardActionArea, Link, Tab, Tabs } from "@mui/material";
 import { Prisma } from "db";
 import React, { Suspense } from "react";
-import { ArrayElement, IsNullOrWhitespace } from 'shared/utils';
+import { ArrayElement, HasFlag, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -41,6 +41,7 @@ import { MutationMarkdownControl } from './SettingMarkdown';
 import { EventSongListTabContent } from './EventSongListComponents';
 import { EventFilesTabContent } from './EventFileComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
+import { assert } from 'blitz';
 
 ////////////////////////////////////////////////////////////////
 // TODO: generic big status
@@ -156,6 +157,7 @@ interface EventTagsControlProps {
 
 export const EventTagsControl = ({ event, tableClient }: EventTagsControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "tags control requires mutation caps");
     //const validationResult = tableClient.schema.ValidateAndComputeDiff(event, event, "update");
     return (<>
         {/* <InspectObject src={event} tooltip='event row' /> */}
@@ -597,6 +599,8 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     const [user] = useCurrentUser()!;
     const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
     const router = useRouter()
+
+    assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "EventDetail control requires mutation caps");
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,

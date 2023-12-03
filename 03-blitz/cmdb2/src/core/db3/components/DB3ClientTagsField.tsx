@@ -2,7 +2,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import { Button, Chip, FormHelperText } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import React from "react";
+import React, { Suspense } from "react";
 //import * as DB3Client from "../DB3Client";
 import * as db3 from "../db3";
 import {
@@ -27,6 +27,7 @@ import db3queries from "../queries/db3queries";
 import { ColorVariationOptions } from 'src/core/components/Color';
 import { IColumnClient, RenderForNewItemDialogArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
+import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 
 
 const gMaxVisibleTags = 6;
@@ -53,41 +54,37 @@ export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponen
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export interface DB3SelectTagsDialogProps<TAssociation> {
+interface DB3SelectTagsDialogListProps<TAssociation> {
     value: TAssociation[];
-    row: TAnyModel;
     spec: TagsFieldClient<TAssociation>;//CMSelectTagsDialogSpec<AssociationModel, ForeignWhereInput>;
-    onChange: (value: TAssociation[]) => void;
-    onClose: () => void;
-};
+    row: TAnyModel;
+    filterText: string;
+    handleItemToggle: (value: TAssociation) => void;
+}
 
-// caller controls value
-export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [filterText, setFilterText] = React.useState("");
-    const [originalValue, setOriginalValue] = React.useState<TAssociation[]>([]);
-    React.useEffect(() => {
-        setOriginalValue(props.value);
-    }, []);
+function DB3SelectTagsDialogList<TAssociation>(props: DB3SelectTagsDialogListProps<TAssociation>) {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const dbctx = useTagsFieldRenderContext({
-        filterText,
+        filterText: props.filterText,
         row: props.row,
         spec: props.spec,
         clientIntention: { intention: 'user', mode: 'primary' },
     });
 
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const itemIsSelected = (x: TAssociation) => {
+        return props.value.some(v => v[props.spec.associationForeignIDMember] === x[props.spec.associationForeignIDMember]);
+    }
+    const filterMatchesAnyItemsExactly = dbctx.options.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, props.filterText));
 
-    const onNewClicked = (e) => {
-        dbctx.doInsertFromString({ row: props.row, userInput: filterText })
-            .then((updatedObj) => {
-                const newValue = [updatedObj, ...props.value];
-                props.onChange(newValue);
+    const onNewClicked = () => {
+        dbctx.doInsertFromString({ row: props.row, userInput: props.filterText })
+            .then((newObj) => {
+                //const newValue = [updatedObj, ...props.value];
+                //props.onChange(newValue);
                 showSnackbar({ children: "created new success", severity: 'success' });
                 dbctx.refetch();
+                props.handleItemToggle(newObj);
             }).catch((err => {
                 console.log(err);
                 showSnackbar({ children: "create error", severity: 'error' });
@@ -95,40 +92,88 @@ export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProp
             }));
     };
 
+    return <>
+        {
+            !!props.filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
+                <Box><Button
+                    size="small"
+                    startIcon={<AddIcon />}
+                    onClick={onNewClicked}
+                >
+                    add {props.filterText}
+                </Button>
+                </Box>
+            )
+        }
+
+        {
+            (dbctx.options.length == 0) ?
+                <Box>Nothing here</Box>
+                :
+                <List>
+
+                    {
+                        dbctx.options.map(item => {
+                            const selected = itemIsSelected(item);
+                            return (
+                                <React.Fragment key={item[props.spec.associationForeignIDMember]}>
+                                    <ListItemButton selected onClick={e => { props.handleItemToggle(item) }}>
+                                        {props.spec.args.renderAsListItem!({}, item, selected)}
+                                    </ListItemButton>
+                                    <Divider></Divider>
+                                </React.Fragment>
+                            );
+                        })
+                    }
+                </List>
+        }</>;
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export interface DB3SelectTagsDialogProps<TAssociation> {
+    initialValue: TAssociation[];
+    row: TAnyModel;
+    spec: TagsFieldClient<TAssociation>;
+    onChange: (value: TAssociation[]) => void;
+    onClose: () => void;
+};
+
+function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
+    const [filterText, setFilterText] = React.useState("");
+    const [value, setValue] = React.useState<TAssociation[]>(props.initialValue);
+    //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
     const handleItemRemove = (x: TAssociation) => {
-        const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== x[props.spec.associationForeignIDMember]);
-        props.onChange(newValue);
+        // const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== x[props.spec.associationForeignIDMember]);
+        // props.onChange(newValue);
+        const newValue: TAssociation[] = value.filter(v => v[props.spec.associationForeignIDMember] !== x[props.spec.associationForeignIDMember]);
+        setValue(newValue);
     };
 
     const itemIsSelected = (x: TAssociation) => {
-        return props.value.some(v => v[props.spec.associationForeignIDMember] === x[props.spec.associationForeignIDMember]);
+        return value.some(v => v[props.spec.associationForeignIDMember] === x[props.spec.associationForeignIDMember]);
     }
 
-    const handleItemToggle = (value: TAssociation) => {
-        if (itemIsSelected(value)) {
-            handleItemRemove(value);
+    const handleItemToggle = (item: TAssociation) => {
+        if (itemIsSelected(item)) {
+            handleItemRemove(item);
         } else {
-            const newValue = [value, ...props.value];
-            props.onChange(newValue);
+            const newValue = [item, ...value];
+            setValue(newValue);
         }
     };
 
-    const filterMatchesAnyItemsExactly = dbctx.options.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText));
-
     return (
-        <Dialog
-            open={true}
-            onClose={props.onClose}
-            scroll="paper"
-            fullScreen={fullScreen}
-        >
+        <>
             <DialogTitle>
                 select {props.spec.typedSchemaColumn.label}
                 <Box sx={{ p: 0 }}>
                     Selected:
                     <DB3TagsValueComponent
                         spec={props.spec}
-                        value={props.value}
+                        value={value}
                         onDelete={(item) => handleItemRemove(item)}
                     />
                 </Box>
@@ -153,53 +198,40 @@ export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProp
                     />
                 </Box>
 
-                {
-                    !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
-                        <Box><Button
-                            size="small"
-                            startIcon={<AddIcon />}
-                            onClick={onNewClicked}
-                        >
-                            add {filterText}
-                        </Button>
-                        </Box>
-                    )
-                }
-
-                {
-                    (dbctx.options.length == 0) ?
-                        <Box>Nothing here</Box>
-                        :
-                        <List>
-                            {
-                                dbctx.options.map(item => {
-                                    const selected = itemIsSelected(item);
-                                    return (
-                                        <React.Fragment key={item[props.spec.associationForeignIDMember]}>
-                                            <ListItemButton selected onClick={e => { handleItemToggle(item) }}>
-                                                {props.spec.args.renderAsListItem!({}, item, selected)}
-                                            </ListItemButton>
-                                            <Divider></Divider>
-                                        </React.Fragment>
-                                    );
-                                })
-                            }
-                        </List>
-                }
+                <Suspense>
+                    <DB3SelectTagsDialogList
+                        value={value}
+                        spec={props.spec}
+                        handleItemToggle={handleItemToggle}
+                        filterText={filterText}
+                        row={props.row}
+                    //onNewClicked={onNewClicked}
+                    />
+                </Suspense>
 
             </DialogContent>
             <DialogActions>
                 <Button onClick={() => {
-                    props.onChange(originalValue);
+                    //props.onChange(originalValue);
                     props.onClose();
                 }}>Cancel</Button>
                 <Button onClick={() => {
+                    props.onChange(value);
                     props.onClose();
                 }}>OK</Button>
             </DialogActions>
-        </Dialog>
+        </>
     );
 }
+
+
+export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
+    return <ReactiveInputDialog
+        onCancel={props.onClose}
+        children={<DB3SelectTagsDialogInner {...props} />}
+    />;
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,7 +275,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
 
         {isOpen && <DB3SelectTagsDialog
             row={props.row}
-            value={props.value}
+            initialValue={props.value}
             spec={props.spec}
             onClose={() => {
                 setIsOpen(false);

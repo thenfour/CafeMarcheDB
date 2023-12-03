@@ -114,7 +114,7 @@ html,
     transition: border .1s, color .1s;
 
     width: min-content;
-    max-width: 250px;
+    /* max-width: 250px; it's tempting to limit width of chips, but many times chips are displayed for things like "event status" where it would be unwise to cut it off. */
     user-select: none;
     overflow: hidden;
     white-space: nowrap;
@@ -1139,9 +1139,13 @@ li.songDropdownOption {
     background-color: #ccc;
 }
 
-
-/* for some reason default dialogs like to be max-width:600px. this overrides that to let edit dialogs to be wide enough for contents.
+.ReactiveInputDialog .MuiDialog-container>.MuiPaper-root {
+    /* for some reason default dialogs like to be max-width:600px. this overrides that to let edit dialogs to be wide enough for contents.
 in particular the date range picker is wide.*/
-.MuiDialog-container.MuiDialog-scrollPaper .MuiPaper-root {
     max-width: 95vw;
+
+    /* setting a min-height is a prettier xp when list has few items, and when user is typing in the filter box changing the list height constantly.*/
+    min-height: 50vh;
+    /* same here.*/
+    min-width: 50vw;
 }
