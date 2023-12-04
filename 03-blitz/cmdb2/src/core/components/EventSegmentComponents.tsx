@@ -140,17 +140,20 @@ export const EventSegmentPanel = ({ event, myEventInfo, refetch, ...props }: Eve
         });
     };
 
-    return <div className={`segment`}>
-        <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>
+    return <div className={`EventSegmentPanel segment`}>
 
-        <div className='name'>name: {props.segmentInfo.segment.name}</div>
+        <div className='name'>{props.segmentInfo.segment.name} <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button></div>
         <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segmentInfo.segment)}</div>
 
+        {/*
+        don't show attendance stuff quite yet because we want to refine the GUI first, then add these kind of things.
+        for the moment it's too distracting and no good way to get rid of it.
+        
         {(props.verbosity !== 'compact') && <div className="attendanceResponseInput">
             <div className="segmentList">
                 <EventAttendanceFrame onRefetch={refetch} segmentInfo={props.segmentInfo} eventUserInfo={myEventInfo} event={event} />
             </div>
-        </div>}
+        </div>} */}
 
         {/* <div className='description'>description: {props.segmentInfo.segment.description}</div> */}
         {editOpen && (<EventSegmentEditDialog
