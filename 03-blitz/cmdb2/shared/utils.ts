@@ -167,11 +167,11 @@ export async function SetSetting(args: SetSettingArgs) {
     });
 }
 
-export async function GetSetting(setting: Setting) {
-    const existing = await db.setting.findFirst({ where: { name: setting, } });
-    if (!existing) return null;
-    return JSON.parse(existing!.value);
-}
+// export async function GetSetting(setting: Setting) {
+//     const existing = await db.setting.findFirst({ where: { name: setting, } });
+//     if (!existing) return null;
+//     return JSON.parse(existing!.value);
+// }
 
 
 // ACTIONS /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -516,6 +516,13 @@ export function modulo(x: number, n: number): number {
 
 // using x || v with booleans is not going to work. but the intention is good. use this.
 export function Coalesce<T>(value: null | undefined | T, defaultValue: T) {
+    if (value === null) return defaultValue;
+    if (value === undefined) return defaultValue;
+    return value;
+}
+
+// this just has a better name.
+export function CoalesceBool<T>(value: null | undefined | T, defaultValue: T) {
     if (value === null) return defaultValue;
     if (value === undefined) return defaultValue;
     return value;

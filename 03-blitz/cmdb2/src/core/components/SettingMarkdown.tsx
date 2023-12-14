@@ -86,7 +86,7 @@ export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownCon
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface SettingMarkdownProps {
-    settingName: string,
+    settingName: string;
 };
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
@@ -96,7 +96,7 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
         initialValue={initialValue}
         refetch={refetch}
         onChange={(newValue) => {
-            console.log(`settingmarkdown onchange setting:'${props.settingName}' = '${newValue}'`);
+            //console.log(`settingmarkdown onchange setting:'${props.settingName}' = '${newValue}'`);
             return updateSetting({ name: props.settingName, value: newValue });
         }}
     />;

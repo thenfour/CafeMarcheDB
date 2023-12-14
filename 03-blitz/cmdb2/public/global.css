@@ -1,9 +1,3 @@
-@font-face {
-  font-family: 'DIN 1451 Std';
-  /* src: url(https://db.onlinewebfonts.com/t/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2'); */
-  src: url(/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2');
-}
-
 :root {
   --drawer-paper-width: 100px;
   --data-grid-column-header-background-color: #f0f0f0;
@@ -15,26 +9,12 @@
 
   --general-interactable-bgcolor: #79b;
   --general-interactable-color: #eee;
-  /* 
-  --visibility-public-bgcolor: #cec;
-  --visibility-public-color: #484;
-
-   */
 
   --visibility-private-bgcolor: #ecc;
   --visibility-private-color: #c00;
 
   --visibility-other-bgcolor: #ccc;
   --visibility-other-color: #000;
-
-  --crop-mask-color: #f00c;
-  --frame-mask-color: #000c;
-
-  --cm-yellow: #ede331;
-  --cm-blue: #344873;
-  --cm-red: #831012;
-
-  --font-homepage: "DIN 1451 Std", Arial, sans-serif;
 }
 
 a,
@@ -49,7 +29,7 @@ a.logo,
 a.logo:link,
 a.logo:hover,
 a.logo:visited {
-  color: var(--cm-yellow);
+  color: #ede331;
 }
 
 /* typically h1 at the top of a section doesn't need any padding or it looks awkwardly pushed down */
@@ -868,15 +848,8 @@ table td {
 
 
 .CMEditGrid2 .MuiDataGrid-virtualScroller {
-  min-height: 40px;
   /* when there are no rows, there's a "nothing to show" overlay, but with our row height auto, it will result in a 1px-height area. this allows the overlay to show.*/
-}
-
-/* todo:  this is no good */
-.pleasebemorespecific .comment {
-  border: 1px solid black;
-  padding: 7px;
-  margin: 7px;
+  min-height: 40px;
 }
 
 div.segment {

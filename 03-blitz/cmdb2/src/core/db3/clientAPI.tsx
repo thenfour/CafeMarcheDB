@@ -20,7 +20,9 @@ import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryIn
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
 import { ClientSession } from "@blitzjs/auth";
 import { GetStyleVariablesForColor } from "../components/Color";
-import { gGeneralPaletteList, gPrivateVisibilityColorId } from "shared/color";
+import { gPrivateVisibilityColorId } from "shared/color";
+import getSetting from "src/auth/queries/getSetting";
+import updateSettingMutation from "src/auth/mutations/updateSetting";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -485,6 +487,21 @@ class OtherAPI {
     updateGenericSortOrderMutation = CreateAPIMutationFunction(updateGenericSortOrder);
 };
 
+class SettingsAPI {
+
+    useSetting = (settingName: string) => {
+        const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
+        return value;
+    }
+
+    useMutableSetting = (settingName: string): [value: string | null, mutateFn: (args: { name: string, value: string | null }) => Promise<any>] => {
+        const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
+        const [mutateFn] = useMutation(updateSettingMutation);
+        return [value, mutateFn];
+    }
+
+    updateSetting = CreateAPIMutationFunction(updateSettingMutation);
+};
 
 
 export const API = {
@@ -494,4 +511,5 @@ export const API = {
     users: gUsersAPI,
     files: gFilesAPI,
     other: new OtherAPI(),
+    settings: new SettingsAPI(),
 };

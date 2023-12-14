@@ -1,6 +1,26 @@
+@font-face {
+    font-family: 'DIN 1451 Std';
+    /* src: url(https://db.onlinewebfonts.com/t/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2'); */
+    src: url(/1cf07fdc01da97ba3a1410d18951d28f.woff2) format('woff2');
+}
+
+:root {
+    --cm-yellow: #ede331;
+    --cm-blue: #344873;
+    --cm-red: #831012;
+
+    --font-homepage: "DIN 1451 Std", Arial, sans-serif;
+}
+
+
 .root2 * {
     font-family: var(--font-homepage);
     box-sizing: border-box;
+}
+
+.backstagePreview * {
+    font-family: var(--font-homepage);
+
 }
 
 /* - front page stuff  --------------------------------- */

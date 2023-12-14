@@ -574,6 +574,8 @@ model File {
   isDeleted      Boolean @default(false)
   sizeBytes      Int
 
+  externalURI String? // dropbox link for example
+
   uploadedAt          DateTime
   uploadedByUserId    Int?
   uploadedByUser      User?       @relation(fields: [uploadedByUserId], references: [id], onDelete: SetDefault)

@@ -1,6 +1,6 @@
 import React from "react";
 import { Backdrop, Box, Button, FormHelperText, InputLabel, MenuItem, Popover, Select, Tooltip } from "@mui/material";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateColorPaletteEntry, CreateNullPaletteEntry, gGeneralPaletteList } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteList, CreateNullPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { gNullValue, getNextSequenceId } from "shared/utils";
 //import "../../../public/style/color.css"
 
@@ -51,28 +51,6 @@ export const GetStyleVariablesForColor = (color: ColorPaletteEntry | null | stri
     } as React.CSSProperties;
 }
 
-// export const NullColorSwatch = (props: ColorSwatchProps) => {
-//     const entry = !!color ? color : CreateNullPaletteEntry();
-
-//     const style = GetStyleVariablesForColor(null);
-//     return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot nullValue `} style={style as React.CSSProperties}>
-//         {props.showStrong &&
-//             //<Tooltip title={`(none)`}>
-//             <div className="strong">
-//                 (none)
-//             </div>
-//             //</Tooltip>
-//         }
-//         {props.showWeak &&
-//             //<Tooltip title={`(none)`}>
-//             <div className="weak">
-//                 (none)
-//             </div>
-//             //</Tooltip>
-//         }
-//     </div>;
-// }
-
 // props.color can never be null.
 export const ColorSwatch = (props: ColorSwatchProps) => {
     const entry = !!props.color ? props.color : CreateNullPaletteEntry();
@@ -80,7 +58,7 @@ export const ColorSwatch = (props: ColorSwatchProps) => {
     //     return <NullColorSwatch {...props} />;
     // }
     const style = GetStyleVariablesForColor(props.color);
-    return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""} ${entry.isNullEntry ? "nullValue" : ""}`} style={style as React.CSSProperties}>
+    return <div className={`${props.selected ? "selected" : ""} colorSwatchRoot ${props.isSpacer ? "spacer" : ""}`} style={style as React.CSSProperties}>
         {props.showStrong &&
             //<Tooltip title={`${entry.strongValue}\r\n${entry.strongContrastColor}`}>
             <div className="strong">

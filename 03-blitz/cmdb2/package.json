@@ -46,6 +46,7 @@
     "mime": "3.0.0",
     "music-metadata": "8.1.4",
     "next": "13.4.5",
+    "parse-css-color": "0.2.1",
     "passport-auth0": "1.4.3",
     "passport-google-oauth20": "2.0.0",
     "prisma": "4.6.1",
