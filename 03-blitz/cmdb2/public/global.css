@@ -7,6 +7,7 @@
 
   --color-transition-duration: .3s;
 
+  /* todo: get rid of these and use proper coloring*/
   --general-interactable-bgcolor: #79b;
   --general-interactable-color: #eee;
 
@@ -15,6 +16,11 @@
 
   --visibility-other-bgcolor: #ccc;
   --visibility-other-color: #000;
+
+  --color-foreground: #f0f;
+  --color-background: #eee;
+  --color-border-style: "dotted";
+
 }
 
 a,

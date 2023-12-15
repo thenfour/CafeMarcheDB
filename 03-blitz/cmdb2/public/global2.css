@@ -89,14 +89,9 @@ html,
 
 
 /* ---------------------------------- */
-.eventTypeControl {}
-
-.eventTypeValue {}
-
-
-/* ---------------------------------- */
 .CMChipContainer {
     display: flex;
+    flex-wrap: wrap;
 }
 
 .CMChipContainer .CMChip {
@@ -104,7 +99,7 @@ html,
 }
 
 .CMChip {
-    /* requires an .applyColor- css class for coloring */
+    /* requires an .applyColor css class for coloring */
     /* background-color: #eee;
     border: 1px solid #ccc;
     color: #888; */
@@ -1238,6 +1233,26 @@ in particular the date range picker is wide.*/
     padding: 8px;
 }
 
+.paletteeditor2 .PaletteEntryEditor>.controls {
+    display: flex;
+    align-items: center;
+    background-color: white;
+}
+
+.paletteeditor2 .PaletteEntryEditor .previewStyleButton {
+    padding: 4px;
+    border: 2px solid transparent;
+}
+
+.paletteeditor2 .PaletteEntryEditor .previewStyleButton.selected {
+    border: 2px solid #44c;
+}
+
+.paletteeditor2 .PaletteEntryEditor .controls .title {
+    font-weight: bold;
+    font-size: 36px;
+}
+
 .paletteeditor2 .textPaletteLayout {
     display: flex;
 
@@ -1253,7 +1268,7 @@ in particular the date range picker is wide.*/
     overflow-wrap: normal;
     overflow-x: scroll;
     flex-shrink: 0;
-
+    padding: 8px;
 }
 
 .looseEntryList {
@@ -1299,6 +1314,47 @@ in particular the date range picker is wide.*/
 .correctColorButtonGroup .correctColorItem.correctColorError {}
 
 .manualColorEntry {
-    font-size: 17px;
+    font-size: 13px;
     font-family: monospace;
+    width: 80px;
+}
+
+.variationEditorContainer {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: var(--preview-bg);
+    color: var(--preview-fg);
+}
+
+.PaletteEntryVariationEditor {
+    border: 1px solid #0002;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.indivColorEditPair {
+    display: flex;
+}
+
+.indivColorEditGroup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.ColorVariationExpo {
+    background-color: var(--preview-bg);
+    color: var(--preview-fg);
+}
+
+.ColorVariationExpo .controls {
+    display: flex;
+    flex-direction: column;
+    margin-left: 24px;
+}
+
+.ColorVariationExpo .controls .row {
+    display: flex;
+    flex-direction: row;
 }

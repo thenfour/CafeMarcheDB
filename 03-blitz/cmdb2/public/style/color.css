@@ -1,188 +1,35 @@
-.colorSwatchRoot {
-    --strong-color: transparent;
-    --strong-contrast-color: black;
-    --strong-border-color: black;
-    --weak-color: #888;
-    --weak-contrast-color: #ccc;
-    --weak-border-color: #ccc;
-    --weak-border-style: solid;
-    --strong-border-style: solid;
+.applyColor {
+    /* !important because sometimes default styling has stronger matching, but if you apply this it's really meant to override any other styling */
+    background-color: var(--color-background) !important;
+    color: var(--color-foreground) !important;
+    border: 1px var(--color-border-style) var(--color-foreground);
+}
 
+.colorSwatchRoot {
     display: flex;
     flex-direction: column;
     padding: 3px 4px;
     width: 90px;
-    height: 70px;
+    height: 30px;
+    margin: 2px;
     overflow: hidden;
     text-align: center;
     /* selection obscures the color*/
     user-select: none;
-}
+    border-radius: 4px;
+    font-size: 14px;
 
-/* generic color application */
-.applyColor-strong {
-    /* !important because sometimes default styling has stronger matching, but if you apply this it's really meant to override any other styling */
-    background-color: var(--strong-color) !important;
-    color: var(--strong-contrast-color) !important;
-    border: 1px var(--strong-border-style) var(--strong-contrast-color);
-}
+    align-items: center;
+    justify-content: center;
 
-/* for button groups (attendance control) border stuff gets unsightly */
-.applyColor-strong-noBorder {
-    background-color: var(--strong-color);
-    color: var(--strong-contrast-color);
-}
-
-/* for button groups (attendance control) border stuff gets unsightly */
-.applyColor-strong-noBorder.notSelected {
-    background-color: white;
-    color: var(--weak-contrast-color);
-}
-
-.applyColor-weak {
-    background-color: var(--weak-color) !important;
-    color: var(--weak-contrast-color) !important;
-    border: 1px var(--weak-border-style) var(--weak-contrast-color);
-}
-
-/* for text-only (no background) rendering */
-.applyColor-inv {
-    color: var(--strong-color);
-    /* text-shadow: var(--weak-contrast-color) 0 1px 1px; */
-    /* text-shadow: var(--strong-contrast-color) 0 1px 1px; */
-}
-
-/* 
-// strong / weak
-// selected / notselected
-// disabled / enabled
-// hover
-// focus */
-
-.applyColor-strong-notselected-enabled,
-.applyColor-weak-notselected-enabled {
-    background-color: var(--strong-color);
-    color: var(--strong-contrast-color);
-    border: 1px var(--strong-border-style) var(--strong-contrast-color);
-
-    /* transition: color var(--color-transition-duration);
-    transition: background-color var(--color-transition-duration); */
-}
-
-.applyColor-strong-notselected-disabled,
-.applyColor-weak-notselected-disabled {
-    background-color: var(--disabled-color);
-    color: var(--disabled-contrast-color);
-    border: 1px var(--disabled-border-style) var(--disabled-contrast-color);
-}
-
-.applyColor-strong-selected-enabled,
-.applyColor-weak-selected-enabled {
-    background-color: var(--strong-color);
-    color: var(--strong-contrast-color);
-    border: 1px var(--strong-border-style) var(--strong-contrast-color);
-    /* box-shadow: inset 0 0 4px var(--strong-contrast-color); */
-
-    /* transition: color var(--color-transition-duration);
-    transition: background-color var(--color-transition-duration); */
-}
-
-.applyColor-strong-selected-disabled,
-.applyColor-weak-selected-disabled {
-    background-color: var(--disabled-color);
-    color: var(--disabled-contrast-color);
-    border: 1px var(--disabled-border-style) var(--disabled-contrast-color);
-    /* box-shadow: inset 0 0 4px var(--disabled-contrast-color); */
-}
-
-.interactable .applyColor-strong-notselected-enabled:hover,
-.interactable .applyColor-weak-notselected-enabled:hover,
-.interactable.applyColor-strong-notselected-enabled:hover,
-.interactable.applyColor-weak-notselected-enabled:hover {
-    /* box-shadow: inset 0 0 6px var(--strong-contrast-color); */
-    /* border: 1px solid black; */
-    background-color: rgb(88, 110, 162);
-    color: #fff;
-    /* transition: color var(--color-transition-duration);
-    transition: background-color var(--color-transition-duration); */
-}
-
-.interactable .applyColor-strong-selected-enabled:hover,
-.interactable .applyColor-weak-selected-enabled:hover,
-.interactable.applyColor-strong-selected-enabled:hover,
-.interactable.applyColor-weak-selected-enabled:hover {
-    /* box-shadow: inset 0 0 6px var(--strong-contrast-color); */
-    /* border: 1px solid black; */
-    background-color: rgb(88, 110, 162);
-    color: #fff;
-    /* transition: color var(--color-transition-duration);
-    transition: background-color var(--color-transition-duration); */
-}
-
-
-
-
-.applyColor-weak-notselected-enabled {
-    background-color: var(--weak-color);
-    color: var(--weak-contrast-color);
-    border: 1px var(--strong-border-style) var(--weak-contrast-color);
-}
-
-.applyColor-weak-selected-enabled {
-    background-color: var(--weak-color);
-    color: var(--weak-contrast-color);
-    border: 1px var(--weak-border-style) var(--weak-contrast-color);
-    box-shadow: inset 0 0 4px var(--weak-contrast-color);
-}
-
-.interactable .applyColor-weak-notselected-enabled:hover,
-.interactable.applyColor-weak-notselected-enabled:hover {
-    box-shadow: inset 0 0 6px var(--weak-contrast-color);
-}
-
-.interactable .applyColor-weak-selected-enabled:hover,
-.interactable.applyColor-weak-selected-enabled:hover {
-    box-shadow: inset 0 0 6px var(--weak-contrast-color);
-}
-
-
-
-.colorSwatchRoot:hover {
-    background-color: #0004;
-    user-select: none;
-    cursor: pointer;
 }
 
 .colorSwatchRoot>* {
-    border-radius: 0px;
-    /* height: 50%; */
     flex-grow: 1;
     font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.colorSwatchRoot>*:last-child {
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-}
-
-.colorSwatchRoot>*:first-child {
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-
-.colorSwatchRoot .strong {
-    background-color: var(--strong-color);
-    color: var(--strong-contrast-color);
-    border: 1px var(--strong-border-style) var(--strong-contrast-color);
-}
-
-.colorSwatchRoot .weak {
-    background-color: var(--weak-color);
-    color: var(--weak-contrast-color);
-    border: 1px var(--weak-border-style) var(--weak-contrast-color);
 }
 
 .colorSwatchRoot.spacer {
@@ -236,25 +83,8 @@
 }
 
 .colorPaletteListRoot {
-    --background-color: white;
-    background-color: var(--background-color);
-}
-
-.colorPaletteListRoot .buttonGroup {
-    display: flex;
-}
-
-.colorPaletteListRoot .smallButton {
-    cursor: pointer;
-    /* selection obscures the color*/
-    user-select: none;
-    padding: 2px 5px;
-    border-radius: 3px;
-    background-color: #ccc8;
-    margin: 2px 5px;
-}
-
-
-.colorPaletteListRoot .smallButton:hover {
-    background-color: #ccc;
+    --preview-bg: "white";
+    --preview-fg: "black";
+    background-color: var(--preview-bg);
+    color: var(--preview-fg);
 }

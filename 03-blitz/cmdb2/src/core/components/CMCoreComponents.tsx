@@ -8,7 +8,7 @@ import { useTheme } from "@mui/material/styles";
 import { nanoid } from 'nanoid';
 import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
-import { ColorPaletteEntry } from 'shared/color';
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
 import WaveSurfer from "wavesurfer.js";
@@ -17,7 +17,7 @@ import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { Coord2D, MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadResponsePayload } from "../db3/shared/apiTypes";
 import { CMTextField } from "./CMTextField";
 import { ChoiceEditCell } from "./ChooseItemDialog";
-import { ColorVariationOptions, GetStyleVariablesForColor } from './Color';
+import { GetStyleVariablesForColor } from './Color';
 import { Coalesce, TAnyModel } from "shared/utils";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -64,9 +64,9 @@ export type CMChipSizeOptions = "small" | "big";
 
 export interface CMChipProps {
     color?: ColorPaletteEntry | string | null;
-    variant?: ColorVariationOptions;
-    selected?: boolean;
-    disabled?: boolean;
+    variation?: ColorVariationSpec;
+    //selected?: boolean;
+    //disabled?: boolean;
     size?: CMChipSizeOptions;
     className?: string;
 
@@ -76,33 +76,26 @@ export interface CMChipProps {
 
 
 export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
-    const style = GetStyleVariablesForColor(props.color);
-    const variant: ColorVariationOptions = props.variant || "strong";
+    const variant = props.variation || StandardVariationSpec.Strong;
+    const style = GetStyleVariablesForColor({ color: props.color, ...variant });
     const size = props.size || "big";
-
-    // .applyColor-strong-notselected-disabled
-    const applyColorClass = `applyColor-${variant}-${props.selected ? "selected" : "notselected"}-${props.disabled ? "disabled" : "enabled"}`;
 
     const wrapperClasses: string[] = [
         "CMChip",
         size,
-        variant,
-        props.disabled ? "disabled" : "enabled",
-        props.selected ? "selected" : "notselected",
+        variant.enabled ? "enabled" : "disabled",
+        variant.selected ? "selected" : "notselected",
         (props.onClick || props.onDelete) ? "interactable" : "noninteractable",
-        //applyColorClass,
     ];
     if (props.className) {
         wrapperClasses.push(props.className);
     }
 
     const chipClasses: string[] = [
-        "chipMain",
+        "chipMain applyColor",
         size,
-        variant,
-        props.disabled ? "disabled" : "enabled",
-        props.selected ? "selected" : "notselected",
-        applyColorClass,
+        variant.enabled ? "enabled" : "disabled",
+        variant.selected ? "selected" : "notselected",
     ];
 
     return <div className={wrapperClasses.join(" ")} style={style} onClick={props.onClick}>
@@ -130,7 +123,7 @@ export interface CMStandardDBChipModel {
 export interface CMStandardDBChipProps<T> {
     model: T;
     getText?: (value: any) => string; // override the text getter
-    variant?: ColorVariationOptions;
+    variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
@@ -139,7 +132,7 @@ export interface CMStandardDBChipProps<T> {
 export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
     return <CMChip
         color={props.model.color}
-        variant={props.variant}
+        variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
@@ -171,13 +164,13 @@ export const CMStatusIndicator = <T extends CMStandardDBChipModel,>(props: CMSta
 // big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
 export interface CMBigChipProps {
     color: ColorPaletteEntry | string | null | undefined;
-    variant: ColorVariationOptions;
+    variation: ColorVariationSpec;
     // put icons & text in children
 };
 
 export const CMBigChip = (props: React.PropsWithChildren<CMBigChipProps>) => {
-    const style = GetStyleVariablesForColor(props.color);
-    return <div className={`cmbigchip ${props.variant}`} style={style}><div className='content'>
+    const style = GetStyleVariablesForColor({ color: props.color, ...props.variation });
+    return <div className={`cmbigchip`} style={style}><div className='content'>
         {props.children}
     </div></div>;
 };
@@ -689,7 +682,7 @@ export const AudioPreviewBehindButton = (props: AudioPreviewBehindButtonProps) =
 
 export interface UserChipProps {
     value: db3.UserPayload_Name;
-    variant?: ColorVariationOptions;
+    variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
@@ -697,7 +690,7 @@ export interface UserChipProps {
 
 export const UserChip = (props: UserChipProps) => {
     return <CMChip
-        variant={props.variant}
+        variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
@@ -709,7 +702,7 @@ export const UserChip = (props: UserChipProps) => {
 
 export interface InstrumentChipProps {
     value: db3.InstrumentPayload;
-    variant?: ColorVariationOptions;
+    variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
@@ -717,7 +710,7 @@ export interface InstrumentChipProps {
 
 export const InstrumentChip = (props: InstrumentChipProps) => {
     return <CMChip
-        variant={props.variant}
+        variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
@@ -730,7 +723,7 @@ export const InstrumentChip = (props: InstrumentChipProps) => {
 
 export interface EventChipProps {
     value: db3.EventPayloadMinimum;
-    variant?: ColorVariationOptions;
+    variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
@@ -738,7 +731,7 @@ export interface EventChipProps {
 
 export const EventChip = (props: EventChipProps) => {
     return <CMChip
-        variant={props.variant}
+        variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
@@ -751,7 +744,7 @@ export const EventChip = (props: EventChipProps) => {
 
 export interface SongChipProps {
     value: db3.SongPayloadMinimum;
-    variant?: ColorVariationOptions;
+    variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
@@ -759,7 +752,7 @@ export interface SongChipProps {
 
 export const SongChip = (props: SongChipProps) => {
     return <CMChip
-        variant={props.variant}
+        variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}

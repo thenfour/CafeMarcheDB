@@ -4,68 +4,220 @@ import { TAnyModel, clamp01, getNextSequenceId, lerp } from "./utils";
 // https://ageofempires.fandom.com/wiki/Player#Age_of_Empires_II
 // https://starcraft.fandom.com/wiki/Colors
 
+export interface ColorPaletteEntryVariation {
+    backgroundColor: string;
+    foregroundColor: string;
+    showBorder: boolean;
+};
+
+// NB: serializable
 export interface ColorPaletteEntry {
     id: string; // used for database match; hand-made. palettegen generates them though.
     label: string;
-
-    strongOutline: boolean; // for black / white, this is useful
-    weakOutline: boolean; // for black / white, this is useful
-
-    // normal filled chip type
-    strongValue: string;
-    strongContrastColor: string; // for text mostly
-
-    //  for de-emphasized we need an inverted value
-    weakValue: string;
-    weakContrastColor: string; // for text mostly
+    strongDisabled: ColorPaletteEntryVariation;
+    strongDisabledSelected: ColorPaletteEntryVariation;
+    strong: ColorPaletteEntryVariation;
+    strongSelected: ColorPaletteEntryVariation;
+    weakDisabled: ColorPaletteEntryVariation;
+    weakDisabledSelected: ColorPaletteEntryVariation;
+    weak: ColorPaletteEntryVariation;
+    weakSelected: ColorPaletteEntryVariation;
 };
 
-const CreatePaletteEntry = (id: string, strongOutline: boolean, strongColor: string, strongContrastColor: string, weakOutline: boolean, weakColor: string, weakContrastColor: string,): ColorPaletteEntry => {
+export type ColorVariationOptions = "strong" | "weak";
+
+export interface ColorVariationSpec {
+    variation: ColorVariationOptions;
+    enabled: boolean;
+    selected: boolean;
+}
+
+export interface GetColorVariationArgs extends ColorVariationSpec {
+    color: ColorPaletteEntry;
+}
+
+export const gStrongDisabled: ColorVariationSpec = { variation: "strong", enabled: false, selected: false };
+export const gStrongDisabledSelected: ColorVariationSpec = { variation: "strong", enabled: false, selected: true };
+export const gStrong: ColorVariationSpec = { variation: "strong", enabled: true, selected: false };
+export const gStrongSelected: ColorVariationSpec = { variation: "strong", enabled: true, selected: true };
+export const gWeakDisabled: ColorVariationSpec = { variation: "weak", enabled: false, selected: false };
+export const gWeakDisabledSelected: ColorVariationSpec = { variation: "weak", enabled: false, selected: true };
+export const gWeak: ColorVariationSpec = { variation: "weak", enabled: true, selected: false };
+export const gWeakSelected: ColorVariationSpec = { variation: "weak", enabled: true, selected: true };
+
+
+export const StandardVariationSpec = {
+    StrongDisabled: gStrongDisabled,
+    StrongDisabledSelected: gStrongDisabledSelected,
+    Strong: gStrong,
+    StrongSelected: gStrongSelected,
+    WeakDisabled: gWeakDisabled,
+    WeakDisabledSelected: gWeakDisabledSelected,
+    Weak: gWeak,
+    WeakSelected: gWeakSelected,
+}
+
+export const GetColorVariation = (args: GetColorVariationArgs): ColorPaletteEntryVariation => {
+    if (args.variation === "strong") {
+        if (!args.enabled) {
+            if (!args.selected) return args.color.strongDisabled;
+            return args.color.strongDisabledSelected;
+        }
+        if (!args.selected) return args.color.strong;
+        return args.color.strongSelected;
+    }
+    if (!args.enabled) {
+        if (!args.selected) return args.color.weakDisabled;
+        return args.color.weakDisabledSelected;
+    }
+    if (!args.selected) return args.color.weak;
+    return args.color.weakSelected;
+};
+
+const CreatePaletteEntry = (id: string,
+    label: string,
+
+    strongDisabled_BackgroundColor: string,
+    strongDisabled_ForegroundColor: string,
+    strongDisabled_ShowBorder: boolean,
+
+    strongDisabledSelected_BackgroundColor: string,
+    strongDisabledSelected_ForegroundColor: string,
+    strongDisabledSelected_ShowBorder: boolean,
+
+    strongEnabled_BackgroundColor: string,
+    strongEnabled_ForegroundColor: string,
+    strongEnabled_ShowBorder: boolean,
+
+    strongEnabledSelected_BackgroundColor: string,
+    strongEnabledSelected_ForegroundColor: string,
+    strongEnabledSelected_ShowBorder: boolean,
+
+    weakDisabled_BackgroundColor: string,
+    weakDisabled_ForegroundColor: string,
+    weakDisabled_ShowBorder: boolean,
+
+    weakDisabledSelected_BackgroundColor: string,
+    weakDisabledSelected_ForegroundColor: string,
+    weakDisabledSelected_ShowBorder: boolean,
+
+    weakEnabled_BackgroundColor: string,
+    weakEnabled_ForegroundColor: string,
+    weakEnabled_ShowBorder: boolean,
+
+    weakEnabledSelected_BackgroundColor: string,
+    weakEnabledSelected_ForegroundColor: string,
+    weakEnabledSelected_ShowBorder: boolean,
+
+): ColorPaletteEntry => {
     return {
         id,
-        label: id,
-        strongOutline,
-        strongValue: strongColor,
-        strongContrastColor,
-        weakOutline,
-        weakValue: weakColor,
-        weakContrastColor,
+        label,
+        strongDisabled: {
+            backgroundColor: strongDisabled_BackgroundColor,
+            foregroundColor: strongDisabled_ForegroundColor,
+            showBorder: strongDisabled_ShowBorder,
+        },
+        strongDisabledSelected: {
+            backgroundColor: strongDisabledSelected_BackgroundColor,
+            foregroundColor: strongDisabledSelected_ForegroundColor,
+            showBorder: strongDisabledSelected_ShowBorder,
+        },
+        strong: {
+            backgroundColor: strongEnabled_BackgroundColor,
+            foregroundColor: strongEnabled_ForegroundColor,
+            showBorder: strongEnabled_ShowBorder,
+        },
+        strongSelected: {
+            backgroundColor: strongEnabledSelected_BackgroundColor,
+            foregroundColor: strongEnabledSelected_ForegroundColor,
+            showBorder: strongEnabledSelected_ShowBorder,
+        },
+        weakDisabled: {
+            backgroundColor: weakDisabled_BackgroundColor,
+            foregroundColor: weakDisabled_ForegroundColor,
+            showBorder: weakDisabled_ShowBorder,
+        },
+        weakDisabledSelected: {
+            backgroundColor: weakDisabledSelected_BackgroundColor,
+            foregroundColor: weakDisabledSelected_ForegroundColor,
+            showBorder: weakDisabledSelected_ShowBorder,
+        },
+        weak: {
+            backgroundColor: weakEnabled_BackgroundColor,
+            foregroundColor: weakEnabled_ForegroundColor,
+            showBorder: weakEnabled_ShowBorder,
+        },
+        weakSelected: {
+            backgroundColor: weakEnabledSelected_BackgroundColor,
+            foregroundColor: weakEnabledSelected_ForegroundColor,
+            showBorder: weakEnabledSelected_ShowBorder,
+        },
     };
 };
 
+function CreateSimplePaletteEntry(id: string, label: string, backgroundColor: string, foregroundColor: string) {
+    return CreatePaletteEntry(id,
+        label,
+        backgroundColor,// strongDisabled_BackgroundColor: string,
+        foregroundColor,// strongDisabled_ForegroundColor: string,
+        true,// strongDisabled_ShowBorder: boolean,
+
+        backgroundColor,// strongDisabledSelected_BackgroundColor: string,
+        foregroundColor,// strongDisabledSelected_ForegroundColor: string,
+        true,// strongDisabledSelected_ShowBorder: boolean,
+
+        backgroundColor,// strongEnabled_BackgroundColor: string,
+        foregroundColor,// strongEnabled_ForegroundColor: string,
+        true,// strongEnabled_ShowBorder: boolean,
+
+        backgroundColor,// strongEnabledSelected_BackgroundColor: string,
+        foregroundColor,// strongEnabledSelected_ForegroundColor: string,
+        true,// strongEnabledSelected_ShowBorder: boolean,
+
+        backgroundColor,// weakDisabled_BackgroundColor: string,
+        foregroundColor,// weakDisabled_ForegroundColor: string,
+        true,// weakDisabled_ShowBorder: boolean,
+
+        backgroundColor,// weakDisabledSelected_BackgroundColor: string,
+        foregroundColor,// weakDisabledSelected_ForegroundColor: string,
+        true,// weakDisabledSelected_ShowBorder: boolean,
+
+        backgroundColor,// weakEnabled_BackgroundColor: string,
+        foregroundColor,// weakEnabled_ForegroundColor: string,
+        true,// weakEnabled_ShowBorder: boolean,
+
+        backgroundColor,// weakEnabledSelected_BackgroundColor: string,
+        foregroundColor,// weakEnabledSelected_ForegroundColor: string,
+        true,// weakEnabledSelected_ShowBorder: boolean,
+    );
+}
+
 // color editor outputs this.
-const gPaletteMap = [
-    CreatePaletteEntry("black", true, "#2e3350", "#adb3d0", true, "#525d90", "#adb3d0"),
-    CreatePaletteEntry("dark_gray", false, "#525d90", "#dee1ec", false, "#adb3d0", "#dee1ec"),
-    CreatePaletteEntry("gray", false, "#adb3d0", "#2e3350", false, "#dee1ec", "#adb3d0"),
-    CreatePaletteEntry("light_gray", false, "#dee1ec", "#525d90", true, "#f7f8fb", "#adb3d0"),
-    CreatePaletteEntry("white", true, "#f7f8fb", "#525d90", true, "#f7f8fb", "#adb3d0"),
-    CreatePaletteEntry("pink", false, "#ffa2ac", "#f7f8fb", false, "#ffa2ac", "#eff0f6"),
-    CreatePaletteEntry("red", false, "#ec273f", "#ffa2ac", false, "#ffa2ac", "#2e3350"),
-    CreatePaletteEntry("maroon", false, "#ac2847", "#ffa2ac", false, "#fff8", "#0008"),
-    CreatePaletteEntry("brown", false, "#6e4c30", "#f7f3b7", false, "#fff8", "#0008"),
-    CreatePaletteEntry("orange", true, "#ed7614", "#0008", true, "#fff8", "#0008"),
-    CreatePaletteEntry("yellow", true, "#e8d282", "#0008", true, "#fff8", "#0008"),
-    CreatePaletteEntry("light_yellow", true, "#f7f3b7", "#0008", true, "#fff8", "#0008"),
-    CreatePaletteEntry("lime_green", true, "#9de64e", "#0008", true, "#fff8", "#0008"),
-    CreatePaletteEntry("green", true, "#5ab552", "#0008", true, "#fff8", "#0008"),
-    CreatePaletteEntry("teal", true, "#6dead6", "#0008", true, "#fff8", "#0008"),
-    CreatePaletteEntry("blue", true, "#1659DA", "#adb3d0", true, "#fff8", "#0008"),
-    CreatePaletteEntry("purple", true, "#7a09fa", "#0008", true, "#fff8", "#0008"),
+const gPaletteMap: ColorPaletteEntry[] = [
+    CreatePaletteEntry("black", "black", "#444444", "#888888", false, "#444444", "#eeeeee", false, "#000000", "#b3b5c9", true, "#000000", "#d8d9e4", true, "#888888", "#cccccc", false, "#888888", "#ffffff", false, "#474a61", "#b3b5c9", false, "#474a61", "#eeeeee", false),
+    CreatePaletteEntry("dark_gray", "dark_gray", "#666666", "#aaaaaa", false, "#666666", "#eeeeee", false, "#474a61", "#d8d9e4", false, "#444444", "#d7dbff", false, "#888888", "#cccccc", false, "#888888", "#ffffff", false, "#6a7095", "#b3b5c9", false, "#6a7095", "#eeeeee", false),
+    CreatePaletteEntry("gray", "gray", "#eeeeee", "#888888", false, "#eeeeee", "#888888", false, "#8e92af", "#ffffff", false, "#eeeeee", "#888888", false, "#eeeeee", "#888888", false, "#eeeeee", "#888888", false, "#eeeeee", "#888888", false, "#eeeeee", "#888888", false),
+    CreatePaletteEntry("light_gray", "light_gray", "#cccccc", "#888888", false, "#cccccc", "#444444", false, "#d8d9e4", "#474a61", false, "#d8d9e4", "#474a61", false, "#dddddd", "#888888", false, "#dddddd", "#888888", false, "#b3b5c9", "#6a7095", false, "#b3b5c9", "#474a61", false),
+    CreatePaletteEntry("white", "white", "#eeeeee", "#cccccc", false, "#eeeeee", "#888888", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#cccccc", false, "#eeeeee", "#888888", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
+    CreatePaletteEntry("pink", "pink", "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ff9f88", "#ffffff", false, "#ff9f88", "#ffffff", false, "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ffcfc2", "#6a7095", false, "#ff9f88", "#474a61", false),
+    CreatePaletteEntry("red", "red", "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#e62b19", "#ff9f88", false, "#e62b19", "#ffffff", false, "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ff9f88", "#eeeeee", false, "#f76d50", "#eeeeee", true),
+    CreatePaletteEntry("maroon", "maroon", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("brown", "brown", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("orange", "orange", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("yellow", "yellow", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("light_yellow", "light_yellow", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("lime_green", "lime_green", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("green", "green", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("teal", "teal", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("blue", "blue", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("purple", "purple", "#444444", "#e62b19", true, "#888888", "#00b300", true, "#793c11", "#ff7700", true, "#e62b19", "#00b300", true, "#5a4426", "#eeff00", true, "#ffcc00", "#ffe596", true, "#8e92af", "#000000", true, "#a0db8e", "#1b5613", true),
+
 
 ];
 
 export const CreateNullPaletteEntry = () => {
-    const ret: ColorPaletteEntry = {
-        id: `${getNextSequenceId()}`,
-        label: "(none)",
-        strongOutline: true,
-        weakOutline: true,
-        strongValue: "#fff8",
-        strongContrastColor: "#0008",
-        weakValue: "#fff8",
-        weakContrastColor: "#0008",
-    };
+    const ret = CreateSimplePaletteEntry(`${getNextSequenceId()}`, "(none)", "#eee", "#888");
     return ret;
 };
 
@@ -80,12 +232,12 @@ export const FetchColorPaletteEntry = (id: string): ColorPaletteEntry => {
     return ret;
 }
 
-export interface ColorPaletteCorrection {
-    id?: string;
-    label?: string;
-    strongOutline?: boolean;
-    weakOutline?: boolean;
-};
+// export interface ColorPaletteCorrection {
+//     id?: string;
+//     label?: string;
+//     strongOutline?: boolean;
+//     weakOutline?: boolean;
+// };
 
 export class ColorPaletteArgs {
     name: string;
@@ -499,6 +651,10 @@ const generalPaletteArgs: ColorPaletteArgs = {
 export const gGeneralPaletteList = new ColorPaletteList([
     //new ColorPalette({ ...grayscalePaletteArgs, corrections: grayscalePaletteManualCorrections }),
     //new ColorPalette({ ...attendanceResponsePaletteArgs }),
+
+    // theme colors
+    // special colors (like unspecified visibility)
+
     new ColorPalette({ ...generalPaletteArgs }),
 ]);
 
