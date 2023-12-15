@@ -1165,9 +1165,7 @@ in particular the date range picker is wide.*/
     display: flex;
 }
 
-.singleSwatchContainer {
-    border: 1px solid blue;
-}
+.singleSwatchContainer {}
 
 .paletteeditor2 .paletteSwatch {
     width: 70px;
@@ -1185,11 +1183,13 @@ in particular the date range picker is wide.*/
     overflow: hidden;
     font-family: monospace;
 
+    color: var(--selected-border-color);
     border: var(--border-size) solid var(--swatch-color);
 }
 
 .paletteeditor2 .paletteSwatch.selected {
     border: var(--border-size) solid var(--selected-border-color);
+    border-radius: 6px;
 }
 
 

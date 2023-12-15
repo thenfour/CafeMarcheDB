@@ -639,9 +639,12 @@ interface PaletteEntryEditorProps {
 
 const PaletteEntryEditor = (props: PaletteEntryEditorProps) => {
 
-    const selectedEntries: string[] = [
+    const strongSelectedEntries: string[] = [
         props.value.strongValue,
         props.value.strongContrastColor,
+    ];
+
+    const weakSelectedEntries: string[] = [
         props.value.weakValue,
         props.value.weakContrastColor,
     ];
@@ -656,12 +659,12 @@ const PaletteEntryEditor = (props: PaletteEntryEditorProps) => {
                 <FormControlLabel label="Strong border?" control={<input type="checkbox" checked={props.value.strongOutline} onChange={(e) => props.onChange({ ...props.value, strongOutline: e.target.checked })} />} />
                 <FormControlLabel label="Weak border?" control={<input type="checkbox" checked={props.value.weakOutline} onChange={(e) => props.onChange({ ...props.value, weakOutline: e.target.checked })} />} />
                 <div className="paletteRow">
-                    <UserColorPick selectedEntries={selectedEntries} value={props.value.strongValue} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, strongValue: e.cssColor })} />
-                    <UserColorPick selectedEntries={selectedEntries} value={props.value.strongContrastColor} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, strongContrastColor: e.cssColor })} />
+                    <UserColorPick selectedEntries={strongSelectedEntries} value={props.value.strongValue} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, strongValue: e.cssColor })} />
+                    <UserColorPick selectedEntries={strongSelectedEntries} value={props.value.strongContrastColor} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, strongContrastColor: e.cssColor })} />
                 </div>
                 <div className="paletteRow">
-                    <UserColorPick selectedEntries={selectedEntries} value={props.value.weakValue} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, weakValue: e.cssColor })} />
-                    <UserColorPick selectedEntries={selectedEntries} value={props.value.weakContrastColor} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, weakContrastColor: e.cssColor })} />
+                    <UserColorPick selectedEntries={weakSelectedEntries} value={props.value.weakValue} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, weakValue: e.cssColor })} />
+                    <UserColorPick selectedEntries={weakSelectedEntries} value={props.value.weakContrastColor} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, weakContrastColor: e.cssColor })} />
                 </div>
                 <div className="manualEntryRow">
                     <div><FormControlLabel label="StrongBG" control={<input className="manualColorEntry" type="text" value={props.value.strongValue} onChange={(e) => props.onChange({ ...props.value, strongValue: e.target.value })} />} /></div>

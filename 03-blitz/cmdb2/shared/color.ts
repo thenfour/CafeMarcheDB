@@ -35,15 +35,15 @@ const CreatePaletteEntry = (id: string, strongOutline: boolean, strongColor: str
 
 // color editor outputs this.
 const gPaletteMap = [
-    CreatePaletteEntry("black", true, "#2e3350", "#f7f8fb", true, "#525d90", "#adb3d0"),
+    CreatePaletteEntry("black", true, "#2e3350", "#adb3d0", true, "#525d90", "#adb3d0"),
     CreatePaletteEntry("dark_gray", false, "#525d90", "#dee1ec", false, "#adb3d0", "#dee1ec"),
-    CreatePaletteEntry("gray", false, "#adb3d0", "#000000", false, "#dee1ec", "#adb3d0"),
-    CreatePaletteEntry("light_gray", false, "#dee1ec", "#7c85b4", true, "#f7f8fb", "#adb3d0"),
+    CreatePaletteEntry("gray", false, "#adb3d0", "#2e3350", false, "#dee1ec", "#adb3d0"),
+    CreatePaletteEntry("light_gray", false, "#dee1ec", "#525d90", true, "#f7f8fb", "#adb3d0"),
     CreatePaletteEntry("white", true, "#f7f8fb", "#525d90", true, "#f7f8fb", "#adb3d0"),
-    CreatePaletteEntry("pink", true, "#ffa2ac", "#f7f8fb", true, "#ffa2ac", "#eff0f6"),
-    CreatePaletteEntry("red", true, "#ec273f", "#0008", true, "#ffa2ac", "#0008"),
-    CreatePaletteEntry("maroon", true, "#ac2847", "#adb3d0", true, "#fff8", "#0008"),
-    CreatePaletteEntry("brown", true, "#773b09", "#adb3d0", true, "#fff8", "#0008"),
+    CreatePaletteEntry("pink", false, "#ffa2ac", "#f7f8fb", false, "#ffa2ac", "#eff0f6"),
+    CreatePaletteEntry("red", false, "#ec273f", "#ffa2ac", false, "#ffa2ac", "#2e3350"),
+    CreatePaletteEntry("maroon", false, "#ac2847", "#ffa2ac", false, "#fff8", "#0008"),
+    CreatePaletteEntry("brown", false, "#6e4c30", "#f7f3b7", false, "#fff8", "#0008"),
     CreatePaletteEntry("orange", true, "#ed7614", "#0008", true, "#fff8", "#0008"),
     CreatePaletteEntry("yellow", true, "#e8d282", "#0008", true, "#fff8", "#0008"),
     CreatePaletteEntry("light_yellow", true, "#f7f3b7", "#0008", true, "#fff8", "#0008"),
