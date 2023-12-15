@@ -394,6 +394,16 @@ interface ParsedPaletteEntry {
     r: ParseColorResult;
 };
 
+function ParsePaletteEntry(cssColor: string) {
+    const eeep = ParseColor(cssColor);
+    const eee: ParsedPaletteEntry = {
+        bundle: null,
+        cssColor: eeep.cssColor || "#f0f",
+        r: eeep,
+    };
+    return eee;
+}
+
 interface ParsedPalette {
     allRows: ParsedPaletteEntry[][];
     allEntries: ParsedPaletteEntry[];
@@ -456,16 +466,31 @@ const ParseTextPalette = (textPalette: string): ParsedPalette => {
     };
 };
 
-const Swatch = (props: { color: string, onClick?: (e: string) => void, text?: string, className?: string, selected?: boolean, selectedBorderColor?: string }) => {
+interface SwatchProps {
+    //color: string;
+    color: ParsedPaletteEntry;
+
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
+    onClick?: (e: ParsedPaletteEntry) => void;
+    text?: string;
+    className?: string;
+    selected?: boolean;
+    //selectedBorderColor?: string;
+}
+
+const Swatch = (props: SwatchProps) => {
     return <div
         className={`paletteSwatch ${props.onClick && "interactable"} ${props.className || ""} ${props.selected && "selected"}`}
         style={{
-            "--swatch-color": props.color,
-            "--selected-border-color": props.selectedBorderColor || "black",
+            "--swatch-color": props.color.cssColor,
+            "--selected-border-color": props.color.r.cssContrastColor || "black",
         } as any}
         onClick={() => { props.onClick && props.onClick(props.color) }}
+        onMouseEnter={props.onMouseEnter}
+        onMouseLeave={props.onMouseLeave}
     >
-        {props.text || props.color}
+        {props.text || props.color.cssColor}
     </div>;
 };
 
@@ -474,10 +499,12 @@ interface UserPaletteGridProps {
     onClick?: (e: ParsedPaletteEntry) => void;
     onSetBlenderParamBundle?: (pb: ColorBlenderParamsBundle) => void;
     selectedEntries: string[];
+    renderPreview?: (hoveredEntry: ParsedPaletteEntry | null) => React.ReactNode;
 };
 
 const UserPaletteGrid = (props: UserPaletteGridProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [hoveredEntry, setHoveredEntry] = React.useState<null | ParsedPaletteEntry>(null);
     const [focusedEntry, setFocusedEntry] = React.useState<null | ParsedPaletteEntry>(null);
     const isOpen = !!anchorEl;
 
@@ -493,15 +520,23 @@ const UserPaletteGrid = (props: UserPaletteGridProps) => {
         }
     };
 
-    return <div>
+    return <div className="UserPaletteGrid">
         {props.parsedPalette.allEntries.length} colors.
-        <div className={`paletteeditor2`}>
+        <div className={`paletteeditor2 UserPaletteGridGrid`}>
             {props.parsedPalette.allRows.map((row, iy) => <div className="paletteRow" key={iy}>
                 {row.map((c, ix) => {
                     const localC = { ...c }; // for capture; dont think this is actually necesasary though.
                     return <div key={ix} className="singleSwatchContainer">
                         <div onClick={e => handleClick(e, localC, ix, iy)}>
-                            <Swatch key={ix} color={localC.cssColor} className={interactable ? "interactable" : ""} selected={props.selectedEntries.some(e => e === localC.cssColor)} selectedBorderColor={localC.r.cssContrastColor || "black"} />
+                            <Swatch
+                                key={ix}
+                                color={localC}
+                                className={interactable ? "interactable" : ""}
+                                selected={props.selectedEntries.some(e => e === localC.cssColor)}
+                                //selectedBorderColor={localC.r.cssContrastColor || "black"}
+                                onMouseEnter={() => setHoveredEntry({ ...localC })}
+                                onMouseLeave={() => setHoveredEntry(null)}
+                            />
                         </div>
                         <Popover
                             anchorEl={anchorEl}
@@ -523,15 +558,19 @@ const UserPaletteGrid = (props: UserPaletteGridProps) => {
                 })}
             </div>)}
         </div>
+        {props.renderPreview && <div className={`paletteeditor2 UserPaletteGridPreview`}>
+            {props.renderPreview(hoveredEntry)}
+        </div>}
     </div>;
 };
 
 
 export interface UserColorPickProps {
-    value: string;
+    value: ParsedPaletteEntry;
     palette: ParsedPalette;
     onChange: (value: ParsedPaletteEntry) => void;
     selectedEntries: string[];
+    renderPreview?: (hoveredEntry: ParsedPaletteEntry | null) => React.ReactNode;
 };
 
 // props.color can never be null.
@@ -559,6 +598,7 @@ export const UserColorPick = (props: UserColorPickProps) => {
                     props.onChange(e);
                     setAnchorEl(null);
                 }}
+                renderPreview={props.renderPreview}
             />
         </Popover >
     </>;
@@ -589,8 +629,6 @@ function FindClosestColorMatch(args: FindClosestColorMatchArgs): ParsedPaletteEn
         console.log(`unable to parse color ${args.value}`);
         return null;
     }
-
-    console.log(`here`);
 
     let bestDistance: number = deltaE(args.parsedPalette.allEntries[0]!.r.labValues, parsedValue.labValues);
     let bestMatch: ParsedPaletteEntry = args.parsedPalette.allEntries[0]!;
@@ -659,12 +697,52 @@ const PaletteEntryEditor = (props: PaletteEntryEditorProps) => {
                 <FormControlLabel label="Strong border?" control={<input type="checkbox" checked={props.value.strongOutline} onChange={(e) => props.onChange({ ...props.value, strongOutline: e.target.checked })} />} />
                 <FormControlLabel label="Weak border?" control={<input type="checkbox" checked={props.value.weakOutline} onChange={(e) => props.onChange({ ...props.value, weakOutline: e.target.checked })} />} />
                 <div className="paletteRow">
-                    <UserColorPick selectedEntries={strongSelectedEntries} value={props.value.strongValue} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, strongValue: e.cssColor })} />
-                    <UserColorPick selectedEntries={strongSelectedEntries} value={props.value.strongContrastColor} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, strongContrastColor: e.cssColor })} />
+                    <UserColorPick
+                        selectedEntries={strongSelectedEntries}
+                        value={ParsePaletteEntry(props.value.strongValue)}
+                        palette={props.parsedPalette}
+                        onChange={(e) => props.onChange({ ...props.value, strongValue: e.cssColor })}
+                        renderPreview={(hovered) => {
+                            const col: ColorPaletteEntry = { ...props.value };
+                            if (hovered) col.strongValue = hovered.cssColor;
+                            return <BigSwatch entry={col} className="applyColor-strong-notselected-enabled" variation="strong" text="selected" />
+                        }}
+                    />
+                    <UserColorPick
+                        selectedEntries={strongSelectedEntries}
+                        value={ParsePaletteEntry(props.value.strongContrastColor)}
+                        palette={props.parsedPalette}
+                        onChange={(e) => props.onChange({ ...props.value, strongContrastColor: e.cssColor })}
+                        renderPreview={(hovered) => {
+                            const col: ColorPaletteEntry = { ...props.value };
+                            if (hovered) col.strongContrastColor = hovered.cssColor;
+                            return <BigSwatch entry={col} className="applyColor-strong-notselected-enabled" variation="strong" text="selected" />
+                        }}
+                    />
                 </div>
                 <div className="paletteRow">
-                    <UserColorPick selectedEntries={weakSelectedEntries} value={props.value.weakValue} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, weakValue: e.cssColor })} />
-                    <UserColorPick selectedEntries={weakSelectedEntries} value={props.value.weakContrastColor} palette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, weakContrastColor: e.cssColor })} />
+                    <UserColorPick
+                        selectedEntries={weakSelectedEntries}
+                        value={ParsePaletteEntry(props.value.weakValue)}
+                        palette={props.parsedPalette}
+                        onChange={(e) => props.onChange({ ...props.value, weakValue: e.cssColor })}
+                        renderPreview={(hovered) => {
+                            const col: ColorPaletteEntry = { ...props.value };
+                            if (hovered) col.weakValue = hovered.cssColor;
+                            return <BigSwatch entry={col} className="applyColor-weak-notselected-enabled" variation="weak" text="selected" />
+                        }}
+                    />
+                    <UserColorPick
+                        selectedEntries={weakSelectedEntries}
+                        value={ParsePaletteEntry(props.value.weakContrastColor)}
+                        palette={props.parsedPalette}
+                        onChange={(e) => props.onChange({ ...props.value, weakContrastColor: e.cssColor })}
+                        renderPreview={(hovered) => {
+                            const col: ColorPaletteEntry = { ...props.value };
+                            if (hovered) col.weakContrastColor = hovered.cssColor;
+                            return <BigSwatch entry={col} className="applyColor-weak-notselected-enabled" variation="weak" text="selected" />
+                        }}
+                    />
                 </div>
                 <div className="manualEntryRow">
                     <div><FormControlLabel label="StrongBG" control={<input className="manualColorEntry" type="text" value={props.value.strongValue} onChange={(e) => props.onChange({ ...props.value, strongValue: e.target.value })} />} /></div>
@@ -1045,6 +1123,8 @@ const ColorBlender = (props: ColorBlenderProps) => {
         }
     }, [props.setParamBundleSerial]);
 
+    const eee = ParsePaletteEntry("#eee");
+
     return <div className="colorBlender">
         <div className="controls">
             <div><button onClick={handlePasteParams}>paste params json</button></div>
@@ -1070,40 +1150,40 @@ const ColorBlender = (props: ColorBlenderProps) => {
         </div>
 
         <div className="paletteRow">
-            <Swatch className="textButton" color="#eee" text={linkAD ? " " : `diag ↘`} onClick={handleClickDiagTL} />
-            <Swatch className="textButton" color="#eee" text="↗" onClick={handleCopyTL} />
-            {grid[0] && grid[0].map((entry, ix) => <Swatch className="textButton" key={ix} onClick={() => handleCopyColumn(ix)} color="#eee" text={linkAD && ix > 0 ? " " : `↓`} />)}
-            <Swatch className="textButton" color="#eee" text={linkAD ? " " : `↘`} onClick={handleCopyTR} />
-            <Swatch className="textButton" color="#eee" text="↙ diag" onClick={handleClickDiagTR} />
+            <Swatch className="textButton" color={eee} text={linkAD ? " " : `diag ↘`} onClick={handleClickDiagTL} />
+            <Swatch className="textButton" color={eee} text="↗" onClick={handleCopyTL} />
+            {grid[0] && grid[0].map((entry, ix) => <Swatch className="textButton" key={ix} onClick={() => handleCopyColumn(ix)} color={eee} text={linkAD && ix > 0 ? " " : `↓`} />)}
+            <Swatch className="textButton" color={eee} text={linkAD ? " " : `↘`} onClick={handleCopyTR} />
+            <Swatch className="textButton" color={eee} text="↙ diag" onClick={handleClickDiagTR} />
         </div>
 
         {grid.map((row, iy) => <div key={iy} className="paletteRow">
-            <Swatch className="spacer" color="#eee" text=" " />
-            <Swatch className="textButton" onClick={() => handleCopyRow(row)} color="#eee" text={linkAD && iy > 0 ? " " : `→`} />
+            <Swatch className="spacer" color={eee} text=" " />
+            <Swatch className="textButton" onClick={() => handleCopyRow(row)} color={eee} text={linkAD && iy > 0 ? " " : `→`} />
             {row.map((c, ix) => {
-                if (linkAD && (ix > colorCountX - iy + 1)) return <Swatch className="textButton" key={ix} color={"#eee"} text=" " />;
-                return <Swatch key={ix} color={c} onClick={() => handleClickSwatch(c)} />;
+                if (linkAD && (ix > colorCountX - iy + 1)) return <Swatch className="textButton" key={ix} color={eee} text=" " />;
+                return <Swatch key={ix} color={ParsePaletteEntry(c)} onClick={() => handleClickSwatch(c)} />;
             })}
-            <Swatch className="textButton" onClick={() => handleCopyRowRev(row)} color="#eee" text={linkAD && iy > 0 ? " " : `←`} />
+            <Swatch className="textButton" onClick={() => handleCopyRowRev(row)} color={eee} text={linkAD && iy > 0 ? " " : `←`} />
         </div>)}
 
         <div className="paletteRow">
-            <Swatch className="textButton" color="#eee" text="diag ↗" onClick={handleClickDiagBL} />
-            <Swatch className="textButton" color="#eee" text={linkAD ? " " : `↖`} onClick={handleCopyBL} />
-            {grid[0] && grid[0].map((entry, ix) => <Swatch className="textButton" key={ix} onClick={() => handleCopyColumnRev(ix)} color="#eee" text={linkAD && ix > 0 ? " " : `↑`} />)}
-            <Swatch className="textButton" color="#eee" text={linkAD ? " " : `↙`} onClick={handleCopyBR} />
-            <Swatch className="textButton" color="#eee" text={linkAD ? " " : "↖ diag"} onClick={handleClickDiagBR} />
+            <Swatch className="textButton" color={eee} text="diag ↗" onClick={handleClickDiagBL} />
+            <Swatch className="textButton" color={eee} text={linkAD ? " " : `↖`} onClick={handleCopyBL} />
+            {grid[0] && grid[0].map((entry, ix) => <Swatch className="textButton" key={ix} onClick={() => handleCopyColumnRev(ix)} color={eee} text={linkAD && ix > 0 ? " " : `↑`} />)}
+            <Swatch className="textButton" color={eee} text={linkAD ? " " : `↙`} onClick={handleCopyBR} />
+            <Swatch className="textButton" color={eee} text={linkAD ? " " : "↖ diag"} onClick={handleClickDiagBR} />
         </div>
 
         {!!subSelection.length && <div>
             <div>{subSelectionDesc}</div>
             <div className="paletteRow">
-                {subSelection.map((entry, ix) => <Swatch key={ix} color={entry} />)}
-                <Swatch className="textButton" color="#eee" text="COPY" onClick={handleCopySubselection} />
-                <Swatch className="textButton" color="#eee" text="Cp-excl" onClick={handleCopySubselectionExcl} />
-                <Swatch className="textButton" color="#eee" text="append" onClick={handleAppendSubselection} />
-                <Swatch className="textButton" color="#eee" text="append-excl" onClick={handleAppendSubselectionExcl} />
-                <Swatch className="textButton" color="#eee" text="Clear" onClick={() => setSubSelection([])} />
+                {subSelection.map((entry, ix) => <Swatch key={ix} color={ParsePaletteEntry(entry)} />)}
+                <Swatch className="textButton" color={eee} text="COPY" onClick={handleCopySubselection} />
+                <Swatch className="textButton" color={eee} text="Cp-excl" onClick={handleCopySubselectionExcl} />
+                <Swatch className="textButton" color={eee} text="append" onClick={handleAppendSubselection} />
+                <Swatch className="textButton" color={eee} text="append-excl" onClick={handleAppendSubselectionExcl} />
+                <Swatch className="textButton" color={eee} text="Clear" onClick={() => setSubSelection([])} />
             </div>
         </div>}
 

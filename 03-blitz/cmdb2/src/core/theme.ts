@@ -15,12 +15,12 @@ export const themeOptions: ThemeOptions = {
   transitions: {
     duration: {
       shortest: 100,
-      shorter: 125,
-      short: 150,
-      standard: 150,// most basic recommended timing (default 300)
-      complex: 250,// this is to be used in complex animations (default 375)
-      enteringScreen: 225,// recommended when something is entering screen (default 225)
-      leavingScreen: 200,// recommended when something is leaving screen (default 195)
+      shorter: 100,
+      short: 100,
+      standard: 100,// most basic recommended timing (default 300)
+      complex: 100,// this is to be used in complex animations (default 375)
+      enteringScreen: 100,// recommended when something is entering screen (default 225)
+      leavingScreen: 100,// recommended when something is leaving screen (default 195)
     },
   },
   components: {
