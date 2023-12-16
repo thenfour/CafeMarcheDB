@@ -20,7 +20,7 @@ import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryIn
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
 import { ClientSession } from "@blitzjs/auth";
 import { GetStyleVariablesForColor } from "../components/Color";
-import { gPrivateVisibilityColorId } from "shared/color";
+import { ColorVariationSpec, gAppColors } from "shared/color";
 import getSetting from "src/auth/queries/getSetting";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 
@@ -242,17 +242,19 @@ class UsersAPI {
 
         let colorId = visPerm?.color;
         if (colorId == null) {
-            colorId = gPrivateVisibilityColorId;
+            colorId = gAppColors.private_visibility;
         }
 
-        const style = GetStyleVariablesForColor(colorId);
+        //const style = GetStyleVariablesForColor(colorId);
 
         return {
             isPrivate,
             isPublic,
             isForEditors,
             isForUsers,
-            style,
+            //style,
+            colorId,
+            getStyleVariablesForColor: (variation: ColorVariationSpec) => GetStyleVariablesForColor({ color: colorId, ...variation }),
             className: cssClasses.join(" "),
         }
     }

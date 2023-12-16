@@ -1746,8 +1746,10 @@ const MyComponent = () => {
                 {selectedEntry && <PaletteEntryEditor onClose={() => setSelectedEntryId(null)} value={selectedEntry} onChange={handleEntryChanged} parsedPalette={parsedPalette} />}
 
                 <ColorPaletteListComponent
-                    allowNull={true}
+                    allowNull={false}
+                    showHiddenSwatches={true}
                     palettes={gGeneralPaletteList}
+
                     onClick={handleSwatchClick} onDrop={(dropped, target) => {
                         // copy all variations for this color.
                         const e = gGeneralPaletteList.findEntry(target.id)!;

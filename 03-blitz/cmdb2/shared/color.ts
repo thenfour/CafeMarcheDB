@@ -212,10 +212,23 @@ const gPaletteMap: ColorPaletteEntry[] = [
     CreatePaletteEntry("teal", "teal", "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#ffffff", false, "#00b39e", "#cfede6", false, "#00b39e", "#ffffff", false, "#aaaaaa", "#ffffff", false, "#aaaaaa", "#ffffff", false, "#9edacd", "#cfede6", false, "#9edacd", "#ffffff", false),
     CreatePaletteEntry("blue", "blue", "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#0077ff", "#d7dbff", false, "#0077ff", "#ffffff", false, "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#abb8ff", "#d7dbff", false, "#abb8ff", "#ffffff", false),
     CreatePaletteEntry("purple", "purple", "#888888", "#eeeeee", false, "#888888", "#eeeeee", false, "#9922dd", "#eaccf8", false, "#9922dd", "#ffffff", false, "#888888", "#eeeeee", false, "#888888", "#eeeeee", false, "#d399f0", "#eaccf8", false, "#d399f0", "#ffffff", false),
+    CreatePaletteEntry("null", "null", "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
+    CreatePaletteEntry("private_visibility", "private_visibility", "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#a92716", "#ffcfc2", false, "#a92716", "#ffcfc2", false, "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#a92716", "#ffcfc2", false, "#a92716", "#ffcfc2", false),
+    CreatePaletteEntry("x1", "x1", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("x2", "x2", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("attendance_no", "attendance_no", "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#e62b19", "#ffcfc2", false, "#e62b19", "#ffffff", false, "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#ff9f88", "#eeeeee", false, "#ff9f88", "#ffffff", false),
+    CreatePaletteEntry("attendance_no_maybe", "attendance_no_maybe", "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#ff7700", "#ffcfc2", false, "#ff7700", "#ffcfc2", false, "#aaaaaa", "#eeeeee", false, "#aaaaaa", "#eeeeee", false, "#ff7700", "#ffcfc2", false, "#ff7700", "#ffcfc2", false),
+    CreatePaletteEntry("attendance_yes_maybe", "attendance_yes_maybe", "#888888", "#eeeeee", false, "#888888", "#eeeeee", false, "#ffcc00", "#786117", false, "#ffcc00", "#786117", false, "#888888", "#eeeeee", false, "#888888", "#eeeeee", false, "#ffcc00", "#786117", false, "#ffcc00", "#786117", false),
+    CreatePaletteEntry("attendance_yes", "attendance_yes", "#888888", "#eeeeee", false, "#888888", "#eeeeee", false, "#00b300", "#d0edc6", false, "#00b300", "#ffffff", false, "#888888", "#eeeeee", false, "#888888", "#eeeeee", false, "#a0db8e", "#d0edc6", false, "#a0db8e", "#ffffff", false),
 
 ];
 
 export const CreateNullPaletteEntry = () => {
+    const f = gPaletteMap.find(e => e.id === "null");
+    if (f) {
+        return { ...f };
+    }
+
     const ret = CreateSimplePaletteEntry(`${getNextSequenceId()}`, "(none)", "#eee", "#888");
     return ret;
 };
@@ -231,19 +244,12 @@ export const FetchColorPaletteEntry = (id: string): ColorPaletteEntry => {
     return ret;
 }
 
-// export interface ColorPaletteCorrection {
-//     id?: string;
-//     label?: string;
-//     strongOutline?: boolean;
-//     weakOutline?: boolean;
-// };
 
 export class ColorPaletteArgs {
     name: string;
     entries: ColorPaletteEntry[];
     columns: number;
     defaultIndex: number;
-    //corrections?: ColorPaletteCorrection[];
 };
 
 export class ColorPalette extends ColorPaletteArgs {
@@ -251,12 +257,6 @@ export class ColorPalette extends ColorPaletteArgs {
     constructor(args: ColorPaletteArgs) {
         super();
         Object.assign(this, args);
-        // apply corrections
-        // if (args.corrections) {
-        //     args.corrections.forEach((c, i) => {
-        //         Object.assign(this.entries[i]!, c);
-        //     });
-        // }
     }
 
     get count(): number {
@@ -564,97 +564,59 @@ export class ColorPaletteList {
     }
 };
 
-// 5x2
-// const generalPaletteGenParams = { "strong": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 0.488, "inpOffset01": 0, "offset01": 0.364, "type": "distX", "linkMix01": 0 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.86, "type": "fixed", "linkMix01": 0 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 0.488, "inpOffset01": 0.022000000000000002, "offset01": 0.364, "type": "distYInv", "linkMix01": 0 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 0 } }, "strongContrast": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 0.695, "inpOffset01": 0, "offset01": 1, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": -1, "type": "fixed", "linkMix01": 1 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 0.5, "inpOffset01": -0.166, "offset01": 0.306, "type": "stepY", "linkMix01": 0 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 1 } }, "weak": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.251, "type": "fixed", "linkMix01": 1 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 0.3956 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0.102, "offset01": -1, "type": "fixed", "linkMix01": 1 } }, "weakContrast": { "hue": { "linkage": "strongContrast", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strongContrast", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": -1, "type": "fixed", "linkMix01": 0.2811 }, "lum": { "linkage": "strongContrast", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": -0.8, "offset01": -0.048, "type": "fixed", "linkMix01": 0 }, "alpha": { "linkage": "strongContrast", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": -1, "type": "fixed", "linkMix01": 0.7059000000000001 } }, "entryCount": 10, "columnCount": 5 };
-//const generalPaletteArgs = { "entries": [{ "id": "0", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(131, 86%, 84%, 1)", "strongContrastColor": "hsla(131, 86%, 31%, 1)", "weakValue": "hsla(131, 86%, 94%, 1)", "weakContrastColor": "hsla(131, 0%, 0%, 0.41180000000000017)" }, { "id": "1", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(175, 86%, 84%, 1)", "strongContrastColor": "hsla(175, 86%, 31%, 1)", "weakValue": "hsla(175, 86%, 94%, 1)", "weakContrastColor": "hsla(175, 0%, 0%, 0.41180000000000017)" }, { "id": "2", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(219, 86%, 84%, 1)", "strongContrastColor": "hsla(219, 86%, 31%, 1)", "weakValue": "hsla(219, 86%, 94%, 1)", "weakContrastColor": "hsla(219, 0%, 0%, 0.41180000000000017)" }, { "id": "3", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(263, 86%, 84%, 1)", "strongContrastColor": "hsla(263, 86%, 31%, 1)", "weakValue": "hsla(263, 86%, 94%, 1)", "weakContrastColor": "hsla(263, 0%, 0%, 0.41180000000000017)" }, { "id": "4", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(307, 86%, 84%, 1)", "strongContrastColor": "hsla(307, 86%, 31%, 1)", "weakValue": "hsla(307, 86%, 94%, 1)", "weakContrastColor": "hsla(307, 0%, 0%, 0.41180000000000017)" }, { "id": "5", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(131, 86%, 35%, 1)", "strongContrastColor": "hsla(131, 86%, 81%, 1)", "weakValue": "hsla(131, 86%, 74%, 1)", "weakContrastColor": "hsla(131, 0%, 0%, 0.41180000000000017)" }, { "id": "6", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(175, 86%, 35%, 1)", "strongContrastColor": "hsla(175, 86%, 81%, 1)", "weakValue": "hsla(175, 86%, 74%, 1)", "weakContrastColor": "hsla(175, 0%, 0%, 0.41180000000000017)" }, { "id": "7", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(219, 86%, 35%, 1)", "strongContrastColor": "hsla(219, 86%, 81%, 1)", "weakValue": "hsla(219, 86%, 74%, 1)", "weakContrastColor": "hsla(219, 0%, 0%, 0.41180000000000017)" }, { "id": "8", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(263, 86%, 35%, 1)", "strongContrastColor": "hsla(263, 86%, 81%, 1)", "weakValue": "hsla(263, 86%, 74%, 1)", "weakContrastColor": "hsla(263, 0%, 0%, 0.41180000000000017)" }, { "id": "9", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(307, 86%, 35%, 1)", "strongContrastColor": "hsla(307, 86%, 81%, 1)", "weakValue": "hsla(307, 86%, 74%, 1)", "weakContrastColor": "hsla(307, 0%, 0%, 0.41180000000000017)" }], "columns": 5, "defaultIndex": 0 };
-// const generalPaletteManualCorrections: ColorPaletteCorrection[] = [
-//     { id: "green_light", label: "Green", strongOutline: false, weakOutline: true },
-//     { id: "teal_light", label: "light teal", strongOutline: false, weakOutline: true },
-//     { id: "blue_light", label: "light blue", strongOutline: false, weakOutline: true },
-//     { id: "purple_light", label: "light purple", strongOutline: false, weakOutline: true },
-//     { id: "pink_light", label: "light pink", strongOutline: false, weakOutline: true },
 
-//     { id: "green", label: "green", strongOutline: false, weakOutline: false },
-//     { id: "teal", label: "teal", strongOutline: false, weakOutline: false },
-//     { id: "blue", label: "blue", strongOutline: false, weakOutline: false },
-//     { id: "purple", label: "purple", strongOutline: false, weakOutline: false },
-//     { id: "pink", label: "pink", strongOutline: false, weakOutline: false },
-// ];
+export const gSwatchColors = {
+    "black": "black",
+    "dark_gray": "dark_gray",
+    "gray": "gray",
+    "light_gray": "light_gray",
+    "white": "white",
+    "pink": "pink",
+    "red": "red",
+    "maroon": "maroon",
+    "brown": "brown",
+    "orange": "orange",
+    "yellow": "yellow",
+    "light_yellow": "light_yellow",
+    "lime_green": "lime_green",
+    "green": "green",
+    "teal": "teal",
+    "blue": "blue",
+    "purple": "purple",
+} as const;
 
-// // 5x1
-// const grayscalePaletteGenParams = { "strong": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0.435, "type": "fixed", "linkMix01": 0 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.045, "type": "fixed", "linkMix01": 0 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.115, "type": "distXInv", "linkMix01": 0 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 0 } }, "strongContrast": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 1 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 0.536, "inpOffset01": 0.11699999999999999, "offset01": 0.376, "type": "stepX", "linkMix01": 0 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 0 } }, "weak": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 1 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.5, "type": "fixed", "linkMix01": 1 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": -0.209, "type": "fixed", "linkMix01": 1 } }, "weakContrast": { "hue": { "linkage": "strongContrast", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strongContrast", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 1 }, "lum": { "linkage": "strongContrast", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.5, "type": "fixed", "linkMix01": 1 }, "alpha": { "linkage": "strongContrast", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": -0.084, "type": "fixed", "linkMix01": 0.5997 } }, "entryCount": 5, "columnCount": 5 };
-//const grayscalePaletteArgs = { "entries": [{ "id": "0", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(157, 5%, 100%, 1)", "strongContrastColor": "hsla(157, 5%, 38%, 1)", "weakValue": "hsla(157, 5%, 100%, 1)", "weakContrastColor": "hsla(157, 5%, 38%, 0.5660748000000001)" }, { "id": "1", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(157, 5%, 87%, 1)", "strongContrastColor": "hsla(157, 5%, 38%, 1)", "weakValue": "hsla(157, 5%, 87%, 1)", "weakContrastColor": "hsla(157, 5%, 38%, 0.5660748000000001)" }, { "id": "2", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(157, 5%, 62%, 1)", "strongContrastColor": "hsla(157, 5%, 91%, 1)", "weakValue": "hsla(157, 5%, 62%, 1)", "weakContrastColor": "hsla(157, 5%, 91%, 0.5660748000000001)" }, { "id": "3", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(157, 5%, 37%, 1)", "strongContrastColor": "hsla(157, 5%, 91%, 1)", "weakValue": "hsla(157, 5%, 37%, 1)", "weakContrastColor": "hsla(157, 5%, 91%, 0.5660748000000001)" }, { "id": "4", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(157, 5%, 12%, 1)", "strongContrastColor": "hsla(157, 5%, 91%, 1)", "weakValue": "hsla(157, 5%, 12%, 1)", "weakContrastColor": "hsla(157, 5%, 91%, 0.5660748000000001)" }], "columns": 5, "defaultIndex": 0 };
-// const grayscalePaletteManualCorrections: ColorPaletteCorrection[] = [
-//     { id: "white", label: "white", strongOutline: true, weakOutline: true },
-//     { id: "lightGray", label: "lightGray", strongOutline: true, weakOutline: true },
-//     { id: "gray", label: "gray", strongOutline: true, weakOutline: true },
-//     { id: "darkGray", label: "darkGray", strongOutline: true, weakOutline: true },
-//     { id: "black", label: "black", strongOutline: true, weakOutline: true },
-// ];
-
-// // 4x1
-// const attendanceResponsePaletteGenParams = { "strong": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 0.297, "inpOffset01": 0, "offset01": -0.011000000000000001, "type": "distX", "linkMix01": 0 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.86, "type": "fixed", "linkMix01": 0 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0.022000000000000002, "offset01": 0.6829999999999999, "type": "fixed", "linkMix01": 0 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 0 } }, "strongContrast": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 0.695, "inpOffset01": 0, "offset01": 1, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": -1, "type": "fixed", "linkMix01": 1 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0.06, "offset01": 0.235, "type": "fixed", "linkMix01": 0 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": 1, "type": "fixed", "linkMix01": 1 } }, "weak": { "hue": { "linkage": "strong", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.07400000000000001, "type": "fixed", "linkMix01": 0.6434000000000001 }, "lum": { "linkage": "strong", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": 0.924, "type": "fixed", "linkMix01": 0.3779 }, "alpha": { "linkage": "strong", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0.102, "offset01": -1, "type": "fixed", "linkMix01": 1 } }, "weakContrast": { "hue": { "linkage": "strongContrast", "realMin": 0, "realMax": 360, "range01": 1, "inpOffset01": 0, "offset01": 0, "type": "distX", "linkMix01": 1 }, "sat": { "linkage": "strongContrast", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": 0, "offset01": -0.084, "type": "fixed", "linkMix01": 1 }, "lum": { "linkage": "strongContrast", "realMin": 0, "realMax": 100, "range01": 1, "inpOffset01": -0.8, "offset01": 0.306, "type": "fixed", "linkMix01": 0 }, "alpha": { "linkage": "strongContrast", "realMin": 0, "realMax": 1, "range01": 1, "inpOffset01": 0, "offset01": -0.332, "type": "fixed", "linkMix01": 0.9183 } }, "entryCount": 4, "columnCount": 4 };
-//const attendanceResponsePaletteArgs = { "entries": [{ "id": "0", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(-4, 86%, 68%, 1)", "strongContrastColor": "hsla(-4, 86%, 24%, 1)", "weakValue": "hsla(-4, 58%, 83%, 1)", "weakContrastColor": "hsla(-4, 86%, 31%, 0.8911756)" }, { "id": "1", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(32, 86%, 68%, 1)", "strongContrastColor": "hsla(32, 86%, 24%, 1)", "weakValue": "hsla(32, 58%, 83%, 1)", "weakContrastColor": "hsla(32, 86%, 31%, 0.8911756)" }, { "id": "2", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(67, 86%, 68%, 1)", "strongContrastColor": "hsla(67, 86%, 24%, 1)", "weakValue": "hsla(67, 58%, 83%, 1)", "weakContrastColor": "hsla(67, 86%, 31%, 0.8911756)" }, { "id": "3", "label": "sample", "strongOutline": false, "weakOutline": false, "strongValue": "hsla(103, 86%, 68%, 1)", "strongContrastColor": "hsla(103, 86%, 24%, 1)", "weakValue": "hsla(103, 58%, 83%, 1)", "weakContrastColor": "hsla(103, 86%, 31%, 0.8911756)" }], "columns": 4, "defaultIndex": 0 };
-// const attendancePaletteManualCorrections: ColorPaletteCorrection[] = [
-//     { id: "no", strongOutline: false, weakOutline: true },
-//     { id: "no_maybe", strongOutline: false, weakOutline: true },
-//     { id: "yes_maybe", strongOutline: false, weakOutline: true },
-//     { id: "yes", strongOutline: false, weakOutline: true },
-// ];
-
-// export const gGeneralPaletteList = new ColorPaletteList([
-//     new ColorPalette({ ...grayscalePaletteArgs, corrections: grayscalePaletteManualCorrections }),
-//     new ColorPalette({ ...attendanceResponsePaletteArgs, corrections: attendancePaletteManualCorrections }),
-//     new ColorPalette({ ...generalPaletteArgs, corrections: generalPaletteManualCorrections }),
-// ]);
-
-
-const generalPaletteArgs: ColorPaletteArgs = {
-    name: "General",
+const swatchPaletteArgs: ColorPaletteArgs = {
+    name: "Swatches",
     columns: 5,
     defaultIndex: 0,
-    entries: [
-        FetchColorPaletteEntry("black"),
-        FetchColorPaletteEntry("dark_gray"),
-        FetchColorPaletteEntry("gray"),
-        FetchColorPaletteEntry("light_gray"),
-        FetchColorPaletteEntry("white"),
-
-        FetchColorPaletteEntry("pink"),
-        FetchColorPaletteEntry("red"),
-        FetchColorPaletteEntry("maroon"),
-        FetchColorPaletteEntry("brown"),
-        FetchColorPaletteEntry("orange"),
-        FetchColorPaletteEntry("yellow"), // more like yellow-ochre / one-ball yellow
-        FetchColorPaletteEntry("light_yellow"),
-        FetchColorPaletteEntry("lime_green"), // yellow-green
-        FetchColorPaletteEntry("green"), // foresty
-        FetchColorPaletteEntry("teal"), // blue-green
-        FetchColorPaletteEntry("blue"),
-        FetchColorPaletteEntry("purple"), // blue-red
-    ]
+    entries: Object.keys(gSwatchColors).map(k => FetchColorPaletteEntry(k)),
 };
 
-// const attendanceResponsePaletteArgs: ColorPaletteArgs = {
-//     name: "Attendance Responses",
-//     columns: 1,
-//     defaultIndex: 0,
-//     entries: [
-//         FetchColorPaletteEntry("no"),
-//         FetchColorPaletteEntry("no_maybe"),
-//         FetchColorPaletteEntry("yes_maybe"),
-//         FetchColorPaletteEntry("yes"),
-//     ]
-// };
+export const gAppColors = {
+    "null": "null",
+    "private_visibility": "private_visibility",
+    "x1": "x1",
+    "x2": "x2",
+    "attendance_no": "attendance_no",
+    "attendance_no_maybe": "attendance_no_maybe",
+    "attendance_yes_maybe": "attendance_yes_maybe",
+    "attendance_yes": "attendance_yes",
+} as const;
+
+export const gHiddenColorIds = {
+    "null": "null",
+    "x1": "x1",
+    "x2": "x2",
+} as const;
+
+const appPaletteArgs: ColorPaletteArgs = {
+    name: "Application",
+    columns: 4,
+    defaultIndex: 0,
+    entries: Object.keys(gAppColors).map(k => FetchColorPaletteEntry(k)),
+};
 
 export const gGeneralPaletteList = new ColorPaletteList([
-    //new ColorPalette({ ...grayscalePaletteArgs, corrections: grayscalePaletteManualCorrections }),
-    //new ColorPalette({ ...attendanceResponsePaletteArgs }),
-
-    // theme colors
-    // special colors (like unspecified visibility)
-
-    new ColorPalette({ ...generalPaletteArgs }),
+    new ColorPalette({ ...swatchPaletteArgs }),
+    new ColorPalette({ ...appPaletteArgs }),
 ]);
-
-export const gPrivateVisibilityColorId = "pink";

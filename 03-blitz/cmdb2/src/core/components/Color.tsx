@@ -1,6 +1,6 @@
 import { Popover } from "@mui/material";
 import React from "react";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationOptions, ColorVariationSpec, CreateNullPaletteEntry, GetColorVariation, StandardVariationSpec, gGeneralPaletteList } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationOptions, ColorVariationSpec, CreateNullPaletteEntry, GetColorVariation, StandardVariationSpec, gAppColors, gGeneralPaletteList, gHiddenColorIds } from "shared/color";
 
 // in total there are the following variations:
 // - strong - disabled - not selected
@@ -133,9 +133,11 @@ export interface ColorPaletteGridProps {
     variation: ColorVariationSpec;
     hoverVariation: ColorVariationSpec;
     onDrop?: (droppedEntry: ColorPaletteEntry, targetEntry: ColorPaletteEntry) => void;
+    showHiddenSwatches?: boolean;
 };
 
 export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
+    const hiddenIds = Object.keys(gHiddenColorIds);
     return <div className="colorPaletteGridRoot">
         {
             props.palette.getAllRowsAndEntries().map((row, rowIndex) => {
@@ -144,7 +146,7 @@ export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
                         // spacers
                         props.showNull && (
                             (rowIndex === 0) ? (<div onClick={() => { props.onClick(null) }}>
-                                <ColorSwatch color={null} isSpacer={true} variation={props.variation} hoverVariation={props.hoverVariation} />
+                                <ColorSwatch color={null} isSpacer={false} variation={props.variation} hoverVariation={props.hoverVariation} />
                             </div>)
                                 : (<ColorSwatch color={null} isSpacer={true} variation={props.variation} hoverVariation={props.hoverVariation} />)
                         )
@@ -155,6 +157,7 @@ export const ColorPaletteGrid = (props: ColorPaletteGridProps) => {
                                 color={e}
                                 variation={props.variation}
                                 hoverVariation={props.hoverVariation}
+                                isSpacer={!props.showHiddenSwatches && hiddenIds.some(k => k === e.id)}
                                 onDrop={props.onDrop && ((dropped) => props.onDrop!(dropped, e))}
                             />
                         </div>;
@@ -171,6 +174,7 @@ export interface ColorPaletteListComponentProps {
     onClick: (value: ColorPaletteEntry | null) => void;
     allowNull: boolean;
     onDrop?: (droppedEntry: ColorPaletteEntry, targetEntry: ColorPaletteEntry) => void;
+    showHiddenSwatches?: boolean;
 };
 
 type TPreviewStyle = [string, string];
@@ -245,6 +249,7 @@ export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps)
                     variation={variationSpec}
                     hoverVariation={hoverVariationSpec}
                     onDrop={props.onDrop}
+                    showHiddenSwatches={props.showHiddenSwatches}
                 />;
             })
         }

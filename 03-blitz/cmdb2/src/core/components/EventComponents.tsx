@@ -42,27 +42,8 @@ import { EventSongListTabContent } from './EventSongListComponents';
 import { EventFilesTabContent } from './EventFileComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { assert } from 'blitz';
+import { StandardVariationSpec } from 'shared/color';
 
-////////////////////////////////////////////////////////////////
-// TODO: generic big status
-////////////////////////////////////////////////////////////////
-// specific non-interactive status for event status
-// export interface EventTypeValueProps {
-//     type: db3.EventTypePayload,
-// };
-
-// // actually this would look better:
-// <div className="statusIndicator confirmed">
-//     <CheckIcon className="statusIcon" />
-//     <span className="statusText">Confirmed</span>
-// </div>
-
-// export const EventTypeValue = (props: EventTypeValueProps) => {
-//     const style = GetStyleVariablesForColor(props.type.color);
-//     return <div><div className={`statusIndicator applyColor-inv`} style={style}>
-//         {props.type.text}
-//     </div></div>;
-// };
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -96,9 +77,9 @@ export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
         return null;
     }
     const status: db3.EventStatusPayloadBare = props.event.status;
-    const style = GetStyleVariablesForColor(status.color);
+    const style = GetStyleVariablesForColor({ color: status.color, ...StandardVariationSpec.Strong });
     //console.log(status.color)
-    return <div><div className={`bigstatus applyColor-inv`} style={style}>
+    return <div><div className={`bigstatus applyColor`} style={style}>
         {RenderMuiIcon(status.iconName)}
         {status.label}
     </div></div>;
@@ -644,7 +625,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     const visInfo = API.users.getVisibilityInfo(event);
 
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
-        <div className='header applyColor-weak' style={visInfo.style}>
+        <div className='header applyColor' style={visInfo.getStyleVariablesForColor(StandardVariationSpec.Weak)}>
             <div className='flex-spacer'></div>
             <Suspense>
                 <EventVisibilityControl event={event} refetch={tableClient.refetch} />

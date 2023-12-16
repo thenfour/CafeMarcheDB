@@ -86,6 +86,7 @@ import { CMBigChip } from './CMCoreComponents';
 import { GetStyleVariablesForColor } from './Color';
 import { Markdown } from './RichTextEditor';
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
+import { StandardVariationSpec } from 'shared/color';
 
 
 ////////////////////////////////////////////////////////////////
@@ -137,14 +138,14 @@ const EventAttendanceResponseControlMeat = (props: EventAttendanceResponseContro
 
     //const nullSelStyle = (!props.value) ? "selected" : "notSelected";
     return <>{(optionsClient.items as db3.EventAttendancePayload[]).map(option => {
-        const style = GetStyleVariablesForColor(option.color);
+        const style = GetStyleVariablesForColor({ color: option.color, ...StandardVariationSpec.Strong });
         const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
         const yesNoStyle = (option.strength > 50) ? "yes" : "no";
         return <Button
             key={option.id}
             style={style}
             endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
-            className={`${yesNoStyle} applyColor-strong-noBorder ${selStyle}`}
+            className={`${yesNoStyle} applyColor ${selStyle}`}
             onClick={() => { props.onChange(option); }}
         >
             {option.text}
@@ -188,12 +189,12 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
     return <div className='EventAttendanceInstrumentControlContainer'>
         <ButtonGroup className='EventAttendanceInstrumentControl'>
             {props.user.instruments.map(assoc => {
-                const style = GetStyleVariablesForColor(assoc.instrument.functionalGroup.color);
+                const style = GetStyleVariablesForColor({ color: assoc.instrument.functionalGroup.color, ...StandardVariationSpec.Strong });
                 const selStyle = (props.selectedInstrumentId == assoc.instrumentId) ? "selected" : "notSelected";
                 return <Button
                     key={assoc.id}
                     style={style}
-                    className={`applyColor-strong-noBorder ${selStyle}`}
+                    className={`applyColor ${selStyle}`}
                     onClick={() => { props.onChange(assoc.instrument); }}
                 >
                     {assoc.instrument.name}
@@ -217,7 +218,7 @@ export interface EventAttendanceAnswerProps {
 };
 
 export const EventAttendanceAnswer = (props: EventAttendanceAnswerProps) => {
-    return <CMBigChip color={props.segmentInfo.response.attendance?.color} variant='strong'>
+    return <CMBigChip color={props.segmentInfo.response.attendance?.color} variation={StandardVariationSpec.Strong}>
         <ThumbUpIcon className="icon" />
         <span className="text">{props.segmentInfo.response.attendance?.personalText}</span>
         {!props.readOnly && <Button onClick={() => { props.onEditClicked && props.onEditClicked() }}>

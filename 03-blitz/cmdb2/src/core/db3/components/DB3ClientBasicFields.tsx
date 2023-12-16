@@ -221,7 +221,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
 
-        console.assert(this.typedSchemaColumn.format === "markdown");
+        assert(this.typedSchemaColumn.format === "markdown", "wrong format for markdown string client");
 
         this.GridColProps = {
             type: "string",
@@ -379,7 +379,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
             visible: true,
             GridColProps: {
                 renderCell: (args: GridRenderCellParams) => {
-                    return <div className='MuiDataGrid-cellContent'><ColorSwatch selected={true} color={args.value} showStrong={true} showWeak={true} /></div>; // colorswatch must be aware of null values.
+                    return <div className='MuiDataGrid-cellContent'><ColorSwatch color={args.value} variation={{ enabled: true, selected: true, variation: "strong" }} /></div>; // colorswatch must be aware of null values.
                 },
                 renderEditCell: (args: GridRenderEditCellParams) => {
                     return <ColorPick

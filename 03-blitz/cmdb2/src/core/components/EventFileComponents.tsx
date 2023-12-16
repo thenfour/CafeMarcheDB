@@ -20,6 +20,7 @@ import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { AudioPreviewBehindButton, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InstrumentChip, ReactiveInputDialog, SongChip, UserChip, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
+import { StandardVariationSpec } from 'shared/color';
 
 
 /*
@@ -62,6 +63,8 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
         }
     }
 
+    const variation = StandardVariationSpec.Weak;
+
     return <div className={classes.join(" ")}>
 
         <div className="header">
@@ -77,23 +80,23 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
         <div className="content">
             <CMChipContainer>
                 {(file.tags.length > 0) && (
-                    file.tags.map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variant="weak" />)
+                    file.tags.map(a => <CMStandardDBChip key={a.id} model={a.fileTag} size="small" variation={variation} />)
                 )}
 
                 {(file.taggedEvents.length > 0) && (
-                    file.taggedEvents.map(a => <EventChip key={a.id} value={a.event} size="small" variant="weak" />)
+                    file.taggedEvents.map(a => <EventChip key={a.id} value={a.event} size="small" variation={variation} />)
                 )}
 
                 {(file.taggedUsers.length > 0) && (
-                    file.taggedUsers.map(a => <UserChip key={a.id} value={a.user} size="small" variant="weak" />)
+                    file.taggedUsers.map(a => <UserChip key={a.id} value={a.user} size="small" variation={variation} />)
                 )}
 
                 {(file.taggedSongs.length > 0) && (
-                    file.taggedSongs.map(a => <SongChip key={a.id} value={a.song} size="small" variant="weak" />)
+                    file.taggedSongs.map(a => <SongChip key={a.id} value={a.song} size="small" variation={variation} />)
                 )}
 
                 {(file.taggedInstruments.length > 0) && (
-                    file.taggedInstruments.map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variant="weak" />)
+                    file.taggedInstruments.map(a => <InstrumentChip key={a.id} value={a.instrument} size="small" variation={variation} />)
                 )}
             </CMChipContainer>
 

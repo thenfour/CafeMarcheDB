@@ -88,3 +88,9 @@
     background-color: var(--preview-bg);
     color: var(--preview-fg);
 }
+
+.colorPaletteGridRoot {
+    border-bottom: 4px solid #0002;
+    margin: 12px;
+    padding: 12px;
+}

@@ -16,6 +16,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { TAnyModel, TIconOptions } from "shared/utils";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { GetStyleVariablesForColor } from "./Color";
+import { StandardVariationSpec } from "shared/color";
 
 // validation should probably NOT be done per-field.
 // but rather, validation done as Zod is designed at the object level, then error object is passed down into fields
@@ -231,16 +232,17 @@ export function ButtonSelectControl(props: ButtonSelectControlProps) {
         className="ButtonArrayControl"
         render={(showingEditor, value, onChange) => {
             const selectedOption = props.options.find(o => o.value === value)!;
-            const selectedStyle = GetStyleVariablesForColor(selectedOption.color);
+
+            const selectedStyle = GetStyleVariablesForColor({ color: selectedOption.color, ...StandardVariationSpec.Strong });
 
             return <div className='valueContainer'>
                 {showingEditor ? <ButtonGroup>
                     {props.options.map((option, i) => {
-                        const style = GetStyleVariablesForColor(option.color);
+                        const style = GetStyleVariablesForColor({ color: option.color, ...StandardVariationSpec.Strong });
                         return <Button
                             key={i}
                             style={style}
-                            className={`applyColor-strong-noBorder ${option.value === value ? "selected" : "notSelected"}`}
+                            className={`applyColor ${option.value === value ? "selected" : "notSelected"}`}
                             startIcon={RenderMuiIcon(option.iconName)}
                             onClick={() => { onChange(option.value) }}>
                             {option.label}
@@ -248,7 +250,7 @@ export function ButtonSelectControl(props: ButtonSelectControlProps) {
                     })}
                 </ButtonGroup>
                     :
-                    <div className="value applyColor-strong-noBorder" style={selectedStyle}>{selectedOption.label}</div>}
+                    <div className="value applyColor" style={selectedStyle}>{selectedOption.label}</div>}
             </div>
 
         }}
