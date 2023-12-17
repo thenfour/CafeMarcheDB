@@ -10,7 +10,7 @@ import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance, UserPayload } from "./prismArgs";
+import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance, UserPayload, UserWithInstrumentsPayload } from "./prismArgs";
 
 
 export const xInstrumentFunctionalGroup = new db3.xTable({
@@ -207,7 +207,7 @@ export const xInstrument = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 
-export const getUserPrimaryInstrument = (user: UserPayload): (InstrumentPayload | null) => {
+export const getUserPrimaryInstrument = (user: UserWithInstrumentsPayload): (InstrumentPayload | null) => {
     if (user.instruments.length < 1) return null;
     const p = user.instruments.find(i => i.isPrimary);
     if (p) {

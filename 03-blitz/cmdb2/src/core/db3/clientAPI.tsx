@@ -263,6 +263,19 @@ class UsersAPI {
         return this.getVisibilityInfo(item).isPublic;
     };
 
+    getUserTagsClient() {
+        return DB3ClientCore.useTableRenderContext({
+            tableSpec: new DB3ClientCore.xTableClientSpec({
+                table: db3.xUserTag,
+                columns: [
+                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
+                ],
+            }),
+            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
+            clientIntention: { intention: 'user', mode: 'primary' },
+        });
+    }
+
     updateUserPrimaryInstrument = CreateAPIMutationFunction(updateUserPrimaryInstrumentMutation);
 };
 
@@ -299,23 +312,15 @@ class EventsAPI {
         return ret;
     }
 
-    getEventSegmentDateTimeRange(segment: db3.EventSegmentPayload) {
-        return new DateTimeRange({
-            startsAtDateTime: segment.startsAt,
-            durationMillis: segment.durationMillis,
-            isAllDay: segment.isAllDay,
-        });
-    }
-
     getEventSegmentFormattedDateRange(segment: db3.EventSegmentPayload) {
-        return this.getEventSegmentDateTimeRange(segment).toString();
+        return db3.getEventSegmentDateTimeRange(segment).toString();
         //return "daterangehere";
     }
 
     getEventDateRange(event: db3.EventClientPayload_Verbose) {
         let ret = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
         for (const segment of event.segments) {
-            const r = this.getEventSegmentDateTimeRange(segment);
+            const r = db3.getEventSegmentDateTimeRange(segment);
             //console.log(`union with ${r.toString()} segcount:${event.segments.length}`);
             //console.log(`union with:`);
             //console.log(segment);
@@ -324,7 +329,7 @@ class EventsAPI {
         return ret;
     }
 
-    getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserPayload }) {
+    getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserWithInstrumentsPayload }) {
         const i = new db3.EventInfoForUser({ event: args.event, user: args.user });
         return i;
     }

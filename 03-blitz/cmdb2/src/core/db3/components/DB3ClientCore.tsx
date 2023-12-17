@@ -41,6 +41,13 @@ export interface RenderForNewItemDialogArgs {
     api: NewDialogAPI,
 };
 
+export interface RenderViewerArgs<T> {
+    key: any;
+    row: TAnyModel; // row
+    value: T;
+    className?: string;
+};
+
 export interface IColumnClientArgs {
     // NB: keep IColumnClient in sync with these fields.
     columnName: string;
@@ -62,7 +69,9 @@ export abstract class IColumnClient {
 
     GridColProps?: Partial<GridColDef>;
 
+
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+    abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactElement; // will render as a child of <FormControl>
     abstract ApplyClientToPostClient?: (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => void; // applies the values from the client object to a db-compatible object.
     abstract onSchemaConnected(tableClient: xTableRenderClient): void;
 
@@ -261,7 +270,7 @@ export class xTableRenderClient {
 
     }; // ctor
 
-    prepareMutation = <T extends TAnyModel,>(row: T, mode: db3.DB3RowMode) => {
+    prepareMutation = <T extends TAnyModel,>(row: T, mode: db3.DB3RowMode): any => {
         const postClientModel = {}; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
         const dbModel = {};
 
@@ -319,7 +328,7 @@ export class xTableRenderClient {
         return ret;
     };
 
-    prepareInsertMutation = <T extends TAnyModel,>(row: TAnyModel) => {
+    prepareInsertMutation = <T extends TAnyModel,>(row: TAnyModel): any => {
         const dbModel = this.prepareMutation(row, "new");
 
         // const postClientModel: T = {} as T;

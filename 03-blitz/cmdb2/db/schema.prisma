@@ -85,6 +85,31 @@ model RolePermission {
   @@unique([roleId, permissionId]) // 
 }
 
+// effectively this creates "groups" that you can belong to. or indeed just tags... makes sense anyway.
+// initial reason for this is attendance groups.
+// copied from FileTag
+model UserTag {
+  id                        Int                 @id @default(autoincrement())
+  text                      String
+  description               String              @default("")
+  color                     String?
+  significance              String? // 
+  sortOrder                 Int                 @default(0)
+  userAssignments           UserTagAssignment[]
+  eventsExpectingAttendance Event[]
+}
+
+// copied from FileTagAssignment
+model UserTagAssignment {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userTagId Int
+  userTag   UserTag @relation(fields: [userTagId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, userTagId])
+}
+
 model User {
   id             Int      @id @default(autoincrement())
   name           String   @default("")
@@ -98,8 +123,10 @@ model User {
   createdAt      DateTime @default(now())
   isActive       Boolean  @default(false)
 
-  roleId   Int? // nullable for new users a role should be assigned by an admin. null = public
-  role     Role?     @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
+  roleId Int? // nullable for new users a role should be assigned by an admin. null = public
+  role   Role? @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
+
+  tags     UserTagAssignment[]
   tokens   Token[]
   sessions Session[]
   changes  Change[] // yea don't include this in queries
@@ -385,6 +412,9 @@ model Event {
   createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+
+  expectedAttendanceUserTagId Int?
+  expectedAttendanceUserTag   UserTag? @relation(fields: [expectedAttendanceUserTagId], references: [id], onDelete: SetNull)
 
   frontpageVisible     Boolean @default(false)
   frontpageDate        String  @default("") // e.g. "Zaterdag 11 november"

@@ -23,6 +23,7 @@ export default resolver.pipe(
             locationURL: args.locationURL,
             isDeleted: args.isDeleted,
             statusId: args.statusId,
+            expectedAttendanceUserTagId: args.expectedAttendanceUserTagId,
             createdByUserId: args.createdByUserId, // TODO: validate client info
 
             frontpageVisible: args.frontpageVisible,

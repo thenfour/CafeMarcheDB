@@ -21,6 +21,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
+import { StandardVariationSpec } from "shared/color";
 
 // effectively there are a couple variants of an "event":
 // x 1. grid row, for admins
@@ -66,9 +67,13 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
+            // i don't actually think description is useful here but it's a required field so adding here generates the default value.
+            // well because we use a custom mutation for event creation, just do it in the mutation.
+            //new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
             new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
             new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention }),
             new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention }),
+            new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName: "expectedAttendanceUserTag", cellWidth: 150, clientIntention }),
             new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention }),
         ],
@@ -98,6 +103,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         table: db3.xEventSegment,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
+            // event, description, name all need to be 
             new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
         ],
     });
@@ -156,10 +162,12 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                     }} />
 
                     {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI)}
+                    {/* {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI)} */}
                     {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI)}
                     {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI)}
                     {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI)}
                     {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI)}
+                    {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI)}
 
                     {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI)}
 
@@ -253,6 +261,7 @@ const EventsControls = (props: EventsControlsProps) => {
         props.onChange(newSpec);
     };
 
+
     // FILTER: [upcoming] [past] [concert] [rehearsals] [majorettes] [__________________]
     // SHOW:   [compact] [default] [full] [verbose]
     // 20 100 all
@@ -282,9 +291,10 @@ const EventsControls = (props: EventsControlsProps) => {
                             {(statusesClient.items as db3.EventStatusPayload[]).filter(i => i.events.length > 0).map(status => (
                                 <CMChip
                                     key={status.id}
-                                    selected={props.spec.statusFilter.some(id => id === status.id)}
+                                    //selected={props.spec.statusFilter.some(id => id === status.id)}
                                     onClick={() => toggleStatus(status.id)}
                                     color={status.color}
+                                    variation={{ ...StandardVariationSpec.Strong, selected: props.spec.statusFilter.some(id => id === status.id) }}
                                 >
                                     {RenderMuiIcon(status.iconName)}{status.label} ({status.events.length})
                                 </CMChip>
@@ -298,7 +308,8 @@ const EventsControls = (props: EventsControlsProps) => {
                             {(typesClient.items as db3.EventTypePayload[]).filter(i => i.events.length > 0).map(type => (
                                 <CMChip
                                     key={type.id}
-                                    selected={props.spec.typeFilter.some(id => id === type.id)}
+                                    //selected={props.spec.typeFilter.some(id => id === type.id)}
+                                    variation={{ ...StandardVariationSpec.Strong, selected: props.spec.typeFilter.some(id => id === type.id) }}
                                     onClick={() => toggleType(type.id)}
                                     color={type.color}
                                 >
@@ -314,7 +325,8 @@ const EventsControls = (props: EventsControlsProps) => {
                             {popularTags.filter(t => t.events.length > 0).map(tag => (
                                 <CMChip
                                     key={tag.id}
-                                    selected={props.spec.tagFilter.some(id => id === tag.id)}
+                                    //selected={props.spec.tagFilter.some(id => id === tag.id)}
+                                    variation={{ ...StandardVariationSpec.Strong, selected: props.spec.tagFilter.some(id => id === tag.id) }}
                                     onClick={() => toggleTag(tag.id)}
                                     color={tag.color}
                                 >
@@ -430,6 +442,10 @@ const MainContent = () => {
             <SettingMarkdown settingName="events_markdown"></SettingMarkdown>
         </Suspense>
 
+        <NewEventButton onOK={() => {
+            setControlSpec({ ...controlSpec, refreshSerial: controlSpec.refreshSerial + 1 });
+        }} />
+
         <Suspense>
             <CMSinglePageSurfaceCard>
                 {/* showing {eventsClient.items.length} events */}
@@ -438,10 +454,6 @@ const MainContent = () => {
                 </div>
             </CMSinglePageSurfaceCard>
         </Suspense>
-
-        <NewEventButton onOK={() => {
-            setControlSpec({ ...controlSpec, refreshSerial: controlSpec.refreshSerial + 1 });
-        }} />
 
         <Suspense>
             <EventsList filterSpec={controlSpec} />

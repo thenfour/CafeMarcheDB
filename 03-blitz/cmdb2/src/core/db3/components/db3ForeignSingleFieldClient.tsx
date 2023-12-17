@@ -9,10 +9,9 @@ import { Coalesce, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
-import { ColorVariationOptions } from "src/core/components/Color";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { IColumnClient, RenderForNewItemDialogArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
+import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import {
     Add as AddIcon,
     Search as SearchIcon
@@ -27,6 +26,9 @@ import {
 } from "@mui/material";
 import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { RenderBasicNameValuePair } from "./DB3ClientBasicFields";
+import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
+import { GetStyleVariablesForColor } from "src/core/components/Color";
 
 
 
@@ -37,7 +39,7 @@ export type InsertFromStringParams = {
 
 export interface RenderAsChipParams<T> {
     value: T | null;
-    colorVariant: ColorVariationOptions;
+    colorVariant: ColorVariationSpec;
     onDelete?: () => void;
     onClick?: () => void;
 }
@@ -61,7 +63,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 
     const chip = props.foreignSpec.args.renderAsChip!({
         value: props.value,
-        colorVariant: "strong",
+        colorVariant: StandardVariationSpec.Strong,
         onDelete: props.readOnly ? undefined : (() => {
             props.onChange(null);
         }),
@@ -136,16 +138,10 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
         const rowInfo = this.typedSchemaColumn.getForeignTableSchema().getRowInfo(args.value);
 
-        const style: React.CSSProperties = {};
-        const color = rowInfo.color;
-        if (color != null) {
-            style.backgroundColor = color.strongValue;
-            style.color = color.strongContrastColor;
-            style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
-        }
+        const style: React.CSSProperties = GetStyleVariablesForColor({ color: rowInfo.color, ...args.colorVariant })
 
         return <Chip
-            className="cmdbChip"
+            className="cmdbChip applyColor"
             style={style}
             size="small"
             label={rowInfo.name}
@@ -155,13 +151,20 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
     defaultRenderAsListItem = (props, value, selected) => {
         console.assert(value != null);
-        const chip = this.defaultRenderAsChip({ value, colorVariant: "strong" });
+        const chip = this.defaultRenderAsChip({ value, colorVariant: StandardVariationSpec.Strong });
         return <li {...props}>
             {selected && <DoneIcon />}
             {chip}
             {selected && <CloseIcon />}
         </li>
     };
+
+    renderViewer = (params: RenderViewerArgs<TForeign>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: <>{this.defaultRenderAsChip({ value: params.value, colorVariant: StandardVariationSpec.Strong })}</>,
+    });
 
     onSchemaConnected = (tableClient: xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
@@ -208,7 +211,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
         this.GridColProps = {
             renderCell: (args: GridRenderCellParams) => {
                 return <div className='MuiDataGrid-cellContent'>
-                    {this.args.renderAsChip!({ value: args.value, colorVariant: "strong" })}
+                    {this.args.renderAsChip!({ value: args.value, colorVariant: StandardVariationSpec.Strong })}
                 </div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
@@ -387,7 +390,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
             select {props.spec.schemaColumn.label}
             <Box sx={{ p: 0 }}>
                 Selected: {props.spec.args.renderAsChip!({
-                    colorVariant: "strong",
+                    colorVariant: StandardVariationSpec.Strong,
                     value: selectedObj || null,
                     onDelete: () => {
                         setSelectedObj(null);

@@ -1,6 +1,6 @@
 // insertEvent
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedMiddlewareCtx, assert } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -17,6 +17,7 @@ export default resolver.pipe(
         //CMDBAuthorizeOrThrow("insertEvent", Permission.comm)
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        assert(!!currentUser, "user required to insert an event")
         const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
 
         // verbose on purpose in order to validate args type against UncheckedUpdateInput
@@ -24,7 +25,7 @@ export default resolver.pipe(
             createdAt: new Date(), // this is automatic though right?
             createdByUserId: currentUser.id,
             name: args.event.name,
-            description: args.event.description,
+            description: args.event.description || "",
             slug: args.event.slug,
             typeId: args.event.typeId,
             statusId: args.event.statusId,
@@ -37,8 +38,8 @@ export default resolver.pipe(
         const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx, clientIntention) as db3.EventPayloadMinimum;
 
         const segmentFields: Prisma.EventSegmentUncheckedCreateInput = {
-            name: args.segment.name,
-            description: args.segment.description,
+            name: args.segment.name || "Set 1",
+            description: args.segment.description || "",
             eventId: newEvent.id,
             startsAt: args.segment.startsAt,
             durationMillis: args.segment.durationMillis,

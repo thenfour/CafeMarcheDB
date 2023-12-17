@@ -12,11 +12,11 @@ import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "
 import { xSong } from "./song";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
-    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload
+    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadMinimum, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload, UserTagPayload, UserWithInstrumentsPayload
 } from "./prismArgs";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
-import { IsEarlierDateWithLateNull, MinDateOrLateNull } from "shared/time";
+import { DateTimeRange, IsEarlierDateWithLateNull, MinDateOrLateNull } from "shared/time";
 
 /*
 
@@ -54,12 +54,24 @@ leave all that for later.
 
 // };
 
+
+
+export const getEventSegmentDateTimeRange = (segment: EventSegmentPayloadMinimum) => {
+    return new DateTimeRange({
+        startsAtDateTime: segment.startsAt,
+        durationMillis: segment.durationMillis,
+        isAllDay: segment.isAllDay,
+    });
+}
+
+
 export const getEventSegmentMinDate = (event: EventPayload) => {
     return event.segments.reduce((acc, seg) => {
         // we want NULLs to count as maximum. The idea is that the date is not "yet" determined.
-        const thisSegmentMinDate = MinDateOrLateNull(seg.startsAt, seg.endsAt);
-        return MinDateOrLateNull(acc, thisSegmentMinDate);
-    }, null);
+        const range = getEventSegmentDateTimeRange(seg);
+        if (range.isTBD()) return acc; // tbd = future; use the accumulator.
+        return MinDateOrLateNull(acc, range.getStartDateTime());
+    }, null as (Date | null));
 };
 
 export const xEventType = new db3.xTable({
@@ -297,11 +309,18 @@ const xEventArgs_Base: db3.TableDesc = {
             foreignTableID: "EventStatus",
             getQuickFilterWhereClause: (query: string) => false,
         }),
+        new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
+            columnName: "expectedAttendanceUserTag",
+            fkMember: "expectedAttendanceUserTagId",
+            allowNull: true,
+            foreignTableID: "UserTag",
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
 
         new BoolField({ columnName: "frontpageVisible", defaultValue: false }),
         MakeRawTextField("frontpageDate"),
         MakeRawTextField("frontpageTime"),
-        MakeRawTextField("frontpageDetails"),
+        MakeMarkdownTextField("frontpageDetails"),
 
         MakeNullableRawTextField("frontpageTitle"),
         MakeNullableRawTextField("frontpageLocation"),
@@ -624,8 +643,9 @@ export const xEventSongListSong = new db3.xTable({
 // by the time the data reaches the UX, ideally it should be a rich object with methods, calculated fields etc.
 // unfortunately we're not there yet. helper functions like this exist.
 export interface CalculateEventInfoForUserArgs {
-    user: UserPayload;
+    user: UserWithInstrumentsPayload;
     event: EventClientPayload_Verbose;
+    expectedAttendanceTag: UserTagPayload | null;
 }
 
 export interface SegmentAndResponse {
@@ -636,7 +656,7 @@ export interface SegmentAndResponse {
 };
 
 ////////////////////////////////////////////////////////////////
-export const getInstrumentForEventSegmentUserResponse = (response: EventSegmentUserResponsePayload, user: UserPayload): (InstrumentPayload | null) => {
+export const getInstrumentForEventSegmentUserResponse = (response: EventSegmentUserResponsePayload, user: UserWithInstrumentsPayload): (InstrumentPayload | null) => {
     if (response.instrument != null) {
         //console.log(`response instrument null; returning user instrument ${response.instrument?.name} id:${response.instrumentId}`);
         return response.instrument;
@@ -649,7 +669,7 @@ export const getInstrumentForEventSegmentUserResponse = (response: EventSegmentU
 
 
 export class EventInfoForUser {
-    user: UserPayload;
+    user: UserWithInstrumentsPayload;
     event: EventClientPayload_Verbose;
     segments: SegmentAndResponse[];  //{ [segmentId: number]: EventSegmentUserResponse }; // all segments in order, together with response. response ALWAYS there for simplicity.
 
@@ -659,6 +679,11 @@ export class EventInfoForUser {
     constructor(args: CalculateEventInfoForUserArgs) {
         this.user = args.user;
         this.event = args.event;
+
+        let expectAttendance: boolean = false;
+        if (args.expectedAttendanceTag) {
+            expectAttendance = !!args.expectedAttendanceTag.userAssignments.find(ua => ua.userId === args.user.id);
+        }
 
         console.assert(!!args.event.segments);
         this.segments = args.event.segments.map(seg => {
@@ -680,7 +705,7 @@ export class EventInfoForUser {
                 attendanceId: null,
                 eventSegmentId: seg.id,
                 eventSegment: seg,
-                expectAttendance: false, // no response object means the user is not expected
+                expectAttendance, // no response object means the user is not expected
                 id: -1,
                 user: this.user,
                 userId: this.user.id,
@@ -711,12 +736,16 @@ export class EventInfoForUser {
 // requires verbose view of event
 interface EventResponsesPerUserArgs {
     event: EventClientPayload_Verbose;
+    expectedAttendanceTag: UserTagPayload | null;
 };
 
 // returns array of response info per user. so each element has unique user.
-export function GetEventResponsesPerUser({ event }: EventResponsesPerUserArgs): EventInfoForUser[] {
+export function GetEventResponsesPerUser({ event, expectedAttendanceTag }: EventResponsesPerUserArgs): EventInfoForUser[] {
     // calculate a list of distinct users
-    const users: UserPayload[] = [];
+    const users: UserWithInstrumentsPayload[] = [];
+    if (expectedAttendanceTag) {
+        users.push(...expectedAttendanceTag.userAssignments.map(ua => ua.user));
+    }
     event.segments.forEach((seg) => {
         // get user ids for this segment
         seg.responses.forEach(resp => {
@@ -727,6 +756,6 @@ export function GetEventResponsesPerUser({ event }: EventResponsesPerUserArgs): 
     });
 
     // and calculate responses for all those users.
-    return users.map(user => new EventInfoForUser({ event, user }));
+    return users.map(user => new EventInfoForUser({ event, user, expectedAttendanceTag }));
 };
 

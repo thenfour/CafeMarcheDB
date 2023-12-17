@@ -65,6 +65,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: d
                 open={true}
                 onClose={onCancel}
                 scroll="paper"
+                className={`ReactiveInputDialog`}
                 fullScreen={fullScreen}
             >
                 <DialogTitle>new {table.args.table.tableName}</DialogTitle>
@@ -99,17 +100,19 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: d
 };
 
 
+
+
 ////////////////////////////////////////////////////////////////
-type DB3EditObjectDialogProps = {
+// similar to DB3EditObjectDialog but uses external table render client.
+type DB3EditObject2DialogProps = {
     onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => void;
     onCancel: () => void;
     onDelete?: (tableClient: DB3ClientCore.xTableRenderClient) => void;
-    table: DB3ClientCore.xTableClientSpec;
-    clientIntention: db3.xTableClientUsageContext;
+    tableRenderClient: DB3ClientCore.xTableRenderClient;
     initialValue: TAnyModel;
 };
 
-export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, initialValue, onDelete }: DB3EditObjectDialogProps) {
+export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete }: DB3EditObject2DialogProps) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(initialValue);
@@ -118,15 +121,9 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
 
     const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
 
-    const tableClient = DB3ClientCore.useTableRenderContext({
-        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
-        tableSpec: table,
-        clientIntention,
-    });
-
     // validate on change
     React.useEffect(() => {
-        const vr = tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new");
+        const vr = tableRenderClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new");
         setValidationResult(vr);
         setOldObj(obj);
     }, [obj]);
@@ -138,7 +135,7 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
             console.log(validationResult);
             return;
         }
-        onOK(obj, tableClient);
+        onOK(obj, tableRenderClient);
     };
 
     const api: DB3ClientCore.NewDialogAPI = {
@@ -152,7 +149,7 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
     };
 
     const handleDelete = () => {
-        onDelete!(tableClient);
+        onDelete!(tableRenderClient);
     }
 
     return (
@@ -161,9 +158,10 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
                 open={true}
                 onClose={onCancel}
                 scroll="paper"
+                className={`ReactiveInputDialog`}
                 fullScreen={fullScreen}
             >
-                <DialogTitle> new {table.args.table.tableName}</DialogTitle>
+                <DialogTitle>Edit {tableRenderClient.tableSpec.args.table.tableName}</DialogTitle>
                 <DialogContent dividers>
                     <DialogContentText>
                         To subscribe to this website, please enter your email address here. We
@@ -181,7 +179,7 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
                     <FormControl>
 
                         {
-                            tableClient.clientColumns.filter(c => c.visible).map(column => {
+                            tableRenderClient.clientColumns.filter(c => c.visible).map(column => {
                                 return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
                                     key: column.columnName,
                                     api,
@@ -203,4 +201,83 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
     );
 };
 
+
+
+
+
+
+////////////////////////////////////////////////////////////////
+type DB3EditObjectDialogProps = {
+    onOK: (obj: TAnyModel, tableClient: DB3ClientCore.xTableRenderClient) => void;
+    onCancel: () => void;
+    onDelete?: (tableClient: DB3ClientCore.xTableRenderClient) => void;
+    table: DB3ClientCore.xTableClientSpec;
+    clientIntention: db3.xTableClientUsageContext;
+    initialValue: TAnyModel;
+};
+
+export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, initialValue, onDelete }: DB3EditObjectDialogProps) {
+    const tableClient = DB3ClientCore.useTableRenderContext({
+        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
+        tableSpec: table,
+        clientIntention,
+    });
+
+    return <DB3EditObject2Dialog initialValue={initialValue} onCancel={onCancel} onOK={onOK} onDelete={onDelete} tableRenderClient={tableClient} />
+};
+
+
+////////////////////////////////////////////////////////////////
+
+export interface DB3EditRowButtonAPI {
+    closeDialog: () => void;
+};
+
+
+////////////////////////////////////////////////////////////////
+export interface DB3EditRowButtonProps {
+    row: TAnyModel;
+    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    //clientIntention: db3.xTableClientUsageContext;
+    onSave: (newRow: TAnyModel, api: DB3EditRowButtonAPI) => void;
+};
+
+export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
+    const [editOpen, setEditOpen] = React.useState<boolean>(false);
+
+    return <div className={`DB3EditRowButton`}>
+        <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>
+        {editOpen && (
+            <DB3EditObject2Dialog
+                initialValue={props.row}
+                //onDelete={props.onDelete}
+                //clientIntention={props.clientIntention}
+                onCancel={() => setEditOpen(false)}
+                onOK={(updatedObj: TAnyModel) => {
+                    props.onSave(updatedObj, {
+                        closeDialog: () => setEditOpen(false)
+                    });
+                }}
+                tableRenderClient={props.tableRenderClient}
+            />
+
+        )}
+    </div>;
+
+};
+
+
+
+
+////////////////////////////////////////////////////////////////
+export interface DB3RowViewerProps {
+    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    row: TAnyModel;
+};
+
+export const DB3RowViewer = (props: DB3RowViewerProps) => {
+    return <div className="DB3RowViewer">
+        {props.tableRenderClient.clientColumns.map((cc, i) => cc.renderViewer({ key: i, row: props.row, value: props.row[cc.columnName] }))}
+    </div>;
+};
 

@@ -19,30 +19,29 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import { useRouter } from "next/router";
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, Card, CardActionArea, Link, Tab, Tabs } from "@mui/material";
+import { Breadcrumbs, Button, Link, Tab, Tabs } from "@mui/material";
+import { assert } from 'blitz';
 import { Prisma } from "db";
+import { useRouter } from "next/router";
 import React, { Suspense } from "react";
-import { ArrayElement, HasFlag, IsNullOrWhitespace } from 'shared/utils';
+import { StandardVariationSpec } from 'shared/color';
+import { HasFlag, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import { CMChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, InspectObject, TabA11yProps, VisibilityControl } from './CMCoreComponents';
+import { CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
-import { EventAttendanceSummary } from './EventAttendanceComponents';
-import { SegmentList } from './EventSegmentComponents';
-import { MutationMarkdownControl } from './SettingMarkdown';
-import { EventSongListTabContent } from './EventSongListComponents';
 import { EventFilesTabContent } from './EventFileComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
-import { assert } from 'blitz';
-import { StandardVariationSpec } from 'shared/color';
+import { SegmentList } from './EventSegmentComponents';
+import { EventSongListTabContent } from './EventSongListComponents';
+import { MutationMarkdownControl } from './SettingMarkdown';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -177,7 +176,7 @@ export interface EventAttendanceDetailRowProps {
 
 export const EventAttendanceDetailRow = ({ userResponse }: EventAttendanceDetailRowProps) => {
     return <tr>
-        <td>{userResponse.user.name}{userResponse.user.isActive ? " (active)" : ""} {gIconMap.Delete()}</td>
+        <td>{userResponse.user.name} {gIconMap.Delete()}</td>
         {userResponse.segments.map(segment => {
             return <React.Fragment key={segment.segment.id}>
                 <td>{!!segment.response.attendance ? segment.response.attendance.text : "--"}</td>
@@ -194,14 +193,22 @@ export const EventAttendanceDetailRow = ({ userResponse }: EventAttendanceDetail
 export interface EventAttendanceDetailProps {
     event: db3.EventClientPayload_Verbose;
     tableClient: DB3Client.xTableRenderClient;
+    expectedAttendanceTag: db3.UserTagPayload | null;
+    refetch: () => void;
 };
 
-export const EventAttendanceDetail = ({ event, tableClient }: EventAttendanceDetailProps) => {
-    const userResponses = db3.GetEventResponsesPerUser({ event });
+export const EventAttendanceDetail = ({ refetch, event, tableClient, expectedAttendanceTag, ...props }: EventAttendanceDetailProps) => {
+    const userResponses = db3.GetEventResponsesPerUser({ event, expectedAttendanceTag });
     const segAttendees = API.events.getAttendeeCountPerSegment({ event });
 
     return <>
+        <DB3Client.RenderBasicNameValuePair
+            name="attendance is expected for"
+            value={<EventAttendanceUserTagControl event={event} refetch={refetch} />}
+        />
+
         <div>todo: sortable columns</div>
+
         <table className='attendanceDetailTable'>
             <thead>
                 <tr>
@@ -387,6 +394,66 @@ export const EventStatusControl = ({ event, refetch }: { event: db3.EventWithSta
         />
     </div>;
 };
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export interface EventAttendanceUserTagValueProps {
+    onClick?: () => void;
+    value: db3.UserTagPayload | null;
+};
+export const EventAttendanceUserTagValue = (props: EventAttendanceUserTagValueProps) => {
+    return !props.value ? (<Button onClick={props.onClick}>Set expected attendance role</Button>) : (
+        <CMStandardDBChip onClick={props.onClick} model={props.value} />
+    );
+};
+
+export const EventAttendanceUserTagControl = ({ event, refetch }: { event: db3.EventWithAttendanceUserTagPayload, refetch: () => void }) => {
+    const mutationToken = API.events.updateEventBasicFields.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const handleChange = (value: db3.UserTagPayload | null) => {
+        mutationToken.invoke({
+            eventId: event.id,
+            expectedAttendanceUserTagId: !value ? undefined : value.id,
+        }).then(() => {
+            showSnackbar({ severity: "success", children: "Successfully updated event attendance tag" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating event attendance tag" });
+        }).finally(() => {
+            refetch();
+        });
+    };
+
+    const itemsClient = API.users.getUserTagsClient();
+
+    // value type is UserTagPayload
+    return <div className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`}>
+        <ChoiceEditCell
+            isEqual={(a: db3.UserTagPayload, b: db3.UserTagPayload) => a.id === b.id}
+            items={itemsClient.items}
+            readOnly={false} // todo!
+            selectDialogTitle="Select who is expected to attend; they'll be expected to respond."
+            value={event.expectedAttendanceUserTag}
+            renderDialogDescription={() => {
+                return <>dialog description heree</>;
+            }}
+            renderAsListItem={(chprops, value: db3.UserTagPayload | null, selected: boolean) => {
+                return <li {...chprops}>
+                    <EventAttendanceUserTagValue value={value} /></li>;
+            }}
+            renderValue={(args) => {
+                return <EventAttendanceUserTagValue value={args.value} onClick={args.handleEnterEdit} />;
+            }}
+            onChange={handleChange}
+        />
+    </div>;
+};
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -579,13 +646,14 @@ export interface EventDetailArgs {
 export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDetailArgs) => {
     const [user] = useCurrentUser()!;
     const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
-    const router = useRouter()
+    const router = useRouter();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "EventDetail control requires mutation caps");
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: 'user', mode: 'primary' },
+        clientIntention,
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xInstrumentFunctionalGroup,
             columns: [
@@ -593,6 +661,30 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             ],
         }),
     });
+
+    const expectedAttendanceUserTagContext = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention,
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xUserTag,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+            ],
+        }),
+        filterModel: {
+            items: [],
+            tableParams: {
+                userTagId: event.expectedAttendanceUserTagId,
+            }
+        },
+    });
+    const expectedAttendanceTag: db3.UserTagPayload | null = (expectedAttendanceUserTagContext.items?.length === 1 ? expectedAttendanceUserTagContext.items[0] : null) as any;
+
+    const refetch = () => {
+        tableClient.refetch();
+        functionalGroupsClient.refetch();
+        expectedAttendanceUserTagContext.refetch();
+    };
 
     const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
 
@@ -617,7 +709,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     }
     else if (minMaxSegmentAttendees.maxAttendees === minMaxSegmentAttendees.minAttendees) {
         // equal. could be 1 segment, or all similar responses.
-        formattedAttendeeRange = ` (${minMaxSegmentAttendees.maxAttendees})`;
+        formattedAttendeeRange = ` (${minMaxSegmentAttendees.maxAttendees}/${expectedAttendanceTag?.userAssignments.length})`;
     } else {
         formattedAttendeeRange = ` (${minMaxSegmentAttendees.minAttendees}-${minMaxSegmentAttendees.maxAttendees})`;
     }
@@ -628,9 +720,9 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
         <div className='header applyColor' style={visInfo.getStyleVariablesForColor(StandardVariationSpec.Weak)}>
             <div className='flex-spacer'></div>
             <Suspense>
-                <EventVisibilityControl event={event} refetch={tableClient.refetch} />
+                <EventVisibilityControl event={event} refetch={refetch} />
             </Suspense>
-            <EventSoftDeleteControl event={event} refetch={tableClient.refetch} />
+            <EventSoftDeleteControl event={event} refetch={refetch} />
         </div>
 
         <div className='content'>
@@ -645,9 +737,9 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             </div>
 
             <div className='titleLine'>
-                <EventTitleControl event={event} refetch={tableClient.refetch} eventURI={eventURI} />
-                <EventTypeControl event={event} refetch={tableClient.refetch} />
-                <EventStatusControl event={event} refetch={tableClient.refetch} />
+                <EventTitleControl event={event} refetch={refetch} eventURI={eventURI} />
+                <EventTypeControl event={event} refetch={refetch} />
+                <EventStatusControl event={event} refetch={refetch} />
             </div>
 
             <div className="tagsLine">
@@ -683,7 +775,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
                         <div className='descriptionLine'>
-                            <EventDescriptionControl event={event} refetch={tableClient.refetch} />
+                            <EventDescriptionControl event={event} refetch={refetch} />
                         </div>
                     </CustomTabPanel>
 
@@ -692,7 +784,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
-                        <EventAttendanceDetail event={event} tableClient={tableClient} />
+                        <EventAttendanceDetail event={event} tableClient={tableClient} expectedAttendanceTag={expectedAttendanceTag} refetch={refetch} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
@@ -749,11 +841,11 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
-                        <EventFilesTabContent event={event} refetch={tableClient.refetch} />
+                        <EventFilesTabContent event={event} refetch={refetch} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
-                        <EventFrontpageTabContent event={event} refetch={tableClient.refetch} />
+                        <EventFrontpageTabContent event={event} refetch={refetch} />
                     </CustomTabPanel>
 
                 </>

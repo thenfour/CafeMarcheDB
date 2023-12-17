@@ -1,29 +1,21 @@
 import { BlitzPage } from "@blitzjs/next";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { Button, CardContent, FormControl, FormHelperText, Input, InputLabel, TextField, Typography } from "@mui/material";
-import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
-import { ButtonSelectControl, ButtonSelectOption, CMTextField, MutationButtonSelectControl, MutationTextControl } from "src/core/components/CMTextField";
 import { useMutation } from "@blitzjs/rpc";
-import updateBasicProfileFields from "../api/user/mutations/updateBasicProfileFields";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { gIconOptions } from "shared/utils";
-import * as DB3Client from "src/core/db3/DB3Client";
-import * as db3 from "src/core/db3/db3";
-import { DebouncedControl } from "src/core/components/RichTextEditor";
-import { useDebounce } from "shared/useDebounce";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { Button, FormHelperText, TextField, Typography } from "@mui/material";
 import React from "react";
-import { API, APIQueryResult } from 'src/core/db3/clientAPI';
-import LabeledTextField from "src/core/components/LabeledTextField";
-import { Form } from "react-final-form";
-import * as schemas from "src/auth/schemas"
-import { useRouter } from "next/router"
-import changePassword from "src/auth/mutations/changePassword"
-import { assert } from "blitz"
+import { StandardVariationSpec } from "shared/color";
+import { TAnyModel } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import changePassword from "src/auth/mutations/changePassword";
+import * as schemas from "src/auth/schemas";
+import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { API } from "src/core/db3/clientAPI";
+import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
+import * as db3 from "src/core/db3/db3";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { SafeParseReturnType } from "zod";
 
 export const ResetOwnPasswordControl = () => {
@@ -87,56 +79,6 @@ export const ResetOwnPasswordControl = () => {
     </div>;
 };
 
-
-
-export const OwnProfileBasicFieldControl = (props: { member: string, label: string, helperText: string }) => {
-    const [currentUser, { refetch }] = useCurrentUser();
-    const [theMutation] = useMutation(updateBasicProfileFields);
-
-    return currentUser && <div className="formFieldContainer">
-        <div className="fieldLabel">{props.label}</div>
-        <MutationTextControl
-            initialValue={currentUser[props.member]}
-            refetch={refetch}
-            onChange={async (value) => {
-                await theMutation({ userId: currentUser.id, [props.member]: value });
-            }}
-        />
-        <FormHelperText>{props.helperText}</FormHelperText>
-    </div>;
-};
-
-export const OwnActiveControl = () => {
-    const [currentUser, { refetch }] = useCurrentUser();
-    const [theMutation] = useMutation(updateBasicProfileFields);
-    const options: ButtonSelectOption[] = [
-        {
-            value: false,
-            label: "Not an active member",
-            iconName: currentUser!.isActive ? undefined : gIconOptions.CheckCircleOutline,
-            color: "no",
-        }, {
-            value: true,
-            label: "active member",
-            iconName: !currentUser!.isActive ? undefined : gIconOptions.CheckCircleOutline,
-            color: "yes",
-        }
-    ];
-    return <div className="formFieldContainer">
-        <div className="fieldLabel">Active member?</div>
-        <MutationButtonSelectControl
-            refetch={refetch}
-            options={options}
-            initialValue={currentUser!.isActive}
-            onChange={async (val) => {
-                await theMutation({ userId: currentUser!.id, isActive: val });
-            }}
-        />
-        <FormHelperText>Being an active member means being invited to events</FormHelperText>
-    </div>;
-};
-
-
 export type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
     refetch: () => void;
 };
@@ -172,7 +114,7 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
             <div className="instrumentAndPrimaryContainer" key={value[props.spec.associationForeignIDMember]}>
                 {props.spec.renderAsChipForCell!({
                     value,
-                    colorVariant: "strong",
+                    colorVariant: StandardVariationSpec.Strong,
                     onDelete: () => {
                         const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
                         props.onChange(newValue);
@@ -193,7 +135,7 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
         <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.label}</Button>
         {isOpen && <DB3Client.DB3SelectTagsDialog
             row={props.row}
-            value={props.value}
+            initialValue={props.value}
             spec={props.spec}
             onClose={() => {
                 setIsOpen(false);
@@ -205,8 +147,6 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
         {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
     </div>;
 };
-
-
 
 
 
@@ -241,6 +181,7 @@ const OwnInstrumentsControl = () => {
 
     // can't use tableClient.getColumn("instruments").renderForNewDialog,
     // because it just lists instruments as tag-like-chips. we need the ability to select a primary instrument.
+
     return <UserInstrumentsFieldInput
         spec={tableClient.getColumn("instruments") as any}
         validationError={validationResult.getErrorForField("instruments")}
@@ -268,6 +209,48 @@ const OwnInstrumentsControl = () => {
 
 
 const MainContent = () => {
+
+    const [currentUser, { refetch }] = useCurrentUser();
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const client = DB3Client.useTableRenderContext({
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xUser,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
+                new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
+                new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
+                new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
+                //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
+                //new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
+                //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
+                //new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
+                new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+                //new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, clientIntention }),
+            ],
+        }),
+        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+        filterModel: {
+            items: [{ field: "id", value: currentUser!.id, operator: "equals" }]
+        },
+        clientIntention,
+    });
+
+    const handleSave = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        client.doUpdateMutation(updateObj).then(e => {
+            showSnackbar({ severity: "success", children: "updated" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating" });
+        }).finally(async () => {
+            client.refetch();
+            await refetch();
+            api.closeDialog();
+        });
+    };
+
     return <>
         <SettingMarkdown settingName="profile_markdown"></SettingMarkdown>
         <CMSinglePageSurfaceCard>
@@ -276,15 +259,16 @@ const MainContent = () => {
                     {gIconMap.Person()} Your profile
                 </Typography>
 
-                <FormControl>
-                    <OwnProfileBasicFieldControl member="name" label="Name" helperText="Your full name" />
-                    <OwnProfileBasicFieldControl member="compactName" label="Compact name" helperText="Shorter name (typically just your first name) that can be used in reduced-space page elements" />
-                    <OwnProfileBasicFieldControl member="phone" label="Phone" helperText="Provide your phone number in case we need to reach you" />
-                    <OwnProfileBasicFieldControl member="email" label="Email" helperText="" />
-                    <OwnActiveControl />
-                    <OwnInstrumentsControl />
-                    <ResetOwnPasswordControl />
-                </FormControl>
+                <OwnInstrumentsControl />
+
+                {client.items.length === 1 && (
+                    <>
+                        <DB3EditRowButton row={client.items[0]!} tableRenderClient={client} onSave={handleSave} />
+                        <DB3RowViewer tableRenderClient={client} row={client.items[0]!} />
+                    </>
+                )}
+
+                <ResetOwnPasswordControl />
 
             </div>
         </CMSinglePageSurfaceCard>

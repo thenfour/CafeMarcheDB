@@ -11,12 +11,6 @@
   --general-interactable-bgcolor: #79b;
   --general-interactable-color: #eee;
 
-  --visibility-private-bgcolor: #ecc;
-  --visibility-private-color: #c00;
-
-  --visibility-other-bgcolor: #ccc;
-  --visibility-other-color: #000;
-
   --color-foreground: #f0f;
   --color-background: #eee;
   --color-border-style: "dotted";
@@ -640,11 +634,6 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 .contentSection.event {
   border-left: solid 16px var(--primary-color);
-}
-
-.contentSection.event.visibility-private>.header {
-  background-color: var(--visibility-private-bgcolor);
-  color: var(--visibility-private-color);
 }
 
 /* 

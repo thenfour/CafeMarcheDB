@@ -20,6 +20,23 @@ html,
     max-width: 1500px;
 }
 
+/* -  --------------------------------- */
+
+.BasicNameValuePairContainer {
+    border: 1px solid #0002;
+    margin: 12px 0;
+}
+
+.BasicNameValuePairContainer>.name {
+    font-weight: bold;
+    background-color: #eee;
+    padding: 9px;
+}
+
+.BasicNameValuePairContainer>.value {
+    padding: 9px;
+}
+
 /* - CM Big Chip --------------------------------- */
 .cmbigchip {
     font-size: 14px;
@@ -438,26 +455,6 @@ or,
     padding: 0 15px;
 }
 
-/* 
-.EventSongListValue.visibility-public {
-    border: 2px solid var(--visibility-public-bgcolor);
-}
-
-.EventSongListValue.visibility-public>.header {
-    background-color: var(--visibility-public-bgcolor);
-}
-
- */
-
-.EventSongListValue.visibility-private {
-    border: 2px solid var(--visibility-private-bgcolor);
-}
-
-.EventSongListValue.visibility-private>.header {
-    background-color: var(--visibility-private-bgcolor);
-}
-
-
 .EventSongListValue>.content {
     padding: 10px;
 }
@@ -489,23 +486,8 @@ li.songDropdownOption {
     padding: 2px 7px;
     user-select: none;
 
-    /* background-color: #ccc;
-    color: #000; */
-
-    /* background-color: var(--strong-color);
-    color: var(--strong-contrast-color); */
 }
 
-/* 
-
-.visibilityValue.visibility-public {
-    background-color: var(--visibility-public-bgcolor);
-    color: var(--visibility-public-color);
-} */
-.visibilityValue.visibility-private {
-    background-color: var(--visibility-private-bgcolor);
-    color: var(--visibility-private-color);
-}
 
 .flex-spacer {
     flex-grow: 1;
@@ -1141,8 +1123,8 @@ in particular the date range picker is wide.*/
 
     /* setting a min-height is a prettier xp when list has few items, and when user is typing in the filter box changing the list height constantly.*/
     min-height: 50vh;
-    /* same here.*/
-    min-width: 50vw;
+    /* same here in theory, but careful because wider-than-necessary is just odd looking*/
+    min-width: 400px;
 }
 
 

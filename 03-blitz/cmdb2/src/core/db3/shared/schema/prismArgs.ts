@@ -116,6 +116,12 @@ export const FileTagSignificance = {
     Rider: "Rider",
 } as const satisfies Record<string, string>;
 
+export const UserTagSignificance = {
+    General: "General",
+} as const satisfies Record<string, string>;
+
+
+
 export const SongTagSignificance = {
     Improvisation: "Improvisation",
     VocalSolo: "VocalSolo",
@@ -228,25 +234,6 @@ export const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByW
     { tag: { text: 'asc' } },
     { tag: { id: 'asc' } },
 ];
-
-// export const SongCommentArgs = Prisma.validator<Prisma.SongCommentArgs>()({
-//     include: {
-//         song: true,
-//         user: true,
-//         visiblePermission: {
-//             include: {
-//                 roles: true
-//             }
-//         },
-//     }
-// });
-
-// export type SongCommentPayload = Prisma.SongCommentGetPayload<typeof SongCommentArgs>;
-
-// export const SongCommentNaturalOrderBy: Prisma.SongCommentOrderByWithRelationInput[] = [
-//     { updatedAt: 'desc' },
-//     { id: 'asc' },
-// ];
 
 export const SongCreditTypeArgs = Prisma.validator<Prisma.SongCreditTypeArgs>()({
     include: {
@@ -363,10 +350,25 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
             }
         },
         instruments: UserInstrumentArgs,
+        tags: {
+            include: {
+                userTag: true,
+            }
+        },
     }
 });
 
 export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
+
+
+export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserArgs>()({
+    include: {
+        instruments: UserInstrumentArgs,
+    }
+});
+
+export type UserWithInstrumentsPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
+
 
 export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
     { name: 'asc' },
@@ -523,6 +525,7 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
                 eventTag: true,
             }
         },
+        expectedAttendanceUserTag: true,
         type: true,
         segments: {
             orderBy: { startsAt: "desc" },
@@ -580,22 +583,7 @@ export const EventSegmentArgs = Prisma.validator<Prisma.EventSegmentArgs>()({
 
 export type EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
 
-// ////////////////////////////////////////////////////////////////
-// export const EventCommentArgs = Prisma.validator<Prisma.EventCommentArgs>()({
-//     include: {
-//         event: true,
-//         user: true,
-//         visiblePermission: {
-//             include: {
-//                 roles: true
-//             }
-//         },
-//     }
-// });
-
-// export type EventCommentPayload = Prisma.EventCommentGetPayload<typeof EventCommentArgs>;
-
-
+export type EventSegmentPayloadMinimum = Prisma.EventSegmentGetPayload<{}>;
 
 export const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
@@ -635,6 +623,7 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         visiblePermission: VisiblePermissionInclude,
         createdByUser: true,
         songLists: EventSongListArgs,
+        expectedAttendanceUserTag: true,
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
             include: {
@@ -658,19 +647,6 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
 
 export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
 
-// export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<{
-//     include: {
-//         responses: {
-//             include: {
-//                 attendance: true,
-//                 user: true,
-//                 instrument: typeof InstrumentArgs,
-//             }
-//         },
-//     }
-// }>;
-
-
 export type EventClientPayload_Verbose = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
 
 export type EventTaggedFilesPayload = Prisma.FileEventTagGetPayload<{
@@ -688,6 +664,12 @@ export type EventWithStatusPayload = Prisma.EventGetPayload<{
         status: true,
     }
 }>;
+export type EventWithAttendanceUserTagPayload = Prisma.EventGetPayload<{
+    include: {
+        expectedAttendanceUserTag: true,
+    }
+}>;
+
 
 export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -771,6 +753,50 @@ export const FileTagAssignmentNaturalOrderBy: Prisma.FileTagAssignmentOrderByWit
     { fileTag: { text: 'asc' } },
     { fileTag: { id: 'asc' } },
 ];
+
+
+
+
+////////////////////////////////////////////////////////////////
+export const UserTagArgs = Prisma.validator<Prisma.UserTagArgs>()({
+    include: {
+        userAssignments: {
+            include: {
+                user: UserWithInstrumentsArgs
+            }
+        },
+    }
+});
+
+export type UserTagPayload = Prisma.UserTagGetPayload<typeof UserTagArgs>;
+
+export const UserTagNaturalOrderBy: Prisma.UserTagOrderByWithRelationInput[] = [
+    { sortOrder: 'desc' },
+    { text: 'asc' },
+    { id: 'asc' },
+];
+
+
+////////////////////////////////////////////////////////////////
+export const UserTagAssignmentArgs = Prisma.validator<Prisma.UserTagAssignmentArgs>()({
+    include: {
+        user: true,
+        userTag: true,
+    }
+});
+export type UserTagAssignmentPayload = Prisma.UserTagAssignmentGetPayload<typeof UserTagAssignmentArgs>;
+
+
+export const UserTagAssignmentNaturalOrderBy: Prisma.UserTagAssignmentOrderByWithRelationInput[] = [
+    { userTag: { sortOrder: 'desc' } },
+    { userTag: { text: 'asc' } },
+    { userTag: { id: 'asc' } },
+];
+
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////

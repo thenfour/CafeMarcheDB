@@ -21,8 +21,22 @@ import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
 import { assert } from "blitz";
+import { Markdown } from "src/core/components/RichTextEditor";
 //import { API } from '../clientAPI';
 
+interface RenderBasicNameValuePairProps {
+    key?: string;
+    className?: string;
+    name: React.ReactNode;
+    value: React.ReactNode;
+};
+
+export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) => {
+    return <div key={props.key} className={`BasicNameValuePairContainer ${props.className}`}>
+        <div className="name">{props.name}</div>
+        <div className="value">{props.value}</div>
+    </div>;
+};
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,6 +59,14 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
     }
 
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: params.value,
+    });
+
     onSchemaConnected() { };
     ApplyClientToPostClient = undefined;
 };
@@ -93,6 +115,13 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             },
         };
     };
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: params.value,
+    });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <CMTextField
@@ -145,6 +174,13 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
             },
         };
     };
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: params.value,
+    });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         if (!this.schemaColumn) throw new Error(`no schemacolumn for slug column '${this.columnName}'`);
@@ -221,6 +257,9 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
 
+        if (this.typedSchemaColumn.format !== "markdown") {
+            debugger;
+        }
         assert(this.typedSchemaColumn.format === "markdown", "wrong format for markdown string client");
 
         this.GridColProps = {
@@ -242,6 +281,13 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
             },
         };
     };
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: <Markdown key={params.key} markdown={params.value} />
+    });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <Stack><CMTextField
@@ -297,6 +343,13 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         };
     };
 
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: params.value,
+    });
+
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <CMTextField
             key={params.key}
@@ -349,6 +402,13 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
         };
     };
 
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<boolean>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: !!params.value ? "Yes" : "No",
+    });
+
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <FormControlLabel label={this.schemaColumn.label} control={
             <Checkbox
@@ -399,6 +459,13 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
 
     onSchemaConnected() { };
 
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<ColorPaletteEntry | null>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: <ColorSwatch color={params.value} variation={{ enabled: true, selected: true, variation: "strong" }} />
+    });
+
     // will render as a child of <FormControl>
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <ColorPick
@@ -434,6 +501,13 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
         });
     }
     ApplyClientToPostClient = undefined;
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: params.value,
+    });
 
     onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
@@ -651,7 +725,6 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
             renderCell: (params: GridRenderCellParams) => {
                 const value = params.value as Date;
                 const now = new Date();
-                //const age = new TimeSpan(now.valueOf() - value.valueOf());
                 const ageStr = `(${formatTimeSpan(value, now)} ago)`;
                 return <>{value.toTimeString()} {ageStr}</>; // todo
             },
@@ -663,6 +736,18 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
                 return <>{value.toTimeString()} {ageStr}</>; // todo
             },
         };
+    };
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<Date>) => {
+        const value = params.value;
+        const now = new Date();
+        const ageStr = `(${formatTimeSpan(value, now)} ago)`;
+        return RenderBasicNameValuePair({
+            key: params.key,
+            className: params.className,
+            name: this.columnName,
+            value: <>{value.toTimeString()} {ageStr}</> // todo,
+        })
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {

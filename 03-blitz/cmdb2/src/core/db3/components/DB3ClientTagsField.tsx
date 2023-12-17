@@ -24,10 +24,12 @@ import { TAnyModel, gQueryOptions } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { ColorVariationOptions } from 'src/core/components/Color';
-import { IColumnClient, RenderForNewItemDialogArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
+import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { RenderBasicNameValuePair } from './DB3ClientBasicFields';
+import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { GetStyleVariablesForColor } from 'src/core/components/Color';
 
 
 const gMaxVisibleTags = 6;
@@ -44,9 +46,9 @@ export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponen
     return <>{props.value.map(c => <React.Fragment key={c[props.spec.associationForeignIDMember]}>
         {props.spec.args.renderAsChip!({
             value: c,
-            colorVariant: "strong",
             onDelete: props.onDelete && (() => props.onDelete!(c)),
             onClick: props.onItemClick && (() => props.onItemClick!(c)),
+            colorVariant: StandardVariationSpec.Strong,
         })}
     </React.Fragment>
     )}</>;
@@ -263,7 +265,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
     return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
         {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
             value,
-            colorVariant: "strong",
+            colorVariant: StandardVariationSpec.Strong,
             onDelete: () => {
                 const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
                 props.onChange(newValue);
@@ -303,7 +305,7 @@ export const TagsView = <TAssociation,>(props: TagsViewProps<TAssociation>) => {
         {
             value.map(a => {
                 return <React.Fragment key={a[props.associationForeignIDMember]}>
-                    {props.renderAsChip({ value: a, colorVariant: "strong" })}
+                    {props.renderAsChip({ value: a, colorVariant: StandardVariationSpec.Strong })}
                 </React.Fragment>;
             })
         }
@@ -316,7 +318,7 @@ export const TagsView = <TAssociation,>(props: TagsViewProps<TAssociation>) => {
 export interface DefaultRenderAsChipParams<TAssociation> {
     value: TAssociation | null;
     columnSchema: db3.TagsField<TAssociation>,
-    colorVariant: ColorVariationOptions;
+    colorVariant: ColorVariationSpec;
     onDelete?: () => void;
     onClick?: () => void;
 }
@@ -332,22 +334,10 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
         throw new Error(`columnSchema is missing getAssociationTableShema.`);
     }
     const rowInfo = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
-    const style: React.CSSProperties = {};
-    const color = rowInfo.color;
-    if (color != null) {
-        if (args.colorVariant === "strong") {
-            style.backgroundColor = color.strongValue;
-            style.color = color.strongContrastColor;
-            style.border = `1px solid ${color.strongOutline ? color.strongContrastColor : color.strongValue}`;
-        } else {
-            style.backgroundColor = color.weakValue;
-            style.color = color.weakContrastColor;
-            style.border = `1px solid ${color.weakOutline ? color.weakContrastColor : color.weakValue}`;
-        }
-    }
+    const style: React.CSSProperties = GetStyleVariablesForColor({ color: rowInfo.color, ...StandardVariationSpec.Strong });
 
     return <Chip
-        className="cmdbChip"
+        className="cmdbChip applyColor"
         style={style}
         size="small"
         label={rowInfo.name}
@@ -411,7 +401,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
     defaultRenderAsListItem = (props, value, selected) => {
         //console.assert(!!this.typedSchemaColumn.getChipCaption);
         console.assert(value != null);
-        const chip = this.defaultRenderAsChip({ value, colorVariant: "strong" });
+        const chip = this.defaultRenderAsChip({ value, colorVariant: StandardVariationSpec.Strong });
         return <li {...props}>
             {selected && <DoneIcon />}
             {chip}
@@ -420,6 +410,17 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             {selected && <CloseIcon />}
         </li>
     };
+
+    renderViewer = (params: RenderViewerArgs<TAssociation[]>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: <TagsView
+            associationForeignIDMember={this.typedSchemaColumn.associationForeignIDMember}
+            renderAsChip={this.renderAsChipForCell}
+            value={params.value}
+        />
+    });
 
     onSchemaConnected = (tableClient: xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.TagsField<TAssociation>;

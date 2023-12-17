@@ -3,9 +3,9 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel, gIconOptions } from "shared/utils";
-import { BoolField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload } from "./prismArgs";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance } from "./prismArgs";
 
 
 export const xUserMinimum = new db3.xTable({
@@ -49,10 +49,10 @@ export const xUserMinimum = new db3.xTable({
             allowNull: true,
             format: "plain",
         }),
-        new BoolField({
-            columnName: "isActive",
-            defaultValue: false,
-        }),
+        // new BoolField({
+        //     columnName: "isActive",
+        //     defaultValue: false,
+        // }),
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
@@ -298,6 +298,82 @@ export const xUserInstrument = new db3.xTable({
 
 
 
+
+////////////////////////////////////////////////////////////////
+
+export const xUserTag = new db3.xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagInclude => {
+        return UserTagArgs.include;
+    },
+    tableName: "UserTag",
+    naturalOrderBy: UserTagNaturalOrderBy,
+    getParameterizedWhereClause: (params: { userTagId?: number }, clientIntention: db3.xTableClientUsageContext): (Prisma.UserWhereInput[] | false) => {
+        if (params.userTagId != null) {
+            return [{
+                id: { equals: params.userTagId }
+            }];
+        }
+        return false;
+    },
+    createInsertModelFromString: (input: string): Prisma.UserTagCreateInput => {
+        return {
+            text: input,
+            description: "auto-created",
+            sortOrder: 0,
+            color: null,
+            significance: null,
+        };
+    },
+    getRowInfo: (row: UserTagPayload) => ({
+        name: row.text,
+        description: row.description,
+        color: gGeneralPaletteList.findEntry(row.color),
+    }),
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakeTitleField("text"),
+        MakeMarkdownTextField("description"),
+        MakeSortOrderField("sortOrder"),
+        MakeColorField("color"),
+        MakeSignificanceField("significance", UserTagSignificance),
+    ]
+});
+
+
+export const xUserTagAssignment = new db3.xTable({
+    tableName: "UserTagAssignment",
+    editPermission: Permission.login,
+    viewPermission: Permission.login,
+    naturalOrderBy: UserTagAssignmentNaturalOrderBy,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagAssignmentInclude => {
+        return UserTagAssignmentArgs.include;
+    },
+    getRowInfo: (row: UserTagAssignmentPayload) => {
+        return {
+            name: row.userTag.text,
+            description: row.userTag.description,
+            color: gGeneralPaletteList.findEntry(row.userTag.color),
+        };
+    }
+    ,
+    columns: [
+        new PKField({ columnName: "id" }),
+        new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
+            columnName: "userTag",
+            fkMember: "userTagId",
+            allowNull: false,
+            foreignTableID: "UserTag",
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
+
+
+
+
+
 ////////////////////////////////////////////////////////////////
 
 export const xUser = new db3.xTable({
@@ -343,10 +419,10 @@ export const xUser = new db3.xTable({
             allowNull: true,
             format: "plain",
         }),
-        new BoolField({
-            columnName: "isActive",
-            defaultValue: false,
-        }),
+        // new BoolField({
+        //     columnName: "isActive",
+        //     defaultValue: false,
+        // }),
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
@@ -384,7 +460,33 @@ export const xUser = new db3.xTable({
             foreignTableID: "Instrument",
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
-        }),]
+        }),
+        new TagsField<UserTagAssignmentPayload>({
+            columnName: "tags",
+            associationForeignIDMember: "userTagId",
+            associationForeignObjectMember: "userTag",
+            associationLocalIDMember: "userId",
+            associationLocalObjectMember: "user",
+            associationTableID: "UserTagAssignment",
+            foreignTableID: "UserTag",
+            getQuickFilterWhereClause: (query: string): Prisma.UserWhereInput => ({
+                tags: {
+                    some: {
+                        userTag: {
+                            text: {
+                                contains: query
+                            }
+                        }
+                    }
+                }
+            }),
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.UserWhereInput | boolean => {
+                // see events tagIds on how to filter by this field.
+                return false;
+            },
+        }), // column: tags
+
+    ]
 });
 
 

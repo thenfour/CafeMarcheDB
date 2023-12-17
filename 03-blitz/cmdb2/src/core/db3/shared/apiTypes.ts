@@ -99,6 +99,7 @@ export interface TupdateEventBasicFieldsArgs {
     locationURL?: string;
     isDeleted?: boolean;
     statusId?: number;
+    expectedAttendanceUserTagId?: number;
     visiblePermissionId?: number | null;
     createdByUserId?: number;
 

@@ -14,6 +14,7 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { API } from '../clientAPI';
 import * as db3 from "../db3";
 import { TAnyModel } from "shared/utils";
+import { RenderBasicNameValuePair } from "./DB3ClientBasicFields";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,11 +75,18 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
                             });
                         });
                     }}
-                    value={API.events.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
+                    value={db3.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
                 />;
             },
         };
     };
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<unknown>) => RenderBasicNameValuePair({
+        key: params.key,
+        className: params.className,
+        name: this.columnName,
+        value: <div>{API.events.getEventSegmentFormattedDateRange(params.row as any)}</div>
+    });
 
     ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
         updateModel[this.args.startsAtColumnName] = clientRow[this.args.startsAtColumnName];
@@ -100,7 +108,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
                     [this.args.isAllDayColumnName]: spec.isAllDay,
                 });
             }}
-            value={API.events.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
+            value={db3.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
         />;
     };
 };

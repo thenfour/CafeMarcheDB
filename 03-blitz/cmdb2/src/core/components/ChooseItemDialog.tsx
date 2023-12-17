@@ -65,6 +65,7 @@ export function ChooseItemDialog(props: ChooseItemDialogProps) {
             onClose={props.onCancel}
             scroll="paper"
             fullScreen={fullScreen}
+            className={`ReactiveInputDialog`}
         >
             <DialogTitle>
                 {props.title}

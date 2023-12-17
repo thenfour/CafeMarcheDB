@@ -55,24 +55,6 @@ export const xFileTag = new db3.xTable({
 });
 
 
-//   model FileTagAssignment {
-//     id         Int      @id @default(autoincrement())
-//     fileId    Int
-//     file      File    @relation(fields: [fileId], references: [id], onDelete: Restrict) // files are soft-delete.
-//     fileTagId Int
-//     fileTag   FileTag @relation(fields: [fileTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
-
-//     @@unique([fileId, fileTagId]) // 
-//   }
-
-
-
-
-
-
-
-
-
 export const xFileTagAssignment = new db3.xTable({
     tableName: "FileTagAssignment",
     editPermission: Permission.login,
@@ -327,10 +309,6 @@ export const xFile = new db3.xTable({
     naturalOrderBy: FileNaturalOrderBy,
     getParameterizedWhereClause: (params: xFileFilterParams, clientIntention: db3.xTableClientUsageContext): (Prisma.FileWhereInput[]) => {
         const ret: Prisma.FileWhereInput[] = [];
-
-        // console.assert(clientIntention.currentUser?.id !== undefined);
-        // console.assert(clientIntention.currentUser?.role?.permissions !== undefined);
-
         if (params.fileId !== undefined) {
             ret.push({ id: params.fileId, });
         }
