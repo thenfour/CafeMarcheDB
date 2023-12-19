@@ -220,7 +220,7 @@ const MainContent = () => {
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
                 new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
-                new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
+                //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
                 new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
                 new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
                 //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),

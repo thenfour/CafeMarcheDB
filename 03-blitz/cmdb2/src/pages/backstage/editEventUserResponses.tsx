@@ -10,35 +10,36 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const tableSpec = new DB3Client.xTableClientSpec({
-    table: db3.xEventSegmentUserResponse,
+    table: db3.xEventUserResponse,
     columns: [
         new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.MarkdownStringColumnClient({ columnName: "attendanceComment", cellWidth: 200 }),
-        new DB3Client.BoolColumnClient({ columnName: "expectAttendance" }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "eventSegment", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+        new DB3Client.MarkdownStringColumnClient({ columnName: "userComment", cellWidth: 200 }),
+        new DB3Client.BoolColumnClient({ columnName: "isInvited" }),
+        new DB3Client.GenericIntegerColumnClient({ columnName: "eventId", cellWidth: 150 }),
+        //new DB3Client.ForeignSingleFieldClient({ columnName: "eventSegment", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "attendance", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+        //new DB3Client.ForeignSingleFieldClient({ columnName: "attendance", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
     ],
 });
 
 const MainContent = () => {
-    if (!useAuthorization("EventSegmentUserResponsePage", Permission.admin_general)) {
+    if (!useAuthorization("EventUserResponsePage", Permission.admin_general)) {
         throw new Error(`unauthorized`);
     }
     const urlParams = new URLSearchParams(window.location.search);
-    const eventSegmentId: number | null = parseIntOrNull(urlParams.get('eventSegmentId'));
+    const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
     return <>
-        <SettingMarkdown settingName="EventSegmentUserResponsePage_markdown"></SettingMarkdown>
+        <SettingMarkdown settingName="EventUserResponsePage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
-            tableParams={{ eventSegmentId }}
+            tableParams={{ eventId }}
         />
     </>;
 };
 
 
-const EventSegmentUserResponsePage: BlitzPage = () => {
+const EventUserResponsePage: BlitzPage = () => {
     return (
         <DashboardLayout title="Event Responses">
             <MainContent />
@@ -46,4 +47,4 @@ const EventSegmentUserResponsePage: BlitzPage = () => {
     )
 }
 
-export default EventSegmentUserResponsePage;
+export default EventUserResponsePage;

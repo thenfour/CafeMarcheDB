@@ -335,7 +335,6 @@ export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelat
 export type UserPayload_Name = Prisma.UserGetPayload<{
     select: {
         name: true,
-        compactName: true,
     }
 }>;
 
@@ -419,6 +418,7 @@ export const InstrumentFunctionalGroupArgs = Prisma.validator<Prisma.InstrumentF
 });
 
 export type InstrumentFunctionalGroupPayload = Prisma.InstrumentFunctionalGroupGetPayload<typeof InstrumentFunctionalGroupArgs>;
+export type InstrumentFunctionalGroupPayloadMinimum = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
 
 export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },
@@ -433,7 +433,6 @@ export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctio
 
 export const UserMinimalSelect = Prisma.validator<Prisma.UserSelect>()({
     name: true,
-    compactName: true,
 });
 
 ////////////////////////////////////////////////////////////////
@@ -527,12 +526,18 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
         },
         expectedAttendanceUserTag: true,
         type: true,
+        responses: {
+            include: {
+                instrument: true,
+                user: true,
+            }
+        },
+
         segments: {
             orderBy: { startsAt: "desc" },
             include: {
                 responses: {
                     include: {
-                        instrument: true,
                         user: true,
                     }
                 }
@@ -560,12 +565,31 @@ export type EventWithTagsPayload = Prisma.EventGetPayload<typeof EventWithTagsAr
 
 
 ////////////////////////////////////////////////////////////////
+export const EventUserResponseArgs = Prisma.validator<Prisma.EventUserResponseArgs>()({
+    include: {
+        instrument: InstrumentArgs,
+        user: UserWithInstrumentsArgs,
+    }
+});
+
+export type EventUserResponsePayload = Prisma.EventUserResponseGetPayload<{
+    include: typeof EventUserResponseArgs.include
+}>;
+
+
+export const EventUserResponseNaturalOrderBy: Prisma.EventUserResponseOrderByWithRelationInput[] = [
+    // todo: sort by something else?
+    { id: 'asc' },
+];
+
+
+////////////////////////////////////////////////////////////////
 export const EventSegmentUserResponseArgs = Prisma.validator<Prisma.EventSegmentUserResponseArgs>()({
     include: {
         attendance: true,
         eventSegment: true,
-        instrument: InstrumentArgs,
-        user: UserArgs
+        //instrument: InstrumentArgs,
+        user: UserWithInstrumentsArgs,
     }
 });
 
@@ -573,6 +597,14 @@ export type EventSegmentUserResponsePayload = Prisma.EventSegmentUserResponseGet
     include: typeof EventSegmentUserResponseArgs.include
 }>;
 
+export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
+    // todo: sort by something else?
+    { id: 'asc' },
+];
+
+
+
+////////////////////////////////////////////////////////////////
 export const EventSegmentArgs = Prisma.validator<Prisma.EventSegmentArgs>()({
     //orderBy: { startsAt: "desc" },
     include: {
@@ -642,6 +674,9 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
             orderBy: EventSegmentNaturalOrderBy,
             include: EventSegmentArgs.include,
         },
+        responses: {
+            include: EventUserResponseArgs.include,
+        }
     }
 });
 
@@ -972,13 +1007,6 @@ export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRel
     { text: 'asc' },
     { id: 'asc' },
 ];
-
-
-export const EventSegmentUserResponseNaturalOrderBy: Prisma.EventSegmentUserResponseOrderByWithRelationInput[] = [
-    // todo: sort by something else?
-    { id: 'asc' },
-];
-
 
 
 

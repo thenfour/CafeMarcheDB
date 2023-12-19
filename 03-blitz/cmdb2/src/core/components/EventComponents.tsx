@@ -21,27 +21,27 @@
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, Link, Tab, Tabs } from "@mui/material";
+import { Breadcrumbs, Button, DialogActions, DialogContent, DialogContentText, DialogTitle, Link, Tab, Tabs, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
-import { StandardVariationSpec } from 'shared/color';
 import { HasFlag, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
-import { CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, TabA11yProps, VisibilityControl } from './CMCoreComponents';
+import { gIconMap } from '../db3/components/IconSelectDialog';
+import { AttendanceChip, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, VisibilityControl } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
-import { GetStyleVariablesForColor } from './Color';
 import { EventFilesTabContent } from './EventFileComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
+import { Markdown } from './RichTextEditor';
 import { MutationMarkdownControl } from './SettingMarkdown';
+import { AddUserButton } from './UserComponents';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -54,36 +54,6 @@ type EventWithTypePayload = Prisma.EventGetPayload<{
         },
     }
 }>;
-
-
-////////////////////////////////////////////////////////////////
-// TODO: generic big status
-////////////////////////////////////////////////////////////////
-// specific non-interactive status for event status
-export interface CMEventBigStatusProps {
-    event: db3.EventPayloadClient,
-    //tableClient: DB3Client.xTableRenderClient,
-};
-
-// actually this would look better:
-{/* <div className="statusIndicator confirmed">
-                <CheckIcon className="statusIcon" />
-                <span className="statusText">Confirmed</span>
-            </div> */}
-
-export const CMEventBigStatus = (props: CMEventBigStatusProps) => {
-    if (!props.event.status) {
-        return null;
-    }
-    const status: db3.EventStatusPayloadBare = props.event.status;
-    const style = GetStyleVariablesForColor({ color: status.color, ...StandardVariationSpec.Strong });
-    //console.log(status.color)
-    return <div><div className={`bigstatus applyColor`} style={style}>
-        {RenderMuiIcon(status.iconName)}
-        {status.label}
-    </div></div>;
-};
-
 
 
 
@@ -165,25 +135,199 @@ export const EventTagsControl = ({ event, tableClient }: EventTagsControlProps) 
 };
 
 
+////////////////////////////////////////////////////////////////
+export interface EventAttendanceEditDialogProps {
+    responseInfo: db3.EventResponseInfo;
+    event: db3.EventClientPayload_Verbose;
+    user: db3.UserWithInstrumentsPayload;
+    refetch: () => void;
 
+    onCancel: () => void;
+    onOK: () => void;
+};
+
+// see also NewEventDialogWrapper for doing this.
+//  some challenges:
+// 1. fields from multiple tables. for the moment let's continue to do things manually. we also do this for NewEventDialogWrapper
+// 2. insert-or-update style. i guess we need a new mutation for this? well let's use the existing stuff.
+// 3. this edits responses for all segments, not just 1. so a dynamic # of items
+export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps) => {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    const mutationToken = API.events.updateUserEventAttendance.useToken();
+
+    const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventUserResponsePayload>(props.responseInfo.getEventResponseForUser(props.user).response);
+    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<number, db3.EventSegmentUserResponsePayload>>(() => {
+        return Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(x => [x[0], x[1].response]));
+    });
+
+    // use the db3 client stuff for rendering / validating fields.
+    const eventResponseTableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xEventUserResponse,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "userComment", cellWidth: 200 }),
+            new DB3Client.BoolColumnClient({ columnName: "isInvited" }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+        ],
+    });
+
+    const eventSegmentResponseTableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xEventSegmentUserResponse,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.ForeignSingleFieldClient({
+                columnName: "attendance",
+                cellWidth: 120,
+                clientIntention: { intention: "admin", mode: "primary" },
+                renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} />,
+            }),
+        ],
+    });
+
+    //necessary to connect all the columns in the spec.
+    const eventResponseTableClient = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.None, // we're only using this for display.
+        tableSpec: eventResponseTableSpec,
+    });
+
+    //necessary to connect all the columns in the spec.
+    const eventSegmentResponseTableClient = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.None, // we're only using this for display.
+        tableSpec: eventSegmentResponseTableSpec,
+    });
+
+    const eventValidationResult = eventResponseTableSpec.args.table.ValidateAndComputeDiff(eventResponseValue, eventResponseValue, "update");
+    const eventSegmentValidationResults: Record<number, db3.ValidateAndComputeDiffResult> = Object.fromEntries(
+        props.event.segments.map(segment => [segment.id, eventSegmentResponseTableSpec.args.table.ValidateAndComputeDiff(eventSegmentResponseValues[segment.id]!, eventSegmentResponseValues[segment.id]!, "update")])
+    );
+
+    const handleSaveClick = () => {
+        mutationToken.invoke({
+            userId: props.user.id,
+            eventId: props.event.id,
+            isInvited: eventResponseValue.isInvited,
+            comment: eventResponseValue.userComment,
+            instrumentId: eventResponseValue.instrumentId,
+            segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => [x[0], {
+                attendanceId: x[1].attendance?.id || null
+            }])),
+        }).then(() => {
+            showSnackbar({ children: "update successful", severity: 'success' });
+            props.onOK();
+        }).catch(err => {
+            console.log(err);
+            showSnackbar({ children: "update error", severity: 'error' });
+        }).finally(props.refetch);
+    };
+
+    const handleChangedEventResponse = (n: db3.EventUserResponsePayload) => {
+        setEventResponseValue(n);
+    };
+
+    const handleChangedEventSegmentResponse = (segment: db3.EventSegmentPayloadMinimum, n: db3.EventSegmentUserResponsePayload) => {
+        const newval = {
+            ...eventSegmentResponseValues,
+            [segment.id]: n
+        };
+        //const newVal = return Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(x => [x[0], x[1].response]));
+        setEventSegmentResponseValues(newval);
+        console.log(newval);
+    };
+
+    return <ReactiveInputDialog onCancel={props.onCancel}>
+
+        <DialogTitle>
+            edit event response for user / event
+        </DialogTitle>
+        <DialogContent dividers>
+            <DialogContentText>
+                description of events and segments?
+            </DialogContentText>
+
+            <div className="EventSongListValue">
+                {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse)}
+                {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse)}
+
+                {
+                    props.event.segments.map(segment => {
+                        const validationResult = eventSegmentValidationResults[segment.id]!;
+                        const response = eventSegmentResponseValues[segment.id]!;
+                        return <div key={segment.id}>
+                            <div>{segment.name}
+                                {eventSegmentResponseTableSpec.renderEditor("attendance", response, validationResult, (n) => handleChangedEventSegmentResponse(segment, n))}
+                            </div>
+                        </div>;
+                    })
+                }
+                {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse)}
+
+            </div>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
+            <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+        </DialogActions>
+
+    </ReactiveInputDialog>;
+};
 
 
 
 ////////////////////////////////////////////////////////////////
-export interface EventAttendanceDetailRowProps {
-    userResponse: db3.EventInfoForUser;
+export interface EventAttendanceEditButtonProps {
+    responseInfo: db3.EventResponseInfo;
+    event: db3.EventClientPayload_Verbose;
+    user: db3.UserWithInstrumentsPayload;
+    refetch: () => void;
+};
+export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps) => {
+    // const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const [showingDialog, setShowingDialog] = React.useState(false);
+
+    // table render contexts.
+    // we have some challenges:
+    // 1. fields from multiple tables. for the moment let's continue to do things manually. we also do this for event insert.
+    // 2. insert-or-update style. i guess we need a new mutation for this? well let's use the existing stuff.
+
+    return <>
+        <div className='interactable' style={{ display: "inline" }} onClick={() => setShowingDialog(true)}>{gIconMap.Edit()}</div>
+        {showingDialog && <EventAttendanceEditDialog {...props} onCancel={() => setShowingDialog(false)} onOK={() => setShowingDialog(false)} />}
+    </>;
 };
 
-export const EventAttendanceDetailRow = ({ userResponse }: EventAttendanceDetailRowProps) => {
+
+////////////////////////////////////////////////////////////////
+export interface EventAttendanceDetailRowProps {
+    responseInfo: db3.EventResponseInfo;
+    event: db3.EventClientPayload_Verbose;
+    user: db3.UserWithInstrumentsPayload;
+    refetch: () => void;
+};
+
+export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch }: EventAttendanceDetailRowProps) => {
+
+    const eventResponse = responseInfo.getEventResponseForUser(user);
+    if (!eventResponse.isRelevantForDisplay) return null;
     return <tr>
-        <td>{userResponse.user.name} {gIconMap.Delete()}</td>
-        {userResponse.segments.map(segment => {
-            return <React.Fragment key={segment.segment.id}>
-                <td>{!!segment.response.attendance ? segment.response.attendance.text : "--"}</td>
-                <td>{segment.instrument?.name || "--"}</td>
-                <td>{segment.instrument?.functionalGroup.name || "--"}</td>
+        <td>
+            <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />
+            {user.name}
+        </td>
+        <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} /> : "--"}</td>
+        <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} /> : "--"}</td>
+        {event.segments.map(segment => {
+            const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
+            return <React.Fragment key={segment.id}>
+                <td>
+                    {!!segmentResponse.response.attendance ? segmentResponse.response.attendance.text : "--"}
+                </td>
             </React.Fragment>;
         })}
+        <td><Markdown markdown={eventResponse.response.userComment} /></td>
     </tr>;
 };
 
@@ -192,14 +336,33 @@ export const EventAttendanceDetailRow = ({ userResponse }: EventAttendanceDetail
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceDetailProps {
     event: db3.EventClientPayload_Verbose;
+    responseInfo: db3.EventResponseInfo;
     tableClient: DB3Client.xTableRenderClient;
-    expectedAttendanceTag: db3.UserTagPayload | null;
+    //expectedAttendanceTag: db3.UserTagPayload | null;
+    //functionalGroups: db3.InstrumentFunctionalGroupPayload[];
     refetch: () => void;
 };
 
-export const EventAttendanceDetail = ({ refetch, event, tableClient, expectedAttendanceTag, ...props }: EventAttendanceDetailProps) => {
-    const userResponses = db3.GetEventResponsesPerUser({ event, expectedAttendanceTag });
+export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }: EventAttendanceDetailProps) => {
     const segAttendees = API.events.getAttendeeCountPerSegment({ event });
+    const token = API.events.updateUserEventAttendance.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const onAddUser = (u: db3.UserPayload | null) => {
+        if (u == null) return;
+        token.invoke({
+            eventId: event.id,
+            userId: u.id,
+            isInvited: true,
+        }).then(e => {
+            showSnackbar({ severity: "success", children: "user invited" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error inviting" });
+        }).finally(() => {
+            refetch();
+        });
+    };
 
     return <>
         <DB3Client.RenderBasicNameValuePair
@@ -207,32 +370,41 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, expectedAtt
             value={<EventAttendanceUserTagControl event={event} refetch={refetch} />}
         />
 
-        <div>todo: sortable columns</div>
-
         <table className='attendanceDetailTable'>
             <thead>
                 <tr>
                     <th>Who</th>
+                    <th>Instrument</th>
+                    <th>Function</th>
                     {event.segments.map(seg => <React.Fragment key={seg.id}>
                         <th>{seg.name}</th>
-                        <th>Instrument</th>
-                        <th>Function</th>
                     </React.Fragment>)}
+                    <th>Comments</th>
                 </tr>
             </thead>
             <tbody>
                 {
-                    userResponses.map(userResponse => <EventAttendanceDetailRow key={userResponse.user.id} userResponse={userResponse} />)
+                    props.responseInfo.distinctUsers.map(user => {
+                        return <EventAttendanceDetailRow key={user.id} responseInfo={props.responseInfo} event={event} user={user} refetch={refetch} />
+                    })
                 }
             </tbody>
             <tfoot>
                 <tr>
-                    <td><Button>{gIconMap.Add()} Add users</Button></td>
+                    <td>
+                        <AddUserButton onSelect={onAddUser} filterPredicate={(u) => {
+                            // don't show users who are already being displayed.
+                            const isDisplayed = props.responseInfo.allEventResponses.some(r => r.user.id === u.id && r.isRelevantForDisplay);
+                            return !isDisplayed;
+                            //!props.responseInfo.distinctUsers.some(d => d.id === u.id)
+                        }} />
+                    </td>
+                    <td>{/*Instrument*/}</td>
+                    <td>{/*Function*/}</td>
                     {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
                         <td>{seg.attendeeCount}</td>
-                        <td>{/*Instrument*/}</td>
-                        <td>{/*Function*/}</td>
                     </React.Fragment>)}
+                    <td>{/*Comments*/}</td>
                 </tr>
             </tfoot>
         </table>
@@ -347,7 +519,7 @@ export interface EventStatusValueProps {
     status: db3.EventStatusPayload | null;
 };
 export const EventStatusValue = (props: EventStatusValueProps) => {
-    return !props.status ? (<Button onClick={props.onClick}>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o.label} />);
+    return !props.status ? (<Button onClick={props.onClick}>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o?.label || ""} />);
 };
 
 export const EventStatusControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
@@ -488,43 +660,6 @@ export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPay
 
 
 
-// ////////////////////////////////////////////////////////////////
-// export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
-//     const mutationToken = API.events.updateEventBasicFields.useToken();
-//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-//     const handleChange = (newValue: string) => {
-//         mutationToken.invoke({
-//             eventId: event.id,
-//             name: newValue,
-//         }).then(() => {
-//             showSnackbar({ severity: "success", children: "Successfully updated event title" });
-//         }).catch(e => {
-//             console.log(e);
-//             showSnackbar({ severity: "error", children: "error updating event title" });
-//         }).finally(() => {
-//             refetch();
-//         });
-//     };
-
-//     return <div className="titleText">
-//         <Link href={eventURI} className="titleLink">
-//             {event.name}
-//         </Link>
-//         <EditTextDialogButton
-//             columnSpec={db3.xEvent.getColumn("name")! as db3.FieldBase<string>}
-//             dialogTitle='name dlg title'
-//             readOnly={false} // todo
-//             renderDialogDescription={() => <>description here</>}
-//             selectButtonLabel='edit name'
-//             value={event.name}
-//             onChange={handleChange}
-//         />
-//     </div>;
-
-// };
-
-
 type EventEditableTitlePayload = Prisma.EventGetPayload<{
     select: {
         id: true,
@@ -634,7 +769,6 @@ export const gEventDetailTabSlugIndices = {
     "frontpage": 5,
 } as const;
 
-
 export interface EventDetailArgs {
     event: db3.EventClientPayload_Verbose;
     tableClient: DB3Client.xTableRenderClient;
@@ -645,7 +779,6 @@ export interface EventDetailArgs {
 
 export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDetailArgs) => {
     const [user] = useCurrentUser()!;
-    const myEventInfo = API.events.getEventInfoForUser({ event, user: user as any });
     const router = useRouter();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
@@ -661,6 +794,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             ],
         }),
     });
+    const functionalGroups: db3.InstrumentFunctionalGroupPayload[] = functionalGroupsClient.items as any || [];
 
     const expectedAttendanceUserTagContext = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -702,6 +836,10 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
         }
     }, [eventURI]);
 
+    const visInfo = API.users.getVisibilityInfo(event);
+    const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
+    const invitedCount = responseInfo.allEventResponses.reduce((acc, resp) => acc + (resp.isInvited ? 1 : 0), 0);
+
     const minMaxSegmentAttendees = API.events.getMinMaxAttendees({ event });
     let formattedAttendeeRange: string = "";
     if (minMaxSegmentAttendees.maxAttendees === null || minMaxSegmentAttendees.minAttendees === null) {
@@ -709,15 +847,13 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     }
     else if (minMaxSegmentAttendees.maxAttendees === minMaxSegmentAttendees.minAttendees) {
         // equal. could be 1 segment, or all similar responses.
-        formattedAttendeeRange = ` (${minMaxSegmentAttendees.maxAttendees}/${expectedAttendanceTag?.userAssignments.length})`;
+        formattedAttendeeRange = ` (${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
     } else {
-        formattedAttendeeRange = ` (${minMaxSegmentAttendees.minAttendees}-${minMaxSegmentAttendees.maxAttendees})`;
+        formattedAttendeeRange = ` (${minMaxSegmentAttendees.minAttendees}-${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
     }
 
-    const visInfo = API.users.getVisibilityInfo(event);
-
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
-        <div className='header applyColor' style={visInfo.getStyleVariablesForColor(StandardVariationSpec.Weak)}>
+        <div className='header'>
             <div className='flex-spacer'></div>
             <Suspense>
                 <EventVisibilityControl event={event} refetch={refetch} />
@@ -755,7 +891,12 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             </div>
         </div> */}
 
-            <SegmentList event={event} myEventInfo={myEventInfo} tableClient={tableClient} verbosity={verbosity} />
+            <SegmentList
+                event={event}
+                //myEventInfo={myEventInfo}
+                tableClient={tableClient}
+                verbosity={verbosity}
+            />
 
             {verbosity === 'verbose' && (
                 <>
@@ -784,7 +925,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
-                        <EventAttendanceDetail event={event} tableClient={tableClient} expectedAttendanceTag={expectedAttendanceTag} refetch={refetch} />
+                        <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
@@ -797,43 +938,41 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                                         return <th key={seg.id}>{seg.name}</th>;
                                     })}
                                 </tr>
-                                {
-                                    (functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
-                                        return <tr key={functionalGroup.id}>
-                                            <td>{functionalGroup.name}</td>
-                                            {event.segments.map((seg) => {
-                                                // come up with the icons per user responses
-                                                // either just sort segment responses by answer strength,
-                                                // or group by answer. not sure which is more useful probably the 1st.
-                                                const sorted = seg.responses.filter(resp => {
-                                                    // only take responses where we 1. expect the user, OR they have responded.
-                                                    // AND it matches the current instrument function.
-                                                    const responseInstrument = API.events.getInstrumentForUserResponse(resp, resp.user);
-                                                    if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
-                                                    return resp.expectAttendance || !!resp.attendance;
-                                                });
-                                                sorted.sort((a, b) => {
-                                                    // no response is weakest.
-                                                    if (a.attendance === null) {
-                                                        if (b.attendance === null) return 0;
-                                                        return -1; // null always lowest, and b is not null.
-                                                    }
-                                                    if (b.attendance === null) {
-                                                        return 1; // b is null & a is not.
-                                                    }
-                                                    return (a > b) ? -1 : 1;
-                                                });
-                                                return <td key={seg.id}>
-                                                    {sorted.map(resp => {
-                                                        if (resp.attendance === null) {
-                                                            return <div key={resp.id}>null</div>;
-                                                        }
-                                                        return <div key={resp.id}>{resp.attendance.text}</div>
-                                                    })}
-                                                </td>;
-                                            })}
-                                        </tr>;
-                                    })
+                                {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
+                                    return <tr key={functionalGroup.id}>
+                                        <td><InstrumentFunctionalGroupChip value={functionalGroup} size='small' /></td>
+                                        {event.segments.map((seg) => {
+                                            // come up with the icons per user responses
+                                            // either just sort segment responses by answer strength,
+                                            // or group by answer. not sure which is more useful probably the 1st.
+                                            const sortedResponses = responseInfo.getResponsesForSegment(seg.id).filter(resp => {
+                                                // only take responses where we 1. expect the user, OR they have responded.
+                                                // AND it matches the current instrument function.
+                                                const eventResponse = responseInfo.getEventResponseForUser(resp.user);
+                                                const responseInstrument = eventResponse.instrument;
+                                                if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
+                                                return eventResponse.isRelevantForDisplay;
+                                            });
+                                            sortedResponses.sort((a, b) => {
+                                                // no response is weakest.
+                                                if (a.response.attendance === null) {
+                                                    if (b.response.attendance === null) return 0;
+                                                    return -1; // null always lowest, and b is not null.
+                                                }
+                                                if (b.response.attendance === null) {
+                                                    return 1; // b is null & a is not.
+                                                }
+                                                return (a > b) ? -1 : 1;
+                                            });
+                                            return <td key={seg.id}>
+                                                ({sortedResponses.length})
+                                                {sortedResponses.map(resp => <Tooltip key={resp.response.id} title={resp.user.name}>
+                                                    <div><AttendanceChip value={resp.response.attendance} /></div>
+                                                </Tooltip>)}
+                                            </td>;
+                                        })}
+                                    </tr>;
+                                })
                                 }
                             </tbody>
                         </table>

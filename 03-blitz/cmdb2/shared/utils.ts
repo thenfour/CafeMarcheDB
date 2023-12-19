@@ -575,3 +575,11 @@ export function calculateNewDimensions(originalDimensions: Size, maxArea: number
 }
 
 
+export function AreAllDefined(items: any[]) {
+    return !(items.some(i => i === undefined));
+}
+
+export function AreAnyDefined(items: any[]) {
+    return (items.some(i => i !== undefined));
+}
+

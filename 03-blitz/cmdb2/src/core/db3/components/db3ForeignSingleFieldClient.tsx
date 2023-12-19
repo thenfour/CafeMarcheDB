@@ -29,6 +29,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { RenderBasicNameValuePair } from "./DB3ClientBasicFields";
 import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
+import { assert } from "blitz";
 
 
 
@@ -68,6 +69,8 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
             props.onChange(null);
         }),
     });
+
+    assert(!!props.foreignSpec.typedSchemaColumn, "schema is not connected to the table spec. you probably need to initiate the client render context");
 
     return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
         {chip}
@@ -244,6 +247,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                 value = this.fixedValue;
                 params.api.setFieldValues({
                     [this.args.columnName]: value,
+                    [this.typedSchemaColumn.fkMember]: !!value ? value[foreignPkMember] : null,
                 });
             }
         }
@@ -259,8 +263,10 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                 validationError={validationValue}
                 value={value}
                 onChange={(newValue: TForeign | null) => {
+                    const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
                     params.api.setFieldValues({
                         [this.args.columnName]: newValue,
+                        [this.typedSchemaColumn.fkMember]: !!newValue ? newValue[foreignPkMember] : null,
                     });
                 }}
             />

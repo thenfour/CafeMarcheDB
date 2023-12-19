@@ -35,11 +35,6 @@ export const xUserMinimum = new db3.xTable({
             format: "plain",
         }),
         new GenericStringField({
-            columnName: "compactName",
-            allowNull: false,
-            format: "plain",
-        }),
-        new GenericStringField({
             columnName: "email",
             allowNull: false,
             format: "email",
@@ -49,10 +44,6 @@ export const xUserMinimum = new db3.xTable({
             allowNull: true,
             format: "plain",
         }),
-        // new BoolField({
-        //     columnName: "isActive",
-        //     defaultValue: false,
-        // }),
         new BoolField({
             columnName: "isSysAdmin",
             defaultValue: false,
@@ -401,11 +392,6 @@ export const xUser = new db3.xTable({
         new PKField({ columnName: "id" }),
         new GenericStringField({
             columnName: "name",
-            allowNull: false,
-            format: "plain",
-        }),
-        new GenericStringField({
-            columnName: "compactName",
             allowNull: false,
             format: "plain",
         }),

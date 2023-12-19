@@ -35,20 +35,6 @@ export const MulSizeBySize = (a: Size, f: Size): Size => {
     }
 };
 
-//
-export const SubCoord2D = (begin: Coord2D, end: Coord2D): Size => {
-    return {
-        width: end.x - begin.x,
-        height: end.y - begin.y,
-    }
-};
-export const AddCoord2D = (a: Coord2D, b: Coord2D): Coord2D => {
-    return {
-        x: a.x + b.x,
-        y: a.y + b.y,
-    }
-};
-
 export const AddCoord2DSize = (a: Coord2D, b: Size): Coord2D => {
     return {
         x: a.x + b.width,
@@ -57,37 +43,26 @@ export const AddCoord2DSize = (a: Coord2D, b: Size): Coord2D => {
 };
 
 
-// // immutable. without clean function overloading it's hard to implement this.
-// export class CCoord2D implements Coord2D {
-//     x: number;
-//     y: number;
-//     constructor(a?: Coord2D) {
-//         if (!a) {
-//             this.x = 0;
-//             this.y = 0;
-//             return;
-//         }
-//         this.x = a.x;
-//         this.y = a.y;
-//     }
-//     add(n: number): CCoord2D {
-//         return new CCoord2D({ x: this.x + n, y: this.y + n });
-//     }
-//     add(n: Coord2D): CCoord2D {
-//         return new CCoord2D({ x: this.x + n.x, y: this.y + n.y });
-//     }
-//     mul(n: number): CCoord2D {
-//         return new CCoord2D({ x: this.x * n, y: this.y * n });
-//     }
-// };
-
-export interface TupdateUserEventSegmentAttendanceMutationArgs {
+export interface TupdateUserEventAttendanceMutationArgs {
     userId: number;
-    eventSegmentId: number;
-    attendanceId?: null | number;
-    comment?: string | null;
-    instrumentId?: number | null;
+    eventId?: number; // if not specified, comment & instrumentId are ignored.
+    comment?: string | null; // for event
+    instrumentId?: number | null; // for event
+    isInvited?: boolean | null; // for event
+
+    // if undefined, attendance is not set.
+    segmentResponses?: Record<number, {
+        attendanceId: null | number; // for segments
+    }>;
+
 };
+
+// export interface TupdateUserEventInvitationMutationArgs {
+//     userId: number;
+//     eventId: number;
+//     //eventSegmentIds: number[];
+//     isInvited: boolean;
+// };
 
 export interface TupdateEventBasicFieldsArgs {
     eventId: number;
@@ -218,48 +193,6 @@ export const ImageFileFormatOptions = {
 export type ImageFileFormat = keyof typeof ImageFileFormatOptions;
 
 
-// reasons to use 01 coords rather than absolute pixels:
-// - i can create defaults that are static and work for any image
-// - adjusting scale doesn't require readjusting every trickle down value
-// - if i change order of operations things should be less broken.
-// - for galleryimagedisplayparams, it feels safer if the viewport changes shape/size.
-// export interface ServerImageFileEditParams {
-//     //scaleOrigin01: Coord2D; // of original dimensions.... never needed because these params are for a static file operation. the idea of scaling around a point means nothing. the dimensions change, no movement is done.
-//     scale: number;// even this is a factor rather than pixels, to avoid having to know the original dimensions.
-//     //cropBegin01: Coord2D; // top/left, of scaled dimensions
-//     //cropEnd01: Coord2D;  // bottom/right of scaled dimensions.
-// };
-
-// export const MakeDefaultServerImageFileEditParams = (): ServerImageFileEditParams => ({
-//     scale: 1,
-//     cropBegin01: {
-//         x: 0, y: 0,
-//     },
-//     cropEnd01: {
-//         x: 1, y: 1,
-//     },
-// });
-
-// export interface GalleryImageDisplayParams {
-//     scaledSize: Size; // specify the size of the image, in pixels. for mocked-up images this is going to be physical file * scaling. for 
-//     cropOffset01: Coord2D; // factor of scaledsize, specifies the offset used to place the object within scaledSize, accounting for cropping. generally this would be the same as ServerImageFileEditParams.cropBegin01.
-//     // the image will be centered here.
-//     rotationDegrees: number;
-//     position01: Coord2D; // factor of scaled size
-// };
-
-// export const MakeDefaultGalleryImageDisplayParams = (): GalleryImageDisplayParams => ({
-//     scaledSize: {
-//         width: 10, height: 10,
-//     },
-//     cropOffset01: {
-//         x: 0, y: 0,
-//     },
-//     rotationDegrees: 0,
-//     position01: {
-//         x: 0, y: 0,
-//     },
-// });
 
 export interface ImageEditParams {
     cropBegin: Coord2D;
@@ -271,26 +204,7 @@ export const MakeDefaultImageEditParams = (): ImageEditParams => ({
     cropBegin: { x: 0, y: 0 },
     cropSize: null,
     rotate: 0
-    //scale: 1,
-    // scaledSize: {
-    //     width: 10, height: 10,
-    // },
-    // cropOffset01: {
-    //     x: 0, y: 0,
-    // },
-    // rotationDegrees: 0,
-    // position01: {
-    //     x: 0, y: 0,
-    // },
 });
-
-// // because of how this is used, returns all options filled with NOP values, rather than undefined..
-// export const MakeDefaultForkImageParams = (parentFile: Prisma.FileGetPayload<{}>): ForkImageParams => ({
-//     outputType: "png",
-//     quality: 80,
-//     parentFileLeaf: parentFile.storedLeafName,
-//     editParams: MakeDefaultImageEditParams(),
-// });
 
 export interface ImageMetadata {
     width?: number | undefined;

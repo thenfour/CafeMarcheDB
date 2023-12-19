@@ -104,18 +104,19 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 ////////////////////////////////////////////////////////////////
 export interface EventSegmentPanelProps {
     event: db3.EventPayloadClient,
-    segmentInfo: db3.SegmentAndResponse,
+    //segmentInfo: db3.SegmentAndResponse,
     verbosity: EventDetailVerbosity;
-    myEventInfo: db3.EventInfoForUser,
+    //myEventInfo: db3.EventInfoForUser,
+    segment: db3.EventVerbose_EventSegmentPayload,
     refetch: () => void;
 };
 
-export const EventSegmentPanel = ({ event, myEventInfo, refetch, ...props }: EventSegmentPanelProps) => {
+export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPanelProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
 
     const handleDelete = (saveClient: DB3Client.xTableRenderClient) => {
-        saveClient.doDeleteMutation(props.segmentInfo.segment.id).then(e => {
+        saveClient.doDeleteMutation(props.segment.id).then(e => {
             showSnackbar({ severity: "success", children: "segment deleted" });
             setEditOpen(false);
             refetch();
@@ -142,8 +143,8 @@ export const EventSegmentPanel = ({ event, myEventInfo, refetch, ...props }: Eve
 
     return <div className={`EventSegmentPanel segment`}>
 
-        <div className='name'>{props.segmentInfo.segment.name} <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button></div>
-        <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segmentInfo.segment)}</div>
+        <div className='name'>{props.segment.name} <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button></div>
+        <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
 
         {/*
         don't show attendance stuff quite yet because we want to refine the GUI first, then add these kind of things.
@@ -157,7 +158,7 @@ export const EventSegmentPanel = ({ event, myEventInfo, refetch, ...props }: Eve
 
         {/* <div className='description'>description: {props.segmentInfo.segment.description}</div> */}
         {editOpen && (<EventSegmentEditDialog
-            initialValue={props.segmentInfo.segment}
+            initialValue={props.segment}
             onDelete={handleDelete}
             onCancel={() => setEditOpen(false)}
             onSave={handleSave}
@@ -170,17 +171,25 @@ export const EventSegmentPanel = ({ event, myEventInfo, refetch, ...props }: Eve
 ////////////////////////////////////////////////////////////////
 interface SegmentListProps {
     event: db3.EventClientPayload_Verbose;
-    myEventInfo: db3.EventInfoForUser;
+    //myEventInfo: db3.EventInfoForUser;
     tableClient: DB3Client.xTableRenderClient;
     verbosity: EventDetailVerbosity;
 };
 
-export const SegmentList = ({ event, myEventInfo, tableClient, verbosity, ...props }: SegmentListProps) => {
+export const SegmentList = ({ event, tableClient, verbosity, ...props }: SegmentListProps) => {
     return <div className='segmentListContainer'>
         <div className="segmentList">
             {event.segments.map(segment => {
-                const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
-                return <EventSegmentPanel key={segment.id} segmentInfo={segInfo} myEventInfo={myEventInfo} event={event} refetch={tableClient.refetch} verbosity={verbosity} />;
+                //const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
+                return <EventSegmentPanel
+                    key={segment.id}
+                    segment={segment}
+                    //segmentInfo={segInfo}
+                    //myEventInfo={myEventInfo}
+                    event={event}
+                    refetch={tableClient.refetch}
+                    verbosity={verbosity}
+                />;
             })}
         </div>
         <NewEventSegmentButton event={event} refetch={tableClient.refetch} />

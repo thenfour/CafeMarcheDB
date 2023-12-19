@@ -114,6 +114,33 @@ export class xTableClientSpec {
     };
 
     getColumn = (name: string): IColumnClient => this.args.columns.find(c => c.columnName === name)!;
+
+    renderViewer = <T extends TAnyModel,>(columnName: string, row: T) => {
+        return this.getColumn(columnName).renderViewer({
+            row,
+            key: columnName,
+            value: row[columnName]
+        });
+    }
+
+    renderEditor = <T extends TAnyModel,>(columnName: string, row: T, validationResult: db3.ValidateAndComputeDiffResult, onChange: (row: T) => void) => {
+        const col = this.getColumn(columnName);
+
+        return col.renderForNewDialog && col.renderForNewDialog({
+            validationResult,
+            api: {
+                setFieldValues: (fieldValues: { [key: string]: any }) => {
+                    const newValue = { ...row, ...fieldValues };
+                    onChange(newValue);
+                },
+            },
+            row,
+            key: columnName,
+            value: row[columnName],
+
+        });
+    }
+
 };
 
 

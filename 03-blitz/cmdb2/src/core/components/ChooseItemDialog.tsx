@@ -10,6 +10,8 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
+import { gIconMap } from "../db3/components/IconSelectDialog";
+import { API } from "../db3/clientAPI";
 
 
 
@@ -19,26 +21,26 @@ export interface ChoiceEditCellRenderValueArgs {
     handleEnterEdit?: () => void; // allows renderer to handle clicks to edit the value.
 };
 
-export interface ChooseItemDialogProps {
-    value: any | null;
-    onOK: (value: any | null) => void;
+export interface ChooseItemDialogProps<T> {
+    value: T | null;
+    onOK: (value: T | null) => void;
     onCancel: () => void;
     closeOnSelect: boolean;
     title: string;
     renderDescription: () => React.ReactElement; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     // how to treat items of unknown type...
-    isEqual: (a: any, b: any) => boolean; // non-null values. null values are compared internally.
+    isEqual: (a: T, b: T) => boolean; // non-null values. null values are compared internally.
     renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactElement;
-    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: any, selected: boolean) => React.ReactElement;
+    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: T, selected: boolean) => React.ReactElement;
     items: any[];
 };
 
 // todo: add a text filter
-export function ChooseItemDialog(props: ChooseItemDialogProps) {
+export function ChooseItemDialog<T>(props: ChooseItemDialogProps<T>) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [selectedObj, setSelectedObj] = React.useState<any>(props.value);
+    const [selectedObj, setSelectedObj] = React.useState<T | null>(props.value);
 
     const betterIsEqual = (a, b) => {
         if (a == null) {
@@ -170,4 +172,3 @@ export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
     </div>;
 };
 
-// todo: EditTextDialogButton but for choices. the above is really for datagrid cells; should be broken down.

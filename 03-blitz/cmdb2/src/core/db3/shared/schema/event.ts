@@ -5,14 +5,19 @@
 import db, { Prisma } from "db";
 import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
+import { CoalesceBool, CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField, MakeNullableRawTextField, MakeRawTextField, EventStartsAtField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
-import { xSong } from "./song";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
-    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadMinimum, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy, EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy, EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs, EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload, EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload, UserTagPayload, UserWithInstrumentsPayload
+    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadMinimum, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
+    EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
+    EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
+    EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload,
+    EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
+    EventUserResponsePayload,
+    EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload, UserTagPayload, UserWithInstrumentsPayload
 } from "./prismArgs";
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
@@ -65,13 +70,13 @@ export const getEventSegmentDateTimeRange = (segment: EventSegmentPayloadMinimum
 }
 
 
-export const getEventSegmentMinDate = (event: EventPayload) => {
-    return event.segments.reduce((acc, seg) => {
+export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
+    const d = event.segments.reduce((acc, seg) => {
         // we want NULLs to count as maximum. The idea is that the date is not "yet" determined.
         const range = getEventSegmentDateTimeRange(seg);
-        if (range.isTBD()) return acc; // tbd = future; use the accumulator.
-        return MinDateOrLateNull(acc, range.getStartDateTime());
-    }, null as (Date | null));
+        return range.unionWith(acc);
+    }, new DateTimeRange());
+    return d.getStartDateTime();
 };
 
 export const xEventType = new db3.xTable({
@@ -483,7 +488,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
     tableName: "eventSegmentUserResponse",
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
-        name: row.user.compactName,
+        name: row.user.name,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         const ret: Prisma.EventSegmentUserResponseWhereInput[] = [];
@@ -496,8 +501,8 @@ export const xEventSegmentUserResponse = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeMarkdownTextField("attendanceComment"),
-        new BoolField({ columnName: "expectAttendance", defaultValue: false }),
+        //MakeMarkdownTextField("attendanceComment"),
+        //new BoolField({ columnName: "expectAttendance", defaultValue: false }),
         new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
             columnName: "eventSegment",
             fkMember: "eventSegmentId",
@@ -515,10 +520,68 @@ export const xEventSegmentUserResponse = new db3.xTable({
         new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
             columnName: "attendance",
             fkMember: "attendanceId",
-            allowNull: false,
+            allowNull: true,
             foreignTableID: "EventAttendance",
             getQuickFilterWhereClause: (query: string) => false,
         }),
+        // new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
+        //     columnName: "instrument",
+        //     fkMember: "instrumentId",
+        //     allowNull: true,
+        //     foreignTableID: "Instrument",
+        //     getQuickFilterWhereClause: (query: string) => false,
+        // }),
+    ]
+});
+
+
+
+export const xEventUserResponse = new db3.xTable({
+    editPermission: Permission.admin_general,
+    viewPermission: Permission.view_general_info,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventUserResponseInclude => {
+        return EventUserResponseArgs.include;
+    },
+    tableName: "eventUserResponse",
+    naturalOrderBy: EventUserResponseNaturalOrderBy,
+    getRowInfo: (row: EventUserResponsePayload) => ({
+        name: row.user.name,
+    }),
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
+        const ret: Prisma.EventUserResponseWhereInput[] = [];
+        if (params.eventId != null) {
+            ret.push({
+                eventId: { equals: params.eventId }
+            });
+        }
+        return ret;
+    },
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakeMarkdownTextField("userComment"),
+        new BoolField({ columnName: "isInvited", defaultValue: false }),
+        MakeIntegerField("eventId"),
+        // new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
+        //     columnName: "eventSegment",
+        //     fkMember: "eventSegmentId",
+        //     allowNull: false,
+        //     foreignTableID: "EventSegment",
+        //     getQuickFilterWhereClause: (query: string) => false,
+        // }),
+        new ForeignSingleField<Prisma.UserGetPayload<{}>>({
+            columnName: "user",
+            fkMember: "userId",
+            allowNull: false,
+            foreignTableID: "User",
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        // new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
+        //     columnName: "attendance",
+        //     fkMember: "attendanceId",
+        //     allowNull: false,
+        //     foreignTableID: "EventAttendance",
+        //     getQuickFilterWhereClause: (query: string) => false,
+        // }),
         new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
             columnName: "instrument",
             fkMember: "instrumentId",
@@ -528,6 +591,8 @@ export const xEventSegmentUserResponse = new db3.xTable({
         }),
     ]
 });
+
+
 
 
 
@@ -640,95 +705,220 @@ export const xEventSongListSong = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-// by the time the data reaches the UX, ideally it should be a rich object with methods, calculated fields etc.
-// unfortunately we're not there yet. helper functions like this exist.
-export interface CalculateEventInfoForUserArgs {
-    user: UserWithInstrumentsPayload;
+export interface EventUserResponse {
     event: EventClientPayload_Verbose;
-    expectedAttendanceTag: UserTagPayload | null;
-}
+    user: UserWithInstrumentsPayload;
+    response: EventUserResponsePayload;
 
-export interface SegmentAndResponse {
-    event: EventPayloadClient;
-    segment: EventVerbose_EventSegmentPayload;
-    response: EventSegmentUserResponsePayload;
+    isInvited: boolean; // NB: invites & comments are per-event, not segment.
+    isRelevantForDisplay: boolean;
+    //isAlert: boolean;
+    //comment: string;
     instrument: InstrumentPayload | null;
 };
 
+export interface EventSegmentUserResponse {
+    segment: EventVerbose_EventSegmentPayload;
+    user: UserWithInstrumentsPayload;
+    response: EventSegmentUserResponsePayload;
+};
+
 ////////////////////////////////////////////////////////////////
-export const getInstrumentForEventSegmentUserResponse = (response: EventSegmentUserResponsePayload, user: UserWithInstrumentsPayload): (InstrumentPayload | null) => {
+export const getInstrumentForEventUserResponse = (response: EventUserResponsePayload, user: UserWithInstrumentsPayload): (InstrumentPayload | null) => {
     if (response.instrument != null) {
-        //console.log(`response instrument null; returning user instrument ${response.instrument?.name} id:${response.instrumentId}`);
         return response.instrument;
     }
-    // use default.
     const ret = getUserPrimaryInstrument(user);
-    //console.log(`response instrument == null; returning user instrument ${ret?.name} id:${ret?.id}`);
     return ret;
-}
+};
 
-
-export class EventInfoForUser {
+export interface GetEventResponseForSegmentAndUserArgs {
     user: UserWithInstrumentsPayload;
-    event: EventClientPayload_Verbose;
-    segments: SegmentAndResponse[];  //{ [segmentId: number]: EventSegmentUserResponse }; // all segments in order, together with response. response ALWAYS there for simplicity.
+    segment: EventVerbose_EventSegmentPayload;
+    expectedAttendanceTag: UserTagPayload | null;
+};
 
-    // (todo) when there is only 1 response type for all segments (1 segment, or all the same), then this will contain that singular one.
-    //singularResponse?: EventSegmentUserResponsePayload;
-
-    constructor(args: CalculateEventInfoForUserArgs) {
-        this.user = args.user;
-        this.event = args.event;
-
-        let expectAttendance: boolean = false;
-        if (args.expectedAttendanceTag) {
-            expectAttendance = !!args.expectedAttendanceTag.userAssignments.find(ua => ua.userId === args.user.id);
-        }
-
-        console.assert(!!args.event.segments);
-        this.segments = args.event.segments.map(seg => {
-            console.assert(!!seg.responses);
-            const response = seg.responses.find(r => r.userId === args.user.id);
-            if (!!response) {
-                return {
-                    event: args.event,
-                    segment: seg,
-                    response: response,
-                    instrument: getInstrumentForEventSegmentUserResponse(response, args.user),
-                };
-            }
-
-            // mock response when none exists
-            const mockResponse: EventSegmentUserResponsePayload = {
-                attendance: null,
-                attendanceComment: null,
-                attendanceId: null,
-                eventSegmentId: seg.id,
-                eventSegment: seg,
-                expectAttendance, // no response object means the user is not expected
-                id: -1,
-                user: this.user,
-                userId: this.user.id,
-                instrument: null,
-                instrumentId: null,
-            };
-
-            return {
-                event: args.event,
-                segment: seg,
-                response: mockResponse,
-                instrument: getInstrumentForEventSegmentUserResponse(mockResponse, args.user),
-            }
-        });
+export const createMockEventSegmentUserResponse = ({ segment, user, expectedAttendanceTag }: GetEventResponseForSegmentAndUserArgs): EventSegmentUserResponse => {
+    let expectAttendance: boolean = false;
+    if (expectedAttendanceTag) {
+        expectAttendance = !!expectedAttendanceTag.userAssignments.find(ua => ua.userId === user.id);
     }
 
-    getSegmentUserInfo = (segmentId: number) => {
-        const segment = this.segments.find(s => s.segment.id === segmentId);
-        if (!segment) {
-            throw new Error(`segment id not found: ${segmentId}`);
-        }
-        console.assert(!!segment.response);
-        return segment;
+    // mock response when none exists
+    const mockResponse: EventSegmentUserResponsePayload = {
+        attendance: null,
+        attendanceId: null,
+        eventSegmentId: segment.id,
+        eventSegment: segment,
+        id: -1,
+        user,
+        userId: user.id,
+    };
+
+    return {
+        segment,
+        user,
+        response: mockResponse,
+    };
+};
+
+export interface createMockEventUserResponseArgs {
+    user: UserWithInstrumentsPayload;
+    event: EventClientPayload_Verbose;
+    defaultInvitees: Set<number>;
+};
+
+export const createMockEventUserResponse = ({ event, user, defaultInvitees }: createMockEventUserResponseArgs): EventUserResponse => {
+    const invitedByDefault: boolean = defaultInvitees.has(user.id);
+
+    // mock response when none exists
+    const mockResponse: EventUserResponsePayload = {
+        userComment: "",
+        eventId: event.id,
+        id: -1,
+        user,
+        userId: user.id,
+        instrument: null,
+        instrumentId: null,
+        isInvited: invitedByDefault,
+    };
+
+    return {
+        user,
+        event,
+        isInvited: invitedByDefault,
+        isRelevantForDisplay: invitedByDefault,
+        instrument: getInstrumentForEventUserResponse(mockResponse, user),
+        response: mockResponse,
+    };
+};
+
+// who's relevant? it's not 100% clear how to handle certain cases.
+// there should be 2 stages to the decision: is the user invited, and what is their answer?
+// first, how to decide if a user is invited?
+// it's based on if they have the expected attendance user tag and if it's been specified in EventSegmentUserResponse.expectAttendance.
+// this is basically coalesce(Response.ExpectAttendance, hasusertag)
+//
+// HasUserTag    Response.ExpectAttendance    Invited
+// no            no                           = no (explicit)
+// no            yes                          = yes (explicit)
+// no            null                         = no (use hasusertag)
+// yes           no                           = no (explicit -- in this case the user has been explicitly uninvited)
+// yes           yes                          = yes (explicit, redundant)
+// yes           null                         = yes (use hasusertag)
+// 
+// INVITED?   ANSWER       RELEVANCE
+// no         null         = no
+// no         notgoing     = no. but questionable. "no" because it's redundant and unhelpful.
+// no         going        = yes. but should be alerted.
+// yes        null         = yes
+// yes        notgoing     = yes
+// yes        going        = yes
+//
+
+export const getEventSegmentResponseForSegmentAndUser = ({ segment, user, expectedAttendanceTag }: GetEventResponseForSegmentAndUserArgs): EventSegmentUserResponse => {
+    console.assert(!!segment.responses);
+
+    let expectAttendance: boolean = false;
+    if (expectedAttendanceTag) {
+        expectAttendance = !!expectedAttendanceTag.userAssignments.find(ua => ua.userId === user.id);
+    }
+
+    const response = segment.responses.find(r => r.userId === user.id);
+    if (!!response) {
+        return {
+            segment,
+            user,
+            response,
+        };
+    }
+
+    return createMockEventSegmentUserResponse({ segment, user, expectedAttendanceTag });
+};
+
+
+export interface GetEventResponseForUserArgs {
+    user: UserWithInstrumentsPayload;
+    event: EventClientPayload_Verbose;
+    defaultInvitationUserIds: Set<number>;
+};
+
+
+export const getEventResponseForUser = ({ event, user, defaultInvitationUserIds }: GetEventResponseForUserArgs): EventUserResponse => {
+    const response = event.responses.find(r => r.userId === user.id);
+    if (response) {
+        const isInvited = CoalesceBool(response.isInvited, defaultInvitationUserIds.has(user.id));
+        const instrument = getInstrumentForEventUserResponse(response, user);
+        //console.log(`user: ${user.name}, instrument: ${instrument}`);
+        return {
+            isInvited,
+            event,
+            user,
+            instrument,
+            response,
+            isRelevantForDisplay: false, // calculated later.
+        };
+    }
+
+    return createMockEventUserResponse({ event, user, defaultInvitees: defaultInvitationUserIds });
+};
+
+
+
+
+export interface EventResponseInfoBase {
+    event: EventClientPayload_Verbose;
+    allEventResponses: EventUserResponse[];
+    allSegmentResponses: EventSegmentUserResponse[];
+    distinctUsers: UserWithInstrumentsPayload[];
+    expectedAttendanceTag: UserTagPayload | null;
+    defaultInvitationUserIds: Set<number>;
+};
+
+export class EventResponseInfo implements EventResponseInfoBase {
+    event: EventClientPayload_Verbose;
+    allEventResponses: EventUserResponse[];
+    allSegmentResponses: EventSegmentUserResponse[];
+    distinctUsers: UserWithInstrumentsPayload[];
+    expectedAttendanceTag: UserTagPayload | null;
+    defaultInvitationUserIds: Set<number>;
+    constructor(args: EventResponseInfoBase) {
+        Object.assign(this, args);
+
+        // populate calculated stuff
+        this.allEventResponses.forEach(r => {
+            // relevant for display = invited OR is maybe going
+            const segmentResponses = this.getResponsesBySegmentForUser(r.user);
+            const segmentEntries = Object.entries(segmentResponses);
+
+            const isMaybeGoing = segmentEntries.some(e => e[1].response.attendance && e[1].response.attendance.strength > 0);
+
+            r.isRelevantForDisplay = isMaybeGoing || r.isInvited;
+        });
+    };
+
+    // ALWAYS returns a response. if doesn't exist in the list then a mock one is created.
+    getResponseForUserAndSegment = ({ user, segment }: { user: UserWithInstrumentsPayload, segment: EventVerbose_EventSegmentPayload }): EventSegmentUserResponse => {
+        const f = this.allSegmentResponses.find(resp => resp.user.id === user.id && resp.segment.id === segment.id);
+        if (f) return f;
+        return createMockEventSegmentUserResponse({ expectedAttendanceTag: this.expectedAttendanceTag, user, segment });
+    };
+
+    // returns responses for all event segments
+    getResponsesBySegmentForUser = (user: UserWithInstrumentsPayload): Record<number, EventSegmentUserResponse> => {
+        const ret: Record<number, EventSegmentUserResponse> = {};
+        this.event.segments.forEach(segment => {
+            ret[segment.id] = this.getResponseForUserAndSegment({ user, segment });
+        });
+        return ret;
+    };
+
+    getResponsesForSegment = (segmentId: number) => this.allSegmentResponses.filter(r => r.segment.id === segmentId);
+
+    getEventResponseForUser = (user: UserWithInstrumentsPayload) => {
+        const ret = this.allEventResponses.find(r => r.user.id === user.id);
+        if (!ret) return createMockEventUserResponse({ event: this.event, user: user, defaultInvitees: this.defaultInvitationUserIds });
+        return ret;
     }
 };
 
@@ -740,10 +930,14 @@ interface EventResponsesPerUserArgs {
 };
 
 // returns array of response info per user. so each element has unique user.
-export function GetEventResponsesPerUser({ event, expectedAttendanceTag }: EventResponsesPerUserArgs): EventInfoForUser[] {
-    // calculate a list of distinct users
+export function GetEventResponseInfo({ event, expectedAttendanceTag }: EventResponsesPerUserArgs): EventResponseInfo {
+
+    let defaultInvitationUserIds = new Set<number>();
+
+    // calculate a list of potentially relevant users to all segments of the event.
     const users: UserWithInstrumentsPayload[] = [];
     if (expectedAttendanceTag) {
+        defaultInvitationUserIds = new Set<number>(expectedAttendanceTag.userAssignments.map(ua => ua.userId));
         users.push(...expectedAttendanceTag.userAssignments.map(ua => ua.user));
     }
     event.segments.forEach((seg) => {
@@ -754,8 +948,35 @@ export function GetEventResponsesPerUser({ event, expectedAttendanceTag }: Event
             }
         });
     });
+    event.responses.forEach((eventResponse) => {
+        if (users.find(u => u.id === eventResponse.userId) == null) {
+            users.push(eventResponse.user);
+        }
+    });
 
-    // and calculate responses for all those users.
-    return users.map(user => new EventInfoForUser({ event, user, expectedAttendanceTag }));
+    const allSegmentResponses: EventSegmentUserResponse[] = [];
+    // for each segment, for all users, generate a response.
+    for (let iseg = 0; iseg < event.segments.length; ++iseg) {
+        const segment = event.segments[iseg]!;
+        allSegmentResponses.push(...users.map(user => getEventSegmentResponseForSegmentAndUser({
+            user,
+            segment,
+            expectedAttendanceTag,
+        })));
+    }
+
+    const allEventResponses: EventUserResponse[] = users.map(user => getEventResponseForUser({
+        user,
+        event,
+        defaultInvitationUserIds,
+    }));
+
+    return new EventResponseInfo({
+        event,
+        defaultInvitationUserIds,
+        expectedAttendanceTag,
+        distinctUsers: users,
+        allSegmentResponses,
+        allEventResponses,
+    });
 };
-

@@ -15,7 +15,6 @@ import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
 import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
-import updateUserEventSegmentAttendanceMutation from "./mutations/updateUserEventSegmentAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
 import { ClientSession } from "@blitzjs/auth";
@@ -23,6 +22,7 @@ import { GetStyleVariablesForColor } from "../components/Color";
 import { ColorVariationSpec, gAppColors } from "shared/color";
 import getSetting from "src/auth/queries/getSetting";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
+import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -329,10 +329,10 @@ class EventsAPI {
         return ret;
     }
 
-    getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserWithInstrumentsPayload }) {
-        const i = new db3.EventInfoForUser({ event: args.event, user: args.user });
-        return i;
-    }
+    // getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserWithInstrumentsPayload }) {
+    //     const i = new db3.EventInfoForUser({ event: args.event, user: args.user });
+    //     return i;
+    // }
 
     getURIForEvent(eventOrEventIdOrSlug: number | string | db3.EventPayloadMinimum, tabSlug?: string) {
         const tabPart = tabSlug ? `/${tabSlug}` : "";
@@ -397,8 +397,8 @@ class EventsAPI {
         return useQuery(getPopularEventTags, {}, gQueryOptions.default);
     };
 
-    getInstrumentForUserResponse = (response: db3.EventSegmentUserResponsePayload, user: db3.UserPayload): (db3.InstrumentPayload | null) => {
-        return db3.getInstrumentForEventSegmentUserResponse(response, user);
+    getInstrumentForUserResponse = (response: db3.EventUserResponsePayload, user: db3.UserWithInstrumentsPayload): (db3.InstrumentPayload | null) => {
+        return db3.getInstrumentForEventUserResponse(response, user);
     }
 
     getSongListStats = (songList: db3.EventSongListPayload): SongListStats => {
@@ -424,7 +424,7 @@ class EventsAPI {
 
     newEventMutation = CreateAPIMutationFunction(insertEvent);
 
-    updateUserEventSegmentAttendance = CreateAPIMutationFunction(updateUserEventSegmentAttendanceMutation);
+    updateUserEventAttendance = CreateAPIMutationFunction(updateUserEventAttendanceMutation);
     updateEventBasicFields = CreateAPIMutationFunction(updateEventBasicFields);
 
     // lol consistent naming

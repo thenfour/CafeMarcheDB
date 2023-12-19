@@ -144,42 +144,40 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName] });
     };
 
-    return <>
-        <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
+    return <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
 
-            <DialogTitle>
-                new event
-            </DialogTitle>
-            <DialogContent dividers>
-                <DialogContentText>
-                    description of events and segments?
-                </DialogContentText>
+        <DialogTitle>
+            new event
+        </DialogTitle>
+        <DialogContent dividers>
+            <DialogContentText>
+                description of events and segments?
+            </DialogContentText>
 
-                <div className="EventSongListValue">
-                    <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
-                        const newValue: db3.EventPayload = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
-                        setEventValue(newValue);
-                    }} />
+            <div className="EventSongListValue">
+                <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
+                    const newValue: db3.EventPayload = { ...eventValue, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
+                    setEventValue(newValue);
+                }} />
 
-                    {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI)}
-                    {/* {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI)} */}
-                    {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI)}
-                    {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI)}
-                    {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI)}
-                    {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI)}
-                    {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI)}
+                {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI)}
+                {/* {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI)} */}
+                {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI)}
+                {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI)}
+                {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI)}
+                {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI)}
+                {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI)}
 
-                    {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI)}
+                {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI)}
 
-                </div>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
-                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
-            </DialogActions>
+            </div>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
+            <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+        </DialogActions>
 
-        </ReactiveInputDialog>
-    </>;
+    </ReactiveInputDialog>;
 };
 
 const NewEventButton = (props: { onOK: () => void }) => {

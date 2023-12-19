@@ -392,6 +392,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
         className: "admin events",
         items: [
             { type: "link", path: "/backstage/editEventUserResponses", linkCaption: "Event User Responses", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventSegmentUserResponses", linkCaption: "Segment User Responses", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventComments", linkCaption: "Event comments", renderIcon: () => <CommentIcon />, permission: Permission.sysadmin },
         ],
     },

@@ -63,6 +63,7 @@ export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren<{ classNa
 export type CMChipSizeOptions = "small" | "big";
 
 export interface CMChipProps {
+    chipRef?: React.Ref<HTMLDivElement>;
     color?: ColorPaletteEntry | string | null;
     variation?: ColorVariationSpec;
     //selected?: boolean;
@@ -98,7 +99,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
         variant.selected ? "selected" : "notselected",
     ];
 
-    return <div className={wrapperClasses.join(" ")} style={style} onClick={props.onClick}>
+    return <div className={wrapperClasses.join(" ")} style={style} onClick={props.onClick} ref={props.chipRef}>
         <div className={chipClasses.join(" ")}>
             <div className='content'>
                 {props.children}
@@ -121,8 +122,8 @@ export interface CMStandardDBChipModel {
 }
 
 export interface CMStandardDBChipProps<T> {
-    model: T;
-    getText?: (value: any) => string; // override the text getter
+    model: T | null;
+    getText?: (value: T | null) => string; // override the text getter
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -131,13 +132,13 @@ export interface CMStandardDBChipProps<T> {
 
 export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
     return <CMChip
-        color={props.model.color}
+        color={props.model?.color}
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
     >
-        {RenderMuiIcon(props.model.iconName)}{props.getText ? props.getText(props.model) : props.model.text}
+        {RenderMuiIcon(props.model?.iconName)}{props.getText ? props.getText(props.model) : props.model?.text || "--"}
     </CMChip>;
 };
 
@@ -680,7 +681,7 @@ export const AudioPreviewBehindButton = (props: AudioPreviewBehindButtonProps) =
 
 
 export interface UserChipProps {
-    value: db3.UserPayload_Name;
+    value: db3.UserPayload_Name | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -694,7 +695,7 @@ export const UserChip = (props: UserChipProps) => {
         onClick={props.onClick}
         className={props.className}
     >
-        {props.value.compactName}
+        {props.value?.name || "--"}
     </CMChip>
 }
 
@@ -714,6 +715,26 @@ export const InstrumentChip = (props: InstrumentChipProps) => {
         onClick={props.onClick}
         className={props.className}
         color={props.value.functionalGroup.color}
+    >
+        {props.value.name}
+    </CMChip>
+}
+
+export interface InstrumentFunctionalGroupChipProps {
+    value: db3.InstrumentFunctionalGroupPayloadMinimum;
+    variation?: ColorVariationSpec;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+};
+
+export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupChipProps) => {
+    return <CMChip
+        variation={props.variation}
+        size={props.size}
+        onClick={props.onClick}
+        className={props.className}
+        color={props.value.color}
     >
         {props.value.name}
     </CMChip>
@@ -762,6 +783,30 @@ export const SongChip = (props: SongChipProps) => {
 }
 
 
+
+export interface AttendanceChipProps {
+    chipRef?: React.ForwardedRef<HTMLDivElement>;
+    value: db3.EventAttendanceBasePayload | null;
+    variation?: ColorVariationSpec;
+    size?: CMChipSizeOptions;
+    onClick?: () => void;
+    className?: string;
+};
+
+export const AttendanceChip = (props: AttendanceChipProps) => {
+    return <CMChip
+        chipRef={props.chipRef}
+        variation={props.variation}
+        size={props.size}
+        onClick={props.onClick}
+        className={props.className}
+        color={props.value?.color || null}
+    >
+        {props.value?.text || "No response"}
+    </CMChip>
+}
+
+export const AttendanceChipWithRef = React.forwardRef<HTMLDivElement, AttendanceChipProps>((props, ref) => <AttendanceChip {...props} chipRef={ref} />);
 
 //////////////////////////////////////////////////////////////////////////////////////
 export type JoystickDivDragState = "idle" | "dragging";

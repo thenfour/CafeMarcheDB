@@ -1,18 +1,8 @@
 
 
 import { BlitzPage } from "@blitzjs/next";
-import { Suspense } from "react";
 import * as React from 'react';
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { Button, Tooltip } from "@mui/material";
-import { Clamp, formatFileSize } from "shared/utils";
-import { JoystickDiv } from "src/core/components/CMCoreComponents";
-import { API, HomepageContentSpec } from "src/core/db3/clientAPI"; // this line causes an exception . uh oh some circular reference.
-import * as db3 from "src/core/db3/db3";
-import { Coord2D, MulSize, MulSizeBySize, Size, SubCoord2D, getFileCustomData } from "src/core/db3/shared/apiTypes";
-import { HomepageMain, HomepagePhotoPattern, generateHomepageId } from "src/core/components/homepageComponents";
-import { nanoid } from 'nanoid';
+import { Suspense } from "react";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

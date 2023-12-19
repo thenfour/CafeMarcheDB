@@ -592,6 +592,17 @@ const swatchPaletteArgs: ColorPaletteArgs = {
     entries: Object.keys(gSwatchColors).map(k => FetchColorPaletteEntry(k)),
 };
 
+export const gLightSwatchColors = {
+    "light_purple": "light_purple",
+} as const;
+
+const liteSwatchPaletteArgs: ColorPaletteArgs = {
+    name: "Light Swatches",
+    columns: 5,
+    defaultIndex: 0,
+    entries: Object.keys(gLightSwatchColors).map(k => FetchColorPaletteEntry(k)),
+};
+
 export const gAppColors = {
     "null": "null",
     "private_visibility": "private_visibility",
@@ -618,5 +629,6 @@ const appPaletteArgs: ColorPaletteArgs = {
 
 export const gGeneralPaletteList = new ColorPaletteList([
     new ColorPalette({ ...swatchPaletteArgs }),
+    new ColorPalette({ ...liteSwatchPaletteArgs }),
     new ColorPalette({ ...appPaletteArgs }),
 ]);
