@@ -157,7 +157,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from "react";
 import { API } from "src/core/db3/clientAPI";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorVariationSpec, GetColorVariation, StandardVariationSpec, gGeneralPaletteList } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorVariationSpec, StandardVariationSpec, gGeneralPaletteList } from "shared/color";
 import { ColorPaletteGrid, ColorPaletteListComponent, ColorPick, ColorSwatch, GetStyleVariablesForColor, GetStyleVariablesForColorVariation } from "src/core/components/Color";
 import { Button, FormControlLabel, Popover, Tooltip } from "@mui/material";
 import parse from 'parse-css-color'
@@ -804,10 +804,12 @@ interface BigSwatchProps {
     className?: string;
     text: string;
 
+    variation: ColorVariationSpec;
+
     onDrop?: (e: ColorPaletteEntryVariation) => void;
 };
 const BigSwatch = (props: BigSwatchProps) => {
-    const style = GetStyleVariablesForColorVariation(props.entry);
+    const style = GetStyleVariablesForColorVariation(props.entry, props.variation);
 
     const onDragStart = (event: React.DragEvent<HTMLDivElement>) => {
         // Set the data and type to be transferred during the drag
@@ -843,8 +845,8 @@ const BigSwatch = (props: BigSwatchProps) => {
         onDragOver={props.onDrop && onDragOver} // Event when something is dragged over
         onDrop={props.onDrop && onDrop} // Event when something is dropped
 
-        className={`paletteBigSwatch applyColor ${props.className}`}
-        style={style}
+        className={`paletteBigSwatch applyColor ${props.className} ${style.cssClass}`}
+        style={style.style}
     >
         <div className={`embeddedContrastSwatch`}></div>
         <div className="embeddedText">{props.text}</div>
@@ -910,6 +912,7 @@ const CorrectColorButton = (props: CorrectColorButtonProps) => {
 interface PaletteEntryVariationEditorProps {
     name: string;
     value: ColorPaletteEntryVariation;
+    variation: ColorVariationSpec;
     //parentValue: ColorPaletteEntry;
     onChange: (newValue: ColorPaletteEntryVariation) => void;
     parsedPalette: ParsedPalette;
@@ -934,7 +937,7 @@ const PaletteEntryVariationEditor = (props: PaletteEntryVariationEditorProps) =>
                     renderPreview={(hovered) => {
                         const col: ColorPaletteEntryVariation = { ...props.value };
                         if (hovered) col.backgroundColor = hovered.cssColor;
-                        return <BigSwatch entry={col} text="preview" />
+                        return <BigSwatch entry={col} text="preview" variation={props.variation} />
                     }}
                 />
                 <div><input className="manualColorEntry" type="text" value={props.value.backgroundColor} onChange={(e) => props.onChange({ ...props.value, backgroundColor: e.target.value })} /></div>
@@ -949,14 +952,14 @@ const PaletteEntryVariationEditor = (props: PaletteEntryVariationEditorProps) =>
                     renderPreview={(hovered) => {
                         const col: ColorPaletteEntryVariation = { ...props.value };
                         if (hovered) col.foregroundColor = hovered.cssColor;
-                        return <BigSwatch entry={col} text="preview" />
+                        return <BigSwatch entry={col} text="preview" variation={props.variation} />
                     }}
                 />
                 <div><input className="manualColorEntry" type="text" value={props.value.foregroundColor} onChange={(e) => props.onChange({ ...props.value, foregroundColor: e.target.value })} /></div>
                 <CorrectColorButton label="" value={props.value.foregroundColor} parsedPalette={props.parsedPalette} onChange={(e) => props.onChange({ ...props.value, foregroundColor: e.cssColor })} />
             </div>
         </div>
-        <BigSwatch entry={props.value} text={props.name} onDrop={(e) => {
+        <BigSwatch entry={props.value} text={props.name} variation={props.variation} onDrop={(e) => {
             props.onChange(e);
         }} />
 
@@ -973,6 +976,9 @@ const ColorVariationExpo = (props: { value: ColorPaletteEntry }) => {
     const [strongParam, setStrongParam] = React.useState<number>(2);
     const [enabledParam, setEnabledParam] = React.useState<number>(1);
     const [selectedParam, setSelectedParam] = React.useState<number>(0);
+    //const [invertedParam, setInvertedParam] = React.useState<number>(0);
+    const [hollowParam, setHollowParam] = React.useState<number>(0);
+    const [shapeParam, setShapeParam] = React.useState<number>(0);
 
     const Reshuffle = () => {
         const idx = Array.from({ length: count }, (_, index) => index); // generate list of indices
@@ -999,15 +1005,18 @@ const ColorVariationExpo = (props: { value: ColorPaletteEntry }) => {
     ];
 
     const ParamToString = (p: number) => {
-        if (p === 0) return `0`;
-        if (p === 1) return `1`;
-        if (p === 2) return `*`;
+        if (p === 0) return `N`;
+        if (p === 1) return `?`;
+        if (p === 2) return `Y`;
     };
 
     // easiest way is to utilize the natural interlacing of bits in a mask.
     let strongBit: number = 0; // this bit determines the param
     let enabledBit: number = 0;
     let selectedBit: number = 0;
+    let hollowBit: number = 0;
+    //let invertedBit: number = 0;
+    let shapeBit: number = 0;
     let altColorBit: number = 0;
     let bitsUsed = 0;
 
@@ -1016,6 +1025,9 @@ const ColorVariationExpo = (props: { value: ColorPaletteEntry }) => {
     if (strongParam === 1) strongBit = (1 << bitsUsed++);
     if (enabledParam === 1) enabledBit = (1 << bitsUsed++);
     if (selectedParam === 1) selectedBit = (1 << bitsUsed++);
+    //if (invertedParam === 1) invertedBit = (1 << bitsUsed++);
+    if (hollowParam === 1) hollowBit = (1 << bitsUsed++);
+    if (shapeParam === 1) shapeBit = (1 << bitsUsed++);
     if (shuffleAltColor) altColorBit = (1 << bitsUsed++);
 
     const getCoolValue = <T,>(i: number, param: number, bit: number, valueIfTrue: T, valueIfFalse: T): T => {
@@ -1035,6 +1047,9 @@ const ColorVariationExpo = (props: { value: ColorPaletteEntry }) => {
                 <FormControlLabel label={`strong(${ParamToString(strongParam)})`} control={<input type="range" min={0} max={2} value={strongParam} onChange={e => setStrongParam(e.target.valueAsNumber)} />} />
                 <FormControlLabel label={`enabled(${ParamToString(enabledParam)})`} control={<input type="range" min={0} max={2} value={enabledParam} onChange={e => setEnabledParam(e.target.valueAsNumber)} />} />
                 <FormControlLabel label={`selected(${ParamToString(selectedParam)})`} control={<input type="range" min={0} max={2} value={selectedParam} onChange={e => setSelectedParam(e.target.valueAsNumber)} />} />
+                {/* <FormControlLabel label={`inverted(${ParamToString(invertedParam)})`} control={<input type="range" min={0} max={2} value={invertedParam} onChange={e => setInvertedParam(e.target.valueAsNumber)} />} /> */}
+                <FormControlLabel label={`hollow(${ParamToString(hollowParam)})`} control={<input type="range" min={0} max={2} value={hollowParam} onChange={e => setHollowParam(e.target.valueAsNumber)} />} />
+                <FormControlLabel label={`shape(${ParamToString(shapeParam)})`} control={<input type="range" min={0} max={2} value={shapeParam} onChange={e => setShapeParam(e.target.valueAsNumber)} />} />
                 <ColorPick allowNull={true} palettes={gGeneralPaletteList} value={altColor} onChange={(c) => setAltColor(c)} />
             </div>
         </div>
@@ -1047,7 +1062,10 @@ const ColorVariationExpo = (props: { value: ColorPaletteEntry }) => {
                         enabled: getCoolValue(i, enabledParam, enabledBit, true, false),
                         selected: getCoolValue(i, selectedParam, selectedBit, true, false),
                         variation: getCoolValue(i, strongParam, strongBit, "strong", "weak"),
+                        //inverted: getCoolValue(i, invertedParam, invertedBit, true, false),
+                        fillOption: getCoolValue(i, hollowParam, hollowBit, "hollow", "filled"),
                     }}
+                    shape={getCoolValue(i, shapeParam, shapeBit, "rounded", "rectangle")}
                     onDelete={interactable ? () => { } : undefined}
                 >
                     {gIconMap.MusicNote()} {instruments[i % instruments.length]} ({i})
@@ -1058,6 +1076,13 @@ const ColorVariationExpo = (props: { value: ColorPaletteEntry }) => {
 }
 
 
+const ContrastColorSwatch = (props: { text: string, backgroundColor: string, color: ParsedPaletteEntry }) => {
+    return <div className="ContrastColorSwatch" style={{ backgroundColor: props.backgroundColor, color: props.color.cssColor }}>
+        {props.text}
+        <Swatch color={props.color} />
+    </div>
+
+}
 
 interface PaletteEntryEditorProps {
     value: ColorPaletteEntry;
@@ -1086,6 +1111,10 @@ const PaletteEntryEditor = (props: PaletteEntryEditorProps) => {
         "--preview-bg": previewStyle[0],
         "--preview-fg": previewStyle[1],
     } as React.CSSProperties;
+
+    const parsedColorOnBlack = ParsePaletteEntry(props.value.contrastColorOnBlack);
+    const parsedColorOnWhite = ParsePaletteEntry(props.value.contrastColorOnWhite);
+    const selectedContrastColors = [parsedColorOnBlack.cssColor, parsedColorOnWhite.cssColor];
 
     return <div className="PaletteEntryEditor" style={style}>
         <div className="controls">
@@ -1121,16 +1150,44 @@ const PaletteEntryEditor = (props: PaletteEntryEditorProps) => {
             </select> */}
         </div>
 
-        <div className="variationEditorContainer">
-            <PaletteEntryVariationEditor name="strongDisabled" parsedPalette={props.parsedPalette} value={props.value.strongDisabled} onChange={(v) => props.onChange({ ...props.value, strongDisabled: v })} />
-            <PaletteEntryVariationEditor name="strongDisabledSelected" parsedPalette={props.parsedPalette} value={props.value.strongDisabledSelected} onChange={(v) => props.onChange({ ...props.value, strongDisabledSelected: v })} />
-            <PaletteEntryVariationEditor name="strong" parsedPalette={props.parsedPalette} value={props.value.strong} onChange={(v) => props.onChange({ ...props.value, strong: v })} />
-            <PaletteEntryVariationEditor name="strongSelected" parsedPalette={props.parsedPalette} value={props.value.strongSelected} onChange={(v) => props.onChange({ ...props.value, strongSelected: v })} />
+        <div className="contrastColorEntries">
+            <div className="ContrastColorSwatch" style={{ backgroundColor: "black", color: parsedColorOnBlack.cssColor }}>
+                FG on black
 
-            <PaletteEntryVariationEditor name="weakDisabled" parsedPalette={props.parsedPalette} value={props.value.weakDisabled} onChange={(v) => props.onChange({ ...props.value, weakDisabled: v })} />
-            <PaletteEntryVariationEditor name="weakDisabledSelected" parsedPalette={props.parsedPalette} value={props.value.weakDisabledSelected} onChange={(v) => props.onChange({ ...props.value, weakDisabledSelected: v })} />
-            <PaletteEntryVariationEditor name="weak" parsedPalette={props.parsedPalette} value={props.value.weak} onChange={(v) => props.onChange({ ...props.value, weak: v })} />
-            <PaletteEntryVariationEditor name="weakSelected" parsedPalette={props.parsedPalette} value={props.value.weakSelected} onChange={(v) => props.onChange({ ...props.value, weakSelected: v })} />
+                <UserColorPick
+                    selectedEntries={selectedContrastColors}
+                    value={parsedColorOnBlack}
+                    palette={props.parsedPalette}
+                    onChange={(e) => props.onChange({ ...props.value, contrastColorOnBlack: e.cssColor })}
+                    renderPreview={(hovered) => {
+                        return <div className="ContrastColorSwatchPreviewContainer"><ContrastColorSwatch color={hovered || parsedColorOnBlack} text="preview" backgroundColor="black" /></div>
+                    }}
+                />
+            </div>
+            <div className="ContrastColorSwatch" style={{ backgroundColor: "white", color: parsedColorOnWhite.cssColor }}>
+                FG on white
+
+                <UserColorPick
+                    selectedEntries={selectedContrastColors}
+                    value={parsedColorOnWhite}
+                    palette={props.parsedPalette}
+                    onChange={(e) => props.onChange({ ...props.value, contrastColorOnWhite: e.cssColor })}
+                    renderPreview={(hovered) => {
+                        return <div className="ContrastColorSwatchPreviewContainer"><ContrastColorSwatch color={hovered || parsedColorOnWhite} text="preview" backgroundColor="white" /></div>
+                    }}
+                />
+            </div>
+        </div>
+
+        <div className="variationEditorContainer">
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.StrongDisabled} name="strongDisabled" parsedPalette={props.parsedPalette} value={props.value.strongDisabled} onChange={(v) => props.onChange({ ...props.value, strongDisabled: v })} />
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.StrongDisabledSelected} name="strongDisabledSelected" parsedPalette={props.parsedPalette} value={props.value.strongDisabledSelected} onChange={(v) => props.onChange({ ...props.value, strongDisabledSelected: v })} />
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.Strong} name="strong" parsedPalette={props.parsedPalette} value={props.value.strong} onChange={(v) => props.onChange({ ...props.value, strong: v })} />
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.StrongSelected} name="strongSelected" parsedPalette={props.parsedPalette} value={props.value.strongSelected} onChange={(v) => props.onChange({ ...props.value, strongSelected: v })} />
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.WeakDisabled} name="weakDisabled" parsedPalette={props.parsedPalette} value={props.value.weakDisabled} onChange={(v) => props.onChange({ ...props.value, weakDisabled: v })} />
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.WeakDisabledSelected} name="weakDisabledSelected" parsedPalette={props.parsedPalette} value={props.value.weakDisabledSelected} onChange={(v) => props.onChange({ ...props.value, weakDisabledSelected: v })} />
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.WeakDisabledSelected} name="weak" parsedPalette={props.parsedPalette} value={props.value.weak} onChange={(v) => props.onChange({ ...props.value, weak: v })} />
+            <PaletteEntryVariationEditor variation={StandardVariationSpec.WeakSelected} name="weakSelected" parsedPalette={props.parsedPalette} value={props.value.weakSelected} onChange={(v) => props.onChange({ ...props.value, weakSelected: v })} />
         </div>
 
         <ColorVariationExpo value={props.value} />
@@ -1614,7 +1671,7 @@ const MyComponent = () => {
                 e.weak,
                 e.weakSelected,
             ];
-            return `CreatePaletteEntry("${e.id}", "${e.id}", ${variations.map(v => variationToArgs(v)).join(",")}),`
+            return `CreatePaletteEntry("${e.id}", "${e.id}", "${e.contrastColorOnBlack}", "${e.contrastColorOnWhite}" ${variations.map(v => variationToArgs(v)).join(",")}),`
         });
 
         const txt = code.join(`\n`) + `\n`;

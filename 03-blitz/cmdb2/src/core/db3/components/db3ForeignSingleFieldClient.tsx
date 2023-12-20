@@ -141,11 +141,11 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
         const rowInfo = this.typedSchemaColumn.getForeignTableSchema().getRowInfo(args.value);
 
-        const style: React.CSSProperties = GetStyleVariablesForColor({ color: rowInfo.color, ...args.colorVariant })
+        const style = GetStyleVariablesForColor({ color: rowInfo.color, ...args.colorVariant })
 
         return <Chip
-            className="cmdbChip applyColor"
-            style={style}
+            className={`cmdbChip applyColor ${style.cssClass}`}
+            style={style.style}
             size="small"
             label={rowInfo.name}
             onDelete={args.onDelete}

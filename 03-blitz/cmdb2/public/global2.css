@@ -173,6 +173,20 @@ html,
     border: 2px solid transparent;
 }
 
+
+.CMChip.rounded {
+    border-radius: 19px;
+}
+
+.CMChip.rectangle {
+    border-radius: 2px;
+}
+
+.CMChip.rectangle>.chipMain {
+    border-radius: 2px;
+}
+
+
 /* general purpose style for interactable things like buttons. avoid selection which is awkward with mouse.
 what's the diff between interactable, freeButton, and iconButton? so far not much...
 */
@@ -1339,4 +1353,40 @@ in particular the date range picker is wide.*/
 .ColorVariationExpo .controls .row {
     display: flex;
     flex-direction: row;
+}
+
+.contrastColorEntries {
+    display: flex;
+    ;
+}
+
+.contrastColorEntries .ContrastColorSwatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 19px;
+}
+
+.ContrastColorSwatchPreviewContainer {
+    padding: 20px;
+}
+
+.attendanceResponseColorBarSegment {
+    height: 24px;
+    width: 16px;
+    margin: 3px;
+}
+
+.attendanceResponseColorBarSegmentContainer {
+    display: flex;
+}
+
+.attendanceResponseColorBarCell {
+    display: flex;
+    align-items: center;
+}
+
+.attendanceResponseColorBarText {
+    display: flex;
+    color: #999;
 }

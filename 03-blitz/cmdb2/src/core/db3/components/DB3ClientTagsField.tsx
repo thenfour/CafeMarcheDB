@@ -334,11 +334,11 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
         throw new Error(`columnSchema is missing getAssociationTableShema.`);
     }
     const rowInfo = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
-    const style: React.CSSProperties = GetStyleVariablesForColor({ color: rowInfo.color, ...StandardVariationSpec.Strong });
+    const style = GetStyleVariablesForColor({ color: rowInfo.color, ...StandardVariationSpec.Strong });
 
     return <Chip
-        className="cmdbChip applyColor"
-        style={style}
+        className={`cmdbChip applyColor ${style.cssClass}`}
+        style={style.style}
         size="small"
         label={rowInfo.name}
         onDelete={args.onDelete}

@@ -10,6 +10,7 @@ import { UserChip } from "./CMCoreComponents";
 
 //////////////////////////////////////////////////////////////////////////////////////
 export interface AddUserButtonProps {
+    buttonChildren?: React.ReactNode;
     filterPredicate?: (u: db3.UserPayload) => boolean;
     onSelect: (u: db3.UserPayload | null) => void;
 };
@@ -17,6 +18,7 @@ export interface AddUserButtonProps {
 // todo: potential to make this more generic. add vs. change, for generic values.
 export const AddUserButton = (props: AddUserButtonProps) => {
     const [addUserOpen, setAddUserOpen] = React.useState<boolean>(false);
+    const buttonChildren = props.buttonChildren || <>{gIconMap.Add()} Add users</>;
 
     const tableClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
@@ -44,7 +46,7 @@ export const AddUserButton = (props: AddUserButtonProps) => {
     };
 
     return <>
-        <Button onClick={handleOpen}>{gIconMap.Add()} Add users</Button>
+        <Button onClick={handleOpen}>{buttonChildren}</Button>
         {addUserOpen &&
             <ChooseItemDialog
                 closeOnSelect={true}

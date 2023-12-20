@@ -42,6 +42,8 @@ import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown } from './RichTextEditor';
 import { MutationMarkdownControl } from './SettingMarkdown';
 import { AddUserButton } from './UserComponents';
+import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { GetStyleVariablesForColor } from './Color';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -233,9 +235,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             ...eventSegmentResponseValues,
             [segment.id]: n
         };
-        //const newVal = return Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(x => [x[0], x[1].response]));
         setEventSegmentResponseValues(newval);
-        console.log(newval);
     };
 
     return <ReactiveInputDialog onCancel={props.onCancel}>
@@ -311,19 +311,21 @@ export interface EventAttendanceDetailRowProps {
 export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch }: EventAttendanceDetailRowProps) => {
 
     const eventResponse = responseInfo.getEventResponseForUser(user);
+    const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
+    const attendanceVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "filled", variation: 'strong' };
     if (!eventResponse.isRelevantForDisplay) return null;
     return <tr>
         <td>
             <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />
             {user.name}
         </td>
-        <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} /> : "--"}</td>
-        <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} /> : "--"}</td>
+        <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" forceNoBorder={true} /> : "--"}</td>
+        <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} variation={instVariant} shape="rectangle" forceNoBorder={true} /> : "--"}</td>
         {event.segments.map(segment => {
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             return <React.Fragment key={segment.id}>
                 <td>
-                    {!!segmentResponse.response.attendance ? segmentResponse.response.attendance.text : "--"}
+                    {!!segmentResponse.response.attendance ? <AttendanceChip value={segmentResponse.response.attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
                 </td>
             </React.Fragment>;
         })}
@@ -392,12 +394,16 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
             <tfoot>
                 <tr>
                     <td>
-                        <AddUserButton onSelect={onAddUser} filterPredicate={(u) => {
-                            // don't show users who are already being displayed.
-                            const isDisplayed = props.responseInfo.allEventResponses.some(r => r.user.id === u.id && r.isRelevantForDisplay);
-                            return !isDisplayed;
-                            //!props.responseInfo.distinctUsers.some(d => d.id === u.id)
-                        }} />
+                        <AddUserButton
+                            onSelect={onAddUser}
+                            filterPredicate={(u) => {
+                                // don't show users who are already being displayed.
+                                const isDisplayed = props.responseInfo.allEventResponses.some(r => r.user.id === u.id && r.isRelevantForDisplay);
+                                return !isDisplayed;
+                                //!props.responseInfo.distinctUsers.some(d => d.id === u.id)
+                            }}
+                            buttonChildren={<>{gIconMap.Add()} Invite someone</>}
+                        />
                     </td>
                     <td>{/*Instrument*/}</td>
                     <td>{/*Function*/}</td>
@@ -965,10 +971,19 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                                                 return (a > b) ? -1 : 1;
                                             });
                                             return <td key={seg.id}>
-                                                ({sortedResponses.length})
-                                                {sortedResponses.map(resp => <Tooltip key={resp.response.id} title={resp.user.name}>
-                                                    <div><AttendanceChip value={resp.response.attendance} /></div>
-                                                </Tooltip>)}
+                                                <div className='attendanceResponseColorBarCell'>
+                                                    <div className='attendanceResponseColorBarSegmentContainer'>
+                                                        {sortedResponses.map(resp => {
+                                                            const style = GetStyleVariablesForColor({ color: resp.response.attendance?.color, ...StandardVariationSpec.Strong });
+                                                            return <Tooltip key={resp.response.id} title={`${resp.user.name}: ${resp.response.attendance?.text || "no response"}`}>
+                                                                <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass}`} style={style.style}></div>
+                                                            </Tooltip>
+                                                        })}
+                                                    </div>
+                                                    <div className='attendanceResponseColorBarText'>
+                                                        {sortedResponses.reduce((acc, r) => acc + (((r.response.attendance?.strength || 0) > 50) ? 1 : 0), 0)}
+                                                    </div>
+                                                </div>
                                             </td>;
                                         })}
                                     </tr>;

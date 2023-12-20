@@ -241,8 +241,8 @@ export function ButtonSelectControl(props: ButtonSelectControlProps) {
                         const style = GetStyleVariablesForColor({ color: option.color, ...StandardVariationSpec.Strong });
                         return <Button
                             key={i}
-                            style={style}
-                            className={`applyColor ${option.value === value ? "selected" : "notSelected"}`}
+                            style={style.style}
+                            className={`applyColor ${style.cssClass} ${option.value === value ? "selected" : "notSelected"}`}
                             startIcon={RenderMuiIcon(option.iconName)}
                             onClick={() => { onChange(option.value) }}>
                             {option.label}
@@ -250,7 +250,7 @@ export function ButtonSelectControl(props: ButtonSelectControlProps) {
                     })}
                 </ButtonGroup>
                     :
-                    <div className="value applyColor" style={selectedStyle}>{selectedOption.label}</div>}
+                    <div className="value applyColor  ${style.cssClass}" style={selectedStyle.style}>{selectedOption.label}</div>}
             </div>
 
         }}

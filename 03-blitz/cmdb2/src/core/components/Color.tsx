@@ -1,6 +1,6 @@
 import { Popover } from "@mui/material";
 import React from "react";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationOptions, ColorVariationSpec, CreateNullPaletteEntry, GetColorVariation, StandardVariationSpec, gAppColors, gGeneralPaletteList, gHiddenColorIds } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationOptions, ColorVariationSpec, CreateNullPaletteEntry, GetColorPaletteEntryWithVariation, StandardVariationSpec, gAppColors, gGeneralPaletteList, gHiddenColorIds } from "shared/color";
 
 // in total there are the following variations:
 // - strong - disabled - not selected
@@ -23,27 +23,39 @@ import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPalet
 //     palette: ColorPalette,
 //     initialNewItemValue: string | null;
 // };
+interface GetStyleVariablesForColorResult {
+    cssClass: string;
+    style: React.CSSProperties;
+}
 
-export const GetStyleVariablesForColorVariation = (variation: ColorPaletteEntryVariation, isNull?: boolean) => {
+export const GetStyleVariablesForColorVariation = (entry: ColorPaletteEntryVariation, variation: ColorVariationSpec, isNull?: boolean): GetStyleVariablesForColorResult => {
+    const classes = [
+        isNull ? "colorNull" : "colorNonNull",
+        entry.showBorder ? "colorShowBorder" : "colorNoBorder",
+        variation.enabled ? "colorEnabled" : "colorDisabled",
+        variation.inverted ? "colorInverted" : "colorNotInverted",
+        variation.selected ? "colorSelected" : "colorNotSelected",
+        variation.hollow ? "colorHollow" : "colorNotHollow",
+        variation.variation,
+    ];
     return {
-        "--color-foreground": variation.foregroundColor,
-        "--color-background": variation.backgroundColor,
-        "--color-border-style": (!!isNull) ? "dotted" : (variation.showBorder ? "solid" : "hidden"),
-    } as React.CSSProperties;
+        style: {
+            "--color-foreground": entry.foregroundColor,
+            "--color-background": entry.backgroundColor,
+            "--color-border-style": (!!isNull) ? "dotted" : (entry.showBorder ? "solid" : "hidden"),
+        } as React.CSSProperties,
+        cssClass: classes.join(" "),
+    };
 }
 
-interface GetStyleVariablesForColorArgs {
+interface GetStyleVariablesForColorArgs extends ColorVariationSpec {
     color: ColorPaletteEntry | null | string | undefined;
-    variation: ColorVariationOptions;
-    enabled: boolean;
-    selected: boolean;
 }
-
 // set this in an element to establish hierarchical color point.
 // to apply them, components should just use these vars as needed.
 // why not just have "color" var instead of "strong color" & "weak color"? so components can
 // access both. might as well support both methods tbh.
-export const GetStyleVariablesForColor = (args: GetStyleVariablesForColorArgs) => {
+export const GetStyleVariablesForColor = (args: GetStyleVariablesForColorArgs): GetStyleVariablesForColorResult => {
     let entry: ColorPaletteEntry | null = null;
     if (typeof args.color === 'string') {
         entry = gGeneralPaletteList.findEntry(args.color);
@@ -54,13 +66,11 @@ export const GetStyleVariablesForColor = (args: GetStyleVariablesForColorArgs) =
         entry = CreateNullPaletteEntry();
     }
 
-    const variation = GetColorVariation({
+    const variation = GetColorPaletteEntryWithVariation({
+        ...args,
         color: entry,
-        enabled: args.enabled,
-        selected: args.selected,
-        variation: args.variation,
     });
-    return GetStyleVariablesForColorVariation(variation, args.color == null);
+    return GetStyleVariablesForColorVariation(variation, args, args.color == null);
 }
 
 export interface ColorSwatchProps {
@@ -117,8 +127,8 @@ export const ColorSwatch = (props: ColorSwatchProps) => {
         onDragStart={onDragStart} // Event when drag starts
         onDragOver={props.onDrop && onDragOver} // Event when something is dragged over
         onDrop={props.onDrop && onDrop} // Event when something is dropped
-        className={`${props.variation.selected ? "selected" : ""} colorSwatchRoot interactable applyColor ${props.isSpacer ? "spacer" : ""}`}
-        style={style}
+        className={`${props.variation.selected ? "selected" : ""} colorSwatchRoot interactable applyColor ${style.cssClass} ${props.isSpacer ? "spacer" : ""}`}
+        style={style.style}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
     >

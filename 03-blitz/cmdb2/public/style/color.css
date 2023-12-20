@@ -5,6 +5,10 @@
     border: 1px var(--color-border-style) var(--color-foreground);
 }
 
+.colorForceNoBorder {
+    border: 1px solid var(--color-background);
+}
+
 .colorSwatchRoot {
     display: flex;
     flex-direction: column;

@@ -14,6 +14,8 @@ export interface ColorPaletteEntryVariation {
 export interface ColorPaletteEntry {
     id: string; // used for database match; hand-made. palettegen generates them though.
     label: string;
+    contrastColorOnWhite: string;
+    contrastColorOnBlack: string;
     strongDisabled: ColorPaletteEntryVariation;
     strongDisabledSelected: ColorPaletteEntryVariation;
     strong: ColorPaletteEntryVariation;
@@ -24,26 +26,32 @@ export interface ColorPaletteEntry {
     weakSelected: ColorPaletteEntryVariation;
 };
 
+// strong = rich color, full strength. for lots of page info, it should not be used much, even though this is the default. it's emphasized.
+// weak = rich color, but in the background. the idea is to continue looking strongly like a chip
+// hollow
 export type ColorVariationOptions = "strong" | "weak";
+export type ColorFillOption = "filled" | "hollow";
 
 export interface ColorVariationSpec {
     variation: ColorVariationOptions;
+    // functionally enabled/disabled.
+    // enabled = colored, disabled = grayscale.
     enabled: boolean;
+
+    // selected does not need to be a big contrast; it's used mainly for styling. weak chips can become a bit stronger.
     selected: boolean;
+
+    fillOption: ColorFillOption;
 }
 
-export interface GetColorVariationArgs extends ColorVariationSpec {
-    color: ColorPaletteEntry;
-}
-
-export const gStrongDisabled: ColorVariationSpec = { variation: "strong", enabled: false, selected: false };
-export const gStrongDisabledSelected: ColorVariationSpec = { variation: "strong", enabled: false, selected: true };
-export const gStrong: ColorVariationSpec = { variation: "strong", enabled: true, selected: false };
-export const gStrongSelected: ColorVariationSpec = { variation: "strong", enabled: true, selected: true };
-export const gWeakDisabled: ColorVariationSpec = { variation: "weak", enabled: false, selected: false };
-export const gWeakDisabledSelected: ColorVariationSpec = { variation: "weak", enabled: false, selected: true };
-export const gWeak: ColorVariationSpec = { variation: "weak", enabled: true, selected: false };
-export const gWeakSelected: ColorVariationSpec = { variation: "weak", enabled: true, selected: true };
+export const gStrongDisabled: ColorVariationSpec = { variation: "strong", enabled: false, selected: false, fillOption: "filled" };
+export const gStrongDisabledSelected: ColorVariationSpec = { variation: "strong", enabled: false, selected: true, fillOption: "filled" };
+export const gStrong: ColorVariationSpec = { variation: "strong", enabled: true, selected: false, fillOption: "filled" };
+export const gStrongSelected: ColorVariationSpec = { variation: "strong", enabled: true, selected: true, fillOption: "filled" };
+export const gWeakDisabled: ColorVariationSpec = { variation: "weak", enabled: false, selected: false, fillOption: "filled" };
+export const gWeakDisabledSelected: ColorVariationSpec = { variation: "weak", enabled: false, selected: true, fillOption: "filled" };
+export const gWeak: ColorVariationSpec = { variation: "weak", enabled: true, selected: false, fillOption: "filled" };
+export const gWeakSelected: ColorVariationSpec = { variation: "weak", enabled: true, selected: true, fillOption: "filled" };
 
 
 export const StandardVariationSpec = {
@@ -57,7 +65,11 @@ export const StandardVariationSpec = {
     WeakSelected: gWeakSelected,
 }
 
-export const GetColorVariation = (args: GetColorVariationArgs): ColorPaletteEntryVariation => {
+export interface GetColorPaletteEntryWithVariationArgs extends ColorVariationSpec {
+    color: ColorPaletteEntry;
+}
+
+export const GetColorPaletteEntryWithVariationBase = (args: GetColorPaletteEntryWithVariationArgs): ColorPaletteEntryVariation => {
     if (args.variation === "strong") {
         if (!args.enabled) {
             if (!args.selected) return args.color.strongDisabled;
@@ -74,8 +86,23 @@ export const GetColorVariation = (args: GetColorVariationArgs): ColorPaletteEntr
     return args.color.weakSelected;
 };
 
+export const GetColorPaletteEntryWithVariation = (args: GetColorPaletteEntryWithVariationArgs): ColorPaletteEntryVariation => {
+    // start with getting the fundamental.
+    const ret = { ...GetColorPaletteEntryWithVariationBase(args) };
+
+    if (args.fillOption === "hollow") {
+        ret.backgroundColor = "white";
+        ret.foregroundColor = args.color.contrastColorOnWhite;
+    }
+
+    return ret;
+};
+
 const CreatePaletteEntry = (id: string,
     label: string,
+
+    contrastColorOnBlack: string,
+    contrastColorOnWhite: string,
 
     strongDisabled_BackgroundColor: string,
     strongDisabled_ForegroundColor: string,
@@ -113,6 +140,8 @@ const CreatePaletteEntry = (id: string,
     return {
         id,
         label,
+        contrastColorOnBlack,
+        contrastColorOnWhite,
         strongDisabled: {
             backgroundColor: strongDisabled_BackgroundColor,
             foregroundColor: strongDisabled_ForegroundColor,
@@ -159,6 +188,9 @@ const CreatePaletteEntry = (id: string,
 function CreateSimplePaletteEntry(id: string, label: string, backgroundColor: string, foregroundColor: string) {
     return CreatePaletteEntry(id,
         label,
+        backgroundColor,
+        foregroundColor,
+
         backgroundColor,// strongDisabled_BackgroundColor: string,
         foregroundColor,// strongDisabled_ForegroundColor: string,
         true,// strongDisabled_ShowBorder: boolean,
@@ -195,31 +227,32 @@ function CreateSimplePaletteEntry(id: string, label: string, backgroundColor: st
 
 // color editor outputs this.
 const gPaletteMap: ColorPaletteEntry[] = [
-    CreatePaletteEntry("black", "black", "#666666", "#888888", false, "#666666", "#cccccc", false, "#000000", "#b3b5c9", true, "#000000", "#d8d9e4", true, "#666666", "#888888", false, "#666666", "#cccccc", false, "#474a61", "#b3b5c9", false, "#474a61", "#eeeeee", false),
-    CreatePaletteEntry("dark_gray", "dark_gray", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#474a61", "#d8d9e4", false, "#444444", "#d7dbff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#6a7095", "#b3b5c9", false, "#6a7095", "#eeeeee", false),
-    CreatePaletteEntry("gray", "gray", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#8e92af", "#ffffff", false, "#8e92af", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#b3b5c9", "#eeeeee", false, "#b3b5c9", "#ffffff", false),
-    CreatePaletteEntry("light_gray", "light_gray", "#cccccc", "#aaaaaa", false, "#cccccc", "#666666", false, "#b3b5c9", "#474a61", false, "#b3b5c9", "#474a61", false, "#cccccc", "#aaaaaa", false, "#cccccc", "#666666", false, "#b3b5c9", "#6a7095", false, "#b3b5c9", "#474a61", false),
-    CreatePaletteEntry("white", "white", "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
-    CreatePaletteEntry("pink", "pink", "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ff9f88", "#eeeeee", false, "#ff9f88", "#ffffff", false, "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ffcfc2", "#6f2013", false, "#ffcfc2", "#000000", false),
-    CreatePaletteEntry("red", "red", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#e62b19", "#ffcfc2", false, "#e62b19", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff9f88", "#eeeeee", false, "#ff9f88", "#ffffff", false),
-    CreatePaletteEntry("maroon", "maroon", "#888888", "#aaaaaa", false, "#888888", "#ffffff", false, "#962b49", "#f9cfd5", false, "#962b49", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#ffffff", false, "#ee9fac", "#eeeeee", false, "#ee9fac", "#ffffff", false),
-    CreatePaletteEntry("brown", "brown", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#886635", "#f1e1cf", false, "#886635", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#cea772", "#f1e1cf", false, "#cea772", "#ffffff", false),
-    CreatePaletteEntry("orange", "orange", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff7700", "#ffddc4", false, "#ff7700", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ffbc8a", "#ffddc4", false, "#ffbc8a", "#ffffff", false),
-    CreatePaletteEntry("yellow", "yellow", "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffcc00", "#786117", false, "#ffcc00", "#000000", false, "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffe596", "#786117", false, "#ffe596", "#000000", false),
-    CreatePaletteEntry("light_yellow", "light_yellow", "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#eeff00", "#71771b", false, "#eeff00", "#000000", false, "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#fdff9d", "#71771b", false, "#fdff9d", "#000000", false),
-    CreatePaletteEntry("lime_green", "lime_green", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#8fb300", "#e6ecc7", false, "#8fb300", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ccd98f", "#475614", false, "#ccd98f", "#000000", false),
-    CreatePaletteEntry("green", "green", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#00b300", "#d0edc6", false, "#00b300", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#a0db8e", "#d0edc6", false, "#a0db8e", "#ffffff", false),
-    CreatePaletteEntry("teal", "teal", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#00b39e", "#cfede6", false, "#00b39e", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#9edacd", "#cfede6", false, "#9edacd", "#ffffff", false),
-    CreatePaletteEntry("blue", "blue", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#0077ff", "#d7dbff", false, "#0077ff", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#abb8ff", "#d7dbff", false, "#abb8ff", "#ffffff", false),
-    CreatePaletteEntry("purple", "purple", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#9922dd", "#eaccf8", false, "#9922dd", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#d399f0", "#eaccf8", false, "#d399f0", "#ffffff", false),
-    CreatePaletteEntry("null", "null", "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
-    CreatePaletteEntry("private_visibility", "private_visibility", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#a92716", "#ffcfc2", false, "#a92716", "#ffcfc2", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#a92716", "#ffcfc2", false, "#a92716", "#ffcfc2", false),
-    CreatePaletteEntry("x1", "x1", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
-    CreatePaletteEntry("x2", "x2", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
-    CreatePaletteEntry("attendance_no", "attendance_no", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#e62b19", "#ffcfc2", false, "#e62b19", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff9f88", "#eeeeee", false, "#ff9f88", "#ffffff", false),
-    CreatePaletteEntry("attendance_no_maybe", "attendance_no_maybe", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff7700", "#ffddc4", false, "#ff7700", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ffbc8a", "#ffddc4", false, "#ffbc8a", "#ffffff", false),
-    CreatePaletteEntry("attendance_yes_maybe", "attendance_yes_maybe", "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffcc00", "#786117", false, "#ffcc00", "#000000", false, "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffe596", "#786117", false, "#ffe596", "#000000", false),
-    CreatePaletteEntry("attendance_yes", "attendance_yes", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#00b300", "#d0edc6", false, "#00b300", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#a0db8e", "#d0edc6", false, "#a0db8e", "#ffffff", false),
+    CreatePaletteEntry("black", "black", "#aaaaaa", "black", "#666666", "#888888", false, "#666666", "#cccccc", false, "#000000", "#b3b5c9", true, "#000000", "#d8d9e4", true, "#666666", "#888888", false, "#666666", "#cccccc", false, "#474a61", "#b3b5c9", false, "#474a61", "#eeeeee", false),
+    CreatePaletteEntry("dark_gray", "dark_gray", "#cccccc", "black", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#474a61", "#d8d9e4", false, "#444444", "#d7dbff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#6a7095", "#b3b5c9", false, "#6a7095", "#eeeeee", false),
+    CreatePaletteEntry("gray", "gray", "#dddddd", "black", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#8e92af", "#ffffff", false, "#8e92af", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#b3b5c9", "#eeeeee", false, "#b3b5c9", "#ffffff", false),
+    CreatePaletteEntry("light_gray", "light_gray", "#eeeeee", "black", "#cccccc", "#aaaaaa", false, "#cccccc", "#666666", false, "#b3b5c9", "#474a61", false, "#b3b5c9", "#474a61", false, "#cccccc", "#aaaaaa", false, "#cccccc", "#666666", false, "#b3b5c9", "#6a7095", false, "#b3b5c9", "#474a61", false),
+    CreatePaletteEntry("white", "white", "white", "black", "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
+    CreatePaletteEntry("pink", "pink", "#ffcfc2", "black", "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ff9f88", "#eeeeee", false, "#ff9f88", "#ffffff", false, "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ffcfc2", "#6f2013", false, "#ffcfc2", "#000000", false),
+    CreatePaletteEntry("red", "red", "#e62b19", "black", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#e62b19", "#ffcfc2", false, "#e62b19", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff9f88", "#eeeeee", false, "#ff9f88", "#ffffff", false),
+    CreatePaletteEntry("maroon", "maroon", "#cc3361", "#962b49", "#888888", "#aaaaaa", false, "#888888", "#ffffff", false, "#962b49", "#f9cfd5", false, "#962b49", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#ffffff", false, "#ee9fac", "#eeeeee", false, "#ee9fac", "#ffffff", false),
+    CreatePaletteEntry("brown", "brown", "#cea772", "#886635", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#886635", "#f1e1cf", false, "#886635", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#cea772", "#f1e1cf", false, "#cea772", "#ffffff", false),
+    CreatePaletteEntry("orange", "orange", "#ff7700", "#ff7700", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff7700", "#ffddc4", false, "#ff7700", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ffbc8a", "#ffddc4", false, "#ffbc8a", "#ffffff", false),
+    CreatePaletteEntry("yellow", "yellow", "#ffcc00", "#ba9415", "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffcc00", "#786117", false, "#ffcc00", "#000000", false, "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffe596", "#786117", false, "#ffe596", "#000000", false),
+    CreatePaletteEntry("light_yellow", "light_yellow", "#eeff00", "#adb918", "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#eeff00", "#71771b", false, "#eeff00", "#000000", false, "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#fdff9d", "#71771b", false, "#fdff9d", "#000000", false),
+    CreatePaletteEntry("lime_green", "lime_green", "white", "black", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#8fb300", "#e6ecc7", false, "#8fb300", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ccd98f", "#475614", false, "#ccd98f", "#000000", false),
+    CreatePaletteEntry("green", "green", "#69c755", "#00b300", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#00b300", "#d0edc6", false, "#00b300", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#a0db8e", "#d0edc6", false, "#a0db8e", "#ffffff", false),
+    CreatePaletteEntry("teal", "teal", "#68c7b5", "#198374", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#00b39e", "#cfede6", false, "#00b39e", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#9edacd", "#cfede6", false, "#9edacd", "#ffffff", false),
+    CreatePaletteEntry("blue", "blue", "#7696ff", "#0077ff", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#0077ff", "#d7dbff", false, "#0077ff", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#abb8ff", "#d7dbff", false, "#abb8ff", "#ffffff", false),
+    CreatePaletteEntry("purple", "purple", "#b865e7", "#9922dd", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#9922dd", "#eaccf8", false, "#9922dd", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#d399f0", "#eaccf8", false, "#d399f0", "#ffffff", false),
+    CreatePaletteEntry("light_purple", "light_purple", "white", "black", "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
+    CreatePaletteEntry("null", "null", "white", "black", "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
+    CreatePaletteEntry("private_visibility", "private_visibility", "white", "black", "#888888", "#aaaaaa", false, "#888888", "#ffffff", false, "#962b49", "#f9cfd5", false, "#962b49", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#ffffff", false, "#ee9fac", "#eeeeee", false, "#ee9fac", "#ffffff", false),
+    CreatePaletteEntry("x1", "x1", "white", "black", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("x2", "x2", "white", "black", "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true, "#eeeeee", "#888888", true),
+    CreatePaletteEntry("attendance_no", "attendance_no", "white", "black", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#e62b19", "#ffcfc2", false, "#e62b19", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff9f88", "#eeeeee", false, "#ff9f88", "#ffffff", false),
+    CreatePaletteEntry("attendance_no_maybe", "attendance_no_maybe", "white", "black", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ff7700", "#ffddc4", false, "#ff7700", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ffbc8a", "#ffddc4", false, "#ffbc8a", "#ffffff", false),
+    CreatePaletteEntry("attendance_yes_maybe", "attendance_yes_maybe", "white", "black", "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffcc00", "#786117", false, "#ffcc00", "#000000", false, "#cccccc", "#dddddd", false, "#cccccc", "#ffffff", false, "#ffe596", "#786117", false, "#ffe596", "#000000", false),
+    CreatePaletteEntry("attendance_yes", "attendance_yes", "white", "black", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#00b300", "#d0edc6", false, "#00b300", "#ffffff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#a0db8e", "#d0edc6", false, "#a0db8e", "#ffffff", false),
 
 ];
 

@@ -60,15 +60,17 @@ export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren<{ classNa
 // - faded main / contrast, for disabled/enabled
 // - for selected, something else? maybe we're OK as is
 
+export type CMChipShapeOptions = "rounded" | "rectangle";
+
 export type CMChipSizeOptions = "small" | "big";
 
 export interface CMChipProps {
     chipRef?: React.Ref<HTMLDivElement>;
     color?: ColorPaletteEntry | string | null;
     variation?: ColorVariationSpec;
-    //selected?: boolean;
-    //disabled?: boolean;
     size?: CMChipSizeOptions;
+    shape?: CMChipShapeOptions;
+    noBorder?: boolean;
     className?: string;
 
     onDelete?: () => void;
@@ -78,12 +80,14 @@ export interface CMChipProps {
 
 export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
     const variant = props.variation || StandardVariationSpec.Strong;
+    const shape: CMChipShapeOptions = props.shape || "rounded";
     const style = GetStyleVariablesForColor({ color: props.color, ...variant });
     const size = props.size || "big";
 
     const wrapperClasses: string[] = [
         "CMChip",
         size,
+        shape,
         variant.enabled ? "enabled" : "disabled",
         variant.selected ? "selected" : "notselected",
         (props.onClick || props.onDelete) ? "interactable" : "noninteractable",
@@ -94,12 +98,14 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
     const chipClasses: string[] = [
         "chipMain applyColor",
+        !!props.noBorder ? "colorForceNoBorder" : "",
+        style.cssClass,
         size,
         variant.enabled ? "enabled" : "disabled",
         variant.selected ? "selected" : "notselected",
     ];
 
-    return <div className={wrapperClasses.join(" ")} style={style} onClick={props.onClick} ref={props.chipRef}>
+    return <div className={wrapperClasses.join(" ")} style={style.style} onClick={props.onClick} ref={props.chipRef}>
         <div className={chipClasses.join(" ")}>
             <div className='content'>
                 {props.children}
@@ -171,7 +177,7 @@ export interface CMBigChipProps {
 
 export const CMBigChip = (props: React.PropsWithChildren<CMBigChipProps>) => {
     const style = GetStyleVariablesForColor({ color: props.color, ...props.variation });
-    return <div className={`cmbigchip`} style={style}><div className='content'>
+    return <div className={`cmbigchip ${style.cssClass}`} style={style.style}><div className='content'>
         {props.children}
     </div></div>;
 };
@@ -414,6 +420,7 @@ export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValu
         onClick ? "interactable" : "",
         variant,
         visInfo.className,
+        style.cssClass,
     ];
 
     let tooltipTitle = "?";
@@ -424,7 +431,7 @@ export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValu
         tooltipTitle = permission!.description || "";
     }
 
-    return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={style} onClick={onClick}>
+    return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={style.style} onClick={onClick}>
         {variant === "minimal" ? (
             permission === null ? <>{gIconMap.Lock()}</> : RenderMuiIcon(permission?.iconName)
         ) : (
@@ -706,6 +713,8 @@ export interface InstrumentChipProps {
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
+    shape?: CMChipShapeOptions;
+    forceNoBorder?: boolean;
 };
 
 export const InstrumentChip = (props: InstrumentChipProps) => {
@@ -715,6 +724,8 @@ export const InstrumentChip = (props: InstrumentChipProps) => {
         onClick={props.onClick}
         className={props.className}
         color={props.value.functionalGroup.color}
+        shape={props.shape}
+        noBorder={props.forceNoBorder}
     >
         {props.value.name}
     </CMChip>
@@ -726,6 +737,8 @@ export interface InstrumentFunctionalGroupChipProps {
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
+    shape?: CMChipShapeOptions;
+    forceNoBorder?: boolean;
 };
 
 export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupChipProps) => {
@@ -735,6 +748,8 @@ export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupCh
         onClick={props.onClick}
         className={props.className}
         color={props.value.color}
+        shape={props.shape}
+        noBorder={props.forceNoBorder}
     >
         {props.value.name}
     </CMChip>
@@ -791,6 +806,7 @@ export interface AttendanceChipProps {
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
+    shape?: CMChipShapeOptions;
 };
 
 export const AttendanceChip = (props: AttendanceChipProps) => {
@@ -801,6 +817,7 @@ export const AttendanceChip = (props: AttendanceChipProps) => {
         onClick={props.onClick}
         className={props.className}
         color={props.value?.color || null}
+        shape={props.shape}
     >
         {props.value?.text || "No response"}
     </CMChip>

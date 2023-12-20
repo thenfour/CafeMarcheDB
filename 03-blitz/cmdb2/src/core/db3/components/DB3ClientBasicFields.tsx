@@ -439,7 +439,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
             visible: true,
             GridColProps: {
                 renderCell: (args: GridRenderCellParams) => {
-                    return <div className='MuiDataGrid-cellContent'><ColorSwatch color={args.value} variation={{ enabled: true, selected: true, variation: "strong" }} /></div>; // colorswatch must be aware of null values.
+                    return <div className='MuiDataGrid-cellContent'><ColorSwatch color={args.value} variation={{ enabled: true, selected: true, fillOption: "filled", variation: "strong" }} /></div>; // colorswatch must be aware of null values.
                 },
                 renderEditCell: (args: GridRenderEditCellParams) => {
                     return <ColorPick
@@ -463,7 +463,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
         key: params.key,
         className: params.className,
         name: this.columnName,
-        value: <ColorSwatch color={params.value} variation={{ enabled: true, selected: true, variation: "strong" }} />
+        value: <ColorSwatch color={params.value} variation={{ enabled: true, selected: true, fillOption: "filled", variation: "strong" }} />
     });
 
     // will render as a child of <FormControl>
