@@ -390,7 +390,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
                 return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                return <FormControlLabel label={this.schemaColumn.label} control={
+                return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.label} control={
                     <Checkbox
                         checked={params.value}
                         onChange={(e, value) => {
@@ -410,7 +410,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
     });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        return <FormControlLabel label={this.schemaColumn.label} control={
+        return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.label} control={
             <Checkbox
                 checked={!!params.value}
                 onChange={(e, val) => {
@@ -677,7 +677,7 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
 
         />
         {props.allowNull &&
-            <FormControlLabel control={<Checkbox
+            <FormControlLabel className='CMFormControlLabel' control={<Checkbox
                 checked={noDateChecked}
                 onChange={(e) => {
                     //console.log(`checkbox change checked=${e.target.checked}, changing to ${e.target.checked ? null : datePickerValue} `);

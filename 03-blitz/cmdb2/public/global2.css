@@ -8,6 +8,16 @@ html,
     display: flex;
 }
 
+.CMSidenote {
+    color: #999;
+    font-style: italic;
+    font-size: 14px;
+}
+
+/* FormControlLabel by default has a negative margin. no idea why but this negates. */
+.CMFormControlLabel {
+    margin: 0;
+}
 
 .singlePageSurface {
     /* spacing is already provided by parent layout*/
@@ -165,6 +175,12 @@ html,
     font-style: normal;
 }
 
+.CMChip>.chipMain {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .CMChip.selected {
     border: 2px solid black;
 }
@@ -186,6 +202,9 @@ html,
     border-radius: 2px;
 }
 
+.AttendanceChip .chipMain {
+    width: 110px;
+}
 
 /* general purpose style for interactable things like buttons. avoid selection which is awkward with mouse.
 what's the diff between interactable, freeButton, and iconButton? so far not much...
@@ -278,8 +297,10 @@ or,
 .EventSongListValue .stats {
     margin: 2px;
     /* background-color: #0003; */
-    padding: 5px 14px;
+    /* padding: 5px 14px;
     color: #00000096;
+    font-style: italic;
+    font-size: 14px; */
 }
 
 .songListSongTable {
@@ -1374,11 +1395,22 @@ in particular the date range picker is wide.*/
 .attendanceResponseColorBarSegment {
     height: 24px;
     width: 16px;
-    margin: 3px;
+    margin: 0 2px;
+    font-family: monospace;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+
+    user-select: none;
+    pointer-events: none;
 }
 
 .attendanceResponseColorBarSegmentContainer {
     display: flex;
+    flex-grow: 1;
+    margin: 0 10px;
 }
 
 .attendanceResponseColorBarCell {
@@ -1388,5 +1420,11 @@ in particular the date range picker is wide.*/
 
 .attendanceResponseColorBarText {
     display: flex;
-    color: #999;
+    color: #bbb;
+    font-family: monospace;
+    font-size: 14px;
+    /* display: flex; */
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
 }

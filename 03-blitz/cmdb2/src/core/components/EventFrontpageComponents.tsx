@@ -126,12 +126,13 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             <div className={`value frontpageVisible`}>
 
                 <FormControlLabel
+                    className='CMFormControlLabel'
                     control={<Switch size="small" checked={props.event.frontpageVisible} onChange={handleVisibilityChange} />}
                     label="Show this event on the front page?"
                 //labelPlacement="end"
                 />
 
-                {!API.users.isPublic(props.event) && <div className="warning">This event still won't be visible, because it has restricted visibility</div>}
+                {!API.users.isPublic(props.event) && <div className="warning CMSidenote">This event still won't be visible, because it has restricted visibility</div>}
 
             </div>
             <div className='editButtonContainer'>

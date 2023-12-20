@@ -21,7 +21,7 @@
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, DialogActions, DialogContent, DialogContentText, DialogTitle, Link, Tab, Tabs, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, Link, Tab, Tabs, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
@@ -329,7 +329,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch }:
                 </td>
             </React.Fragment>;
         })}
-        <td><Markdown markdown={eventResponse.response.userComment} /></td>
+        <td><Markdown markdown={eventResponse.response.userComment} className='compact' /></td>
     </tr>;
 };
 
@@ -765,6 +765,78 @@ export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithS
     </div>;
 };
 
+export interface EventCompletenessTabContentProps {
+    event: db3.EventClientPayload_Verbose;
+    responseInfo: db3.EventResponseInfo;
+    functionalGroupsClient: DB3Client.xTableRenderClient;
+}
+
+export const EventCompletenessTabContent = ({ event, responseInfo, functionalGroupsClient }: EventCompletenessTabContentProps) => {
+    const [minStrength, setMinStrength] = React.useState<number>(1);
+    const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
+    return <div>
+        <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" />
+        <table>
+            <tbody>
+                <tr>
+                    <th>Instrument group</th>
+                    {event.segments.map((seg) => {
+                        return <th key={seg.id}>{seg.name}</th>;
+                    })}
+                </tr>
+                {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
+                    return <tr key={functionalGroup.id}>
+                        <td><InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} forceNoBorder={true} shape='rectangle' /></td>
+                        {event.segments.map((seg) => {
+                            // come up with the icons per user responses
+                            // either just sort segment responses by answer strength,
+                            // or group by answer. not sure which is more useful probably the 1st.
+                            const sortedResponses = responseInfo.getResponsesForSegment(seg.id).filter(resp => {
+                                // only take responses where we 1. expect the user, OR they have responded.
+                                // AND it matches the current instrument function.
+                                if (!resp.response.attendance) return false; // no answer = don't show.
+                                if (resp.response.attendance.strength < (100 - minStrength)) return false;
+                                const eventResponse = responseInfo.getEventResponseForUser(resp.user);
+                                const responseInstrument = eventResponse.instrument;
+                                if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
+                                return eventResponse.isRelevantForDisplay;
+                            });
+                            sortedResponses.sort((a, b) => {
+                                // no response is weakest.
+                                if (a.response.attendance === null) {
+                                    if (b.response.attendance === null) return 0;
+                                    return -1; // null always lowest, and b is not null.
+                                }
+                                if (b.response.attendance === null) {
+                                    return 1; // b is null & a is not.
+                                }
+                                return (a.response.attendance.strength < b.response.attendance.strength) ? -1 : 1;
+                            });
+                            return <td key={seg.id}>
+                                <div className='attendanceResponseColorBarCell'>
+                                    <div className='attendanceResponseColorBarSegmentContainer'>
+                                        {sortedResponses.map(resp => {
+                                            const style = GetStyleVariablesForColor({ color: resp.response.attendance?.color, ...StandardVariationSpec.Strong });
+                                            return <Tooltip key={resp.response.id} title={`${resp.user.name}: ${resp.response.attendance?.text || "no response"}`}>
+                                                <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass}`} style={style.style}>
+                                                    {resp.user.name.substring(0, 1).toLocaleUpperCase()}
+                                                </div>
+                                            </Tooltip>
+                                        })}
+                                    </div>
+                                    <div className='attendanceResponseColorBarText'>
+                                        {sortedResponses.reduce((acc, r) => acc + (((r.response.attendance?.strength || 0) > 50) ? 1 : 0), 0)}
+                                    </div>
+                                </div>
+                            </td>;
+                        })}
+                    </tr>;
+                })
+                }
+            </tbody>
+        </table>
+    </div>;
+};
 
 export const gEventDetailTabSlugIndices = {
     "info": 0,
@@ -800,7 +872,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             ],
         }),
     });
-    const functionalGroups: db3.InstrumentFunctionalGroupPayload[] = functionalGroupsClient.items as any || [];
+    //const functionalGroups: db3.InstrumentFunctionalGroupPayload[] = functionalGroupsClient.items as any || [];
 
     const expectedAttendanceUserTagContext = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -846,17 +918,17 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
     const invitedCount = responseInfo.allEventResponses.reduce((acc, resp) => acc + (resp.isInvited ? 1 : 0), 0);
 
-    const minMaxSegmentAttendees = API.events.getMinMaxAttendees({ event });
-    let formattedAttendeeRange: string = "";
-    if (minMaxSegmentAttendees.maxAttendees === null || minMaxSegmentAttendees.minAttendees === null) {
-        // probably no segments or no attendees.
-    }
-    else if (minMaxSegmentAttendees.maxAttendees === minMaxSegmentAttendees.minAttendees) {
-        // equal. could be 1 segment, or all similar responses.
-        formattedAttendeeRange = ` (${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
-    } else {
-        formattedAttendeeRange = ` (${minMaxSegmentAttendees.minAttendees}-${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
-    }
+    // const minMaxSegmentAttendees = API.events.getMinMaxAttendees({ event });
+    // let formattedAttendeeRange: string = "";
+    // if (minMaxSegmentAttendees.maxAttendees === null || minMaxSegmentAttendees.minAttendees === null) {
+    //     // probably no segments or no attendees.
+    // }
+    // else if (minMaxSegmentAttendees.maxAttendees === minMaxSegmentAttendees.minAttendees) {
+    //     // equal. could be 1 segment, or all similar responses.
+    //     formattedAttendeeRange = ` (${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
+    // } else {
+    //     formattedAttendeeRange = ` (${minMaxSegmentAttendees.minAttendees}-${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
+    // }
 
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
         <div className='header'>
@@ -914,7 +986,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     >
                         <Tab label="Event Info" {...TabA11yProps('event', 0)} />
                         <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
-                        <Tab label={`Attendance ${formattedAttendeeRange}`} {...TabA11yProps('event', 2)} />
+                        <Tab label={`Attendance`} {...TabA11yProps('event', 2)} />
                         <Tab label={`Completeness`} {...TabA11yProps('event', 3)} />
                         <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
                         <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />
@@ -931,68 +1003,15 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
-                        <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} />
+                        <Suspense>
+                            <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} />
+                        </Suspense>
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
                         {/* COMPLETENESS */}
-                        <table>
-                            <tbody>
-                                <tr>
-                                    <th>Instrument group</th>
-                                    {event.segments.map((seg) => {
-                                        return <th key={seg.id}>{seg.name}</th>;
-                                    })}
-                                </tr>
-                                {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
-                                    return <tr key={functionalGroup.id}>
-                                        <td><InstrumentFunctionalGroupChip value={functionalGroup} size='small' /></td>
-                                        {event.segments.map((seg) => {
-                                            // come up with the icons per user responses
-                                            // either just sort segment responses by answer strength,
-                                            // or group by answer. not sure which is more useful probably the 1st.
-                                            const sortedResponses = responseInfo.getResponsesForSegment(seg.id).filter(resp => {
-                                                // only take responses where we 1. expect the user, OR they have responded.
-                                                // AND it matches the current instrument function.
-                                                const eventResponse = responseInfo.getEventResponseForUser(resp.user);
-                                                const responseInstrument = eventResponse.instrument;
-                                                if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
-                                                return eventResponse.isRelevantForDisplay;
-                                            });
-                                            sortedResponses.sort((a, b) => {
-                                                // no response is weakest.
-                                                if (a.response.attendance === null) {
-                                                    if (b.response.attendance === null) return 0;
-                                                    return -1; // null always lowest, and b is not null.
-                                                }
-                                                if (b.response.attendance === null) {
-                                                    return 1; // b is null & a is not.
-                                                }
-                                                return (a > b) ? -1 : 1;
-                                            });
-                                            return <td key={seg.id}>
-                                                <div className='attendanceResponseColorBarCell'>
-                                                    <div className='attendanceResponseColorBarSegmentContainer'>
-                                                        {sortedResponses.map(resp => {
-                                                            const style = GetStyleVariablesForColor({ color: resp.response.attendance?.color, ...StandardVariationSpec.Strong });
-                                                            return <Tooltip key={resp.response.id} title={`${resp.user.name}: ${resp.response.attendance?.text || "no response"}`}>
-                                                                <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass}`} style={style.style}></div>
-                                                            </Tooltip>
-                                                        })}
-                                                    </div>
-                                                    <div className='attendanceResponseColorBarText'>
-                                                        {sortedResponses.reduce((acc, r) => acc + (((r.response.attendance?.strength || 0) > 50) ? 1 : 0), 0)}
-                                                    </div>
-                                                </div>
-                                            </td>;
-                                        })}
-                                    </tr>;
-                                })
-                                }
-                            </tbody>
-                        </table>
+                        <EventCompletenessTabContent event={event} responseInfo={responseInfo} functionalGroupsClient={functionalGroupsClient} />
                     </CustomTabPanel>
-
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
                         <EventFilesTabContent event={event} refetch={refetch} />

@@ -421,7 +421,7 @@ export type InstrumentFunctionalGroupPayload = Prisma.InstrumentFunctionalGroupG
 export type InstrumentFunctionalGroupPayloadMinimum = Prisma.InstrumentFunctionalGroupGetPayload<{}>;
 
 export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctionalGroupOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { name: 'asc' },
     { id: 'asc' },
 ];
@@ -620,11 +620,11 @@ export type EventSegmentPayloadMinimum = Prisma.EventSegmentGetPayload<{}>;
 export const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
         event: true,
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
+        // visiblePermission: {
+        //     include: {
+        //         roles: true
+        //     }
+        // },
         songs: {
             include: {
                 song: SongArgs,

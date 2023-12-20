@@ -621,10 +621,10 @@ export const xEventSongList = new db3.xTable({
         }
         return ret;
     },
-    visibilitySpec: {
-        ownerUserIDColumnName: "createdByUserId",
-        visiblePermissionIDColumnName: "visiblePermissionId",
-    },
+    // visibilitySpec: {
+    //     ownerUserIDColumnName: "createdByUserId",
+    //     visiblePermissionIDColumnName: "visiblePermissionId",
+    // },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name"),
@@ -637,14 +637,14 @@ export const xEventSongList = new db3.xTable({
             foreignTableID: "Event",
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        new CreatedByUserField({
-            columnName: "createdByUser",
-            fkMember: "createdByUserId",
-        }),
-        new VisiblePermissionField({
-            columnName: "visiblePermission",
-            fkMember: "visiblePermissionId",
-        }),
+        // new CreatedByUserField({
+        //     columnName: "createdByUser",
+        //     fkMember: "createdByUserId",
+        // }),
+        // new VisiblePermissionField({
+        //     columnName: "visiblePermission",
+        //     fkMember: "visiblePermissionId",
+        // }),
         new TagsField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "songs",
             foreignTableID: "Song",

@@ -392,6 +392,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                 {!value.isTBD() && (<>
                     <div className="allDayControl">
                         <FormControlLabel
+                            className='CMFormControlLabel'
                             control={<Switch size="small" checked={value.isAllDay()} onChange={handleAllDayChange} />}
                             label="All-day"
                             labelPlacement="end"
@@ -406,6 +407,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
                 <div className="row">
                     <div className="allDayControl">
                         <FormControlLabel
+                        className='CMFormControlLabel'
                             control={<Switch checked={value.isAllDay()} onChange={handleAllDayChange} />}
                             label="All-day"
                         />

@@ -17,9 +17,10 @@ import * as db3 from "src/core/db3/db3";
 import db, { Prisma } from "db";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
-import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
+import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
 import { formatSongLength } from 'shared/time';
+import { StandardVariationSpec } from 'shared/color';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -110,7 +111,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             {/* <div className="CMChipContainer comment2"></div> */}
             {props.showTags && (props.value.song.tags.length > 0) && (
                 <CMChipContainer>
-                    {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variant="weak" />)}
+                    {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variation={StandardVariationSpec.Weak} />)}
                 </CMChipContainer>
             )}
         </div>
@@ -119,38 +120,38 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 };
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSongListMenuButton = () => {
-    //const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export const EventSongListMenuButton = () => {
+//     //const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
+//     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
-    };
+//     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+//         setAnchorEl(event.currentTarget);
+//     };
 
-    return <>
-        <div className="EventSongListMenuButton interactable iconButton" onClick={handleMenu}><MoreHorizIcon /></div>
+//     return <>
+//         <div className="EventSongListMenuButton interactable iconButton" onClick={handleMenu}><MoreHorizIcon /></div>
 
-        <Menu
-            anchorEl={anchorEl}
-            open={!!anchorEl}
-            onClose={() => setAnchorEl(null)}
+//         <Menu
+//             anchorEl={anchorEl}
+//             open={!!anchorEl}
+//             onClose={() => setAnchorEl(null)}
 
-            anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
-            transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-            }}
-        >
-            <MenuItem>{gIconMap.ContentCopy()} Copy</MenuItem>
-            <MenuItem>{gIconMap.ContentPaste()} Paste (and replace)</MenuItem>
-        </Menu>
+//             anchorOrigin={{
+//                 vertical: 'top',
+//                 horizontal: 'right',
+//             }}
+//             transformOrigin={{
+//                 vertical: 'top',
+//                 horizontal: 'right',
+//             }}
+//         >
+//             <MenuItem>{gIconMap.ContentCopy()} Copy</MenuItem>
+//             <MenuItem>{gIconMap.ContentPaste()} Paste (and replace)</MenuItem>
+//         </Menu>
 
-    </>;
-};
+//     </>;
+// };
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,22 +163,23 @@ interface EventSongListValueViewerProps {
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     //const [currentUser] = useCurrentUser();
     const [showTags, setShowTags] = React.useState<boolean>(false);
-    const visInfo = API.users.getVisibilityInfo(props.value);
+    //const visInfo = API.users.getVisibilityInfo(props.value);
 
     const stats = API.events.getSongListStats(props.value);
-    return <div className={`EventSongListValue EventSongListValueViewer ${visInfo.className}`}>
+    return <div className={`EventSongListValue EventSongListValueViewer`}>
 
         <div className="header">
-            <VisibilityValue permission={props.value.visiblePermission} variant="minimal" />
-            <div className="flex-spacer"></div>
-            <EventSongListMenuButton />
-            <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
-        </div>
-        <div className="content">
-
             <div className="columnName-name">
                 {props.value.name}
             </div>
+            <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
+            {/* <VisibilityValue permission={props.value.visiblePermission} variant="minimal" /> */}
+            {/* <div className="flex-spacer"></div>
+            <EventSongListMenuButton /> */}
+
+        </div>
+        <div className="content">
+
 
             <Markdown markdown={props.value.description} />
 
@@ -190,7 +192,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                         <div className="th tempo">Tempo</div>
                         <div className="th comment">
                             Comment
-                            <FormControlLabel control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+                            <FormControlLabel className='CMFormControlLabel'
+                                control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
                         </div>
                     </div>
                 </div>
@@ -203,9 +206,10 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                 </div>
             </div>
 
-            <div className="stats">
-                {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
-                {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
+            <div className="stats CMSidenote">
+                {stats.songCount} songs,
+                length: {formatSongLength(stats.durationSeconds)}
+                {stats.songsOfUnknownDuration > 0 && <> (with {stats.songsOfUnknownDuration} song(s) of unknown length)</>}
             </div>
         </div>
     </div>;
@@ -350,7 +354,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 </div>
                 {props.showTags && props.value.song && props.value.song.tags.length > 0 && (
                     <CMChipContainer>
-                        {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variant="weak" size="small" />)}
+                        {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variation={StandardVariationSpec.Weak} size="small" />)}
                     </CMChipContainer>
                 )}
             </div>
@@ -458,15 +462,11 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                 </DialogContentText>
 
                 <div className="EventSongListValue">
-                    {/* 
-                <InspectObject src={props.initialValue} tooltip="props.initialValue" />
-                <InspectObject src={initialValueCopy} tooltip="initialValueCopy" />
-                <InspectObject src={value} tooltip="value" /> */}
 
-                    <VisibilityControl value={value.visiblePermission} onChange={(newVisiblePermission) => {
+                    {/* <VisibilityControl value={value.visiblePermission} onChange={(newVisiblePermission) => {
                         const newValue: db3.EventSongListPayload = { ...value, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
                         setValue(newValue);
-                    }} />
+                    }} /> */}
 
                     <div className="flex-spacer"></div>
 
@@ -502,7 +502,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                 <div className="th tempo">Tempo</div>
                                 <div className="th comment">
                                     Comment
-                                    <FormControlLabel control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+                                    <FormControlLabel className='CMFormControlLabel'
+                                        control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
                                 </div>
                             </div>
                         </div>
@@ -558,7 +559,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     const handleSave = (newValue: db3.EventSongListPayload) => {
         updateMutation.invoke({
             id: newValue.id,
-            visiblePermissionId: newValue.visiblePermissionId,
+            //visiblePermissionId: newValue.visiblePermissionId,
             eventId: newValue.eventId,
             description: newValue.description,
             name: newValue.name,
@@ -622,7 +623,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 
     const handleSave = (value: db3.EventSongListPayload) => {
         insertMutation.invoke({
-            visiblePermissionId: value.visiblePermissionId,
+            //visiblePermissionId: value.visiblePermissionId,
             eventId: props.event.id,
             description: value.description,
             name: value.name,

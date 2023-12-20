@@ -210,6 +210,20 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   /* there's an edit bar so reduce the amount of space at the top; it's unnecessary. */
 }
 
+.markdown.renderedContent.compact {
+  margin: 0;
+  padding: 0;
+  color: #999;
+  zoom: 90%;
+  font-style: italic;
+}
+
+.markdown.renderedContent.compact>p,
+.markdown.renderedContent.compact>*>p {
+  margin: 0;
+  padding: 0;
+}
+
 .homeCalendars {
   /* scale: 80%; */
   display: flex;

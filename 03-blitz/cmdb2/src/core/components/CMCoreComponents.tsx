@@ -815,7 +815,7 @@ export const AttendanceChip = (props: AttendanceChipProps) => {
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
-        className={props.className}
+        className={`${props.className} AttendanceChip`}
         color={props.value?.color || null}
         shape={props.shape}
     >
