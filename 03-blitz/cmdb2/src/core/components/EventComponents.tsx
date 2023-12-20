@@ -876,9 +876,9 @@ export const EventCompletenessTabContent = ({ event, responseInfo, functionalGro
                                             </Tooltip>
                                         })}
                                     </div>
-                                    <div className='attendanceResponseColorBarText'>
+                                    {/* <div className='attendanceResponseColorBarText'>
                                         {sortedResponses.reduce((acc, r) => acc + (((r.response.attendance?.strength || 0) > 50) ? 1 : 0), 0)}
-                                    </div>
+                                    </div> */}
                                 </div>
                             </td>;
                         })}
@@ -1022,6 +1022,10 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
+                            if (obj.slug !== event.slug) {
+                                const newUrl = API.events.getURIForEvent(obj.slug);
+                                router.push(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                            }
                         }).catch(err => {
                             console.log(err);
                             showSnackbar({ children: "update error", severity: 'error' });

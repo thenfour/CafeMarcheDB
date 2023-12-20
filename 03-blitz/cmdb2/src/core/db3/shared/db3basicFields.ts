@@ -273,6 +273,7 @@ export class GenericIntegerField extends FieldBase<number> {
     };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        if (clientModel[this.member] === undefined) return;
         const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
         mutationModel[this.member] = vr.parsedValue;
     };
@@ -333,6 +334,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        if (clientModel[this.member] === undefined) return;
         const val: ColorPaletteEntry | null = clientModel[this.member];
         mutationModel[this.member] = (val?.id) || null;
     };
@@ -399,6 +401,7 @@ export class BoolField extends FieldBase<boolean> {
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        if (clientModel[this.member] === undefined) return;
         mutationModel[this.member] = clientModel[this.member];
     };
 
@@ -464,6 +467,7 @@ export class ConstEnumStringField extends FieldBase<string> {
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        if (clientModel[this.member] === undefined) return;
         mutationModel[this.member] = clientModel[this.member];
     };
 
@@ -734,9 +738,8 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         // clients work with associations, even mock associations (where id is empty).
         // mutations don't require any of this info; associations are always with existing local & foreign items.
         // so basically we just need to reduce associations down to an update/mutate model.
-        if (clientModel[this.member]) {
-            mutationModel[this.member] = clientModel[this.member].map(a => a[this.associationForeignIDMember]);
-        }
+        if (clientModel[this.member] === undefined) return;
+        mutationModel[this.member] = clientModel[this.member].map(a => a[this.associationForeignIDMember]);
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
@@ -823,6 +826,7 @@ export class EventStartsAtField extends FieldBase<Date> {
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
         //console.assert(clientModel[this.member] instanceof Date);
+        if (clientModel[this.member] === undefined) return;
         const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
         mutationModel[this.member] = vr.parsedValue;
     };
@@ -875,10 +879,7 @@ export class CreatedAtField extends FieldBase<Date> {
         if (args.mode === "new") {
             return SuccessfulValidateAndParseResult(new Date());
         }
-        console.assert(value instanceof Date);
-        // if (!(value instanceof Date)) {
-        //     debugger;
-        // }
+        assert(value instanceof Date, "what's up with this");
         return SuccessfulValidateAndParseResult(value);
     };
 
@@ -891,6 +892,7 @@ export class CreatedAtField extends FieldBase<Date> {
     };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        if (clientModel[this.member] === undefined) return;
         const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
         mutationModel[this.member] = vr.parsedValue;
     };
@@ -973,6 +975,7 @@ export class SlugField extends FieldBase<string> {
     };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+        if (clientModel[this.member] === undefined) return;
         mutationModel[this.member] = clientModel[this.member];
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
