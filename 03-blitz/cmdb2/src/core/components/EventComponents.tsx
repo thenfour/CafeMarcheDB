@@ -334,8 +334,8 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch }:
             <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />
             {user.name}
         </td>
-        <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" forceNoBorder={true} /> : "--"}</td>
-        <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} variation={instVariant} shape="rectangle" forceNoBorder={true} /> : "--"}</td>
+        <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
+        <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
         {event.segments.map(segment => {
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             return <React.Fragment key={segment.id}>
@@ -824,7 +824,7 @@ export interface EventCompletenessTabContentProps {
 }
 
 export const EventCompletenessTabContent = ({ event, responseInfo, functionalGroupsClient }: EventCompletenessTabContentProps) => {
-    const [minStrength, setMinStrength] = React.useState<number>(1);
+    const [minStrength, setMinStrength] = React.useState<number>(50);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     return <div>
         <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" />
@@ -838,7 +838,7 @@ export const EventCompletenessTabContent = ({ event, responseInfo, functionalGro
                 </tr>
                 {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
                     return <tr key={functionalGroup.id}>
-                        <td><InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} forceNoBorder={true} shape='rectangle' /></td>
+                        <td><InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} border={'noBorder'} shape='rectangle' /></td>
                         {event.segments.map((seg) => {
                             // come up with the icons per user responses
                             // either just sort segment responses by answer strength,
@@ -911,7 +911,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     const [user] = useCurrentUser()!;
     const router = useRouter();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
-
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "EventDetail control requires mutation caps");
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
@@ -1005,18 +1005,46 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
             <div className='titleLine'>
                 <EventTitleControl event={event} refetch={refetch} eventURI={eventURI} />
+                {event.status && <CMStandardDBChip
+                    variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
+                    border='border'
+                    shape="rectangle"
+                    model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
+                />}
 
-                <Button>{gIconMap.Edit()} Edit</Button>
-                {/* <EventTypeControl event={event} refetch={refetch} /> */}
-                {event.type && //<EventTypeValue type={event.type} />
-                    <CMStandardDBChip model={event.type} getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`} />
-                }
-                {event.status && <CMStandardDBChip model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`} />}
+                <EditFieldsDialogButton
+                    dialogTitle='Edit event'
+                    initialValue={event}
+                    renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
+                    tableSpec={tableClient.tableSpec}
+                    onCancel={() => { }}
+                    onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                        tableClient.doUpdateMutation(obj).then(() => {
+                            showSnackbar({ children: "update successful", severity: 'success' });
+                            api.close();
+                        }).catch(err => {
+                            console.log(err);
+                            showSnackbar({ children: "update error", severity: 'error' });
+                        }).finally(refetch);
+                    }}
+                    readOnly={false}
+                    renderDialogDescription={() => <>aoesunthaoii</>}
+                />
             </div>
 
             <div className="tagsLine">
                 <CMChipContainer>
-                    {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+                    {event.type && //<EventTypeValue type={event.type} />
+                        <CMStandardDBChip
+                            model={event.type}
+                            getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                            // shape='rectangle'
+                            border='border'
+                            variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
+                        />
+                    }
+
+                    {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
                 </CMChipContainer>
             </div>
             {/* 

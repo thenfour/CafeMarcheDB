@@ -265,6 +265,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     font-size: 24px;
     font-weight: bold;
     text-transform: uppercase;
+    margin-right: 20px;
 }
 
 /* 
@@ -478,13 +479,14 @@ or,
     /*allow the header to touch edges*/
     padding: 0;
     border-radius: 8px;
-    border: 2px solid #fea;
+    /*fea*/
+    border: 2px solid #eee;
     margin: 0 10px;
     margin-bottom: 19px;
 }
 
 .EventSongListValue>.header {
-    background-color: #fea;
+    background-color: #eee;
     display: flex;
     align-items: center;
     padding: 0 15px;
@@ -1404,7 +1406,7 @@ in particular the date range picker is wide.*/
     font-weight: bold;
 
     user-select: none;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 .attendanceResponseColorBarSegmentContainer {

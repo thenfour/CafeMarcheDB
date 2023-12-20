@@ -1671,7 +1671,7 @@ const MyComponent = () => {
                 e.weak,
                 e.weakSelected,
             ];
-            return `CreatePaletteEntry("${e.id}", "${e.id}", "${e.contrastColorOnBlack}", "${e.contrastColorOnWhite}" ${variations.map(v => variationToArgs(v)).join(",")}),`
+            return `CreatePaletteEntry("${e.id}", "${e.id}", "${e.contrastColorOnBlack}", "${e.contrastColorOnWhite}", ${variations.map(v => variationToArgs(v)).join(",")}),`
         });
 
         const txt = code.join(`\n`) + `\n`;
@@ -1810,6 +1810,9 @@ const MyComponent = () => {
                     onClick={handleSwatchClick} onDrop={(dropped, target) => {
                         // copy all variations for this color.
                         const e = gGeneralPaletteList.findEntry(target.id)!;
+                        e.contrastColorOnBlack = dropped.contrastColorOnBlack;
+                        e.contrastColorOnWhite = dropped.contrastColorOnWhite;
+
                         e.strong = { ...dropped.strong };
                         e.strongDisabled = { ...dropped.strongDisabled };
                         e.strongDisabledSelected = { ...dropped.strongDisabledSelected };

@@ -64,13 +64,15 @@ export type CMChipShapeOptions = "rounded" | "rectangle";
 
 export type CMChipSizeOptions = "small" | "big";
 
+export type CMChipBorderOption = "default" | "border" | "noBorder";
+
 export interface CMChipProps {
     chipRef?: React.Ref<HTMLDivElement>;
     color?: ColorPaletteEntry | string | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     shape?: CMChipShapeOptions;
-    noBorder?: boolean;
+    border?: CMChipBorderOption;
     className?: string;
     tooltip?: string | null;
 
@@ -99,7 +101,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
     const chipClasses: string[] = [
         "chipMain applyColor",
-        !!props.noBorder ? "colorForceNoBorder" : "",
+        props.border === "border" ? "colorForceBorder" : (props.border === "noBorder" ? "colorForceNoBorder" : "colorForceDefaultBorder"),
         style.cssClass,
         size,
         variant.enabled ? "enabled" : "disabled",
@@ -143,7 +145,7 @@ export interface CMStandardDBChipProps<T> {
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     shape?: CMChipShapeOptions;
-    forceNoBorder?: boolean;
+    border?: CMChipBorderOption;
     onClick?: () => void;
     className?: string;
 };
@@ -159,7 +161,7 @@ export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStan
         className={props.className}
         tooltip={tooltip}
         shape={props.shape}
-        noBorder={props.forceNoBorder}
+        border={props.border}
     >
         {RenderMuiIcon(props.model?.iconName)}{props.getText ? props.getText(props.model, dbText) : dbText || "--"}
     </CMChip>;
@@ -333,22 +335,22 @@ export interface EditFieldsDialogButtonApi {
     close: () => void;
 };
 export interface EditFieldsDialogButtonProps<TRowModel> {
-    value: string;
+    //value: string;
     readOnly: boolean;
     tableSpec: DB3Client.xTableClientSpec;
-    selectButtonLabel: string;
+    renderButtonChildren: () => React.ReactNode;
     onCancel: () => void;
     onOK: (obj: TRowModel, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => void;
     initialValue: TRowModel;
     dialogTitle: string;
-    renderDialogDescription: () => React.ReactElement;
+    renderDialogDescription: () => React.ReactNode;
 };
 export const EditFieldsDialogButton = <TRowModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     return <>
-        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>
+        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>
         {isOpen && !props.readOnly && <DB3EditObjectDialog
             initialValue={props.initialValue as TAnyModel}
             onCancel={() => {
@@ -731,7 +733,7 @@ export interface InstrumentChipProps {
     onClick?: () => void;
     className?: string;
     shape?: CMChipShapeOptions;
-    forceNoBorder?: boolean;
+    border?: CMChipBorderOption;
 };
 
 export const InstrumentChip = (props: InstrumentChipProps) => {
@@ -742,7 +744,7 @@ export const InstrumentChip = (props: InstrumentChipProps) => {
         className={props.className}
         color={props.value.functionalGroup.color}
         shape={props.shape}
-        noBorder={props.forceNoBorder}
+        border={props.border}
     >
         {props.value.name}
     </CMChip>
@@ -755,7 +757,7 @@ export interface InstrumentFunctionalGroupChipProps {
     onClick?: () => void;
     className?: string;
     shape?: CMChipShapeOptions;
-    forceNoBorder?: boolean;
+    border?: CMChipBorderOption;
 };
 
 export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupChipProps) => {
@@ -766,7 +768,7 @@ export const InstrumentFunctionalGroupChip = (props: InstrumentFunctionalGroupCh
         className={props.className}
         color={props.value.color}
         shape={props.shape}
-        noBorder={props.forceNoBorder}
+        border={props.border}
     >
         {props.value.name}
     </CMChip>

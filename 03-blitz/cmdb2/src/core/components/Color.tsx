@@ -33,9 +33,8 @@ export const GetStyleVariablesForColorVariation = (entry: ColorPaletteEntryVaria
         isNull ? "colorNull" : "colorNonNull",
         entry.showBorder ? "colorShowBorder" : "colorNoBorder",
         variation.enabled ? "colorEnabled" : "colorDisabled",
-        variation.inverted ? "colorInverted" : "colorNotInverted",
         variation.selected ? "colorSelected" : "colorNotSelected",
-        variation.hollow ? "colorHollow" : "colorNotHollow",
+        variation.fillOption,
         variation.variation,
     ];
     return {

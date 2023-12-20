@@ -197,6 +197,9 @@ skott --showCircularDependencies
 
 will show clearly on the command line.
 
+# DB3 components
+
+    <EditFieldsDialogButton>
 
 # how: build / deployment?
 

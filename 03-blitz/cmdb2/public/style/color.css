@@ -9,6 +9,10 @@
     border: 1px solid var(--color-background);
 }
 
+.colorForceBorder {
+    border: 1px solid var(--color-foreground);
+}
+
 .colorSwatchRoot {
     display: flex;
     flex-direction: column;
