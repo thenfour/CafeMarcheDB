@@ -736,6 +736,7 @@ export const EventTypeArgs = Prisma.validator<Prisma.EventTypeArgs>()({
 });
 
 export type EventTypePayload = Prisma.EventTypeGetPayload<typeof EventTypeArgs>;
+export type EventTypeMinimumPayload = Prisma.EventTypeGetPayload<{}>;
 
 export const EventTypeNaturalOrderBy: Prisma.EventTypeOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
@@ -963,7 +964,7 @@ export const EventStatusArgs = Prisma.validator<Prisma.EventStatusArgs>()({
 
 export type EventStatusPayload = Prisma.EventStatusGetPayload<typeof EventStatusArgs>;
 
-export type EventStatusPayloadBare = Prisma.EventStatusGetPayload<{}>;
+export type EventStatusPayloadMinimum = Prisma.EventStatusGetPayload<{}>;
 
 export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInput[] = [
     { sortOrder: 'desc' },

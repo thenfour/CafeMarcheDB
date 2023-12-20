@@ -18,7 +18,7 @@ import { Coord2D, MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadR
 import { CMTextField } from "./CMTextField";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { GetStyleVariablesForColor } from './Color';
-import { Coalesce, TAnyModel } from "shared/utils";
+import { Coalesce, IsNullOrWhitespace, TAnyModel } from "shared/utils";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
@@ -72,6 +72,7 @@ export interface CMChipProps {
     shape?: CMChipShapeOptions;
     noBorder?: boolean;
     className?: string;
+    tooltip?: string | null;
 
     onDelete?: () => void;
     onClick?: () => void;
@@ -105,13 +106,17 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
         variant.selected ? "selected" : "notselected",
     ];
 
-    return <div className={wrapperClasses.join(" ")} style={style.style} onClick={props.onClick} ref={props.chipRef}>
+    const chipNode = <div className={wrapperClasses.join(" ")} style={style.style} onClick={props.onClick} ref={props.chipRef}>
         <div className={chipClasses.join(" ")}>
             <div className='content'>
                 {props.children}
             </div>
         </div>
     </div>;
+
+    if (IsNullOrWhitespace(props.tooltip)) return chipNode;
+
+    return <Tooltip title={props.tooltip}>{chipNode}</Tooltip>;
 }
 
 
@@ -124,27 +129,39 @@ export const CMChipContainer = (props: React.PropsWithChildren<{ className?: str
 export interface CMStandardDBChipModel {
     color?: null | string | ColorPaletteEntry;
     iconName?: string | null;
+
     text?: string | null;
+    label?: string | null;
+
+    description?: string | null;
 }
 
 export interface CMStandardDBChipProps<T> {
     model: T | null;
-    getText?: (value: T | null) => string; // override the text getter
+    getText?: (value: T | null, coalescedValue: string | null) => string; // override the text getter
+    getTooltip?: (value: T | null, coalescedValue: string | null) => string | null;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
+    shape?: CMChipShapeOptions;
+    forceNoBorder?: boolean;
     onClick?: () => void;
     className?: string;
 };
 
 export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
+    const dbText = props.model?.label || props.model?.text || null;
+    const tooltip: string | null | undefined = props.getTooltip ? props.getTooltip(props.model, dbText) : (props.model?.description);
     return <CMChip
         color={props.model?.color}
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
+        tooltip={tooltip}
+        shape={props.shape}
+        noBorder={props.forceNoBorder}
     >
-        {RenderMuiIcon(props.model?.iconName)}{props.getText ? props.getText(props.model) : props.model?.text || "--"}
+        {RenderMuiIcon(props.model?.iconName)}{props.getText ? props.getText(props.model, dbText) : dbText || "--"}
     </CMChip>;
 };
 

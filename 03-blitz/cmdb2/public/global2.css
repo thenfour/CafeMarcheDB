@@ -1428,3 +1428,8 @@ in particular the date range picker is wide.*/
     justify-content: center;
     font-weight: bold;
 }
+
+.attendanceDetailTable .responseCell {
+    min-width: 100px;
+    text-align: center;
+}

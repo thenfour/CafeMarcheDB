@@ -33,7 +33,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
-import { AttendanceChip, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, VisibilityControl } from './CMCoreComponents';
+import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, VisibilityControl, VisibilityValue } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { EventFilesTabContent } from './EventFileComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
@@ -99,42 +99,57 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
 };
 
 
-////////////////////////////////////////////////////////////////
-// tag list with ability to edit
-// see also OwnInstrumentsControl
-interface EventTagsControlProps {
-    event: db3.EventClientPayload_Verbose;
-    tableClient: DB3Client.xTableRenderClient;
-};
+// ////////////////////////////////////////////////////////////////
+// // tag list with ability to edit
+// // see also OwnInstrumentsControl
+// interface EventTagsControlProps {
+//     event: db3.EventClientPayload_Verbose;
+//     tableClient: DB3Client.xTableRenderClient;
+// };
 
-export const EventTagsControl = ({ event, tableClient }: EventTagsControlProps) => {
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "tags control requires mutation caps");
-    //const validationResult = tableClient.schema.ValidateAndComputeDiff(event, event, "update");
-    return (<>
-        {/* <InspectObject src={event} tooltip='event row' /> */}
-        {tableClient.getColumn("tags").renderForNewDialog!({
-            key: event.id,
-            row: event,
-            value: event.tags,
-            //validationResult,
-            api: {
-                setFieldValues: (updatedFields) => {
-                    const updateObj = {
-                        id: event.id,
-                        ...updatedFields,
-                    };
-                    tableClient.doUpdateMutation(updateObj).then(e => {
-                        showSnackbar({ severity: "success", children: "Tags updated" });
-                    }).catch(e => {
-                        console.log(e);
-                        showSnackbar({ severity: "error", children: "error updating tags" });
-                    });
-                }
-            }
-        })}
-    </>);
-};
+// export const EventTagsControl = ({ event, tableClient }: EventTagsControlProps) => {
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+//     assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "tags control requires mutation caps");
+//     //const validationResult = tableClient.schema.ValidateAndComputeDiff(event, event, "update");
+//     return (<>
+//         {/* <InspectObject src={event} tooltip='event row' /> */}
+//         {tableClient.getColumn("tags").renderForNewDialog!({
+//             key: event.id,
+//             row: event,
+//             value: event.tags,
+//             //validationResult,
+//             api: {
+//                 setFieldValues: (updatedFields) => {
+//                     const updateObj = {
+//                         id: event.id,
+//                         ...updatedFields,
+//                     };
+//                     tableClient.doUpdateMutation(updateObj).then(e => {
+//                         showSnackbar({ severity: "success", children: "Tags updated" });
+//                     }).catch(e => {
+//                         console.log(e);
+//                         showSnackbar({ severity: "error", children: "error updating tags" });
+//                     });
+//                 }
+//             }
+//         })}
+//     </>);
+// };
+
+
+
+// ////////////////////////////////////////////////////////////////
+// interface EventTagsViewProps {
+//     event: db3.EventClientPayload_Verbose;
+// };
+
+// export const EventTagsView = ({ event }: EventTagsViewProps) => {
+//     return <CMChipContainer>
+//         {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} />)}
+//     </CMChipContainer>;
+// };
+
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -324,7 +339,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch }:
         {event.segments.map(segment => {
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             return <React.Fragment key={segment.id}>
-                <td>
+                <td className='responseCell'>
                     {!!segmentResponse.response.attendance ? <AttendanceChip value={segmentResponse.response.attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
                 </td>
             </React.Fragment>;
@@ -345,10 +360,19 @@ export interface EventAttendanceDetailProps {
     refetch: () => void;
 };
 
+type EventAttendanceDetailSortField = "user" | "instrument" | "response";
+
 export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }: EventAttendanceDetailProps) => {
     const segAttendees = API.events.getAttendeeCountPerSegment({ event });
     const token = API.events.updateUserEventAttendance.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
+    const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
+    const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentPayload | null>(null);
+
+    React.useEffect(() => {
+        setSortSegment(event.segments.find(s => s.id === sortSegmentId) || null);
+    }, [sortSegmentId, event]);
 
     const onAddUser = (u: db3.UserPayload | null) => {
         if (u == null) return;
@@ -366,6 +390,27 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
         });
     };
 
+    // sort rows
+    const sortedUsers = [...props.responseInfo.distinctUsers];
+    sortedUsers.sort((a, b) => {
+        if (sortField === 'instrument') {
+            const ar = props.responseInfo.getEventResponseForUser(a);
+            const br = props.responseInfo.getEventResponseForUser(b);
+            if (!ar.instrument) return -1;
+            if (!br.instrument) return 1;
+            return ar.instrument.functionalGroup.sortOrder < br.instrument.functionalGroup.sortOrder ? -1 : 1;
+        }
+        if (sortField === 'response' && !!sortSegment) {
+            const ar = props.responseInfo.getResponseForUserAndSegment({ user: a, segment: sortSegment });
+            const br = props.responseInfo.getResponseForUserAndSegment({ user: b, segment: sortSegment });
+            if (!ar.response.attendance) return -1;
+            if (!br.response.attendance) return 1;
+            return ar.response.attendance.sortOrder < br.response.attendance.sortOrder ? -1 : 1;
+        }
+        //        if (sortField === 'user') 
+        return a.name < b.name ? -1 : 1;
+    });
+
     return <>
         <DB3Client.RenderBasicNameValuePair
             name="attendance is expected for"
@@ -375,18 +420,25 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
         <table className='attendanceDetailTable'>
             <thead>
                 <tr>
-                    <th>Who</th>
-                    <th>Instrument</th>
-                    <th>Function</th>
+                    <th>
+                        <div className='interactable' onClick={() => setSortField('user')}>Who {sortField === 'user' && <>&#8595;</>}</div>
+                    </th>
+                    <th colSpan={2}>
+                        <div className='interactable' onClick={() => setSortField('instrument')}>Instrument / function {sortField === 'instrument' && <>&#8595;</>}</div>
+                    </th>
                     {event.segments.map(seg => <React.Fragment key={seg.id}>
-                        <th>{seg.name}</th>
+                        <th className='responseCell' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
+                            <div className='interactable'>
+                                {seg.name} {sortField === 'response' && seg.id === sortSegmentId && <>&#8595;</>}
+                            </div>
+                        </th>
                     </React.Fragment>)}
                     <th>Comments</th>
                 </tr>
             </thead>
             <tbody>
                 {
-                    props.responseInfo.distinctUsers.map(user => {
+                    sortedUsers.map(user => {
                         return <EventAttendanceDetailRow key={user.id} responseInfo={props.responseInfo} event={event} user={user} refetch={refetch} />
                     })
                 }
@@ -408,7 +460,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
                     <td>{/*Instrument*/}</td>
                     <td>{/*Function*/}</td>
                     {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
-                        <td>{seg.attendeeCount}</td>
+                        <td className='responseCell'>{seg.attendeeCount}</td>
                     </React.Fragment>)}
                     <td>{/*Comments*/}</td>
                 </tr>
@@ -465,113 +517,113 @@ export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTyp
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface EventTypeValueProps {
-    onClick?: () => void;
-    type: db3.EventTypePayload | null;
-};
-export const EventTypeValue = (props: EventTypeValueProps) => {
-    return !props.type ? (<Button onClick={props.onClick}>Set event type</Button>) : (<CMStatusIndicator model={props.type} onClick={props.onClick} />);
-};
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export interface EventTypeValueProps {
+//     onClick?: () => void;
+//     type: db3.EventTypeMinimumPayload | null;
+// };
+// export const EventTypeValue = (props: EventTypeValueProps) => {
+//     return !props.type ? (<Button onClick={props.onClick}>Set event type</Button>) : (<CMStatusIndicator model={props.type} onClick={props.onClick} />);
+// };
 
-export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+// export const EventTypeControl = ({ event, refetch }: { event: EventWithTypePayload, refetch: () => void }) => {
+//     const mutationToken = API.events.updateEventBasicFields.useToken();
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const handleChange = (value: db3.EventTypePayload | null) => {
-        mutationToken.invoke({
-            eventId: event.id,
-            typeId: !value ? undefined : value.id,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated event type" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event type" });
-        }).finally(() => {
-            refetch();
-        });
-    };
+//     const handleChange = (value: db3.EventTypePayload | null) => {
+//         mutationToken.invoke({
+//             eventId: event.id,
+//             typeId: !value ? undefined : value.id,
+//         }).then(() => {
+//             showSnackbar({ severity: "success", children: "Successfully updated event type" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: "error updating event type" });
+//         }).finally(() => {
+//             refetch();
+//         });
+//     };
 
-    const typesClient = API.events.getEventTypesClient();
+//     const typesClient = API.events.getEventTypesClient();
 
-    // value type is EventTypePayload
-    return <div className={`eventTypeControl ${event.type?.significance}`}>
-        <ChoiceEditCell
-            isEqual={(a: db3.EventTypePayload, b: db3.EventTypePayload) => a.id === b.id}
-            items={typesClient.items}
-            readOnly={false} // todo!
-            selectDialogTitle='select dialog title here'
-            value={event.type}
-            renderDialogDescription={() => {
-                return <>dialog description heree</>;
-            }}
-            renderAsListItem={(chprops, value: db3.EventTypePayload | null, selected: boolean) => {
-                return <li {...chprops}>
-                    <EventTypeValue type={value} /></li>;
-            }}
-            renderValue={(args) => {
-                return <EventTypeValue type={args.value} onClick={args.handleEnterEdit} />;
-            }}
-            onChange={handleChange}
-        />
-    </div>;
-};
+//     // value type is EventTypePayload
+//     return <div className={`eventTypeControl ${event.type?.significance}`}>
+//         <ChoiceEditCell
+//             isEqual={(a: db3.EventTypePayload, b: db3.EventTypePayload) => a.id === b.id}
+//             items={typesClient.items}
+//             readOnly={false} // todo!
+//             selectDialogTitle='select dialog title here'
+//             value={event.type}
+//             renderDialogDescription={() => {
+//                 return <>dialog description heree</>;
+//             }}
+//             renderAsListItem={(chprops, value: db3.EventTypePayload | null, selected: boolean) => {
+//                 return <li {...chprops}>
+//                     <EventTypeValue type={value} /></li>;
+//             }}
+//             renderValue={(args) => {
+//                 return <EventTypeValue type={args.value} onClick={args.handleEnterEdit} />;
+//             }}
+//             onChange={handleChange}
+//         />
+//     </div>;
+// };
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface EventStatusValueProps {
     onClick?: () => void;
-    status: db3.EventStatusPayload | null;
+    status: db3.EventStatusPayloadMinimum | null;
 };
 export const EventStatusValue = (props: EventStatusValueProps) => {
     return !props.status ? (<Button onClick={props.onClick}>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o?.label || ""} />);
 };
 
-export const EventStatusControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+// export const EventStatusControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
+//     const mutationToken = API.events.updateEventBasicFields.useToken();
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const handleChange = (value: db3.EventStatusPayload | null) => {
-        mutationToken.invoke({
-            eventId: event.id,
-            statusId: !value ? undefined : value.id,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated event status" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event status" });
-        }).finally(() => {
-            refetch();
-        });
-    };
+//     const handleChange = (value: db3.EventStatusPayload | null) => {
+//         mutationToken.invoke({
+//             eventId: event.id,
+//             statusId: !value ? undefined : value.id,
+//         }).then(() => {
+//             showSnackbar({ severity: "success", children: "Successfully updated event status" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: "error updating event status" });
+//         }).finally(() => {
+//             refetch();
+//         });
+//     };
 
-    const statusesClient = API.events.getEventStatusesClient();
+//     const statusesClient = API.events.getEventStatusesClient();
 
-    // value type is EventStatusPayload
-    return <div className={`eventStatusControl ${event.status?.significance}`}>
-        <ChoiceEditCell
-            isEqual={(a: db3.EventStatusPayload, b: db3.EventStatusPayload) => a.id === b.id}
-            items={statusesClient.items}
-            readOnly={false} // todo!
-            //validationError={null}
-            selectDialogTitle='select dialog title here'
-            //selectButtonLabel='select button'
-            value={event.status}
-            renderDialogDescription={() => {
-                return <>dialog description heree</>;
-            }}
-            renderAsListItem={(chprops, value: db3.EventStatusPayload | null, selected: boolean) => {
-                return <li {...chprops}>
-                    <EventStatusValue status={value} /></li>;
-            }}
-            renderValue={(args) => {
-                return <EventStatusValue status={args.value} onClick={args.handleEnterEdit} />;
-            }}
-            onChange={handleChange}
-        />
-    </div>;
-};
+//     // value type is EventStatusPayload
+//     return <div className={`eventStatusControl ${event.status?.significance}`}>
+//         <ChoiceEditCell
+//             isEqual={(a: db3.EventStatusPayload, b: db3.EventStatusPayload) => a.id === b.id}
+//             items={statusesClient.items}
+//             readOnly={false} // todo!
+//             //validationError={null}
+//             selectDialogTitle='select dialog title here'
+//             //selectButtonLabel='select button'
+//             value={event.status}
+//             renderDialogDescription={() => {
+//                 return <>dialog description heree</>;
+//             }}
+//             renderAsListItem={(chprops, value: db3.EventStatusPayload | null, selected: boolean) => {
+//                 return <li {...chprops}>
+//                     <EventStatusValue status={value} /></li>;
+//             }}
+//             renderValue={(args) => {
+//                 return <EventStatusValue status={args.value} onClick={args.handleEnterEdit} />;
+//             }}
+//             onChange={handleChange}
+//         />
+//     </div>;
+// };
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -634,80 +686,80 @@ export const EventAttendanceUserTagControl = ({ event, refetch }: { event: db3.E
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPayloadMinimum, refetch: () => void }) => {
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const [showingConfirmation, setShowingConfirmation] = React.useState(false);
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export const EventSoftDeleteControl = ({ event, refetch }: { event: db3.EventPayloadMinimum, refetch: () => void }) => {
+//     const mutationToken = API.events.updateEventBasicFields.useToken();
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+//     const [showingConfirmation, setShowingConfirmation] = React.useState(false);
 
-    const handleClick = () => {
-        mutationToken.invoke({
-            eventId: event.id,
-            isDeleted: true,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully deleted event" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error deleting event" });
-        }).finally(() => {
-            refetch();
-            setShowingConfirmation(false);
-        });
-    };
+//     const handleClick = () => {
+//         mutationToken.invoke({
+//             eventId: event.id,
+//             isDeleted: true,
+//         }).then(() => {
+//             showSnackbar({ severity: "success", children: "Successfully deleted event" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: "error deleting event" });
+//         }).finally(() => {
+//             refetch();
+//             setShowingConfirmation(false);
+//         });
+//     };
 
-    return <>
-        <div className={`interactable EventSoftDeleteControl freeButton`} onClick={() => setShowingConfirmation(true)}>
-            {gIconMap.Delete()}
-        </div>
-        {showingConfirmation && <ConfirmationDialog onCancel={() => setShowingConfirmation(false)} onConfirm={handleClick} />}
-    </>;
-};
-
-
+//     return <>
+//         <div className={`interactable EventSoftDeleteControl freeButton`} onClick={() => setShowingConfirmation(true)}>
+//             {gIconMap.Delete()}
+//         </div>
+//         {showingConfirmation && <ConfirmationDialog onCancel={() => setShowingConfirmation(false)} onConfirm={handleClick} />}
+//     </>;
+// };
 
 
-type EventEditableTitlePayload = Prisma.EventGetPayload<{
-    select: {
-        id: true,
-        slug: true,
-        name: true,
-    }
-}>
+
+
+// type EventEditableTitlePayload = Prisma.EventGetPayload<{
+//     select: {
+//         id: true,
+//         slug: true,
+//         name: true,
+//     }
+// }>
 
 ////////////////////////////////////////////////////////////////
 export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const router = useRouter();
-    const tableSpec = new DB3Client.xTableClientSpec({
-        table: db3.xEvent,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
-            new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
-        ],
-    });
+    // const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    // const router = useRouter();
+    // const tableSpec = new DB3Client.xTableClientSpec({
+    //     table: db3.xEvent,
+    //     columns: [
+    //         new DB3Client.PKColumnClient({ columnName: "id" }),
+    //         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
+    //         new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
+    //     ],
+    // });
 
-    const onOK = (obj: EventEditableTitlePayload, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
-        api.close();
-        tableClient.doUpdateMutation(obj).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated event title" });
-            // if you update the event slug it may cause you to be on an obsolete URI.
-            // it's not clear to me the best way to handle this, because we need to know if we're on the events page or not, and is it even a good idea then to redirect? best to just give a message.
-            //console.log(`oldslug: ${event.slug} newslug: ${obj.slug}, routerpath: ${router.pathname}`);
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event title" });
-        }).finally(() => {
-            api.close();
-            refetch();
-        });
-    };
+    // const onOK = (obj: EventEditableTitlePayload, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+    //     api.close();
+    //     tableClient.doUpdateMutation(obj).then(() => {
+    //         showSnackbar({ severity: "success", children: "Successfully updated event title" });
+    //         // if you update the event slug it may cause you to be on an obsolete URI.
+    //         // it's not clear to me the best way to handle this, because we need to know if we're on the events page or not, and is it even a good idea then to redirect? best to just give a message.
+    //         //console.log(`oldslug: ${event.slug} newslug: ${obj.slug}, routerpath: ${router.pathname}`);
+    //     }).catch(e => {
+    //         console.log(e);
+    //         showSnackbar({ severity: "error", children: "error updating event title" });
+    //     }).finally(() => {
+    //         api.close();
+    //         refetch();
+    //     });
+    // };
 
     return <div className="titleText">
         <Link href={eventURI} className="titleLink">
             {event.name}
         </Link>
-        <EditFieldsDialogButton
+        {/* <EditFieldsDialogButton
             tableSpec={tableSpec}
             dialogTitle='name dlg title'
             readOnly={false} // todo
@@ -717,7 +769,7 @@ export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.Eve
             initialValue={event}
             onCancel={() => { }}
             onOK={onOK}
-        />
+        /> */}
     </div>;
 
 };
@@ -731,29 +783,29 @@ export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.Eve
 // 2. allow editing link uri
 export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
     const locationKnown = !IsNullOrWhitespace(event.locationDescription);
-    const mutationToken = API.events.updateEventBasicFields.useToken();
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    // const mutationToken = API.events.updateEventBasicFields.useToken();
+    // const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const handleChange = (newValue: string) => {
-        mutationToken.invoke({
-            eventId: event.id,
-            locationDescription: newValue,
-        }).then(() => {
-            showSnackbar({ severity: "success", children: "Successfully updated event location" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event location" });
-        }).finally(() => {
-            refetch();
-        });
-    };
+    // const handleChange = (newValue: string) => {
+    //     mutationToken.invoke({
+    //         eventId: event.id,
+    //         locationDescription: newValue,
+    //     }).then(() => {
+    //         showSnackbar({ severity: "success", children: "Successfully updated event location" });
+    //     }).catch(e => {
+    //         console.log(e);
+    //         showSnackbar({ severity: "error", children: "error updating event location" });
+    //     }).finally(() => {
+    //         refetch();
+    //     });
+    // };
 
     return <div className="location smallInfoBox">
         <PlaceIcon className="icon" />
         <span className="text">{
             locationKnown ? event.locationDescription : "Location TBD"
         }</span>
-        <EditTextDialogButton
+        {/* <EditTextDialogButton
             columnSpec={db3.xEvent.getColumn("locationDescription")! as db3.FieldBase<string>}
             dialogTitle='Location'
             readOnly={false} // todo
@@ -761,7 +813,7 @@ export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithS
             selectButtonLabel='edit location'
             value={event.locationDescription}
             onChange={handleChange}
-        />
+        /> */}
     </div>;
 };
 
@@ -916,7 +968,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
     const visInfo = API.users.getVisibilityInfo(event);
     const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
-    const invitedCount = responseInfo.allEventResponses.reduce((acc, resp) => acc + (resp.isInvited ? 1 : 0), 0);
+    //const invitedCount = responseInfo.allEventResponses.reduce((acc, resp) => acc + (resp.isInvited ? 1 : 0), 0);
 
     // const minMaxSegmentAttendees = API.events.getMinMaxAttendees({ event });
     // let formattedAttendeeRange: string = "";
@@ -933,10 +985,11 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
         <div className='header'>
             <div className='flex-spacer'></div>
-            <Suspense>
+            {/* <Suspense>
                 <EventVisibilityControl event={event} refetch={refetch} />
-            </Suspense>
-            <EventSoftDeleteControl event={event} refetch={refetch} />
+            </Suspense> */}
+            <VisibilityValue permission={event.visiblePermission} variant='verbose' />
+            {/* <EventSoftDeleteControl event={event} refetch={refetch} /> */}
         </div>
 
         <div className='content'>
@@ -952,12 +1005,19 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
             <div className='titleLine'>
                 <EventTitleControl event={event} refetch={refetch} eventURI={eventURI} />
-                <EventTypeControl event={event} refetch={refetch} />
-                <EventStatusControl event={event} refetch={refetch} />
+
+                <Button>{gIconMap.Edit()} Edit</Button>
+                {/* <EventTypeControl event={event} refetch={refetch} /> */}
+                {event.type && //<EventTypeValue type={event.type} />
+                    <CMStandardDBChip model={event.type} getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`} />
+                }
+                {event.status && <CMStandardDBChip model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`} />}
             </div>
 
             <div className="tagsLine">
-                <EventTagsControl event={event} tableClient={tableClient} />
+                <CMChipContainer>
+                    {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+                </CMChipContainer>
             </div>
             {/* 
         <div className="attendanceResponseInput">

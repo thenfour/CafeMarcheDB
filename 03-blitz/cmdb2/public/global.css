@@ -627,6 +627,10 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   align-items: center;
 }
 
+.contentSection .titleLine>* {
+  margin-right: 10px;
+}
+
 .contentSection .infoLine {
   display: flex;
   align-items: center;
@@ -639,7 +643,8 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   font-weight: bold;
   color: var(--primary-color);
   text-transform: uppercase;
-  margin: 3px 0px;
+  /* margin: 3px 0px; */
+  margin-right: 20px;
 }
 
 .contentSection.rehearsal .titleText {
@@ -674,7 +679,8 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 .contentSection .smallInfoBox {
   /* background-color: #eee; */
-  margin-right: 20px;
+  margin-right: 40px;
+  margin-top: 4px;
   /* margin-bottom: 10px; */
   display: flex;
   align-items: center;
