@@ -1394,6 +1394,53 @@ in particular the date range picker is wide.*/
     padding: 20px;
 }
 
+.SwatchTempPalette .SwatchTempPaletteEntry {
+    border: 2px dashed #0003;
+    border-left: none;
+}
+
+.SwatchTempPalette .SwatchTempPaletteEntry:first-child {
+    border-left: 2px dashed #0003;
+}
+
+.SwatchTempPalette .SwatchTempPaletteEntry.selected {
+    border-bottom: 2px solid #00fc;
+    border-top: 2px solid #00fc;
+}
+
+.SwatchTempPaletteSection {
+    position: sticky;
+    inset: 0px;
+    z-index: 10000;
+}
+
+.ColorDetail {
+    display: flex;
+}
+
+.ColorDetail .swatchPreviewCell {
+    --preview-bg: #red;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background-color: var(--preview-bg);
+}
+
+
+.nameValueTable {
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.nameValueTable .row {
+    display: flex;
+}
+
+.nameValueTable .name {
+    width: 100px;
+}
+
 .attendanceResponseColorBarSegment {
     height: 24px;
     width: 16px;

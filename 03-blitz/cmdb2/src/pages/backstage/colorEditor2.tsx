@@ -162,7 +162,7 @@ import { ColorPaletteGrid, ColorPaletteListComponent, ColorPick, ColorSwatch, Ge
 import { Button, FormControlLabel, Popover, Tooltip } from "@mui/material";
 import parse from 'parse-css-color'
 import { lerp } from "shared/utils";
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, OpenCloseIcon } from "src/core/components/CMCoreComponents";
 import { assert } from "blitz";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 
@@ -360,8 +360,6 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
     if (vmax === b) h = (r - g) / d + 4;
     h /= 6;
 
-    //console.log(`${rgbToCssString(r * 255, g * 255, b * 255, 1)} = h:${h} s:${s} l:${l}`);
-
     return [h, s, l];
 }
 
@@ -423,7 +421,10 @@ interface ParseColorResult {
 };
 
 function separateCppComment(line: string): { text: string, comment: string | null } {
-    const regex = /^(.*?)\s*\/\/\s*(.*)$/;
+    if (line.startsWith("//")) { // the text capture won't work when it's 0-length. check for that scenario specifically.
+        return { text: "", comment: line.substring(2) };
+    }
+    const regex = /^(.*?)\/\/(.*)$/;
     const match = line.match(regex);
     if (match && match[1] && match[2]) {
         return { text: match[1].trim(), comment: match[2].trim() };
@@ -588,9 +589,6 @@ const ParseTextPalette = (textPalette: string): ParsedPalette => {
                     r,
                     bundle: thisBundle || currentBundle, // favor a comment right on this line; otherwise continue prev
                 };
-                // console.log(`found color; thisBundle || currentBundle:`);
-                // console.log(thisBundle);
-                // console.log(currentBundle);
                 row.push(e);
                 allColors.push(e);
                 break;
@@ -606,14 +604,8 @@ const ParseTextPalette = (textPalette: string): ParsedPalette => {
         // do after processing to account for newline behavior (newline + bundle comment clears the current one, THEN we should replace)
         if (thisBundle) {
             currentBundle = thisBundle;
-            // console.log(`setting current bundle to`);
-            // console.log(currentBundle);
         }
     }
-
-    // console.log(`---- end parse; result: -------`);
-    // console.log(allColors);
-    // console.log(`---- end parse -------`);
 
     if (row.length) newRows.push(row);
 
@@ -633,6 +625,7 @@ interface SwatchProps {
     text?: string;
     className?: string;
     selected?: boolean;
+    //bundle?: ColorBlenderParamsBundle; // when copying/dragging the color, this will be attached to it.
 }
 
 const Swatch = (props: SwatchProps) => {
@@ -729,22 +722,13 @@ const UserPaletteGrid = (props: UserPaletteGridProps) => {
                             anchorEl={anchorEl}
                             open={isOpen}
                             onClose={() => setAnchorEl(null)}
+                            className="paletteeditor2"
                         >
-                            {!!focusedEntry && !!focusedEntry.bundle && <button onClick={() => {
-                                if (props.onSetBlenderParamBundle) {
-                                    props.onSetBlenderParamBundle(focusedEntry.bundle!);
-                                }
-                                setAnchorEl(null);
-                            }}>
-                                click to set bundle to <br />
-                                {JSON.stringify(focusedEntry.bundle.c)}
-                            </button>}
-                            {/* here we could show more info about the palette entry */}
-                            {!!focusedEntry &&
-                                <div>
-                                    {hslToCssString(focusedEntry.r.hslValues[0], focusedEntry.r.hslValues[1], focusedEntry.r.hslValues[2], focusedEntry.r.alpha01)}
-                                </div>
-                            }
+                            <ColorDetailControl
+                                value={focusedEntry!}
+                                onChange={() => console.error(`not impl`)}
+                                onSetBlenderParamBundle={props.onSetBlenderParamBundle}
+                            />
                         </Popover>
                     </div>
                 })}
@@ -1580,7 +1564,11 @@ const ColorBlender = (props: ColorBlenderProps) => {
             <Swatch className="textButton" onClick={() => handleCopyRow(row)} color={eee} text={linkAD && iy > 0 ? " " : `→`} />
             {row.map((c, ix) => {
                 if (linkAD && (ix > colorCountX - iy + 1)) return <Swatch className="textButton" key={ix} color={eee} text=" " />;
-                return <Swatch key={ix} color={ParsePaletteEntry(c)} onClick={() => handleClickSwatch(c)} />;
+
+                const parsed = ParsePaletteEntry(c);
+                parsed.bundle = JSON.parse(JSON.stringify(paramsBundle));
+
+                return <Swatch key={ix} color={parsed} onClick={() => handleClickSwatch(c)} />;
             })}
             <Swatch className="textButton" onClick={() => handleCopyRowRev(row)} color={eee} text={linkAD && iy > 0 ? " " : `←`} />
         </div>)}
@@ -1596,7 +1584,11 @@ const ColorBlender = (props: ColorBlenderProps) => {
         {!!subSelection.length && <div>
             <div>{subSelectionDesc}</div>
             <div className="paletteRow">
-                {subSelection.map((entry, ix) => <Swatch key={ix} color={ParsePaletteEntry(entry)} />)}
+                {subSelection.map((entry, ix) => {
+                    const parsed = ParsePaletteEntry(entry);
+                    parsed.bundle = JSON.parse(JSON.stringify(paramsBundle));
+                    return <Swatch key={ix} color={parsed} />
+                })}
                 <Swatch className="textButton" color={eee} text="COPY" onClick={handleCopySubselection} />
                 <Swatch className="textButton" color={eee} text="Cp-excl" onClick={handleCopySubselectionExcl} />
                 <Swatch className="textButton" color={eee} text="append" onClick={handleAppendSubselection} />
@@ -1608,34 +1600,138 @@ const ColorBlender = (props: ColorBlenderProps) => {
     </div>;
 };
 
+
+interface ColorDetailControlProps {
+    onChange: (val: ParsedPaletteEntry) => void;
+    value: ParsedPaletteEntry;
+    onSetBlenderParamBundle?: (pb: ColorBlenderParamsBundle) => void;
+}
+
+const ColorDetailControl = ({ value, ...props }: ColorDetailControlProps) => {
+    return <div className="ColorDetail">
+        <div className="nameValueTable">
+            <div className="row"><div className="name">CSS</div><div className="value">{value.cssColor}</div></div>
+            <div className="row"><div className="name">Contrast</div><div className="value">{value.r.cssContrastColor}</div></div>
+            <div className="row"><div className="name">Alpha</div><div className="value">{(value.r.alpha01 * 100).toFixed(2)}%</div></div>
+            <div className="row"><div className="name">HSL</div><div className="value">{hslToCssString(value.r.hslValues[0], value.r.hslValues[1], value.r.hslValues[2], value.r.alpha01)}</div></div>
+            <div className="row"><div className="name">RGB</div><div className="value">{rgbToCssString(value.r.rgbValues[0], value.r.rgbValues[1], value.r.rgbValues[2], value.r.alpha01)}</div></div>
+            <div className="row"><div className="name">LAB</div><div className="value">[{value.r.labValues[0].toFixed(1)}, {value.r.labValues[1].toFixed(1)} {value.r.labValues[2].toFixed(1)}]</div></div>
+            <div className="row"><div className="name">CMYK</div><div className="value">[{value.r.cmykValues[0].toFixed(1)}, {value.r.cmykValues[1].toFixed(1)} {value.r.cmykValues[2].toFixed(1)} {value.r.cmykValues[3].toFixed(1)}]</div></div>
+            <div className="row"><div className="name">Comment</div><div className="value">{value.r.comment}</div></div>
+            {props.onSetBlenderParamBundle && !!value.bundle && <button onClick={() => {
+                props.onSetBlenderParamBundle && props.onSetBlenderParamBundle(value.bundle!);
+            }}>
+                Set bundle
+            </button>}
+
+        </div>        <div className="swatchPreviewCell" style={{ "--preview-bg": "#000" } as any}>
+            <Swatch color={value} />
+        </div>
+        <div className="swatchPreviewCell" style={{ "--preview-bg": "#444" } as any}>
+            <Swatch color={value} />
+        </div>
+        <div className="swatchPreviewCell" style={{ "--preview-bg": "#888" } as any}>
+            <Swatch color={value} />
+        </div>
+        <div className="swatchPreviewCell" style={{ "--preview-bg": "#ccc" } as any}>
+            <Swatch color={value} />
+        </div>
+        <div className="swatchPreviewCell" style={{ "--preview-bg": "#eee" } as any}>
+            <Swatch color={value} />
+        </div>
+        <div className="swatchPreviewCell" style={{ "--preview-bg": "#fff" } as any}>
+            <Swatch color={value} />
+        </div>
+
+    </div>;
+};
+
+interface SwatchTempPaletteEntryProps {
+    selected: boolean;
+    value: ParsedPaletteEntry;
+    onChange: (value: ParsedPaletteEntry) => void;
+    onClick: () => void;
+};
+
+const SwatchTempPaletteEntry = (props: SwatchTempPaletteEntryProps) => {
+    //const [value, setValue] = React.useState<ParsedPaletteEntry>(ParsePaletteEntry("#fff0"));
+    return <div className={`SwatchTempPaletteEntry ${props.selected ? "selected" : ""}`}>
+        <Swatch color={props.value} onDroppedColor={(c) => props.onChange(c)} onClick={() => props.onClick()} />
+    </div>;
+};
+
+interface SwatchTempPaletteProps {
+    onSetBlenderParamBundle: (pb: ColorBlenderParamsBundle) => void;
+};
+
+
+const SwatchTempPalette = (props: SwatchTempPaletteProps) => {
+    const gCount = 16;
+    const idx = Array.from({ length: gCount }, (_, index) => index); // generate list of indices
+    const [selectedIndex, setSelectedIndex] = React.useState<number | null>(null);
+    const [entries, setEntries] = React.useState<ParsedPaletteEntry[]>(() => {
+        return Array.from({ length: gCount }, (_, index) => ParsePaletteEntry("#0001"));
+    });
+
+    const focusedEntry = selectedIndex === null ? null : entries[selectedIndex];
+
+    return <div className="SwatchTempPalette">
+        <div className="paletteRow">
+            {idx.map(i =>
+                <SwatchTempPaletteEntry
+                    key={i}
+                    onClick={() => {
+                        setSelectedIndex((i === selectedIndex) ? null : i);
+                    }}
+                    selected={i === selectedIndex}
+                    value={entries[i]!}
+                    onChange={(c) => {
+                        entries[i] = c;
+                        setEntries([...entries]);
+                    }}
+                />
+            )}
+        </div>
+        {!!focusedEntry && <div>
+            <div onClick={() => {
+                setSelectedIndex(null);
+            }} className="interactable" >{gIconMap.Close()}</div>
+
+            <ColorDetailControl
+                onSetBlenderParamBundle={props.onSetBlenderParamBundle}
+                onChange={c => {
+                    entries[selectedIndex!] = c;
+                    setEntries([...entries]);
+                }}
+                value={focusedEntry}
+            /></div>}
+    </div>;
+};
+
 const MyComponent = () => {
-    const [textPalette, setTextPalette] = React.useState<string>("");
     const textPaletteSetting = API.settings.useSetting("textPalette");
+    const [textPalette, setTextPalette] = React.useState<string>(() => textPaletteSetting || "");
     const updateSettingToken = API.settings.updateSetting.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [selectedEntryId, setSelectedEntryId] = React.useState<string | null>(null);
     const [forceRedraw, setForceRedraw] = React.useState<number>(0);
 
+    const [showTempPalette, setShowTempPalette] = React.useState<boolean>(true);
     const [showBlender, setShowBlender] = React.useState<boolean>(false);
     const [showTextPalette, setShowTextPalette] = React.useState<boolean>(false);
-    const [showColorEditor, setShowColorEditor] = React.useState<boolean>(false);
+    const [showColorEditor, setShowColorEditor] = React.useState<boolean>(true);
 
     const [paramBundleToSet, setParamBundleToSet] = React.useState<null | ColorBlenderParamsBundle>(null);
     const [paramBundleSerial, setParamBundleSerial] = React.useState<number>(0);
 
-    const handleTextPaletteChange = (val: string) => {
-        setTextPalette(val);
-        updateSettingToken.invoke({ name: "textPalette", value: val }).then(x => {
+    const handleSave = () => {
+        updateSettingToken.invoke({ name: "textPalette", value: textPalette }).then(x => {
             showSnackbar({ severity: "success", children: "Updated palette setting" });
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "Error updating palette setting" });
         });
     };
-
-    React.useEffect(() => {
-        setTextPalette(textPaletteSetting || "");
-    }, [textPaletteSetting]);
 
     const handleSwatchClick = (p: ColorPaletteEntry | null) => {
         setSelectedEntryId(p?.id || null);
@@ -1705,6 +1801,9 @@ const MyComponent = () => {
             }
         };
 
+        localCheck(e.contrastColorOnBlack);
+        localCheck(e.contrastColorOnWhite);
+
         const localCheckVariation = (v: ColorPaletteEntryVariation) => {
             localCheck(v.foregroundColor);
             localCheck(v.backgroundColor);
@@ -1743,6 +1842,14 @@ const MyComponent = () => {
                 v.foregroundColor = mSC.cssColor;
             };
 
+            const cob = FindClosestColorMatch({ parsedPalette, value: e.contrastColorOnBlack });
+            if (!cob) return;
+            e.contrastColorOnBlack = cob.cssColor;
+
+            const cow = FindClosestColorMatch({ parsedPalette, value: e.contrastColorOnWhite });
+            if (!cow) return;
+            e.contrastColorOnWhite = cow.cssColor;
+
             localDoVariation(e.strongDisabled);
             localDoVariation(e.strongDisabledSelected);
             localDoVariation(e.strong);
@@ -1759,9 +1866,24 @@ const MyComponent = () => {
     return <div className="paletteeditor2">
         {/* <div><a href="https://colordesigner.io/">tool for generating tones / tints / shades of a primary</a></div> */}
 
+        <CMSinglePageSurfaceCard className="SwatchTempPaletteSection">
+            <div className="header interactable" onClick={() => setShowTempPalette(!showTempPalette)}>
+                <OpenCloseIcon isOpen={showTempPalette} /> Temp Palette
+            </div>
+            {showTempPalette && <div className="content">
+                <SwatchTempPalette
+                    onSetBlenderParamBundle={(pb) => {
+                        setParamBundleToSet(pb);
+                        setParamBundleSerial(paramBundleSerial + 1);
+                        setShowBlender(true)
+                    }}
+                />
+            </div>}
+        </CMSinglePageSurfaceCard>
+
         <CMSinglePageSurfaceCard>
             <div className="header interactable" onClick={() => setShowBlender(!showBlender)}>
-                Color blender tool
+                <OpenCloseIcon isOpen={showBlender} /> Color blender tool
             </div>
             {showBlender && <div className="content">
                 <ColorBlender handleAppendToTextPalette={(txt) => setTextPalette(textPalette + txt)} setParamBundle={paramBundleToSet} setParamBundleSerial={paramBundleSerial} />
@@ -1770,28 +1892,28 @@ const MyComponent = () => {
 
         <CMSinglePageSurfaceCard>
             <div className="header interactable" onClick={() => setShowTextPalette(!showTextPalette)}>
-                Text palette {parsedPalette.allEntries.length}
+                <OpenCloseIcon isOpen={showTextPalette} /> Text palette {parsedPalette.allEntries.length}
             </div>
             {showTextPalette && <div className="content">
                 <div className="textPaletteLayout">
-                    <textarea value={textPalette || ""} onChange={e => handleTextPaletteChange(e.target.value)}></textarea>
+                    <textarea value={textPalette || ""} onChange={e => setTextPalette(e.target.value)}></textarea>
                     <UserPaletteGrid
                         parsedPalette={parsedPalette}
                         selectedEntries={[]}
                         onSetBlenderParamBundle={(pb) => {
-                            //console.log(`setting trigger...`)
-                            //setParamBundleTrigger(pb);
                             setParamBundleToSet(pb);
                             setParamBundleSerial(paramBundleSerial + 1);
+                            setShowBlender(true)
                         }}
                     />
                 </div>
+                <button onClick={handleSave} disabled={textPalette === textPaletteSetting} >Save to settings</button>
             </div>}
         </CMSinglePageSurfaceCard>
 
         <CMSinglePageSurfaceCard>
             <div className="header interactable" onClick={() => setShowColorEditor(!showColorEditor)}>
-                Edit color
+                <OpenCloseIcon isOpen={showColorEditor} /> Edit color
             </div>
             {showColorEditor && <div className="content">
 
@@ -1864,3 +1986,4 @@ const ColorEdit2Page: BlitzPage = () => {
 }
 
 export default ColorEdit2Page;
+

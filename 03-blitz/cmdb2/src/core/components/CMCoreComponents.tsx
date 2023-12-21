@@ -513,7 +513,7 @@ interface TabPanelProps {
 export function CustomTabPanel(props: TabPanelProps) {
     const { children, value, index, tabPanelID, ...other } = props;
 
-    return (
+    return (<Suspense>
         <div
             role="tabpanel"
             hidden={value !== index}
@@ -527,6 +527,7 @@ export function CustomTabPanel(props: TabPanelProps) {
                 </>
             )}
         </div>
+    </Suspense>
     );
 }
 
@@ -963,4 +964,10 @@ export const JoystickDiv = ({ enabled, children, className, ...props }: React.Pr
         {children}
     </div>;
 
+};
+
+export const OpenCloseIcon = ({ isOpen }: { isOpen: boolean }) => {
+    // https://www.compart.com/en/unicode/U+23F5
+    // 
+    return isOpen ? <>&#9207;</> : <>&#9205;</>;
 };

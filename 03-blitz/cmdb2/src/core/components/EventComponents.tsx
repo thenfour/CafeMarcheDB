@@ -1082,13 +1082,10 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
-                        <Suspense>
-                            <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} readonly={props.readonly} />
-                        </Suspense>
+                        <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} readonly={props.readonly} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
-                        {/* COMPLETENESS */}
                         <EventCompletenessTabContent event={event} responseInfo={responseInfo} functionalGroupsClient={functionalGroupsClient} />
                     </CustomTabPanel>
 
