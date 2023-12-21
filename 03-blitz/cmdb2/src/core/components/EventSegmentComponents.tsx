@@ -108,6 +108,7 @@ export interface EventSegmentPanelProps {
     verbosity: EventDetailVerbosity;
     //myEventInfo: db3.EventInfoForUser,
     segment: db3.EventVerbose_EventSegmentPayload,
+    readonly: boolean;
     refetch: () => void;
 };
 
@@ -143,7 +144,10 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 
     return <div className={`EventSegmentPanel segment`}>
 
-        <div className='name'>{props.segment.name} <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button></div>
+        <div className='name'>
+            {props.segment.name}
+            {!props.readonly && <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
+        </div>
         <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
 
         {/*
@@ -157,7 +161,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
         </div>} */}
 
         {/* <div className='description'>description: {props.segmentInfo.segment.description}</div> */}
-        {editOpen && (<EventSegmentEditDialog
+        {!props.readonly && editOpen && (<EventSegmentEditDialog
             initialValue={props.segment}
             onDelete={handleDelete}
             onCancel={() => setEditOpen(false)}
@@ -174,6 +178,7 @@ interface SegmentListProps {
     //myEventInfo: db3.EventInfoForUser;
     tableClient: DB3Client.xTableRenderClient;
     verbosity: EventDetailVerbosity;
+    readonly: boolean;
 };
 
 export const SegmentList = ({ event, tableClient, verbosity, ...props }: SegmentListProps) => {
@@ -184,6 +189,7 @@ export const SegmentList = ({ event, tableClient, verbosity, ...props }: Segment
                 return <EventSegmentPanel
                     key={segment.id}
                     segment={segment}
+                    readonly={props.readonly}
                     //segmentInfo={segInfo}
                     //myEventInfo={myEventInfo}
                     event={event}
@@ -192,6 +198,6 @@ export const SegmentList = ({ event, tableClient, verbosity, ...props }: Segment
                 />;
             })}
         </div>
-        <NewEventSegmentButton event={event} refetch={tableClient.refetch} />
+        {!props.readonly && <NewEventSegmentButton event={event} refetch={tableClient.refetch} />}
     </div>;
 };

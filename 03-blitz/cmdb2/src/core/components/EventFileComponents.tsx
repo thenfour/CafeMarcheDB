@@ -42,6 +42,7 @@ for the uploader, during uploads there should be a cancel button plus progress
 interface EventFileViewerProps {
     value: db3.FileWithTagsPayload;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
+    readonly: boolean;
 };
 
 export const EventFileValueViewer = (props: EventFileViewerProps) => {
@@ -75,7 +76,7 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
 
             <div className="flex-spacer"></div>
             <VisibilityValue permission={file.visiblePermission} variant="minimal" />
-            <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>
+            {!props.readonly && <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>}
         </div>
         <div className="content">
             <CMChipContainer>
@@ -249,10 +250,10 @@ export const EventFileControl = (props: EventFileControlProps) => {
     const [editMode, setEditMode] = React.useState<boolean>(false);
 
     return <>
-        {editMode &&
+        {!props.readonly && editMode &&
             <EventFileEditor initialValue={props.value} onClose={() => { setEditMode(false); props.refetch() }} rowMode="update" />
         }
-        <EventFileValueViewer value={props.value} onEnterEditMode={() => setEditMode(true)} />
+        <EventFileValueViewer value={props.value} onEnterEditMode={() => setEditMode(true)} readonly={props.readonly} />
     </>;
 };
 
@@ -370,11 +371,12 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
 export interface EventFilesListProps {
     event: db3.EventClientPayload_Verbose;
     refetch: () => void;
+    readonly: boolean;
 };
 
 export const EventFilesList = (props: EventFilesListProps) => {
     return <div className="EventFilesList">
-        {props.event.fileTags.map((file, index) => <EventFileControl key={file.id} readonly={false} refetch={props.refetch} value={file.file} />)}
+        {props.event.fileTags.map((file, index) => <EventFileControl key={file.id} readonly={props.readonly} refetch={props.refetch} value={file.file} />)}
     </div>;
 };
 
@@ -383,6 +385,7 @@ export const EventFilesList = (props: EventFilesListProps) => {
 export interface EventFilesTabContentProps {
     event: db3.EventClientPayload_Verbose;
     refetch: () => void;
+    readonly: boolean;
 };
 
 export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
@@ -417,14 +420,14 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
         }
     };
     return <>
-        {showUpload ? <div className="uploadControlContainer">
+        {!props.readonly && (showUpload ? <div className="uploadControlContainer">
             <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} />
             <Button onClick={() => setShowUpload(false)}>Cancel</Button>
         </div> :
-            <Button onClick={() => setShowUpload(true)}>Upload</Button>
+            <Button onClick={() => setShowUpload(true)}>Upload</Button>)
         }
 
-        <EventFilesList event={props.event} refetch={props.refetch} />
+        <EventFilesList event={props.event} refetch={props.refetch} readonly={props.readonly} />
     </>;
 };
 

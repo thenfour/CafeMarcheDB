@@ -293,7 +293,7 @@ export const EditTextDialog = (props: EditTextDialogProps) => {
 
 ////////////////////////////////////////////////////////////////
 // this control is a button which pops up a dialog.
-// JUST the button.
+// by default JUST displays the button (not the text)
 export interface EditTextDialogButtonProps {
     value: string;
     readOnly: boolean;
@@ -336,7 +336,7 @@ export interface EditFieldsDialogButtonApi {
 };
 export interface EditFieldsDialogButtonProps<TRowModel> {
     //value: string;
-    readOnly: boolean;
+    readonly: boolean;
     tableSpec: DB3Client.xTableClientSpec;
     renderButtonChildren: () => React.ReactNode;
     onCancel: () => void;
@@ -350,8 +350,8 @@ export const EditFieldsDialogButton = <TRowModel,>(props: EditFieldsDialogButton
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     return <>
-        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>
-        {isOpen && !props.readOnly && <DB3EditObjectDialog
+        <Button disabled={props.readonly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>
+        {isOpen && !props.readonly && <DB3EditObjectDialog
             initialValue={props.initialValue as TAnyModel}
             onCancel={() => {
                 props.onCancel();

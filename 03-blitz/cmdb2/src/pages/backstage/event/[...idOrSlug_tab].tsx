@@ -96,7 +96,7 @@ const MyComponent = () => {
         {/* <InspectObject src={include} tooltip="include" /> */}
         {event ? <>
             <EventBreadcrumbs event={event} />
-            <EventDetail verbosity="verbose" event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} allowRouterPush={true} />
+            <EventDetail verbosity="verbose" readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} allowRouterPush={true} />
         </> : <>
             no event was found. some possibilities:
             <ul>

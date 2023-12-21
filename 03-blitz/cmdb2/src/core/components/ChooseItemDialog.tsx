@@ -118,7 +118,7 @@ export interface ChoiceEditCellProps {
     value: any | null;
     onChange: (value: any | null) => void;
     validationError?: string | null;
-    readOnly: boolean;
+    readonly: boolean;
     selectButtonLabel?: string; // if behavior includes extra button this is needed. if not specified then the button won't be rendered.
 
     selectDialogTitle: string;
@@ -140,7 +140,7 @@ export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
 
     const renderedValue = props.renderValue({
         value: props.value,
-        onDelete: props.readOnly ? undefined : (() => {
+        onDelete: props.readonly ? undefined : (() => {
             props.onChange(null);
         }),
         handleEnterEdit: () => { setIsOpen(!isOpen) },
@@ -148,7 +148,7 @@ export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
 
     return <div className={`ChoiceEditCell ${(props.validationError === undefined) ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
         {renderedValue}
-        {props.selectButtonLabel && <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>}
+        {props.selectButtonLabel && <Button disabled={props.readonly} onClick={props.readonly ? undefined : () => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>}
         {isOpen && <ChooseItemDialog
             closeOnSelect={true}
             value={props.value}

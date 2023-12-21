@@ -157,12 +157,13 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
     value: db3.EventSongListPayload;
+    readonly: boolean;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
 };
 
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     //const [currentUser] = useCurrentUser();
-    const [showTags, setShowTags] = React.useState<boolean>(false);
+    const [showTags, setShowTags] = React.useState<boolean>(true);
     //const visInfo = API.users.getVisibilityInfo(props.value);
 
     const stats = API.events.getSongListStats(props.value);
@@ -172,14 +173,13 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
             <div className="columnName-name">
                 {props.value.name}
             </div>
-            <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>
+            {props.readonly && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
             {/* <VisibilityValue permission={props.value.visiblePermission} variant="minimal" /> */}
             {/* <div className="flex-spacer"></div>
             <EventSongListMenuButton /> */}
 
         </div>
         <div className="content">
-
 
             <Markdown markdown={props.value.description} />
 
@@ -593,8 +593,8 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     };
 
     return <>
-        {editMode && <EventSongListValueEditor initialValue={props.value} onSave={handleSave} onDelete={handleDelete} onCancel={() => setEditMode(false)} rowMode="update" />}
-        <EventSongListValueViewer value={props.value} onEnterEditMode={() => setEditMode(true)} />
+        {!props.readonly && editMode && <EventSongListValueEditor initialValue={props.value} onSave={handleSave} onDelete={handleDelete} onCancel={() => setEditMode(false)} rowMode="update" />}
+        <EventSongListValueViewer readonly={props.readonly} value={props.value} onEnterEditMode={() => setEditMode(true)} />
     </>;
 };
 
@@ -646,22 +646,22 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSongListList = ({ event, tableClient }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient }) => {
+export const EventSongListList = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
     return <div className="EventSongListList">
-        {event.songLists.map(c => <EventSongListControl key={c.id} value={c} readonly={false} refetch={tableClient.refetch} />)}
+        {event.songLists.map(c => <EventSongListControl key={c.id} value={c} readonly={false} refetch={refetch} />)}
     </div>;
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventSongListTabContent = ({ event, tableClient }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient }) => {
+export const EventSongListTabContent = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
     return <div className="EventSongListTabContent">
-        <EventSongListList event={event} tableClient={tableClient} />
-        {newOpen && (
-            <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); tableClient.refetch(); }} />
+        <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
+        {newOpen && readonly && (
+            <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
         )}
-        <div className="addButtonContainer"><Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button></div>
+        {!readonly && <div className="addButtonContainer"><Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button></div>}
     </div>;
 };
 

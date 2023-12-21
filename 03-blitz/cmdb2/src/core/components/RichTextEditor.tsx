@@ -184,9 +184,11 @@ interface MarkdownControlProps {
     debounceMilliseconds: number,
     editButtonText?: string,
     closeButtonText?: string,
+    readonly: boolean,
 }
 
 export function MarkdownControl(props: MarkdownControlProps) {
+    if (props.readonly) return <Markdown markdown={props.initialValue} />;
     return <DebouncedControl
         debounceMilliseconds={props.debounceMilliseconds}
         initialValue={props.initialValue}

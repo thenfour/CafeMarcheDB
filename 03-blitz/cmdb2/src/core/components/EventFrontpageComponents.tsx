@@ -3,9 +3,8 @@ import { FormControlLabel, Switch } from "@mui/material";
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
-import { API } from '../db3/clientAPI';
+import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
-import { HomepageAgendaItemSpec } from '../db3/shared/apiTypes';
 import { EditTextDialogButton } from "./CMCoreComponents";
 import { AgendaItem } from './homepageComponents';
 
@@ -22,6 +21,7 @@ interface EventFrontpageControlProps {
     refetch: () => void;
     fieldSpec: FrontpageControlSpec;
     fallbackValue: string;
+    readonly: boolean;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -66,20 +66,20 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         <div className='nullContainer'>
             {props.fieldSpec.nullable &&
                 <>
-                    <Switch size="small" checked={!isNull} onChange={handleNullChange} />
+                    <Switch size="small" checked={!isNull} onChange={props.readonly ? undefined : handleNullChange} />
                     {isNull && <div className="autoLabel">(auto)</div>}
                 </>
             }</div>
         <div className='editButtonContainer'>
-            <EditTextDialogButton
+            {!props.readonly && <EditTextDialogButton
                 columnSpec={db3.xEvent.getColumn(props.fieldSpec.fieldName)! as db3.FieldBase<string>}
                 dialogTitle={props.fieldSpec.fieldLabel}
-                readOnly={false}
+                readOnly={props.readonly}
                 renderDialogDescription={() => <>description here</>}
                 selectButtonLabel='edit'
                 value={value || defaultValue}
                 onChange={handleChange}
-            />
+            />}
         </div>
         <div className={`value ${isNull ? "faded" : ""}`}>{value || defaultValue}</div>
     </div>;
@@ -94,6 +94,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
 export interface EventFrontpageTabContentProps {
     event: db3.EventClientPayload_Verbose;
     refetch: () => void;
+    readonly: boolean;
 };
 
 export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) => {
@@ -124,12 +125,13 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             <div className='nullContainer'>
             </div>
             <div className={`value frontpageVisible`}>
-
                 <FormControlLabel
                     className='CMFormControlLabel'
-                    control={<Switch size="small" checked={props.event.frontpageVisible} onChange={handleVisibilityChange} />}
+                    // NB: readonly does not work for <Switch>.
+                    control={
+                        <Switch size="small" checked={props.event.frontpageVisible} onChange={props.readonly ? undefined : handleVisibilityChange} />
+                    }
                     label="Show this event on the front page?"
-                //labelPlacement="end"
                 />
 
                 {!API.users.isPublic(props.event) && <div className="warning CMSidenote">This event still won't be visible, because it has restricted visibility</div>}
@@ -142,7 +144,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
 
-        <EventFrontpageControl event={props.event} refetch={props.refetch}
+        <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.date || ""}
             fieldSpec={{
                 fieldLabel: "Date",
@@ -151,7 +153,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                 renderIcon: gIconMap.CalendarMonth,
             }} />
 
-        <EventFrontpageControl event={props.event} refetch={props.refetch}
+        <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.time || ""}
             fieldSpec={{
                 fieldLabel: "Time",
@@ -160,7 +162,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                 renderIcon: gIconMap.Schedule,
             }} />
 
-        <EventFrontpageControl event={props.event} refetch={props.refetch}
+        <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.title || ""}
             fieldSpec={{
                 fieldLabel: "Title",
@@ -170,7 +172,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
 
-        <EventFrontpageControl event={props.event} refetch={props.refetch}
+        <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.detailsMarkdown || ""}
             fieldSpec={{
                 fieldLabel: "Details",
@@ -180,7 +182,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
 
-        <EventFrontpageControl event={props.event} refetch={props.refetch}
+        <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.location || ""}
             fieldSpec={{
                 fieldLabel: "Location",
@@ -190,7 +192,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
 
-        <EventFrontpageControl event={props.event} refetch={props.refetch}
+        <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.locationURI || ""}
             fieldSpec={{
                 fieldLabel: "Location URI",
@@ -200,7 +202,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
 
-        <EventFrontpageControl event={props.event} refetch={props.refetch}
+        <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.tags || ""}
             fieldSpec={{
                 fieldLabel: "Tags",

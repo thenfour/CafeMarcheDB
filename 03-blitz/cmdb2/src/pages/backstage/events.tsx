@@ -340,13 +340,13 @@ const EventsControls = (props: EventsControlsProps) => {
             <div className="row">
                 {/* <div className="caption cell">SHOW</div> */}
                 <CMChipContainer className="cell">
-                    <CMChip selected={props.spec.verbosity === "compact"} onClick={() => setVerbosity("compact")}>Compact</CMChip>
-                    <CMChip selected={props.spec.verbosity === "default"} onClick={() => setVerbosity("default")}>Default</CMChip>
-                    <CMChip selected={props.spec.verbosity === "verbose"} onClick={() => setVerbosity("verbose")}>Full</CMChip>
+                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.verbosity === "compact" }} onClick={() => setVerbosity("compact")}>Compact</CMChip>
+                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.verbosity === "default" }} onClick={() => setVerbosity("default")}>Default</CMChip>
+                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.verbosity === "verbose" }} onClick={() => setVerbosity("verbose")}>Full</CMChip>
 
-                    <CMChip selected={props.spec.recordCount === 5} onClick={() => setRecordCount(5)}>5</CMChip>
-                    <CMChip selected={props.spec.recordCount === 20} onClick={() => setRecordCount(20)}>20</CMChip>
-                    <CMChip selected={props.spec.recordCount === 100} onClick={() => setRecordCount(100)}>100</CMChip>
+                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 5 }} onClick={() => setRecordCount(5)}>5</CMChip>
+                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 20 }} onClick={() => setRecordCount(20)}>20</CMChip>
+                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 100 }} onClick={() => setRecordCount(100)}>100</CMChip>
                 </CMChipContainer>
             </div>
         </div>{/* content */}
@@ -362,6 +362,8 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
+
+
 
     // const filterModel: db3.CMDBTableFilterModel = {
     //     quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
@@ -398,7 +400,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
             page: 0,
             pageSize: filterSpec.recordCount,
         },
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+        requestedCaps: DB3Client.xTableClientCaps.Query,// | DB3Client.xTableClientCaps.Mutation,
         clientIntention,
         queryOptions: gQueryOptions.liveData,
     });
@@ -411,7 +413,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
         {/* <InspectObject src={where} tooltip={`inspect where clause for events query`} />
         <InspectObject src={include} tooltip={`inspect include clause for events query`} />
         <InspectObject src={eventsClient.items} tooltip={`inspect events raw results`} /> */}
-        {eventsClient.items.map(event => <EventDetail key={event.id} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} allowRouterPush={false} />)}
+        {eventsClient.items.map(event => <EventDetail key={event.id} readonly={true} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} allowRouterPush={false} />)}
     </>;
 };
 

@@ -321,9 +321,10 @@ export interface EventAttendanceDetailRowProps {
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
     refetch: () => void;
+    readonly: boolean;
 };
 
-export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch }: EventAttendanceDetailRowProps) => {
+export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly }: EventAttendanceDetailRowProps) => {
 
     const eventResponse = responseInfo.getEventResponseForUser(user);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
@@ -331,7 +332,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch }:
     if (!eventResponse.isRelevantForDisplay) return null;
     return <tr>
         <td>
-            <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />
+            {!readonly && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}
             {user.name}
         </td>
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
@@ -358,6 +359,7 @@ export interface EventAttendanceDetailProps {
     //expectedAttendanceTag: db3.UserTagPayload | null;
     //functionalGroups: db3.InstrumentFunctionalGroupPayload[];
     refetch: () => void;
+    readonly: boolean;
 };
 
 type EventAttendanceDetailSortField = "user" | "instrument" | "response";
@@ -414,7 +416,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
     return <>
         <DB3Client.RenderBasicNameValuePair
             name="attendance is expected for"
-            value={<EventAttendanceUserTagControl event={event} refetch={refetch} />}
+            value={<EventAttendanceUserTagControl event={event} refetch={refetch} readonly={props.readonly} />}
         />
 
         <table className='attendanceDetailTable'>
@@ -439,14 +441,14 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
             <tbody>
                 {
                     sortedUsers.map(user => {
-                        return <EventAttendanceDetailRow key={user.id} responseInfo={props.responseInfo} event={event} user={user} refetch={refetch} />
+                        return <EventAttendanceDetailRow key={user.id} responseInfo={props.responseInfo} event={event} user={user} refetch={refetch} readonly={props.readonly} />
                     })
                 }
             </tbody>
             <tfoot>
                 <tr>
                     <td>
-                        <AddUserButton
+                        {!props.readonly && <AddUserButton
                             onSelect={onAddUser}
                             filterPredicate={(u) => {
                                 // don't show users who are already being displayed.
@@ -455,7 +457,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
                                 //!props.responseInfo.distinctUsers.some(d => d.id === u.id)
                             }}
                             buttonChildren={<>{gIconMap.Add()} Invite someone</>}
-                        />
+                        />}
                     </td>
                     <td>{/*Instrument*/}</td>
                     <td>{/*Function*/}</td>
@@ -474,11 +476,12 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const EventDescriptionControl = ({ event, refetch }: { event: db3.EventPayloadMinimum, refetch: () => void }) => {
+export const EventDescriptionControl = ({ event, refetch, readonly }: { event: db3.EventPayloadMinimum, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     return <MutationMarkdownControl
         initialValue={event.description}
         refetch={refetch}
+        readonly={readonly}
         onChange={(newValue) => mutationToken.invoke({
             eventId: event.id,
             description: newValue || "",
@@ -638,7 +641,7 @@ export const EventAttendanceUserTagValue = (props: EventAttendanceUserTagValuePr
     );
 };
 
-export const EventAttendanceUserTagControl = ({ event, refetch }: { event: db3.EventWithAttendanceUserTagPayload, refetch: () => void }) => {
+export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: db3.EventWithAttendanceUserTagPayload, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
@@ -663,7 +666,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch }: { event: db3.E
         <ChoiceEditCell
             isEqual={(a: db3.UserTagPayload, b: db3.UserTagPayload) => a.id === b.id}
             items={itemsClient.items}
-            readOnly={false} // todo!
+            readonly={readonly}
             selectDialogTitle="Select who is expected to attend; they'll be expected to respond."
             value={event.expectedAttendanceUserTag}
             renderDialogDescription={() => {
@@ -674,7 +677,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch }: { event: db3.E
                     <EventAttendanceUserTagValue value={value} /></li>;
             }}
             renderValue={(args) => {
-                return <EventAttendanceUserTagValue value={args.value} onClick={args.handleEnterEdit} />;
+                return <EventAttendanceUserTagValue value={args.value} onClick={readonly ? undefined : args.handleEnterEdit} />;
             }}
             onChange={handleChange}
         />
@@ -726,53 +729,42 @@ export const EventAttendanceUserTagControl = ({ event, refetch }: { event: db3.E
 //     }
 // }>
 
-////////////////////////////////////////////////////////////////
-export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
-    // const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    // const router = useRouter();
-    // const tableSpec = new DB3Client.xTableClientSpec({
-    //     table: db3.xEvent,
-    //     columns: [
-    //         new DB3Client.PKColumnClient({ columnName: "id" }),
-    //         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
-    //         new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
-    //     ],
-    // });
+// ////////////////////////////////////////////////////////////////
+// export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.EventWithStatusPayload, eventURI: string, refetch: () => void }) => {
+//     // const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+//     // const router = useRouter();
+//     // const tableSpec = new DB3Client.xTableClientSpec({
+//     //     table: db3.xEvent,
+//     //     columns: [
+//     //         new DB3Client.PKColumnClient({ columnName: "id" }),
+//     //         new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
+//     //         new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
+//     //     ],
+//     // });
 
-    // const onOK = (obj: EventEditableTitlePayload, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
-    //     api.close();
-    //     tableClient.doUpdateMutation(obj).then(() => {
-    //         showSnackbar({ severity: "success", children: "Successfully updated event title" });
-    //         // if you update the event slug it may cause you to be on an obsolete URI.
-    //         // it's not clear to me the best way to handle this, because we need to know if we're on the events page or not, and is it even a good idea then to redirect? best to just give a message.
-    //         //console.log(`oldslug: ${event.slug} newslug: ${obj.slug}, routerpath: ${router.pathname}`);
-    //     }).catch(e => {
-    //         console.log(e);
-    //         showSnackbar({ severity: "error", children: "error updating event title" });
-    //     }).finally(() => {
-    //         api.close();
-    //         refetch();
-    //     });
-    // };
+//     // const onOK = (obj: EventEditableTitlePayload, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+//     //     api.close();
+//     //     tableClient.doUpdateMutation(obj).then(() => {
+//     //         showSnackbar({ severity: "success", children: "Successfully updated event title" });
+//     //         // if you update the event slug it may cause you to be on an obsolete URI.
+//     //         // it's not clear to me the best way to handle this, because we need to know if we're on the events page or not, and is it even a good idea then to redirect? best to just give a message.
+//     //         //console.log(`oldslug: ${event.slug} newslug: ${obj.slug}, routerpath: ${router.pathname}`);
+//     //     }).catch(e => {
+//     //         console.log(e);
+//     //         showSnackbar({ severity: "error", children: "error updating event title" });
+//     //     }).finally(() => {
+//     //         api.close();
+//     //         refetch();
+//     //     });
+//     // };
 
-    return <div className="titleText">
-        <Link href={eventURI} className="titleLink">
-            {event.name}
-        </Link>
-        {/* <EditFieldsDialogButton
-            tableSpec={tableSpec}
-            dialogTitle='name dlg title'
-            readOnly={false} // todo
-            renderDialogDescription={() => <>description here</>}
-            selectButtonLabel='edit name'
-            value={event.name}
-            initialValue={event}
-            onCancel={() => { }}
-            onOK={onOK}
-        /> */}
-    </div>;
+//     return <div className="titleText">
+//         <Link href={eventURI} className="titleLink">
+//             {event.name}
+//         </Link>
+//     </div>;
 
-};
+// };
 
 
 
@@ -781,41 +773,30 @@ export const EventTitleControl = ({ event, eventURI, refetch }: { event: db3.Eve
 ////////////////////////////////////////////////////////////////
 // todo: 1. link to location with a link icon
 // 2. allow editing link uri
-export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
-    const locationKnown = !IsNullOrWhitespace(event.locationDescription);
-    // const mutationToken = API.events.updateEventBasicFields.useToken();
-    // const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+// export const EventLocationControl = ({ event, refetch }: { event: db3.EventWithStatusPayload, refetch: () => void }) => {
+//     const locationKnown = !IsNullOrWhitespace(event.locationDescription);
+//     // const mutationToken = API.events.updateEventBasicFields.useToken();
+//     // const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    // const handleChange = (newValue: string) => {
-    //     mutationToken.invoke({
-    //         eventId: event.id,
-    //         locationDescription: newValue,
-    //     }).then(() => {
-    //         showSnackbar({ severity: "success", children: "Successfully updated event location" });
-    //     }).catch(e => {
-    //         console.log(e);
-    //         showSnackbar({ severity: "error", children: "error updating event location" });
-    //     }).finally(() => {
-    //         refetch();
-    //     });
-    // };
+//     // const handleChange = (newValue: string) => {
+//     //     mutationToken.invoke({
+//     //         eventId: event.id,
+//     //         locationDescription: newValue,
+//     //     }).then(() => {
+//     //         showSnackbar({ severity: "success", children: "Successfully updated event location" });
+//     //     }).catch(e => {
+//     //         console.log(e);
+//     //         showSnackbar({ severity: "error", children: "error updating event location" });
+//     //     }).finally(() => {
+//     //         refetch();
+//     //     });
+//     // };
 
-    return <div className="location smallInfoBox">
-        <PlaceIcon className="icon" />
-        <span className="text">{
-            locationKnown ? event.locationDescription : "Location TBD"
-        }</span>
-        {/* <EditTextDialogButton
-            columnSpec={db3.xEvent.getColumn("locationDescription")! as db3.FieldBase<string>}
-            dialogTitle='Location'
-            readOnly={false} // todo
-            renderDialogDescription={() => <>description here</>}
-            selectButtonLabel='edit location'
-            value={event.locationDescription}
-            onChange={handleChange}
-        /> */}
-    </div>;
-};
+//     return <div className="location smallInfoBox">
+//         <PlaceIcon className="icon" />
+//         <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD": event.locationDescription}</span>
+//     </div>;
+// };
 
 export interface EventCompletenessTabContentProps {
     event: db3.EventClientPayload_Verbose;
@@ -903,6 +884,7 @@ export interface EventDetailArgs {
     event: db3.EventClientPayload_Verbose;
     tableClient: DB3Client.xTableRenderClient;
     verbosity: EventDetailVerbosity;
+    readonly: boolean;
     initialTabIndex?: number;
     allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
 }
@@ -912,7 +894,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     const router = useRouter();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "EventDetail control requires mutation caps");
+    //assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "EventDetail control requires mutation caps");
 
     const functionalGroupsClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -985,11 +967,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
         <div className='header'>
             <div className='flex-spacer'></div>
-            {/* <Suspense>
-                <EventVisibilityControl event={event} refetch={refetch} />
-            </Suspense> */}
             <VisibilityValue permission={event.visiblePermission} variant='verbose' />
-            {/* <EventSoftDeleteControl event={event} refetch={refetch} /> */}
         </div>
 
         <div className='content'>
@@ -1000,11 +978,19 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     <span className="text">{API.events.getEventDateRange(event).toString()}</span>
                 </div>
 
-                <EventLocationControl event={event} refetch={tableClient.refetch} />
+                <div className="location smallInfoBox">
+                    <PlaceIcon className="icon" />
+                    <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
+                </div>
             </div>
 
             <div className='titleLine'>
-                <EventTitleControl event={event} refetch={refetch} eventURI={eventURI} />
+                <div className="titleText">
+                    <Link href={eventURI} className="titleLink">
+                        {event.name}
+                    </Link>
+                </div>
+
                 {event.status && <CMStandardDBChip
                     variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
                     border='border'
@@ -1012,8 +998,9 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
                 />}
 
-                <EditFieldsDialogButton
+                {!props.readonly && <EditFieldsDialogButton
                     dialogTitle='Edit event'
+                    readonly={props.readonly}
                     initialValue={event}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
@@ -1031,9 +1018,8 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                             showSnackbar({ children: "update error", severity: 'error' });
                         }).finally(refetch);
                     }}
-                    readOnly={false}
                     renderDialogDescription={() => <>aoesunthaoii</>}
-                />
+                />}
             </div>
 
             <div className="tagsLine">
@@ -1066,6 +1052,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                 //myEventInfo={myEventInfo}
                 tableClient={tableClient}
                 verbosity={verbosity}
+                readonly={props.readonly}
             />
 
             {verbosity === 'verbose' && (
@@ -1086,17 +1073,17 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
                         <div className='descriptionLine'>
-                            <EventDescriptionControl event={event} refetch={refetch} />
+                            <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
                         </div>
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
-                        <EventSongListTabContent event={event} tableClient={tableClient} />
+                        <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
                         <Suspense>
-                            <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} />
+                            <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} readonly={props.readonly} />
                         </Suspense>
                     </CustomTabPanel>
 
@@ -1106,11 +1093,11 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
-                        <EventFilesTabContent event={event} refetch={refetch} />
+                        <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
-                        <EventFrontpageTabContent event={event} refetch={refetch} />
+                        <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
                     </CustomTabPanel>
 
                 </>
