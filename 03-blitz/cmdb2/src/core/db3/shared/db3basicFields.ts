@@ -21,6 +21,7 @@ import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared
 import { TAnyModel } from "shared/utils";
 import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
 import { DateTimeRange, DateTimeRangeSpec } from "shared/time";
+import { assert } from "blitz";
 
 ////////////////////////////////////////////////////////////////
 // field types

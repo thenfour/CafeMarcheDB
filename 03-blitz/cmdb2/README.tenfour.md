@@ -199,7 +199,22 @@ will show clearly on the command line.
 
 # DB3 components
 
+````
+
     <EditFieldsDialogButton>
+    renders a "edit" button; when clicked, a dialog is rendered to edit a db3 table spec object.
+
+    <ChoiceEditCell>
+    renders a value
+    clicking reveals a dialog to select other values.
+    used for visibility controls, tags fields.
+
+    <DB3EditObjectDialog> & <DB3EditObject2Dialog>
+
+    <DB3RowViewer>
+    simple rendering of db3 name/value columns
+
+````
 
 # how: build / deployment?
 
