@@ -171,7 +171,7 @@ export const DayControl = (props: DayControlProps) => {
 
     const handleCalendarChangeDay = (newDay: Date) => {
         props.onChange(newDay);
-        //setCalendarAnchorEl(null); // close calendar upon selecting
+        setCalendarAnchorEl(null); // close calendar upon selecting
     };
 
     const handleCalendarClose = () => {
@@ -510,7 +510,11 @@ export const DateTimeRangeControlExample = () => {
         }),
     ];
 
-    const [value, setValue] = React.useState<DateTimeRange>(new DateTimeRange());
+    const [value, setValue] = React.useState<DateTimeRange>(new DateTimeRange({
+        isAllDay: true,
+        startsAtDateTime: new Date(),
+        durationMillis: 0,
+    }));
 
     const handleChange = (newValue: DateTimeRange) => {
         setValue(newValue);

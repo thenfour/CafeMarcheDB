@@ -93,6 +93,16 @@ export function floorToMinuteIntervalOfDay(minuteOfDay: number, intervalInMinute
     return alignedMinuteOfDay;
 }
 
+function roundToNearest15Minutes(date: Date) {
+    const roundedMinutes = Math.ceil(date.getMinutes() / 15) * 15;
+    const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes);
+    return roundedDate;
+}
+
+
+
+
+
 export function floorToDay(x: Date) {
     return new Date(x.getFullYear(), x.getMonth(), x.getDate());
 }
@@ -238,35 +248,47 @@ export class DateTimeRange {
     private spec: DateTimeRangeSpec;
     constructor(args?: DateTimeRangeSpec) {
         if (args) {
+
             // sanitize spec to conform to assertions.
+            if (args.isAllDay) {
+                let days = Math.round(args.durationMillis / gMillisecondsPerDay);// all-day events have duration of 1-day increments always.
+                if (days < 1) days = 1; // 0-length ranges are not useful and cause complexity
+                const durationMillis = days * gMillisecondsPerDay;
 
-            // all-day events have duration of 1-day increments always.
-            const durationMillis = (args.isAllDay) ? (
-                Math.round(args.durationMillis / gMillisecondsPerDay) * gMillisecondsPerDay
-            ) : (
-                args.durationMillis
-            );
+                // all-day events also must start at midnight.
+                const startsAtDateTime = args.startsAtDateTime ? floorToDay(args.startsAtDateTime) : args.startsAtDateTime;
 
-            // all-day events also must start at midnight.
-            const startsAtDateTime = (args.startsAtDateTime && args.isAllDay) ? (
-                floorToDay(args.startsAtDateTime)
-            ) : (
-                args.startsAtDateTime
-            );
+                this.spec = {
+                    durationMillis,
+                    startsAtDateTime,
+                    isAllDay: args.isAllDay,
+                };
+                return;
+            }
+
+            // not all-day.
+            // snap duration to 15-minute increments.
+            const gIntervalLen = (gMillisecondsPerMinute * 15);
+            let intervals = Math.round(args.durationMillis / gIntervalLen);// all-day events have duration of 1-day increments always.
+            if (intervals < 1) intervals = 1; // 0-length ranges are not useful and cause complexity
+            const durationMillis = intervals * gIntervalLen;
+
+            // snap start time to 15-minute increment.
+            const startsAtDateTime = args.startsAtDateTime ? roundToNearest15Minutes(args.startsAtDateTime) : args.startsAtDateTime;
 
             this.spec = {
                 durationMillis,
                 startsAtDateTime,
                 isAllDay: args.isAllDay,
             };
+            return;
         }
-        else {
-            this.spec = {
-                durationMillis: gMillisecondsPerHour,
-                isAllDay: false,
-                startsAtDateTime: new Date(),
-            };
-        }
+
+        this.spec = {
+            durationMillis: gMillisecondsPerHour,
+            isAllDay: false,
+            startsAtDateTime: new Date(),
+        };
     }
 
     getSpec(): DateTimeRangeSpec {
@@ -313,10 +335,19 @@ export class DateTimeRange {
         if (this.isTBD()) {
             return "TBD";
         }
+        const now = new Date();
         if (this.isAllDay()) {
-            return `${formatDate(this.getStartDateTime(new Date()))} - ${formatDate(this.getEndDateTime(new Date()))}`;
+            //return `${formatDate(this.getStartDateTime(new Date()))} - ${formatDate(this.getEndDateTime(new Date()))}`;
+            const begin = formatDate(this.getStartDateTime(now));
+            const end = formatDate(this.getLastDateTime(now));
+            if (begin === end) return begin;
+            return `${begin} - ${end} (${this.durationToString()})`;
         }
-        return `${formatDate(this.getStartDateTime(new Date()))} - ${formatDate(this.getEndDateTime(new Date()))}`;
+
+        const startDate = this.getStartDateTime(now);
+        const endDate = this.getEndDateTime(now);
+
+        return `${formatDate(startDate)} ${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${this.durationToString()})`;
         // Monday 4 October 2023, 18-19h
         // Monday 4 October 2023 - Wednesday 6 October 2023
     }
