@@ -13,7 +13,7 @@ export default resolver.pipe(
     async (args: TupdateUserEventAttendanceMutationArgs, ctx: AuthenticatedMiddlewareCtx) => {
 
         // TODO: authorize
-        //debugger;
+        debugger;
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         const clientIntention: db3.xTableClientUsageContext = {

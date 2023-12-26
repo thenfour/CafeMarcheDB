@@ -24,7 +24,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditEventAttendancesPage", Permission.admin_general)) {
+    if (!useAuthorization("EditEventAttendancesPage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
     return <>

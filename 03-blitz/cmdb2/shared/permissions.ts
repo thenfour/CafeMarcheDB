@@ -1,7 +1,32 @@
 
 
 export enum Permission {
-    login = "login", // basic permission to access the site at all.
+
+    always_grant = "always_grant", // opposite of never_grant. even though public, visibility_public, and always_grant seem to offer the same thing, they have theoretically different functions.
+    public = "public", // in cases where the user has no User record, therefore no Role, and no other permissions. should not be assigned to any user roles for this reason.
+
+    // basic permission to access the logged-in version of the site.
+    // having a user identity grants you this.
+    // require this for features which have no restriction on use, like viewing your profile, resetting your own password, or viewing the backstage front page.
+    login = "login",
+
+    // ability to view site things like users and basic stuff. this allows one level of trust after anonymously creating an account.
+    // this shall be used for visibility of things like tags / instruments
+    basic_trust = "basic_trust",
+
+    // require this for site behvaiors:  managing roles and permissions,
+    // do NOT use this for lower-level functions like managing tags, statuses, types, attributes; these should have their own permission like admin_events
+    sysadmin = "sysadmin",
+    never_grant = "never_grant", // no roles should have this permission; it's the opposite of public.
+
+    // ***********************************************
+
+    // for changing site content at the site level (site chrome, style, etc)
+    // basically sysadmin but non-functional sitewide changes
+    content_admin = "content_admin",
+
+    // specific permission for this feature.
+    impersonate_user = "impersonate_user",
 
     // for user-created objects like events / files, they have the ability to specify a permission that dictates who can
     // see the object. visibility permissions should be marked as such in the permissions table.
@@ -11,40 +36,40 @@ export enum Permission {
     visibility_logged_in_users = "visibility_logged_in_users",
     visibility_public = "visibility_public",// this is the only permission which is special-case in that EVERYONE will be authorized for it, no exceptions. so there are special cases for it like if you have no user object or no session.
 
+    // ability to edit the homepage content
     edit_public_homepage = "edit_public_homepage",
-    backstage_user = "backstage_user",
-    sysadmin = "sysadmin",
 
-
-    ////////////
-
-    admin_auth = "admin_auth", // roles, permissions
-    impersonate_user = "impersonate_user",
-    view_roles = "view_roles",
-    view_permissions = "view_permissions",
-    view_songs = "view_songs",
-    admin_songs = "admin_songs",
-    view_general_info = "view_general_info", // instruments, instrument tags,
-    edit_song_credit_types = "edit_song_credit_types",
-
+    // ******************** event permissions.
+    admin_events = "admin_events",// require this for managing event attributes like type, status, tags
+    manage_events = "manage_events",// require this for editing events: descriptions, creating / editing / deleting events
     view_events = "view_events",
-    admin_events = "admin_events",
-    edit_events = "edit_events",
+    respond_to_events = "respond_to_events",
 
-    view_settings = "view_settings", // basically everyone should have this
-    admin_settings = "admin_settings",
+    // ******************** song permissions.
+    admin_songs = "admin_songs",
+    manage_songs = "manage_songs",
+    view_songs = "view_songs",
 
-    admin_users = "admin_users",
-    view_all_user_data = "view_all_user_data",
+    // ******************** file permissions.
+    admin_files = "admin_files",
+    manage_files = "manage_files",
+    view_files = "view_files",
 
-    admin_general = "admin_general",
-    view_instruments = "view_instruments",
+    // ******************** instrument permissions.
+    admin_instruments = "admin_instruments",
+    manage_instruments = "manage_instruments",
 
-    change_own_password = "change_own_password",
-    change_own_userInfo = "change_own_userInfo",
-
-    associate_instrument_tags = "associate_instrument_tags",
-    associate_song_tags = "associate_song_tags",
-    edit_song_credits = "edit_song_credits",
+    // ******************** user permissions.
+    admin_users = "admin_users", // creating / deleting / editing users in general.
+    manage_users = "manage_users",
 };
+
+// these are granted automatically to public.
+export const gPublicPermissions: Permission[] = [
+    Permission.always_grant,
+    Permission.view_files, // in order for homepage to show photos
+    Permission.view_events,// events are visible to public because of homepage
+    Permission.public,
+    Permission.visibility_public,
+];
 

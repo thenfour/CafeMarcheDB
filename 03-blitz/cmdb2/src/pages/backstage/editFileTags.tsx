@@ -30,7 +30,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 });
 
 const MainContent = () => {
-    if (!useAuthorization("EditFileTagsPage", Permission.admin_general)) {
+    if (!useAuthorization("EditFileTagsPage", Permission.admin_files)) {
         throw new Error(`unauthorized`);
     }
     return <>

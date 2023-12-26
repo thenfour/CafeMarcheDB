@@ -5,6 +5,7 @@ import * as db3 from "../db3";
 import { AuthenticatedMiddlewareCtx } from "blitz";
 import { CMDBAuthorizeOrThrow } from "types";
 import * as mutationCore from "../server/db3mutationCore"
+import { TAnyModel } from "shared/utils";
 
 export default resolver.pipe(
     //resolver.authorize("db3query", Permission.login),
@@ -47,8 +48,20 @@ export default resolver.pipe(
                 include,
                 take: input.take,
             });
+
+            const rowAuthResult = (items as TAnyModel[]).map(row => table.authorizeAndSanitize({
+                contextDesc,
+                publicData: ctx.session.$publicData,
+                clientIntention,
+                rowMode: "view",
+                model: row,
+            }));
+
+            // any unknown / unauthorized columns are simply discarded.
+            const sanitizedItems = rowAuthResult.filter(r => r.rowIsAuthorized).map(r => r.authorizedModel);
+
             return {
-                items,
+                items: sanitizedItems,
                 where,
                 include,
                 clientIntention,

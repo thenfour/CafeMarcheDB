@@ -22,7 +22,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditEventSegmentsPage", Permission.admin_general)) {
+    if (!useAuthorization("EditEventSegmentsPage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
 

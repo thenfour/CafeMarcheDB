@@ -25,7 +25,7 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 
 const MainContent = () => {
-    if (!useAuthorization("admin songs page", Permission.admin_general)) {
+    if (!useAuthorization("admin songs page", Permission.admin_songs)) {
         throw new Error(`unauthorized`);
     }
 

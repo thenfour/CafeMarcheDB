@@ -14,7 +14,7 @@ interface GetPermissionsInput
     > { }
 
 export default resolver.pipe(
-    resolver.authorize(Permission.view_permissions),
+    resolver.authorize(Permission.sysadmin),
     async ({ where, orderBy, skip = 0, take = 100 }: GetPermissionsInput, ctx) => {
         try {
             const {

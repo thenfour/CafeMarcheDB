@@ -10,7 +10,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    if (!useAuthorization("EventSegmentUserResponsePage", Permission.admin_general)) {
+    if (!useAuthorization("EventSegmentUserResponsePage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
     const urlParams = new URLSearchParams(window.location.search);

@@ -15,7 +15,7 @@ interface MutationMarkdownControlProps {
     errorMessage?: string,
     debounceMilliseconds?: number,
     editButtonText?: string,
-    readonly: boolean,
+    readonly?: boolean,
     closeButtonText?: string,
 };
 

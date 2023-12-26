@@ -10,7 +10,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditFrontpageGalleryItemsPage", Permission.admin_general)) {
+    if (!useAuthorization("EditFrontpageGalleryItemsPage", Permission.edit_public_homepage)) {
         throw new Error(`unauthorized`);
     }
 

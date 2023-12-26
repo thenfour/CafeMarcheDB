@@ -184,7 +184,7 @@ interface MarkdownControlProps {
     debounceMilliseconds: number,
     editButtonText?: string,
     closeButtonText?: string,
-    readonly: boolean,
+    readonly?: boolean,
 }
 
 export function MarkdownControl(props: MarkdownControlProps) {

@@ -18,8 +18,6 @@ export default resolver.pipe(
   resolver.authorize(Permission.login),
   async ({ currentPassword, newPassword }, ctx) => {
 
-    //CMDBAuthorizeOrThrow("ChangePassword", Permission.change_own_password, ctx);
-
     const user = await db.user.findFirst({ where: { id: ctx.session.userId } })
     if (!user) throw new NotFoundError()
 

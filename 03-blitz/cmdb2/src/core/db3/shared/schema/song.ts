@@ -13,10 +13,35 @@ import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, 
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 
 
+export const xSongAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_songs,
+    PostQuery: Permission.view_songs,
+    PreMutateAsOwner: Permission.view_songs,
+    PreMutate: Permission.manage_songs,
+    PreInsert: Permission.manage_songs,
+};
+
+export const xSongAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_songs,
+    PostQuery: Permission.view_songs,
+    PreMutateAsOwner: Permission.manage_songs,
+    PreMutate: Permission.manage_songs,
+    PreInsert: Permission.manage_songs,
+};
+
+export const xSongAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_songs,
+    PostQuery: Permission.view_songs,
+    PreMutateAsOwner: Permission.admin_songs,
+    PreMutate: Permission.admin_songs,
+    PreInsert: Permission.admin_songs,
+};
+
+
+
+
 
 export const xSongTag = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagInclude => {
         return SongTagArgs.include;
     },
@@ -35,33 +60,39 @@ export const xSongTag = new db3.xTable({
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("text"),
+        MakeTitleField("text", { authMap: xSongAuthMap_R_EOwn_EManagers }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new ColorField({
             columnName: "color",
             allowNull: true,
             palette: gGeneralPaletteList,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new ConstEnumStringField({
             columnName: "significance",
             allowNull: true,
             defaultValue: null,
             options: SongTagSignificance,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new BoolField({
             columnName: "showOnSongLists",
             defaultValue: false,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
     ]
 });
@@ -71,8 +102,6 @@ export const xSongTag = new db3.xTable({
 
 export const xSongTagAssociation = new db3.xTable({
     tableName: "SongTagAssociation",
-    editPermission: Permission.associate_song_tags,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationInclude => {
         return SongTagAssociationArgs.include;
     },
@@ -81,6 +110,7 @@ export const xSongTagAssociation = new db3.xTable({
         name: row.tag.text,
         description: row.tag.description,
         color: gGeneralPaletteList.findEntry(row.tag.color),
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
@@ -89,6 +119,7 @@ export const xSongTagAssociation = new db3.xTable({
             fkMember: "tagId",
             allowNull: false,
             foreignTableID: "SongTag",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput | false => false,
         }),
     ]
@@ -100,8 +131,6 @@ export const xSongTagAssociation = new db3.xTable({
 
 export const xSong = new db3.xTable({
     tableName: "Song",
-    editPermission: Permission.admin_songs,
-    viewPermission: Permission.view_songs,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
         return SongArgs.include;
     },
@@ -109,6 +138,7 @@ export const xSong = new db3.xTable({
     getRowInfo: (row: SongPayload) => ({
         name: row.name,
         description: row.description,
+        ownerUserId: null,
     }),
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
@@ -119,41 +149,49 @@ export const xSong = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("name"),
-        MakeSlugField("slug", "name"),
+        MakeTitleField("name", { authMap: xSongAuthMap_R_EOwn_EManagers, }),
+        MakeSlugField("slug", "name", { authMap: xSongAuthMap_R_EAdmin, }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
             columnName: "startBPM",
             allowNull: true,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
             columnName: "endBPM",
             allowNull: true,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
             columnName: "introducedYear",
             allowNull: true,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new BoolField({
             columnName: "isDeleted",
             defaultValue: false,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({ // todo: a column type specifically for song lengths
             columnName: "lengthSeconds",
             allowNull: true,
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
 
         new CreatedByUserField({
             columnName: "createdByUser",
             fkMember: "createdByUserId",
+            authMap: xSongAuthMap_R_EAdmin,
         }),
         new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
 
         new TagsField<SongTagAssociationPayload>({
@@ -164,6 +202,7 @@ export const xSong = new db3.xTable({
             associationLocalObjectMember: "song",
             associationTableID: "SongTagAssociation",
             foreignTableID: "SongTag",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
                 tags: {
@@ -181,73 +220,11 @@ export const xSong = new db3.xTable({
 });
 
 
-// ////////////////////////////////////////////////////////////////
-// export const xSongComment = new db3.xTable({
-//     editPermission: Permission.admin_general,
-//     viewPermission: Permission.view_general_info,
-//     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCommentInclude => {
-//         return SongCommentArgs.include;
-//     },
-//     tableName: "songComment",
-//     naturalOrderBy: SongCommentNaturalOrderBy,
-//     getRowInfo: (row: SongCommentPayload) => ({
-//         name: "<not supported>",
-//     }),
-//     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCommentWhereInput[] | false) => {
-//         if (params.songId != null) {
-//             return [{
-//                 songId: { equals: params.songId }
-//             }];
-//         }
-//         return false;
-//     },
-//     visibilitySpec: {
-//         ownerUserIDColumnName: "userId",
-//         visiblePermissionIDColumnName: "visiblePermissionId",
-//     },
-//     columns: [
-//         new PKField({ columnName: "id" }),
-//         new GenericStringField({
-//             columnName: "text",
-//             allowNull: false,
-//             format: "plain",
-//         }),
-//         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
-//             columnName: "user",
-//             fkMember: "userId",
-//             allowNull: false,
-//             foreignTableID: "User",
-//             getQuickFilterWhereClause: (query: string) => false,
-//         }),
-
-//         new VisiblePermissionField({
-//             columnName: "visiblePermission",
-//             fkMember: "visiblePermissionId",
-//         }),
-//         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
-//             columnName: "song",
-//             fkMember: "songId",
-//             allowNull: false,
-//             foreignTableID: "Song",
-//             getQuickFilterWhereClause: (query: string) => false,
-//         }),
-//         MakeCreatedAtField("createdAt"),
-//         new DateTimeField({
-//             columnName: "updatedAt",
-//             allowNull: true,
-//             granularity: "minute",
-//         }),
-//     ]
-// });
-
-
 
 
 
 ////////////////////////////////////////////////////////////////
 export const xSongCreditType = new db3.xTable({
-    editPermission: Permission.edit_song_credit_types,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditTypeInclude => {
         return SongCreditTypeArgs.include;
     },
@@ -265,23 +242,27 @@ export const xSongCreditType = new db3.xTable({
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("text"),
+        MakeTitleField("text", { authMap: xSongAuthMap_R_EManagers }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xSongAuthMap_R_EManagers,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            authMap: xSongAuthMap_R_EManagers,
         }),
         new ColorField({
             columnName: "color",
             allowNull: true,
             palette: gGeneralPaletteList,
+            authMap: xSongAuthMap_R_EManagers,
         }),
     ]
 });
@@ -290,8 +271,6 @@ export const xSongCreditType = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 export const xSongCredit = new db3.xTable({
-    editPermission: Permission.edit_song_credits,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditInclude => {
         return SongCreditArgs.include;
     },
@@ -299,6 +278,7 @@ export const xSongCredit = new db3.xTable({
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({
         name: "<a song credit>",
+        ownerUserId: row.userId, // questionable.
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.SongCreditWhereInput[] | false) => {
         if (params.songId != null) {
@@ -315,6 +295,7 @@ export const xSongCredit = new db3.xTable({
             fkMember: "userId",
             allowNull: false,
             foreignTableID: "User",
+            authMap: xSongAuthMap_R_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
@@ -322,12 +303,14 @@ export const xSongCredit = new db3.xTable({
             fkMember: "songId",
             allowNull: false,
             foreignTableID: "Song",
+            authMap: xSongAuthMap_R_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.SongCreditTypeGetPayload<{}>>({
             columnName: "type",
             fkMember: "typeId",
             allowNull: false,
+            authMap: xSongAuthMap_R_EManagers,
             foreignTableID: "SongCreditType",
             getQuickFilterWhereClause: (query: string) => false,
         }),

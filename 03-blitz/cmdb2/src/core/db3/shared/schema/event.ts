@@ -7,7 +7,7 @@ import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/col
 import { Permission } from "shared/permissions";
 import { CoalesceBool, CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
 import * as db3 from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField, MakeNullableRawTextField, MakeRawTextField, EventStartsAtField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField, MakeNullableRawTextField, MakeRawTextField, EventStartsAtField, GhostField } from "../db3basicFields";
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
@@ -22,6 +22,55 @@ import {
 import { getUserPrimaryInstrument, xInstrument } from "./instrument";
 import { xFileEventTag } from "./file";
 import { DateTimeRange, IsEarlierDateWithLateNull, MinDateOrLateNull } from "shared/time";
+
+
+
+export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_events,
+    PostQuery: Permission.view_events,
+    PreMutateAsOwner: Permission.respond_to_events,
+    PreMutate: Permission.manage_events,
+    PreInsert: Permission.respond_to_events,
+};
+
+export const xEventAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.public,
+    PostQuery: Permission.view_events,
+    PreMutateAsOwner: Permission.view_events,
+    PreMutate: Permission.manage_events,
+    PreInsert: Permission.manage_events,
+};
+
+export const xEventAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_events,
+    PostQuery: Permission.view_events,
+    PreMutateAsOwner: Permission.manage_events,
+    PreMutate: Permission.manage_events,
+    PreInsert: Permission.manage_events,
+};
+
+export const xEventAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_events,
+    PostQuery: Permission.view_events,
+    PreMutateAsOwner: Permission.admin_events,
+    PreMutate: Permission.admin_events,
+    PreInsert: Permission.admin_events,
+};
+
+export const xEventAuthMap_CreatedAt = xEventAuthMap_R_EAdmin;
+
+export const xEventAuthMap_Homepage: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.basic_trust,
+    PostQuery: Permission.basic_trust,
+    PreMutateAsOwner: Permission.edit_public_homepage,
+    PreMutate: Permission.edit_public_homepage,
+    PreInsert: Permission.edit_public_homepage,
+};
+
+
+
+
+
 
 /*
 
@@ -80,8 +129,6 @@ export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
 };
 
 export const xEventType = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTypeInclude => {
         return EventTypeArgs.include;
     },
@@ -99,19 +146,21 @@ export const xEventType = new db3.xTable({
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
     columns: [
         new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false }),
-        MakeTitleField("text"),
-        MakeMarkdownTextField("description"),
-        MakeSortOrderField("sortOrder"),
-        MakeColorField("color"),
-        MakeSignificanceField("significance", EventTypeSignificance),
-        MakeIconField("iconName", gIconOptions),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSignificanceField("significance", EventTypeSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GhostField({ memberName: "events", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 
@@ -120,8 +169,6 @@ export const xEventType = new db3.xTable({
 
 
 export const xEventStatus = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventStatusInclude => {
         return EventStatusArgs.include;
     },
@@ -138,19 +185,21 @@ export const xEventStatus = new db3.xTable({
         name: row.label,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
     columns: [
         new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false }),
-        MakeTitleField("label"),
-        MakeMarkdownTextField("description"),
-        MakeSortOrderField("sortOrder"),
-        MakeColorField("color"),
-        MakeSignificanceField("significance", EventStatusSignificance),
-        MakeIconField("iconName", gIconOptions),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeTitleField("label", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSignificanceField("significance", EventStatusSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GhostField({ memberName: "events", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 
@@ -159,8 +208,6 @@ export const xEventStatus = new db3.xTable({
 
 export const xEventTag = new db3.xTable({
     tableName: "EventTag",
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagInclude => {
         return EventTagArgs.include;
     },
@@ -178,15 +225,17 @@ export const xEventTag = new db3.xTable({
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("text"),
-        new BoolField({ columnName: "visibleOnFrontpage", defaultValue: false }),
-        MakeMarkdownTextField("description"),
-        MakeSortOrderField("sortOrder"),
-        MakeColorField("color"),
-        MakeSignificanceField("significance", EventTagSignificance),
+        MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "visibleOnFrontpage", defaultValue: false, authMap: xEventAuthMap_Homepage, }),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSignificanceField("significance", EventTagSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GhostField({ memberName: "events", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 
@@ -196,8 +245,6 @@ export const xEventTag = new db3.xTable({
 
 export const xEventTagAssignment = new db3.xTable({
     tableName: "EventTagAssignment",
-    editPermission: Permission.edit_events,
-    viewPermission: Permission.view_events,
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentInclude => {
         return EventTagAssignmentArgs.include;
@@ -207,6 +254,7 @@ export const xEventTagAssignment = new db3.xTable({
             name: row.eventTag.text,
             description: row.eventTag.description,
             color: gGeneralPaletteList.findEntry(row.eventTag.color),
+            ownerUserId: null,
         };
     },
     columns: [
@@ -216,6 +264,7 @@ export const xEventTagAssignment = new db3.xTable({
             fkMember: "eventTagId",
             allowNull: false,
             foreignTableID: "EventTag",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -224,8 +273,6 @@ export const xEventTagAssignment = new db3.xTable({
 
 const xEventArgs_Base: db3.TableDesc = {
     tableName: "event",
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
         return EventArgs.include;
     },
@@ -234,6 +281,7 @@ const xEventArgs_Base: db3.TableDesc = {
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
+        ownerUserId: row.createdByUserId,
     }),
     getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string, eventTypeIds?: number[], eventStatusIds: number[] }, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
@@ -284,34 +332,38 @@ const xEventArgs_Base: db3.TableDesc = {
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("name"),
-        MakeSlugField("slug", "name"),
-        MakeMarkdownTextField("description"),
-        new BoolField({ columnName: "isDeleted", defaultValue: false }),
-        MakePlainTextField("locationDescription"),
-        MakePlainTextField("locationURL"),
+        MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSlugField("slug", "name", { authMap: xEventAuthMap_R_EAdmin, }),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakePlainTextField("locationDescription", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         //new CalculatedEventDateRangeField(),
-        MakeCreatedAtField("createdAt"),
+        MakeCreatedAtField("createdAt", { authMap: xEventAuthMap_CreatedAt, }),
         new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
             columnName: "type",
             fkMember: "typeId",
             allowNull: true,
             foreignTableID: "EventType",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new CreatedByUserField({
             columnName: "createdByUser",
             fkMember: "createdByUserId",
+            authMap: xEventAuthMap_CreatedAt,
         }),
         new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
         new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
             columnName: "status",
             fkMember: "statusId",
             allowNull: true,
             foreignTableID: "EventStatus",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.UserTagGetPayload<{}>>({
@@ -319,18 +371,19 @@ const xEventArgs_Base: db3.TableDesc = {
             fkMember: "expectedAttendanceUserTagId",
             allowNull: true,
             foreignTableID: "UserTag",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
-        new BoolField({ columnName: "frontpageVisible", defaultValue: false }),
-        MakeRawTextField("frontpageDate"),
-        MakeRawTextField("frontpageTime"),
-        MakeMarkdownTextField("frontpageDetails"),
+        new BoolField({ columnName: "frontpageVisible", defaultValue: false, authMap: xEventAuthMap_Homepage, }),
+        MakeRawTextField("frontpageDate", { authMap: xEventAuthMap_Homepage, }),
+        MakeRawTextField("frontpageTime", { authMap: xEventAuthMap_Homepage, }),
+        MakeMarkdownTextField("frontpageDetails", { authMap: xEventAuthMap_Homepage, }),
 
-        MakeNullableRawTextField("frontpageTitle"),
-        MakeNullableRawTextField("frontpageLocation"),
-        MakeNullableRawTextField("frontpageLocationURI"),
-        MakeNullableRawTextField("frontpageTags"),
+        MakeNullableRawTextField("frontpageTitle", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageLocation", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageLocationURI", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageTags", { authMap: xEventAuthMap_Homepage, }),
 
         new TagsField<EventTagAssignmentPayload>({
             columnName: "tags",
@@ -339,6 +392,7 @@ const xEventArgs_Base: db3.TableDesc = {
             associationLocalIDMember: "eventId",
             associationLocalObjectMember: "event",
             associationTableID: "EventTagAssignment",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             foreignTableID: "EventTag",
             getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput => ({
                 tags: {
@@ -373,11 +427,16 @@ const xEventArgs_Base: db3.TableDesc = {
             associationTableID: "FileEventTag",
             associationForeignIDMember: "fileId",
             associationForeignObjectMember: "file",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             associationLocalIDMember: "eventId",
             associationLocalObjectMember: "event",
             getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput | boolean => false,
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventWhereInput | boolean => false,
         }), // tags
+
+        new GhostField({ memberName: "segments", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 };
 
@@ -395,8 +454,6 @@ export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
 
 export const xEventSegment = new db3.xTable({
     tableName: "EventSegment",
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentInclude => {
         return EventSegmentArgs.include;
     },
@@ -404,6 +461,7 @@ export const xEventSegment = new db3.xTable({
     getRowInfo: (row: EventSegmentPayload) => ({
         name: row.name,
         description: row.description,
+        ownerUserId: null,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSegmentWhereInput[] | false) => {
         if (params.eventId != null) {
@@ -419,19 +477,23 @@ export const xEventSegment = new db3.xTable({
             columnName: "name",
             allowNull: false,
             format: "plain",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
-        MakeMarkdownTextField("description"),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new EventStartsAtField({
             allowNull: true,
             columnName: "startsAt",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
             allowNull: false,
             columnName: "durationMillis",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
         new BoolField({
             columnName: "isAllDay",
             defaultValue: true,
+            authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
 
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
@@ -440,6 +502,7 @@ export const xEventSegment = new db3.xTable({
             allowNull: false,
             foreignTableID: "Event",
             getQuickFilterWhereClause: (query: string) => false,
+            authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
     ]
 });
@@ -449,8 +512,6 @@ export const xEventSegment = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xEventAttendance = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventAttendanceInclude => {
         return EventAttendanceArgs.include;
     },
@@ -460,19 +521,20 @@ export const xEventAttendance = new db3.xTable({
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("text"),
-        new GenericStringField({ allowNull: false, columnName: "personalText", format: "title", caseSensitive: false }),
-        MakeMarkdownTextField("description"),
-        MakeColorField("color"),
-        MakeIntegerField("strength"),
-        MakeSortOrderField("sortOrder"),
-        new BoolField({ columnName: "isDeleted", defaultValue: false }),
+        MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GenericStringField({ allowNull: false, columnName: "personalText", format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIntegerField("strength", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
     ]
 });
 
@@ -480,8 +542,6 @@ export const xEventAttendance = new db3.xTable({
 
 
 export const xEventSegmentUserResponse = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentUserResponseInclude => {
         return EventSegmentUserResponseArgs.include;
     },
@@ -489,6 +549,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
         name: row.user.name,
+        ownerUserId: row.userId,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         const ret: Prisma.EventSegmentUserResponseWhereInput[] = [];
@@ -509,6 +570,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
             allowNull: false,
             foreignTableID: "EventSegment",
             getQuickFilterWhereClause: (query: string) => false,
+            authMap: xEventAuthMap_UserResponse,
         }),
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
@@ -516,6 +578,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
             allowNull: false,
             foreignTableID: "User",
             getQuickFilterWhereClause: (query: string) => false,
+            authMap: xEventAuthMap_UserResponse,
         }),
         new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
             columnName: "attendance",
@@ -523,6 +586,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
             allowNull: true,
             foreignTableID: "EventAttendance",
             getQuickFilterWhereClause: (query: string) => false,
+            authMap: xEventAuthMap_UserResponse,
         }),
         // new ForeignSingleField<Prisma.InstrumentGetPayload<{}>>({
         //     columnName: "instrument",
@@ -537,15 +601,14 @@ export const xEventSegmentUserResponse = new db3.xTable({
 
 
 export const xEventUserResponse = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventUserResponseInclude => {
         return EventUserResponseArgs.include;
     },
     tableName: "eventUserResponse",
     naturalOrderBy: EventUserResponseNaturalOrderBy,
     getRowInfo: (row: EventUserResponsePayload) => ({
-        name: row.user.name,
+        name: row.user?.name || "",
+        ownerUserId: row.userId,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         const ret: Prisma.EventUserResponseWhereInput[] = [];
@@ -558,9 +621,9 @@ export const xEventUserResponse = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeMarkdownTextField("userComment"),
-        new BoolField({ columnName: "isInvited", defaultValue: false }),
-        MakeIntegerField("eventId"),
+        MakeMarkdownTextField("userComment", { authMap: xEventAuthMap_UserResponse, }),
+        new BoolField({ columnName: "isInvited", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIntegerField("eventId", { authMap: xEventAuthMap_UserResponse, }),
         // new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
         //     columnName: "eventSegment",
         //     fkMember: "eventSegmentId",
@@ -574,6 +637,7 @@ export const xEventUserResponse = new db3.xTable({
             allowNull: false,
             foreignTableID: "User",
             getQuickFilterWhereClause: (query: string) => false,
+            authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
         // new ForeignSingleField<Prisma.EventAttendanceGetPayload<{}>>({
         //     columnName: "attendance",
@@ -588,6 +652,7 @@ export const xEventUserResponse = new db3.xTable({
             allowNull: true,
             foreignTableID: "Instrument",
             getQuickFilterWhereClause: (query: string) => false,
+            authMap: xEventAuthMap_UserResponse,
         }),
     ]
 });
@@ -601,8 +666,6 @@ export const xEventUserResponse = new db3.xTable({
 
 
 export const xEventSongList = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListInclude => {
         return EventSongListArgs.include;
     },
@@ -611,6 +674,7 @@ export const xEventSongList = new db3.xTable({
     getRowInfo: (row: EventSongListPayload) => ({
         name: row.name,
         description: row.description,
+        ownerUserId: null,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         const ret: Prisma.EventSongListWhereInput[] = [];
@@ -627,14 +691,15 @@ export const xEventSongList = new db3.xTable({
     // },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("name"),
-        MakeMarkdownTextField("description"),
-        MakeSortOrderField("sortOrder"),
+        MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
             fkMember: "eventId",
             allowNull: false,
             foreignTableID: "Event",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         // new CreatedByUserField({
@@ -653,6 +718,7 @@ export const xEventSongList = new db3.xTable({
             associationForeignObjectMember: "song",
             associationLocalIDMember: "eventSongListId",
             associationLocalObjectMember: "eventSongList",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.EventSongListWhereInput | boolean => false,
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
         }),
@@ -662,8 +728,6 @@ export const xEventSongList = new db3.xTable({
 
 
 export const xEventSongListSong = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListSongInclude => {
         return EventSongListSongArgs.include;
     },
@@ -672,6 +736,7 @@ export const xEventSongListSong = new db3.xTable({
     getRowInfo: (row: EventSongListSongPayload) => ({
         name: row.song.name,
         description: row.subtitle || "",
+        ownerUserId: null,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListSongWhereInput[] | false) => {
         const ret: Prisma.EventSongListSongWhereInput[] = [];
@@ -684,13 +749,14 @@ export const xEventSongListSong = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakePlainTextField("subtitle"),
-        MakeSortOrderField("sortOrder"),
+        MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
             columnName: "song",
             fkMember: "songId",
             allowNull: false,
             foreignTableID: "Song",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
@@ -698,6 +764,7 @@ export const xEventSongListSong = new db3.xTable({
             fkMember: "eventSongListId",
             allowNull: false,
             foreignTableID: "EventSongList",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]

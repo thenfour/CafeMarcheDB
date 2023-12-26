@@ -16,7 +16,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    if (!useAuthorization("admin role-permissions matrix page", Permission.admin_auth)) {
+    if (!useAuthorization("admin role-permissions matrix page", Permission.sysadmin)) {
         throw new Error(`unauthorized`);
     }
 

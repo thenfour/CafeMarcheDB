@@ -1545,8 +1545,8 @@ const ColorBlender = (props: ColorBlenderProps) => {
             method:
             <select value={method} onChange={(e) => setMethod(e.target.value)}>
                 <option value="lab">lab</option>
-                <option value="cmyk">cmyk</option>
                 <option value="rgb">rgb</option>
+                <option value="cmyk">cmyk</option>
                 <option value="hsl">hsl</option>
             </select>
         </div>

@@ -13,7 +13,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
-import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
+import { DB3EditObject2Dialog, DB3EditObjectDialog, DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { SafeParseReturnType } from "zod";
@@ -214,23 +214,25 @@ const MainContent = () => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
+    const spec = new DB3Client.xTableClientSpec({
+        table: db3.xUser,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
+            //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
+            //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
+            //new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
+            //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
+            //new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
+            new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+            //new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, clientIntention }),
+        ],
+    })
+
     const client = DB3Client.useTableRenderContext({
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xUser,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
-                //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
-                new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
-                new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
-                //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
-                //new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
-                //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
-                //new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
-                new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-                //new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, clientIntention }),
-            ],
-        }),
+        tableSpec: spec,
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
         filterModel: {
             items: [{ field: "id", value: currentUser!.id, operator: "equals" }]
@@ -251,6 +253,19 @@ const MainContent = () => {
         });
     };
 
+    // const handleSave = (updateObj: db3.UserMinimumPayload, client: DB3Client.xTableRenderClient) => {
+    //     client.doUpdateMutation(updateObj).then(e => {
+    //         showSnackbar({ severity: "success", children: "updated" });
+    //     }).catch(e => {
+    //         console.log(e);
+    //         showSnackbar({ severity: "error", children: "error updating" });
+    //     }).finally(async () => {
+    //         client.refetch();
+    //         await refetch();
+    //         //api.closeDialog();
+    //     });
+    // };
+
     return <>
         <SettingMarkdown settingName="profile_markdown"></SettingMarkdown>
         <CMSinglePageSurfaceCard>
@@ -264,6 +279,7 @@ const MainContent = () => {
                 {client.items.length === 1 && (
                     <>
                         <DB3EditRowButton row={client.items[0]!} tableRenderClient={client} onSave={handleSave} />
+                        {/* <DB3EditObjectDialog table={spec} clientIntention={clientIntention} initialValue={client.items[0]!} onOK={handleOk} onCancel={() => { }} /> */}
                         <DB3RowViewer tableRenderClient={client} row={client.items[0]!} />
                     </>
                 )}

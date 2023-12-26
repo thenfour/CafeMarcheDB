@@ -21,7 +21,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 
 
 const InstrumentFunctionalGroupListContent = () => {
-    if (!useAuthorization("admin instrument functional groups page", Permission.admin_general)) {
+    if (!useAuthorization("admin instrument functional groups page", Permission.admin_instruments)) {
         throw new Error(`unauthorized`);
     }
     return <>

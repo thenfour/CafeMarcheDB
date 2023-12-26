@@ -204,6 +204,8 @@ will show clearly on the command line.
     <EditFieldsDialogButton>
     renders a "edit" button; when clicked, a dialog is rendered to edit a db3 table spec object.
 
+    <DB3EditRowButton> -- quite possibly a dupe of another ....
+
     <ChoiceEditCell>
     renders a value
     clicking reveals a dialog to select other values.

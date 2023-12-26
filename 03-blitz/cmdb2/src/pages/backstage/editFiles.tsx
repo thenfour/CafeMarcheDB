@@ -11,7 +11,7 @@ import { useRouter } from "next/router";
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditFilesPage", Permission.admin_general)) {
+    if (!useAuthorization("EditFilesPage", Permission.admin_files)) {
         throw new Error(`unauthorized`);
     }
 

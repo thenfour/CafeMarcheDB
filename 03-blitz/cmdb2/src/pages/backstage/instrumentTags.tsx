@@ -24,7 +24,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 });
 
 const InstrumentTagListContent = () => {
-    if (!useAuthorization("admin instrument tags page", Permission.admin_general)) {
+    if (!useAuthorization("admin instrument tags page", Permission.admin_instruments)) {
         throw new Error(`unauthorized`);
     }
     return <>

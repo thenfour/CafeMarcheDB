@@ -8,7 +8,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MainContent = () => {
-    if (!useAuthorization("EditEventTypesPage", Permission.admin_general)) {
+    if (!useAuthorization("EditEventTypesPage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
 

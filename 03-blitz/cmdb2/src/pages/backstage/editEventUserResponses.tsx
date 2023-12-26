@@ -24,7 +24,7 @@ const tableSpec = new DB3Client.xTableClientSpec({
 });
 
 const MainContent = () => {
-    if (!useAuthorization("EventUserResponsePage", Permission.admin_general)) {
+    if (!useAuthorization("EventUserResponsePage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
     const urlParams = new URLSearchParams(window.location.search);

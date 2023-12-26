@@ -12,7 +12,7 @@ import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
 
 const InstrumentListContent = () => {
-    if (!useAuthorization("admin instruments page", Permission.admin_general)) {
+    if (!useAuthorization("admin instruments page", Permission.admin_instruments)) {
         throw new Error(`unauthorized`);
     }
     const router = useRouter();

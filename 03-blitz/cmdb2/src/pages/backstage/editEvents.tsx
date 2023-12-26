@@ -60,7 +60,7 @@ const MainContent = () => {
         ],
     });
 
-    if (!useAuthorization("EditEventsPage", Permission.admin_general)) {
+    if (!useAuthorization("EditEventsPage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
     return <>

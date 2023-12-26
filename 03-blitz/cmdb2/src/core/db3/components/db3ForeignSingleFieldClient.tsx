@@ -74,7 +74,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 
     return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
         {chip}
-        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.label}</Button>
+        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.member}</Button>
         {isOpen && <SelectSingleForeignDialog
             clientIntention={props.clientIntention}
             closeOnSelect={true}
@@ -195,7 +195,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                 console.error(`table params ${JSON.stringify(tableClient.args.filterModel?.tableParams)} object not found for ${this.typedSchemaColumn.fkMember}. Maybe data obsolete? Maybe you manually typed in the query?`);
             }
             else {
-                this.fixedValue = items[0];
+                this.fixedValue = items[0] as any;
                 //items_ = items;
                 //this.rowCount = items.length;
                 //this.refetch = refetch;
@@ -307,7 +307,7 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             filter: { items: [] },
             cmdbQueryContext: "ForeignSingleFieldRenderContext",
         }, gQueryOptions.default);
-        this.items = items;
+        this.items = items as any;
         this.refetch = refetch;
     }
 
@@ -393,7 +393,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
     const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
     return <>
         <DialogTitle>
-            select {props.spec.schemaColumn.label}
+            select {props.spec.schemaColumn.member}
             <Box sx={{ p: 0 }}>
                 Selected: {props.spec.args.renderAsChip!({
                     colorVariant: StandardVariationSpec.Strong,

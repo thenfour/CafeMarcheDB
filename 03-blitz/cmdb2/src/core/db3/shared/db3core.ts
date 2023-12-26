@@ -1,8 +1,10 @@
 import { ColorPaletteEntry } from "shared/color";
-import { Permission } from "shared/permissions";
+import { Permission, gPublicPermissions } from "shared/permissions";
 import { TAnyModel, isEmptyArray } from "shared/utils";
 import db, { Prisma } from "db";
 import { assert } from "blitz";
+import { CreatePublicData, PublicDataType } from "types";
+import { EmptyPublicData, PublicData } from "@blitzjs/auth";
 
 
 // server-side code for db schema expression.
@@ -185,13 +187,46 @@ export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArg
 //export type FieldSignificanceOptions = "name" | "description" | "none" | "color";
 export type DB3RowMode = "new" | "view" | "update";
 
-export interface FieldBaseArgs<FieldDataType> {
-    //fieldType: string;
+export type DB3AuthContextPermissionMap = {
+    PostQuery: Permission;
+    PostQueryAsOwner: Permission;
+    PreInsert: Permission;
+    PreMutate: Permission;
+    PreMutateAsOwner: Permission;
+};
+
+export const createAuthContextMap_Mono = (p: Permission): DB3AuthContextPermissionMap => ({
+    PostQuery: p,
+    PostQueryAsOwner: p,
+    PreInsert: p,
+    PreMutate: p,
+    PreMutateAsOwner: p,
+});
+
+export const createAuthContextMap_DenyAll = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.never_grant);
+export const createAuthContextMap_GrantAll = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.always_grant);
+export const createAuthContextMap_PK = (): DB3AuthContextPermissionMap => ({
+    PostQuery: Permission.basic_trust,
+    PostQueryAsOwner: Permission.basic_trust,
+    PreInsert: Permission.never_grant,
+    PreMutate: Permission.never_grant,
+    PreMutateAsOwner: Permission.never_grant,
+});
+
+
+// adding this because crafting auth maps for all fields takes a lot of work and i want to shortcut the effort
+export const createAuthContextMap_TODO = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.always_grant);
+
+export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMap;// "PostQuery" | "PostQueryAsOwner" | "PreInsert" | "PreMutate" | "PreMutateAsOwner";
+
+export type FieldBaseArgs<FieldDataType> = {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
-    label: string;
+    //label: string;
     defaultValue: FieldDataType | null;
-    //fieldSignificance: FieldSignificanceOptions;
+    authMap: DB3AuthContextPermissionMap | null;
+    _customAuth: ((args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean) | null;
+    _matchesMemberForAuthorization?: ((memberName: string) => boolean) | null;
 }
 
 export interface ValidateAndParseArgs<FieldDataType> {
@@ -200,12 +235,47 @@ export interface ValidateAndParseArgs<FieldDataType> {
     mode: DB3RowMode;
 };
 
+export interface DB3AuthorizeAndSanitizeInput<T> {
+    contextDesc: string,
+    model: T,
+    rowMode: DB3RowMode,
+    publicData: EmptyPublicData | Partial<PublicDataType>,
+    clientIntention: xTableClientUsageContext,
+};
+
+export type DB3AuthorizeAndSanitizeFieldInput<T> = DB3AuthorizeAndSanitizeInput<T> & {
+    rowInfo: RowInfo;
+    authContext: DB3AuthorizationContext;
+    isOwner: boolean;
+};
+
+
+export interface DB3AuthorizeForViewColumnArgs<T> {
+    model: T,
+    publicData: EmptyPublicData | Partial<PublicDataType>,
+    clientIntention: xTableClientUsageContext,
+    columnName: string;
+};
+
+
+export interface DB3AuthorizeAndSanitizeResult<T> {
+    authorizedModel: Partial<T>,
+    unauthorizedModel: Partial<T>,
+    unknownModel: Partial<T>,
+    authorizedColumnCount: number, // if 0, the whole row is not authorized.
+    unauthorizedColumnCount: number,
+    unknownColumnCount: number,
+    rowIsAuthorized: boolean, // in theory you could have access to view some fields of a row, but not the row itself or its existence.
+};
+
 export abstract class FieldBase<FieldDataType> {
-    //fieldType: string;
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
-    label: string;
     defaultValue: FieldDataType | null;
+
+    authMap: DB3AuthContextPermissionMap | null;
+    _customAuth: ((args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>) => boolean) | null;
+    _matchesMemberForAuthorization?: ((memberName: string) => boolean) | null; // needed for multi-member columns like foreignsingle
 
     constructor(args: FieldBaseArgs<FieldDataType>) {
         Object.assign(this, args);
@@ -221,6 +291,26 @@ export abstract class FieldBase<FieldDataType> {
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null>;// => {
+
+    matchesMemberForAuthorization = (memberName: string): boolean => {
+        if (this._matchesMemberForAuthorization) {
+            return this._matchesMemberForAuthorization(memberName);
+        }
+        return (memberName.toLowerCase() === this.member.toLowerCase());
+    };
+
+    authorize = (args: DB3AuthorizeAndSanitizeFieldInput<TAnyModel>): boolean => {
+        if (!!this._customAuth) {
+            return this._customAuth(args);
+        }
+        assert(!!this.authMap, `one of authMap or customAuth are required; field:${this.member}, contextDesc:${args.contextDesc}`);
+        if (args.publicData.isSysAdmin) return true;
+        const requiredPermission = this.authMap[args.authContext];
+        if (!args.publicData.permissions) {
+            return gPublicPermissions.some(p => p === requiredPermission);
+        }
+        return args.publicData.permissions.some(p => p === requiredPermission);
+    }
 
     abstract ApplyToNewRow: (args: TAnyModel, clientIntention: xTableClientUsageContext) => void;
 
@@ -284,6 +374,7 @@ export interface RowInfo {
     name: string;
     description?: string;
     color?: ColorPaletteEntry | null;
+    ownerUserId: number | null; // if the row has an "owner" set this. helps with authorization
 };
 
 
@@ -309,11 +400,7 @@ export interface TableDesc {
     softDeleteSpec?: SoftDeleteSpec;
     visibilitySpec?: VisibilitySpec; // visibility
 
-    // formerly localInclude; the includes:{} object. Like Prisma.UserInclude.
     getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel,
-    // for members which exist in your includes:{} object (and therefore need to be filtered), but are not specified in your columns list.
-    viewPermission: Permission;
-    editPermission: Permission;
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     naturalOrderBy?: TAnyModel;
@@ -327,11 +414,7 @@ export class xTable implements TableDesc {
     tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
-    // formerly localInclude; the includes:{} object. Like Prisma.UserInclude.
     getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel;
-
-    viewPermission: Permission;
-    editPermission: Permission;
 
     softDeleteSpec?: SoftDeleteSpec;
     visibilitySpec?: VisibilitySpec; // visibility
@@ -357,6 +440,97 @@ export class xTable implements TableDesc {
             field.connectToTable(this);
         });
     }
+
+    // authorization is at the field level, and serves to:
+    // - filter fields from db queries (db payload)
+    // - filter out fields before committing to DB (db payload)
+    // - filter out fields coming from the db (db payload)
+    // - allow client-side to check if a field should be displayed
+
+    // for each field, the following contexts should be specified:
+    // - post-query normal
+    // - post-query owner/creator
+    // - pre-insert
+    // - pre-mutate normal
+    // - pre-mutate owner/creator
+    authorizeAndSanitize = (args: DB3AuthorizeAndSanitizeInput<TAnyModel>): DB3AuthorizeAndSanitizeResult<TAnyModel> => {
+        const rowInfo = this.getRowInfo(args.model);
+        const isOwner = ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId);
+        let authContext: DB3AuthorizationContext = "PostQuery";
+        switch (args.rowMode) {
+            case "new":
+                authContext = "PreInsert";
+                break;
+            case "update":
+                authContext = isOwner ? "PreMutateAsOwner" : "PreMutate";
+                break;
+            case "view":
+                authContext = isOwner ? "PostQueryAsOwner" : "PostQuery";
+                break;
+        }
+
+        // authorize & filter each column.
+        const ret = {
+            authorizedModel: {},
+            unauthorizedModel: {},
+            unknownModel: {},
+            authorizedColumnCount: 0,
+            unauthorizedColumnCount: 0,
+            unknownColumnCount: 0,
+            rowIsAuthorized: false,
+        };
+
+        const fieldInput: DB3AuthorizeAndSanitizeFieldInput<TAnyModel> = { ...args, authContext, rowInfo, isOwner };
+
+        Object.entries(args.model).forEach(e => {
+            //const col = this.columns.find(c => c.member.toLowerCase() === e[0].toLowerCase());
+            const col = this.columns.find(c => c.matchesMemberForAuthorization(e[0]));
+            if (e[0].toLowerCase() === this.pkMember.toLowerCase()) {
+                // primary key gets special treatment. actually in no case should this field be stripped as unauthorized.
+                ret.authorizedColumnCount++;
+                ret.authorizedModel[e[0]] = e[1];
+                return;
+            }
+            if (!col) {
+                console.log(`unknown column: ${e[0]}, tableID:${this.tableID}`);
+                debugger;
+                ret.unknownColumnCount++;
+                ret.unknownModel[e[0]] = e[1];
+                return;
+            }
+            if (col.authorize(fieldInput)) {
+                ret.authorizedColumnCount++;
+                ret.authorizedModel[e[0]] = e[1];
+                return;
+            }
+
+            // NB: if a column represents multiple members (ForeignSingle...) then
+            // one of the members will get stripped off
+
+            ret.unauthorizedColumnCount++;
+            ret.unauthorizedModel[e[0]] = e[1];
+        });
+
+        ret.rowIsAuthorized = ret.authorizedColumnCount > 0;
+        return ret;
+    };
+
+    authorizeColumnForView = <T extends TAnyModel,>(args: DB3AuthorizeForViewColumnArgs<T>) => {
+        const rowInfo = this.getRowInfo(args.model);
+        const isOwner = ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId);
+        const col = this.getColumn(args.columnName);
+        if (!col) return false;
+        return col.authorize({
+            clientIntention: args.clientIntention,
+            authContext: "PostQuery",
+            rowMode: "view",
+            isOwner: false,
+            contextDesc: "(authorizeColumnForView)",
+            model: args.model,
+            publicData: args.publicData,
+            rowInfo,
+        });
+    };
 
     // returns an object describing changes and validation errors.
     ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel, mode: DB3RowMode): ValidateAndComputeDiffResult {
@@ -414,10 +588,15 @@ export class xTable implements TableDesc {
         return ret;
     };
 
-    CalculateInclude = (clientIntention: xTableClientUsageContext): TAnyModel => {
+    CalculateInclude = (clientIntention: xTableClientUsageContext): TAnyModel | undefined => {
         // create a deep copy so our modifications don't spill into other stuff.
         const include = JSON.parse(JSON.stringify(this.getInclude(clientIntention)));
         this.ApplyIncludeFiltering(include, clientIntention);
+
+        // tables with no relations do not support `include` at all. even if it's empty.
+        // talk to Prisma about that but in that case we must return undefined so the query doesn't have the empty `include` clause.
+        if (Object.entries(include).length === 0) return undefined;
+
         return include;
     };
 
@@ -578,8 +757,7 @@ export class xTable implements TableDesc {
         return ret;
     }
 
-}
-
+};
 
 ////////////////////////////////////////////////////////////////
 export const gAllTables: { [key: string]: xTable } = {

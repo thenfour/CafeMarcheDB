@@ -1,16 +1,34 @@
 import { EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
 import { SessionContext } from "@blitzjs/auth";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedMiddlewareCtx, assert } from "blitz";
 import { User } from "db"
-import { Permission } from "shared/permissions";
+import { Permission, gPublicPermissions } from "shared/permissions";
 import { Ctx } from "@blitzjs/next";
 
 
-type PublicDataType = {
+export type PublicDataType = {
   userId: User["id"],
   impersonatingFromUserId?: User["id"],
   isSysAdmin: boolean,
   permissions: string[],
+};
+
+export type CMAuthorize2Args = {
+  reason: string,
+  permission: Permission | null,
+
+  isSysAdmin: boolean,
+  userPermissions: string[],
+  userId: number | null;
+};
+
+export function CMAuthorize2(args: CMAuthorize2Args) {
+  assert(!!args.permission && args.permission.length, `CMAuthorize: Permission is invalid; Maybe a call was improperly made. args=${JSON.stringify(args)}`);
+  assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
+  const ret = (!!args.userId) && (args.isSysAdmin || args.userPermissions.some(p => p === args.permission));
+
+  console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] userId:${args.userId || "<null>"} perm:${args.permission} with userPerms ${JSON.stringify(args.userPermissions)}`);
+  return ret || false;
 };
 
 type CMAuthorizeArgs = {
@@ -20,11 +38,18 @@ type CMAuthorizeArgs = {
 };
 
 export function CMAuthorize(args: CMAuthorizeArgs) {
-  console.assert(!!args.permission && args.permission.length, `CMAuthorize: Permission is invalid; Maybe a call was improperly made. args=${JSON.stringify(args)}`);
-  console.assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
-  const ret = (!!args.publicData?.userId) && (args.publicData?.isSysAdmin || args.publicData?.permissions?.some(p => p === args.permission));
-  console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] perm:${args.permission} for user ${args.publicData?.userId || "<null>"} with perms ${JSON.stringify(args.publicData?.permissions || [])}`);
-  return ret || false;
+  return CMAuthorize2({
+    isSysAdmin: args.publicData.isSysAdmin || false,
+    userPermissions: args.publicData.permissions || [],
+    reason: args.reason,
+    permission: args.permission,
+    userId: args.publicData.userId || null,
+  });
+  // assert(!!args.permission && args.permission.length, `CMAuthorize: Permission is invalid; Maybe a call was improperly made. args=${JSON.stringify(args)}`);
+  // assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
+  // const ret = (!!args.publicData?.userId) && (args.publicData?.isSysAdmin || args.publicData?.permissions?.some(p => p === args.permission));
+  // console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] perm:${args.permission} for user ${args.publicData?.userId || "<null>"} with perms ${JSON.stringify(args.publicData?.permissions || [])}`);
+  // return ret || false;
 };
 
 // interface CMDBRolesIsAuthorizedArgs {
@@ -70,14 +95,14 @@ export function CreatePublicData(user: any, impersonatingFromUserId?: number): P
     return {
       userId: 0, // numeric & falsy
       isSysAdmin: false,
-      permissions: [],
+      permissions: [...gPublicPermissions],
       impersonatingFromUserId,
     };
   }
   return {
     userId: user.id,
     isSysAdmin: user.isSysAdmin,
-    permissions: (user.role?.permissions)?.map(p => p.permission?.name) || [],
+    permissions: [...gPublicPermissions, ...((user.role?.permissions)?.map(p => p.permission?.name) || [])],
     impersonatingFromUserId,
   };
 };

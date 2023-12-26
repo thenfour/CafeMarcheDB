@@ -10,7 +10,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditSongCreditsPage", Permission.admin_general)) {
+    if (!useAuthorization("EditSongCreditsPage", Permission.admin_songs)) {
         throw new Error(`unauthorized`);
     }
 

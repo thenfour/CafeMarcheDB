@@ -229,42 +229,42 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
 
 // ////////////////////////////////////////////////////////////////
 
-// export interface DB3EditRowButtonAPI {
-//     closeDialog: () => void;
-// };
+export interface DB3EditRowButtonAPI {
+    closeDialog: () => void;
+};
 
 
-// ////////////////////////////////////////////////////////////////
-// export interface DB3EditRowButtonProps {
-//     row: TAnyModel;
-//     tableRenderClient: DB3ClientCore.xTableRenderClient;
-//     //clientIntention: db3.xTableClientUsageContext;
-//     onSave: (newRow: TAnyModel, api: DB3EditRowButtonAPI) => void;
-// };
+////////////////////////////////////////////////////////////////
+export interface DB3EditRowButtonProps {
+    row: TAnyModel;
+    tableRenderClient: DB3ClientCore.xTableRenderClient;
+    //clientIntention: db3.xTableClientUsageContext;
+    onSave: (newRow: TAnyModel, api: DB3EditRowButtonAPI) => void;
+};
 
-// export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
-//     const [editOpen, setEditOpen] = React.useState<boolean>(false);
+export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
+    const [editOpen, setEditOpen] = React.useState<boolean>(false);
 
-//     return <div className={`DB3EditRowButton`}>
-//         <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>
-//         {editOpen && (
-//             <DB3EditObject2Dialog
-//                 initialValue={props.row}
-//                 //onDelete={props.onDelete}
-//                 //clientIntention={props.clientIntention}
-//                 onCancel={() => setEditOpen(false)}
-//                 onOK={(updatedObj: TAnyModel) => {
-//                     props.onSave(updatedObj, {
-//                         closeDialog: () => setEditOpen(false)
-//                     });
-//                 }}
-//                 tableRenderClient={props.tableRenderClient}
-//             />
+    return <div className={`DB3EditRowButton`}>
+        <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>
+        {editOpen && (
+            <DB3EditObject2Dialog
+                initialValue={props.row}
+                //onDelete={props.onDelete}
+                //clientIntention={props.clientIntention}
+                onCancel={() => setEditOpen(false)}
+                onOK={(updatedObj: TAnyModel) => {
+                    props.onSave(updatedObj, {
+                        closeDialog: () => setEditOpen(false)
+                    });
+                }}
+                tableRenderClient={props.tableRenderClient}
+            />
 
-//         )}
-//     </div>;
+        )}
+    </div>;
 
-// };
+};
 
 
 

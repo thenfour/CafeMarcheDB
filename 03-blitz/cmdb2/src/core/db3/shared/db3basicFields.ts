@@ -19,16 +19,74 @@
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
-import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, xTable, xTableClientUsageContext } from "./db3core";
+import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_Mono, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 import { DateTimeRange, DateTimeRangeSpec } from "shared/time";
 import { assert } from "blitz";
 
+export type DB3AuthSpec = {
+    authMap: DB3AuthContextPermissionMap;
+} | {
+    _customAuth: (args: DB3AuthorizeAndSanitizeInput<TAnyModel>) => boolean;
+};
+
+
 ////////////////////////////////////////////////////////////////
 // field types
+export type GhostFieldArgs = {
+    memberName: string;
+} & DB3AuthSpec;
 
-export interface PKFieldArgs {
+// sometimes you have a query containing a payload and you don't need to have a full FieldSpec for handling it. you just need to access its raw value as returned by the db.
+// often something like a include:{...}
+export class GhostField extends FieldBase<number> {
+
+    table: xTable;
+
+    constructor(args: GhostFieldArgs) {
+        super({
+            member: args.memberName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: null,
+        });
+    }
+
+    connectToTable = (table: xTable) => { this.table = table; };
+
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
+
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
+
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    ValidateAndParse = (val: ValidateAndParseArgs<number>): ValidateAndParseResult<number | null> => {
+        return SuccessfulValidateAndParseResult(val.value);
+    };
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+    };
+    isEqual = (a: any, b: any) => {
+        //assert(false, "ghost fields should not be doing validation.");
+        return true;
+    };
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
+        //assert(false, "ghost fields should not be applying to db model.");
+        console.log(`Ghost field skipping applying to db model. tableID:${this.table.tableID}, column:${this.member}`);
+    };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
+        if (dbModel[this.member] === undefined) return;
+        clientModel[this.member] = dbModel[this.member];
+    }
+}
+
+
+
+export type PKFieldArgs = {
     columnName: string;
-};
+};// & DB3AuthSpec;
 
 export class PKField extends FieldBase<number> {
     constructor(args: PKFieldArgs) {
@@ -36,7 +94,11 @@ export class PKField extends FieldBase<number> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: null,
-            label: args.columnName,
+            //label: args.columnName,
+            //authMap: (args as any).authMap || null,
+            //_customAuth: (args as any)._customAuth || null,
+            authMap: createAuthContextMap_PK(),
+            _customAuth: null,
         });
     }
 
@@ -80,14 +142,14 @@ export class PKField extends FieldBase<number> {
 // for validation and client UI behavior.
 export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw";
 
-export interface GenericStringFieldArgs {
+export type GenericStringFieldArgs = {
     columnName: string;
     format: StringFieldFormatOptions;
     allowNull: boolean;
     // minLength?: number;
     caseSensitive?: boolean;
     // doTrim?: boolean;
-};
+} & DB3AuthSpec;
 
 export class GenericStringField extends FieldBase<string> {
     caseSensitive: boolean;
@@ -101,7 +163,9 @@ export class GenericStringField extends FieldBase<string> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : "",
-            label: args.columnName,
+            //label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
 
         this.format = args.format;
@@ -207,10 +271,10 @@ export class GenericStringField extends FieldBase<string> {
 };
 
 
-export interface GenericIntegerFieldArgs {
+export type GenericIntegerFieldArgs = {
     columnName: string;
     allowNull: boolean;
-};
+} & DB3AuthSpec;
 
 export class GenericIntegerField extends FieldBase<number> {
 
@@ -221,7 +285,9 @@ export class GenericIntegerField extends FieldBase<number> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : 0,
-            label: args.columnName,
+            //label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
         this.allowNull = args.allowNull;
     }
@@ -290,11 +356,11 @@ export class GenericIntegerField extends FieldBase<number> {
 // 
 // this means the datagrid row model has a ColorPaletteEntry, NOT a string. not both.
 // this is the gateway to doing foreign key items.
-export interface ColorFieldArgs {
+export type ColorFieldArgs = {
     columnName: string;
     allowNull: boolean;
     palette: ColorPaletteList;
-};
+} & DB3AuthSpec;
 
 export class ColorField extends FieldBase<ColorPaletteEntry> {
     allowNull: boolean;
@@ -305,7 +371,8 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : args.palette.defaultEntry,
-            label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
         this.allowNull = args.allowNull;
         this.palette = args.palette;
@@ -361,10 +428,10 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
 // booleans are simple checkboxes; therefore null is not supported.
 // for null support use a radio / multi select style field.
-export interface BoolFieldArgs {
+export type BoolFieldArgs = {
     columnName: string;
     defaultValue: boolean;
-};
+} & DB3AuthSpec;
 
 export class BoolField extends FieldBase<boolean> {
     constructor(args: BoolFieldArgs) {
@@ -372,7 +439,8 @@ export class BoolField extends FieldBase<boolean> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.defaultValue,
-            label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
     }
 
@@ -417,12 +485,12 @@ export class BoolField extends FieldBase<boolean> {
 // a single select field where
 // - the db value is a string (no relationship enforced)
 // - the enum value is a const typescript key val object (not an 'enum' type, but rather a const MyEnum { val1: "val1", val2: "val2" })
-export interface ConstEnumStringFieldArgs {
+export type ConstEnumStringFieldArgs = {
     columnName: string,
     options: TAnyModel,
     defaultValue: string | null;
     allowNull: boolean,
-};
+} & DB3AuthSpec;
 
 export class ConstEnumStringField extends FieldBase<string> {
     options: TAnyModel;
@@ -434,7 +502,8 @@ export class ConstEnumStringField extends FieldBase<string> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.defaultValue,
-            label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
         this.options = args.options;
         this.defaultValue = args.defaultValue;
@@ -491,7 +560,7 @@ export class ConstEnumStringField extends FieldBase<string> {
 ////////////////////////////////////////////////////////////////
 // a single select field where the items are a db table with relation
 // on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
-export interface ForeignSingleFieldArgs<TForeign> {
+export type ForeignSingleFieldArgs<TForeign> = {
     columnName: string; // "instrumentType"
     fkMember: string; // "instrumentTypeId"
     foreignTableID: string; // for circular referencing don't force caller to use the xTable.
@@ -499,7 +568,7 @@ export interface ForeignSingleFieldArgs<TForeign> {
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
     doesItemExactlyMatchText?: (item: TForeign, filterText: string) => boolean,
-};
+} & DB3AuthSpec;
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     fkMember: string;
@@ -519,7 +588,12 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             member: args.columnName,
             fieldTableAssociation: "foreignObject",
             defaultValue: args.defaultValue || null,
-            label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
+            _matchesMemberForAuthorization: (memberName: string) => {
+                const mnl = memberName.toLowerCase();
+                return mnl === this.member.toLowerCase() || mnl === this.fkMember.toLowerCase();
+            },
         });
 
         // does default behavior of case-insensitive, trimmed compare.
@@ -604,7 +678,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
 ////////////////////////////////////////////////////////////////
 // tags fields are arrays of associations
 // on client side, there is NO foreign key field (like instrumentId). Only the foreign object ('instrument').
-export interface TagsFieldArgs<TAssociation> {
+export type TagsFieldArgs<TAssociation> = {
     columnName: string; // "instrumentType"
     associationTableID: string;
     foreignTableID: string;
@@ -622,7 +696,7 @@ export interface TagsFieldArgs<TAssociation> {
     associationForeignIDMember: string;
     associationLocalObjectMember: string;
     associationForeignObjectMember: string;
-};
+} & DB3AuthSpec;
 
 export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     localTableSpec: xTable;
@@ -658,7 +732,8 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             member: args.columnName,
             fieldTableAssociation: "associationRecord",
             defaultValue: [],
-            label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
 
         // does default behavior of case-insensitive, trimmed compare.
@@ -752,11 +827,10 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
 };
 
 
-export interface EventStartsAtFieldArgs {
+export type EventStartsAtFieldArgs = {
     columnName: string;
-
     allowNull: boolean;
-};
+} & DB3AuthSpec;
 
 export class EventStartsAtField extends FieldBase<Date> {
 
@@ -767,7 +841,8 @@ export class EventStartsAtField extends FieldBase<Date> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: args.allowNull ? null : new Date(),
-            label: "date/time",
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
         this.allowNull = args.allowNull;
     }
@@ -846,9 +921,9 @@ export class EventStartsAtField extends FieldBase<Date> {
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface CreatedAtFieldArgs {
+export type CreatedAtFieldArgs = {
     columnName: string;
-};
+} & DB3AuthSpec;
 
 export class CreatedAtField extends FieldBase<Date> {
     constructor(args: CreatedAtFieldArgs) {
@@ -856,7 +931,8 @@ export class CreatedAtField extends FieldBase<Date> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: new Date(),
-            label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
     }
 
@@ -921,10 +997,10 @@ export const slugify = (...args: (string | number)[]): string => {
         .replace(/\s+/g, '-') // separator
 }
 
-export interface SlugFieldFieldArgs {
+export type SlugFieldFieldArgs = {
     columnName: string;
     sourceColumnName: string;
-};
+} & DB3AuthSpec;
 
 export class SlugField extends FieldBase<string> {
     sourceColumnName: string;
@@ -934,7 +1010,8 @@ export class SlugField extends FieldBase<string> {
             member: args.columnName,
             fieldTableAssociation: "tableColumn",
             defaultValue: "",
-            label: args.columnName,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
         });
         this.sourceColumnName = args.sourceColumnName;
     }
@@ -992,82 +1069,105 @@ export class SlugField extends FieldBase<string> {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // higher-level conveniences
-export const MakePlainTextField = (columnName: string) => (
+export const MakePlainTextField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
         columnName: columnName,
         allowNull: false,
         format: "plain",
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeNullableRawTextField = (columnName: string) => (
+export const MakeNullableRawTextField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
         columnName: columnName,
         allowNull: true,
         format: "raw",
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeRawTextField = (columnName: string) => (
+export const MakeRawTextField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
         columnName: columnName,
         allowNull: false,
         format: "raw",
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeMarkdownTextField = (columnName: string) => (
+export const MakeMarkdownTextField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
         columnName,
         allowNull: false,
         format: "markdown",
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeTitleField = (columnName: string) => (
+export const MakeTitleField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericStringField({
         columnName: columnName,
         allowNull: false,
         format: "title",
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeIntegerField = (columnName: string) => (
+export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericIntegerField({
         columnName,
         allowNull: false,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeColorField = (columnName: string) => (
+export const MakeColorField = (columnName: string, authSpec: DB3AuthSpec) => (
     new ColorField({
         columnName,
         allowNull: true,
         palette: gGeneralPaletteList,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeSortOrderField = (columnName: string) => (
+export const MakeSortOrderField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericIntegerField({
         columnName,
         allowNull: false,
+        authMap: createAuthContextMap_GrantAll(), // safe enough to never hide this field.
     }));
 
-export const MakeSignificanceField = (columnName: string, options: TAnyModel) => (
+export const MakeSignificanceField = (columnName: string, options: TAnyModel, authSpec: DB3AuthSpec) => (
     new ConstEnumStringField({
         columnName,
         allowNull: true,
         defaultValue: null,
         options,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeIconField = (columnName: string, options: TAnyModel) => (
+export const MakeIconField = (columnName: string, options: TAnyModel, authSpec: DB3AuthSpec) => (
     new ConstEnumStringField({
         columnName,
         allowNull: true,
         defaultValue: null,
         options,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     }));
 
-export const MakeSlugField = (columnName: string, sourceColumnName: string) => (
+export const MakeSlugField = (columnName: string, sourceColumnName: string, authSpec: DB3AuthSpec) => (
     new SlugField({
         columnName,
         sourceColumnName,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     })
 );
 
-export const MakeCreatedAtField = (columnName: string) => (
+export const MakeCreatedAtField = (columnName: string, authSpec: DB3AuthSpec) => (
     new CreatedAtField({
-        columnName
+        columnName,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
     })
 );
 

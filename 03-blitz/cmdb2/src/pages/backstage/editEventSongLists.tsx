@@ -37,7 +37,7 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditEventSongListsPage", Permission.admin_general)) {
+    if (!useAuthorization("EditEventSongListsPage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
     const urlParams = new URLSearchParams(window.location.search);

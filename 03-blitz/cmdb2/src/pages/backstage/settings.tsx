@@ -6,6 +6,7 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
 import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
+import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -15,7 +16,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const SettingsControls = (props) => {
-    if (!useAuthorization("settings page", Permission.admin_settings)) {
+    if (!useAuthorization("settings page", Permission.sysadmin)) {
         throw new Error(`unauthorized`);
     }
 
@@ -69,21 +70,26 @@ const SettingsControls = (props) => {
 
 
 
-const tableSpec = new DB3Client.xTableClientSpec({
-    table: db3.xSetting,
-    columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-        new DB3Client.GenericStringColumnClient({ columnName: "value", cellWidth: 200 }),
-    ],
-});
-
 
 const SettingsContent = () => {
+
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xSetting,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "value", cellWidth: 200 }),
+        ],
+    });
+
     return <>
-        <SettingMarkdown settingName="settings_markdown"></SettingMarkdown>
-        <SettingsControls></SettingsControls>
-        <DB3EditGrid tableSpec={tableSpec} />
+        <CMSinglePageSurfaceCard>
+            <div className="content">
+                <SettingMarkdown settingName="settings_markdown"></SettingMarkdown>
+                <SettingsControls></SettingsControls>
+                <DB3EditGrid tableSpec={tableSpec} />
+            </div>
+        </CMSinglePageSurfaceCard>
     </>;
 };
 

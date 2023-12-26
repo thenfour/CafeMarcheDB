@@ -658,10 +658,10 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
     return <div className="EventSongListTabContent">
         <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
-        {newOpen && readonly && (
+        {newOpen && !readonly && (
             <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
         )}
-        {!readonly && <div className="addButtonContainer"><Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button></div>}
+        {!readonly && <Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
     </div>;
 };
 

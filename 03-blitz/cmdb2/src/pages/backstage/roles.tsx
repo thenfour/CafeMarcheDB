@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 
 const MainContent = () => {
-    if (!useAuthorization("admin roles page", Permission.admin_auth)) {
+    if (!useAuthorization("admin roles page", Permission.sysadmin)) {
         throw new Error(`unauthorized`);
     }
 

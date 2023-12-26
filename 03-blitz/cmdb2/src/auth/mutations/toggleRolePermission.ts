@@ -13,7 +13,7 @@ type InputArgs = z.infer<typeof ToggleRolePermissionSchema>;
 
 export default resolver.pipe(
     resolver.zod(ToggleRolePermissionSchema),
-    resolver.authorize(Permission.admin_auth),
+    resolver.authorize(Permission.sysadmin),
     async (data: InputArgs, ctx) => {
         try {
             const changeContext = CreateChangeContext("toggleRolePermissionMutation");

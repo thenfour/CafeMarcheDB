@@ -8,14 +8,20 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance, UserPayload, UserWithInstrumentsPayload } from "./prismArgs";
 
+// editable by anyone
+export const xInstrumentAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.basic_trust,
+    PostQuery: Permission.basic_trust,
+    PreMutateAsOwner: Permission.manage_instruments,
+    PreMutate: Permission.manage_instruments,
+    PreInsert: Permission.manage_instruments,
+};
 
 export const xInstrumentFunctionalGroup = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupInclude => {
         return InstrumentFunctionalGroupArgs.include;
     },
@@ -25,6 +31,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     createInsertModelFromString: (input: string): Partial<InstrumentFunctionalGroupPayload> => ({
         description: "auto-created from selection dlg",
@@ -33,28 +40,30 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("name"),
+        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new ColorField({
             columnName: "color",
             allowNull: true,
             palette: gGeneralPaletteList,
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
+        new GhostField({ memberName: "instruments", authMap: xInstrumentAuthMap_R_EManagers }),
     ]
 });
 
 
 export const xInstrumentTag = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagInclude => {
         return InstrumentTagArgs.include;
     },
@@ -73,29 +82,34 @@ export const xInstrumentTag = new db3.xTable({
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("text"),
+        MakeTitleField("text", { authMap: xInstrumentAuthMap_R_EManagers }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new ColorField({
             columnName: "color",
             allowNull: true,
             palette: gGeneralPaletteList,
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new ConstEnumStringField({
             columnName: "significance",
             allowNull: true,
             defaultValue: null,
             options: InstrumentTagSignificance,
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
     ]
 });
@@ -105,8 +119,6 @@ export const xInstrumentTag = new db3.xTable({
 // this is mostly only in order to define the tags field in xInstruments.
 export const xInstrumentTagAssociation = new db3.xTable({
     tableName: "InstrumentTagAssociation",
-    editPermission: Permission.associate_instrument_tags,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationInclude => {
         return InstrumentTagAssociationArgs.include;
     },
@@ -115,6 +127,7 @@ export const xInstrumentTagAssociation = new db3.xTable({
         name: row.tag.text,
         description: row.tag.description,
         color: gGeneralPaletteList.findEntry(row.tag.color),
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
@@ -126,6 +139,7 @@ export const xInstrumentTagAssociation = new db3.xTable({
             fkMember: "tagId",
             allowNull: false,
             foreignTableID: "InstrumentTag",
+            authMap: xInstrumentAuthMap_R_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -134,8 +148,6 @@ export const xInstrumentTagAssociation = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 
 export const xInstrument = new db3.xTable({
-    editPermission: Permission.admin_general,
-    viewPermission: Permission.view_general_info,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentInclude => {
         return InstrumentArgs.include;
     },
@@ -145,29 +157,34 @@ export const xInstrument = new db3.xTable({
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.functionalGroup.color),
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("name"),
+        MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers, }),
         new GenericStringField({
             columnName: "slug",
             allowNull: false,
             format: "plain",
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new ForeignSingleField<InstrumentFunctionalGroupPayload>({
             columnName: "functionalGroup",
             fkMember: "functionalGroupId",
             foreignTableID: "InstrumentFunctionalGroup",
             allowNull: false,
+            authMap: xInstrumentAuthMap_R_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 functionalGroup: {
                     name: { contains: query }
@@ -182,6 +199,7 @@ export const xInstrument = new db3.xTable({
             associationLocalObjectMember: "instrument",
             associationTableID: "InstrumentTagAssociation",
             foreignTableID: "InstrumentTag",
+            authMap: xInstrumentAuthMap_R_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.InstrumentWhereInput => ({
                 instrumentTags: {
                     some: {

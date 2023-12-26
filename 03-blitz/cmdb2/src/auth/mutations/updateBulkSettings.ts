@@ -13,7 +13,7 @@ type InputType = z.infer<typeof UpdateBulkSettingsSchema>;
 
 export default resolver.pipe(
     resolver.zod(UpdateBulkSettingsSchema),
-    resolver.authorize(Permission.admin_auth),
+    resolver.authorize(Permission.sysadmin),
     async (items: InputType, ctx) => {
         try {
             for (let i = 0; i < items.length; ++i) {

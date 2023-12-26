@@ -34,7 +34,6 @@ export default resolver.pipe(
         };
 
         // create the root event,
-        //debugger;
         const newEvent = await mutationCore.insertImpl(db3.xEvent, eventFields, ctx, clientIntention) as db3.EventPayloadMinimum;
 
         const segmentFields: Prisma.EventSegmentUncheckedCreateInput = {

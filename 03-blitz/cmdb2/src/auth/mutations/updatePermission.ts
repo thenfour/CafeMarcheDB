@@ -102,7 +102,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
 
 export default resolver.pipe(
     resolver.zod(UpdatePermissionSchema),
-    resolver.authorize(Permission.admin_auth),
+    resolver.authorize(Permission.sysadmin),
     async (data, ctx) => {
         try {
             // todo: put this in a transaction. it fails right now. perhaps a sqlite thing?

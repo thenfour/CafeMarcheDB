@@ -6,7 +6,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
 
 export default resolver.pipe(
     resolver.zod(CreatePermissionSchema),
-    resolver.authorize(Permission.admin_auth),
+    resolver.authorize(Permission.sysadmin),
     async (fields, ctx) => {
         try {
             const obj = await db.permission.create({

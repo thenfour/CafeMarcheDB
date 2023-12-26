@@ -8,8 +8,17 @@
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { GenericStringField, PKField } from "./db3basicFields";
-import { xTable, xTableClientUsageContext } from "./db3core";
+import { DB3AuthContextPermissionMap, xTable, xTableClientUsageContext } from "./db3core";
 import { TAnyModel } from "shared/utils";
+
+
+export const xSettingsAuthMap: DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.basic_trust,
+    PostQuery: Permission.basic_trust,
+    PreMutateAsOwner: Permission.content_admin,
+    PreMutate: Permission.content_admin,
+    PreInsert: Permission.content_admin,
+};
 
 
 export type SettingPayload = Prisma.SettingGetPayload<{}>;
@@ -19,13 +28,12 @@ export const SettingNaturalOrderBy: Prisma.SettingOrderByWithRelationInput[] = [
 ];
 
 export const xSetting = new xTable({
-    editPermission: Permission.admin_settings,
-    viewPermission: Permission.admin_settings,
     getInclude: (clientIntention) => ({}),
     tableName: "Setting",
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({
-        name: row.name
+        name: row.name,
+        ownerUserId: null,
     }),
     columns: [
         new PKField({ columnName: "id" }),
@@ -33,11 +41,13 @@ export const xSetting = new xTable({
             columnName: "name",
             allowNull: false,
             format: "plain",
+            authMap: xSettingsAuthMap,
         }),
         new GenericStringField({
             columnName: "value",
             allowNull: false,
             format: "plain",
+            authMap: xSettingsAuthMap,
         }),
     ]
 });

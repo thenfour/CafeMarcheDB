@@ -111,8 +111,9 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
-        CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
         const dbTableClient = db[table.tableName]; // the prisma interface
+
+        // TODO: delete row authorization
 
         // delete any associations for this item first.
         table.columns.forEach(async (column) => {
@@ -152,7 +153,6 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<TReturnPayload> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
-        CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
@@ -167,6 +167,17 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         const { localFields, associationFields } = db3.separateMutationValues({ table, fields });
 
         // at this point `fields` should not be used because it mixes foreign associations with local values
+
+        const authResult = table.authorizeAndSanitize({
+            clientIntention,
+            contextDesc,
+            model: localFields,
+            publicData: ctx.session.$publicData,
+            rowMode: "new",
+        });
+
+        if (!authResult.rowIsAuthorized) throw new Error(`unauthorized (row)`);
+        if (authResult.authorizedColumnCount < 1) throw new Error(`unauthorized (0 columns)`);
 
         const obj = await dbTableClient.create({
             data: localFields,
@@ -208,7 +219,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
 export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<TAnyModel> => {
     try {
         const contextDesc = `update:${table.tableName}`;
-        CMDBAuthorizeOrThrow(contextDesc, table.editPermission, ctx);
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
@@ -226,11 +236,20 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
 
-        //const include = table.CalculateInclude(clientIntention);
+        const authResult = table.authorizeAndSanitize({
+            clientIntention,
+            contextDesc,
+            model: localFields,
+            publicData: ctx.session.$publicData,
+            rowMode: "update",
+        });
+
+        if (!authResult.rowIsAuthorized) throw new Error(`unauthorized (row)`);
+        if (authResult.authorizedColumnCount < 1) throw new Error(`unauthorized (0 columns)`);
 
         const obj = await dbTableClient.update({
             where: { [table.pkMember]: pkid },
-            data: localFields,
+            data: authResult.authorizedModel,
             //include,
         });
 
@@ -245,6 +264,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         });
 
         // now update any associations
+        // TODO: authorization for associations
         table.columns.forEach(async (column) => {
             if (column.fieldTableAssociation !== "associationRecord") { return; }
             if (!associationFields[column.member]) { return; }
@@ -300,6 +320,8 @@ export interface UpdateEventSongListSongsArgs {
 //   it means we cannot rely on fk for computing change request.
 // - we have additional info in the association table.
 export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: UpdateEventSongListSongsArgs) => {
+
+    // TODO: authorization.
 
     // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
     const desiredValues: TinsertOrUpdateEventSongListSong[] = args.desiredValues.map((a, index) => ({
@@ -430,6 +452,7 @@ export interface QueryImplArgs {
 
 export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, ...args }: QueryImplArgs) => {
     const currentUser = await getCurrentUserCore(ctx);
+    const contextDesc = `queryManyImpl:${args.schema.tableName}`;
     if (clientIntention.intention === "public") {
         clientIntention.currentUser = undefined;// for public intentions, no user should be used.
     }
@@ -451,8 +474,19 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
         //take: input.take,
     }) as TitemPayload[];
 
+    const rowAuthResult = (items as TAnyModel[]).map(row => args.schema.authorizeAndSanitize({
+        contextDesc,
+        publicData: ctx.session.$publicData,
+        clientIntention,
+        rowMode: "view",
+        model: row,
+    }));
+
+    // any unknown / unauthorized columns are simply discarded.
+    const sanitizedItems = rowAuthResult.filter(r => r.rowIsAuthorized).map(r => r.authorizedModel);
+
     return {
-        items,
+        items: sanitizedItems,
         where,
         include,
         clientIntention,
@@ -460,7 +494,11 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
 
 };
 
+
 export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterModel, ctx, skipVisibilityCheck, ...args }: QueryImplArgs) => {
+
+    const contextDesc = `queryFirstImpl:${args.schema.tableName}`;
+
     const currentUser = await getCurrentUserCore(ctx);
     if (clientIntention.intention === "public") {
         clientIntention.currentUser = undefined;// for public intentions, no user should be used.
@@ -477,12 +515,28 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
 
     const include = args.schema.CalculateInclude(clientIntention);
 
-    const item = await db[args.schema.tableName].findFirst({
+    let item = await db[args.schema.tableName].findFirst({
         where,
         orderBy: args.schema.naturalOrderBy,
         include,
         //take: input.take,
     }) as (TitemPayload | null);
+
+    if (!!item) {
+        const rowAuthResult = args.schema.authorizeAndSanitize({
+            contextDesc,
+            publicData: ctx.session.$publicData,
+            clientIntention,
+            rowMode: "view",
+            model: item,
+        });
+        // any unknown / unauthorized columns are simply discarded.
+        if (!rowAuthResult.rowIsAuthorized) {
+            item = null;
+        } else {
+            item = rowAuthResult.authorizedModel as any;
+        }
+    }
 
     return {
         item,
@@ -545,48 +599,6 @@ export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, 
     };
     return fields;
 };
-
-
-// export interface QueryFileArgs {
-//     ctx: AuthenticatedMiddlewareCtx;
-//     storedLeafName: string;
-//     skipVisibilityCheck: boolean;
-//     clientIntention: db3.xTableClientUsageContext;
-// };
-
-// export interface QueryFileByLeafOrIdResult {
-//     dbFile: db3.FilePayload;
-//     fullPath: string;
-// };
-
-// export const QueryFileByStoredLeaf = async ({ clientIntention, storedLeafName, ctx, skipVisibilityCheck }: QueryFileArgs): Promise<null | QueryFileByLeafOrIdResult> => {
-
-//     const { item } = await queryFirstImpl<db3.FilePayload>({
-//         clientIntention,
-//         ctx,
-//         schema: db3.xFile,
-//         skipVisibilityCheck,
-//         filterModel: {
-//             items: [{
-//                 operator: "equals",
-//                 field: "storedLeafName",
-//                 value: storedLeafName,
-//             }]
-//         }
-//     });
-
-//     if (!item) {
-//         throw new Error(`file not found`);
-//     }
-
-//     const fullPath = GetFileServerStoragePath(item.storedLeafName || "");
-
-//     return {
-//         fullPath,
-//         dbFile: item,
-//     };
-// };
-
 
 export const GetImageMetadata = async (img: sharp.Sharp): Promise<ImageMetadata> => {
     return new Promise(async (resolve, reject) => {

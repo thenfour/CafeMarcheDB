@@ -11,7 +11,7 @@ type InputType = z.infer<typeof UpdateSettingByIdSchema>;
 
 export default resolver.pipe(
     resolver.zod(UpdateSettingByIdSchema),
-    resolver.authorize(Permission.admin_auth),
+    resolver.authorize(Permission.content_admin),
     async ({ id, ...data }: InputType, ctx) => {
         try {
             const oldValues = await db.setting.findFirst({ where: { id } });
