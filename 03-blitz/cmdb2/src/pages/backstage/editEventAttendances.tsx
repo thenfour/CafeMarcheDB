@@ -8,25 +8,25 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
-const tableSpec = new DB3Client.xTableClientSpec({
-    table: db3.xEventAttendance,
-    columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
-        new DB3Client.GenericStringColumnClient({ columnName: "personalText", cellWidth: 180 }),
-        new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-        new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-        new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
-        new DB3Client.GenericIntegerColumnClient({ cellWidth: 90, columnName: "strength" }),
-    ],
-});
-
-
 
 const MainContent = () => {
     if (!useAuthorization("EditEventAttendancesPage", Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
+
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xEventAttendance,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "personalText", cellWidth: 180 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+            new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
+            new DB3Client.GenericIntegerColumnClient({ cellWidth: 90, columnName: "strength" }),
+        ],
+    });
+
     return <>
         <SettingMarkdown settingName="EditEventAttendancesPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />

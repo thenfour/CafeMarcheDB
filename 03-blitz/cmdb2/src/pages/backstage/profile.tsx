@@ -3,7 +3,9 @@ import { useMutation } from "@blitzjs/rpc";
 import { Button, FormHelperText, TextField, Typography } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec } from "shared/color";
+import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/utils";
+import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import changePassword from "src/auth/mutations/changePassword";
 import * as schemas from "src/auth/schemas";
@@ -132,7 +134,7 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
             </div>
         ))}
 
-        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.label}</Button>
+        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.member}</Button>
         {isOpen && <DB3Client.DB3SelectTagsDialog
             row={props.row}
             initialValue={props.value}
@@ -213,6 +215,8 @@ const MainContent = () => {
     const [currentUser, { refetch }] = useCurrentUser();
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    useAuthorizationOrThrow(`user profile page`, Permission.basic_trust);
 
     const spec = new DB3Client.xTableClientSpec({
         table: db3.xUser,

@@ -142,11 +142,19 @@ To get `db seed` to work,
 
 
 
+
 ---
 
   * generate first migration from existing db (squash all migrations). this is "baselining" and explained [here](https://www.prisma.io/docs/guides/migrate/developing-with-prisma-migrate/baselining)
   * [customize a migration](https://www.prisma.io/docs/guides/migrate/developing-with-prisma-migrate/customizing-migrations) (like adding a new required field with no default)
     * it's not magic; just run `blitz prisma migrate dev --create-only` to create the migration, edit the SQL manually, then apply it like normal (as if you just `git pull`ed the migration for example) via `prisma migrate dev`
+
+## to completely reset the db in dev (before ever deploying)
+
+  - delete the `db.db` sqlite file
+  - delete migrations
+  - `blitz prisma migrate dev`
+  - `blitz prisma db seed` MAY be necessary. or maybe not?
 
 # special URLs:
 

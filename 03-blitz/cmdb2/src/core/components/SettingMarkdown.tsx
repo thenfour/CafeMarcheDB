@@ -5,6 +5,8 @@ import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CompactMarkdownControl, MarkdownControl } from "./RichTextEditor";
 import { gQueryOptions } from "shared/utils";
+import { Permission } from "shared/permissions";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MutationMarkdownControlProps {
@@ -89,10 +91,16 @@ export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownCon
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface SettingMarkdownProps {
     settingName: string;
+    requiredEditPermission?: Permission;
 };
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const [updateSetting] = useMutation(updateSettingMutation);
+    if (!useAuthorization(`SettingMarkdown:${props.settingName}`, props.requiredEditPermission || Permission.content_admin)) {
+        throw new Error(`unauthorized`);
+    }
+
+
     let [initialValue, { refetch }] = useQuery(getSetting, { name: props.settingName }, gQueryOptions.default);
     return <MutationMarkdownControl
         initialValue={initialValue}

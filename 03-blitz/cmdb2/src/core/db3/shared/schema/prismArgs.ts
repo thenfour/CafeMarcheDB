@@ -155,7 +155,7 @@ export type PermissionPayloadMinimum = Prisma.PermissionGetPayload<{}>;
 export type PermissionPayload = Prisma.PermissionGetPayload<typeof PermissionArgs>;
 
 export const PermissionNaturalOrderBy: Prisma.PermissionOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { name: 'asc' },
     { id: 'asc' },
 ];
@@ -173,7 +173,7 @@ export const RolePermissionArgs = Prisma.validator<Prisma.RolePermissionArgs>()(
 export type RolePermissionAssociationPayload = Prisma.RolePermissionGetPayload<typeof RolePermissionArgs>;
 
 export const RolePermissionNaturalOrderBy: Prisma.RolePermissionOrderByWithRelationInput[] = [
-    { permission: { sortOrder: 'desc' } },
+    { permission: { sortOrder: 'asc' } },
     { permission: { name: 'asc' } },
     { permission: { id: 'asc' } },
 ];

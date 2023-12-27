@@ -64,6 +64,36 @@ export enum Permission {
     manage_users = "manage_users",
 };
 
+export const gPermissionOrdered: Permission[] = [
+    Permission.always_grant,
+    Permission.public,
+    Permission.login,
+    Permission.basic_trust,
+    Permission.sysadmin,
+    Permission.never_grant,
+    Permission.content_admin,
+    Permission.impersonate_user,
+    Permission.visibility_editors,
+    Permission.visibility_members,
+    Permission.visibility_logged_in_users,
+    Permission.visibility_public,
+    Permission.edit_public_homepage,
+    Permission.admin_events,
+    Permission.manage_events,
+    Permission.view_events,
+    Permission.respond_to_events,
+    Permission.admin_songs,
+    Permission.manage_songs,
+    Permission.view_songs,
+    Permission.admin_files,
+    Permission.manage_files,
+    Permission.view_files,
+    Permission.admin_instruments,
+    Permission.manage_instruments,
+    Permission.admin_users,
+    Permission.manage_users,
+];
+
 // these are granted automatically to public.
 export const gPublicPermissions: Permission[] = [
     Permission.always_grant,

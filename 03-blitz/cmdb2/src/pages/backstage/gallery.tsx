@@ -1,7 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { useAuthorization, useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Alert, Button, ButtonGroup, Chip, Divider } from "@mui/material";
 import { EventAttendanceResponseInput, EventAttendanceResponseInput2, EventSummary, RehearsalSummary } from "src/core/components/CMMockupComponents";
@@ -23,6 +23,8 @@ import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
 
 const MainContent = () => {
+
+    useAuthorizationOrThrow("gallyery", Permission.sysadmin);
 
     return <>
         <Divider />

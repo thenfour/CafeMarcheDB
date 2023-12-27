@@ -235,23 +235,23 @@ export interface ValidateAndParseArgs<FieldDataType> {
     mode: DB3RowMode;
 };
 
-export interface DB3AuthorizeAndSanitizeInput<T> {
+export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
     contextDesc: string,
-    model: T,
+    model: T | null,
     rowMode: DB3RowMode,
     publicData: EmptyPublicData | Partial<PublicDataType>,
     clientIntention: xTableClientUsageContext,
 };
 
-export type DB3AuthorizeAndSanitizeFieldInput<T> = DB3AuthorizeAndSanitizeInput<T> & {
-    rowInfo: RowInfo;
+export type DB3AuthorizeAndSanitizeFieldInput<T extends TAnyModel> = DB3AuthorizeAndSanitizeInput<T> & {
+    rowInfo: RowInfo | null;
     authContext: DB3AuthorizationContext;
     isOwner: boolean;
 };
 
 
-export interface DB3AuthorizeForViewColumnArgs<T> {
-    model: T,
+export interface DB3AuthorizeForViewColumnArgs<T extends TAnyModel> {
+    model: T | null,
     publicData: EmptyPublicData | Partial<PublicDataType>,
     clientIntention: xTableClientUsageContext,
     columnName: string;
@@ -324,14 +324,14 @@ export abstract class FieldBase<FieldDataType> {
     abstract ApplyIncludeFiltering: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void;
 };
 
-export enum xTableClientUsageCustomContextType {
-    UserInsertDialog,
-    AdminInsertDialog,
-}
+// export enum xTableClientUsageCustomContextType {
+//     //UserInsertDialog,
+//     //AdminInsertDialog,
+// }
 
-export interface xTableClientUsageCustomContextBase {
-    type: xTableClientUsageCustomContextType, // a way to identify the type of custom context provided.
-};
+// export interface xTableClientUsageCustomContextBase {
+//     type: xTableClientUsageCustomContextType, // a way to identify the type of custom context provided.
+// };
 
 export interface UsageContextPathPart {
     table: string,
@@ -358,7 +358,7 @@ export interface xTableClientUsageContext {
     currentUser?: UserWithRolesPayload | null;
 
     // does your xTable need to act differently when it's being used to populate a dropdown for a related key of some field? use this to do whatever.
-    customContext?: xTableClientUsageCustomContextBase;
+    //customContext?: xTableClientUsageCustomContextBase;
 
     // for related objects, this is the hierarchical path. first element is the root.
     relationPath?: UsageContextPathPart[];
@@ -453,9 +453,11 @@ export class xTable implements TableDesc {
     // - pre-insert
     // - pre-mutate normal
     // - pre-mutate owner/creator
+
+    // if model is empty, then 
     authorizeAndSanitize = (args: DB3AuthorizeAndSanitizeInput<TAnyModel>): DB3AuthorizeAndSanitizeResult<TAnyModel> => {
-        const rowInfo = this.getRowInfo(args.model);
-        const isOwner = ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId);
+        const rowInfo = args.model ? this.getRowInfo(args.model) : null;
+        const isOwner = rowInfo ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId) : false;
         let authContext: DB3AuthorizationContext = "PostQuery";
         switch (args.rowMode) {
             case "new":
@@ -482,55 +484,101 @@ export class xTable implements TableDesc {
 
         const fieldInput: DB3AuthorizeAndSanitizeFieldInput<TAnyModel> = { ...args, authContext, rowInfo, isOwner };
 
-        Object.entries(args.model).forEach(e => {
-            //const col = this.columns.find(c => c.member.toLowerCase() === e[0].toLowerCase());
-            const col = this.columns.find(c => c.matchesMemberForAuthorization(e[0]));
-            if (e[0].toLowerCase() === this.pkMember.toLowerCase()) {
-                // primary key gets special treatment. actually in no case should this field be stripped as unauthorized.
-                ret.authorizedColumnCount++;
-                ret.authorizedModel[e[0]] = e[1];
-                return;
-            }
-            if (!col) {
-                console.log(`unknown column: ${e[0]}, tableID:${this.tableID}`);
-                debugger;
-                ret.unknownColumnCount++;
-                ret.unknownModel[e[0]] = e[1];
-                return;
-            }
-            if (col.authorize(fieldInput)) {
-                ret.authorizedColumnCount++;
-                ret.authorizedModel[e[0]] = e[1];
-                return;
-            }
-
-            // NB: if a column represents multiple members (ForeignSingle...) then
-            // one of the members will get stripped off
-
-            ret.unauthorizedColumnCount++;
-            ret.unauthorizedModel[e[0]] = e[1];
-        });
+        if (args.model) {
+            Object.entries(args.model).forEach(e => {
+                //const col = this.columns.find(c => c.member.toLowerCase() === e[0].toLowerCase());
+                const col = this.columns.find(c => c.matchesMemberForAuthorization(e[0]));
+                if (e[0].toLowerCase() === this.pkMember.toLowerCase()) {
+                    // TODO: this may not be necessary; pk field's authorize() may handle this already.
+                    // primary key gets special treatment. actually in no case should this field be stripped as unauthorized.
+                    ret.authorizedColumnCount++;
+                    ret.authorizedModel[e[0]] = e[1];
+                    return;
+                }
+                if (!col) {
+                    console.log(`unknown column: ${e[0]}, tableID:${this.tableID}`);
+                    debugger;
+                    ret.unknownColumnCount++;
+                    ret.unknownModel[e[0]] = e[1];
+                    return;
+                }
+                if (col.authorize(fieldInput)) {
+                    ret.authorizedColumnCount++;
+                    ret.authorizedModel[e[0]] = e[1];
+                    return;
+                }
+                ret.unauthorizedColumnCount++;
+                ret.unauthorizedModel[e[0]] = e[1];
+            });
+        } else {
+            // no model means we have to deduce columns from schema.
+            this.columns.forEach((col, i) => {
+                const member = col.member;
+                if (col.authorize(fieldInput)) {
+                    ret.authorizedColumnCount++;
+                    ret.authorizedModel[member] = null;
+                    return;
+                }
+                ret.unauthorizedColumnCount++;
+                ret.unauthorizedModel[member] = null;
+            });
+        }
 
         ret.rowIsAuthorized = ret.authorizedColumnCount > 0;
         return ret;
     };
 
     authorizeColumnForView = <T extends TAnyModel,>(args: DB3AuthorizeForViewColumnArgs<T>) => {
-        const rowInfo = this.getRowInfo(args.model);
-        const isOwner = ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId);
+        const rowInfo = args.model ? this.getRowInfo(args.model) : null;
+        const isOwner = rowInfo ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId) : false;
         const col = this.getColumn(args.columnName);
         if (!col) return false;
         return col.authorize({
             clientIntention: args.clientIntention,
-            authContext: "PostQuery",
+            authContext: isOwner ? "PostQueryAsOwner" : "PostQuery",
             rowMode: "view",
-            isOwner: false,
+            isOwner: isOwner,
             contextDesc: "(authorizeColumnForView)",
             model: args.model,
             publicData: args.publicData,
             rowInfo,
         });
     };
+
+    authorizeColumnForEdit = <T extends TAnyModel,>(args: DB3AuthorizeForViewColumnArgs<T>) => {
+        const rowInfo = args.model ? this.getRowInfo(args.model) : null;
+        const isOwner = rowInfo ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId) : false;
+        const col = this.getColumn(args.columnName);
+        if (!col) return false;
+        return col.authorize({
+            clientIntention: args.clientIntention,
+            authContext: isOwner ? "PreMutateAsOwner" : "PreMutate",
+            rowMode: "update",
+            isOwner: isOwner,
+            contextDesc: "(authorizeColumnForView)",
+            model: args.model,
+            publicData: args.publicData,
+            rowInfo,
+        });
+    };
+
+    authorizeColumnForInsert = <T extends TAnyModel,>(args: DB3AuthorizeForViewColumnArgs<T>) => {
+        const col = this.getColumn(args.columnName);
+        if (!col) return false;
+        return col.authorize({
+            clientIntention: args.clientIntention,
+            authContext: "PreInsert",
+            rowMode: "new",
+            isOwner: false,
+            contextDesc: "(authorizeColumnForView)",
+            model: null,
+            publicData: args.publicData,
+            rowInfo: null,
+        });
+    };
+
+    // authorizeForEdit
+    // authorizeForInsert
 
     // returns an object describing changes and validation errors.
     ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel, mode: DB3RowMode): ValidateAndComputeDiffResult {

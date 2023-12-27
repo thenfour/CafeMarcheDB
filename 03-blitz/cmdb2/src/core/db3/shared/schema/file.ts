@@ -364,6 +364,12 @@ export const xFile = new db3.xTable({
             authMap: xFileAuthMap_R_EAdmin,
         }),
         new GenericStringField({
+            columnName: "externalURI",
+            allowNull: true,
+            format: "raw",
+            authMap: xFileAuthMap_R_EOwn_EManagers,
+        }),
+        new GenericStringField({
             columnName: "customData",
             allowNull: true,
             format: "raw",

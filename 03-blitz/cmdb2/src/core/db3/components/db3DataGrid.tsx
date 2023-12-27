@@ -41,6 +41,7 @@ import { TAnyModel } from 'shared/utils';
 import * as db3 from '../db3';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { gIconMap } from './IconSelectDialog';
+import { useAuthenticatedSession } from '@blitzjs/auth';
 //import { separateMutationValues } from '../server/db3mutationCore';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
@@ -118,9 +119,12 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
 
     //console.log(`DB3EditGrid tableParams: ${JSON.stringify(props.tableParams)}`);
 
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'admin', mode: 'primary' };
+    const publicData = useAuthenticatedSession();
+
     const tableClient = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Mutation | DB3Client.xTableClientCaps.PaginatedQuery,
-        clientIntention: { intention: 'admin', mode: 'primary' },
+        clientIntention,
         tableSpec,
         filterModel: {
             items: filterModel.items.map(i => {
@@ -315,6 +319,15 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
 
     for (let i = 0; i < tableClient.clientColumns.length; ++i) {
         const column = tableClient.clientColumns[i]!;
+        if (!column.schemaTable.authorizeColumnForView({
+            clientIntention,
+            columnName: column.columnName,
+            model: null,
+            publicData,
+        })) {
+            continue;
+        }
+
         const c: GridColDef = {
             field: column.columnName,
             headerName: column.headerName,
@@ -386,12 +399,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             onCancel={() => { setShowingNewDialog(false); }}
             onOK={onAddOK}
             table={tableSpec}
-            clientIntention={{
-                intention: 'admin', mode: 'primary',
-                customContext: {
-                    type: db3.xTableClientUsageCustomContextType.AdminInsertDialog,
-                }
-            }}
+            clientIntention={clientIntention}
         />}
 
         <ClipboardControls client={tableClient} />

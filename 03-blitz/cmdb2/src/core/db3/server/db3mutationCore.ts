@@ -165,34 +165,38 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         }
 
         const { localFields, associationFields } = db3.separateMutationValues({ table, fields });
+        let obj = {};
 
         // at this point `fields` should not be used because it mixes foreign associations with local values
+        if (Object.keys(localFields).length > 0) {
+            const authResult = table.authorizeAndSanitize({
+                clientIntention,
+                contextDesc,
+                model: localFields,
+                publicData: ctx.session.$publicData,
+                rowMode: "new",
+            });
 
-        const authResult = table.authorizeAndSanitize({
-            clientIntention,
-            contextDesc,
-            model: localFields,
-            publicData: ctx.session.$publicData,
-            rowMode: "new",
-        });
+            if (!authResult.rowIsAuthorized) {
+                throw new Error(`unauthorized (row)`);
+            }
+            if (authResult.authorizedColumnCount < 1) {
+                throw new Error(`unauthorized (0 columns)`);
+            }
 
-        if (!authResult.rowIsAuthorized) throw new Error(`unauthorized (row)`);
-        if (authResult.authorizedColumnCount < 1) throw new Error(`unauthorized (0 columns)`);
+            obj = await dbTableClient.create({
+                data: localFields,
+            });
 
-        const obj = await dbTableClient.create({
-            data: localFields,
-            //include, // todo: is this needed? why?
-        });
-
-        await RegisterChange({
-            action: ChangeAction.insert,
-            changeContext,
-            table: table.tableName,
-            pkid: obj[table.pkMember],
-            newValues: localFields,
-            ctx,
-        });
-
+            await RegisterChange({
+                action: ChangeAction.insert,
+                changeContext,
+                table: table.tableName,
+                pkid: obj[table.pkMember],
+                newValues: localFields,
+                ctx,
+            });
+        }
         // now update any associations
         table.columns.forEach(async (column) => {
             if (column.fieldTableAssociation !== "associationRecord") { return; }
@@ -235,33 +239,42 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         // at this point `fields` should not be used.
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
+        let obj = oldValues;
 
-        const authResult = table.authorizeAndSanitize({
-            clientIntention,
-            contextDesc,
-            model: localFields,
-            publicData: ctx.session.$publicData,
-            rowMode: "update",
-        });
+        if (Object.keys(localFields).length > 0) {
+            const authResult = table.authorizeAndSanitize({
+                clientIntention,
+                contextDesc,
+                model: localFields,
+                publicData: ctx.session.$publicData,
+                rowMode: "update",
+            });
 
-        if (!authResult.rowIsAuthorized) throw new Error(`unauthorized (row)`);
-        if (authResult.authorizedColumnCount < 1) throw new Error(`unauthorized (0 columns)`);
+            if (!authResult.rowIsAuthorized) {
+                debugger;
+                throw new Error(`unauthorized (row)`);
+            }
+            if (authResult.authorizedColumnCount < 1) {
+                debugger;
+                throw new Error(`unauthorized (0 columns)`);
+            }
 
-        const obj = await dbTableClient.update({
-            where: { [table.pkMember]: pkid },
-            data: authResult.authorizedModel,
-            //include,
-        });
+            obj = await dbTableClient.update({
+                where: { [table.pkMember]: pkid },
+                data: authResult.authorizedModel,
+                //include,
+            });
 
-        await RegisterChange({
-            action: ChangeAction.update,
-            changeContext,
-            table: table.tableName,
-            pkid,
-            oldValues,
-            newValues: obj,
-            ctx,
-        });
+            await RegisterChange({
+                action: ChangeAction.update,
+                changeContext,
+                table: table.tableName,
+                pkid,
+                oldValues,
+                newValues: obj,
+                ctx,
+            });
+        }
 
         // now update any associations
         // TODO: authorization for associations
@@ -271,7 +284,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             await UpdateAssociations({
                 changeContext,
                 ctx,
-                localId: obj[table.pkMember],
+                localId: pkid,
                 localTable: table,
                 column: column as db3.TagsField<TAnyModel>,
                 desiredTagIds: associationFields[column.member],

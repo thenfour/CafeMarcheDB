@@ -9,22 +9,23 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
-const tableSpec = new DB3Client.xTableClientSpec({
-    table: db3.xSongCreditType,
-    columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-        new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
-        new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-        new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
-        new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
-    ],
-});
-
 
 const MainContent = () => {
     if (!useAuthorization("admin song tags page", Permission.admin_songs)) {
         throw new Error(`unauthorized`);
     }
+
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xSongCreditType,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.GenericStringColumnClient({ columnName: "text", cellWidth: 180 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+            new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
+            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
+        ],
+    });
+
     return <>
         <SettingMarkdown settingName="editSongCreditTypes_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />

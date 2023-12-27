@@ -3,6 +3,7 @@
 // here we need CELLS to act like DB rows.
 
 import { BlitzPage } from "@blitzjs/next";
+import { FormControlLabel, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { InspectObject } from "src/core/components/CMCoreComponents";
@@ -13,12 +14,15 @@ import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatr
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import React from "react";
 
 
 const MainContent = () => {
     if (!useAuthorization("admin role-permissions matrix page", Permission.sysadmin)) {
         throw new Error(`unauthorized`);
     }
+
+    const [showUnknown, setShowUnknown] = React.useState<boolean>(false);
 
     const RoleClientSchema = new DB3Client.xTableClientSpec({
         table: db3.xRole,
@@ -47,13 +51,25 @@ const MainContent = () => {
         ],
     });
 
+    const codePermissions = Object.keys(Permission);
 
     return <>
         <SettingMarkdown settingName="rolePermissionsMatrixPage_markdown"></SettingMarkdown>
+        <FormControlLabel label="Show unknown permissions" control={<input type="checkbox" checked={showUnknown} onChange={(e) => setShowUnknown(e.target.checked)} />} />
         <DB3AssociationMatrix
             localTableSpec={PermissionClientSchema}
             foreignTableSpec={RoleClientSchema}
             tagsField={PermissionClientSchema.getColumn("roles") as DB3Client.TagsFieldClient<db3.RolePermissionAssociationPayload>}
+            filterRow={(row: db3.PermissionPayloadMinimum) => {
+                if (showUnknown) return true;
+                return codePermissions.some(k => k === row.name);
+            }}
+            renderExtraActions={(x) => {
+                return <div style={{ display: "flex" }}>{x.row.sortOrder}{codePermissions.some(k => k === x.row.name) ? (
+                    <Tooltip title="this permission is in sync with code."><div>🟢</div></Tooltip>)
+                    : (<Tooltip title="this permission is not known in code; it can probably be deleted.">
+                        <div style={{ display: "flex", whiteSpace: "nowrap" }}>🟥Unknown</div></Tooltip>)}</div>
+            }}
         />
     </>;
 };
@@ -61,7 +77,7 @@ const MainContent = () => {
 
 const RolePermissionsMatrixPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Users">
+        <DashboardLayout title="RolePerm Matrix">
             <MainContent />
         </DashboardLayout>
     );

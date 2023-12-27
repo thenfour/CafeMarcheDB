@@ -170,7 +170,7 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
     return (
         <>
             <DialogTitle>
-                select {props.spec.typedSchemaColumn.label}
+                select {props.spec.typedSchemaColumn.member}
                 <Box sx={{ p: 0 }}>
                     Selected:
                     <DB3TagsValueComponent
@@ -273,7 +273,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         })
         }</React.Fragment>)}
 
-        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.label}</Button>
+        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.member}</Button>
 
         {isOpen && <DB3SelectTagsDialog
             row={props.row}

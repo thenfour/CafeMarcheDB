@@ -1,3 +1,5 @@
+// TODO: authorization for rows & columns
+
 // this will differ from the other EditGrid
 // rows & columns are dynamic based on the associated DB tables
 // CELLS are rows in an association table.
@@ -26,10 +28,16 @@ import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
 
+export interface DB3AssMatrxiExtraActionsArgs {
+    row: TAnyModel,
+};
+
 export type DB3BooleanMatrixProps<TLocal, TAssociation> = {
     localTableSpec: DB3Client.xTableClientSpec,
     foreignTableSpec: DB3Client.xTableClientSpec,
     tagsField: DB3Client.TagsFieldClient<TAssociation>,
+    renderExtraActions?: (args: DB3AssMatrxiExtraActionsArgs) => React.ReactNode,
+    filterRow?: (row: TLocal) => boolean;
 };
 
 export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatrixProps<TLocal, TAssociation>) {
@@ -70,6 +78,8 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         sortModel,
         paginationModel,
     });
+
+    const filteredRows: TLocal[] = !!props.filterRow ? (dbRows.items as TLocal[]).filter(row => props.filterRow!(row)) : (dbRows.items as TLocal[]);
 
     const dbColumns = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -135,19 +145,67 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
                 }}
             /></div>;
         }
-    }))
+    })),
+    {
+        field: 'actions',
+        type: 'actions',
+        headerName: 'Actions',
+        getActions: ({ id, ...args }) => {
+            //const isInEditMode = rowModesModel[id]?.mode === GridRowModes.Edit;
+            return [
+                <React.Fragment key="extra">
+                    {props.renderExtraActions && props.renderExtraActions({
+                        row: args.row,
+                    })}
+                </React.Fragment>,
+            ];
+        },
+    }
     ];
 
-    // now add a column for each tag.
+    const handleClickCopy = async () => {
 
+        // create an array of pairs
+        const obj: [string, string][] = [];
+        const objRows: string[] = [];
 
-    return (<>
+        for (let iy = 0; iy < filteredRows.length; ++iy) {
+            const permission = filteredRows[iy]!;// as db3.PermissionPayload;
+            const associations = permission[props.tagsField.columnName] as TAssociation[];
+            const permissionInfo = props.localTableSpec.args.table.getRowInfo(permission);
+
+            for (let ix = 0; ix < dbColumns.items.length; ++ix) {
+                // "tag" = X (foreign) (column) (role)
+                const role = dbColumns.items[ix]!;
+                const roleId = role[props.foreignTableSpec.args.table.pkMember];
+
+                const association = associations.find(a => a[props.tagsField.associationForeignIDMember] === roleId);
+                if (!association) continue;
+
+                const roleInfo = props.foreignTableSpec.args.table.getRowInfo(role);
+                obj.push([roleInfo.name, permissionInfo.name]);
+                //   [ "always_grant", "Admin" ],
+                objRows.push(`  [ "${roleInfo.name}", "${permissionInfo.name}" ]`);
+            }
+        }
+
+        console.log(obj);
+        const txt = `[\n${objRows.join(`,\n`)}\n]\n`; // JSON.stringify(obj, null, 2);
+        await navigator.clipboard.writeText(txt);
+        showSnackbar({ severity: "success", children: `Copied ${Object.entries(obj).length} associations to clipboard (${txt.length} characters)` });
+    };
+
+    return (<div>
         {/* <InspectObject src={rowWhere} tooltip="ROW WHERE" />
         <InspectObject src={rowInclude} tooltip="ROW INCLUDE" />
         <InspectObject src={columnWhere} tooltip="COLUMN WHERE" />
         <InspectObject src={columnInclude} tooltip="COLUMN INCLUDE" />
         <InspectObject src={dbColumns.items} tooltip="COLUMN RESULTS" />
         <InspectObject src={dbColumns.remainingQueryResults} tooltip="COLUMN extra results" /> */}
+
+        <div>
+            <button onClick={handleClickCopy}>Copy</button>
+        </div>
 
         <DataGrid
             // basic config
@@ -159,8 +217,8 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
             columns={columns}
 
             // actual data
-            rows={dbRows.items}
-            rowCount={dbRows.rowCount}
+            rows={filteredRows}
+            rowCount={filteredRows.length}
 
             // initial state
             initialState={{
@@ -195,6 +253,6 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
             }}
 
         />
-    </>
+    </div>
     );
 };

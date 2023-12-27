@@ -390,7 +390,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
                 return <div className='MuiDataGrid-cellContent'><Checkbox checked={params.value} disabled /></div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.label} control={
+                return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.member} control={
                     <Checkbox
                         checked={params.value}
                         onChange={(e, value) => {
@@ -410,7 +410,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
     });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.label} control={
+        return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.member} control={
             <Checkbox
                 checked={!!params.value}
                 onChange={(e, val) => {
@@ -535,7 +535,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         const value = params.value === null ? gNullValue : params.value;
         return <React.Fragment key={params.key}>
-            <InputLabel>{this.schemaColumn.label}</InputLabel>
+            <InputLabel>{this.schemaColumn.member}</InputLabel>
             <Select
                 value={value}
                 error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}
@@ -591,7 +591,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         const value = params.value === null ? gNullValue : params.value;
         return <React.Fragment key={params.key}>
-            <InputLabel>{this.schemaColumn.label}</InputLabel>
+            <InputLabel>{this.schemaColumn.member}</InputLabel>
             <Select
                 value={value}
                 error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}

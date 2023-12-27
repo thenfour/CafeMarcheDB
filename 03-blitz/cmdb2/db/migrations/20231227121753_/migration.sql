@@ -3,6 +3,7 @@ CREATE TABLE "Role" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "name" TEXT NOT NULL,
     "isRoleForNewUsers" BOOLEAN NOT NULL DEFAULT false,
+    "isPublicRole" BOOLEAN NOT NULL DEFAULT false,
     "description" TEXT,
     "sortOrder" INTEGER NOT NULL DEFAULT 0
 );
@@ -28,10 +29,28 @@ CREATE TABLE "RolePermission" (
 );
 
 -- CreateTable
+CREATE TABLE "UserTag" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "text" TEXT NOT NULL,
+    "description" TEXT NOT NULL DEFAULT '',
+    "color" TEXT,
+    "significance" TEXT,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0
+);
+
+-- CreateTable
+CREATE TABLE "UserTagAssignment" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "userId" INTEGER NOT NULL,
+    "userTagId" INTEGER NOT NULL,
+    CONSTRAINT "UserTagAssignment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "UserTagAssignment_userTagId_fkey" FOREIGN KEY ("userTagId") REFERENCES "UserTag" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "User" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "name" TEXT NOT NULL DEFAULT '',
-    "compactName" TEXT NOT NULL DEFAULT '',
     "isSysAdmin" BOOLEAN NOT NULL DEFAULT false,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "email" TEXT NOT NULL,
@@ -39,7 +58,6 @@ CREATE TABLE "User" (
     "hashedPassword" TEXT,
     "googleId" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "isActive" BOOLEAN NOT NULL DEFAULT false,
     "roleId" INTEGER,
     CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -236,6 +254,7 @@ CREATE TABLE "Event" (
     "createdAt" DATETIME NOT NULL,
     "createdByUserId" INTEGER,
     "visiblePermissionId" INTEGER,
+    "expectedAttendanceUserTagId" INTEGER,
     "frontpageVisible" BOOLEAN NOT NULL DEFAULT false,
     "frontpageDate" TEXT NOT NULL DEFAULT '',
     "frontpageTime" TEXT NOT NULL DEFAULT '',
@@ -247,7 +266,8 @@ CREATE TABLE "Event" (
     CONSTRAINT "Event_typeId_fkey" FOREIGN KEY ("typeId") REFERENCES "EventType" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Event_statusId_fkey" FOREIGN KEY ("statusId") REFERENCES "EventStatus" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
     CONSTRAINT "Event_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "User" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
-    CONSTRAINT "Event_visiblePermissionId_fkey" FOREIGN KEY ("visiblePermissionId") REFERENCES "Permission" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE
+    CONSTRAINT "Event_visiblePermissionId_fkey" FOREIGN KEY ("visiblePermissionId") REFERENCES "Permission" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
+    CONSTRAINT "Event_expectedAttendanceUserTagId_fkey" FOREIGN KEY ("expectedAttendanceUserTagId") REFERENCES "UserTag" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -259,7 +279,6 @@ CREATE TABLE "EventSegment" (
     "startsAt" DATETIME,
     "durationMillis" INTEGER NOT NULL,
     "isAllDay" BOOLEAN NOT NULL DEFAULT true,
-    "endsAt" DATETIME,
     CONSTRAINT "EventSegment_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -327,12 +346,12 @@ CREATE TABLE "EventSongList" (
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "name" TEXT NOT NULL,
     "description" TEXT NOT NULL DEFAULT '',
-    "createdByUserId" INTEGER,
-    "visiblePermissionId" INTEGER,
     "eventId" INTEGER NOT NULL,
-    CONSTRAINT "EventSongList_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "User" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
-    CONSTRAINT "EventSongList_visiblePermissionId_fkey" FOREIGN KEY ("visiblePermissionId") REFERENCES "Permission" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
-    CONSTRAINT "EventSongList_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "permissionId" INTEGER,
+    "userId" INTEGER,
+    CONSTRAINT "EventSongList_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "EventSongList_permissionId_fkey" FOREIGN KEY ("permissionId") REFERENCES "Permission" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "EventSongList_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -359,18 +378,27 @@ CREATE TABLE "EventAttendance" (
 );
 
 -- CreateTable
+CREATE TABLE "EventUserResponse" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "userId" INTEGER NOT NULL,
+    "eventId" INTEGER NOT NULL,
+    "isInvited" BOOLEAN,
+    "userComment" TEXT,
+    "instrumentId" INTEGER,
+    CONSTRAINT "EventUserResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "EventUserResponse_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "EventUserResponse_instrumentId_fkey" FOREIGN KEY ("instrumentId") REFERENCES "Instrument" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "EventSegmentUserResponse" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "userId" INTEGER NOT NULL,
     "eventSegmentId" INTEGER NOT NULL,
-    "expectAttendance" BOOLEAN,
     "attendanceId" INTEGER,
-    "attendanceComment" TEXT,
-    "instrumentId" INTEGER,
-    CONSTRAINT "EventSegmentUserResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "EventSegmentUserResponse_eventSegmentId_fkey" FOREIGN KEY ("eventSegmentId") REFERENCES "EventSegment" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "EventSegmentUserResponse_attendanceId_fkey" FOREIGN KEY ("attendanceId") REFERENCES "EventAttendance" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
-    CONSTRAINT "EventSegmentUserResponse_instrumentId_fkey" FOREIGN KEY ("instrumentId") REFERENCES "Instrument" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE
+    CONSTRAINT "EventSegmentUserResponse_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "EventSegmentUserResponse_eventSegmentId_fkey" FOREIGN KEY ("eventSegmentId") REFERENCES "EventSegment" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "EventSegmentUserResponse_attendanceId_fkey" FOREIGN KEY ("attendanceId") REFERENCES "EventAttendance" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -400,13 +428,18 @@ CREATE TABLE "File" (
     "description" TEXT NOT NULL,
     "isDeleted" BOOLEAN NOT NULL DEFAULT false,
     "sizeBytes" INTEGER NOT NULL,
+    "externalURI" TEXT,
     "uploadedAt" DATETIME NOT NULL,
     "uploadedByUserId" INTEGER,
     "visiblePermissionId" INTEGER,
     "mimeType" TEXT,
-    "previewData" TEXT,
+    "customData" TEXT,
+    "previewFileId" INTEGER,
+    "parentFileId" INTEGER,
     CONSTRAINT "File_uploadedByUserId_fkey" FOREIGN KEY ("uploadedByUserId") REFERENCES "User" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
-    CONSTRAINT "File_visiblePermissionId_fkey" FOREIGN KEY ("visiblePermissionId") REFERENCES "Permission" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE
+    CONSTRAINT "File_visiblePermissionId_fkey" FOREIGN KEY ("visiblePermissionId") REFERENCES "Permission" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
+    CONSTRAINT "File_previewFileId_fkey" FOREIGN KEY ("previewFileId") REFERENCES "File" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "File_parentFileId_fkey" FOREIGN KEY ("parentFileId") REFERENCES "File" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -452,7 +485,12 @@ CREATE TABLE "FrontpageGalleryItem" (
     "caption" TEXT NOT NULL,
     "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "fileId" INTEGER NOT NULL,
-    CONSTRAINT "FrontpageGalleryItem_fileId_fkey" FOREIGN KEY ("fileId") REFERENCES "File" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "displayParams" TEXT NOT NULL,
+    "createdByUserId" INTEGER,
+    "visiblePermissionId" INTEGER,
+    CONSTRAINT "FrontpageGalleryItem_fileId_fkey" FOREIGN KEY ("fileId") REFERENCES "File" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "FrontpageGalleryItem_createdByUserId_fkey" FOREIGN KEY ("createdByUserId") REFERENCES "User" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE,
+    CONSTRAINT "FrontpageGalleryItem_visiblePermissionId_fkey" FOREIGN KEY ("visiblePermissionId") REFERENCES "Permission" ("id") ON DELETE SET DEFAULT ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -463,6 +501,9 @@ CREATE UNIQUE INDEX "Permission_name_key" ON "Permission"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "RolePermission_roleId_permissionId_key" ON "RolePermission"("roleId", "permissionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "UserTagAssignment_userId_userTagId_key" ON "UserTagAssignment"("userId", "userTagId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
@@ -483,16 +524,28 @@ CREATE UNIQUE INDEX "SongCredit_userId_songId_key" ON "SongCredit"("userId", "so
 CREATE UNIQUE INDEX "SongTagAssociation_tagId_songId_key" ON "SongTagAssociation"("tagId", "songId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "InstrumentFunctionalGroup_name_key" ON "InstrumentFunctionalGroup"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Instrument_name_key" ON "Instrument"("name");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "InstrumentTagAssociation_instrumentId_tagId_key" ON "InstrumentTagAssociation"("instrumentId", "tagId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EventTagAssignment_eventId_eventTagId_key" ON "EventTagAssignment"("eventId", "eventTagId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "EventUserResponse_userId_eventId_key" ON "EventUserResponse"("userId", "eventId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EventSegmentUserResponse_userId_eventSegmentId_key" ON "EventSegmentUserResponse"("userId", "eventSegmentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "FileTagAssignment_fileId_fileTagId_key" ON "FileTagAssignment"("fileId", "fileTagId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "File_storedLeafName_key" ON "File"("storedLeafName");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "FileUserTag_fileId_userId_key" ON "FileUserTag"("fileId", "userId");

@@ -11,6 +11,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
 import { calculateNewDimensions, formatFileSize, gDefaultImageArea } from "shared/utils";
+import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMDBUploadFile, CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, VisibilityControl, VisibilityControlValue } from "src/core/components/CMCoreComponents";
 import { UploadFileComponent } from "src/core/components/EventFileComponents";
@@ -411,7 +412,7 @@ const GalleryItem = (props: GalleryItemProps) => {
 ////////////////////////////////////////////////////////////////
 const MainContent = () => {
 
-    // todo: authorize
+    useAuthorizationOrThrow("front page gallery", Permission.edit_public_homepage);
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();

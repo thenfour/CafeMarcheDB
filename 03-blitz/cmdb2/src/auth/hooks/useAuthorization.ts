@@ -7,3 +7,10 @@ export const useAuthorization = (reason: string, permission: Permission) => {
     const [isAuthorized] = useQuery(getAuthorization, { reason, permission }, gQueryOptions.default);
     return isAuthorized;
 }
+
+export const useAuthorizationOrThrow = (reason: string, permission: Permission) => {
+    const [isAuthorized] = useQuery(getAuthorization, { reason, permission }, gQueryOptions.default);
+    if (!isAuthorized) {
+        throw new Error(`unauthorized`);
+    }
+}

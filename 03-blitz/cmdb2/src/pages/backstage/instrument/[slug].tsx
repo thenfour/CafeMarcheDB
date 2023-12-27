@@ -9,7 +9,7 @@ import HomeIcon from '@mui/icons-material/Home';
 
 const MyComponent = () => {
     const params = useParams();
-    if (!useAuthorization(`instrument page: ${params.slug}`, Permission.login)) {
+    if (!useAuthorization(`instrument page: ${params.slug}`, Permission.basic_trust)) {
         throw new Error(`unauthorized`);
     }
     //return <div>{params.slug} - todo: show breadcrumbs of some sort</div>;
