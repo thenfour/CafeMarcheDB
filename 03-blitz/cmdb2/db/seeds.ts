@@ -222,44 +222,48 @@ const main = async () => {
   ]);
 
 
-  await SeedTable("eventAttendance", prisma.eventAttendance, [
-    {
-      "text": "Going!",
-      "personalText": "You're going!",
-      "description": "",
-      "color": null,
-      "strength": 100,
-      "sortOrder": 100,
-      "isDeleted": false
-    },
-    {
-      "text": "Probably going",
-      "personalText": "you're probably going",
-      "description": "",
-      "color": null,
-      "strength": 66,
-      "sortOrder": 66,
-      "isDeleted": false
-    },
-    {
-      "text": "Probably not going",
-      "personalText": "you're probably not going",
-      "description": "",
-      "color": null,
-      "strength": 33,
-      "sortOrder": 33,
-      "isDeleted": false
-    },
-    {
-      "text": "Not going",
-      "personalText": "you're not going",
-      "description": "",
-      "color": null,
-      "strength": 0,
-      "sortOrder": 0,
-      "isDeleted": false
-    }
-  ]);
+  await SeedTable("eventAttendance", prisma.eventAttendance,
+    [
+      {
+        "text": "Going!",
+        "personalText": "You're going!",
+        "description": "",
+        "color": "attendance_yes",
+        "strength": 100,
+        "sortOrder": 100
+      },
+      {
+        "text": "Probably going",
+        "personalText": "you're probably going",
+        "description": "",
+        "color": "attendance_yes_maybe",
+        "strength": 66,
+        "sortOrder": 66
+      },
+      {
+        "text": "Probably not going",
+        "personalText": "you're probably not going",
+        "description": "",
+        "color": "attendance_no_maybe",
+        "strength": 33,
+        "sortOrder": 33
+      },
+      {
+        "text": "Not going",
+        "personalText": "you're not going",
+        "description": "",
+        "color": "attendance_no",
+        "strength": 0,
+        "sortOrder": 0
+      }
+    ]);
+
+
+
+
+
+
+
 
   await SeedTable("songCreditType", prisma.songCreditType, [
     {
@@ -501,6 +505,7 @@ const main = async () => {
     ["Admin", "manage_files"],
     ["Moderators", "manage_files"],
     ["Editors", "manage_files"],
+    ["Normal Users", "manage_files"],
     ["Admin", "view_files"],
     ["Moderators", "view_files"],
     ["Editors", "view_files"],

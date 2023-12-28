@@ -393,6 +393,7 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
 ////////////////////////////////////////////////////////////////
 export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
     include: {
+        createdByUser: true,
         visiblePermission: {
             include: {
                 roles: true

@@ -34,7 +34,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: d
 
     // validate on change
     React.useEffect(() => {
-        const vr = tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new");
+        const vr = tableClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new", clientIntention);
         setValidationResult(vr);
         setOldObj(obj);
     }, [obj]);
@@ -84,6 +84,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: d
                                     row: obj,
                                     value: obj[column.columnName],
                                     validationResult,
+                                    clientIntention,
                                 })}</React.Fragment>;
                             })
                         }
@@ -123,7 +124,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
 
     // validate on change
     React.useEffect(() => {
-        const vr = tableRenderClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new");
+        const vr = tableRenderClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new", tableRenderClient.args.clientIntention);
         setValidationResult(vr);
         setOldObj(obj);
     }, [obj]);
@@ -186,6 +187,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                                     row: obj,
                                     value: obj[column.columnName],
                                     validationResult,
+                                    clientIntention: tableRenderClient.args.clientIntention,
                                 })}</React.Fragment>;
                             })
                         }

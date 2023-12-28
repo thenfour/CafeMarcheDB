@@ -100,13 +100,13 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string",
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+                const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <CMTextField
                     key={params.key}
                     className={`columnName-${this.columnName}`}
                     autoFocus={params.hasFocus}
                     label={this.headerName}
-                    validationError={vr.success ? null : (vr.errorMessage || null)}
+                    validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
                     value={params.value as string}
                     onChange={(e, value) => {
                         void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
@@ -160,17 +160,18 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string",
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
-                return <CMTextField
-                    key={params.key}
-                    autoFocus={params.hasFocus}
-                    label={this.headerName}
-                    validationError={vr.success ? null : (vr.errorMessage || null)}
-                    value={params.value as string}
-                    onChange={(e, value) => {
-                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
-                    }}
-                />;
+                return <div key={params.key}>placeholder</div>;
+                // const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
+                // return <CMTextField
+                //     key={params.key}
+                //     autoFocus={params.hasFocus}
+                //     label={this.headerName}
+                //     validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
+                //     value={params.value as string}
+                //     onChange={(e, value) => {
+                //         void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                //     }}
+                // />;
             },
         };
     };
@@ -184,14 +185,18 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         if (!this.schemaColumn) throw new Error(`no schemacolumn for slug column '${this.columnName}'`);
-        const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
+        const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "new", clientIntention: params.clientIntention });
+        console.log(vr);
 
         //const [isEditable, setIsEditable] = React.useState<boolean>(false);
         //const [customValue, setCustomValue] = React.useState<string>("");
 
         // set the calculated value in the object.
-        if (params.value !== vr.parsedValue) {
-            params.api.setFieldValues({ [this.schemaColumn.member]: vr.parsedValue });
+        // if (params.value !== vr.parsedValue) {
+        //     params.api.setFieldValues({ [this.schemaColumn.member]: vr.parsedValue });
+        // }
+        if (vr.values[this.columnName] !== params.row[this.columnName]) {
+            params.api.setFieldValues(vr.values);
         }
 
         // NOTE: do not bother with custom-editable slugs.
@@ -211,11 +216,6 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         // };
 
         return <div className="slugEditField">
-            {/* <FormControlLabel
-                control={<Switch size="small" checked={isEditable} onChange={handleEditableChange} />}
-                label="Manual edit"
-                labelPlacement="end"
-            /> */}
             <CMTextField
                 readOnly={true}
                 key={params.key}
@@ -223,7 +223,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
                 label={this.headerName}
                 //validationError={null} // don't show validation errors for fields you can't edit.
                 //validationError={vr.errorMessage || null}
-                value={vr.parsedValue as string}
+                value={vr.values[this.columnName] as string}
                 onChange={(e, val) => {
                     //params.api.setFieldValues({ [this.columnName]: val });
                 }}
@@ -265,12 +265,12 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string",
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+                const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <Stack><CMTextField
                     key={params.key}
                     autoFocus={params.hasFocus}
                     label={this.headerName}
-                    validationError={vr.success ? null : (vr.errorMessage || null)}
+                    validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
                     value={params.value as string}
                     onChange={(e, value) => {
                         void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
@@ -328,12 +328,12 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string", // we will do our own number conversion
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+                const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <CMTextField
                     key={params.key}
                     autoFocus={params.hasFocus}
                     label={this.headerName}
-                    validationError={vr.success ? null : (vr.errorMessage || null)}
+                    validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
                     value={params.value as string}
                     onChange={(e, value) => {
                         void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
@@ -576,9 +576,9 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
             return RenderMuiIcon(params.value);
         };
         this.GridColProps!.renderEditCell = (params) => {
-            const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+            const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
             return <IconEditCell
-                validationError={vr.success ? null : (vr.errorMessage || null)}
+                validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
                 value={params.value}
                 //allowNull={true}
                 onOK={(value) => {
@@ -751,14 +751,15 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        const vr = this.schemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "new" });
+        const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "new", clientIntention: params.clientIntention });
 
         // set the calculated value in the object.
-        if (params.value === undefined && vr.parsedValue) {
-            params.api.setFieldValues({ [this.schemaColumn.member]: vr.parsedValue });
+        if (params.value === undefined && vr.values) {
+            params.api.setFieldValues(vr.values);
         }
 
-        const value = vr.parsedValue as Date;
+        //const value = vr.parsedValue as Date;
+        const value = params.row[this.columnName];
         const now = new Date();
         //const age = new TimeSpan(now.valueOf() - value.valueOf());
         const ageStr = `(${formatTimeSpan(now, value)} ago)`;

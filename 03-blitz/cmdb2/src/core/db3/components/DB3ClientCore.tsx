@@ -39,6 +39,7 @@ export interface RenderForNewItemDialogArgs {
     value: unknown;
     validationResult?: db3.ValidateAndComputeDiffResult;
     api: NewDialogAPI,
+    clientIntention: db3.xTableClientUsageContext;
 };
 
 export interface RenderViewerArgs<T> {
@@ -123,11 +124,12 @@ export class xTableClientSpec {
         });
     }
 
-    renderEditor = <T extends TAnyModel,>(columnName: string, row: T, validationResult: db3.ValidateAndComputeDiffResult, onChange: (row: T) => void) => {
+    renderEditor = <T extends TAnyModel,>(columnName: string, row: T, validationResult: db3.ValidateAndComputeDiffResult, onChange: (row: T) => void, clientIntention: db3.xTableClientUsageContext) => {
         const col = this.getColumn(columnName);
 
         return col.renderForNewDialog && col.renderForNewDialog({
             validationResult,
+            clientIntention,
             api: {
                 setFieldValues: (fieldValues: { [key: string]: any }) => {
                     const newValue = { ...row, ...fieldValues };
@@ -290,7 +292,7 @@ export class xTableRenderClient {
 
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
-            return this.schema.getClientModel(dbitem as TAnyModel, "view");
+            return this.schema.getClientModel(dbitem as TAnyModel, "view", args.clientIntention);
         });
 
         this.refetch = this.refetch || (() => { });
@@ -313,7 +315,7 @@ export class xTableRenderClient {
         });
 
         this.schema.columns.forEach(schemaCol => {
-            schemaCol.ApplyClientToDb(postClientModel, dbModel, mode);
+            schemaCol.ApplyClientToDb(postClientModel, dbModel, mode, this.args.clientIntention);
         });
         return dbModel;
     };

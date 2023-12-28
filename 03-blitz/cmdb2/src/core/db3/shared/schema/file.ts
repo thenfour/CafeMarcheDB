@@ -33,6 +33,36 @@ export const xFileAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
 };
 
 
+export const xFileTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_files,
+    View: Permission.view_files,
+    EditOwn: Permission.manage_files,
+    Edit: Permission.manage_files,
+    Insert: Permission.manage_files,
+};
+
+export const xFileTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_files,
+    View: Permission.view_files,
+    EditOwn: Permission.admin_files,
+    Edit: Permission.admin_files,
+    Insert: Permission.admin_files,
+};
+
+export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.basic_trust,
+    View: Permission.basic_trust,
+    EditOwn: Permission.edit_public_homepage,
+    Edit: Permission.edit_public_homepage,
+    Insert: Permission.edit_public_homepage,
+};
+
+
+
+
+
+
+
 
 // // tech rider, partition, invoice, contract, event media, other, what is the usage?
 // model FileTag {
@@ -52,6 +82,7 @@ export const xFileTag = new db3.xTable({
     },
     tableName: "fileTag",
     naturalOrderBy: FileTagNaturalOrderBy,
+    tableAuthMap: xFileTableAuthMap_R_EAdmins,
     createInsertModelFromString: (input: string): Prisma.FileTagCreateInput => {
         return {
             text: input,
@@ -81,14 +112,15 @@ export const xFileTag = new db3.xTable({
 export const xFileTagAssignment = new db3.xTable({
     tableName: "FileTagAssignment",
     naturalOrderBy: FileTagAssignmentNaturalOrderBy,
+    tableAuthMap: xFileTableAuthMap_R_EManagers,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagAssignmentInclude => {
         return FileTagAssignmentArgs.include;
     },
     getRowInfo: (row: FileTagAssignmentPayload) => {
         return {
-            name: row.fileTag.text,
-            description: row.fileTag.description,
-            color: gGeneralPaletteList.findEntry(row.fileTag.color),
+            name: row.fileTag?.text || "",
+            description: row.fileTag?.description || "",
+            color: gGeneralPaletteList.findEntry(row.fileTag?.color || null),
             ownerUserId: row.file.uploadedByUserId,
         };
     }
@@ -130,12 +162,13 @@ export const xFileTagAssignment = new db3.xTable({
 export const xFileUserTag = new db3.xTable({
     tableName: "FileUserTag",
     naturalOrderBy: FileUserTagNaturalOrderBy,
+    tableAuthMap: xFileTableAuthMap_R_EManagers,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileUserTagInclude => {
         return FileUserTagArgs.include;
     },
     getRowInfo: (row: FileUserTagPayload) => {
         return {
-            name: row.user.name,
+            name: row.user?.name || "",
             ownerUserId: null,
         };
     },
@@ -174,12 +207,13 @@ export const xFileUserTag = new db3.xTable({
 export const xFileSongTag = new db3.xTable({
     tableName: "FileSongTag",
     naturalOrderBy: FileSongTagNaturalOrderBy,
+    tableAuthMap: xFileTableAuthMap_R_EManagers,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileSongTagInclude => {
         return FileSongTagArgs.include;
     },
     getRowInfo: (row: FileSongTagPayload) => {
         return {
-            name: row.song.name,
+            name: row.song?.name || "",
             ownerUserId: null,
         };
     },
@@ -212,13 +246,14 @@ export const xFileSongTag = new db3.xTable({
 
 export const xFileEventTag = new db3.xTable({
     tableName: "FileEventTag",
+    tableAuthMap: xFileTableAuthMap_R_EManagers,
     naturalOrderBy: FileEventTagNaturalOrderBy,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileEventTagInclude => {
         return FileEventTagArgs.include;
     },
     getRowInfo: (row: FileEventTagPayload) => {
         return {
-            name: row.event.name,
+            name: row.event?.name || "",
             ownerUserId: null,
         };
     },
@@ -261,13 +296,14 @@ export const xFileEventTag = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 export const xFileInstrumentTag = new db3.xTable({
     tableName: "FileInstrumentTag",
+    tableAuthMap: xFileTableAuthMap_R_EManagers,
     naturalOrderBy: FileInstrumentTagNaturalOrderBy,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInstrumentTagInclude => {
         return FileInstrumentTagArgs.include;
     },
     getRowInfo: (row: FileInstrumentTagPayload) => {
         return {
-            name: row.instrument.name,
+            name: row.instrument?.name || "",
             ownerUserId: null,
         };
     },
@@ -321,6 +357,7 @@ export const xFile = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInclude => {
         return FileArgs.include;
     },
+    tableAuthMap: xFileTableAuthMap_R_EManagers,
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
@@ -376,7 +413,7 @@ export const xFile = new db3.xTable({
             authMap: db3.createAuthContextMap_TODO(),
         }),
         MakeCreatedAtField("uploadedAt", { authMap: xFileAuthMap_R_EOwn_EManagers }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFileAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFileAuthMap_R_EOwn_EManagers, allowNull: false }),
 
         new CreatedByUserField({
             columnName: "uploadedByUser",
@@ -567,6 +604,7 @@ export const xFrontpageGalleryItem = new db3.xTable({
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
+    tableAuthMap: xFrontpageTableAuthMap,
     naturalOrderBy: FrontpageGalleryItemNaturalOrderBy,
     getParameterizedWhereClause: (params: any, clientIntention: db3.xTableClientUsageContext): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
     getRowInfo: (row: FrontpageGalleryItemPayload) => ({
@@ -576,7 +614,7 @@ export const xFrontpageGalleryItem = new db3.xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFrontpageAuthMap_Basic }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFrontpageAuthMap_Basic, allowNull: false }),
         //new BoolField({ columnName: "isPublished", defaultValue: false }),
         new GenericStringField({
             columnName: "caption",

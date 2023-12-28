@@ -138,6 +138,7 @@ export interface ChooseIconDialogProps {
     value: TIconOptions | null;
     validationError: string | null;
     onOK: (value: TIconOptions | null) => void;
+    readonly: boolean;
 };
 
 export function IconEditCell(props: ChooseIconDialogProps) {
@@ -145,7 +146,7 @@ export function IconEditCell(props: ChooseIconDialogProps) {
         selectDialogTitle="Select icon"
         renderDialogDescription={() => <>a description here</>}
         items={Object.keys(gIconOptions)}
-        readOnly={false}
+        readonly={props.readonly}
         value={props.value}
         onChange={(value) => props.onOK(value)}
         selectButtonLabel="Icon..."

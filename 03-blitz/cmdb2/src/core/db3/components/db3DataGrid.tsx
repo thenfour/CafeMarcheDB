@@ -42,7 +42,6 @@ import * as db3 from '../db3';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { gIconMap } from './IconSelectDialog';
 import { useAuthenticatedSession } from '@blitzjs/auth';
-//import { separateMutationValues } from '../server/db3mutationCore';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -172,7 +171,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
         //console.log(`processRowUpdate ${JSON.stringify(newRow)}`);
         return new Promise<GridRowModel>((resolve, reject) => {
-            const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow, "update");
+            const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow, "update", clientIntention);
             // there are 3 possible paths:
             // 1. validation errors
             // 2. or, changes made
@@ -183,7 +182,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 console.log(validateResult);
                 reject(validateResult.errors);
             }
-            else if (validateResult.hasChanges) {
+            else if (validateResult.changeResult.hasChanges) {
                 // Save the arguments to resolve or reject the promise later
                 setConfirmDialogArgs({ resolve, reject, newRow, oldRow, validateResult });
             } else {

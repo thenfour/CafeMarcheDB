@@ -19,7 +19,7 @@
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { TAnyModel } from "shared/utils";
-import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_Mono, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
+import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_Mono, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 import { DateTimeRange, DateTimeRangeSpec } from "shared/time";
 import { assert } from "blitz";
 
@@ -63,7 +63,7 @@ export class GhostField extends FieldBase<number> {
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
 
     ValidateAndParse = (val: ValidateAndParseArgs<number>): ValidateAndParseResult<number | null> => {
-        return SuccessfulValidateAndParseResult(val.value);
+        return SuccessfulValidateAndParseResult({ [this.member]: val.row[this.member] });
     };
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
     };
@@ -74,7 +74,7 @@ export class GhostField extends FieldBase<number> {
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
         //assert(false, "ghost fields should not be applying to db model.");
-        console.log(`Ghost field skipping applying to db model. tableID:${this.table.tableID}, column:${this.member}`);
+        //console.log(`Ghost field skipping applying to db model. tableID:${this.table.tableID}, column:${this.member}`);
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
         if (dbModel[this.member] === undefined) return;
@@ -121,7 +121,7 @@ export class PKField extends FieldBase<number> {
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     // for pk id fields, there should never be any changes. but it is required to pass into update/delete/whatever so just pass it always.
     ValidateAndParse = (val: ValidateAndParseArgs<number>): ValidateAndParseResult<number | null> => {
-        return SuccessfulValidateAndParseResult(val.value);
+        return SuccessfulValidateAndParseResult({ [this.member]: val.row[this.member] });
     };
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
         // new rows don't have primary keys assigned yet; NOP
@@ -215,19 +215,23 @@ export class GenericStringField extends FieldBase<string> {
     // this column type has no sub-items; no filtering to do.
     ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
-    ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null | undefined> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
         if (value === null) {
-            if (this.allowNull) return SuccessfulValidateAndParseResult(value);
-            return ErrorValidateAndParseResult("field must be non-null", value);
+            if (this.allowNull) return SuccessfulValidateAndParseResult(objValue);
+            return ErrorValidateAndParseResult("field must be non-null", objValue);
         }
         if (typeof value !== 'string') {
-            return ErrorValidateAndParseResult("field is of unknown type", value);
+            return ErrorValidateAndParseResult("field is of unknown type", objValue);
         }
         if (this.doTrim) {
             value = value.trim();
+            objValue[this.member] = value;
         }
         if (value.length < this.minLength) {
-            return ErrorValidateAndParseResult("minimum length not satisfied", value);
+            return ErrorValidateAndParseResult("minimum length not satisfied", objValue);
         }
         if (this.format === "email") {
             // https://stackoverflow.com/questions/46155/how-can-i-validate-an-email-address-in-javascript
@@ -239,10 +243,10 @@ export class GenericStringField extends FieldBase<string> {
                     );
             };
             if (!validateEmail(value)) {
-                return ErrorValidateAndParseResult("email not in the correct format", value);
+                return ErrorValidateAndParseResult("email not in the correct format", objValue);
             }
         }
-        return SuccessfulValidateAndParseResult(value);
+        return SuccessfulValidateAndParseResult(objValue);
     };
 
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
@@ -294,10 +298,10 @@ export class GenericIntegerField extends FieldBase<number> {
 
     connectToTable = (table: xTable) => { };
 
-    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
-        const r = this.ValidateAndParse({ value: query, row: {}, mode: "view" }); // passing empty row because it's not used by this class.
-        if (!r.success) return false;
-        return { [this.member]: { equals: r.parsedValue } };
+    getQuickFilterWhereClause = (query: string, clientIntention: xTableClientUsageContext): TAnyModel | boolean => {
+        const r = this.ValidateAndParse({ row: { [this.member]: query }, mode: "view", clientIntention }); // passing empty row because it's not used by this class.
+        if (r.result !== "success") return false;
+        return { [this.member]: { equals: r.values[this.member] } };
     };
 
     getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
@@ -308,27 +312,30 @@ export class GenericIntegerField extends FieldBase<number> {
     ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = ({ value }: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
         if (value === null) {
             if (this.allowNull) {
-                return SuccessfulValidateAndParseResult(value);
+                return SuccessfulValidateAndParseResult(objValue);
             }
-            return ErrorValidateAndParseResult("field must be non-null", value);
+            return ErrorValidateAndParseResult("field must be non-null", objValue);
         }
         // val should be coerced into number, convert to integer.
         if (typeof value === 'string') {
             const s = (value as string).trim();
             if (this.allowNull && s === '') {
-                return SuccessfulValidateAndParseResult(null);
+                return SuccessfulValidateAndParseResult(objValue);
             }
             const i = parseInt(s, 10);
             if (isNaN(i)) {
-                return ErrorValidateAndParseResult("Input string was not convertible to integer", value as (string | number));
+                return ErrorValidateAndParseResult("Input string was not convertible to integer", objValue);
             }
             value = i;
         }
         // todo here check other constraints like min/max whatever
-        return SuccessfulValidateAndParseResult(value);
+        return SuccessfulValidateAndParseResult(objValue);
     };
 
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
@@ -339,10 +346,10 @@ export class GenericIntegerField extends FieldBase<number> {
         return a === b;
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
         if (clientModel[this.member] === undefined) return;
-        const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
-        mutationModel[this.member] = vr.parsedValue;
+        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        mutationModel[this.member] = vr.values[this.member];
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -412,16 +419,19 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = ({ value }: ValidateAndParseArgs<ColorPaletteEntry>): ValidateAndParseResult<ColorPaletteEntry | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<ColorPaletteEntry>): ValidateAndParseResult<ColorPaletteEntry | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
         if (value === null) {//&& !this.allowNull) {
             if (this.allowNull)
-                return SuccessfulValidateAndParseResult(value);
-            return ErrorValidateAndParseResult("field must be non-null", value);
+                return SuccessfulValidateAndParseResult(objValue);
+            return ErrorValidateAndParseResult("field must be non-null", objValue);
         }
         if (this.palette.findEntry(value?.id || null) == null) {
-            return ErrorValidateAndParseResult("Not found in palette.", value);
+            return ErrorValidateAndParseResult("Not found in palette.", objValue);
         }
-        return SuccessfulValidateAndParseResult(value);
+        return SuccessfulValidateAndParseResult(objValue);
     };
 
 };
@@ -430,10 +440,13 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 // for null support use a radio / multi select style field.
 export type BoolFieldArgs = {
     columnName: string;
-    defaultValue: boolean;
+    defaultValue: boolean | null;
+    allowNull: boolean;
 } & DB3AuthSpec;
 
 export class BoolField extends FieldBase<boolean> {
+    allowNull: boolean;
+
     constructor(args: BoolFieldArgs) {
         super({
             member: args.columnName,
@@ -442,6 +455,7 @@ export class BoolField extends FieldBase<boolean> {
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
+        this.allowNull = args.allowNull;
     }
 
     connectToTable = (table: xTable) => { };
@@ -475,8 +489,14 @@ export class BoolField extends FieldBase<boolean> {
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: ValidateAndParseArgs<boolean>): ValidateAndParseResult<boolean | null> => {
-        return SuccessfulValidateAndParseResult(val.value);
+    ValidateAndParse = (args: ValidateAndParseArgs<boolean>): ValidateAndParseResult<boolean | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
+        if (value === null && !this.allowNull) {
+            return ErrorValidateAndParseResult("must not be null", objValue);
+        }
+        return SuccessfulValidateAndParseResult(objValue);
     };
 };
 
@@ -542,17 +562,22 @@ export class ConstEnumStringField extends FieldBase<string> {
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = ({ value }: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
+
         if (value === null) {
-            if (this.allowNull) return SuccessfulValidateAndParseResult(value);
-            return ErrorValidateAndParseResult("field must be non-null", value);
+            if (this.allowNull) return SuccessfulValidateAndParseResult(objValue);
+            return ErrorValidateAndParseResult("field must be non-null", objValue);
         }
         // make sure val is actually a member of the enum.
         value = value!.trim();
+        objValue[this.member] = value;
         if (!Object.values(this.options).some(op => op === value)) {
-            return ErrorValidateAndParseResult(`unrecognized option '${value}'`, value);
+            return ErrorValidateAndParseResult(`unrecognized option '${value}'`, objValue);
         }
-        return SuccessfulValidateAndParseResult(value);
+        return SuccessfulValidateAndParseResult(objValue);
     };
 
 };
@@ -640,7 +665,8 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         // which makes sense.
     };
 
-    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+        //ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         // leaves behind the fk id.
         clientModel[this.member] = dbModel[this.member];
@@ -651,24 +677,67 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     };
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
-        // mutations want ONLY the id, not the object.
-        const foreign = clientModel[this.member];
-        if (foreign === undefined) return;
-        if (foreign === null) {
-            mutationModel[this.fkMember] = null;
+        // mutations want ONLY the id, not the object. but in the case both exist, use the object not the fk.
+        const foreignPk = this.getForeignTableSchema().pkMember;
+        if (clientModel[this.member] !== undefined) {
+            if (clientModel[this.member] === null) {
+                mutationModel[this.fkMember] = null; // assumes foreign pk is 'id'
+            } else {
+                mutationModel[this.fkMember] = clientModel[this.member][foreignPk]; // assumes foreign pk is 'id'
+            }
             return;
         }
-        mutationModel[this.fkMember] = foreign[this.getForeignTableSchema().pkMember];
+
+        if (clientModel[this.fkMember] !== undefined) {
+            if (clientModel[this.fkMember] === null) {
+                mutationModel[this.fkMember] = null; // assumes foreign pk is 'id'
+            } else {
+                mutationModel[this.fkMember] = clientModel[this.fkMember]; // assumes foreign pk is 'id'
+            }
+            return;
+        }
+
+
+
+        // if (clientModel[this.fkMember]) {
+        //     mutationModel[this.fkMember] = clientModel[this.fkMember];
+        //     return;
+        // }
+        // const foreign = clientModel[this.member];
+        // if (foreign === undefined) return;
+        // if (foreign === null) {
+        //     mutationModel[this.fkMember] = null;
+        //     return;
+        // }
+        // mutationModel[this.fkMember] = foreign[this.getForeignTableSchema().pkMember];
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = ({ value }: ValidateAndParseArgs<TForeign>): ValidateAndParseResult<TForeign | null> => {
-        if (value === null) {
-            if (this.allowNull) return SuccessfulValidateAndParseResult(value);
-            return ErrorValidateAndParseResult("field must be non-null", value);
+    ValidateAndParse = (args: ValidateAndParseArgs<TForeign>): ValidateAndParseResult<TForeign | null> => {
+        let value = args.row[this.member];
+        if (value === undefined) {
+            let fkvalue = args.row[this.fkMember];
+            if (fkvalue === undefined) return UndefinedValidateAndParseResult(); // both are undefined.
+
+            // operate on fk instead of object.
+            if (fkvalue === null && !this.allowNull) return ErrorValidateAndParseResult("field must be non-null", { [this.fkMember]: fkvalue });
+            return SuccessfulValidateAndParseResult({ [this.fkMember]: fkvalue });
         }
-        // there's really nothing else to validate here.
-        return SuccessfulValidateAndParseResult(value);
+
+        if (value === null) {
+            if (!this.allowNull) return ErrorValidateAndParseResult("field must be non-null", {
+                [this.member]: null,
+                [this.fkMember]: null,
+            });
+            return SuccessfulValidateAndParseResult({
+                [this.member]: null,
+                [this.fkMember]: null,
+            });
+        }
+        return SuccessfulValidateAndParseResult({
+            [this.member]: value,
+            [this.fkMember]: value.id,
+        });
     };
 
 };
@@ -815,14 +884,23 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         // mutations don't require any of this info; associations are always with existing local & foreign items.
         // so basically we just need to reduce associations down to an update/mutate model.
         if (clientModel[this.member] === undefined) return;
-        mutationModel[this.member] = clientModel[this.member].map(a => a[this.associationForeignIDMember]);
+
+        // there's a possibility the client model is the one coming from the serialized format. yea terrible. but support this case
+        // until we have proper clean serialized formats.
+        mutationModel[this.member] = clientModel[this.member].map(a => {
+            if (typeof a === 'number') return a;
+            return a[this.associationForeignIDMember];
+        });
     };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = (val: ValidateAndParseArgs<TAssociation[]>): ValidateAndParseResult<TAssociation[] | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<TAssociation[]>): ValidateAndParseResult<TAssociation[] | null> => {
         // there's really nothing else to validate here. in theory you can make sure the IDs are valid but it should never be possible plus enforced by the db relationship.
         // therefore not worth the overhead / roundtrip / complexity.
-        return SuccessfulValidateAndParseResult(val.value);
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
+        return SuccessfulValidateAndParseResult(objValue);
     };
 };
 
@@ -860,12 +938,15 @@ export class EventStartsAtField extends FieldBase<Date> {
     ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = ({ value }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
         if (value === null) {
             if (this.allowNull) {
-                return SuccessfulValidateAndParseResult(value);
+                return SuccessfulValidateAndParseResult(objValue);
             }
-            return ErrorValidateAndParseResult("field must be non-null", value);
+            return ErrorValidateAndParseResult("field must be non-null", objValue);
         }
         if (typeof (value) === 'string') {
             // string to date conv.
@@ -876,16 +957,17 @@ export class EventStartsAtField extends FieldBase<Date> {
             // returns "Invalid Date" and valueOf() method returns NaN).
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date
             if (isNaN(parsedDate.valueOf())) {
-                return ErrorValidateAndParseResult("Not a valid date", value as unknown as (Date | null));
+                return ErrorValidateAndParseResult("Not a valid date", objValue);
             }
             value = parsedDate;
+            objValue[this.member] = value;
         }
         if (value instanceof Date) {
             if (isNaN(value.valueOf())) {
-                return ErrorValidateAndParseResult("Date is invalid", value as unknown as (Date | null));
+                return ErrorValidateAndParseResult("Date is invalid", objValue);
             }
         }
-        return SuccessfulValidateAndParseResult(value);
+        return SuccessfulValidateAndParseResult(objValue);
     };
 
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
@@ -900,11 +982,11 @@ export class EventStartsAtField extends FieldBase<Date> {
             a.getMinutes() === b.getMinutes();
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
         //console.assert(clientModel[this.member] instanceof Date);
         if (clientModel[this.member] === undefined) return;
-        const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
-        mutationModel[this.member] = vr.parsedValue;
+        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        Object.assign(mutationModel, vr.values);
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -951,13 +1033,17 @@ export class CreatedAtField extends FieldBase<Date> {
 
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    ValidateAndParse = ({ value, ...args }: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
+    ValidateAndParse = (args: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
+
         // we don't care about the input; for creations just generate a new date always.
         if (args.mode === "new") {
-            return SuccessfulValidateAndParseResult(new Date());
+            return SuccessfulValidateAndParseResult({ [this.member]: new Date() });
         }
         assert(value instanceof Date, "what's up with this");
-        return SuccessfulValidateAndParseResult(value);
+        return SuccessfulValidateAndParseResult(objValue);
     };
 
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
@@ -968,10 +1054,11 @@ export class CreatedAtField extends FieldBase<Date> {
         return a === b;
     };
 
-    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
         if (clientModel[this.member] === undefined) return;
-        const vr = this.ValidateAndParse({ value: clientModel[this.member], row: clientModel, mode });
-        mutationModel[this.member] = vr.parsedValue;
+        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        //mutationModel[this.member] = vr.parsedValue;
+        Object.assign(mutationModel, vr.values);
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
@@ -1028,20 +1115,28 @@ export class SlugField extends FieldBase<string> {
     // this column type has no sub-items; no filtering to do.
     ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
 
-    ValidateAndParse = (val: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
-        let slugValue = val.value; // by default, for editing, allow users to enter a custom value.
-        if (val.mode === "new") {
+    ValidateAndParse = (args: ValidateAndParseArgs<string>): ValidateAndParseResult<string | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
+
+        //let slugValue = val.value; // by default, for editing, allow users to enter a custom value.
+        if (args.mode === "new") {
             // calculate the slug value
-            const src = val.row[this.sourceColumnName];
-            if (src == null) return ErrorValidateAndParseResult("required", "");
-            if (typeof src !== 'string') return ErrorValidateAndParseResult("unknown type", "");
-            slugValue = slugify(src);
+            const src = args.row[this.sourceColumnName];
+            if (src == null) return ErrorValidateAndParseResult("source column required", objValue);
+            if (typeof src !== 'string') return ErrorValidateAndParseResult("source column unknown type", objValue);
+            value = slugify(src);
+            objValue[this.member] = value;
         }
 
-        if (slugValue == null) return ErrorValidateAndParseResult("required", "");
-        if (typeof slugValue !== 'string') return ErrorValidateAndParseResult("unknown type", "");
-        if (slugValue.length < 1) return ErrorValidateAndParseResult("required", "");
-        return SuccessfulValidateAndParseResult(slugValue);
+        if (value == null) return ErrorValidateAndParseResult("required", objValue);
+        if (typeof value !== 'string') return ErrorValidateAndParseResult("unknown type", objValue);
+        if (value.length < 1) return ErrorValidateAndParseResult("required", objValue);
+
+        console.log(`slug: ${value}`);
+
+        return SuccessfulValidateAndParseResult(objValue);
     };
 
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
@@ -1181,6 +1276,8 @@ export const MakeCreatedAtField = (columnName: string, authSpec: DB3AuthSpec) =>
 export interface separateMutationValuesArgs {
     table: xTable;
     fields: TAnyModel;
+    // rowMode: DB3RowMode;
+    // clientIntention: xTableClientUsageContext;
 };
 export interface separateMutationValuesResult {
     associationFields: TAnyModel;
@@ -1202,8 +1299,15 @@ export const separateMutationValues = ({ table, fields }: separateMutationValues
             case "foreignObject":
                 // foreign objects come in with a different member than column.member (FK member, not object member)
                 const typedColumn = column as ForeignSingleField<TAnyModel>;
+                if (fields[typedColumn.member] !== undefined) {
+                    ret.localFields[typedColumn.member] = fields[typedColumn.member];
+                }
                 if (fields[typedColumn.fkMember] !== undefined) {
                     ret.localFields[typedColumn.fkMember] = fields[typedColumn.fkMember];
+                }
+                if (!fields[typedColumn.fkMember] && !!fields[typedColumn.member]) {
+                    // if we're able to populate the fk member go ahead. assumes the foreign model's pk is 'id'
+                    ret.localFields[typedColumn.fkMember] = fields[typedColumn.member].id;
                 }
                 break;
             case "associationRecord":

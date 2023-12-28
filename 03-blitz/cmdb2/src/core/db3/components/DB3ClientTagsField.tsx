@@ -441,10 +441,10 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
                 />;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.typedSchemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+                const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 const value: TAssociation[] = params.value;
                 return <TagsFieldInput
-                    validationError={vr.success ? null : vr.errorMessage || null}
+                    validationError={vr.result === "success" ? null : vr.errorMessage || null}
                     spec={this}
                     value={value}
                     row={params.row as TAnyModel}

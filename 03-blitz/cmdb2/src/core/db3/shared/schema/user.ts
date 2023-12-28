@@ -16,17 +16,17 @@ export const xUserAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
     PostQuery: Permission.basic_trust,
     PreMutateAsOwner: Permission.basic_trust,
     PreMutate: Permission.manage_users,
-    PreInsert: Permission.basic_trust,
-};
+    PreInsert: Permission.manage_users,
+} as const;
 
 // readable by everyone, editable by managers only (cannot edit own)
 export const xUserAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.basic_trust,
     PostQuery: Permission.basic_trust,
-    PreMutateAsOwner: Permission.admin_users,
-    PreMutate: Permission.admin_users,
-    PreInsert: Permission.basic_trust,
-};
+    PreMutateAsOwner: Permission.manage_users,
+    PreMutate: Permission.manage_users,
+    PreInsert: Permission.manage_users,
+} as const;
 
 // readable by everyone, editable by admins only (cannot edit own)
 export const xUserAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
@@ -34,8 +34,34 @@ export const xUserAuthMap_R_EAdmins: db3.DB3AuthContextPermissionMap = {
     PostQuery: Permission.basic_trust,
     PreMutateAsOwner: Permission.admin_users,
     PreMutate: Permission.admin_users,
-    PreInsert: Permission.basic_trust,
-};
+    PreInsert: Permission.admin_users,
+} as const;
+
+
+export const xUserTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.basic_trust,
+    View: Permission.basic_trust,
+    EditOwn: Permission.basic_trust,
+    Edit: Permission.manage_users,
+    Insert: Permission.manage_users,
+} as const;
+
+export const xUserTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.basic_trust,
+    View: Permission.basic_trust,
+    EditOwn: Permission.basic_trust,
+    Edit: Permission.admin_users,
+    Insert: Permission.admin_users,
+} as const;
+
+export const xPermissionTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.basic_trust,
+    View: Permission.basic_trust,
+    EditOwn: Permission.admin_users,
+    Edit: Permission.admin_users,
+    Insert: Permission.admin_users,
+} as const;
+
 
 export const xUserMinimum = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
@@ -47,6 +73,7 @@ export const xUserMinimum = new db3.xTable({
         name: row.name,
         ownerUserId: row.id,
     }),
+    tableAuthMap: xUserTableAuthMap_R_EManagers,
 
     // note: self-sign-up is not part of this; it doesn't use db3 auth.
     // 
@@ -98,6 +125,7 @@ export const xUserMinimum = new db3.xTable({
             columnName: "isSysAdmin",
             defaultValue: false,
             authMap: xUserAuthMap_R_EAdmins,
+            allowNull: false,
         }),
         new GenericStringField({
             columnName: "hashedPassword",
@@ -126,6 +154,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
     },
     tableName: "permission",
     naturalOrderBy: PermissionNaturalOrderBy,
+    tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
         name: row.name,
         description: row.description || "",
@@ -155,6 +184,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             columnName: "isVisibility",
             defaultValue: false,
             authMap: xUserAuthMap_R_EOwn_EManagers,
+            allowNull: false,
         }),
         MakeColorField("color", { authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeIconField("iconName", gIconOptions, { authMap: xUserAuthMap_R_EOwn_EManagers }),
@@ -208,10 +238,11 @@ export const xRolePermissionAssociation = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RolePermissionInclude => {
         return RolePermissionArgs.include;
     },
+    tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RolePermissionNaturalOrderBy,
     getRowInfo: (row: RolePermissionAssociationPayload) => ({
-        name: row.permission.name,
-        description: row.permission.description || "",
+        name: row.permission?.name || "",
+        description: row.permission?.description || "",
         ownerUserId: null,
     }),
     columns: [
@@ -242,6 +273,7 @@ export const xRole = new db3.xTable({
         return RoleArgs.include;
     },
     tableName: "role",
+    tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
         return {
@@ -273,11 +305,13 @@ export const xRole = new db3.xTable({
             columnName: "isRoleForNewUsers",
             defaultValue: false,
             authMap: xUserAuthMap_R_EAdmins,
+            allowNull: false,
         }),
         new BoolField({
             columnName: "isPublicRole",
             defaultValue: false,
             authMap: xUserAuthMap_R_EAdmins,
+            allowNull: false,
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
@@ -313,21 +347,22 @@ export const xRole = new db3.xTable({
 
 export const xUserInstrument = new db3.xTable({
     tableName: "UserInstrument",
+    tableAuthMap: xUserTableAuthMap_R_EManagers,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInstrumentInclude => {
         return UserInstrumentArgs.include;
     },
     naturalOrderBy: UserInstrumentNaturalOrderBy,
     getRowInfo: (row: UserInstrumentPayload) => {
         return {
-            name: row.instrument.name,
-            description: row.instrument.description,
-            color: gGeneralPaletteList.findEntry(row.instrument.functionalGroup.color),
+            name: row.instrument?.name || "",
+            description: row.instrument?.description || "",
+            color: gGeneralPaletteList.findEntry(row.instrument?.functionalGroup?.color || null),
             ownerUserId: row.userId,
         };
     },
     columns: [
         new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isPrimary", defaultValue: false, authMap: xUserAuthMap_R_EOwn_EManagers }),
+        new BoolField({ columnName: "isPrimary", defaultValue: false, authMap: xUserAuthMap_R_EOwn_EManagers, allowNull: false }),
         new ForeignSingleField<Prisma.UserInstrumentGetPayload<{}>>({ // tags field should include the foreign object (tag object)
             columnName: "instrument",
             fkMember: "instrumentId",
@@ -362,6 +397,7 @@ export const xUserTag = new db3.xTable({
         return UserTagArgs.include;
     },
     tableName: "UserTag",
+    tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserTagNaturalOrderBy,
     getParameterizedWhereClause: (params: { userTagId?: number }, clientIntention: db3.xTableClientUsageContext): (Prisma.UserWhereInput[] | false) => {
         if (params.userTagId != null) {
@@ -401,14 +437,15 @@ export const xUserTag = new db3.xTable({
 export const xUserTagAssignment = new db3.xTable({
     tableName: "UserTagAssignment",
     naturalOrderBy: UserTagAssignmentNaturalOrderBy,
+    tableAuthMap: xUserTableAuthMap_R_EManagers,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagAssignmentInclude => {
         return UserTagAssignmentArgs.include;
     },
     getRowInfo: (row: UserTagAssignmentPayload) => {
         return {
-            name: row.userTag.text,
-            description: row.userTag.description,
-            color: gGeneralPaletteList.findEntry(row.userTag.color),
+            name: row.userTag?.text || "",
+            description: row.userTag?.description || "",
+            color: gGeneralPaletteList.findEntry(row.userTag?.color || null),
             ownerUserId: row.userId,
         };
     }
@@ -437,6 +474,7 @@ export const xUser = new db3.xTable({
         return UserArgs.include;
     },
     tableName: "user",
+    tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
         name: row.name,
@@ -480,6 +518,7 @@ export const xUser = new db3.xTable({
             columnName: "isSysAdmin",
             defaultValue: false,
             authMap: xUserAuthMap_R_EAdmins,
+            allowNull: false,
         }),
         new ForeignSingleField<Prisma.RoleGetPayload<{}>>({
             columnName: "role",
@@ -575,6 +614,14 @@ export class CreatedByUserField extends ForeignSingleField<UserPayload> {
     ApplyToNewRow = (args: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         args[this.member] = clientIntention.currentUser;
     };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: db3.DB3RowMode, clientIntention: db3.xTableClientUsageContext) => {
+        if (mode === "new") {
+            dbModel[this.member] = clientIntention.currentUser;
+            return;
+        }
+        if (dbModel[this.member] === undefined) return;
+        clientModel[this.member] = dbModel[this.member];
+    }
 };
 
 

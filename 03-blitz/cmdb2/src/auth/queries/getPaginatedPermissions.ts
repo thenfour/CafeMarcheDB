@@ -35,8 +35,6 @@ export default resolver.pipe(
                     }),
             });
 
-            //debugger;
-
             return {
                 items,
                 nextPage,

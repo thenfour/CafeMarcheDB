@@ -218,9 +218,9 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                 </div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.typedSchemaColumn.ValidateAndParse({ value: params.value, row: params.row, mode: "update" });
+                const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <ForeignSingleFieldInput
-                    validationError={vr.success ? null : vr.errorMessage || null}
+                    validationError={vr.result === "success" ? null : vr.errorMessage || null}
                     clientIntention={this.args.clientIntention}
                     foreignSpec={this}
                     readOnly={false} // always allow switching this; for admin purposes makes sense

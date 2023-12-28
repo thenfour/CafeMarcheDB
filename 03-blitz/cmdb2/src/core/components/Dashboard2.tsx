@@ -393,7 +393,6 @@ const gMenuItemGroups: MenuItemGroup[] = [
         items: [
             { type: "link", path: "/backstage/editEventUserResponses", linkCaption: "Event User Responses", renderIcon: () => <CommentIcon />, permission: Permission.manage_events },
             { type: "link", path: "/backstage/editEventSegmentUserResponses", linkCaption: "Segment User Responses", renderIcon: () => <CommentIcon />, permission: Permission.manage_events },
-            { type: "link", path: "/backstage/editEventComments", linkCaption: "Event comments", renderIcon: () => <CommentIcon />, permission: Permission.manage_events },
         ],
     },
     {

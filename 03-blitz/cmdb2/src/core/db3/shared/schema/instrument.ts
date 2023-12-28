@@ -21,11 +21,24 @@ export const xInstrumentAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
     PreInsert: Permission.manage_instruments,
 };
 
+
+export const xInstrumentTableAuthMap: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.basic_trust,
+    View: Permission.basic_trust,
+    EditOwn: Permission.manage_instruments,
+    Edit: Permission.manage_instruments,
+    Insert: Permission.manage_instruments,
+} as const;
+
+
+
+
 export const xInstrumentFunctionalGroup = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupInclude => {
         return InstrumentFunctionalGroupArgs.include;
     },
     tableName: "instrumentFunctionalGroup",
+    tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
     getRowInfo: (row: InstrumentFunctionalGroupPayload) => ({
         name: row.name,
@@ -68,6 +81,7 @@ export const xInstrumentTag = new db3.xTable({
         return InstrumentTagArgs.include;
     },
     tableName: "instrumentTag",
+    tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
         return {
@@ -122,11 +136,12 @@ export const xInstrumentTagAssociation = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagAssociationInclude => {
         return InstrumentTagAssociationArgs.include;
     },
+    tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
     getRowInfo: (row: InstrumentTagAssociationPayload) => ({
-        name: row.tag.text,
-        description: row.tag.description,
-        color: gGeneralPaletteList.findEntry(row.tag.color),
+        name: row.tag?.text || "",
+        description: row.tag?.description || "",
+        color: gGeneralPaletteList.findEntry(row.tag?.color || ""),
         ownerUserId: null,
     }),
     columns: [
@@ -156,9 +171,10 @@ export const xInstrument = new db3.xTable({
     getRowInfo: (row: InstrumentPayload) => ({
         name: row.name,
         description: row.description,
-        color: gGeneralPaletteList.findEntry(row.functionalGroup.color),
+        color: gGeneralPaletteList.findEntry(row.functionalGroup?.color || ""),
         ownerUserId: null,
     }),
+    tableAuthMap: xInstrumentTableAuthMap,
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers, }),

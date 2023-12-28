@@ -48,19 +48,31 @@ export type RegisterChangeArgs = {
 }
 
 export type CalculateChangesResult = {
+    hasChanges: boolean;
     oldValues: any,
     newValues: any,
 };
 
+export const createEmptyCalculateChangesResult = (): CalculateChangesResult => ({
+    oldValues: {},
+    newValues: {},
+    hasChanges: false,
+});
+
 // return an obj of fields which exist in both inputs, and are different.
 export function CalculateChanges(oldObj: any, newObj: any): CalculateChangesResult {
-    const result: CalculateChangesResult = { oldValues: {}, newValues: {} };
+    const result: CalculateChangesResult = {
+        oldValues: {},
+        newValues: {},
+        hasChanges: false,
+    };
 
     for (const prop in oldObj) {
         if (oldObj.hasOwnProperty(prop) && newObj.hasOwnProperty(prop)) {
             if (oldObj[prop] !== newObj[prop]) {
                 result.oldValues[prop] = oldObj[prop];
                 result.newValues[prop] = newObj[prop];
+                result.hasChanges = true;
             }
         }
     }

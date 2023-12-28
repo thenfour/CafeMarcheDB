@@ -156,15 +156,20 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
-        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "new");
-        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "new");
+        // converts serialized -> client, but not perfect. because ForeignSingle fields come through with an ID-only, but client payload wants the object not ID.
+        // so those values will continue to be ID.
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "new", clientIntention);
+        // converts client -> sanitized client
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "new", clientIntention);
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);
             throw new Error(`validation failed; log contains details.`);
         }
 
-        const { localFields, associationFields } = db3.separateMutationValues({ table, fields });
+        const dbModel = table.clientToDbModel(validateResult.successfulModel, "new", clientIntention);
+
+        const { localFields, associationFields } = db3.separateMutationValues({ table, fields: dbModel });
         let obj = {};
 
         // at this point `fields` should not be used because it mixes foreign associations with local values
@@ -227,15 +232,17 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         const dbTableClient = db[table.tableName]; // the prisma interface
 
         // in order to validate, we must convert "db" values to "client" values which ValidateAndComputeDiff expects.
-        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "update");
-        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "update");
+        const clientModelForValidation: TAnyModel = table.getClientModel(fields, "update", clientIntention);
+        const validateResult = table.ValidateAndComputeDiff(clientModelForValidation, clientModelForValidation, "update", clientIntention);
         if (!validateResult.success) {
             console.log(`Validation failed during ${contextDesc}`);
             console.log(validateResult);
             throw new Error(`validation failed; log contains details.`);
         }
 
-        const { localFields, associationFields } = db3.separateMutationValues({ table, fields });
+        const dbModel = table.clientToDbModel(validateResult.successfulModel, "update", clientIntention);
+
+        const { localFields, associationFields } = db3.separateMutationValues({ table, fields: dbModel });
         // at this point `fields` should not be used.
 
         const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });

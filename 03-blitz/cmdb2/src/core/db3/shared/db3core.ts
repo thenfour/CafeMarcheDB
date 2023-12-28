@@ -1,10 +1,11 @@
 import { ColorPaletteEntry } from "shared/color";
 import { Permission, gPublicPermissions } from "shared/permissions";
-import { TAnyModel, isEmptyArray } from "shared/utils";
+import { CalculateChanges, CalculateChangesResult, TAnyModel, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
 import db, { Prisma } from "db";
 import { assert } from "blitz";
 import { CreatePublicData, PublicDataType } from "types";
 import { EmptyPublicData, PublicData } from "@blitzjs/auth";
+import { ComputeChangePlan } from "shared/associationUtils";
 
 
 // server-side code for db schema expression.
@@ -113,40 +114,54 @@ export interface QueryInput {
 
 ////////////////////////////////////////////////////////////////
 export interface ValidateAndParseResult<FieldType> {
-    success: boolean;
+    //success: boolean;
+    result: "success" | "error" | "undefined";
     errorMessage?: string;
     // when success, this is the "parsed" sanitized value. when error, this is the original value. for convenience so in every case this value can be used after the call.
     // therefore it must also support string and null (possibly invalid values)
-    parsedValue: string | FieldType;
+    values: { [k: string]: (string | FieldType) };
 };
 
-export const SuccessfulValidateAndParseResult = <FieldType>(parsedValue: FieldType | string): ValidateAndParseResult<FieldType> => {
+export const SuccessfulValidateAndParseResult = <FieldType>(values: { [k: string]: (string | FieldType) }): ValidateAndParseResult<FieldType> => {
     return {
-        success: true,
-        parsedValue,
+        result: "success",
+        values,
     };
 };
 
-export const ErrorValidateAndParseResult = <FieldType>(errorMessage: string, inputValue: FieldType | string): ValidateAndParseResult<FieldType> => {
+export const ErrorValidateAndParseResult = <FieldType>(errorMessage: string, values: { [k: string]: (string | FieldType) }): ValidateAndParseResult<FieldType> => {
     return {
-        success: false,
+        result: "error",
         errorMessage,
-        parsedValue: inputValue,
+        values,
+    };
+};
+
+export const UndefinedValidateAndParseResult = <FieldType>(): ValidateAndParseResult<FieldType> => {
+    return {
+        result: "undefined",
+        values: {},
     };
 };
 
 export interface ValidateAndComputeDiffResultFields {
     success: boolean;
     errors: { [key: string]: string };
-    hasChanges: boolean; // only meaningful if success
-    changes: { [key: string]: [any, any] }; // only meaningful if success
+    //hasChanges: boolean; // only meaningful if success
+    //changes: { [key: string]: [any, any] }; // only meaningful if success
+    // a complete validated model based on the incoming model. because validation can sanitize values, after validating you should use this
+    // **IF** successful.
+    successfulModel: TAnyModel;
+    changeResult: CalculateChangesResult;
 };
 
 export class ValidateAndComputeDiffResult implements ValidateAndComputeDiffResultFields {
     success: boolean = true;
     errors: { [key: string]: string } = {};
-    hasChanges: boolean = false; // only meaningful if success
-    changes: { [key: string]: [any, any] } = {}; // only meaningful if success
+    //hasChanges: boolean = false; // only meaningful if success
+    //changes: { [key: string]: [any, any] } = {}; // only meaningful if success
+    changeResult: CalculateChangesResult;
+    successfulModel: TAnyModel;
 
     constructor(args: Partial<ValidateAndComputeDiffResultFields>) {
         Object.assign(this, args);
@@ -164,7 +179,7 @@ export class ValidateAndComputeDiffResult implements ValidateAndComputeDiffResul
 
 export const SuccessfulValidateAndComputeDiffResult: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({
     success: true,
-    hasChanges: false,
+    changeResult: createEmptyCalculateChangesResult(),
 });
 
 export const EmptyValidateAndComputeDiffResult = SuccessfulValidateAndComputeDiffResult;
@@ -184,9 +199,9 @@ export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArg
 
 
 ////////////////////////////////////////////////////////////////
-//export type FieldSignificanceOptions = "name" | "description" | "none" | "color";
 export type DB3RowMode = "new" | "view" | "update";
 
+////////////////////////////////////////////////////////////////
 export type DB3AuthContextPermissionMap = {
     PostQuery: Permission;
     PostQueryAsOwner: Permission;
@@ -213,9 +228,21 @@ export const createAuthContextMap_PK = (): DB3AuthContextPermissionMap => ({
     PreMutateAsOwner: Permission.never_grant,
 });
 
-
 // adding this because crafting auth maps for all fields takes a lot of work and i want to shortcut the effort
 export const createAuthContextMap_TODO = (): DB3AuthContextPermissionMap => createAuthContextMap_Mono(Permission.always_grant);
+
+
+////////////////////////////////////////////////////////////////
+export type DB3AuthTablePermissionMap = {
+    View: Permission;
+    ViewOwn: Permission;
+    Edit: Permission;
+    EditOwn: Permission;
+    Insert: Permission;
+};
+
+
+
 
 export type DB3AuthorizationContext = keyof DB3AuthContextPermissionMap;// "PostQuery" | "PostQueryAsOwner" | "PreInsert" | "PreMutate" | "PreMutateAsOwner";
 
@@ -230,9 +257,10 @@ export type FieldBaseArgs<FieldDataType> = {
 }
 
 export interface ValidateAndParseArgs<FieldDataType> {
-    value: FieldDataType | null;
+    //value: FieldDataType | null;
     row: TAnyModel;
     mode: DB3RowMode;
+    clientIntention: xTableClientUsageContext;
 };
 
 export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
@@ -257,6 +285,12 @@ export interface DB3AuthorizeForViewColumnArgs<T extends TAnyModel> {
     columnName: string;
 };
 
+
+export interface DB3AuthorizeForRowArgs<T extends TAnyModel> {
+    model: T | null,
+    publicData: EmptyPublicData | Partial<PublicDataType>,
+    clientIntention: xTableClientUsageContext,
+};
 
 export interface DB3AuthorizeAndSanitizeResult<T> {
     authorizedModel: Partial<T>,
@@ -285,12 +319,12 @@ export abstract class FieldBase<FieldDataType> {
     abstract connectToTable: (table: xTable) => void;
 
     // return either falsy, or a "WhereInput" object like { name: { contains: query } }
-    abstract getQuickFilterWhereClause: (query: string) => TAnyModel | boolean;
+    abstract getQuickFilterWhereClause: (query: string, clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
     abstract getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
     abstract getOverallWhereClause: (clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
-    abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null>;// => {
+    abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null | undefined>;// => {
 
     matchesMemberForAuthorization = (memberName: string): boolean => {
         if (this._matchesMemberForAuthorization) {
@@ -317,8 +351,8 @@ export abstract class FieldBase<FieldDataType> {
     // SANITIZED values are passed in. That means no nulls, and ValidateAndParse has already been called.
     abstract isEqual: (a: FieldDataType, b: FieldDataType) => boolean;
 
-    abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => void;
-    abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => void; // apply the value from db to client.
+    abstract ApplyClientToDb: (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => void;
+    abstract ApplyDbToClient: (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => void; // apply the value from db to client.
 
     // for foreign "includes", we need to apply a WHERE clause which excludes soft deletes, irrelevant things, & records the user doesn't have access to.
     abstract ApplyIncludeFiltering: (include: TAnyModel, clientIntention: xTableClientUsageContext) => void;
@@ -406,6 +440,8 @@ export interface TableDesc {
     naturalOrderBy?: TAnyModel;
     clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+
+    tableAuthMap: DB3AuthTablePermissionMap;
 };
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
@@ -426,6 +462,8 @@ export class xTable implements TableDesc {
     naturalOrderBy?: TAnyModel;
     clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+
+    tableAuthMap: DB3AuthTablePermissionMap;
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
@@ -577,61 +615,87 @@ export class xTable implements TableDesc {
         });
     };
 
-    // authorizeForEdit
-    // authorizeForInsert
+    authorizeRowForView = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+        const rowInfo = args.model ? this.getRowInfo(args.model) : null;
+        const isOwner = rowInfo ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId) : false;
+        if (args.publicData.isSysAdmin) return true;
+        const requiredPermission = isOwner ? this.tableAuthMap.ViewOwn : this.tableAuthMap.View;
+        if (!args.publicData.permissions) {
+            return gPublicPermissions.some(p => p === requiredPermission);
+        }
+        return args.publicData.permissions.some(p => p === requiredPermission);
+    };
+
+    authorizeRowForEdit = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+        const rowInfo = args.model ? this.getRowInfo(args.model) : null;
+        const isOwner = rowInfo ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId) : false;
+        if (args.publicData.isSysAdmin) return true;
+        const requiredPermission = isOwner ? this.tableAuthMap.EditOwn : this.tableAuthMap.Edit;
+        if (!args.publicData.permissions) {
+            return gPublicPermissions.some(p => p === requiredPermission);
+        }
+        return args.publicData.permissions.some(p => p === requiredPermission);
+    };
+
+    authorizeRowForInsert = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+        if (args.publicData.isSysAdmin) return true;
+        const requiredPermission = this.tableAuthMap.Insert;
+        if (!args.publicData.permissions) {
+            return gPublicPermissions.some(p => p === requiredPermission);
+        }
+        return args.publicData.permissions.some(p => p === requiredPermission);
+    };
 
     // returns an object describing changes and validation errors.
-    ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel, mode: DB3RowMode): ValidateAndComputeDiffResult {
+    ValidateAndComputeDiff(oldItem: TAnyModel, newItem: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext): ValidateAndComputeDiffResult {
         const ret: ValidateAndComputeDiffResult = new ValidateAndComputeDiffResult({
-            changes: {},
             errors: {},
             success: true,
-            hasChanges: false,
+            successfulModel: {},
+            //hasChanges: false,
+            //changes: {},
         });
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
 
             // clients are not required to provide values for all values. only care about fields which are in a or b.
-            const a = oldItem[field.member];
-            const b_raw = newItem[field.member];
+            //const a = oldItem[field.member];
 
-            if (a === undefined && b_raw === undefined) {
-                continue;
-            }
+            const b_parseResult = field.ValidateAndParse({ row: newItem, mode, clientIntention }); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
 
-            const b_parseResult = field.ValidateAndParse({ value: b_raw, row: newItem, mode }); // because `a` comes from the db, it's not necessary to validate it for the purpose of computing diff.
+            if (b_parseResult.result === "undefined") continue;
 
-            if (!b_parseResult.success) {
+            if (b_parseResult.result === "error") {
                 ret.success = false;
                 ret.errors[field.member] = b_parseResult.errorMessage!;
                 continue;
             }
-            const b = b_parseResult.parsedValue;
+            //const b = b_parseResult.parsedValue;
 
-            const a_isNully = ((a === null) || (a === undefined));
-            const b_isNully = ((b === null) || (b === undefined));
-            if (a_isNully && b_isNully) {
-                // they are both null, therefore equal.
-                continue;
-            }
-            if (a_isNully !== b_isNully) {
-                // one is null, other is not. guaranteed change.
-                ret.hasChanges = true;
-                ret.changes[field.member] = [a, b];
-                continue;
-            }
+            Object.assign(ret.successfulModel, b_parseResult.values);
 
-            if (!field.isEqual(a, b)) {
-                ret.hasChanges = true;
-                ret.changes[field.member] = [a, b];
-                continue;
-            }
+            //const a_isNully = ((a === null) || (a === undefined));
+            //const b_isNully = ((b === null) || (b === undefined));
+            // if (a_isNully && b_isNully) {
+            //     // they are both null, therefore equal.
+            //     continue;
+            // }
+            // if (a_isNully !== b_isNully) {
+            //     // one is null, other is not. guaranteed change.
+            //     ret.hasChanges = true;
+            //     ret.changes[field.member] = [a, b];
+            //     continue;
+            // }
+
+            // if (!field.isEqual(a, b)) {
+            //     ret.hasChanges = true;
+            //     ret.changes[field.member] = [a, b];
+            //     continue;
+            // }
         }
 
-        // console.log(`ValidateAndComputeDiff. old, new, result:`);
-        // console.log(oldItem);
-        // console.log(newItem);
-        // console.log(ret);
+        //ComputeChangePlan(oldItem, ret.successfulModel, );
+        ret.changeResult = CalculateChanges(oldItem, ret.successfulModel);
 
         return ret;
     };
@@ -665,7 +729,7 @@ export class xTable implements TableDesc {
             // each "item" is a token typically.
             const quickFilterItems = filterModel.quickFilterValues.filter(q => q.length > 0).map(q => {// for each token
                 return {
-                    OR: this.GetQuickFilterWhereClauseExpression(q)
+                    OR: this.GetQuickFilterWhereClauseExpression(q, clientIntention)
                 };
             });
             and.push(...quickFilterItems);
@@ -745,11 +809,11 @@ export class xTable implements TableDesc {
         return ret;
     };
 
-    GetQuickFilterWhereClauseExpression = (query: string) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
+    GetQuickFilterWhereClauseExpression = (query: string, clientIntention: xTableClientUsageContext) => { // takes a quick filter string, return an array of expressions to be OR'd together, like [ { name: { contains: q } }, { email: { contains: q } }, ]
         const ret = [] as any[];
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
-            const clause = field.getQuickFilterWhereClause(query);
+            const clause = field.getQuickFilterWhereClause(query, clientIntention);
             if (clause && !isEmptyArray(clause)) {
                 ret.push(clause);
             }
@@ -781,15 +845,24 @@ export class xTable implements TableDesc {
         return ret;
     };
 
-    getClientModel = (dbModel: TAnyModel, mode: DB3RowMode) => {
+    getClientModel = (dbModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
         const ret: TAnyModel = {};
         for (let i = 0; i < this.columns.length; ++i) {
             const field = this.columns[i]!;
-            field.ApplyDbToClient(dbModel, ret, mode);
+            field.ApplyDbToClient(dbModel, ret, mode, clientIntention);
         }
         return { ...dbModel, ...ret };
         //return ret;
     }
+
+    clientToDbModel = <T extends TAnyModel,>(clientModel: T, mode: DB3RowMode, clientIntention: xTableClientUsageContext): TAnyModel => {
+        const dbModel = {};
+
+        this.columns.forEach(schemaCol => {
+            schemaCol.ApplyClientToDb(clientModel, dbModel, mode, clientIntention);
+        });
+        return dbModel;
+    };
 
     getColumn = (name: string) => {
         return this.columns.find(c => c.member === name);

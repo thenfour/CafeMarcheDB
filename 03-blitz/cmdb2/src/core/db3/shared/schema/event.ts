@@ -70,6 +70,33 @@ export const xEventAuthMap_Homepage: db3.DB3AuthContextPermissionMap = {
 
 
 
+export const xEventTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.public,
+    View: Permission.public,
+    EditOwn: Permission.manage_events,
+    Edit: Permission.manage_events,
+    Insert: Permission.manage_events,
+};
+
+export const xEventTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.public,
+    View: Permission.public,
+    EditOwn: Permission.admin_events,
+    Edit: Permission.admin_events,
+    Insert: Permission.admin_events,
+};
+
+export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_events,
+    View: Permission.view_events,
+    EditOwn: Permission.respond_to_events,
+    Edit: Permission.respond_to_events,
+    Insert: Permission.respond_to_events,
+};
+
+
+
+
 
 
 /*
@@ -133,6 +160,7 @@ export const xEventType = new db3.xTable({
         return EventTypeArgs.include;
     },
     tableName: "EventType",
+    tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventTypeCreateInput => {
         return {
@@ -153,7 +181,7 @@ export const xEventType = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
@@ -173,6 +201,7 @@ export const xEventStatus = new db3.xTable({
         return EventStatusArgs.include;
     },
     tableName: "eventStatus",
+    tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventStatusNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
         return {
@@ -192,7 +221,7 @@ export const xEventStatus = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         MakeTitleField("label", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
@@ -212,6 +241,7 @@ export const xEventTag = new db3.xTable({
         return EventTagArgs.include;
     },
     naturalOrderBy: EventTagNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_R_EAdmins,
     createInsertModelFromString: (input: string): Prisma.EventTagCreateInput => {
         return {
             text: input,
@@ -230,7 +260,7 @@ export const xEventTag = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        new BoolField({ columnName: "visibleOnFrontpage", defaultValue: false, authMap: xEventAuthMap_Homepage, }),
+        new BoolField({ columnName: "visibleOnFrontpage", defaultValue: false, authMap: xEventAuthMap_Homepage, allowNull: false }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
@@ -246,14 +276,15 @@ export const xEventTag = new db3.xTable({
 export const xEventTagAssignment = new db3.xTable({
     tableName: "EventTagAssignment",
     naturalOrderBy: EventTagAssignmentNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventTagAssignmentInclude => {
         return EventTagAssignmentArgs.include;
     },
     getRowInfo: (row: EventTagAssignmentPayload) => {
         return {
-            name: row.eventTag.text,
-            description: row.eventTag.description,
-            color: gGeneralPaletteList.findEntry(row.eventTag.color),
+            name: row.eventTag?.text || "",
+            description: row.eventTag?.description || "",
+            color: gGeneralPaletteList.findEntry(row.eventTag?.color || null),
             ownerUserId: null,
         };
     },
@@ -276,6 +307,7 @@ const xEventArgs_Base: db3.TableDesc = {
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
         return EventArgs.include;
     },
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
         name: row.name,
@@ -335,7 +367,7 @@ const xEventArgs_Base: db3.TableDesc = {
         MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSlugField("slug", "name", { authMap: xEventAuthMap_R_EAdmin, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         MakePlainTextField("locationDescription", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         //new CalculatedEventDateRangeField(),
@@ -375,7 +407,7 @@ const xEventArgs_Base: db3.TableDesc = {
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
-        new BoolField({ columnName: "frontpageVisible", defaultValue: false, authMap: xEventAuthMap_Homepage, }),
+        new BoolField({ columnName: "frontpageVisible", defaultValue: false, authMap: xEventAuthMap_Homepage, allowNull: false }),
         MakeRawTextField("frontpageDate", { authMap: xEventAuthMap_Homepage, }),
         MakeRawTextField("frontpageTime", { authMap: xEventAuthMap_Homepage, }),
         MakeMarkdownTextField("frontpageDetails", { authMap: xEventAuthMap_Homepage, }),
@@ -458,6 +490,7 @@ export const xEventSegment = new db3.xTable({
         return EventSegmentArgs.include;
     },
     naturalOrderBy: EventSegmentNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSegmentPayload) => ({
         name: row.name,
         description: row.description,
@@ -494,6 +527,7 @@ export const xEventSegment = new db3.xTable({
             columnName: "isAllDay",
             defaultValue: true,
             authMap: xEventAuthMap_R_EOwn_EManagers,
+            allowNull: false
         }),
 
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
@@ -516,6 +550,7 @@ export const xEventAttendance = new db3.xTable({
         return EventAttendanceArgs.include;
     },
     tableName: "eventAttendance",
+    tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({
         name: row.text,
@@ -534,7 +569,8 @@ export const xEventAttendance = new db3.xTable({
         MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeIntegerField("strength", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 
@@ -546,9 +582,10 @@ export const xEventSegmentUserResponse = new db3.xTable({
         return EventSegmentUserResponseArgs.include;
     },
     tableName: "eventSegmentUserResponse",
+    tableAuthMap: xEventTableAuthMap_UserResponse,
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
-        name: row.user.name,
+        name: row.user?.name || "",
         ownerUserId: row.userId,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
@@ -606,6 +643,7 @@ export const xEventUserResponse = new db3.xTable({
     },
     tableName: "eventUserResponse",
     naturalOrderBy: EventUserResponseNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_UserResponse,
     getRowInfo: (row: EventUserResponsePayload) => ({
         name: row.user?.name || "",
         ownerUserId: row.userId,
@@ -622,7 +660,7 @@ export const xEventUserResponse = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeMarkdownTextField("userComment", { authMap: xEventAuthMap_UserResponse, }),
-        new BoolField({ columnName: "isInvited", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isInvited", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: true }),
         MakeIntegerField("eventId", { authMap: xEventAuthMap_UserResponse, }),
         // new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
         //     columnName: "eventSegment",
@@ -671,6 +709,7 @@ export const xEventSongList = new db3.xTable({
     },
     tableName: "eventSongList",
     naturalOrderBy: EventSongListNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListPayload) => ({
         name: row.name,
         description: row.description,
@@ -733,6 +772,7 @@ export const xEventSongListSong = new db3.xTable({
     },
     tableName: "eventSongListSong",
     naturalOrderBy: EventSongListSongNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListSongPayload) => ({
         name: row.song.name,
         description: row.subtitle || "",

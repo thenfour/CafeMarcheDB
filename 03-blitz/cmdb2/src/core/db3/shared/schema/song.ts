@@ -7,7 +7,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/utils";
-import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeSlugField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeSlugField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
@@ -40,12 +40,29 @@ export const xSongAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
 
 
 
+export const xSongTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_songs,
+    View: Permission.view_songs,
+    EditOwn: Permission.manage_songs,
+    Edit: Permission.manage_songs,
+    Insert: Permission.manage_songs,
+};
+
+export const xSongTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_songs,
+    View: Permission.view_songs,
+    EditOwn: Permission.admin_songs,
+    Edit: Permission.admin_songs,
+    Insert: Permission.admin_songs,
+};
+
 
 export const xSongTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagInclude => {
         return SongTagArgs.include;
     },
     tableName: "songTag",
+    tableAuthMap: xSongTableAuthMap_R_EAdmins,
     naturalOrderBy: SongTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
         return {
@@ -93,7 +110,9 @@ export const xSongTag = new db3.xTable({
             columnName: "showOnSongLists",
             defaultValue: false,
             authMap: xSongAuthMap_R_EOwn_EManagers,
+            allowNull: false,
         }),
+        new GhostField({ memberName: "songs", authMap: xSongAuthMap_R_EOwn_EManagers, }),
     ]
 });
 
@@ -105,11 +124,12 @@ export const xSongTagAssociation = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagAssociationInclude => {
         return SongTagAssociationArgs.include;
     },
+    tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
     getRowInfo: (row: SongTagAssociationPayload) => ({
-        name: row.tag.text,
-        description: row.tag.description,
-        color: gGeneralPaletteList.findEntry(row.tag.color),
+        name: row.tag?.text || "",
+        description: row.tag?.description || "",
+        color: gGeneralPaletteList.findEntry(row.tag?.color || null),
         ownerUserId: null,
     }),
     columns: [
@@ -134,6 +154,7 @@ export const xSong = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
         return SongArgs.include;
     },
+    tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongNaturalOrderBy,
     getRowInfo: (row: SongPayload) => ({
         name: row.name,
@@ -176,6 +197,7 @@ export const xSong = new db3.xTable({
             columnName: "isDeleted",
             defaultValue: false,
             authMap: xSongAuthMap_R_EOwn_EManagers,
+            allowNull: false,
         }),
         new GenericIntegerField({ // todo: a column type specifically for song lengths
             columnName: "lengthSeconds",
@@ -228,6 +250,7 @@ export const xSongCreditType = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditTypeInclude => {
         return SongCreditTypeArgs.include;
     },
+    tableAuthMap: xSongTableAuthMap_R_EAdmins,
     tableName: "songCreditType",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
@@ -275,6 +298,7 @@ export const xSongCredit = new db3.xTable({
         return SongCreditArgs.include;
     },
     tableName: "songCredit",
+    tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({
         name: "<a song credit>",
