@@ -581,6 +581,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
                 validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
                 value={params.value}
                 //allowNull={true}
+                readonly={false}
                 onOK={(value) => {
                     void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                 }}

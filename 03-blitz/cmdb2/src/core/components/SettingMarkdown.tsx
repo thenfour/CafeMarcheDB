@@ -96,15 +96,13 @@ interface SettingMarkdownProps {
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const [updateSetting] = useMutation(updateSettingMutation);
-    if (!useAuthorization(`SettingMarkdown:${props.settingName}`, props.requiredEditPermission || Permission.content_admin)) {
-        throw new Error(`unauthorized`);
-    }
-
+    const editable = useAuthorization(`SettingMarkdown:${props.settingName}`, props.requiredEditPermission || Permission.content_admin);
 
     let [initialValue, { refetch }] = useQuery(getSetting, { name: props.settingName }, gQueryOptions.default);
     return <MutationMarkdownControl
         initialValue={initialValue}
         refetch={refetch}
+        readonly={!editable}
         onChange={(newValue) => {
             //console.log(`settingmarkdown onchange setting:'${props.settingName}' = '${newValue}'`);
             return updateSetting({ name: props.settingName, value: newValue });

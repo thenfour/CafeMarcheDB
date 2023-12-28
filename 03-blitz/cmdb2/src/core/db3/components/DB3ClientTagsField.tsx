@@ -30,6 +30,8 @@ import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { RenderBasicNameValuePair } from './DB3ClientBasicFields';
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { GetStyleVariablesForColor } from 'src/core/components/Color';
+import { useAuthenticatedSession } from '@blitzjs/auth';
+import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 
 
 const gMaxVisibleTags = 6;
@@ -66,12 +68,16 @@ interface DB3SelectTagsDialogListProps<TAssociation> {
 
 function DB3SelectTagsDialogList<TAssociation>(props: DB3SelectTagsDialogListProps<TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const publicData = useAuthenticatedSession();
+    const currentUser = useCurrentUser()[0]!;
+
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
 
     const dbctx = useTagsFieldRenderContext({
         filterText: props.filterText,
         row: props.row,
         spec: props.spec,
-        clientIntention: { intention: 'user', mode: 'primary' },
+        clientIntention,
     });
 
     const itemIsSelected = (x: TAssociation) => {
@@ -94,9 +100,12 @@ function DB3SelectTagsDialogList<TAssociation>(props: DB3SelectTagsDialogListPro
             }));
     };
 
+    const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({ clientIntention, publicData });
+    console.log(`insertAuthorized: ${insertAuthorized} alowfromstr:${props.spec.typedSchemaColumn.allowInsertFromString}`);
+
     return <>
         {
-            !!props.filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
+            !!props.filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && insertAuthorized && (
                 <Box><Button
                     size="small"
                     startIcon={<AddIcon />}

@@ -9,7 +9,7 @@ import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { TAnyModel } from "shared/utils";
 import { gIconMap } from "./IconSelectDialog";
-import { ConfirmationDialog } from "src/core/components/CMCoreComponents";
+import { useAuthenticatedSession } from "@blitzjs/auth";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -25,6 +25,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: d
     const [obj, setObj] = React.useState(table.args.table.createNew(clientIntention));
     const [oldObj, setOldObj] = React.useState(table.args.table.createNew(clientIntention)); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
+    const publicData = useAuthenticatedSession();
 
     const tableClient = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
@@ -77,7 +78,15 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: d
                     <FormControl>
 
                         {
-                            tableClient.clientColumns.map(column => {
+                            tableClient.clientColumns.filter(c => {
+                                if (!c.visible) return false;
+                                return tableClient.schema.authorizeColumnForInsert({
+                                    clientIntention: tableClient.args.clientIntention,
+                                    model: obj,
+                                    columnName: c.columnName,
+                                    publicData,
+                                });
+                            }).map(column => {
                                 return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
                                     key: column.columnName,
                                     api,
@@ -115,6 +124,7 @@ type DB3EditObject2DialogProps = {
 
 export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete }: DB3EditObject2DialogProps) {
     const theme = useTheme();
+    const publicData = useAuthenticatedSession();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(initialValue);
     const [oldObj, setOldObj] = React.useState(initialValue); // needed for tracking changes during validation
@@ -124,7 +134,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
 
     // validate on change
     React.useEffect(() => {
-        const vr = tableRenderClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "new", tableRenderClient.args.clientIntention);
+        const vr = tableRenderClient.tableSpec.args.table.ValidateAndComputeDiff(oldObj, obj, "update", tableRenderClient.args.clientIntention);
         setValidationResult(vr);
         setOldObj(obj);
     }, [obj]);
@@ -180,7 +190,15 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                     <FormControl>
 
                         {
-                            tableRenderClient.clientColumns.filter(c => c.visible).map(column => {
+                            tableRenderClient.clientColumns.filter(c => {
+                                if (!c.visible) return false;
+                                return (c.schemaTable.authorizeColumnForEdit({
+                                    clientIntention: tableRenderClient.args.clientIntention,
+                                    columnName: c.columnName,
+                                    model: obj,
+                                    publicData,
+                                }));
+                            }).map(column => {
                                 return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
                                     key: column.columnName,
                                     api,

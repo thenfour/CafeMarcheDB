@@ -30,6 +30,7 @@ import { RenderBasicNameValuePair } from "./DB3ClientBasicFields";
 import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { assert } from "blitz";
+import { useAuthenticatedSession } from "@blitzjs/auth";
 
 
 
@@ -348,6 +349,7 @@ export interface SelectSingleForeignDialogProps<TForeign> {
 export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
     const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
     const [filterText, setFilterText] = React.useState("");
+    const publicData = useAuthenticatedSession();
 
     const db3Context = useForeignSingleFieldRenderContext({
         filterText,
@@ -359,7 +361,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onNewClicked = (e) => {
-        db3Context.doInsertFromString(filterText)//.then(updatedObj)
+        db3Context.doInsertFromString(filterText)
             .then((updatedObj) => {
                 setSelectedObj(updatedObj);
                 showSnackbar({ children: "created new success", severity: 'success' });
@@ -391,6 +393,12 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
     };
 
     const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
+
+    const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({
+        clientIntention: props.clientIntention,
+        publicData,
+    });
+
     return <>
         <DialogTitle>
             select {props.spec.schemaColumn.member}
@@ -425,7 +433,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
             </Box>
 
             {
-                !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && (
+                !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && insertAuthorized && (
                     <Box><Button
                         size="small"
                         startIcon={<AddIcon />}

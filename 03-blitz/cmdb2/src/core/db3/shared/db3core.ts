@@ -292,6 +292,12 @@ export interface DB3AuthorizeForRowArgs<T extends TAnyModel> {
     clientIntention: xTableClientUsageContext,
 };
 
+export interface DB3AuthorizeForBeforeInsertArgs<T extends TAnyModel> {
+    //model: T | null,
+    publicData: EmptyPublicData | Partial<PublicDataType>,
+    clientIntention: xTableClientUsageContext,
+};
+
 export interface DB3AuthorizeAndSanitizeResult<T> {
     authorizedModel: Partial<T>,
     unauthorizedModel: Partial<T>,
@@ -637,7 +643,7 @@ export class xTable implements TableDesc {
         return args.publicData.permissions.some(p => p === requiredPermission);
     };
 
-    authorizeRowForInsert = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+    authorizeRowBeforeInsert = <T extends TAnyModel,>(args: DB3AuthorizeForBeforeInsertArgs<T>) => {
         if (args.publicData.isSysAdmin) return true;
         const requiredPermission = this.tableAuthMap.Insert;
         if (!args.publicData.permissions) {

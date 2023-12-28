@@ -1,13 +1,5 @@
 // todo:
-// x number field
-// x const enum field type
-// x color field
-// x new item dlg
-// x fk single field type
-// x fk multi field type
-// x when clicking outside to exit edit mode, check validation before allowing this.
-// x when clicking save, don't bother confirming.
-// x respect onRowModesModelChange "fieldToFocus" to focus a field upon entering edit.
+// respect auth for editing / insertion. right now everything is assumed to be admin.
 
 import {
     Add as AddIcon,
@@ -115,8 +107,6 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
 
     const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
-
-    //console.log(`DB3EditGrid tableParams: ${JSON.stringify(props.tableParams)}`);
 
     const clientIntention: db3.xTableClientUsageContext = { intention: 'admin', mode: 'primary' };
     const publicData = useAuthenticatedSession();
