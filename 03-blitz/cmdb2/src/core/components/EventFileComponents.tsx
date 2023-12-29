@@ -9,9 +9,9 @@
 
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@mui/material";
+import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from "@mui/material";
 import React from "react";
-import { TAnyModel, formatFileSize, parseMimeType } from "shared/utils";
+import { TAnyModel, formatFileSize, isValidURL, parseMimeType, smartTruncate } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -72,10 +72,22 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
     return <div className={classes.join(" ")}>
 
         <div className="header">
-            <a target="_empty" className="downloadLink" href={API.files.getURIForFile(file)}>
-                <FileDownloadIcon />
-                <div className="filename">{file.fileLeafName}</div>
-            </a>
+
+            {file.externalURI ? (
+                <a target="_empty" className="downloadLink" href={file.externalURI}>
+                    {gIconMap.Link()}
+                    <Tooltip title={file.fileLeafName}>
+                        <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+                    </Tooltip>
+                </a>
+            ) : (
+                <a target="_empty" className="downloadLink" href={API.files.getURIForFile(file)}>
+                    <FileDownloadIcon />
+                    <Tooltip title={file.fileLeafName}>
+                        <div className="filename">{smartTruncate(file.fileLeafName)}</div>
+                    </Tooltip>
+                </a>)
+            }
 
             <div className="flex-spacer"></div>
             <VisibilityValue permission={file.visiblePermission} variant="minimal" />
@@ -111,8 +123,19 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
             <div className="preview">
                 {isAudio && <AudioPreviewBehindButton value={file} />}
             </div>
+
+            {file.externalURI &&
+                <div className="stats externalURI">
+                    <Tooltip title={file.externalURI}>
+                        <div>
+                            {smartTruncate(file.externalURI)}
+                        </div>
+                    </Tooltip>
+                </div>
+            }
+
             <div className="stats">
-                {formatFileSize(file.sizeBytes)},
+                {file.sizeBytes === null ? "unknown size" : formatFileSize(file.sizeBytes)},
                 uploaded at {file.uploadedAt.toISOString()} by {file.uploadedByUser?.name},
                 {file.mimeType && <>type: {file.mimeType}</>}
             </div>
@@ -170,7 +193,7 @@ export const EventFileEditor = (props: EventFileEditorProps) => {
         },
     };
 
-    const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode);
+    const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode, clientIntention);
 
     const handleSave = () => {
         renderContext.doUpdateMutation(value).then(() => {
@@ -218,7 +241,7 @@ export const EventFileEditor = (props: EventFileEditorProps) => {
                         {
                             tableSpec.args.columns.map(clientColumn => {
                                 return <React.Fragment key={clientColumn.columnName}>{
-                                    clientColumn.renderForNewDialog && clientColumn.renderForNewDialog({ api, key: clientColumn.columnName, validationResult, value: value[clientColumn.columnName], row: value })
+                                    clientColumn.renderForNewDialog && clientColumn.renderForNewDialog({ api, key: clientColumn.columnName, validationResult, value: value[clientColumn.columnName], row: value, clientIntention })
                                 }</React.Fragment>;
                             })
                         }
@@ -264,6 +287,7 @@ export const EventFileControl = (props: EventFileControlProps) => {
 ////////////////////////////////////////////////////////////////
 interface UploadFileComponentProps {
     onFileSelect: (files: FileList) => void;
+    onURLUpload: (url: string) => void;
     progress: number | null; // 0-1 progress, or null if no upload in progress.
 }
 
@@ -289,7 +313,15 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
     // for paste support
     React.useEffect(() => {
         const handlePaste = (e: ClipboardEvent) => {
+            if (!e.clipboardData) return;
             e.preventDefault();
+
+            // pasting a URL- comes in as text/plain
+            const txt = e.clipboardData.getData("text");
+            if (isValidURL(txt)) {
+                props.onURLUpload(txt);
+                return;
+            }
 
             if ((e.clipboardData?.files?.length || 0) > 0) {
                 props.onFileSelect(e.clipboardData!.files);
@@ -326,6 +358,13 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
         if (files.length > 0) {
             props.onFileSelect(files);
         }
+        else if (e.dataTransfer.types.includes('text/uri-list') || e.dataTransfer.types.includes('text/plain')) {
+            const droppedURL = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+            if (isValidURL(droppedURL)) {
+                console.log('Dropped URL:', droppedURL);
+                props.onURLUpload(droppedURL);
+            }
+        }
     };
 
     const classes: string[] = [
@@ -357,9 +396,9 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
                         <div className="instructions">
                             To upload files,
                             <ul>
-                                <li>Drag & drop files here</li>
+                                <li>Drag & drop files or URLs here</li>
                                 <li>or, Click to select files</li>
-                                <li>or, Paste content</li>
+                                <li>or, Paste files/images/URLs</li>
                             </ul>
                         </div>
                     </>
@@ -411,6 +450,7 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
                 fields: {
                     taggedEventId: props.event.id,
                     visiblePermissionId: permissionId,
+                    externalURI: null,
                 },
                 files,
                 onProgress: (prog01, uploaded, total) => {
@@ -429,9 +469,35 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
             });
         }
     };
+
+    const handleURLSelect = (uri: string) => {
+        setProgress(0);
+        CMDBUploadFile({
+            fields: {
+                taggedEventId: props.event.id,
+                visiblePermissionId: permissionId,
+                externalURI: uri,
+            },
+            files: null,
+            onProgress: (prog01, uploaded, total) => {
+                //console.log(`progress:${prog}, uploaded:${uploaded}, total:${total}`);
+                setProgress(prog01);
+            },
+        }).then(() => {
+            showSnackbar({ severity: "success", children: "file(s) uploaded" });
+            setProgress(null);
+            props.refetch();
+            //setProgress([...progress, `complete.`]);
+        }).catch((e: string) => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: `error uploading file(s) : ${e}` });
+            //setProgress([...progress, `catch`]);
+        });
+    };
+
     return <>
         {!props.readonly && canUploadFiles && (showUpload ? <div className="uploadControlContainer">
-            <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} />
+            <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={handleURLSelect} />
             <Button onClick={() => setShowUpload(false)}>Cancel</Button>
         </div> :
             <Button onClick={() => setShowUpload(true)}>Upload</Button>)

@@ -186,7 +186,6 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         if (!this.schemaColumn) throw new Error(`no schemacolumn for slug column '${this.columnName}'`);
         const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "new", clientIntention: params.clientIntention });
-        console.log(vr);
 
         //const [isEditable, setIsEditable] = React.useState<boolean>(false);
         //const [customValue, setCustomValue] = React.useState<string>("");

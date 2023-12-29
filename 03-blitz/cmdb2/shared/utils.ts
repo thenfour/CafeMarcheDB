@@ -595,3 +595,20 @@ export function AreAnyDefined(items: any[]) {
     return (items.some(i => i !== undefined));
 }
 
+export function isValidURL(url) {
+    try {
+        new URL(url);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+
+export function smartTruncate(url: string, maxLength: number = 120) {
+    if (url.length <= maxLength) return url;
+
+    const start = url.slice(0, maxLength / 2);
+    const end = url.slice(-maxLength / 2);
+    return `${start}...${end}`;
+}

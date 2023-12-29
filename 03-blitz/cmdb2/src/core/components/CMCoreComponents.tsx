@@ -564,15 +564,17 @@ export type EventDetailVerbosity = "compact" | "default" | "verbose";
 
 ////////////////////////////////////////////////////////////////
 export interface CMDBUploadFilesArgs {
-    files: FileList;
+    files: FileList | null;
     fields: TClientUploadFileArgs;
     onProgress: (progress01: number, uploaded: number, total: number) => void;
 };
 
 export async function CMDBUploadFile(args: CMDBUploadFilesArgs): Promise<UploadResponsePayload> {
     const formData = new FormData();
-    for (let i = 0; i < args.files.length; ++i) {
-        formData.append(`file_${i}`, args.files[i]!);
+    if (args.files) {
+        for (let i = 0; i < args.files.length; ++i) {
+            formData.append(`file_${i}`, args.files[i]!);
+        }
     }
     const xhr = new XMLHttpRequest();
 

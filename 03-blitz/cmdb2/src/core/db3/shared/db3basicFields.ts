@@ -1134,8 +1134,6 @@ export class SlugField extends FieldBase<string> {
         if (typeof value !== 'string') return ErrorValidateAndParseResult("unknown type", objValue);
         if (value.length < 1) return ErrorValidateAndParseResult("required", objValue);
 
-        console.log(`slug: ${value}`);
-
         return SuccessfulValidateAndParseResult(objValue);
     };
 

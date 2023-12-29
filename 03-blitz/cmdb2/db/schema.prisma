@@ -622,7 +622,7 @@ model File {
   storedLeafName String  @unique // a unique filename used in server storage; a guid probably. this is also what is used in params for identifying files.
   description    String
   isDeleted      Boolean @default(false)
-  sizeBytes      Int
+  sizeBytes      Int? // null for external URIs
 
   externalURI String? // dropbox link for example
 

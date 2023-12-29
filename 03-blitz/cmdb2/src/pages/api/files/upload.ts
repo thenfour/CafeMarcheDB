@@ -4,7 +4,7 @@ import formidable, { PersistentFile } from 'formidable';
 import { api } from "src/blitz-server"
 import { Ctx } from "@blitzjs/next";
 import { TClientUploadFileArgs, UploadResponsePayload } from 'src/core/db3/shared/apiTypes';
-import { CoerceToNumberOrNull, sleep } from 'shared/utils';
+import { CoerceToNumberOrNull, CoerceToString, isValidURL, sleep } from 'shared/utils';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
@@ -52,9 +52,43 @@ export default api(async (req, res, origCtx: Ctx) => {
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
                     args.visiblePermissionId = fields.visiblePermissionId && (CoerceToNumberOrNull(fields.visiblePermissionId[0]));
 
+                    if (fields.externalURI) {
+                        const sanitizedURI = CoerceToString(fields.externalURI[0]);
+                        if (isValidURL(sanitizedURI)) {
+                            args.externalURI = sanitizedURI;
+                        }
+                    }
+
                     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
 
                     //await sleep(1000);
+                    if (!files || Object.values(files).length < 1) {
+                        if (args.externalURI) {
+                            // you have uploaded a URI.
+                            const uri = new URL(args.externalURI);
+                            let leaf = uri.pathname.split("/").pop() || "";
+                            if (leaf.trim().length < 1) {
+                                leaf = "(unknown)";
+                            }
+
+                            const fields = mutationCore.PrepareNewFileRecord({
+                                humanReadableLeafName: leaf,
+                                sizeBytes: null,
+                                uploadedByUserId: currentUser.id,
+                                visiblePermissionId: args.visiblePermissionId || null,
+                            }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
+
+                            if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
+                            if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
+                            if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
+                            if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
+                            if (args.externalURI) (fields as db3.FilePayloadMinimum).externalURI = args.externalURI;
+
+                            const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+
+                            responsePayload.files.push(newFile);
+                        }
+                    }
 
                     // each field can contain multiple files
                     const promises = Object.values(files).map(async (field: PersistentFile) => {

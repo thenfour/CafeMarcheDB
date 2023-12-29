@@ -287,6 +287,10 @@ export const xSongCreditType = new db3.xTable({
             palette: gGeneralPaletteList,
             authMap: xSongAuthMap_R_EManagers,
         }),
+        new GhostField({
+            memberName: "songCredits",
+            authMap: xSongAuthMap_R_EManagers,
+        }),
     ]
 });
 

@@ -577,7 +577,7 @@ export const GetFileServerStoragePath = (storedLeafName: string) => {
 export interface PrepareNewFileRecordArgs {
     uploadedByUserId: number;
     humanReadableLeafName: string;
-    sizeBytes: number;
+    sizeBytes: number | null;
     visiblePermissionId: number | null;
     parentFileId?: number;
     previewFileId?: number;

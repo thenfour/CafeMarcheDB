@@ -2,7 +2,7 @@
 import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { BoolField, ForeignSingleField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
@@ -433,7 +433,7 @@ export const xFile = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("fileLeafName", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
-        MakeIntegerField("sizeBytes", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
+        new GenericIntegerField({ columnName: "sizeBytes", allowNull: true, authMap: xFileAuthMap_FileObjects_AdminEdit }),
         new GenericStringField({
             columnName: "storedLeafName",
             allowNull: false,

@@ -165,6 +165,7 @@ export interface TClientUploadFileArgs {
     taggedEventId?: number;
     taggedInstrumentId?: number;
     visiblePermissionId?: number;
+    externalURI?: string | null;
 };
 
 export interface TClientUpdateFile {

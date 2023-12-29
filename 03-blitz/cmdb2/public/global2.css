@@ -633,6 +633,12 @@ li.songDropdownOption {
     color: #999;
 }
 
+.EventFileValue .stats.externalURI {
+    font-family: monospace;
+}
+
+
+
 .EventFileValue .downloadLink {
     display: flex;
     align-items: center;
