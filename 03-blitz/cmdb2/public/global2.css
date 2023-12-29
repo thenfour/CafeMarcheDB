@@ -1488,3 +1488,25 @@ in particular the date range picker is wide.*/
     min-width: 100px;
     text-align: center;
 }
+
+
+.attendanceDetailTable .nameCellContainer {
+    display: flex;
+    align-items: center;
+}
+
+.attendanceDetailTable .nameCellContainer.you {
+    /* color: #00f; */
+    font-weight: bold;
+}
+
+.attendanceDetailTable .nameCellContainer>.editButton {
+    color: #888;
+}
+
+.attendanceDetailTable .nameCellContainer>.name {}
+
+.attendanceDetailTable .nameCellContainer>.you {
+    color: #000;
+    font-weight: normal;
+}

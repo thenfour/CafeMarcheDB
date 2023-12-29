@@ -291,13 +291,16 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
         model: eventResponse,
     });
 
-
-    const canRespondToEvents = useAuthorization("xy", Permission.respond_to_events);
+    //const canRespondToEvents = useAuthorization("xy", Permission.respond_to_events);
+    const isYou = eventResponse.user.id === currentUser.id;
 
     return <tr>
         <td>
-            {!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}
-            {user.name}
+            <div className={`nameCellContainer ${isYou && "you"}`}>
+                <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}</div>
+                <div className='name'>{user.name}</div>
+                {isYou && <div className='you'>(you)</div>}
+            </div>
         </td>
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
         <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
@@ -336,8 +339,8 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
     const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
     const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentPayload | null>(null);
     const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    // const publicData = useAuthenticatedSession();
+    // const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     React.useEffect(() => {
         setSortSegment(event.segments.find(s => s.id === sortSegmentId) || null);
@@ -359,10 +362,12 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
         });
     };
 
-    const canAddUsers = db3.xEventUserResponse.authorizeRowBeforeInsert({
-        clientIntention,
-        publicData
-    });
+
+    const canAddUsers = useAuthorization("EventAttendanceDetail:canAddUsers", Permission.manage_events);
+    // db3.xEventUserResponse.authorizeRowBeforeInsert({
+    //     clientIntention,
+    //     publicData
+    // });
 
     // sort rows
     const sortedUsers = [...props.responseInfo.distinctUsers];

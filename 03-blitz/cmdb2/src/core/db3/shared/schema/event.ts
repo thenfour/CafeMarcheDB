@@ -91,7 +91,7 @@ export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
     View: Permission.view_events,
     EditOwn: Permission.respond_to_events,
     Edit: Permission.manage_events,
-    Insert: Permission.respond_to_events,
+    Insert: Permission.respond_to_events, // you can add a response for yourself, but not on behalf of other users. but yea for the moment this is just a limitation.
 };
 
 
