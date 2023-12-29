@@ -7,6 +7,8 @@ import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { EditTextDialogButton } from "./CMCoreComponents";
 import { AgendaItem } from './homepageComponents';
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { useAuthenticatedSession } from "@blitzjs/auth";
 
 
 interface FrontpageControlSpec {
@@ -28,6 +30,9 @@ interface EventFrontpageControlProps {
 export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const handleChange = (newValue: string | null) => {
         console.log(`setting field ${props.fieldSpec.fieldName} to ${newValue}`);
@@ -57,6 +62,15 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         handleChange(null);
     }
 
+    const canEdit = db3.xEvent.authorizeColumnForEdit({
+        clientIntention,
+        publicData,
+        model: props.event,
+        columnName: props.fieldSpec.fieldName,
+    });
+
+    const readonly = props.readonly || !canEdit;
+
     return <div className={`fieldContainer ${props.fieldSpec.fieldName} ${props.event.frontpageVisible ? "" : "faded"}`}>
 
         <div className='label'>
@@ -66,15 +80,15 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         <div className='nullContainer'>
             {props.fieldSpec.nullable &&
                 <>
-                    <Switch size="small" checked={!isNull} onChange={props.readonly ? undefined : handleNullChange} />
+                    <Switch size="small" checked={!isNull} onChange={readonly ? undefined : handleNullChange} disabled={readonly} />
                     {isNull && <div className="autoLabel">(auto)</div>}
                 </>
             }</div>
         <div className='editButtonContainer'>
-            {!props.readonly && <EditTextDialogButton
+            {!readonly && <EditTextDialogButton
                 columnSpec={db3.xEvent.getColumn(props.fieldSpec.fieldName)! as db3.FieldBase<string>}
                 dialogTitle={props.fieldSpec.fieldLabel}
-                readOnly={props.readonly}
+                readOnly={readonly}
                 renderDialogDescription={() => <>description here</>}
                 selectButtonLabel='edit'
                 value={value || defaultValue}
@@ -100,6 +114,9 @@ export interface EventFrontpageTabContentProps {
 export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         mutationToken.invoke({
@@ -118,6 +135,13 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const agendaItem: HomepageAgendaItemSpec = API.events.getAgendaItem(props.event);
     const fallbackValues = API.events.getAgendaItemFallbackValues(props.event);
 
+    const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
+        clientIntention,
+        publicData,
+        columnName: "frontpageVisible",
+        model: props.event,
+    });
+
     return <div className='EventFrontpageTabContent'>
         <div className={`fieldContainer frontpageVisible`}>
             <div className='label'>
@@ -129,7 +153,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                     className='CMFormControlLabel'
                     // NB: readonly does not work for <Switch>.
                     control={
-                        <Switch size="small" checked={props.event.frontpageVisible} onChange={props.readonly ? undefined : handleVisibilityChange} />
+                        <Switch size="small" checked={props.event.frontpageVisible} disabled={props.readonly || !canEdit_frontpageVisible} onChange={props.readonly ? undefined : handleVisibilityChange} />
                     }
                     label="Show this event on the front page?"
                 />
@@ -140,9 +164,6 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             <div className='editButtonContainer'>
             </div>
         </div>
-
-
-
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
             fallbackValue={fallbackValues.date || ""}

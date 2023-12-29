@@ -1,48 +1,52 @@
 import { AuthenticationError, PromiseReturnType } from "blitz"
-import Link from "next/link"
-import { LabeledTextField } from "src/core/components/LabeledTextField"
-import { Form, FORM_ERROR } from "src/core/components/Form"
+//import Link from "next/link"
+//import { LabeledTextField } from "src/core/components/LabeledTextField"
+//import { Form, FORM_ERROR } from "src/core/components/Form"
 import login from "src/auth/mutations/login"
-import { Login } from "src/auth/schemas"
+//import { Login } from "src/auth/schemas"
 import { useMutation } from "@blitzjs/rpc"
-import { Routes } from "@blitzjs/next"
+import { FormControlLabel } from "@mui/material"
+//import { Routes } from "@blitzjs/next"
+import React, { Suspense } from "react";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 
 type LoginFormProps = {
   onSuccess?: (user: PromiseReturnType<typeof login>) => void
 }
 
 export const LoginForm = (props: LoginFormProps) => {
-  const [loginMutation] = useMutation(login)
-  return (
-    <div>
-      <h1>Login</h1>
+  const [loginMutation] = useMutation(login);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-      <Form
-        submitText="Loginh"
-        schema={Login}
-        initialValues={{ email: "", password: "" }}
-        onSubmit={async (values) => {
-          try {
-            const user = await loginMutation(values)
-            props.onSuccess?.(user)
-          } catch (error: any) {
-            if (error instanceof AuthenticationError) {
-              return { [FORM_ERROR]: "Sorry, those credentials are invalid" }
-            } else {
-              return {
-                [FORM_ERROR]:
-                  "Sorry, we had an unexpected error. Please try again. - " + error.toString(),
-              }
-            }
-          }
-        }}
-      >
-        <LabeledTextField name="email" label="Email" placeholder="Email" />
-        <LabeledTextField name="password" label="Password" placeholder="Password" type="password" />
-      </Form>
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      const user = await loginMutation({
+        email,
+        password,
+      });
+      props.onSuccess?.(user)
+    } catch (error: any) {
+      console.log(error);
+      if (error instanceof AuthenticationError) {
+        showSnackbar({ severity: "error", children: "Sorry, those credentials are invalid" });
+      } else {
+        showSnackbar({ severity: "error", children: "Sorry, we had an unexpected error. Please try again. - " + error.toString() });
+      }
+    }
+  };
 
+  return (<div>
+    <h1>Login</h1>
+    <form onSubmit={handleSubmit} method="">
+      <div><FormControlLabel label="Email" control={<input type="text" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />} /></div>
+      <div><FormControlLabel label="Password" control={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />} /></div>
+      <div><input type="submit" value="subm" /></div>
+    </form>
 
-      {/*
+    {/*
       
       TODO: forgot password function
 
@@ -50,11 +54,10 @@ export const LoginForm = (props: LoginFormProps) => {
         <Link href={Routes.ForgotPasswordPage()}>Forgot your password?</Link>
       </div> */}
 
-      {/* <div style={{ marginTop: "1rem" }}>
+    {/* <div style={{ marginTop: "1rem" }}>
         Or <Link href={Routes.SignupPage()}>Sign Up</Link>
       </div> */}
-    </div>
-  )
+  </div>);
 }
 
 export default LoginForm

@@ -90,7 +90,7 @@ export const xEventTableAuthMap_UserResponse: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_events,
     View: Permission.view_events,
     EditOwn: Permission.respond_to_events,
-    Edit: Permission.respond_to_events,
+    Edit: Permission.manage_events,
     Insert: Permission.respond_to_events,
 };
 
@@ -646,7 +646,7 @@ export const xEventUserResponse = new db3.xTable({
     tableAuthMap: xEventTableAuthMap_UserResponse,
     getRowInfo: (row: EventUserResponsePayload) => ({
         name: row.user?.name || "",
-        ownerUserId: row.userId,
+        ownerUserId: row.user?.id,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         const ret: Prisma.EventUserResponseWhereInput[] = [];

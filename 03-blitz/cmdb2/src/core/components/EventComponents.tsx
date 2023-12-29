@@ -44,6 +44,9 @@ import { MutationMarkdownControl } from './SettingMarkdown';
 import { AddUserButton } from './UserComponents';
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { GetStyleVariablesForColor } from './Color';
+import { useAuthenticatedSession, useAuthorize } from '@blitzjs/auth';
+import { useAuthorization } from 'src/auth/hooks/useAuthorization';
+import { Permission } from 'shared/permissions';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -273,14 +276,27 @@ export interface EventAttendanceDetailRowProps {
 };
 
 export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly }: EventAttendanceDetailRowProps) => {
+    const currentUser = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
 
     const eventResponse = responseInfo.getEventResponseForUser(user);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const attendanceVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "filled", variation: 'strong' };
     if (!eventResponse.isRelevantForDisplay) return null;
+
+    const authorizedForEdit = db3.xEventUserResponse.authorizeRowForEdit({
+        clientIntention,
+        publicData,
+        model: eventResponse,
+    });
+
+
+    const canRespondToEvents = useAuthorization("xy", Permission.respond_to_events);
+
     return <tr>
         <td>
-            {!readonly && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}
+            {!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}
             {user.name}
         </td>
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
@@ -319,6 +335,9 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
     const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
     const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentPayload | null>(null);
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     React.useEffect(() => {
         setSortSegment(event.segments.find(s => s.id === sortSegmentId) || null);
@@ -339,6 +358,11 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
             refetch();
         });
     };
+
+    const canAddUsers = db3.xEventUserResponse.authorizeRowBeforeInsert({
+        clientIntention,
+        publicData
+    });
 
     // sort rows
     const sortedUsers = [...props.responseInfo.distinctUsers];
@@ -396,7 +420,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
             <tfoot>
                 <tr>
                     <td>
-                        {!props.readonly && <AddUserButton
+                        {!props.readonly && canAddUsers && <AddUserButton
                             onSelect={onAddUser}
                             filterPredicate={(u) => {
                                 // don't show users who are already being displayed.
@@ -426,10 +450,22 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventDescriptionControl = ({ event, refetch, readonly }: { event: db3.EventPayloadMinimum, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
+
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const authorized = db3.xEvent.authorizeColumnForEdit({
+        model: null,
+        columnName: "description",
+        clientIntention,
+        publicData,
+    });
+
     return <MutationMarkdownControl
         initialValue={event.description}
         refetch={refetch}
-        readonly={readonly}
+        readonly={readonly || !authorized}
         onChange={(newValue) => mutationToken.invoke({
             eventId: event.id,
             description: newValue || "",
@@ -492,6 +528,17 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const authorizedForEdit = db3.xEvent.authorizeColumnForEdit({
+        clientIntention,
+        publicData,
+        model: event,
+        columnName: "expectedAttendanceUserTag",
+    });
+
     const handleChange = (value: db3.UserTagPayload | null) => {
         mutationToken.invoke({
             eventId: event.id,
@@ -507,6 +554,8 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     };
 
     const itemsClient = API.users.getUserTagsClient();
+
+    readonly = readonly || !authorizedForEdit;
 
     // value type is UserTagPayload
     return <div className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`}>
@@ -733,7 +782,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
                 />}
 
-                {!props.readonly && <EditFieldsDialogButton
+                <EditFieldsDialogButton
                     dialogTitle='Edit event'
                     readonly={props.readonly}
                     initialValue={event}
@@ -754,7 +803,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                         }).finally(refetch);
                     }}
                     renderDialogDescription={() => <>aoesunthaoii</>}
-                />}
+                />
             </div>
 
             <div className="tagsLine">

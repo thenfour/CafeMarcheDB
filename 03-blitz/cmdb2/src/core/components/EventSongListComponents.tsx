@@ -21,6 +21,7 @@ import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmooth
 import { Markdown } from "./RichTextEditor";
 import { formatSongLength } from 'shared/time';
 import { StandardVariationSpec } from 'shared/color';
+import { useAuthenticatedSession } from '@blitzjs/auth';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -166,6 +167,18 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
     const [showTags, setShowTags] = React.useState<boolean>(true);
     //const visInfo = API.users.getVisibilityInfo(props.value);
 
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
+        clientIntention,
+        publicData,
+        model: props.value,
+    });
+
+
+
     const stats = API.events.getSongListStats(props.value);
     return <div className={`EventSongListValue EventSongListValueViewer`}>
 
@@ -173,7 +186,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
             <div className="columnName-name">
                 {props.value.name}
             </div>
-            {props.readonly && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
+            {!props.readonly && editAuthorized && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
             {/* <VisibilityValue permission={props.value.visiblePermission} variant="minimal" /> */}
             {/* <div className="flex-spacer"></div>
             <EventSongListMenuButton /> */}
@@ -374,6 +387,8 @@ interface EventSongListValueEditorProps {
 
 // state managed internally.
 export const EventSongListValueEditor = (props: EventSongListValueEditorProps) => {
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
 
     const ensureHasNewRow = (list: EventSongListNullableSong[]) => {
         // make sure there is at least 1 "new" item.
@@ -416,7 +431,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         },
     };
 
-    const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode);
+    const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode, clientIntention);
 
     const stats = API.events.getSongListStats(value);
 
@@ -472,8 +487,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
                     {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
-                    {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name })}
-                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description })}
+                    {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention })}
+                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention })}
 
                     {/*
           TITLE                  DURATION    BPM      Comment
@@ -552,6 +567,15 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
+        clientIntention,
+        publicData,
+        model: props.value,
+    });
 
     const deleteMutation = API.events.deleteEventSongListx.useToken();
     const updateMutation = API.events.updateEventSongListx.useToken();
@@ -593,7 +617,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     };
 
     return <>
-        {!props.readonly && editMode && <EventSongListValueEditor initialValue={props.value} onSave={handleSave} onDelete={handleDelete} onCancel={() => setEditMode(false)} rowMode="update" />}
+        {!props.readonly && editAuthorized && editMode && <EventSongListValueEditor initialValue={props.value} onSave={handleSave} onDelete={handleDelete} onCancel={() => setEditMode(false)} rowMode="update" />}
         <EventSongListValueViewer readonly={props.readonly} value={props.value} onEnterEditMode={() => setEditMode(true)} />
     </>;
 };
@@ -656,12 +680,21 @@ export const EventSongListList = ({ event, tableClient, readonly, refetch }: { e
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventSongListTabContent = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
     const [newOpen, setNewOpen] = React.useState<boolean>(false);
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
+        clientIntention,
+        publicData,
+    });
+
     return <div className="EventSongListTabContent">
         <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
-        {newOpen && !readonly && (
+        {newOpen && !readonly && insertAuthorized && (
             <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
         )}
-        {!readonly && <Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
+        {insertAuthorized && !readonly && <Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
     </div>;
 };
 

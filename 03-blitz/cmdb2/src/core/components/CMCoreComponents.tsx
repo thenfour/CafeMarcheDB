@@ -2,7 +2,7 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { getAntiCSRFToken } from "@blitzjs/auth";
+import { getAntiCSRFToken, useAuthenticatedSession } from "@blitzjs/auth";
 import { Box, Button, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { nanoid } from 'nanoid';
@@ -334,7 +334,7 @@ export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
 export interface EditFieldsDialogButtonApi {
     close: () => void;
 };
-export interface EditFieldsDialogButtonProps<TRowModel> {
+export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
     //value: string;
     readonly: boolean;
     tableSpec: DB3Client.xTableClientSpec;
@@ -345,13 +345,23 @@ export interface EditFieldsDialogButtonProps<TRowModel> {
     dialogTitle: string;
     renderDialogDescription: () => React.ReactNode;
 };
-export const EditFieldsDialogButton = <TRowModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
+export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    const publicData = useAuthenticatedSession();
+
+    const authorizedForEdit = props.tableSpec.args.table.authorizeRowForEdit({
+        clientIntention,
+        publicData,
+        model: props.initialValue,
+    });
+
+    const readonly = !authorizedForEdit || props.readonly;
+
     return <>
-        <Button disabled={props.readonly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>
-        {isOpen && !props.readonly && <DB3EditObjectDialog
+        {!readonly && <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>}
+        {isOpen && !readonly && <DB3EditObjectDialog
             initialValue={props.initialValue as TAnyModel}
             onCancel={() => {
                 props.onCancel();
@@ -479,7 +489,7 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
         <ChoiceEditCell
             isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
             items={visibilityChoices}
-            readOnly={false} // todo!
+            readonly={false} // todo!
             validationError={null}
             selectDialogTitle='select dialog title here'
             //selectButtonLabel='change visibility'

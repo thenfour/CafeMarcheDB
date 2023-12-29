@@ -6,48 +6,6 @@ import { BoolField, ForeignSingleField, GenericStringField, MakeColorField, Make
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
-//import { xEvent } from "./event";
-
-export const xFileAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.view_files,
-    PostQuery: Permission.view_files,
-    PreMutateAsOwner: Permission.view_files,
-    PreMutate: Permission.manage_files,
-    PreInsert: Permission.manage_files,
-};
-
-export const xFileAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.view_files,
-    PostQuery: Permission.view_files,
-    PreMutateAsOwner: Permission.manage_files,
-    PreMutate: Permission.manage_files,
-    PreInsert: Permission.manage_files,
-};
-
-export const xFileAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.view_files,
-    PostQuery: Permission.view_files,
-    PreMutateAsOwner: Permission.admin_files,
-    PreMutate: Permission.admin_files,
-    PreInsert: Permission.admin_files,
-};
-
-
-export const xFileTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_files,
-    View: Permission.view_files,
-    EditOwn: Permission.manage_files,
-    Edit: Permission.manage_files,
-    Insert: Permission.manage_files,
-};
-
-export const xFileTableAuthMap_R_EAdmins: db3.DB3AuthTablePermissionMap = {
-    ViewOwn: Permission.view_files,
-    View: Permission.view_files,
-    EditOwn: Permission.admin_files,
-    Edit: Permission.admin_files,
-    Insert: Permission.admin_files,
-};
 
 export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.basic_trust,
@@ -58,7 +16,101 @@ export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
 };
 
 
+// view_files - true view perm.
+// upload_files - can upload but not edit most items.
+// manage_files - most users will get this, allows uploading but not 
+// admin_files - ability to change system-level things like mime-type etc.
 
+
+
+// export const xFileAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
+//     PostQueryAsOwner: Permission.view_files,
+//     PostQuery: Permission.view_files,
+//     PreMutateAsOwner: Permission.view_files,
+//     PreMutate: Permission.manage_files,
+//     PreInsert: Permission.manage_files,
+// };
+
+// export const xFileAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
+//     PostQueryAsOwner: Permission.view_files,
+//     PostQuery: Permission.view_files,
+//     PreMutateAsOwner: Permission.manage_files,
+//     PreMutate: Permission.manage_files,
+//     PreInsert: Permission.manage_files,
+// };
+
+// export const xFileAuthMap_R_EOwn_EAdmin: db3.DB3AuthContextPermissionMap = {
+//     PostQueryAsOwner: Permission.view_files,
+//     PostQuery: Permission.view_files,
+//     PreMutateAsOwner: Permission.view_files,
+//     PreMutate: Permission.admin_files,
+//     PreInsert: Permission.admin_files,
+// };
+
+
+// export const xFileTableAuthMap_Uploaders_Managers: db3.DB3AuthTablePermissionMap = {
+//     ViewOwn: Permission.view_files,
+//     View: Permission.view_files,
+//     EditOwn: Permission.upload_files,
+//     Edit: Permission.manage_files,
+//     Insert: Permission.upload_files,
+// };
+
+// export const xFileTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
+//     ViewOwn: Permission.view_files,
+//     View: Permission.view_files,
+//     EditOwn: Permission.manage_files,
+//     Edit: Permission.manage_files,
+//     Insert: Permission.manage_files,
+// };
+
+
+// Admin objects are like file tags and similar fields which are viewable by any file users, but only managed by admins.
+export const xFileTableAuth_AdminObjects: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_files,
+    View: Permission.view_files,
+    EditOwn: Permission.view_files,
+    Edit: Permission.admin_files,
+    Insert: Permission.admin_files,
+};
+
+export const xFileAuthMap_AdminObjects: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_files,
+    PostQuery: Permission.view_files,
+    PreMutateAsOwner: Permission.view_files,
+    PreMutate: Permission.admin_files,
+    PreInsert: Permission.admin_files,
+};
+
+
+// files for example, where
+// - most people can view them
+// - uploaders can upload and edit their own files
+// - but editing other peoples files is for managers only.
+export const xFileTableAuth_FileObjects: db3.DB3AuthTablePermissionMap = {
+    ViewOwn: Permission.view_files,
+    View: Permission.view_files,
+    EditOwn: Permission.upload_files, // anyone can edit their own uploaded files.
+    Edit: Permission.manage_files,
+    Insert: Permission.upload_files,
+};
+
+export const xFileAuthMap_FileObjects: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_files,
+    PostQuery: Permission.view_files,
+    PreMutateAsOwner: Permission.upload_files,
+    PreMutate: Permission.manage_files,
+    PreInsert: Permission.upload_files,
+};
+
+// mime type or those kinds of things can only be edited by admins.
+export const xFileAuthMap_FileObjects_AdminEdit: db3.DB3AuthContextPermissionMap = {
+    PostQueryAsOwner: Permission.view_files,
+    PostQuery: Permission.view_files,
+    PreMutateAsOwner: Permission.admin_files,
+    PreMutate: Permission.admin_files,
+    PreInsert: Permission.upload_files,
+};
 
 
 
@@ -82,7 +134,7 @@ export const xFileTag = new db3.xTable({
     },
     tableName: "fileTag",
     naturalOrderBy: FileTagNaturalOrderBy,
-    tableAuthMap: xFileTableAuthMap_R_EAdmins,
+    tableAuthMap: xFileTableAuth_AdminObjects,
     createInsertModelFromString: (input: string): Prisma.FileTagCreateInput => {
         return {
             text: input,
@@ -100,11 +152,11 @@ export const xFileTag = new db3.xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("text", { authMap: xFileAuthMap_R_EOwn_EManagers }),
-        MakeMarkdownTextField("description", { authMap: xFileAuthMap_R_EOwn_EManagers }),
-        MakeSortOrderField("sortOrder", { authMap: xFileAuthMap_R_EOwn_EManagers }),
-        MakeColorField("color", { authMap: xFileAuthMap_R_EOwn_EManagers }),
-        MakeSignificanceField("significance", FileTagSignificance, { authMap: xFileAuthMap_R_EOwn_EManagers }),
+        MakeTitleField("text", { authMap: xFileAuthMap_AdminObjects }),
+        MakeMarkdownTextField("description", { authMap: xFileAuthMap_AdminObjects }),
+        MakeSortOrderField("sortOrder", { authMap: xFileAuthMap_AdminObjects }),
+        MakeColorField("color", { authMap: xFileAuthMap_AdminObjects }),
+        MakeSignificanceField("significance", FileTagSignificance, { authMap: xFileAuthMap_AdminObjects }),
     ]
 });
 
@@ -112,7 +164,7 @@ export const xFileTag = new db3.xTable({
 export const xFileTagAssignment = new db3.xTable({
     tableName: "FileTagAssignment",
     naturalOrderBy: FileTagAssignmentNaturalOrderBy,
-    tableAuthMap: xFileTableAuthMap_R_EManagers,
+    tableAuthMap: xFileTableAuth_FileObjects,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagAssignmentInclude => {
         return FileTagAssignmentArgs.include;
     },
@@ -132,7 +184,7 @@ export const xFileTagAssignment = new db3.xTable({
             fkMember: "fileTagId",
             allowNull: false,
             foreignTableID: "FileTag",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -162,7 +214,7 @@ export const xFileTagAssignment = new db3.xTable({
 export const xFileUserTag = new db3.xTable({
     tableName: "FileUserTag",
     naturalOrderBy: FileUserTagNaturalOrderBy,
-    tableAuthMap: xFileTableAuthMap_R_EManagers,
+    tableAuthMap: xFileTableAuth_FileObjects,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileUserTagInclude => {
         return FileUserTagArgs.include;
     },
@@ -179,7 +231,7 @@ export const xFileUserTag = new db3.xTable({
             fkMember: "userId",
             allowNull: false,
             foreignTableID: "User",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -207,7 +259,7 @@ export const xFileUserTag = new db3.xTable({
 export const xFileSongTag = new db3.xTable({
     tableName: "FileSongTag",
     naturalOrderBy: FileSongTagNaturalOrderBy,
-    tableAuthMap: xFileTableAuthMap_R_EManagers,
+    tableAuthMap: xFileTableAuth_FileObjects,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileSongTagInclude => {
         return FileSongTagArgs.include;
     },
@@ -223,7 +275,7 @@ export const xFileSongTag = new db3.xTable({
             columnName: "song",
             fkMember: "songId",
             allowNull: false,
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             foreignTableID: "Song",
             getQuickFilterWhereClause: (query: string) => false,
         }),
@@ -246,7 +298,7 @@ export const xFileSongTag = new db3.xTable({
 
 export const xFileEventTag = new db3.xTable({
     tableName: "FileEventTag",
-    tableAuthMap: xFileTableAuthMap_R_EManagers,
+    tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileEventTagNaturalOrderBy,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileEventTagInclude => {
         return FileEventTagArgs.include;
@@ -264,7 +316,7 @@ export const xFileEventTag = new db3.xTable({
             fkMember: "eventId",
             allowNull: false,
             foreignTableID: "Event",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.FileGetPayload<{}>>({
@@ -272,7 +324,7 @@ export const xFileEventTag = new db3.xTable({
             fkMember: "fileId",
             allowNull: false,
             foreignTableID: "File",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -296,7 +348,7 @@ export const xFileEventTag = new db3.xTable({
 ////////////////////////////////////////////////////////////////
 export const xFileInstrumentTag = new db3.xTable({
     tableName: "FileInstrumentTag",
-    tableAuthMap: xFileTableAuthMap_R_EManagers,
+    tableAuthMap: xFileTableAuth_FileObjects,
     naturalOrderBy: FileInstrumentTagNaturalOrderBy,
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInstrumentTagInclude => {
         return FileInstrumentTagArgs.include;
@@ -314,7 +366,7 @@ export const xFileInstrumentTag = new db3.xTable({
             fkMember: "instrumentId",
             allowNull: false,
             foreignTableID: "Instrument",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
     ]
@@ -357,7 +409,7 @@ export const xFile = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileInclude => {
         return FileArgs.include;
     },
-    tableAuthMap: xFileTableAuthMap_R_EManagers,
+    tableAuthMap: xFileTableAuth_FileObjects,
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
@@ -380,31 +432,31 @@ export const xFile = new db3.xTable({
     }),
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("fileLeafName", { authMap: xFileAuthMap_R_EOwn_EManagers }),
-        MakeIntegerField("sizeBytes", { authMap: xFileAuthMap_R_EOwn_EManagers }),
+        MakeTitleField("fileLeafName", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
+        MakeIntegerField("sizeBytes", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
         new GenericStringField({
             columnName: "storedLeafName",
             allowNull: false,
             format: "raw",
-            authMap: xFileAuthMap_R_EAdmin,
+            authMap: xFileAuthMap_FileObjects_AdminEdit,
         }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
             format: "markdown",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
         }),
         new GenericStringField({
             columnName: "mimeType",
             allowNull: true,
             format: "raw",
-            authMap: xFileAuthMap_R_EAdmin,
+            authMap: xFileAuthMap_FileObjects_AdminEdit,
         }),
         new GenericStringField({
             columnName: "externalURI",
             allowNull: true,
             format: "raw",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
         }),
         new GenericStringField({
             columnName: "customData",
@@ -412,18 +464,18 @@ export const xFile = new db3.xTable({
             format: "raw",
             authMap: db3.createAuthContextMap_TODO(),
         }),
-        MakeCreatedAtField("uploadedAt", { authMap: xFileAuthMap_R_EOwn_EManagers }),
-        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFileAuthMap_R_EOwn_EManagers, allowNull: false }),
+        MakeCreatedAtField("uploadedAt", { authMap: xFileAuthMap_FileObjects }),
+        new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFileAuthMap_FileObjects, allowNull: false }),
 
         new CreatedByUserField({
             columnName: "uploadedByUser",
             fkMember: "uploadedByUserId",
-            authMap: xFileAuthMap_R_EAdmin,
+            authMap: xFileAuthMap_FileObjects_AdminEdit,
         }),
         new VisiblePermissionField({
             columnName: "visiblePermission",
             fkMember: "visiblePermissionId",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
         }),
 
         new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
@@ -431,7 +483,7 @@ export const xFile = new db3.xTable({
             fkMember: "previewFileId",
             allowNull: true,
             foreignTableID: "File",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new ForeignSingleField<Prisma.FileTagGetPayload<{}>>({
@@ -439,7 +491,7 @@ export const xFile = new db3.xTable({
             fkMember: "parentFileId",
             allowNull: true,
             foreignTableID: "File",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string) => false,
         }),
 
@@ -451,7 +503,7 @@ export const xFile = new db3.xTable({
             associationLocalObjectMember: "file",
             associationTableID: "FileTagAssignment",
             foreignTableID: "FileTag",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 tags: {
                     some: {
@@ -477,7 +529,7 @@ export const xFile = new db3.xTable({
             associationLocalObjectMember: "file",
             associationTableID: "FileUserTag",
             foreignTableID: "User",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedUsers: {
                     some: {
@@ -500,7 +552,7 @@ export const xFile = new db3.xTable({
             associationLocalObjectMember: "file",
             associationTableID: "FileSongTag",
             foreignTableID: "Song",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedSongs: {
                     some: {
@@ -523,7 +575,7 @@ export const xFile = new db3.xTable({
             associationLocalObjectMember: "file",
             associationTableID: "FileEventTag",
             foreignTableID: "Event",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedEvents: {
                     some: {
@@ -546,7 +598,7 @@ export const xFile = new db3.xTable({
             associationLocalObjectMember: "file",
             associationTableID: "FileInstrumentTag",
             foreignTableID: "Instrument",
-            authMap: xFileAuthMap_R_EOwn_EManagers,
+            authMap: xFileAuthMap_FileObjects,
             getQuickFilterWhereClause: (query: string): Prisma.FileWhereInput => ({
                 taggedInstruments: {
                     some: {

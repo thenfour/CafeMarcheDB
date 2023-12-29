@@ -441,6 +441,7 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
     //export const FileWithTagsArgs: Prisma.FileArgs = {
     include: {
         visiblePermission: VisiblePermissionInclude,
+        uploadedByUser: true,
         tags: {
             include: {
                 fileTag: true,

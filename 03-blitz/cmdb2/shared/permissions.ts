@@ -53,6 +53,7 @@ export enum Permission {
     // ******************** file permissions.
     admin_files = "admin_files",
     manage_files = "manage_files", // should be granted widely
+    upload_files = "upload_files",
     view_files = "view_files",
 
     // ******************** instrument permissions.

@@ -21,6 +21,9 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 import { AudioPreviewBehindButton, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InspectObject, InstrumentChip, ReactiveInputDialog, SongChip, UserChip, VisibilityControl, VisibilityValue } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
 import { StandardVariationSpec } from 'shared/color';
+import { useAuthenticatedSession } from '@blitzjs/auth';
+import { useAuthorization } from 'src/auth/hooks/useAuthorization';
+import { Permission } from 'shared/permissions';
 
 
 /*
@@ -110,7 +113,7 @@ export const EventFileValueViewer = (props: EventFileViewerProps) => {
             </div>
             <div className="stats">
                 {formatFileSize(file.sizeBytes)},
-                uploaded at {file.uploadedAt.toISOString()},
+                uploaded at {file.uploadedAt.toISOString()} by {file.uploadedByUser?.name},
                 {file.mimeType && <>type: {file.mimeType}</>}
             </div>
         </div>
@@ -394,6 +397,13 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const permissionId = API.users.getDefaultVisibilityPermission().id;
 
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const canUploadFiles = useAuthorization("EventFilesTabContent", Permission.upload_files);
+    // question: other criteria for authorizing attaching files to events?
+
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
             setProgress(0);
@@ -420,7 +430,7 @@ export const EventFilesTabContent = (props: EventFilesTabContentProps) => {
         }
     };
     return <>
-        {!props.readonly && (showUpload ? <div className="uploadControlContainer">
+        {!props.readonly && canUploadFiles && (showUpload ? <div className="uploadControlContainer">
             <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} />
             <Button onClick={() => setShowUpload(false)}>Cancel</Button>
         </div> :

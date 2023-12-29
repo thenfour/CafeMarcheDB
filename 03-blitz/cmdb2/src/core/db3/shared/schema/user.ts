@@ -375,7 +375,7 @@ export const xUserInstrument = new db3.xTable({
             columnName: "user",
             fkMember: "userId",
             allowNull: false,
-            foreignTableID: "UserMinimum",
+            foreignTableID: "user",
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
@@ -564,7 +564,8 @@ export const xUser = new db3.xTable({
             associationLocalObjectMember: "user",
             associationTableID: "UserTagAssignment",
             foreignTableID: "UserTag",
-            authMap: xUserAuthMap_R_EManagers,
+            //authMap: xUserAuthMap_R_EManagers,
+            authMap: xUserAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.UserWhereInput => ({
                 tags: {
                     some: {

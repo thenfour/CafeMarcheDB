@@ -15,6 +15,7 @@ import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { EventDetailVerbosity } from './CMCoreComponents';
 import { EventAttendanceFrame } from './EventAttendanceComponents';
+import { useAuthenticatedSession } from "@blitzjs/auth";
 
 /*
 
@@ -73,9 +74,15 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
+    const publicData = useAuthenticatedSession();
     const blankObject: db3.EventSegmentPayload = db3.xEventSegment.createNew(clientIntention) as any;
     blankObject.eventId = event.id;
     blankObject.event = event;
+
+    const authorized = db3.xEventSegment.authorizeRowBeforeInsert({
+        clientIntention,
+        publicData,
+    });
 
     const handleSave = (obj, tableClient) => {
         tableClient.doInsertMutation(obj).then((newRow) => {
@@ -89,8 +96,9 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
         });
     };
 
+
     return <>
-        <Button onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</Button>
+        {authorized && <Button onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</Button>}
         {open && <EventSegmentEditDialog
             onCancel={() => setOpen(false)}
             onSave={handleSave}
@@ -115,6 +123,9 @@ export interface EventSegmentPanelProps {
 export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPanelProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const handleDelete = (saveClient: DB3Client.xTableRenderClient) => {
         saveClient.doDeleteMutation(props.segment.id).then(e => {
@@ -142,11 +153,17 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
         });
     };
 
+    const editAuthorized = db3.xEventSegment.authorizeRowForEdit({
+        clientIntention,
+        publicData,
+        model: props.segment,
+    });
+
     return <div className={`EventSegmentPanel segment`}>
 
         <div className='name'>
             {props.segment.name}
-            {!props.readonly && <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
+            {!props.readonly && editAuthorized && <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
         </div>
         <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
 
