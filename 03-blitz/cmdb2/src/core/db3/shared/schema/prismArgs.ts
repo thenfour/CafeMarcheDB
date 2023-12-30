@@ -194,7 +194,7 @@ export const RoleArgs = Prisma.validator<Prisma.RoleArgs>()({
 export type RolePayload = Prisma.RoleGetPayload<typeof RoleArgs>;
 
 export const RoleNaturalOrderBy: Prisma.RoleOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { name: 'asc' },
     { id: 'asc' },
 ];
@@ -216,7 +216,7 @@ export const SongTagArgs = Prisma.validator<Prisma.SongTagArgs>()({
 export type SongTagPayload = Prisma.SongTagGetPayload<typeof SongTagArgs>;
 
 export const SongTagNaturalOrderBy: Prisma.SongTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];
@@ -230,7 +230,7 @@ export const SongTagAssociationArgs = Prisma.validator<Prisma.SongTagAssociation
 export type SongTagAssociationPayload = Prisma.SongTagAssociationGetPayload<typeof SongTagAssociationArgs>;
 
 export const SongTagAssociationNaturalOrderBy: Prisma.SongTagAssociationOrderByWithRelationInput[] = [
-    { tag: { sortOrder: 'desc' } },
+    { tag: { sortOrder: 'asc' } },
     { tag: { text: 'asc' } },
     { tag: { id: 'asc' } },
 ];
@@ -244,7 +244,7 @@ export const SongCreditTypeArgs = Prisma.validator<Prisma.SongCreditTypeArgs>()(
 export type SongCreditTypePayload = Prisma.SongCreditTypeGetPayload<typeof SongCreditTypeArgs>;
 
 export const SongCreditTypeNaturalOrderBy: Prisma.SongCreditTypeOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];
@@ -289,7 +289,7 @@ export const InstrumentTagAssociationArgs = Prisma.validator<Prisma.InstrumentTa
 export type InstrumentTagAssociationPayload = Prisma.InstrumentTagAssociationGetPayload<typeof InstrumentTagAssociationArgs>;
 
 export const InstrumentTagAssociationNaturalOrderBy: Prisma.InstrumentTagAssociationOrderByWithRelationInput[] = [
-    { tag: { sortOrder: 'desc' } },
+    { tag: { sortOrder: 'asc' } },
     { tag: { text: 'asc' } },
     { tag: { id: 'asc' } },
 ];
@@ -327,7 +327,7 @@ export const UserInstrumentArgs = Prisma.validator<Prisma.UserInstrumentArgs>()(
 export type UserInstrumentPayload = Prisma.UserInstrumentGetPayload<typeof UserInstrumentArgs>;
 
 export const UserInstrumentNaturalOrderBy: Prisma.UserInstrumentOrderByWithRelationInput[] = [
-    { instrument: { sortOrder: 'desc' } },
+    { instrument: { sortOrder: 'asc' } },
     { instrument: { name: 'asc' } },
     { instrument: { id: 'asc' } },
 ];
@@ -380,10 +380,10 @@ export const UserNaturalOrderBy: Prisma.UserOrderByWithRelationInput[] = [
 export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput[] = [
     {
         functionalGroup: {
-            sortOrder: 'desc',
+            sortOrder: 'asc',
         }
     },
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { name: 'asc' },
     { id: 'asc' },
 ];
@@ -493,7 +493,7 @@ export type EventTagAssignmentPayload = Prisma.EventTagAssignmentGetPayload<type
 
 
 export const EventTagAssignmentNaturalOrderBy: Prisma.EventTagAssignmentOrderByWithRelationInput[] = [
-    { eventTag: { sortOrder: 'desc' } },
+    { eventTag: { sortOrder: 'asc' } },
     { eventTag: { text: 'asc' } },
     { eventTag: { id: 'asc' } },
 ];
@@ -619,14 +619,14 @@ export type EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegm
 
 export type EventSegmentPayloadMinimum = Prisma.EventSegmentGetPayload<{}>;
 
+export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelationInput[] = [
+    { sortOrder: 'asc' },
+    { id: 'asc' },
+];
+
 export const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
         event: true,
-        // visiblePermission: {
-        //     include: {
-        //         roles: true
-        //     }
-        // },
         songs: {
             include: {
                 song: SongArgs,
@@ -636,11 +636,6 @@ export const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
 });
 
 export type EventSongListPayload = Prisma.EventSongListGetPayload<typeof EventSongListArgs>;
-
-export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
-    { id: 'asc' },
-];
 
 
 export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
@@ -656,7 +651,7 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         status: true,
         visiblePermission: VisiblePermissionInclude,
         createdByUser: true,
-        songLists: EventSongListArgs,
+        songLists: { ...EventSongListArgs, orderBy: EventSongListNaturalOrderBy },
         expectedAttendanceUserTag: true,
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
@@ -709,7 +704,7 @@ export type EventWithAttendanceUserTagPayload = Prisma.EventGetPayload<{
 
 
 export const EventSongListSongNaturalOrderBy: Prisma.EventSongListSongOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { id: 'asc' },
 ];
 
@@ -770,7 +765,7 @@ export const FileTagArgs = Prisma.validator<Prisma.FileTagArgs>()({
 export type FileTagPayload = Prisma.FileTagGetPayload<typeof FileTagArgs>;
 
 export const FileTagNaturalOrderBy: Prisma.FileTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];
@@ -787,7 +782,7 @@ export type FileTagAssignmentPayload = Prisma.FileTagAssignmentGetPayload<typeof
 
 
 export const FileTagAssignmentNaturalOrderBy: Prisma.FileTagAssignmentOrderByWithRelationInput[] = [
-    { fileTag: { sortOrder: 'desc' } },
+    { fileTag: { sortOrder: 'asc' } },
     { fileTag: { text: 'asc' } },
     { fileTag: { id: 'asc' } },
 ];
@@ -809,7 +804,7 @@ export const UserTagArgs = Prisma.validator<Prisma.UserTagArgs>()({
 export type UserTagPayload = Prisma.UserTagGetPayload<typeof UserTagArgs>;
 
 export const UserTagNaturalOrderBy: Prisma.UserTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];
@@ -826,7 +821,7 @@ export type UserTagAssignmentPayload = Prisma.UserTagAssignmentGetPayload<typeof
 
 
 export const UserTagAssignmentNaturalOrderBy: Prisma.UserTagAssignmentOrderByWithRelationInput[] = [
-    { userTag: { sortOrder: 'desc' } },
+    { userTag: { sortOrder: 'asc' } },
     { userTag: { text: 'asc' } },
     { userTag: { id: 'asc' } },
 ];
@@ -948,7 +943,7 @@ export const InstrumentTagArgs = Prisma.validator<Prisma.InstrumentTagArgs>()({
 export type InstrumentTagPayload = Prisma.InstrumentTagGetPayload<typeof InstrumentTagArgs>;
 
 export const InstrumentTagNaturalOrderBy: Prisma.InstrumentTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];
@@ -969,7 +964,7 @@ export type EventStatusPayload = Prisma.EventStatusGetPayload<typeof EventStatus
 export type EventStatusPayloadMinimum = Prisma.EventStatusGetPayload<{}>;
 
 export const EventStatusNaturalOrderBy: Prisma.EventStatusOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { label: 'asc' },
     { id: 'asc' },
 ];
@@ -985,7 +980,7 @@ export const EventTagArgs = Prisma.validator<Prisma.EventTagArgs>()({
 export type EventTagPayload = Prisma.EventTagGetPayload<typeof EventTagArgs>;
 
 export const EventTagNaturalOrderBy: Prisma.EventTagOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];
@@ -1006,7 +1001,7 @@ export type EventAttendancePayload = Prisma.EventAttendanceGetPayload<typeof Eve
 export type EventAttendanceBasePayload = Prisma.EventAttendanceGetPayload<{}>;
 
 export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRelationInput[] = [
-    { sortOrder: 'desc' },
+    { sortOrder: 'asc' },
     { text: 'asc' },
     { id: 'asc' },
 ];

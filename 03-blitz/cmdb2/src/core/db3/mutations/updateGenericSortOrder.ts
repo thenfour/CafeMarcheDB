@@ -16,18 +16,18 @@ export default resolver.pipe(
 
         // TODO
         //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        //const currentUser = await mutationCore.getCurrentUserCore(ctx);
 
         if (args.movingItemId === args.newPositionItemId) {
             //moving an item to the same place 
             return args;
         }
 
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
+        // const clientIntention: db3.xTableClientUsageContext = {
+        //     intention: "user",
+        //     mode: "primary",
+        //     currentUser,
+        // };
 
         const table = db3.GetTableById(args.tableID);
         const dbTableClient = db[table.tableName] as typeof db.frontpageGalleryItem; // the prisma interface. for convenience of intellisense cast to something known.
@@ -57,28 +57,8 @@ export default resolver.pipe(
         //let prevSortOrder = newItems[0]!.sortOrder;
         let oldValues: { id: number, sortOrder: number }[] = [];
         let newValues: { id: number, sortOrder: number }[] = [];
-        // for (let i = 1; i < newItems.length; ++i) {
-        //     const item = newItems[i]!;
-        //     if (item.id === args.movingItemId) {
-        //         // the item to be moved we already know will be an incorrect sort order.
-        //     }
-        //     else if (item.sortOrder <= prevSortOrder) {
-        //         // sort order is out of ascending order; this item needs correction
-        //         prevSortOrder++; // make a new correct sort order
-        //         oldValues.push({ id: item.id, sortOrder: item.sortOrder });
-        //         newValues.push({ id: item.id, sortOrder: prevSortOrder });
-        //         //update
-        //         item.sortOrder = prevSortOrder;
-        //         await dbTableClient.update({
-        //             data: { sortOrder: item.sortOrder },
-        //             where: { id: item.id },
-        //         });
-        //     } else {
-        //         prevSortOrder = item.sortOrder;
-        //     }
-        // }
 
-        for (let i = 1; i < newItems.length; ++i) {
+        for (let i = 0; i < newItems.length; ++i) {
             const item = newItems[i]!;
             if (item.sortOrder === i) continue;
             oldValues.push({ id: item.id, sortOrder: item.sortOrder });

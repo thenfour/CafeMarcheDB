@@ -14,7 +14,7 @@ import dayjs, { Dayjs } from "dayjs";
 import React from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
-import { gNullValue } from "shared/utils";
+import { CoerceToNumberOrNull, CoerceToString, gNullValue } from "shared/utils";
 import { CMTextField } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import * as db3fields from "../shared/db3basicFields";
@@ -350,16 +350,20 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
     });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        const val = params.value as (number | null);
+        // for values which are not numeric, simply display as "".
+        const displayValue = (val == null) || isNaN(val) ? "" : `${val}`;
+        //console.log(`asString:${asString}, displayValue:${displayValue}, value:${params.value}`);
         return <CMTextField
             key={params.key}
             autoFocus={false}
             label={this.headerName}
             validationError={params.validationResult && params.validationResult.getErrorForField(this.columnName)}
-            value={params.value as string}
+            value={displayValue}
             onChange={(e, val) => {
                 // so this sets the row model value to a string. that's OK because the value gets parsed later.
                 // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
-                params.api.setFieldValues({ [this.columnName]: val });
+                params.api.setFieldValues({ [this.columnName]: CoerceToNumberOrNull(val) });
             }}
         />;
     };

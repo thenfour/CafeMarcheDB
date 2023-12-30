@@ -17,11 +17,12 @@ import * as db3 from "src/core/db3/db3";
 import db, { Prisma } from "db";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
-import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
+import { CMChipContainer, CMStandardDBChip, InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
 import { formatSongLength } from 'shared/time';
 import { StandardVariationSpec } from 'shared/color';
 import { useAuthenticatedSession } from '@blitzjs/auth';
+import { assert } from 'blitz';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -53,38 +54,6 @@ regarding API and mutations etc. so instead of having tons of calls like
 
 it will just be updateSetList(song list etc.)
 
-*/
-
-////////////////////////////////////////////////////////////////
-/*
-model EventSongList {
-  id          Int    @id @default(autoincrement())
-  sortOrder   Int    @default(0)
-  name        String
-  description String @default("")
-
-  createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
-  visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
-
-  eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
-
-  songs EventSongListSong[]
-}
-
-model EventSongListSong {
-  id        Int     @id @default(autoincrement())
-  subtitle  String? // could be a small comment like "short version"
-  sortOrder Int     @default(0)
-
-  songId Int
-  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
-
-  eventSongListId Int
-  eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
-}
 */
 
 
@@ -121,40 +90,6 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 };
 
 
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// export const EventSongListMenuButton = () => {
-//     //const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
-//     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-
-//     const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-//         setAnchorEl(event.currentTarget);
-//     };
-
-//     return <>
-//         <div className="EventSongListMenuButton interactable iconButton" onClick={handleMenu}><MoreHorizIcon /></div>
-
-//         <Menu
-//             anchorEl={anchorEl}
-//             open={!!anchorEl}
-//             onClose={() => setAnchorEl(null)}
-
-//             anchorOrigin={{
-//                 vertical: 'top',
-//                 horizontal: 'right',
-//             }}
-//             transformOrigin={{
-//                 vertical: 'top',
-//                 horizontal: 'right',
-//             }}
-//         >
-//             <MenuItem>{gIconMap.ContentCopy()} Copy</MenuItem>
-//             <MenuItem>{gIconMap.ContentPaste()} Paste (and replace)</MenuItem>
-//         </Menu>
-
-//     </>;
-// };
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
     value: db3.EventSongListPayload;
@@ -183,13 +118,12 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
     return <div className={`EventSongListValue EventSongListValueViewer`}>
 
         <div className="header">
-            <div className="columnName-name">
+
+            <div className={`columnName-name ${editAuthorized && "draggable dragHandle"}`}>
+                {editAuthorized && <div className="dragHandleIcon ">☰</div>}
                 {props.value.name}
             </div>
             {!props.readonly && editAuthorized && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
-            {/* <VisibilityValue permission={props.value.visiblePermission} variant="minimal" /> */}
-            {/* <div className="flex-spacer"></div>
-            <EventSongListMenuButton /> */}
 
         </div>
         <div className="content">
@@ -421,6 +355,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 200 }),
         ],
     });
 
@@ -484,11 +419,13 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     }} /> */}
 
                     <div className="flex-spacer"></div>
+                    <InspectObject src={value} />
 
                     {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
                     {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention })}
                     {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention })}
+                    {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention })}
 
                     {/*
           TITLE                  DURATION    BPM      Comment
@@ -671,8 +608,49 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventSongListList = ({ event, tableClient, readonly, refetch }: { event: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, readonly: boolean, refetch: () => void }) => {
-    return <div className="EventSongListList">
-        {event.songLists.map(c => <EventSongListControl key={c.id} value={c} readonly={false} refetch={refetch} />)}
+    const [saving, setSaving] = React.useState<boolean>(false);
+
+    const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const onDrop = (args: ReactSmoothDnd.DropResult) => {
+        setSaving(true);
+        // removedIndex is the previous index; the original item to be moved
+        // addedIndex is the new index where it should be moved to.
+        if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
+        const movingItemId = event.songLists[args.removedIndex]!.id;
+        const newPositionItemId = event.songLists[args.addedIndex]!.id;
+        assert(!!movingItemId && !!newPositionItemId, "moving item not found?");
+
+        updateSortOrderMutation.invoke({
+            tableID: db3.xEventSongList.tableID,
+            tableName: db3.xEventSongList.tableName,
+            movingItemId,
+            newPositionItemId,
+        }).then(() => {
+            showSnackbar({ severity: "success", children: "song list reorder successful" });
+            refetch();
+        }).catch((e) => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "reorder error; see console" });
+        }).finally(() => {
+            setSaving(false);
+        });
+
+    };
+
+    return <div className={`EventSongListList ${saving && "saving"}`}>
+        <ReactSmoothDndContainer
+            dragHandleSelector=".dragHandle"
+            lockAxis="y"
+            onDrop={onDrop}
+        >
+            {event.songLists.map(c => (
+                <ReactSmoothDndDraggable key={c.id}>
+                    <EventSongListControl key={c.id} value={c} readonly={false} refetch={refetch} />
+                </ReactSmoothDndDraggable>
+            ))}
+        </ReactSmoothDndContainer>
     </div>;
 };
 

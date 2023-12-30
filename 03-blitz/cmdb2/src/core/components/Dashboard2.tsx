@@ -36,7 +36,6 @@ import { assert } from "blitz";
 
 const drawerWidth = 300;
 
-
 const Search = styled('div')(({ theme }) => ({
     position: 'relative',
     borderRadius: theme.shape.borderRadius,
@@ -210,7 +209,8 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     >
                         <a href={"/backstage"} className="logo">Café Marché Backstage</a>
                     </Typography>
-                    {(session.userId != null) && <Search>
+
+                    {/* {(session.userId != null) && <Search>
                         <SearchIconWrapper>
                             <SearchIcon />
                         </SearchIconWrapper>
@@ -218,7 +218,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             placeholder="Search…"
                             inputProps={{ 'aria-label': 'search' }}
                         />
-                    </Search>}
+                    </Search>} */}
                     {(session.impersonatingFromUserId != null) && (
                         <Button size="small" variant="contained" onClick={onClickStopImpersonating}>Stop impersonating</Button>
                     )}
