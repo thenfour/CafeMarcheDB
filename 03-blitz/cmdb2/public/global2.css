@@ -496,8 +496,13 @@ or,
     border-radius: 8px;
     /*fea*/
     border: 2px solid #eee;
+    border-left: 8px solid #ccc;
     margin: 0 10px;
     margin-bottom: 19px;
+}
+
+.EventSongListValue:hover {
+    border-left: 8px solid #88f;
 }
 
 .EventSongListValue>.header {
@@ -1502,12 +1507,22 @@ in particular the date range picker is wide.*/
 .attendanceDetailTable .responseCell {
     min-width: 100px;
     text-align: center;
+    display: flex;
+    align-items: center;
+}
+
+
+.attendanceDetailTable th.responseCell>* {
+    display: flex;
+    width: 100%;
+    justify-content: center;
 }
 
 
 .attendanceDetailTable .nameCellContainer {
     display: flex;
     align-items: center;
+    padding-left: 8px;
 }
 
 .attendanceDetailTable .nameCellContainer.you {

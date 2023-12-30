@@ -89,267 +89,267 @@ import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { StandardVariationSpec } from 'shared/color';
 
 
-////////////////////////////////////////////////////////////////
-// a view/edit control for the comment only (including mutation)
-interface EventAttendanceCommentControlProps {
-    userResponse: db3.EventSegmentUserResponse,
-    //event: db3.EventPayloadClient,
-    //segmentInfo: db3.SegmentAndResponse,
-    //eventUserInfo: db3.EventInfoForUser,
-    onRefetch: () => void,
-};
+// ////////////////////////////////////////////////////////////////
+// // a view/edit control for the comment only (including mutation)
+// interface EventAttendanceCommentControlProps {
+//     userResponse: db3.EventSegmentUserResponse,
+//     //event: db3.EventPayloadClient,
+//     //segmentInfo: db3.SegmentAndResponse,
+//     //eventUserInfo: db3.EventInfoForUser,
+//     onRefetch: () => void,
+// };
 
-const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
-    const token = API.events.updateUserEventAttendance.useToken();
-    return <CompactMutationMarkdownControl initialValue={props.userResponse.response.attendanceComment} refetch={props.onRefetch} onChange={async (value) => {
-        return await token.invoke({
-            userId: props.userResponse.user.id,
-            eventId: props.userResponse.segment.eventId,
-            comment: value,
-        });
-    }} />;
-};
-
-
-
-////////////////////////////////////////////////////////////////
-// event segment attendance standalone field (read-only possible, buttons array for input).
-// basically a button array of responses, not tied to DB but just a value.
-interface EventAttendanceResponseControlProps {
-    value: db3.EventAttendanceBasePayload | null;
-    onChange: (value: db3.EventAttendanceBasePayload | null) => void;
-    showClose: boolean,
-    onClose: () => void,
-};
+// const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
+//     const token = API.events.updateUserEventAttendance.useToken();
+//     return <CompactMutationMarkdownControl initialValue={props.userResponse.response.attendanceComment} refetch={props.onRefetch} onChange={async (value) => {
+//         return await token.invoke({
+//             userId: props.userResponse.user.id,
+//             eventId: props.userResponse.segment.eventId,
+//             comment: value,
+//         });
+//     }} />;
+// };
 
 
 
-const EventAttendanceResponseControlMeat = (props: EventAttendanceResponseControlProps) => {
-
-    const optionsClient = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention: { intention: 'user', mode: 'primary' },
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xEventAttendance,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
-        }),
-    });
-
-    //const nullSelStyle = (!props.value) ? "selected" : "notSelected";
-    return <>{(optionsClient.items as db3.EventAttendancePayload[]).map(option => {
-        const style = GetStyleVariablesForColor({ color: option.color, ...StandardVariationSpec.Strong });
-        const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
-        const yesNoStyle = (option.strength > 50) ? "yes" : "no";
-        return <Button
-            key={option.id}
-            style={style}
-            endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
-            className={`${yesNoStyle} applyColor ${selStyle}`}
-            onClick={() => { props.onChange(option); }}
-        >
-            {option.text}
-        </Button>;
-    })}</>;
-};
-
-const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
-    const nullSelStyle = (!props.value) ? "selected" : "notSelected";
-    return <>
-        <ButtonGroup className='EventAttendanceResponseControlButtonGroup'>
-            <Suspense>
-                <EventAttendanceResponseControlMeat {...props} />
-            </Suspense>
-
-            <Button className={`null noSelection ${nullSelStyle}`} onClick={() => { props.onChange(null); }}>no answer</Button>
-
-        </ButtonGroup>
-
-        {props.showClose && <Button onClick={() => { props.onClose() }}>
-            <Tooltip title="hide these buttons" >
-                <CloseIcon />
-            </Tooltip>
-        </Button>}
-    </>;
-};
+// ////////////////////////////////////////////////////////////////
+// // event segment attendance standalone field (read-only possible, buttons array for input).
+// // basically a button array of responses, not tied to DB but just a value.
+// interface EventAttendanceResponseControlProps {
+//     value: db3.EventAttendanceBasePayload | null;
+//     onChange: (value: db3.EventAttendanceBasePayload | null) => void;
+//     showClose: boolean,
+//     onClose: () => void,
+// };
 
 
 
-////////////////////////////////////////////////////////////////
-// event segment attendance standalone field (read-only possible, buttons array for input).
-// basically a button array of responses, not tied to DB but just a value.
-interface EventAttendanceInstrumentControlProps {
-    selectedInstrumentId: number | null;
-    onChange: (value: db3.InstrumentPayload | null) => void;
-    user: db3.UserWithInstrumentsPayload;
-};
+// const EventAttendanceResponseControlMeat = (props: EventAttendanceResponseControlProps) => {
 
-const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
+//     const optionsClient = DB3Client.useTableRenderContext({
+//         requestedCaps: DB3Client.xTableClientCaps.Query,
+//         clientIntention: { intention: 'user', mode: 'primary' },
+//         tableSpec: new DB3Client.xTableClientSpec({
+//             table: db3.xEventAttendance,
+//             columns: [
+//                 new DB3Client.PKColumnClient({ columnName: "id" }),
+//             ],
+//         }),
+//     });
 
-    return <div className='EventAttendanceInstrumentControlContainer'>
-        <ButtonGroup className='EventAttendanceInstrumentControl'>
-            {props.user.instruments.map(assoc => {
-                const style = GetStyleVariablesForColor({ color: assoc.instrument.functionalGroup.color, ...StandardVariationSpec.Strong });
-                const selStyle = (props.selectedInstrumentId == assoc.instrumentId) ? "selected" : "notSelected";
-                return <Button
-                    key={assoc.id}
-                    style={style}
-                    className={`applyColor ${selStyle}`}
-                    onClick={() => { props.onChange(assoc.instrument); }}
-                >
-                    {assoc.instrument.name}
-                </Button>;
-            })}
-        </ButtonGroup>
-    </div>;
-};
+//     //const nullSelStyle = (!props.value) ? "selected" : "notSelected";
+//     return <>{(optionsClient.items as db3.EventAttendancePayload[]).map(option => {
+//         const style = GetStyleVariablesForColor({ color: option.color, ...StandardVariationSpec.Strong });
+//         const selStyle = (!!props.value && (option.id === props.value.id)) ? "selected" : "notSelected";
+//         const yesNoStyle = (option.strength > 50) ? "yes" : "no";
+//         return <Button
+//             key={option.id}
+//             style={style}
+//             endIcon={(option.strength > 50) ? <ThumbUpIcon /> : <ThumbDownIcon />}
+//             className={`${yesNoStyle} applyColor ${selStyle}`}
+//             onClick={() => { props.onChange(option); }}
+//         >
+//             {option.text}
+//         </Button>;
+//     })}</>;
+// };
 
+// const EventAttendanceResponseControl = (props: EventAttendanceResponseControlProps) => {
+//     const nullSelStyle = (!props.value) ? "selected" : "notSelected";
+//     return <>
+//         <ButtonGroup className='EventAttendanceResponseControlButtonGroup'>
+//             <Suspense>
+//                 <EventAttendanceResponseControlMeat {...props} />
+//             </Suspense>
 
+//             <Button className={`null noSelection ${nullSelStyle}`} onClick={() => { props.onChange(null); }}>no answer</Button>
 
+//         </ButtonGroup>
 
-////////////////////////////////////////////////////////////////
-// read-only answer + comment, with optional "edit" button
-export interface EventAttendanceAnswerProps {
-    //event: db3.EventPayloadClient,
-    userResponse: db3.EventSegmentUserResponse,
-    //segmentInfo: db3.SegmentAndResponse,
-    //eventUserInfo: db3.EventInfoForUser,
-    readOnly: boolean,
-    onEditClicked?: () => void,
-};
-
-export const EventAttendanceAnswer = (props: EventAttendanceAnswerProps) => {
-    return <CMBigChip color={props.userResponse.response.attendance?.color} variation={StandardVariationSpec.Strong}>
-        <ThumbUpIcon className="icon" />
-        <span className="text">{props.userResponse.response.attendance?.personalText}</span>
-        {!props.readOnly && <Button onClick={() => { props.onEditClicked && props.onEditClicked() }}>
-            <EditIcon />
-        </Button>}
-        {
-            props.userResponse.user.instruments.length > 1 &&
-            <div className='instrument'>{props.userResponse.instrument!.name}</div>
-        }
-        <div className='userComment'>
-            <Markdown markdown={props.userResponse.response.attendanceComment} />
-        </div>
-    </CMBigChip>;
-};
+//         {props.showClose && <Button onClick={() => { props.onClose() }}>
+//             <Tooltip title="hide these buttons" >
+//                 <CloseIcon />
+//             </Tooltip>
+//         </Button>}
+//     </>;
+// };
 
 
-////////////////////////////////////////////////////////////////
-// frame for event segment
-// input controls for attendance + comment
-export interface EventAttendanceEditControlProps {
-    // event: db3.EventPayloadClient,
-    // segmentInfo: db3.SegmentAndResponse,
-    // eventUserInfo: db3.EventInfoForUser,
-    userResponse: db3.EventSegmentUserResponse,
 
-    onRefetch: () => void,
-    showClose: boolean,
-    onClose: () => void,
-};
+// ////////////////////////////////////////////////////////////////
+// // event segment attendance standalone field (read-only possible, buttons array for input).
+// // basically a button array of responses, not tied to DB but just a value.
+// interface EventAttendanceInstrumentControlProps {
+//     selectedInstrumentId: number | null;
+//     onChange: (value: db3.InstrumentPayload | null) => void;
+//     user: db3.UserWithInstrumentsPayload;
+// };
 
-export const EventAttendanceEditControl = (props: EventAttendanceEditControlProps) => {
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const token = API.events.updateUserEventSegmentAttendance.useToken();
+// const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
 
-    const handleOnChange = async (value: db3.EventAttendanceBasePayload | null) => {
-        try {
-            await API.events.updateUserEventSegmentAttendance.invoke(token, {
-                userId: props.userResponse.user.id,
-                eventSegmentIds: [props.userResponse.segment.id],
-                attendanceId: value == null ? null : value.id,
-            });
-            showSnackbar({ severity: 'success', children: "update successful" });
-            props.onRefetch();
-        } catch (e) {
-            console.log(e);
-            showSnackbar({ severity: 'error', children: "error;  see console" });
-        }
-    };
+//     return <div className='EventAttendanceInstrumentControlContainer'>
+//         <ButtonGroup className='EventAttendanceInstrumentControl'>
+//             {props.user.instruments.map(assoc => {
+//                 const style = GetStyleVariablesForColor({ color: assoc.instrument.functionalGroup.color, ...StandardVariationSpec.Strong });
+//                 const selStyle = (props.selectedInstrumentId == assoc.instrumentId) ? "selected" : "notSelected";
+//                 return <Button
+//                     key={assoc.id}
+//                     style={style}
+//                     className={`applyColor ${selStyle}`}
+//                     onClick={() => { props.onChange(assoc.instrument); }}
+//                 >
+//                     {assoc.instrument.name}
+//                 </Button>;
+//             })}
+//         </ButtonGroup>
+//     </div>;
+// };
 
-    const handleInstrumentChange = async (value: db3.InstrumentPayload) => {
-        try {
-            await API.events.updateUserEventSegmentAttendance.invoke(token, {
-                userId: props.userResponse.user.id,
-                eventSegmentIds: [props.userResponse.segment.id],
-                instrumentId: value.id,
-            });
-            showSnackbar({ severity: 'success', children: "update instrument successful" });
-            props.onRefetch();
-        } catch (e) {
-            console.log(e);
-            showSnackbar({ severity: 'error', children: "error;  see console" });
-        }
-    };
 
-    return <>
-        <EventAttendanceResponseControl
-            value={props.userResponse.response.attendance}
-            onChange={handleOnChange}
-            showClose={props.showClose}
-            onClose={props.onClose}
-        />
-        <EventAttendanceInstrumentControl
-            onChange={handleInstrumentChange}
-            selectedInstrumentId={props.userResponse.instrument?.id || null}
-            user={props.userResponse.user}
-        />
-        <EventAttendanceCommentControl userResponse={props.userResponse} onRefetch={props.onRefetch} />
-    </>;
 
-};
 
-////////////////////////////////////////////////////////////////
-// frame for event segment:
-// shows your answer & comment, small button to show edit controls.
-export interface EventAttendanceFrameProps {
-    // event: db3.EventPayloadClient,
-    // segmentInfo: db3.SegmentAndResponse,
-    // eventUserInfo: db3.EventInfoForUser,
-    userResponse: db3.EventSegmentUserResponse;
-    onRefetch: () => void,
-};
+// ////////////////////////////////////////////////////////////////
+// // read-only answer + comment, with optional "edit" button
+// export interface EventAttendanceAnswerProps {
+//     //event: db3.EventPayloadClient,
+//     userResponse: db3.EventSegmentUserResponse,
+//     //segmentInfo: db3.SegmentAndResponse,
+//     //eventUserInfo: db3.EventInfoForUser,
+//     readOnly: boolean,
+//     onEditClicked?: () => void,
+// };
 
-export const EventAttendanceFrame = (props: EventAttendanceFrameProps) => {
-    const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
-    // const hasResponse = !!props.segmentInfo.response.attendance;
-    // const expectResponse = true;//props.segmentInfo.response.expectAttendance;
-    // alert mode effectively forces edit mode, regardless of explicit edit. so don't show the hide button in alert state because it would do nothing.
-    //const alert = expectResponse && !hasResponse;
-    const editMode = (explicitEdit || props.userResponse.isAlert);
+// export const EventAttendanceAnswer = (props: EventAttendanceAnswerProps) => {
+//     return <CMBigChip color={props.userResponse.response.attendance?.color} variation={StandardVariationSpec.Strong}>
+//         <ThumbUpIcon className="icon" />
+//         <span className="text">{props.userResponse.response.attendance?.personalText}</span>
+//         {!props.readOnly && <Button onClick={() => { props.onEditClicked && props.onEditClicked() }}>
+//             <EditIcon />
+//         </Button>}
+//         {
+//             props.userResponse.user.instruments.length > 1 &&
+//             <div className='instrument'>{props.userResponse.instrument!.name}</div>
+//         }
+//         <div className='userComment'>
+//             <Markdown markdown={props.userResponse.response.attendanceComment} />
+//         </div>
+//     </CMBigChip>;
+// };
 
-    return <div className={`segment ${props.userResponse.isAlert && "alert"}`}>
-        <div className='header'>
-            {props.userResponse.isAlert && <ErrorOutlineIcon className='icon' />}
-            <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.userResponse.segment)}</div>
-            <div className=''>{props.userResponse.segment.name}</div>
-            {editMode && <div className="prompt">Are you going?</div>}
-        </div>
-        {editMode ?
-            <EventAttendanceEditControl
-                userResponse={props.userResponse}
-                // event={props.event}
-                // segmentInfo={props.segmentInfo}
-                // eventUserInfo={props.eventUserInfo}
-                onRefetch={props.onRefetch}
-                showClose={true && !alert} // alert forces edit mode; don't allow hiding then
-                onClose={() => { setExplicitEdit(false) }}
-            /> :
-            <EventAttendanceAnswer
-                userResponse={props.userResponse}
-                readOnly={false}
-                // event={props.event}
-                // segmentInfo={props.segmentInfo}
-                // eventUserInfo={props.eventUserInfo}
-                onEditClicked={() => { setExplicitEdit(true); }}
-            />
-        }
-    </div>;
 
-};
+// ////////////////////////////////////////////////////////////////
+// // frame for event segment
+// // input controls for attendance + comment
+// export interface EventAttendanceEditControlProps {
+//     // event: db3.EventPayloadClient,
+//     // segmentInfo: db3.SegmentAndResponse,
+//     // eventUserInfo: db3.EventInfoForUser,
+//     userResponse: db3.EventSegmentUserResponse,
+
+//     onRefetch: () => void,
+//     showClose: boolean,
+//     onClose: () => void,
+// };
+
+// export const EventAttendanceEditControl = (props: EventAttendanceEditControlProps) => {
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+//     const token = API.events.updateUserEventSegmentAttendance.useToken();
+
+//     const handleOnChange = async (value: db3.EventAttendanceBasePayload | null) => {
+//         try {
+//             await API.events.updateUserEventSegmentAttendance.invoke(token, {
+//                 userId: props.userResponse.user.id,
+//                 eventSegmentIds: [props.userResponse.segment.id],
+//                 attendanceId: value == null ? null : value.id,
+//             });
+//             showSnackbar({ severity: 'success', children: "update successful" });
+//             props.onRefetch();
+//         } catch (e) {
+//             console.log(e);
+//             showSnackbar({ severity: 'error', children: "error;  see console" });
+//         }
+//     };
+
+//     const handleInstrumentChange = async (value: db3.InstrumentPayload) => {
+//         try {
+//             await API.events.updateUserEventSegmentAttendance.invoke(token, {
+//                 userId: props.userResponse.user.id,
+//                 eventSegmentIds: [props.userResponse.segment.id],
+//                 instrumentId: value.id,
+//             });
+//             showSnackbar({ severity: 'success', children: "update instrument successful" });
+//             props.onRefetch();
+//         } catch (e) {
+//             console.log(e);
+//             showSnackbar({ severity: 'error', children: "error;  see console" });
+//         }
+//     };
+
+//     return <>
+//         <EventAttendanceResponseControl
+//             value={props.userResponse.response.attendance}
+//             onChange={handleOnChange}
+//             showClose={props.showClose}
+//             onClose={props.onClose}
+//         />
+//         <EventAttendanceInstrumentControl
+//             onChange={handleInstrumentChange}
+//             selectedInstrumentId={props.userResponse.instrument?.id || null}
+//             user={props.userResponse.user}
+//         />
+//         <EventAttendanceCommentControl userResponse={props.userResponse} onRefetch={props.onRefetch} />
+//     </>;
+
+// };
+
+// ////////////////////////////////////////////////////////////////
+// // frame for event segment:
+// // shows your answer & comment, small button to show edit controls.
+// export interface EventAttendanceFrameProps {
+//     // event: db3.EventPayloadClient,
+//     // segmentInfo: db3.SegmentAndResponse,
+//     // eventUserInfo: db3.EventInfoForUser,
+//     userResponse: db3.EventSegmentUserResponse;
+//     onRefetch: () => void,
+// };
+
+// export const EventAttendanceFrame = (props: EventAttendanceFrameProps) => {
+//     const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
+//     // const hasResponse = !!props.segmentInfo.response.attendance;
+//     // const expectResponse = true;//props.segmentInfo.response.expectAttendance;
+//     // alert mode effectively forces edit mode, regardless of explicit edit. so don't show the hide button in alert state because it would do nothing.
+//     //const alert = expectResponse && !hasResponse;
+//     const editMode = (explicitEdit || props.userResponse.isAlert);
+
+//     return <div className={`segment ${props.userResponse.isAlert && "alert"}`}>
+//         <div className='header'>
+//             {props.userResponse.isAlert && <ErrorOutlineIcon className='icon' />}
+//             <div className="segmentName">{API.events.getEventSegmentFormattedDateRange(props.userResponse.segment)}</div>
+//             <div className=''>{props.userResponse.segment.name}</div>
+//             {editMode && <div className="prompt">Are you going?</div>}
+//         </div>
+//         {editMode ?
+//             <EventAttendanceEditControl
+//                 userResponse={props.userResponse}
+//                 // event={props.event}
+//                 // segmentInfo={props.segmentInfo}
+//                 // eventUserInfo={props.eventUserInfo}
+//                 onRefetch={props.onRefetch}
+//                 showClose={true && !alert} // alert forces edit mode; don't allow hiding then
+//                 onClose={() => { setExplicitEdit(false) }}
+//             /> :
+//             <EventAttendanceAnswer
+//                 userResponse={props.userResponse}
+//                 readOnly={false}
+//                 // event={props.event}
+//                 // segmentInfo={props.segmentInfo}
+//                 // eventUserInfo={props.eventUserInfo}
+//                 onEditClicked={() => { setExplicitEdit(true); }}
+//             />
+//         }
+//     </div>;
+
+// };
 
 // ////////////////////////////////////////////////////////////////
 // // frame for event:

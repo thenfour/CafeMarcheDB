@@ -419,7 +419,6 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     }} /> */}
 
                     <div className="flex-spacer"></div>
-                    <InspectObject src={value} />
 
                     {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
@@ -668,11 +667,11 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
     });
 
     return <div className="EventSongListTabContent">
-        <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
+        {insertAuthorized && !readonly && <Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
         {newOpen && !readonly && insertAuthorized && (
             <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
         )}
-        {insertAuthorized && !readonly && <Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
+        <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
     </div>;
 };
 

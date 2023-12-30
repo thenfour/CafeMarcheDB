@@ -275,7 +275,6 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
                         void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
                     }}
                 />
-                    <Button>edit</Button>
                 </Stack>;
             },
         };
@@ -299,7 +298,6 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
                 params.api.setFieldValues({ [this.columnName]: val });
             }}
         />
-            <Button>edit</Button>
         </Stack >;
     };
 };

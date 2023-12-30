@@ -297,7 +297,6 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
     return <tr>
         <td>
             <div className={`nameCellContainer ${isYou && "you"}`}>
-                <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}</div>
                 <div className='name'>{user.name}</div>
                 {isYou && <div className='you'>(you)</div>}
             </div>
@@ -308,6 +307,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             return <React.Fragment key={segment.id}>
                 <td className='responseCell'>
+                    <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}</div>
                     {!!segmentResponse.response.attendance ? <AttendanceChip value={segmentResponse.response.attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
                 </td>
             </React.Fragment>;
@@ -524,9 +524,10 @@ export interface EventAttendanceUserTagValueProps {
     value: db3.UserTagPayload | null;
 };
 export const EventAttendanceUserTagValue = (props: EventAttendanceUserTagValueProps) => {
-    return !props.value ? (<Button onClick={props.onClick}>Set expected attendance role</Button>) : (
-        <CMStandardDBChip onClick={props.onClick} model={props.value} />
-    );
+    return !props.value ? <div className='interactable' onClick={props.onClick}>(none)</div> : <CMStandardDBChip onClick={props.onClick} model={props.value} />;
+    // return !props.value ? (<Button onClick={props.onClick}>Set expected attendance role</Button>) : (
+    //     
+    // );
 };
 
 export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: db3.EventWithAttendanceUserTagPayload, refetch: () => void, readonly: boolean }) => {
@@ -547,7 +548,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     const handleChange = (value: db3.UserTagPayload | null) => {
         mutationToken.invoke({
             eventId: event.id,
-            expectedAttendanceUserTagId: !value ? undefined : value.id,
+            expectedAttendanceUserTagId: value?.id || null,
         }).then(() => {
             showSnackbar({ severity: "success", children: "Successfully updated event attendance tag" });
         }).catch(e => {
@@ -559,6 +560,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     };
 
     const itemsClient = API.users.getUserTagsClient();
+    const items = [null, ...(itemsClient.items as db3.UserTagPayload[])];
 
     readonly = readonly || !authorizedForEdit;
 
@@ -566,7 +568,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     return <div className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`}>
         <ChoiceEditCell
             isEqual={(a: db3.UserTagPayload, b: db3.UserTagPayload) => a.id === b.id}
-            items={itemsClient.items}
+            items={items}
             readonly={readonly}
             selectDialogTitle="Select who is expected to attend; they'll be expected to respond."
             value={event.expectedAttendanceUserTag}
