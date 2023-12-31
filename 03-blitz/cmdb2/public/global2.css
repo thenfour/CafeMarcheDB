@@ -283,6 +283,10 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     cursor: wait;
 }
 
+.addNewSongListButton {
+    margin: 14px;
+}
+
 /* 
 this is for use of <InputBase /> as simple text fields. <TextField /> is too bulky sometimes.
 in the case of using within Autocomplete, I can't specify my own class names to the InputBase itself. i have to use a wrapper.
@@ -1507,10 +1511,18 @@ in particular the date range picker is wide.*/
 .attendanceDetailTable .responseCell {
     min-width: 100px;
     text-align: center;
+}
+
+.attendanceDetailTable tfoot td {
+    background-color: white;
+    color: #aaa;
+    font-family: monospace;
+}
+
+.attendanceDetailTable .responseCell .responseCellContents {
     display: flex;
     align-items: center;
 }
-
 
 .attendanceDetailTable th.responseCell>* {
     display: flex;
@@ -1539,4 +1551,53 @@ in particular the date range picker is wide.*/
 .attendanceDetailTable .nameCellContainer>.you {
     color: #000;
     font-weight: normal;
+}
+
+
+
+
+
+.EventSegmentPanel.segment {
+    border: 2px solid #ccc;
+    padding: 0;
+    margin: 15px 5px;
+    border-radius: 6px;
+    background-color: #f8f8f8;
+    border-left: 8px solid var(--primary-color);
+}
+
+
+.EventSegmentPanel.segment .header {
+    padding: 4px 12px;
+    background-color: #ddd;
+    color: #888;
+}
+
+.EventSegmentPanel.segment .content {
+    padding: 8px;
+}
+
+.EventSegmentPanel.segment .name {
+    font-size: 20px;
+    /* color: white; */
+    font-weight: bold;
+}
+
+
+.EventSegmentPanel.segment .editButton {
+    /* color: white;
+    background-color: black;
+    border: 0; */
+    margin: 0 12px;
+}
+
+
+.EventSegmentPanel.segment .dateRange {
+    /* text-transform: uppercase; */
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.newSegmentButton {
+    margin: 10px;
 }

@@ -256,7 +256,7 @@ export class DateTimeRange {
                 const durationMillis = days * gMillisecondsPerDay;
 
                 // all-day events also must start at midnight.
-                const startsAtDateTime = args.startsAtDateTime ? floorToDay(args.startsAtDateTime) : args.startsAtDateTime;
+                const startsAtDateTime = args.startsAtDateTime ? floorToDay(args.startsAtDateTime) : null;
 
                 this.spec = {
                     durationMillis,
@@ -274,7 +274,7 @@ export class DateTimeRange {
             const durationMillis = intervals * gIntervalLen;
 
             // snap start time to 15-minute increment.
-            const startsAtDateTime = args.startsAtDateTime ? roundToNearest15Minutes(args.startsAtDateTime) : args.startsAtDateTime;
+            const startsAtDateTime = args.startsAtDateTime ? roundToNearest15Minutes(args.startsAtDateTime) : null;
 
             this.spec = {
                 durationMillis,
@@ -500,7 +500,7 @@ export class DateTimeRange {
             let startdjs = dayjs(earliestStart);
             let enddjs = dayjs(latestLast);
             // count days in duration, ceil, convert to duration millis
-            let durationDays = startdjs.diff(enddjs, "day");
+            let durationDays = Math.abs(startdjs.diff(enddjs, "day"));
             durationDays = Math.ceil(durationDays);
 
             return new DateTimeRange({

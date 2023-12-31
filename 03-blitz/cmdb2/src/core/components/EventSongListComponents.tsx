@@ -667,7 +667,7 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
     });
 
     return <div className="EventSongListTabContent">
-        {insertAuthorized && !readonly && <Button onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
+        {insertAuthorized && !readonly && <Button className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
         {newOpen && !readonly && insertAuthorized && (
             <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
         )}

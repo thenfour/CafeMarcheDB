@@ -612,10 +612,19 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 }
 
 .contentSection>.header {
-  padding: 2px 15px;
+  padding: 3px;
   background-color: #eee;
   display: flex;
   align-items: center;
+}
+
+.contentSection>.header>* {
+  margin: 0 20px;
+}
+
+.contentSection>.header>*:first-child,
+.contentSection>.header>*:last-child {
+  margin: 0 10px;
 }
 
 .contentSection>.content {
@@ -639,7 +648,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 }
 
 .contentSection .titleText {
-  font-size: 34px;
+  font-size: 38px;
   font-weight: bold;
   color: var(--primary-color);
   text-transform: uppercase;
@@ -677,10 +686,11 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   margin: 0 0 12px 0;
 }
 
+
 .contentSection .smallInfoBox {
   /* background-color: #eee; */
-  margin-right: 40px;
-  margin-top: 4px;
+  /* margin-right: 40px;
+  margin-top: 4px; */
   /* margin-bottom: 10px; */
   display: flex;
   align-items: center;
@@ -865,13 +875,4 @@ table td {
 .CMEditGrid2 .MuiDataGrid-virtualScroller {
   /* when there are no rows, there's a "nothing to show" overlay, but with our row height auto, it will result in a 1px-height area. this allows the overlay to show.*/
   min-height: 40px;
-}
-
-div.segment {
-  border: 2px solid #ccc;
-  padding: 7px;
-  margin: 7px;
-  border-radius: 8px;
-  /* border-left: 19px solid #eee; */
-  background-color: #f8f8f8;
 }

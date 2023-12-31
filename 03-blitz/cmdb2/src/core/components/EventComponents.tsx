@@ -303,12 +303,14 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
         </td>
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
         <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
-        {event.segments.map(segment => {
+        {event.segments.map((segment, iseg) => {
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             return <React.Fragment key={segment.id}>
                 <td className='responseCell'>
-                    <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}</div>
-                    {!!segmentResponse.response.attendance ? <AttendanceChip value={segmentResponse.response.attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
+                    <div className='responseCellContents'>
+                        {iseg === 0 && <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}</div>}
+                        {!!segmentResponse.response.attendance ? <AttendanceChip value={segmentResponse.response.attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
+                    </div>
                 </td>
             </React.Fragment>;
         })}
@@ -757,23 +759,33 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
     return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
         <div className='header'>
+
+            <CMChipContainer>
+                {event.type && //<EventTypeValue type={event.type} />
+                    <CMStandardDBChip
+                        model={event.type}
+                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        // shape='rectangle'
+                        //border='border'
+                        variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
+                    />
+                }
+
+            </CMChipContainer>
+
+            <div className="date smallInfoBox">
+                <CalendarMonthIcon className="icon" />
+                <span className="text">{API.events.getEventDateRange(event).toString()}</span>
+            </div>
+            <div className="location smallInfoBox">
+                <PlaceIcon className="icon" />
+                <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
+            </div>
             <div className='flex-spacer'></div>
             <VisibilityValue permission={event.visiblePermission} variant='verbose' />
         </div>
 
         <div className='content'>
-
-            <div className="infoLine">
-                <div className="date smallInfoBox">
-                    <CalendarMonthIcon className="icon" />
-                    <span className="text">{API.events.getEventDateRange(event).toString()}</span>
-                </div>
-
-                <div className="location smallInfoBox">
-                    <PlaceIcon className="icon" />
-                    <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
-                </div>
-            </div>
 
             <div className='titleLine'>
                 <div className="titleText">
@@ -815,16 +827,6 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
             <div className="tagsLine">
                 <CMChipContainer>
-                    {event.type && //<EventTypeValue type={event.type} />
-                        <CMStandardDBChip
-                            model={event.type}
-                            getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                            // shape='rectangle'
-                            border='border'
-                            variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
-                        />
-                    }
-
                     {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
                 </CMChipContainer>
             </div>
@@ -838,13 +840,13 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
             </div>
         </div> */}
 
-            <SegmentList
+            {verbosity === 'verbose' && <SegmentList
                 event={event}
                 //myEventInfo={myEventInfo}
                 tableClient={tableClient}
                 verbosity={verbosity}
                 readonly={props.readonly}
-            />
+            />}
 
             {verbosity === 'verbose' && (
                 <>

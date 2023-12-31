@@ -16,6 +16,7 @@ import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { EventDetailVerbosity } from './CMCoreComponents';
 import { EventAttendanceFrame } from './EventAttendanceComponents';
 import { useAuthenticatedSession } from "@blitzjs/auth";
+import { Markdown } from "./RichTextEditor";
 
 /*
 
@@ -98,7 +99,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 
 
     return <>
-        {authorized && <Button onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</Button>}
+        {authorized && <Button className="newSegmentButton" onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</Button>}
         {open && <EventSegmentEditDialog
             onCancel={() => setOpen(false)}
             onSave={handleSave}
@@ -160,14 +161,16 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     });
 
     return <div className={`EventSegmentPanel segment`}>
-
-        <div className='name'>
-            {props.segment.name}
-            {!props.readonly && editAuthorized && <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
+        <div className="header">
+            <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
+            {!props.readonly && editAuthorized && <Button className="editButton" onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
         </div>
-        <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
+        <div className="content">
+            <div className='name'>
+                {props.segment.name}
+            </div>
 
-        {/*
+            {/*
         don't show attendance stuff quite yet because we want to refine the GUI first, then add these kind of things.
         for the moment it's too distracting and no good way to get rid of it.
         
@@ -177,13 +180,14 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
             </div>
         </div>} */}
 
-        {/* <div className='description'>description: {props.segmentInfo.segment.description}</div> */}
-        {!props.readonly && editOpen && (<EventSegmentEditDialog
-            initialValue={props.segment}
-            onDelete={handleDelete}
-            onCancel={() => setEditOpen(false)}
-            onSave={handleSave}
-        />)}
+            <Markdown markdown={props.segment.description} />
+            {!props.readonly && editOpen && (<EventSegmentEditDialog
+                initialValue={props.segment}
+                onDelete={handleDelete}
+                onCancel={() => setEditOpen(false)}
+                onSave={handleSave}
+            />)}
+        </div>
     </div>;
 
 };
@@ -200,6 +204,7 @@ interface SegmentListProps {
 
 export const SegmentList = ({ event, tableClient, verbosity, ...props }: SegmentListProps) => {
     return <div className='segmentListContainer'>
+        {!props.readonly && <NewEventSegmentButton event={event} refetch={tableClient.refetch} />}
         <div className="segmentList">
             {event.segments.map(segment => {
                 //const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
@@ -215,6 +220,5 @@ export const SegmentList = ({ event, tableClient, verbosity, ...props }: Segment
                 />;
             })}
         </div>
-        {!props.readonly && <NewEventSegmentButton event={event} refetch={tableClient.refetch} />}
     </div>;
 };
