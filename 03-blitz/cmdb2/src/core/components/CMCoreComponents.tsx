@@ -850,7 +850,9 @@ export const AttendanceChip = (props: AttendanceChipProps) => {
         className={`${props.className} AttendanceChip`}
         color={props.value?.color || null}
         shape={props.shape}
+        tooltip={props.value?.text}
     >
+        {RenderMuiIcon(props.value?.iconName)}
         {props.value?.text || "No response"}
     </CMChip>
 }

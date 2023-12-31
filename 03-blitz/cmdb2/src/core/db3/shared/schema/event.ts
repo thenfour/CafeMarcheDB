@@ -11,7 +11,7 @@ import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerFie
 import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
-    EventSegmentArgs, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadMinimum, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
+    EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadMinimum, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
     EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
     EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
     EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload,
@@ -372,6 +372,13 @@ const xEventArgs_Base: db3.TableDesc = {
         MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         //new CalculatedEventDateRangeField(),
         MakeCreatedAtField("createdAt", { authMap: xEventAuthMap_CreatedAt, }),
+        new ConstEnumStringField({
+            columnName: "segmentBehavior",
+            allowNull: false,
+            defaultValue: "Sets",
+            options: EventSegmentBehavior,
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
         new ForeignSingleField<Prisma.EventTypeGetPayload<{}>>({
             columnName: "type",
             fkMember: "typeId",
@@ -557,6 +564,7 @@ export const xEventAttendance = new db3.xTable({
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
+        iconName: row.iconName,
     }),
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
@@ -565,7 +573,10 @@ export const xEventAttendance = new db3.xTable({
         new PKField({ columnName: "id" }),
         MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GenericStringField({ allowNull: false, columnName: "personalText", format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GenericStringField({ allowNull: false, columnName: "pastText", format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new GenericStringField({ allowNull: false, columnName: "pastPersonalText", format: "title", caseSensitive: false, authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeIntegerField("strength", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),

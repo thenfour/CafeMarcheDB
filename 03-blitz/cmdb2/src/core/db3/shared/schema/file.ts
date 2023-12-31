@@ -16,55 +16,6 @@ export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
 };
 
 
-// view_files - true view perm.
-// upload_files - can upload but not edit most items.
-// manage_files - most users will get this, allows uploading but not 
-// admin_files - ability to change system-level things like mime-type etc.
-
-
-
-// export const xFileAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
-//     PostQueryAsOwner: Permission.view_files,
-//     PostQuery: Permission.view_files,
-//     PreMutateAsOwner: Permission.view_files,
-//     PreMutate: Permission.manage_files,
-//     PreInsert: Permission.manage_files,
-// };
-
-// export const xFileAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
-//     PostQueryAsOwner: Permission.view_files,
-//     PostQuery: Permission.view_files,
-//     PreMutateAsOwner: Permission.manage_files,
-//     PreMutate: Permission.manage_files,
-//     PreInsert: Permission.manage_files,
-// };
-
-// export const xFileAuthMap_R_EOwn_EAdmin: db3.DB3AuthContextPermissionMap = {
-//     PostQueryAsOwner: Permission.view_files,
-//     PostQuery: Permission.view_files,
-//     PreMutateAsOwner: Permission.view_files,
-//     PreMutate: Permission.admin_files,
-//     PreInsert: Permission.admin_files,
-// };
-
-
-// export const xFileTableAuthMap_Uploaders_Managers: db3.DB3AuthTablePermissionMap = {
-//     ViewOwn: Permission.view_files,
-//     View: Permission.view_files,
-//     EditOwn: Permission.upload_files,
-//     Edit: Permission.manage_files,
-//     Insert: Permission.upload_files,
-// };
-
-// export const xFileTableAuthMap_R_EManagers: db3.DB3AuthTablePermissionMap = {
-//     ViewOwn: Permission.view_files,
-//     View: Permission.view_files,
-//     EditOwn: Permission.manage_files,
-//     Edit: Permission.manage_files,
-//     Insert: Permission.manage_files,
-// };
-
-
 // Admin objects are like file tags and similar fields which are viewable by any file users, but only managed by admins.
 export const xFileTableAuth_AdminObjects: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.view_files,

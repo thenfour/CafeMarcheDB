@@ -202,8 +202,14 @@ html,
     border-radius: 2px;
 }
 
-.AttendanceChip .chipMain {
-    width: 110px;
+.CMChip.AttendanceChip .chipMain {
+    width: 175px;
+    padding: 1px 8px;
+}
+
+
+.EventCompletenessTabContent .instrumentFunctionalGroupTD {
+    background-color: white;
 }
 
 /* general purpose style for interactable things like buttons. avoid selection which is awkward with mouse.
@@ -1489,7 +1495,7 @@ in particular the date range picker is wide.*/
 .attendanceResponseColorBarSegmentContainer {
     display: flex;
     flex-grow: 1;
-    margin: 0 10px;
+    margin: 0 6px;
 }
 
 .attendanceResponseColorBarCell {

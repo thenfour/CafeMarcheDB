@@ -402,6 +402,9 @@ model Event {
   statusId            Int?
   status              EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
+// sets vs. options vs . ???
+   segmentBehavior              String?
+
   // don't do this because it's redundant with status. bring it back only if there's a true need.
   // isCancelled Boolean   @default(false) // used as an input for calculating status
 
@@ -547,10 +550,15 @@ model EventSongListSong {
 model EventAttendance {
   id           Int     @id @default(autoincrement())
   sortOrder    Int     @default(0)
+
   text         String // generic button text ("yes", "probably")
   personalText String  @default("") // more personal text explanation ("you are going", "you are probably going")
+  pastText String @default("") // "went"
+  pastPersonalText String @default("") // "you went"
+
   description  String  @default("") // explanation
   color        String?
+  iconName     String?
   strength     Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
   isDeleted    Boolean @default(false)
 

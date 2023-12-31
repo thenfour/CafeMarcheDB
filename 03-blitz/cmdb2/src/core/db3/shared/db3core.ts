@@ -414,6 +414,7 @@ export interface RowInfo {
     name: string;
     description?: string;
     color?: ColorPaletteEntry | null;
+    iconName?: string | null;
     ownerUserId: number | null; // if the row has an "owner" set this. helps with authorization
 };
 

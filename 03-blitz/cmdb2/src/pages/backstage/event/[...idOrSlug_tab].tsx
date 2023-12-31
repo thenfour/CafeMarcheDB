@@ -48,6 +48,7 @@ const MyComponent = () => {
                 new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
                 new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
                 //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
+                new DB3Client.ConstEnumStringFieldClient({ columnName: "segmentBehavior", cellWidth: 220 }),
                 new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
                 new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
                 //new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName: "expectedAttendanceUserTag", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),

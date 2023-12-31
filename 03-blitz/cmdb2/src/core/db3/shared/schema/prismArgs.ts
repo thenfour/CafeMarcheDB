@@ -1007,6 +1007,12 @@ export const EventAttendanceNaturalOrderBy: Prisma.EventAttendanceOrderByWithRel
 ];
 
 
+////////////////////////////////////////////////////////////////
+
+export const EventSegmentBehavior = {
+    Sets: "Sets",
+    Options: "Options",
+} as const satisfies Record<string, string>;
 
 
 ////////////////////////////////////////////////////////////////

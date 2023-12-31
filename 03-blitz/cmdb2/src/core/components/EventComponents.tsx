@@ -602,7 +602,7 @@ export const EventCompletenessTabContent = ({ event, responseInfo, functionalGro
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     return <div>
         <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" />
-        <table>
+        <table className='EventCompletenessTabContent'>
             <tbody>
                 <tr>
                     <th>Instrument group</th>
@@ -612,7 +612,9 @@ export const EventCompletenessTabContent = ({ event, responseInfo, functionalGro
                 </tr>
                 {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
                     return <tr key={functionalGroup.id}>
-                        <td><InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} border={'noBorder'} shape='rectangle' /></td>
+                        <td className='instrumentFunctionalGroupTD'>
+                            <InstrumentFunctionalGroupChip value={functionalGroup} size='small' variation={instVariant} border={'noBorder'} shape='rectangle' />
+                        </td>
                         {event.segments.map((seg) => {
                             // come up with the icons per user responses
                             // either just sort segment responses by answer strength,
