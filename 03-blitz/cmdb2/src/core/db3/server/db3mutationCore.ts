@@ -183,7 +183,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             });
 
             if (!authResult.rowIsAuthorized) {
-                throw new Error(`unauthorized (row); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
+                throw new Error(`unauthorized (row); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))} on table ${table.tableName}`);
             }
             if (authResult.authorizedColumnCount < 1) {
                 throw new Error(`unauthorized (0 columns); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
@@ -239,7 +239,6 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             console.log(validateResult);
             throw new Error(`validation failed; log contains details.`);
         }
-
         const dbModel = table.clientToDbModel(validateResult.successfulModel, "update", clientIntention);
 
         const { localFields, associationFields } = db3.separateMutationValues({ table, fields: dbModel });
@@ -252,14 +251,16 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             const authResult = table.authorizeAndSanitize({
                 clientIntention,
                 contextDesc,
-                model: localFields,
+                // we should pass oldValues here to make sure you are authorized to change from the old data. e.g.
+                // if you are changing the ownerUserID from someone else to yourself. We should definitely check the old value.
+                model: oldValues,//localFields,
                 publicData: ctx.session.$publicData,
                 rowMode: "update",
             });
 
             if (!authResult.rowIsAuthorized) {
                 //debugger;
-                throw new Error(`unauthorized (row); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
+                throw new Error(`unauthorized (row); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))} on table ${table.tableName}`);
             }
             if (authResult.authorizedColumnCount < 1) {
                 //debugger;
@@ -268,7 +269,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 
             obj = await dbTableClient.update({
                 where: { [table.pkMember]: pkid },
-                data: authResult.authorizedModel,
+                data: localFields,// authResult.authorizedModel,
                 //include,
             });
 

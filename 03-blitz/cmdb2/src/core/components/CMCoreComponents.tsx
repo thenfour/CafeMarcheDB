@@ -169,6 +169,34 @@ export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStan
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface RowInfoChipProps {
+    tableSpec: db3.xTable;
+    item: TAnyModel | null;
+
+    onClick?: () => void;
+    className?: string;
+    shape?: CMChipShapeOptions;
+    border?: CMChipBorderOption;
+};
+export const RowInfoChip = (props: RowInfoChipProps) => {
+    const rowInfo: db3.RowInfo = props.item ? props.tableSpec.getRowInfo(props.item) : {
+        name: "--",
+        ownerUserId: null,
+    };
+    return <CMChip
+        color={rowInfo.color}
+        onClick={props.onClick}
+        className={props.className}
+        tooltip={rowInfo.description}
+        shape={props.shape}
+        border={props.border}
+    >
+        {RenderMuiIcon(rowInfo.iconName)}{rowInfo.name}
+    </CMChip>;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const CMStatusIndicator = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
     return <CMStandardDBChip {...props} className="CMStatusIndicator" />;
 };

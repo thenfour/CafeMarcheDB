@@ -1,3 +1,4 @@
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import { Button, FormHelperText, TextField, Typography } from "@mui/material";
@@ -9,7 +10,7 @@ import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import changePassword from "src/auth/mutations/changePassword";
 import * as schemas from "src/auth/schemas";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMChip, CMSinglePageSurfaceCard, CMStandardDBChip, RowInfoChip } from "src/core/components/CMCoreComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -215,6 +216,7 @@ const MainContent = () => {
     const [currentUser, { refetch }] = useCurrentUser();
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const publicData = useAuthenticatedSession();
 
     useAuthorizationOrThrow(`user profile page`, Permission.basic_trust);
 
@@ -233,7 +235,7 @@ const MainContent = () => {
             new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, clientIntention }),
         ],
-    })
+    });
 
     const client = DB3Client.useTableRenderContext({
         tableSpec: spec,
@@ -243,6 +245,9 @@ const MainContent = () => {
         },
         clientIntention,
     });
+
+    const value = client.items[0]! as db3.UserPayload;
+
 
     const handleSave = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
         client.doUpdateMutation(updateObj).then(e => {
@@ -270,6 +275,8 @@ const MainContent = () => {
     //     });
     // };
 
+
+
     return <>
         <SettingMarkdown settingName="profile_markdown"></SettingMarkdown>
         <CMSinglePageSurfaceCard>
@@ -289,6 +296,24 @@ const MainContent = () => {
                 )}
 
                 <ResetOwnPasswordControl />
+
+                <div className="permissionSummary">
+                    {DB3Client.RenderBasicNameValuePair({
+                        name: "role",
+                        value: <RowInfoChip item={value.role} tableSpec={db3.xRole} />,
+                    })}
+
+                    {DB3Client.RenderBasicNameValuePair({
+                        name: "permissions",
+                        value: value.role?.permissions.map(p => <CMChip>{p.permissionId}</CMChip>),
+                    })}
+
+                    {DB3Client.RenderBasicNameValuePair({
+                        name: "publicData permissions",
+                        value: publicData.permissions.map(p => <CMChip>{p}</CMChip>),
+                    })}
+
+                </div>
 
             </div>
         </CMSinglePageSurfaceCard>
