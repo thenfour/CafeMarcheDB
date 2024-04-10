@@ -105,11 +105,11 @@ const AppBarUserIcon_Desktop = () => {
                 color="inherit"
                 sx={{ padding: 0 }}
             >
-                <Badge badgeContent={4} color="error">
-                    <Avatar alt={currentUser?.name || ""}>
-                        {gIconMap.Person()}
-                    </Avatar>
-                </Badge>
+                <Avatar alt={currentUser?.name || ""}>
+                    {gIconMap.Person()}
+                </Avatar>
+                {/* <Badge badgeContent={4} color="error">
+                </Badge> */}
                 <Typography sx={{ p: 2 }}>{currentUser?.name}</Typography>
             </IconButton>
             <Menu
@@ -422,8 +422,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
         items: [
             { type: "link", path: "/backstage/settings", linkCaption: "Settings", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/gallery", linkCaption: "Component Gallery", renderIcon: () => <CollectionsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/coloreditor", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
-            { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor 2", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/colorEditor2", linkCaption: "Color Editor", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
         ],
     },
 ];

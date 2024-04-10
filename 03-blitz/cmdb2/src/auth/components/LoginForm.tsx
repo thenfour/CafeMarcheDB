@@ -1,5 +1,5 @@
 import { AuthenticationError, PromiseReturnType } from "blitz"
-//import Link from "next/link"
+import Link from "next/link"
 //import { LabeledTextField } from "src/core/components/LabeledTextField"
 //import { Form, FORM_ERROR } from "src/core/components/Form"
 import login from "src/auth/mutations/login"
@@ -9,6 +9,7 @@ import { FormControlLabel } from "@mui/material"
 //import { Routes } from "@blitzjs/next"
 import React, { Suspense } from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { Routes } from "@blitzjs/next";
 
 type LoginFormProps = {
   onSuccess?: (user: PromiseReturnType<typeof login>) => void
@@ -39,11 +40,14 @@ export const LoginForm = (props: LoginFormProps) => {
   };
 
   return (<div>
-    <h1>Login</h1>
+    <div className="link createNewAccount">
+      Login to an existing account
+    </div>
     <form onSubmit={handleSubmit} method="">
       <div><FormControlLabel label="Email" control={<input type="text" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />} /></div>
       <div><FormControlLabel label="Password" control={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />} /></div>
-      <div><input type="submit" value="subm" /></div>
+      <div><input type="submit" value="Login" /></div>
+      <Link href={Routes.ForgotPasswordPage()}>Forgot your password?</Link>
     </form>
 
     {/*

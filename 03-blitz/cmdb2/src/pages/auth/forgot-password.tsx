@@ -46,7 +46,7 @@ import { BlitzPage } from "@blitzjs/next"
 // }
 
 const ForgotPasswordPage = () => {
-  return <>not implemented</>;
+  return <>not implemented; ask an admin to reset it for you</>;
 }
 
 export default ForgotPasswordPage

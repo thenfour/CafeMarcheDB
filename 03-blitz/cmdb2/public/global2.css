@@ -1607,3 +1607,27 @@ in particular the date range picker is wide.*/
 .newSegmentButton {
     margin: 10px;
 }
+
+
+.signInBlock {
+    border: 1px solid #555;
+    border-left: 6px solid #ccc;
+    max-width: 600px;
+    padding: 15px;
+    margin: 15px;
+}
+
+.signInBlock:hover {
+    border-left: 6px solid #88c;
+}
+
+.signInBlock .link {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.signInBlock .description {
+    display: block;
+    font-size: 14px;
+}

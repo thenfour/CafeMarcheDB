@@ -15,21 +15,35 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 const LoginSignup = () => {
     const router = useRouter()
     return (
-        <>
-            <Link href={Routes.SignupPage()}>
-                <strong>Sign Up</strong>
-            </Link>
-            <Link href="/api/auth/google">
-                <strong>Google</strong>
-            </Link>
-            <LoginForm
-                onSuccess={(_user) => {
-                    const next = router.query.next ? decodeURIComponent(router.query.next as string) : "/"
-                    return router.push(next)
-                }}
-            />
+        <div className="signInPageMain">
+            <div className="signInBlock google">
+                <Link href="/api/auth/google" className="link googleSignInLink">
+                    Sign in via Google
+                </Link>
+                <div className="description">
+                    <ul>
+                        <li>Sign in</li>
+                        <li>Or create an account associated with your Google account.</li>
+                    </ul>
 
-        </>
+                    This way you don't need to create a password just for this site; it will be associated with your Google account. Note: your Google account will remain separate from this website; no private details will be shared. We will just use Google to verify your identity.
+                </div>
+            </div>
+            <div className="signInBlock">
+                <Link href={Routes.SignupPage()} className="link createNewAccount">
+                    <strong>Create a new account</strong>
+                </Link>
+                Anyone can create an account, but you won't have permission to see everything right away.
+            </div>
+            <div className="signInBlock google">
+                <LoginForm
+                    onSuccess={(_user) => {
+                        const next = router.query.next ? decodeURIComponent(router.query.next as string) : "/"
+                        return router.push(next)
+                    }}
+                />
+            </div>
+        </div>
     );
 };
 

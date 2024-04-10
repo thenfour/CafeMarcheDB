@@ -394,7 +394,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
 
     return <>
         <DB3Client.RenderBasicNameValuePair
-            name="attendance is expected for"
+            name="Attendance is expected for this user tag:"
             value={<EventAttendanceUserTagControl event={event} refetch={refetch} readonly={props.readonly} />}
         />
 

@@ -2,10 +2,9 @@
 better terminology would make things clearer. ideally,
 "answer" is just the yes/no/etc portion of your response
 "comment" is just the comment
-"response" or "attendance" or "attendanceResponse" refers to the combination attendance + comment
+"response" or "attendance" or "attendanceResponse" refers to the combination attendance + comment + instrument
 
-"frame" or "chip" will put a frame. otherwise it's a standalone embeddable component
------------------------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EventAttendanceAnswer
   big chip answer + optional edit button
@@ -33,32 +32,48 @@ EventAttendanceEditControl
   comment       [edit]
 
 
-EventAttendanceFrame
-  per segment
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+EventAttendanceSegment
+
+per segment
   frame + editMode EventAttendanceEditControl or EventAttendanceAnswer
   direct child of alert control
   .---------------------------------------------------------.
-  | Set 1 from  12:00 - 14:00                               |
+  | Set 1 (12:00 - 14:00)                                   |
   | you are going [edit]                                    | <EventAttendanceAnswer>
   | comment       [edit]                                    | 
+  | instrument    [edit]                                    | 
   `---------------------------------------------------------`
   or,
   .---------------------------------------------------------.
-  | Set 1 from  12:00 - 14:00                               |
+  | Set 1 (12:00 - 14:00)                                   |
   | <EventAttendanceEditControl> or <EventAttendanceAnswer> |
   `---------------------------------------------------------`
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 EventAttendanceAlertControl
-  big alert for an event with edit controls for all segments.
-  .--------------------------------.
-  | Are you going to xyz?          |
-  | <EventAttendanceFrame>       |
-  | <EventAttendanceFrame>       |
-  `--------------------------------`
 
-  
-EventAttendanceSummary
+  big alert for an event with edit controls for all segments.
+
+  * low-profile mode if no activity is needed (already answered)
+  * invisible if not invited or otherwise no attendance is relevant
+  * if in the past, invisible. for the sake of simplicity and 
+  .----------------------------------.
+  | Are you going to xyz?            | <-- if ANY are unanswered
+  | <EventAttendanceSegment>         |
+  | <EventAttendanceSegment>         |
+  `----------------------------------`
+
+  | You're going to xyz!             | <-- if all are answered going
+
+  | You're partially going to xyz!   | <-- if ANY are answered going
+
+  | You're missing xyz :(            | <-- if all are answered not going
+
+
+EventAttendanceSummary (obsolete?)
   per event, an array of <BigChip> showing a response + comment (EventAttendanceAnswer). used by noninteractivecard
 
 
@@ -69,7 +84,7 @@ EventAttendanceSummary
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import {
-    Edit as EditIcon
+  Edit as EditIcon
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -305,7 +320,7 @@ import { StandardVariationSpec } from 'shared/color';
 // ////////////////////////////////////////////////////////////////
 // // frame for event segment:
 // // shows your answer & comment, small button to show edit controls.
-// export interface EventAttendanceFrameProps {
+// export interface EventAttendanceSegmentProps {
 //     // event: db3.EventPayloadClient,
 //     // segmentInfo: db3.SegmentAndResponse,
 //     // eventUserInfo: db3.EventInfoForUser,
@@ -313,7 +328,7 @@ import { StandardVariationSpec } from 'shared/color';
 //     onRefetch: () => void,
 // };
 
-// export const EventAttendanceFrame = (props: EventAttendanceFrameProps) => {
+// export const EventAttendanceSegment = (props: EventAttendanceSegmentProps) => {
 //     const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
 //     // const hasResponse = !!props.segmentInfo.response.attendance;
 //     // const expectResponse = true;//props.segmentInfo.response.expectAttendance;
@@ -376,7 +391,7 @@ import { StandardVariationSpec } from 'shared/color';
 //             <div className="segmentList">
 //                 {responses.map(segment => {
 //                     //const segInfo = eventInfo.getSegmentUserInfo(segment.id);
-//                     return <EventAttendanceFrame key={segment.id} onRefetch={props.onRefetch} segmentInfo={segInfo} eventUserInfo={eventInfo} event={props.event} />;
+//                     return <EventAttendanceSegment key={segment.id} onRefetch={props.onRefetch} segmentInfo={segInfo} eventUserInfo={eventInfo} event={props.event} />;
 //                 })}
 //             </div>
 //         </div>
