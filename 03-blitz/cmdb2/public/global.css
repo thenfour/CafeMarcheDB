@@ -168,7 +168,16 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   display: flex;
 }
 
-.richTextContainer.editMode .richTextContentContainer {}
+.richTextContainer.compactMarkdownControl {
+  margin: 0;
+  min-height: auto;
+}
+
+.richTextContainer.compactMarkdownControl.sameLineButton {
+  display: flex;
+  flex-direction: row;
+}
+
 
 .richTextContainer .editControlsContainer {
   /* background-color: rgba(0, 0, 0, 0.06); */
@@ -569,7 +578,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   /* margin-bottom: 10px; */
   display: flex;
   align-items: center;
-  opacity: 50%;
+  opacity: 70%;
   font-size: 19px;
   text-transform: uppercase;
   font-weight: bold;

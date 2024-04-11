@@ -248,15 +248,24 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 }
 
 .CMSmallButton {
+    width: max-content;
     font-size: 13px;
     opacity: 50%;
     font-style: italic;
     /* text-decoration: underline; */
     /* border: 2px outset #fff; */
     display: inline-block;
-    padding: 1px 6px;
+    padding: 0px 6px;
 }
 
+
+.CMSmallButton.variant_framed {
+    opacity: 80%;
+    border: 1px solid black;
+    font-style: normal;
+    border-radius: 4px;
+    background-color: #0003;
+}
 
 
 .debugInspectorOpen {

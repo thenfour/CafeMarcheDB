@@ -59,27 +59,34 @@ interface CompactMutationMarkdownControlProps {
     onChange: (value: string | null) => Promise<any>,
     successMessage?: string,
     errorMessage?: string,
-    debounceMilliseconds?: number,
+    editButtonVariant?: "framed" | "default";
+    cancelButtonMessage?: string,
+    saveButtonMessage?: string,
+    editButtonMessage?: string,
 };
 
 export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownControlProps) => {
-    const [isSaving, setIsSaving] = React.useState(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const onValueChanged = (newValue: string | null) => {
-        setIsSaving(true);
-        props.onChange(newValue).then(x => {
+    const onValueChanged = async (newValue: string | null): Promise<void> => {
+        try {
+            await props.onChange(newValue);
             showSnackbar({ severity: "success", children: props.successMessage || "Updated" });
-        }).catch(e => {
+        } catch (e) {
             console.log(e);
             showSnackbar({ severity: "error", children: props.errorMessage || "Error" });
-        }).finally(() => {
-            setIsSaving(false);
+        } finally {
             props.refetch();
-        });
+        }
     };
-
-    return <CompactMarkdownControl initialValue={props.initialValue || ""} isSaving={isSaving} onValueChanged={onValueChanged} debounceMilliseconds={props.debounceMilliseconds || 1200} />;
+    return <CompactMarkdownControl
+        initialValue={props.initialValue}
+        onValueChanged={onValueChanged}
+        cancelButtonMessage={props.cancelButtonMessage}
+        saveButtonMessage={props.saveButtonMessage}
+        editButtonMessage={props.editButtonMessage}
+        editButtonVariant={props.editButtonVariant}
+    />;
 };
 
 

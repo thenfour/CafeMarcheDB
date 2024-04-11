@@ -205,13 +205,19 @@ interface EventAttendanceCommentControlProps {
 
 const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
   const token = API.events.updateUserEventAttendance.useToken();
-  return <CompactMutationMarkdownControl initialValue={props.userResponse.response.userComment} refetch={props.onRefetch} onChange={async (value) => {
-    return await token.invoke({
-      userId: props.userResponse.user.id,
-      eventId: props.userResponse.event.id,
-      comment: value,
-    });
-  }} />;
+  const val = props.userResponse.response.userComment || "";
+  return <CompactMutationMarkdownControl
+    initialValue={props.userResponse.response.userComment}
+    editButtonMessage={val === "" ? "Add a comment" : "Edit comment"}
+    editButtonVariant={val === "" ? "default" : "framed"}
+    refetch={props.onRefetch}
+    onChange={async (value) => {
+      return await token.invoke({
+        userId: props.userResponse.user.id,
+        eventId: props.userResponse.event.id,
+        comment: value,
+      });
+    }} />;
 };
 
 
@@ -364,6 +370,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const eventIsPast = eventTiming === Timing.Past;
   const allAnswered = segmentResponses.every(r => !!r.response.attendance);
   const allAffirmative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength > 50);
+  const someAffirmative = segmentResponses.some(r => !!r.response.attendance && r.response.attendance!.strength > 50);
   const allNegative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength <= 50);
   const isInvited = eventResponse.isInvited;
 
@@ -405,12 +412,12 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
       <div className='comment'>
         <EventAttendanceCommentControl onRefetch={props.onRefetch} userResponse={eventResponse} />
       </div>
-      <div className='instrument'>
+      {someAffirmative && <div className='instrument'>
         <EventAttendanceInstrumentControl
           eventUserResponse={eventResponse}
           onRefetch={props.onRefetch}
         />
-      </div>
+      </div>}
       <div className="segmentList">
         {segmentResponses.map(segment => {
           return <EventAttendanceSegmentControl
