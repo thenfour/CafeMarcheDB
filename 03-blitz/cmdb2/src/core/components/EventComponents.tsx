@@ -48,6 +48,7 @@ import { useAuthenticatedSession, useAuthorize } from '@blitzjs/auth';
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { Permission } from 'shared/permissions';
 import { EventAttendanceControl } from './EventAttendanceComponents';
+import { Timing } from 'shared/time';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -682,6 +683,7 @@ export interface EventDetailArgs {
     verbosity: EventDetailVerbosity;
     readonly: boolean;
     initialTabIndex?: number;
+    isOnlyEventVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
     allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
 }
 
@@ -746,21 +748,9 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
     const visInfo = API.users.getVisibilityInfo(event);
     const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
-    //const invitedCount = responseInfo.allEventResponses.reduce((acc, resp) => acc + (resp.isInvited ? 1 : 0), 0);
+    const eventTiming = API.events.getEventTiming(event);
 
-    // const minMaxSegmentAttendees = API.events.getMinMaxAttendees({ event });
-    // let formattedAttendeeRange: string = "";
-    // if (minMaxSegmentAttendees.maxAttendees === null || minMaxSegmentAttendees.minAttendees === null) {
-    //     // probably no segments or no attendees.
-    // }
-    // else if (minMaxSegmentAttendees.maxAttendees === minMaxSegmentAttendees.minAttendees) {
-    //     // equal. could be 1 segment, or all similar responses.
-    //     formattedAttendeeRange = ` (${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
-    // } else {
-    //     formattedAttendeeRange = ` (${minMaxSegmentAttendees.minAttendees}-${minMaxSegmentAttendees.maxAttendees}/${invitedCount})`;
-    // }
-
-    return <div className={`contentSection event ${verbosity}Verbosity ${visInfo.className}`}>
+    return <div className={`EventDetail contentSection event ${verbosity}Verbosity ${visInfo.className} ${(!props.isOnlyEventVisible && (eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
         <div className='header'>
 
             <CMChipContainer>

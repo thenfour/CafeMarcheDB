@@ -548,6 +548,10 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   border-left: solid 16px var(--primary-color);
 }
 
+.contentSection.EventDetail.past {
+  opacity: 50%;
+}
+
 /* 
 .contentSection.event.visibility-public>.header {
   background-color: #eee;

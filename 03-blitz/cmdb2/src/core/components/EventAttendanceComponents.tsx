@@ -385,13 +385,13 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   const captionMap = {};
   captionMap[Timing.Past] = [
-    "Are you going?",// any non-responses
+    "Did you go?",// any non-responses
     "You were there!",// all affirmative
     "We missed you 😢",// all negative
     "You were (partially) there",// else (mixed)
   ] as const;
   captionMap[Timing.Present] = [
-    "Are you going?",// any non-responses
+    "Are you there?",// any non-responses
     "You are there!",// all affirmative
     "We're missing you 😢",// all negative
     "You are (partially) going",// else (mixed)

@@ -414,7 +414,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
         {/* <InspectObject src={where} tooltip={`inspect where clause for events query`} />
         <InspectObject src={include} tooltip={`inspect include clause for events query`} />
         <InspectObject src={eventsClient.items} tooltip={`inspect events raw results`} /> */}
-        {eventsClient.items.map(event => <EventDetail key={event.id} readonly={true} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} allowRouterPush={false} />)}
+        {eventsClient.items.map(event => <EventDetail key={event.id} readonly={true} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} isOnlyEventVisible={false} allowRouterPush={false} />)}
     </>;
 };
 

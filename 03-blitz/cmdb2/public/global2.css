@@ -1686,10 +1686,13 @@ in particular the date range picker is wide.*/
 
 .eventAttendanceControl .segment {
     margin: 4px;
-    border: 1px solid #0004;
-    background-color: #fff;
+    /* border: 1px solid #0004; */
+    /* background-color: #fff; */
     padding: 2px 6px;
+    /* border-bottom: 2px solid #0002; */
+    margin-bottom: 10px;
 }
+
 
 .eventAttendanceControl .segment .header {
     font-size: 19px;
