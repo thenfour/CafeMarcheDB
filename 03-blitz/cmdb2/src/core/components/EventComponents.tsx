@@ -706,28 +706,11 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
     });
     //const functionalGroups: db3.InstrumentFunctionalGroupPayload[] = functionalGroupsClient.items as any || [];
 
-    const expectedAttendanceUserTagContext = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xUserTag,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
-        }),
-        filterModel: {
-            items: [],
-            tableParams: {
-                userTagId: event.expectedAttendanceUserTagId,
-            }
-        },
-    });
-    const expectedAttendanceTag: db3.UserTagPayload | null = (expectedAttendanceUserTagContext.items?.length === 1 ? expectedAttendanceUserTagContext.items[0] : null) as any;
+    const expectedAttendanceTag = API.users.getUserTag(event.expectedAttendanceUserTagId);
 
     const refetch = () => {
         tableClient.refetch();
         functionalGroupsClient.refetch();
-        expectedAttendanceUserTagContext.refetch();
     };
 
     const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
@@ -787,13 +770,6 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </Link>
                 </div>
 
-                {event.status && <CMStandardDBChip
-                    variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
-                    border='border'
-                    shape="rectangle"
-                    model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
-                />}
-
                 <EditFieldsDialogButton
                     dialogTitle='Edit event'
                     readonly={props.readonly}
@@ -816,13 +792,20 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     }}
                     renderDialogDescription={() => <>aoesunthaoii</>}
                 />
-            </div>
 
-            <div className="tagsLine">
+                {event.status && <CMStandardDBChip
+                    variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
+                    border='border'
+                    shape="rectangle"
+                    model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
+                />}
+
                 <CMChipContainer>
                     {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
                 </CMChipContainer>
+
             </div>
+
 
             <EventAttendanceControl
                 event={event}
@@ -830,15 +813,6 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                 onRefetch={refetch}
                 responseInfo={responseInfo}
             />
-            {/* 
-        <div className="attendanceResponseInput">
-            <div className="segmentList">
-                {event.segments.map(segment => {
-                    const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
-                    return <EventAttendanceFrame key={segment.id} onRefetch={refetch} segmentInfo={segInfo} eventUserInfo={myEventInfo} event={event} />;
-                })}
-            </div>
-        </div> */}
 
             {verbosity === 'verbose' && <SegmentList
                 event={event}
@@ -896,3 +870,109 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
     </div>;
 };
+
+
+
+export interface EventDashboardItemProps {
+    event: db3.EventClientPayload_Verbose,
+    onRefetch: () => void;
+}
+export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps) => {
+    const eventURI = API.events.getURIForEvent(event);
+    const visInfo = API.users.getVisibilityInfo(event);
+    const expectedAttendanceTag = API.users.getUserTag(event.expectedAttendanceUserTagId);
+    const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
+    const eventTiming = API.events.getEventTiming(event);
+
+    return <div className={`EventDetail contentSection event ${visInfo.className} ${(eventTiming === Timing.Past) ? "past" : "notPast"}`}>
+        <div className='header'>
+            <CMChipContainer>
+                {event.type && //<EventTypeValue type={event.type} />
+                    <CMStandardDBChip
+                        model={event.type}
+                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
+                    />
+                }
+
+            </CMChipContainer>
+
+            <div className="date smallInfoBox">
+                <CalendarMonthIcon className="icon" />
+                <span className="text">{API.events.getEventDateRange(event).toString()}</span>
+            </div>
+            <div className="location smallInfoBox">
+                <PlaceIcon className="icon" />
+                <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
+            </div>
+        </div>
+
+        <div className='content'>
+
+            <div className='titleLine'>
+                <div className="titleText">
+                    <Link href={eventURI} className="titleLink">
+                        {event.name}
+                    </Link>
+                </div>
+
+                {event.status && <CMStandardDBChip
+                    variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
+                    border='border'
+                    shape="rectangle"
+                    model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
+                />}
+
+                <CMChipContainer>
+                    {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+                </CMChipContainer>
+            </div>
+
+            <EventAttendanceControl
+                event={event}
+                linkToEvent={false}
+                onRefetch={props.onRefetch}
+                responseInfo={responseInfo}
+            />
+        </div>
+    </div>;
+
+
+};
+
+
+export const EventDashboard = () => {
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
+    const [currentUser] = useCurrentUser();
+    clientIntention.currentUser = currentUser!;
+
+    const eventsClient = DB3Client.useTableRenderContext({
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xEventVerbose,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+            ],
+        }),
+        filterModel: {
+            items: [],
+            tableParams: {
+                hidePastEvents: true,
+            }
+        },
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention,
+    });
+
+    return <div className='EventDashboard'>
+        <h1>Upcoming events</h1>
+        {eventsClient.items.length < 1 ? (<div>
+            Nothing here!
+        </div>) : eventsClient.items.map(event => <EventDashboardItem key={event.id}
+            event={event as db3.EventClientPayload_Verbose}
+            onRefetch={eventsClient.refetch}
+        />)}
+    </div>;
+};
+
+
+

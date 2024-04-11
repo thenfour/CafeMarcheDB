@@ -276,20 +276,6 @@ export class xTableRenderClient {
             this.refetch = refetch;
         }
 
-        // apply client-side sorting.
-        if (items_ && this.tableSpec.args.table.clientLessThan) {
-            const lt = this.tableSpec.args.table.clientLessThan;
-            items_.sort((a, b) => {
-                if (lt(a, b)) {
-                    return -1;
-                }
-                if (lt(b, a)) {
-                    return 1;
-                }
-                return 0;
-            });
-        }
-
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
             return this.schema.getClientModel(dbitem as TAnyModel, "view", args.clientIntention);

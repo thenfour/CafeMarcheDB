@@ -751,6 +751,9 @@ export type EventPayloadClient = EventPayload; // used to include calculated fie
 export const EventNaturalOrderBy: Prisma.EventOrderByWithRelationInput[] = [
     // while you can order by relation (ex orderByRelation): https://github.com/prisma/prisma/issues/5008
     // you can't do aggregations; for us sorting by soonest segment date would require a min() aggregation. https://stackoverflow.com/questions/67930989/prisma-order-by-relation-has-only-count-property-can-not-order-by-relation-fie
+    // order by nulls
+    // https://github.com/prisma/prisma/issues/14377
+    { startsAt: { nulls: "first", sort: "desc" } }, // latest stuff first
     { id: 'desc' }, // TODO: we should find a way to order by segment! can be done in SQL but not prisma afaik. ordering can just be done in code.
 ];
 

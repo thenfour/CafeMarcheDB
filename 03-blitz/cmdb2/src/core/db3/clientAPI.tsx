@@ -276,6 +276,28 @@ class UsersAPI {
         });
     }
 
+    getUserTag(userTagId: number | null): null | db3.UserTagPayload {
+        if (!userTagId) return null;
+        const ctx = DB3ClientCore.useTableRenderContext({
+            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
+            clientIntention: { intention: 'user', mode: 'primary' },
+            tableSpec: new DB3ClientCore.xTableClientSpec({
+                table: db3.xUserTag,
+                columns: [
+                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
+                ],
+            }),
+            filterModel: {
+                items: [],
+                tableParams: {
+                    userTagId,
+                }
+            },
+        });
+        return (ctx.items?.length === 1 ? ctx.items[0] : null) as any;
+    }
+
+
     updateUserPrimaryInstrument = CreateAPIMutationFunction(updateUserPrimaryInstrumentMutation);
 };
 

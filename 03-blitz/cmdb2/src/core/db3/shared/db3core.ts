@@ -445,7 +445,6 @@ export interface TableDesc {
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     naturalOrderBy?: TAnyModel;
-    clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 
     tableAuthMap: DB3AuthTablePermissionMap;
@@ -467,7 +466,6 @@ export class xTable implements TableDesc {
     rowNameMember?: string;
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
-    clientLessThan?: (a: TAnyModel, b: TAnyModel) => boolean; // for performing client-side sorting (when ORDER BY can't cut it -- see EventNaturalOrderBy for more notes)
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 
     tableAuthMap: DB3AuthTablePermissionMap;

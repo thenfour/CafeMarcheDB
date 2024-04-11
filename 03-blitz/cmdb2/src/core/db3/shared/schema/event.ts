@@ -321,7 +321,7 @@ const xEventArgs_Base: db3.TableDesc = {
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
         ownerUserId: row.createdByUserId,
     }),
-    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string, eventTypeIds?: number[], eventStatusIds: number[] }, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
+    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string, eventTypeIds?: number[], eventStatusIds?: number[], hidePastEvents?: boolean }, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
 
         //console.assert(clientIntention.currentUser?.id !== undefined);
@@ -355,11 +355,15 @@ const xEventArgs_Base: db3.TableDesc = {
             }
         }
 
+        // a past event is one that ENDED before now. and heck give it a couple days of leeway
+        if (params.hidePastEvents) {
+            const t: Prisma.EventWhereInput = {
+                endDateTime: { gte: new Date() }
+            };
+            ret.push(t);
+        }
+
         return ret;
-    },
-    clientLessThan: (a: EventPayload, b: EventPayload) => {
-        // `!`, because we want desc (late dates first)
-        return !IsEarlierDateWithLateNull(getEventSegmentMinDate(a), getEventSegmentMinDate(b));
     },
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
@@ -380,7 +384,7 @@ const xEventArgs_Base: db3.TableDesc = {
         MakeCreatedAtField("createdAt", { authMap: xEventAuthMap_CreatedAt, }),
         new ConstEnumStringField({
             columnName: "segmentBehavior",
-            allowNull: false,
+            allowNull: true,
             defaultValue: "Sets",
             options: EventSegmentBehavior,
             authMap: xEventAuthMap_R_EOwn_EManagers,
@@ -482,6 +486,25 @@ const xEventArgs_Base: db3.TableDesc = {
         new GhostField({ memberName: "segments", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
+
+        new EventStartsAtField({
+            allowNull: true,
+            columnName: "startsAt",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
+        new GenericIntegerField({
+            allowNull: false,
+            columnName: "durationMillis",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
+        new BoolField({
+            columnName: "isAllDay",
+            defaultValue: true,
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+            allowNull: false
+        }),
+
+        new GhostField({ memberName: "endDateTime", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 };
 

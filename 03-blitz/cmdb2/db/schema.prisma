@@ -151,6 +151,12 @@ model Setting {
   value String @default("") // json value
 }
 
+model Markdown {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @default("")
+  value String @default("") // json value
+}
+
 model Change {
   id Int @id @default(autoincrement())
 
@@ -402,13 +408,26 @@ model Event {
   statusId            Int?
   status              EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
-// sets vs. options vs . ???
-   segmentBehavior              String?
+  // sets vs. options vs . ???
+  segmentBehavior String?
 
   // don't do this because it's redundant with status. bring it back only if there's a true need.
   // isCancelled Boolean   @default(false) // used as an input for calculating status
 
   createdAt DateTime
+
+  // conforms to DateTimeRangeSpec, to encompass all segments. the idea is to be able to sort by event date.
+  // normally these are stored in EventSegment, but sorting based on relation like that is not possible (and if it was, it would be VERY messy to manage)
+  // so these are to be populated automatically when you change segment dates.
+  // for safety, basically any time you change segment data at all:
+  // - new segment
+  // - change segment
+  // - delete segment
+  // then we just populate this
+  startsAt       DateTime? // date null means TBD
+  durationMillis Int       @default(0)
+  isAllDay       Boolean   @default(true)
+  endDateTime    DateTime? // after calculating the date range, this is the "end time" or TBD
 
   createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
   createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
@@ -548,19 +567,19 @@ model EventSongListSong {
 
 // things like yes, no, not-sure-yes, not-sure-no, partially
 model EventAttendance {
-  id           Int     @id @default(autoincrement())
-  sortOrder    Int     @default(0)
+  id        Int @id @default(autoincrement())
+  sortOrder Int @default(0)
 
-  text         String // generic button text ("yes", "probably")
-  personalText String  @default("") // more personal text explanation ("you are going", "you are probably going")
-  pastText String @default("") // "went"
+  text             String // generic button text ("yes", "probably")
+  personalText     String @default("") // more personal text explanation ("you are going", "you are probably going")
+  pastText         String @default("") // "went"
   pastPersonalText String @default("") // "you went"
 
-  description  String  @default("") // explanation
-  color        String?
-  iconName     String?
-  strength     Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
-  isDeleted    Boolean @default(false)
+  description String  @default("") // explanation
+  color       String?
+  iconName    String?
+  strength    Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
+  isDeleted   Boolean @default(false)
 
   responses EventSegmentUserResponse[]
 }

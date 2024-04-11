@@ -14,6 +14,7 @@ import * as mime from 'mime';
 import sharp from "sharp";
 import * as mm from 'music-metadata';
 import { SharedAPI } from "../shared/sharedAPI";
+import { DateTimeRange } from "shared/time";
 
 var path = require('path');
 var fs = require('fs');
@@ -39,6 +40,34 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
     }
 };
 
+export const RecalcEventDateRange = async (eventId: number) => {
+    try {
+        // get list of all event segments
+        const segments = await db.eventSegment.findMany({
+            where: {
+                eventId,
+            }
+        });
+
+        let range = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
+        for (const segment of segments) {
+            const r = db3.getEventSegmentDateTimeRange(segment);
+            range = range.unionWith(r);
+        }
+
+        await db.event.update({
+            where: { id: eventId },
+            data: {
+                startsAt: range.getSpec().startsAtDateTime,
+                durationMillis: range.getSpec().durationMillis,
+                isAllDay: range.getSpec().isAllDay,
+                endDateTime: range.getEndDateTime(),
+            }
+        });
+    } catch (e) {
+        // well weird.
+    }
+};
 
 export interface UpdateAssociationsArgs {
     ctx: AuthenticatedMiddlewareCtx;
@@ -132,7 +161,19 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         if (!oldValues) {
             throw new Error(`can't delete unknown '${table.tableName}' with pk '${id}'`);
         }
+
+        // special hooks?
+        let eventIdToRecalc: null | number = null;
+        if (table.tableName.toLowerCase() === "eventsegment") {
+            // if you make any changes to event segments, recalculate the event date range.
+            eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
+        }
+
         const choice = await dbTableClient.deleteMany({ where: { [table.pkMember]: id } });
+
+        if (eventIdToRecalc !== null) {
+            await RecalcEventDateRange(eventIdToRecalc);
+        }
 
         await RegisterChange({
             action: ChangeAction.delete,
@@ -216,7 +257,14 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             });
         });
 
-        return obj;
+        // special hooks?
+        if (table.tableName.toLowerCase() === "eventsegment") {
+            // if you make any changes to event segments, recalculate the event date range.
+            const eventIdToRecalc = (localFields as Prisma.EventSegmentGetPayload<{}>).eventId;
+            await RecalcEventDateRange(eventIdToRecalc);
+        }
+
+        return obj as any;
     } catch (e) {
         console.error(e);
         throw (e);
@@ -298,6 +346,13 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                 desiredTagIds: associationFields[column.member],
             });
         });
+
+        // special hooks?
+        if (table.tableName.toLowerCase() === "eventsegment") {
+            // if you make any changes to event segments, recalculate the event date range.
+            const eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
+            await RecalcEventDateRange(eventIdToRecalc);
+        }
 
         return obj;
     } catch (e) {
