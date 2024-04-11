@@ -1013,3 +1013,14 @@ export const OpenCloseIcon = ({ isOpen }: { isOpen: boolean }) => {
     // 
     return isOpen ? <>&#9207;</> : <>&#9205;</>;
 };
+
+
+export interface CMSmallButtonProps {
+    onClick?: () => void;
+};
+
+export const CMSmallButton = (props: React.PropsWithChildren<CMSmallButtonProps>) => {
+    return <div className="interactable freeButton CMSmallButton" onClick={() => { props.onClick && props.onClick() }}>
+        {props.children}
+    </div>;
+};

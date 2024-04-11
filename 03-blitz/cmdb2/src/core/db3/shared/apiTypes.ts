@@ -51,6 +51,8 @@ export interface TupdateUserEventAttendanceMutationArgs {
     isInvited?: boolean | null; // for event
 
     // if undefined, attendance is not set.
+    // any segment responses listed here are updated. if not listed, its existing record will be ignored.
+    // key is segment ID.
     segmentResponses?: Record<number, {
         attendanceId: null | number; // for segments
     }>;

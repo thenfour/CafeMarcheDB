@@ -2,7 +2,7 @@ import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { DateTimeRange } from "shared/time";
+import { DateTimeRange, Timing } from "shared/time";
 import { Clamp, TAnyModel, gMinImageDimension, gQueryOptions } from "shared/utils";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
 import * as db3 from "src/core/db3/db3";
@@ -328,6 +328,11 @@ class EventsAPI {
         }
         //console.log(`---------- end getEventDateRange: ${ret.toString()}`);
         return ret;
+    }
+
+    getEventTiming(event: db3.EventClientPayload_Verbose) {
+        const r = this.getEventDateRange(event);
+        return r.hitTestDateTime();
     }
 
     // getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserWithInstrumentsPayload }) {

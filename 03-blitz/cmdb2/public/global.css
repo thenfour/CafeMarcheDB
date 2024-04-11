@@ -410,8 +410,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   color: green;
 }
 
-.cmcard .attendance,
-.attendanceResponseInput .selectedValue {
+.cmcard .attendance {
   font-size: 14px;
   padding-bottom: 15px;
   text-transform: uppercase;
@@ -422,8 +421,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   font-weight: bold;
 }
 
-.cmcard .attendance .chip,
-.attendanceResponseInput .selectedValue {
+.cmcard .attendance .chip {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -432,19 +430,11 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   color: white;
 }
 
-.attendanceResponseInput .selectedValue {
-  flex-direction: column;
-  display: flex;
-  width: max-content;
-  align-items: flex-start;
-  background-color: #9acd3229;
-  color: yellowgreen;
-}
-
+/* 
 .cmcard .attendance.yes .chip {
   background-color: #9acd3229;
   color: yellowgreen;
-}
+} */
 
 
 
@@ -466,36 +456,6 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 }
 
 
-.attendanceResponseInput {
-  /* border: solid 2px #0008;
-  padding: 15px; */
-}
-
-.attendanceResponseInput .segmentName {
-  font-size: 18px;
-  font-weight: bold;
-  /* margin-bottom: 2px;
-  border-bottom: 1px dotted #0004;
-  padding-bottom: 10px; */
-}
-
-.attendanceResponseInput .segment {
-  margin-bottom: 12px;
-  margin-right: 19px;
-  /* without left margin the shadow is chopped off sometimes (alerts) */
-  margin-left: 4px;
-  background-color: white;
-  border-radius: 4px;
-  padding: 8px 12px;
-  box-shadow: var(--subtle-elevation);
-  border-left: 6px solid #88f6;
-}
-
-.attendanceResponseInput .segment.alert {
-  background-color: #fc75;
-  border-left: 6px solid orange;
-}
-
 .segment .header {
   display: flex;
 }
@@ -506,97 +466,12 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   color: red;
 }
 
-
-
-.attendanceResponseInput .segmentList {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-
-.attendanceResponseInput .yes.noSelection,
-.attendanceResponseInput .yes.selected {
-  color: white;
-  background-color: green;
-}
-
-.attendanceResponseInput .yes_maybe.selectedValue .icon,
-.attendanceResponseInput .yes_maybe.selectedValue .text {
-  color: yellowgreen;
-}
-
 .textWithIcon,
 .flexVerticalCenter {
   display: flex;
   /* align-content: center; */
   align-items: center;
 }
-
-.attendanceResponseInput .yes_maybe.noSelection,
-.attendanceResponseInput .yes_maybe.selected {
-  color: white;
-  background-color: yellowgreen;
-}
-
-.attendanceResponseInput .no_maybe.noSelection,
-.attendanceResponseInput .no_maybe.selected {
-  color: white;
-  background-color: orange;
-}
-
-.attendanceResponseInput .no.noSelection,
-.attendanceResponseInput .no.selected {
-  color: white;
-  background-color: red;
-}
-
-.attendanceResponseInput .some.noSelection {
-  color: white;
-  background-color: red;
-}
-
-.attendanceResponseInput .some.selected {
-  color: white;
-  background-color: #675;
-}
-
-.attendanceResponseInput .yes.notSelected,
-.attendanceResponseInput .yes_maybe.notSelected,
-.attendanceResponseInput .no_maybe.notSelected,
-.attendanceResponseInput .no.notSelected {
-  color: #666;
-  background-color: #ccc;
-  opacity: 50%;
-}
-
-.attendanceResponseInput input.add_comment {
-  font-size: 16px;
-  background-color: transparent;
-  border: 1px solid #0002;
-  border-radius: 7px;
-  padding: 4px;
-  margin: 0 13px;
-  width: 400px;
-}
-
-.attendanceResponseInput .placeholderText {
-  color: #0006;
-  letter-spacing: normal;
-  text-decoration: none;
-  text-transform: none;
-  font-style: italic;
-  font-weight: normal;
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-}
-
-.attendanceResponseInput .selectedValue .placeholderText .icon {
-  color: #0008;
-  width: 14px;
-  height: 14px;
-}
-
 
 .contentSection {
   /* spacing is already provided by parent layout*/

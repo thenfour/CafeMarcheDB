@@ -146,6 +146,12 @@ export const getEventSegmentDateTimeRange = (segment: EventSegmentPayloadMinimum
 }
 
 
+export const getEventSegmentTiming = (segment: EventSegmentPayloadMinimum) => {
+    const r = getEventSegmentDateTimeRange(segment);
+    return r.hitTestDateTime(null);
+}
+
+
 export const getEventSegmentMinDate = (event: EventPayload): Date | null => {
     const d = event.segments.reduce((acc, seg) => {
         // we want NULLs to count as maximum. The idea is that the date is not "yet" determined.

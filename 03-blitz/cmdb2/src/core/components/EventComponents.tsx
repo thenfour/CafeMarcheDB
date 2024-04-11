@@ -47,6 +47,7 @@ import { GetStyleVariablesForColor } from './Color';
 import { useAuthenticatedSession, useAuthorize } from '@blitzjs/auth';
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { Permission } from 'shared/permissions';
+import { EventAttendanceControl } from './EventAttendanceComponents';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -832,6 +833,13 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
                 </CMChipContainer>
             </div>
+
+            <EventAttendanceControl
+                event={event}
+                linkToEvent={false}
+                onRefetch={refetch}
+                responseInfo={responseInfo}
+            />
             {/* 
         <div className="attendanceResponseInput">
             <div className="segmentList">

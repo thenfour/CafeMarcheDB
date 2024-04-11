@@ -2,6 +2,12 @@ import dayjs, { Dayjs } from "dayjs";
 import { assert } from "blitz";
 import { isInRange } from "./utils";
 
+export enum Timing {
+    Past = 'Past',
+    Present = 'Present',
+    Future = 'Future',
+}
+
 export const gMillisecondsPerMinute = 60 * 1000;
 export const gMillisecondsPerHour = 60 * gMillisecondsPerMinute;
 export const gMillisecondsPerDay = 24 * gMillisecondsPerHour;
@@ -465,6 +471,18 @@ export class DateTimeRange {
         return ret;
     }
 
+    hitTestDateTime = (lhs?: Date | null): Timing => {
+        const lhsx = lhs || new Date();
+        const start = this.getStartDateTime();
+        if (start === null) return Timing.Future; // TBD = future
+        if (lhsx < start) return Timing.Future; // test date is before start; this range is in the future
+
+        const end = this.getEndDateTime();
+        if (end === null) throw new Error("TBD should have been handled already");
+        if (lhsx >= end) return Timing.Past;
+        return Timing.Present;
+    };
+
     unionWith(rhs: DateTimeRange): DateTimeRange {
         // between TBD and isAllDay, and the fact that our spec cannot represent certain things
         // (like known beginning but no known end, or different all-day-ness between start & end),
@@ -527,3 +545,4 @@ export const DateTimeRangeLessThan = (lhs: DateTimeRange | null, rhs: DateTimeRa
     }
     return lhs.isLessThan(rhs);
 };
+

@@ -14,6 +14,10 @@ html,
     font-size: 14px;
 }
 
+.HalfOpacity {
+    opacity: 50%;
+}
+
 /* FormControlLabel by default has a negative margin. no idea why but this negates. */
 .CMFormControlLabel {
     margin: 0;
@@ -207,6 +211,9 @@ html,
     padding: 1px 8px;
 }
 
+.CMChipNoMargin {
+    margin: 0;
+}
 
 .EventCompletenessTabContent .instrumentFunctionalGroupTD {
     background-color: white;
@@ -240,7 +247,15 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     user-select: none;
 }
 
-
+.CMSmallButton {
+    font-size: 13px;
+    opacity: 50%;
+    font-style: italic;
+    /* text-decoration: underline; */
+    /* border: 2px outset #fff; */
+    display: inline-block;
+    padding: 1px 6px;
+}
 
 
 
@@ -1630,4 +1645,44 @@ in particular the date range picker is wide.*/
 .signInBlock .description {
     display: block;
     font-size: 14px;
+}
+
+/* --------------------------------------------------- */
+.eventAttendanceControl {
+    max-width: 650px;
+    background-color: #eee;
+    padding: 6px;
+    border-radius: 3px;
+    border: 2px solid #ddd;
+    border-left: 8px solid #ddd;
+}
+
+.eventAttendanceControl.alert {
+    background-color: #fee;
+    /* padding: 4px; */
+    border: 2px solid #f88;
+    border-left: 8px solid #f88;
+}
+
+.eventAttendanceControl .eventName {
+    display: inline;
+}
+
+
+.eventAttendanceControl .header {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+
+.eventAttendanceControl .segment {
+    margin: 4px;
+    border: 1px solid #0004;
+    background-color: #fff;
+    padding: 2px 6px;
+}
+
+.eventAttendanceControl .segment .header {
+    font-size: 19px;
+    font-weight: bold;
 }
