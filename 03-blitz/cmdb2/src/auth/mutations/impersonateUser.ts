@@ -24,15 +24,16 @@ export default resolver.pipe(
             return user;
         }
 
-        await ctx.session.$create(CreatePublicData(user,
+        await ctx.session.$create(CreatePublicData({
+            user,
             // don't clobber the original impersonatingFromUserId; it's your true user id.
             // repro:
             // - log in as user A who is admin
             // - impersonate user B (who is also an admin)
             // - impersonate user C
             // impersonatingFromUserId should point to A, not B.
-            ctx.session.impersonatingFromUserId || ctx.session.userId
-        ));
+            impersonatingFromUserId: ctx.session.impersonatingFromUserId || ctx.session.userId,
+        }));
 
         return user
     }

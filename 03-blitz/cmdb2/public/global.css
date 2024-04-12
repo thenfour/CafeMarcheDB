@@ -164,18 +164,28 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   width: 100%;
 }
 
-.richTextContainer .richTextContentContainer {
-  display: flex;
+.richTextContainer.editable {
+  border: 1px solid #ddd;
 }
 
-.richTextContainer.compactMarkdownControl {
-  margin: 0;
-  min-height: auto;
+.richTextContainer .richTextContentContainer {
+  display: flex;
 }
 
 .richTextContainer.compactMarkdownControl.sameLineButton {
   display: flex;
   flex-direction: row;
+}
+
+.richTextContainer.compactMarkdownControlRoot.compact {
+  margin: 0;
+  min-height: auto;
+}
+
+/* during editing, visually group together all these pieces. preview, editor, buttons, help ...*/
+.compactMarkdownControlRoot.editing {
+  border: 1px solid #ddd;
+  padding: 2px;
 }
 
 
@@ -211,6 +221,14 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   margin: 15px;
   margin-top: 0;
   flex: 1;
+}
+
+/*
+you want to be able to just paste a paragraph of text without it spanning across the screen.
+it's not often you'll actually want markdown that's really wide.
+*/
+.renderedContent.limitedWidth {
+  max-width: 700px;
 }
 
 .richTextContainer .renderedContent>*,
@@ -763,4 +781,13 @@ table td {
 .CMEditGrid2 .MuiDataGrid-virtualScroller {
   /* when there are no rows, there's a "nothing to show" overlay, but with our row height auto, it will result in a 1px-height area. this allows the overlay to show.*/
   min-height: 40px;
+}
+
+
+/* compact markdown editor */
+.helpText,
+.tinyCaption {
+  font-size: 13px;
+  font-style: italic;
+  color: #aaa;
 }

@@ -10,6 +10,7 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { TAnyModel } from "shared/utils";
 import { gIconMap } from "./IconSelectDialog";
 import { useAuthenticatedSession } from "@blitzjs/auth";
+import { Markdown } from "src/core/components/RichTextEditor";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -120,9 +121,11 @@ type DB3EditObject2DialogProps = {
     onDelete?: (tableClient: DB3ClientCore.xTableRenderClient) => void;
     tableRenderClient: DB3ClientCore.xTableRenderClient;
     initialValue: TAnyModel;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
 };
 
-export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete }: DB3EditObject2DialogProps) {
+export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initialValue, onDelete, ...props }: DB3EditObject2DialogProps) {
     const theme = useTheme();
     const publicData = useAuthenticatedSession();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -172,12 +175,11 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                 className={`ReactiveInputDialog`}
                 fullScreen={fullScreen}
             >
-                <DialogTitle>Edit {tableRenderClient.tableSpec.args.table.tableName}</DialogTitle>
+                <DialogTitle>{props.title || <>Edit {tableRenderClient.tableSpec.args.table.tableName}</>}</DialogTitle>
                 <DialogContent dividers>
-                    <DialogContentText>
-                        To subscribe to this website, please enter your email address here. We
-                        will send updates occasionally.
-                    </DialogContentText>
+                    {
+                        props.description && <DialogContentText>{props.description}</DialogContentText>
+                    }
                     {
                         onDelete && (<div className="deleteConfirmationControlContainer">
                             <Button onClick={() => setShowingDeleteConfirmation(true)}>{gIconMap.Delete()}Delete</Button>
@@ -234,16 +236,26 @@ type DB3EditObjectDialogProps = {
     table: DB3ClientCore.xTableClientSpec;
     clientIntention: db3.xTableClientUsageContext;
     initialValue: TAnyModel;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
 };
 
-export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, initialValue, onDelete }: DB3EditObjectDialogProps) {
+export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, initialValue, onDelete, ...props }: DB3EditObjectDialogProps) {
     const tableClient = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
         tableSpec: table,
         clientIntention,
     });
 
-    return <DB3EditObject2Dialog initialValue={initialValue} onCancel={onCancel} onOK={onOK} onDelete={onDelete} tableRenderClient={tableClient} />
+    return <DB3EditObject2Dialog
+        initialValue={initialValue}
+        onCancel={onCancel}
+        onOK={onOK}
+        onDelete={onDelete}
+        tableRenderClient={tableClient}
+        title={props.title}
+        description={props.description}
+    />
 };
 
 

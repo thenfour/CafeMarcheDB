@@ -17,12 +17,13 @@ import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
 import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
-import { ClientSession } from "@blitzjs/auth";
+import { ClientSession, useAuthenticatedSession } from "@blitzjs/auth";
 import { GetStyleVariablesForColor } from "../components/Color";
 import { ColorVariationSpec, gAppColors } from "shared/color";
 import getSetting from "src/auth/queries/getSetting";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
+import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -520,6 +521,12 @@ class FrontpageAPI {
 
 class OtherAPI {
     updateGenericSortOrderMutation = CreateAPIMutationFunction(updateGenericSortOrder);
+    setShowingAdminControlsMutation = CreateAPIMutationFunction(setShowingAdminControls);
+
+    useIsShowingAdminControls() {
+        const sess = useAuthenticatedSession();
+        return sess.isSysAdmin && sess.showAdminControls;
+    };
 };
 
 class SettingsAPI {

@@ -1,7 +1,7 @@
 import { EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
 import { SessionContext } from "@blitzjs/auth";
 import { AuthenticatedMiddlewareCtx, assert } from "blitz";
-import { User } from "db"
+import db, { Prisma, User } from "db"
 import { Permission, gPublicPermissions } from "shared/permissions";
 import { Ctx } from "@blitzjs/next";
 
@@ -11,6 +11,8 @@ export type PublicDataType = {
   impersonatingFromUserId?: User["id"],
   isSysAdmin: boolean,
   permissions: string[],
+
+  showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
 };
 
 export type CMAuthorize2Args = {
@@ -90,20 +92,28 @@ declare module "@blitzjs/auth" {
   }
 }
 
-export function CreatePublicData(user: any, impersonatingFromUserId?: number): PublicDataType {
-  if (!user) {
+export interface CreatePublicDataArgs {
+  user?: Prisma.UserGetPayload<{ include: { role: { include: { permissions: { include: { permission: true } } } } } }>; // if no user, public profile.
+  impersonatingFromUserId?: number;
+  showAdminControls?: boolean; // client-side option
+}
+
+export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
+  if (!args.user) {
+    // anonymous/public
     return {
       userId: 0, // numeric & falsy
       isSysAdmin: false,
       permissions: [...gPublicPermissions],
-      impersonatingFromUserId,
+      impersonatingFromUserId: args.impersonatingFromUserId,
+      showAdminControls: false,
     };
   }
   return {
-    userId: user.id,
-    isSysAdmin: user.isSysAdmin,
-    permissions: [...gPublicPermissions, ...((user.role?.permissions)?.map(p => p.permission?.name) || [])],
-    impersonatingFromUserId,
+    userId: args.user.id,
+    isSysAdmin: args.user.isSysAdmin,
+    permissions: [...gPublicPermissions, ...((args.user.role?.permissions)?.map(p => p.permission?.name) || [])],
+    impersonatingFromUserId: args.impersonatingFromUserId,
+    showAdminControls: args.showAdminControls || false,
   };
 };
-

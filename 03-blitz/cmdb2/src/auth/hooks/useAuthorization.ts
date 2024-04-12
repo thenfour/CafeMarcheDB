@@ -14,3 +14,4 @@ export const useAuthorizationOrThrow = (reason: string, permission: Permission) 
         throw new Error(`unauthorized`);
     }
 }
+

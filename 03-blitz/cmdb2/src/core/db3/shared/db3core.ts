@@ -3,7 +3,7 @@ import { Permission, gPublicPermissions } from "shared/permissions";
 import { CalculateChanges, CalculateChangesResult, TAnyModel, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
 import db, { Prisma } from "db";
 import { assert } from "blitz";
-import { CreatePublicData, PublicDataType } from "types";
+import { PublicDataType } from "types";
 import { EmptyPublicData, PublicData } from "@blitzjs/auth";
 import { ComputeChangePlan } from "shared/associationUtils";
 

@@ -14,13 +14,13 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { API } from '../clientAPI';
 import * as db3 from "../db3";
 import { TAnyModel } from "shared/utils";
-import { RenderBasicNameValuePair } from "./DB3ClientBasicFields";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 export interface EventDateRangeColumnArgs {
+    fieldCaption?: string;
+    fieldDescriptionSettingName?: string;
     startsAtColumnName: string;
     durationMillisColumnName: string;
     isAllDayColumnName: string;
@@ -39,6 +39,8 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             headerName: "",
             width: 250,
             visible: true,
+            fieldCaption: args.fieldCaption,
+            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
         this.args = args;
     }
@@ -51,18 +53,11 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "custom",
             renderCell: (params: GridRenderCellParams) => {
+                // renders only the value (because the grid header shows the name)
                 return <div>{API.events.getEventSegmentFormattedDateRange(params.row)}</div>;
-                // if (params.value == null) {
-                //     return <>--</>;
-                // }
-                // const value = params.value as Date;
-                // if (isNaN(value.valueOf())) {
-                //     return <>---</>; // treat as null.
-                // }
-                // const d = dayjs(value);
-                // return <>{d.toString()}</>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
+                // renders only the editor
                 return <DateTimeRangeControl
                     items={[]}
                     onChange={(newValue) => {
@@ -81,12 +76,27 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<unknown>) => RenderBasicNameValuePair({
-        key: params.key,
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<unknown>) => this.defaultRenderer({
         className: params.className,
-        name: this.columnName,
         value: <div>{API.events.getEventSegmentFormattedDateRange(params.row as any)}</div>
     });
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        return this.defaultRenderer({
+            value: <DateTimeRangeControl
+                items={[]}
+                onChange={(newValue) => {
+                    const spec = newValue.getSpec();
+                    params.api.setFieldValues({
+                        [this.args.startsAtColumnName]: spec.startsAtDateTime,
+                        [this.args.durationMillisColumnName]: spec.durationMillis,
+                        [this.args.isAllDayColumnName]: spec.isAllDay,
+                    });
+                }}
+                value={db3.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
+            />
+        });
+    };
 
     ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
         updateModel[this.args.startsAtColumnName] = clientRow[this.args.startsAtColumnName];
@@ -95,21 +105,6 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         // console.log(`ApplyClientToPostClient`);
         // console.log(clientRow);
         // console.log(updateModel);
-    };
-
-    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        return <DateTimeRangeControl
-            items={[]}
-            onChange={(newValue) => {
-                const spec = newValue.getSpec();
-                params.api.setFieldValues({
-                    [this.args.startsAtColumnName]: spec.startsAtDateTime,
-                    [this.args.durationMillisColumnName]: spec.durationMillis,
-                    [this.args.isAllDayColumnName]: spec.isAllDay,
-                });
-            }}
-            value={db3.getEventSegmentDateTimeRange(params.row as db3.EventSegmentPayload)}
-        />;
     };
 };
 

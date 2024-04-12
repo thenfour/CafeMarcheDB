@@ -140,7 +140,7 @@ leave all that for later.
 export const getEventSegmentDateTimeRange = (segment: EventSegmentPayloadMinimum) => {
     return new DateTimeRange({
         startsAtDateTime: segment.startsAt,
-        durationMillis: segment.durationMillis,
+        durationMillis: Number(segment.durationMillis),
         isAllDay: segment.isAllDay,
     });
 }
@@ -574,6 +574,8 @@ export const xEventSegment = new db3.xTable({
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
+
+        new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 

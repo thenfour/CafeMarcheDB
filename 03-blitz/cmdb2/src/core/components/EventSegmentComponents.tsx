@@ -1,5 +1,3 @@
-// 
-
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
@@ -14,9 +12,9 @@ import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { EventDetailVerbosity } from './CMCoreComponents';
-import { EventAttendanceFrame } from './EventAttendanceComponents';
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "./RichTextEditor";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 /*
 
@@ -31,6 +29,7 @@ import { Markdown } from "./RichTextEditor";
 ////////////////////////////////////////////////////////////////
 interface EventSegmentEditDialogProps {
     initialValue: db3.EventVerbose_EventSegmentPayload;
+    isNewObject: boolean,
     onSave: (newValue: db3.EventVerbose_EventSegmentPayload, tableRenderClient: DB3Client.xTableRenderClient) => void;
     onCancel: () => void;
     onDelete?: (tableRenderClient: DB3Client.xTableRenderClient) => void;
@@ -45,9 +44,9 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, fieldCaption: "Description", fieldDescriptionSettingName: "EventSegmentDescriptionFieldDescription" }),
 
-            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
+            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range", fieldDescriptionSettingName: "EventSegmentDateRangeFieldDescription" }),
 
             // this must specify all the columns which are required for insertion as well.
             new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention, visible: false }),
@@ -61,12 +60,15 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         onCancel={props.onCancel}
         onOK={props.onSave}
         table={tableSpec}
+        title={<SettingMarkdown settingName={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
+        description={<SettingMarkdown settingName={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
     />;
 };
 
 ////////////////////////////////////////////////////////////////
 interface NewEventSegmentButtonProps {
     event: db3.EventPayloadMinimum;
+    initialName: string;
     refetch: () => void;
 };
 
@@ -77,6 +79,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
     const publicData = useAuthenticatedSession();
     const blankObject: db3.EventSegmentPayload = db3.xEventSegment.createNew(clientIntention) as any;
+    blankObject.name = props.initialName;
     blankObject.eventId = event.id;
     blankObject.event = event;
 
@@ -102,6 +105,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
         {authorized && <Button className="newSegmentButton" onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</Button>}
         {open && <EventSegmentEditDialog
             onCancel={() => setOpen(false)}
+            isNewObject={true}
             onSave={handleSave}
             initialValue={blankObject}
         />
@@ -170,19 +174,10 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
                 {props.segment.name}
             </div>
 
-            {/*
-        don't show attendance stuff quite yet because we want to refine the GUI first, then add these kind of things.
-        for the moment it's too distracting and no good way to get rid of it.
-        
-        {(props.verbosity !== 'compact') && <div className="attendanceResponseInput">
-            <div className="segmentList">
-                <EventAttendanceFrame onRefetch={refetch} segmentInfo={props.segmentInfo} eventUserInfo={myEventInfo} event={event} />
-            </div>
-        </div>} */}
-
             <Markdown markdown={props.segment.description} />
             {!props.readonly && editOpen && (<EventSegmentEditDialog
                 initialValue={props.segment}
+                isNewObject={false}
                 onDelete={handleDelete}
                 onCancel={() => setEditOpen(false)}
                 onSave={handleSave}
@@ -204,7 +199,11 @@ interface SegmentListProps {
 
 export const SegmentList = ({ event, tableClient, verbosity, ...props }: SegmentListProps) => {
     return <div className='segmentListContainer'>
-        {!props.readonly && <NewEventSegmentButton event={event} refetch={tableClient.refetch} />}
+        {!props.readonly && <NewEventSegmentButton
+            event={event}
+            initialName={`Set ${event.segments.length + 1}`}
+            refetch={tableClient.refetch}
+        />}
         <div className="segmentList">
             {event.segments.map(segment => {
                 //const segInfo = myEventInfo.getSegmentUserInfo(segment.id);

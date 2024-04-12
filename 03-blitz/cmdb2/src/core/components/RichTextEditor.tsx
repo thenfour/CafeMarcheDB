@@ -25,14 +25,14 @@ import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
 import { getNextSequenceId } from "shared/utils";
-import { CMSmallButton } from "./CMCoreComponents";
+import { CMSmallButton } from "./CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const Markdown = (props: { markdown: string | null, id?: string, className?: string }) => {
     const md = new MarkdownIt;
     if (props.markdown == null) return <></>;
     if (props.markdown.trim().length < 1) return <></>;
-    return <div className={`markdown renderedContent ${props.className || ""}`}>
+    return <div className={`markdown renderedContent limitedWidth ${props.className || ""}`}>
         <div id={props.id} dangerouslySetInnerHTML={{ __html: md.render(props.markdown || "") }}></div>
     </div >;
 };
@@ -187,6 +187,7 @@ export function DebouncedControl(props: DebouncedControlProps) {
 // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
 interface MarkdownControlProps {
     initialValue: string | null, // value which may be coming from the database.
+    className?: string;
     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
     isSaving: boolean, // show the value as saving in progress
     debounceMilliseconds: number,
@@ -202,7 +203,7 @@ export function MarkdownControl(props: MarkdownControlProps) {
         initialValue={props.initialValue}
         isSaving={props.isSaving}
         onValueChanged={props.onValueChanged}
-        className="richTextContainer"
+        className={`richTextContainer editable ${props.className || ""}`}
         editButtonText={props.editButtonText}
         closeButtonText={props.closeButtonText}
         render={(showingEditor, value, onChange) => {
@@ -223,43 +224,16 @@ export function MarkdownControl(props: MarkdownControlProps) {
 
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
-// // similar to the "normal" markdown control
-// // but
-// // - single-line
-// // - no preview
-// // - tiny edit button next to value
-// interface CompactMarkdownControlProps {
-//     initialValue: string | null, // value which may be coming from the database.
-//     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
-//     isSaving: boolean, // show the value as saving in progress
-//     debounceMilliseconds: number,
-// }
-
-// export function CompactMarkdownControl(props: CompactMarkdownControlProps) {
-//     return <DebouncedControl
-//         debounceMilliseconds={props.debounceMilliseconds}
-//         initialValue={props.initialValue}
-//         isSaving={props.isSaving}
-//         onValueChanged={props.onValueChanged}
-//         className="richTextContainer compactMarkdownControl"
-//         render={(showingEditor, value, onChange) => {
-//             return <div className='richTextContentContainer'>
-//                 {showingEditor && <MarkdownEditor value={value} onValueChanged={onChange} />}
-//                 <Markdown markdown={value} className="compact" />
-//             </div>
-
-//         }}
-//     />;
-// };
-
+// NO DEBOUNCE behavior here.
 interface CompactMarkdownControlProps {
     initialValue: string | null, // value which may be coming from the database.
+    className?: string;
     onValueChanged: (val: string) => Promise<void>, // caller can save the changed value to a db here.
     cancelButtonMessage?: string,
     saveButtonMessage?: string,
     editButtonMessage?: string,
     editButtonVariant?: "framed" | "default";
+    height?: number;
 }
 
 export function CompactMarkdownControl({ initialValue, onValueChanged, ...props }: CompactMarkdownControlProps) {
@@ -278,20 +252,27 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
     };
 
     if (showingEditor) {
-        return (<>
-            <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>
-            <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>
+        return (<div className={`compactMarkdownControlRoot editing ${props.className}`}>
+            <div className="CMSmallButtonGroup">
+                <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>
+                <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>
+                <span className="helpText">
+                    "Markdown" syntax is supported. <a href="/backstage/markdownhelp" target="_blank">Click here</a> for details.
+                </span>
+            </div>
             <div className="richTextContainer compactMarkdownControl">
                 <div className='richTextContentContainer'>
-                    <MarkdownEditor value={value} onValueChanged={(v) => setValue(v)} height={10} />
+                    <MarkdownEditor value={value} onValueChanged={(v) => setValue(v)} height={props.height || 50} />
                 </div>
             </div>
-        </>);
+            {value !== "" && <div className="tinyCaption">Preview:</div>}
+            <Markdown markdown={value} />
+        </div>);
     }
 
     // not editor just viewer.
-    return <div className="richTextContainer compactMarkdownControl sameLineButton">
-        <Markdown markdown={value} className="compact" />
+    return <div className={`richTextContainer compactMarkdownControl notEditing sameLineButton compactMarkdownControlRoot ${props.className}`}>
+        <Markdown markdown={value} className={props.className} />
         <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>
     </div >;
 };

@@ -1,3 +1,5 @@
+// NB: THis should not reference  "../db3/clientAPI", because it would be a circular dependency.
+
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import React, { Suspense } from "react";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
@@ -7,6 +9,8 @@ import { CompactMarkdownControl, MarkdownControl } from "./RichTextEditor";
 import { gQueryOptions } from "shared/utils";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { useAuthenticatedSession } from "@blitzjs/auth";
+//import { API } from "../db3/clientAPI";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MutationMarkdownControlProps {
@@ -18,6 +22,7 @@ interface MutationMarkdownControlProps {
     debounceMilliseconds?: number,
     editButtonText?: string,
     readonly?: boolean,
+    className?: string;
     closeButtonText?: string,
 };
 
@@ -41,6 +46,7 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
 
     return <MarkdownControl
         initialValue={props.initialValue || ""}
+        className={props.className}
         isSaving={isSaving}
         readonly={props.readonly}
         onValueChanged={onValueChanged}
@@ -56,6 +62,7 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
 interface CompactMutationMarkdownControlProps {
     initialValue: string | null,
     refetch: () => void,
+    className?: string;
     onChange: (value: string | null) => Promise<any>,
     successMessage?: string,
     errorMessage?: string,
@@ -82,6 +89,7 @@ export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownCon
     return <CompactMarkdownControl
         initialValue={props.initialValue}
         onValueChanged={onValueChanged}
+        className={props.className}
         cancelButtonMessage={props.cancelButtonMessage}
         saveButtonMessage={props.saveButtonMessage}
         editButtonMessage={props.editButtonMessage}
@@ -96,14 +104,19 @@ export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownCon
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// intended only for admin-editable GUI content (not site content but chrome application content)
 interface SettingMarkdownProps {
     settingName: string;
-    requiredEditPermission?: Permission;
+    //requiredEditPermission?: Permission; // sysadmin by default
 };
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const [updateSetting] = useMutation(updateSettingMutation);
-    const editable = useAuthorization(`SettingMarkdown:${props.settingName}`, props.requiredEditPermission || Permission.content_admin);
+    //const showAdminControls = API.other.useIsShowingAdminControls();
+    const sess = useAuthenticatedSession();
+    const showAdminControls = sess.isSysAdmin && sess.showAdminControls;
+
+    const editable = useAuthorization(`SettingMarkdown:${props.settingName}`, Permission.sysadmin) && showAdminControls;
 
     let [initialValue, { refetch }] = useQuery(getSetting, { name: props.settingName }, gQueryOptions.default);
     return <MutationMarkdownControl

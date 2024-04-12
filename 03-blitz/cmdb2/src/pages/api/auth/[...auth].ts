@@ -73,7 +73,7 @@ export default api(
               // list permissions:
               // user.role.permissions.map(p => p.permission.name);
 
-              done(null, { publicData: CreatePublicData(user) });
+              done(null, { publicData: CreatePublicData({ user }) });
             } catch (err) {
               done(null, false);
             }

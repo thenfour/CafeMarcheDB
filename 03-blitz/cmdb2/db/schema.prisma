@@ -425,7 +425,7 @@ model Event {
   // - delete segment
   // then we just populate this
   startsAt       DateTime? // date null means TBD
-  durationMillis Int       @default(0)
+  durationMillis BigInt    @default(0)
   isAllDay       Boolean   @default(true)
   endDateTime    DateTime? // after calculating the date range, this is the "end time" or TBD
 
@@ -466,7 +466,7 @@ model EventSegment {
 
   // conform to DateTimeRangeSpec
   startsAt       DateTime? // date null means TBD
-  durationMillis Int
+  durationMillis BigInt
   isAllDay       Boolean   @default(true)
 
   responses EventSegmentUserResponse[]

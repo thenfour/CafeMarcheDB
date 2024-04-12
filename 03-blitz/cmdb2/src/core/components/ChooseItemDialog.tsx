@@ -10,8 +10,6 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
-import { gIconMap } from "../db3/components/IconSelectDialog";
-import { API } from "../db3/clientAPI";
 
 
 

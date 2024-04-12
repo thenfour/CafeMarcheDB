@@ -11,21 +11,50 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import React from "react";
 import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import React from "react";
 //import * as db3 from "../db3";
-import * as db3 from "../db3"
+import { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
+import { assert } from "blitz";
+import { Coalesce, HasFlag, TAnyModel, gQueryOptions } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
-import { GridColDef, GridFilterModel, GridPaginationModel, GridRenderCellParams, GridRenderEditCellParams, GridSortModel } from "@mui/x-data-grid";
-import { Coalesce, HasFlag, TAnyModel, gNullValue, gQueryOptions } from "shared/utils";
-import { CMTextField } from "src/core/components/CMTextField";
-import { ColorPick, ColorSwatch } from "src/core/components/Color";
-import { ColorPaletteEntry } from "shared/color";
-import { FormHelperText, InputLabel, MenuItem, Select } from "@mui/material";
 import db3queries from "../queries/db3queries";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { assert } from "blitz";
+//import { NameValuePair } from "./DB3ClientBasicFields";
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// useful for consistent field rendering including name, value, detailed help etc.
+interface RenderBasicNameValuePairProps {
+    key?: string;
+    className?: string;
+    name: React.ReactNode;
+    value: React.ReactNode;
+    description?: React.ReactNode;
+};
+
+export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) => {
+    return <div key={props.key} className={`BasicNameValuePairContainer ${props.className}`}>
+        <div className="name">{props.name}</div>
+        {props.description && <div className="description">{props.description}</div>}
+        <div className="value">{props.value}</div>
+    </div>;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface NameValuePairProps {
+    name: React.ReactNode;
+    value: React.ReactNode;
+    description?: React.ReactNode;
+    className?: string;
+};
+
+export const NameValuePair = (props: NameValuePairProps) => {
+    return RenderBasicNameValuePair(props);
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {
@@ -57,6 +86,9 @@ export interface IColumnClientArgs {
     visible: boolean;
     width: number;
 
+    fieldCaption: string | undefined;
+    fieldDescriptionSettingName: string | null | undefined;
+
     GridColProps?: Partial<GridColDef>;
 };
 
@@ -70,6 +102,8 @@ export abstract class IColumnClient {
 
     GridColProps?: Partial<GridColDef>;
 
+    fieldCaption: string | undefined;
+    fieldDescriptionSettingName: string | null | undefined;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
     abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactElement; // will render as a child of <FormControl>
@@ -96,6 +130,16 @@ export abstract class IColumnClient {
             console.error(`column '${schemaTable.tableName}'.'${this.columnName}' doesn't have a corresponding field in the core schema.`);
         }
         this.onSchemaConnected && this.onSchemaConnected(tableClient);
+    };
+
+    // child classes call this when you want default rendering.
+    defaultRenderer = ({ value, className }: { value: React.ReactNode, className?: string }) => {
+        return <NameValuePair
+            name={this.fieldCaption || this.columnName}
+            description={this.fieldDescriptionSettingName && <SettingMarkdown settingName={this.fieldDescriptionSettingName} />}
+            value={value}
+            className={className}
+        />;
     };
 };
 

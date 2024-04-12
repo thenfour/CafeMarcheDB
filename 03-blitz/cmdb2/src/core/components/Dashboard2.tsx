@@ -28,7 +28,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import CollectionsIcon from '@mui/icons-material/Collections';
-import { gIconMap } from "../db3/components/IconSelectDialog";
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { Permission } from "shared/permissions";
 import { CMAuthorize } from "types";
 import { API } from "../db3/clientAPI";
@@ -174,6 +174,7 @@ interface PrimarySearchAppBarProps {
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const theme = useTheme();
     const router = useRouter();
+    const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
     const session = useSession();
     let backgroundColor: string | undefined = undefined;
@@ -185,6 +186,10 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
 
     const onClickStopImpersonating = async () => {
         await stopImpersonatingMutation();
+    };
+
+    const onClickShowAdminControls = async (showAdminControls: boolean) => {
+        await showAdminControlsMutation.invoke({ showAdminControls });
     };
 
     return (
@@ -219,6 +224,12 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             inputProps={{ 'aria-label': 'search' }}
                         />
                     </Search>} */}
+                    {(!!session.isSysAdmin) && (
+                        session.showAdminControls ?
+                            <Button size="small" variant="contained" onClick={() => onClickShowAdminControls(false)}>Hide {gIconMap.Settings()}</Button>
+                            : <Button size="small" variant="contained" onClick={() => onClickShowAdminControls(true)}>Show {gIconMap.Settings()}</Button>
+
+                    )}
                     {(session.impersonatingFromUserId != null) && (
                         <Button size="small" variant="contained" onClick={onClickStopImpersonating}>Stop impersonating</Button>
                     )}

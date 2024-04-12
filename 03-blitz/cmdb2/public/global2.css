@@ -51,6 +51,12 @@ html,
     padding: 9px;
 }
 
+.BasicNameValuePairContainer>.description {
+    color: #888;
+    font-style: italic;
+    font-size: 13px;
+}
+
 /* - CM Big Chip --------------------------------- */
 .cmbigchip {
     font-size: 14px;
@@ -1222,6 +1228,14 @@ in particular the date range picker is wide.*/
     min-height: 50vh;
     /* same here in theory, but careful because wider-than-necessary is just odd looking*/
     min-width: 400px;
+}
+
+.ReactiveInputDialog .MuiDialog-container>.MuiPaper-root.MuiDialog-paperFullScreen {
+    /* test: edit song list dialog on narrow screen. for full-screen dialogs, don't set max-width! */
+    max-width: none;
+    min-width: none;
+    min-height: none;
+    max-height: none;
 }
 
 

@@ -43,7 +43,7 @@ export default resolver.pipe(
         ctx,
       });
 
-      await ctx.session.$create(CreatePublicData(user));
+      await ctx.session.$create(CreatePublicData({ user }));
       return user;
 
     } catch (e) {

@@ -95,27 +95,17 @@ EventAttendanceSummary (obsolete?)
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import {
-  Edit as EditIcon
-} from '@mui/icons-material';
-import CloseIcon from '@mui/icons-material/Close';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import { Alert, Button, ButtonGroup, Tooltip, Typography } from "@mui/material";
-import React, { Suspense } from "react";
+import React from "react";
+import { Timing } from 'shared/time';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { CMBigChip, CMChip, CMChipContainer, CMSmallButton, InspectObject } from './CMCoreComponents';
-import { GetStyleVariablesForColor } from './Color';
-import { Markdown } from './RichTextEditor';
+import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
+import { CMChip, CMChipContainer } from './CMCoreComponents';
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
-import { StandardVariationSpec } from 'shared/color';
-import { Timing } from 'shared/time';
-import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
+import { CMSmallButton } from "./CMCoreComponents2";
 
 
 ////////////////////////////////////////////////////////////////
@@ -211,6 +201,7 @@ const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps
     editButtonMessage={val === "" ? "Add a comment" : "Edit comment"}
     editButtonVariant={val === "" ? "default" : "framed"}
     refetch={props.onRefetch}
+    className="compact"
     onChange={async (value) => {
       return await token.invoke({
         userId: props.userResponse.user.id,

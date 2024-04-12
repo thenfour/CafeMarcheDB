@@ -1,19 +1,3 @@
-// TODO:
-// attendance responses & new events.
-// what happens when you create a new event? originally i thought the event creator would explicitly have buttons like "invite all active members"
-// but i think that's not cool; better to have automatic logic which is sensible.
-//
-// so by default, no attendance is created. treat all active members as invited, and no EventSegmentAttendanceUserResponse is needed.
-// that's like expectAttendance being NULL.
-// 
-// on one hand i don't like the idea of adding more complexity with a 3rd expectAttendance state.
-// because just "add/remove users" wouldn't be enough; theoretically there should be a 3rd option to "use default"
-// which is ultra confusing. or can we unify them somehow? like, on the attendees list, by default show active members,
-// and only if you remove them explicitly we mark it FALSE. otherwise NULL is fine.
-// and then TRUE is only necessary for non-active members.
-// so an "add" dialog is necessary to show all users who aren't there already.
-
-
 
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129

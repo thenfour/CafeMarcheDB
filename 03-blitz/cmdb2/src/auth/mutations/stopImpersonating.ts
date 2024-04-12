@@ -18,7 +18,7 @@ export default resolver.pipe(
         })
         if (!user) throw new Error("Could not find user id " + userId)
 
-        await ctx.session.$create(CreatePublicData(user));
+        await ctx.session.$create(CreatePublicData({ user }));
 
         return user
     }
