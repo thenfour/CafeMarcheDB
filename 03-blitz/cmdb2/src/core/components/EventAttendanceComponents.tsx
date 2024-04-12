@@ -236,9 +236,9 @@ const EventAttendanceAnswerButton = ({ value, selected, noItemSelected, onSelect
     onClick={() => onSelect && onSelect(value)}
     shape='rectangle'
     className={`attendanceAnswer ${yesNoStyle} CMChipNoMargin`}
-    border='border'
+    //border='border'
     color={value?.color}
-    size='small'
+    size='big'
     tooltip={value?.description}
     variation={{
       enabled: true,
@@ -316,7 +316,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
       </>) : (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedResponse.attendance} />
+          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedResponse.attendance} onSelect={() => setExplicitEdit(true)} />
           <CMSmallButton onClick={() => setExplicitEdit(true)}>change</CMSmallButton>
         </CMChipContainer>
       </>

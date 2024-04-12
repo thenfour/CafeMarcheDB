@@ -225,38 +225,51 @@ const main = async () => {
   await SeedTable("eventAttendance", prisma.eventAttendance,
     [
       {
-        "text": "Going!",
-        "personalText": "You're going!",
-        "description": "",
-        "color": "attendance_yes",
-        "strength": 100,
-        "sortOrder": 100
+        "text": "No",
+        "personalText": "you're not going",
+        "pastText": "xyz",
+        "pastPersonalText": "xyz",
+        "description": "You can't make it",
+        "iconName": "ThumbDown",
+        "color": "attendance_no",
+        "strength": 0,
+        "sortOrder": 0
       },
       {
-        "text": "Probably going",
-        "personalText": "you're probably going",
-        "description": "",
-        "color": "attendance_yes_maybe",
-        "strength": 66,
-        "sortOrder": 66
-      },
-      {
-        "text": "Probably not going",
+        "text": "Probably not",
         "personalText": "you're probably not going",
-        "description": "",
+        "pastText": "snth",
+        "pastPersonalText": "snth",
+        "description": "You probably can't make it; we won't count on you for final head count or reserving things like meals",
+        "iconName": "ThumbDown",
         "color": "attendance_no_maybe",
         "strength": 33,
         "sortOrder": 33
       },
       {
-        "text": "Not going",
-        "personalText": "you're not going",
-        "description": "",
-        "color": "attendance_no",
-        "strength": 0,
-        "sortOrder": 0
+        "text": "Probably",
+        "personalText": "you're probably going",
+        "pastText": "snth",
+        "pastPersonalText": "snth",
+        "description": "We will assume you're coming, even if you're not certain you can come. We will include you for final head count and reserving things like meals.",
+        "iconName": "ThumbUp",
+        "color": "attendance_yes_maybe",
+        "strength": 66,
+        "sortOrder": 66
+      },
+      {
+        "text": "Yes",
+        "personalText": "You're going!",
+        "pastText": "snth",
+        "pastPersonalText": "snth",
+        "description": "We'll count you in!",
+        "iconName": "ThumbUp",
+        "color": "attendance_yes",
+        "strength": 100,
+        "sortOrder": 100
       }
-    ]);
+    ]
+  );
 
 
 
