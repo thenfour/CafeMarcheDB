@@ -2,37 +2,36 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
+import { useAuthenticatedSession } from '@blitzjs/auth';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, Link, Tab, Tabs, Tooltip } from "@mui/material";
-import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
-import React, { Suspense } from "react";
-import { HasFlag, IsNullOrWhitespace } from 'shared/utils';
+import React from "react";
+import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { Permission } from 'shared/permissions';
+import { Timing } from 'shared/time';
+import { IsNullOrWhitespace } from 'shared/utils';
+import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
-import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, ConfirmationDialog, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EditTextDialogButton, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, VisibilityControl, VisibilityValue } from './CMCoreComponents';
+import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, VisibilityControl, VisibilityValue } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
+import { GetStyleVariablesForColor } from './Color';
+import { EventAttendanceControl } from './EventAttendanceComponents';
 import { EventFilesTabContent } from './EventFileComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown } from './RichTextEditor';
-import { MutationMarkdownControl } from './SettingMarkdown';
+import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import { AddUserButton } from './UserComponents';
-import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
-import { GetStyleVariablesForColor } from './Color';
-import { useAuthenticatedSession, useAuthorize } from '@blitzjs/auth';
-import { useAuthorization } from 'src/auth/hooks/useAuthorization';
-import { Permission } from 'shared/permissions';
-import { EventAttendanceControl } from './EventAttendanceComponents';
-import { Timing } from 'shared/time';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -560,9 +559,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
             readonly={readonly}
             selectDialogTitle="Select who is expected to attend; they'll be expected to respond."
             value={event.expectedAttendanceUserTag}
-            renderDialogDescription={() => {
-                return <>dialog description heree</>;
-            }}
+            dialogDescription={<>dialog description herexxx</>}
             renderAsListItem={(chprops, value: db3.UserTagPayload | null, selected: boolean) => {
                 return <li {...chprops}>
                     <EventAttendanceUserTagValue value={value} /></li>;
@@ -774,7 +771,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                             showSnackbar({ children: "update error", severity: 'error' });
                         }).finally(refetch);
                     }}
-                    renderDialogDescription={() => <>aoesunthaoii</>}
+                    dialogDescription={<SettingMarkdown settingName='EditEventDialogDescription' />}
                 />
 
                 {event.status && <CMStandardDBChip

@@ -26,11 +26,11 @@ import {
 } from "@mui/material";
 import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { RenderBasicNameValuePair } from "./DB3ClientBasicFields";
 import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { assert } from "blitz";
 import { useAuthenticatedSession } from "@blitzjs/auth";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 
 
 
@@ -108,6 +108,8 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactElement;
 
     visible?: boolean;
+    fieldCaption?: string;
+    fieldDescriptionSettingName?: string;
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -124,6 +126,8 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             editable: true,
             width: args.cellWidth,
             visible: Coalesce(args.visible, true),
+            fieldCaption: args.fieldCaption,
+            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
 
         this.args = args;
@@ -163,10 +167,17 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
         </li>
     };
 
-    renderViewer = (params: RenderViewerArgs<TForeign>) => RenderBasicNameValuePair({
-        key: params.key,
+    // renderViewer = (params: RenderViewerArgs<TForeign>) => RenderBasicNameValuePair({
+    //     key: params.key,
+    //     className: params.className,
+    //     name: this.columnName,
+    //     value: <>{this.defaultRenderAsChip({ value: params.value, colorVariant: StandardVariationSpec.Strong })}</>,
+    // });
+
+    renderViewer = (params: RenderViewerArgs<TForeign>) => this.defaultRenderer({
+        //key: params.key,
         className: params.className,
-        name: this.columnName,
+        //name: this.columnName,
         value: <>{this.defaultRenderAsChip({ value: params.value, colorVariant: StandardVariationSpec.Strong })}</>,
     });
 
@@ -344,6 +355,9 @@ export interface SelectSingleForeignDialogProps<TForeign> {
     onOK: (value: TForeign | null) => void;
     onCancel: () => void;
     closeOnSelect: boolean;
+
+    caption?: string;
+    descriptionSettingName?: string;
 };
 
 export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
@@ -401,7 +415,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
 
     return <>
         <DialogTitle>
-            select {props.spec.schemaColumn.member}
+            {props.caption || <>Select {props.spec.schemaColumn.member}</>}
             <Box sx={{ p: 0 }}>
                 Selected: {props.spec.args.renderAsChip!({
                     colorVariant: StandardVariationSpec.Strong,
@@ -413,10 +427,13 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
             </Box>
         </DialogTitle>
         <DialogContent dividers>
-            <DialogContentText>
+
+            {props.descriptionSettingName && <SettingMarkdown settingName={props.descriptionSettingName} />}
+
+            {/* <DialogContentText>
                 To subscribe to this website, please enter your email address here. We
                 will send updates occasionally.
-            </DialogContentText>
+            </DialogContentText> */}
 
             <Box>
                 <InputBase

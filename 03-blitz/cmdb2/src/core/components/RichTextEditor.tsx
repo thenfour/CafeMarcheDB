@@ -13,18 +13,15 @@
 //     DeleteOutlined as DeleteIcon,
 //     Edit as EditIcon
 // } from '@mui/icons-material';
-import { Box, Button, ButtonGroup, CircularProgress, TextField } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import MarkdownIt from 'markdown-it';
 import React from "react";
 //import useDebounce from "shared/useDebounce";
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
-import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
+import EditIcon from '@mui/icons-material/Edit';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
-import { getNextSequenceId } from "shared/utils";
 import { CMSmallButton } from "./CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

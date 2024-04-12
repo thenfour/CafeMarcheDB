@@ -25,7 +25,7 @@ export interface ChooseItemDialogProps<T> {
     onCancel: () => void;
     closeOnSelect: boolean;
     title: string;
-    renderDescription: () => React.ReactElement; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
+    description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     // how to treat items of unknown type...
     isEqual: (a: T, b: T) => boolean; // non-null values. null values are compared internally.
@@ -78,7 +78,7 @@ export function ChooseItemDialog<T>(props: ChooseItemDialogProps<T>) {
             </DialogTitle>
             <DialogContent dividers>
                 <DialogContentText>
-                    {props.renderDescription()}
+                    {props.description}
                 </DialogContentText>
 
                 {
@@ -120,7 +120,7 @@ export interface ChoiceEditCellProps {
     selectButtonLabel?: string; // if behavior includes extra button this is needed. if not specified then the button won't be rendered.
 
     selectDialogTitle: string;
-    renderDialogDescription: () => React.ReactElement; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
+    dialogDescription: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     isEqual: (a: any, b: any) => boolean;
     renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactElement;
@@ -153,7 +153,7 @@ export const ChoiceEditCell = (props: ChoiceEditCellProps) => {
             isEqual={props.isEqual}
             items={props.items}
             renderAsListItem={props.renderAsListItem}
-            renderDescription={props.renderDialogDescription}
+            description={props.dialogDescription}
             title={props.selectDialogTitle}
             renderValue={props.renderValue}
             onOK={(newValue: any | null) => {

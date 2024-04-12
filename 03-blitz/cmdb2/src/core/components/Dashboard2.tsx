@@ -441,11 +441,30 @@ const gMenuItemGroups: MenuItemGroup[] = [
 const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
 
     const session = useSession();
+    const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
+    const isShowingAdminControls = API.other.useIsShowingAdminControls();
     //session.permissions
 
     React.useEffect(() => {
         document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
     }, []);
+
+    React.useEffect(() => {
+        function handleKeyPress(event) {
+            if (event.altKey && event.key === '9') {
+                showAdminControlsMutation.invoke({ toggle: true });
+            }
+        }
+
+        // Add event listener
+        window.addEventListener('keydown', handleKeyPress);
+
+        // Remove event listener on cleanup
+        return () => {
+            window.removeEventListener('keydown', handleKeyPress);
+        };
+    }, []);
+
 
     const theme = useTheme();
     //console.log(theme.direction);

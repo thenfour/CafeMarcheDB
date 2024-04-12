@@ -27,11 +27,11 @@ import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
-import { RenderBasicNameValuePair } from './DB3ClientBasicFields';
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { GetStyleVariablesForColor } from 'src/core/components/Color';
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
+import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
 
 
 const gMaxVisibleTags = 6;
@@ -149,6 +149,8 @@ export interface DB3SelectTagsDialogProps<TAssociation> {
     spec: TagsFieldClient<TAssociation>;
     onChange: (value: TAssociation[]) => void;
     onClose: () => void;
+    caption?: string;
+    descriptionSettingName?: string;
 };
 
 function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
@@ -179,7 +181,7 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
     return (
         <>
             <DialogTitle>
-                select {props.spec.typedSchemaColumn.member}
+                {props.caption || <>Select {props.spec.typedSchemaColumn.member}</>}
                 <Box sx={{ p: 0 }}>
                     Selected:
                     <DB3TagsValueComponent
@@ -190,10 +192,7 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
-                <DialogContentText>
-                    To subscribe to this website, please enter your email address here. We
-                    will send updates occasionally.
-                </DialogContentText>
+                {props.descriptionSettingName && <SettingMarkdown settingName={props.descriptionSettingName} />}
 
                 <Box>
                     <InputBase
@@ -367,6 +366,8 @@ export interface TagsFieldClientArgs<TAssociation> {
 
     // should render a <li {...props}> for autocomplete
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TAssociation, selected: boolean) => React.ReactElement;
+    fieldCaption?: string;
+    fieldDescriptionSettingName?: string;
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -398,6 +399,8 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             editable: true,
             width: args.cellWidth,
             visible: true,
+            fieldCaption: args.fieldCaption,
+            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
         this.args = args;
         if (this.args.allowDeleteFromCell === undefined) this.args.allowDeleteFromCell = true;
@@ -420,10 +423,21 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
         </li>
     };
 
-    renderViewer = (params: RenderViewerArgs<TAssociation[]>) => RenderBasicNameValuePair({
-        key: params.key,
+    // renderViewer = (params: RenderViewerArgs<TAssociation[]>) => RenderBasicNameValuePair({
+    //     key: params.key,
+    //     className: params.className,
+    //     name: this.columnName,
+    //     value: <TagsView
+    //         associationForeignIDMember={this.typedSchemaColumn.associationForeignIDMember}
+    //         renderAsChip={this.renderAsChipForCell}
+    //         value={params.value}
+    //     />
+    // });
+
+    renderViewer = (params: RenderViewerArgs<TAssociation[]>) => this.defaultRenderer({
+        //key: params.key,
         className: params.className,
-        name: this.columnName,
+        //name: this.columnName,
         value: <TagsView
             associationForeignIDMember={this.typedSchemaColumn.associationForeignIDMember}
             renderAsChip={this.renderAsChipForCell}

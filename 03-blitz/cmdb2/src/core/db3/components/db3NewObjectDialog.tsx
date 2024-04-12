@@ -11,6 +11,7 @@ import { TAnyModel } from "shared/utils";
 import { gIconMap } from "./IconSelectDialog";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "src/core/components/RichTextEditor";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -18,9 +19,12 @@ type db3NewObjectDialogProps = {
     onCancel: () => any;
     table: DB3ClientCore.xTableClientSpec;
     clientIntention: db3.xTableClientUsageContext;
+
+    caption?: string;
+    descriptionSettingName?: string;
 };
 
-export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: db3NewObjectDialogProps) {
+export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...props }: db3NewObjectDialogProps) {
     const theme = useTheme();
     const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(table.args.table.createNew(clientIntention));
@@ -70,12 +74,13 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention }: d
                 className={`ReactiveInputDialog`}
                 fullScreen={fullScreen}
             >
-                <DialogTitle>new {table.args.table.tableName}</DialogTitle>
+                <DialogTitle>
+                    {props.caption || <>New {table.args.table.tableName}</>}
+                </DialogTitle>
                 <DialogContent dividers>
-                    <DialogContentText>
-                        To subscribe to this website, please enter your email address here. We
-                        will send updates occasionally.
-                    </DialogContentText>
+
+                    {props.descriptionSettingName && <SettingMarkdown settingName={props.descriptionSettingName} />}
+
                     <FormControl>
 
                         {

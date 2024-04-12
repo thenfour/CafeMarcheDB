@@ -144,7 +144,7 @@ export interface ChooseIconDialogProps {
 export function IconEditCell(props: ChooseIconDialogProps) {
     return <ChoiceEditCell
         selectDialogTitle="Select icon"
-        renderDialogDescription={() => <>a description here</>}
+        dialogDescription={<>a description here</>}
         items={Object.keys(gIconOptions)}
         readonly={props.readonly}
         value={props.value}

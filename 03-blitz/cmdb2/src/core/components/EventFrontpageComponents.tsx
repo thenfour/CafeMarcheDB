@@ -89,7 +89,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                 columnSpec={db3.xEvent.getColumn(props.fieldSpec.fieldName)! as db3.FieldBase<string>}
                 dialogTitle={props.fieldSpec.fieldLabel}
                 readOnly={readonly}
-                renderDialogDescription={() => <>description here</>}
+                dialogDescription={<>description here</>}
                 selectButtonLabel='edit'
                 value={value || defaultValue}
                 onChange={handleChange}

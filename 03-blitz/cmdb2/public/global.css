@@ -791,3 +791,9 @@ table td {
   font-style: italic;
   color: #aaa;
 }
+
+/* as a convenience, text fields for fields called "name" to be emphasized. */
+.columnName-name input {
+  font-weight: bold;
+  font-size: 20px;
+}

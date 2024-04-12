@@ -292,7 +292,7 @@ export interface EditTextDialogProps {
     title: string;
     onOK: (value: string) => void;
     onCancel: () => void;
-    renderDescription: () => React.ReactElement;
+    description: React.ReactNode;
 };
 export const EditTextDialog = (props: EditTextDialogProps) => {
     const [value, setValue] = React.useState<string>(props.value);
@@ -304,7 +304,7 @@ export const EditTextDialog = (props: EditTextDialogProps) => {
         </DialogTitle>
         <DialogContent dividers>
             <DialogContentText>
-                {props.renderDescription()}
+                {props.description}
             </DialogContentText>
             <EditTextField
                 columnSpec={props.columnSpec}
@@ -331,7 +331,7 @@ export interface EditTextDialogButtonProps {
     selectButtonLabel: string;
     onChange: (value: string) => void;
     dialogTitle: string;
-    renderDialogDescription: () => React.ReactElement;
+    dialogDescription: React.ReactNode;
 };
 export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
@@ -342,7 +342,7 @@ export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
             value={props.value}
             columnSpec={props.columnSpec}
             title={props.dialogTitle}
-            renderDescription={props.renderDialogDescription}
+            description={props.dialogDescription}
             onOK={(newValue: string) => {
                 props.onChange(newValue);
                 setIsOpen(false);
@@ -373,7 +373,7 @@ export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
     onOK: (obj: TRowModel, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => void;
     initialValue: TRowModel;
     dialogTitle: string;
-    renderDialogDescription: () => React.ReactNode;
+    dialogDescription: React.ReactNode;
 };
 export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
@@ -404,6 +404,7 @@ export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: Edit
             }}
             table={props.tableSpec}
             clientIntention={clientIntention}
+            description={props.dialogDescription}
         />
         }
     </>;
@@ -524,9 +525,7 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
             selectDialogTitle='select dialog title here'
             //selectButtonLabel='change visibility'
             value={props.value}
-            renderDialogDescription={() => {
-                return <>dialog description heree</>;
-            }}
+            dialogDescription={<>dialog description her99ee</>}
             renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
                 return <li {...chprops}>
                     <VisibilityValue permission={value} variant={"verbose"} />
