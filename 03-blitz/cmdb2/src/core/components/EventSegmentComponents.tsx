@@ -60,8 +60,8 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         onCancel={props.onCancel}
         onOK={props.onSave}
         table={tableSpec}
-        title={<SettingMarkdown settingName={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
-        description={<SettingMarkdown settingName={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
+        title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
+        description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
     />;
 };
 

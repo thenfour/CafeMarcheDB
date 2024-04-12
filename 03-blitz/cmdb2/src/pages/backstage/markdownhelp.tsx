@@ -14,7 +14,7 @@ const MyContent = () => {
     useAuthorizationOrThrow("MarkdownHelpPage", Permission.basic_trust);
 
     return <div>
-        <SettingMarkdown settingName="MarkdownHelpPage" />
+        <SettingMarkdown setting="MarkdownHelpPage" />
     </div>;
 };
 

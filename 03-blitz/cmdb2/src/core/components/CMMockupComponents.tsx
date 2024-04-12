@@ -263,7 +263,7 @@ export const EventSummary = (props: EventSummaryProps) => {
 
         <EventAttendanceResponseInput finalized={props.finalized} past={props.past} segmentCount={2} />
 
-        <SettingMarkdown settingName="event_description_mockup_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="event_description_mockup_markdown"></SettingMarkdown>
         <div className="seeMoreButtonContainer">
             <Button className="seeMoreButton">
                 {/* <div>14 musicians going</div> */}

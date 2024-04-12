@@ -34,7 +34,7 @@ const MainContent = () => {
         throw new Error(`unauthorized`);
     }
     return <>
-        <SettingMarkdown settingName="EditFileTagsPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EditFileTagsPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };

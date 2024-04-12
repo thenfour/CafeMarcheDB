@@ -54,7 +54,7 @@ const MainContent = () => {
     const codePermissions = Object.keys(Permission);
 
     return <>
-        <SettingMarkdown settingName="rolePermissionsMatrixPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="rolePermissionsMatrixPage_markdown"></SettingMarkdown>
         <FormControlLabel label="Show unknown permissions" control={<input type="checkbox" checked={showUnknown} onChange={(e) => setShowUnknown(e.target.checked)} />} />
         <DB3AssociationMatrix
             localTableSpec={PermissionClientSchema}

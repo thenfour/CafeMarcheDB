@@ -440,7 +440,7 @@ const MainContent = () => {
     return <div className="eventsMainContent">
 
         <Suspense>
-            <SettingMarkdown settingName="events_markdown"></SettingMarkdown>
+            <SettingMarkdown setting="events_markdown"></SettingMarkdown>
         </Suspense>
 
         <NewEventButton onOK={() => {

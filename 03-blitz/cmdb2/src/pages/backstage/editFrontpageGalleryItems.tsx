@@ -29,7 +29,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="EditFrontpageGalleryItemsPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EditFrontpageGalleryItemsPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };

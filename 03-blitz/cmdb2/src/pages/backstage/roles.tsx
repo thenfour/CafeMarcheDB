@@ -27,7 +27,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="RolesAdminPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="RolesAdminPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={RoleClientSchema} />
     </>;
 };

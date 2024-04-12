@@ -23,7 +23,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="UserInstrumentsPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="UserInstrumentsPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };

@@ -20,7 +20,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { TAnyModel, gQueryOptions } from "shared/utils";
+import { SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
@@ -150,7 +150,7 @@ export interface DB3SelectTagsDialogProps<TAssociation> {
     onChange: (value: TAssociation[]) => void;
     onClose: () => void;
     caption?: string;
-    descriptionSettingName?: string;
+    descriptionSettingName?: SettingKey;
 };
 
 function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
@@ -192,7 +192,7 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
-                {props.descriptionSettingName && <SettingMarkdown settingName={props.descriptionSettingName} />}
+                {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
 
                 <Box>
                     <InputBase

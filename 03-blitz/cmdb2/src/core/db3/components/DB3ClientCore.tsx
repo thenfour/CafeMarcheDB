@@ -16,7 +16,7 @@ import React from "react";
 //import * as db3 from "../db3";
 import { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
-import { Coalesce, HasFlag, TAnyModel, gQueryOptions } from "shared/utils";
+import { Coalesce, HasFlag, SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
@@ -103,7 +103,7 @@ export abstract class IColumnClient {
     GridColProps?: Partial<GridColDef>;
 
     fieldCaption: string | undefined;
-    fieldDescriptionSettingName: string | null | undefined;
+    fieldDescriptionSettingName: SettingKey | null | undefined;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
     abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactElement; // will render as a child of <FormControl>
@@ -136,7 +136,7 @@ export abstract class IColumnClient {
     defaultRenderer = ({ value, className }: { value: React.ReactNode, className?: string }) => {
         return <NameValuePair
             name={this.fieldCaption || this.columnName}
-            description={this.fieldDescriptionSettingName && <SettingMarkdown settingName={this.fieldDescriptionSettingName} />}
+            description={this.fieldDescriptionSettingName && <SettingMarkdown setting={this.fieldDescriptionSettingName} />}
             value={value}
             className={className}
         />;

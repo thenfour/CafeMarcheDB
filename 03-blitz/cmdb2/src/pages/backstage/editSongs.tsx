@@ -48,7 +48,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="editSongs_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="editSongs_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={songTableSpec}
             renderExtraActions={(args) => <ExtraActions gridArgs={args} />}

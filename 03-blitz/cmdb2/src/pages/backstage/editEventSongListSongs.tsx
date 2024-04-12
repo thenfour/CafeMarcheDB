@@ -28,7 +28,7 @@ const MainContent = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const eventSongListId: number | null = parseIntOrNull(urlParams.get('eventSongListId'));
     return <>
-        <SettingMarkdown settingName="EditEventSongListSongsPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EditEventSongListSongsPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             tableParams={{ eventSongListId }}

@@ -41,7 +41,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="EditFilesPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EditFilesPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
         />

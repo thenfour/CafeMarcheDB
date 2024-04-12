@@ -66,7 +66,7 @@ const MainContent = () => {
         throw new Error(`unauthorized`);
     }
     return <>
-        <SettingMarkdown settingName="editEvents_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="editEvents_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             renderExtraActions={(args) => {

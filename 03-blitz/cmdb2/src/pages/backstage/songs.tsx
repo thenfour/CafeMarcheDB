@@ -5,7 +5,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 const SongsPage: BlitzPage = () => {
     return (
         <DashboardLayout title="Songs">
-            <SettingMarkdown settingName="songs_markdown"></SettingMarkdown>
+            <SettingMarkdown setting="songs_markdown"></SettingMarkdown>
         </DashboardLayout>
     )
 }

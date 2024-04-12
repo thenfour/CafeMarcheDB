@@ -262,23 +262,8 @@ const MainContent = () => {
         });
     };
 
-    // const handleSave = (updateObj: db3.UserMinimumPayload, client: DB3Client.xTableRenderClient) => {
-    //     client.doUpdateMutation(updateObj).then(e => {
-    //         showSnackbar({ severity: "success", children: "updated" });
-    //     }).catch(e => {
-    //         console.log(e);
-    //         showSnackbar({ severity: "error", children: "error updating" });
-    //     }).finally(async () => {
-    //         client.refetch();
-    //         await refetch();
-    //         //api.closeDialog();
-    //     });
-    // };
-
-
-
     return <>
-        <SettingMarkdown settingName="profile_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="profile_markdown"></SettingMarkdown>
         <CMSinglePageSurfaceCard>
             <div className="content">
                 <Typography gutterBottom variant="h4" component="div">

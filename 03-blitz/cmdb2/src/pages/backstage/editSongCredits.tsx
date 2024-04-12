@@ -28,7 +28,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="EditSongCreditsPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EditSongCreditsPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             tableParams={{ songId }}

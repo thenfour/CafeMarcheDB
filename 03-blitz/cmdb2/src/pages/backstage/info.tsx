@@ -18,7 +18,7 @@ const MyContent = () => {
 
 
     return <div>
-        <SettingMarkdown settingName="info_text" />
+        <SettingMarkdown setting="info_text" />
         <input />
     </div>;
 };

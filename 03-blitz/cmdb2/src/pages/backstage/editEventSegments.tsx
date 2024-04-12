@@ -41,7 +41,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="EditEventSegmentsPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EditEventSegmentsPage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             tableParams={{ eventId }}

@@ -26,7 +26,7 @@ const InstrumentFunctionalGroupListContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="InstrumentFunctionalGroupList_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="InstrumentFunctionalGroupList_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };

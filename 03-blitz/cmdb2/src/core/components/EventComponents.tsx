@@ -771,7 +771,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                             showSnackbar({ children: "update error", severity: 'error' });
                         }).finally(refetch);
                     }}
-                    dialogDescription={<SettingMarkdown settingName='EditEventDialogDescription' />}
+                    dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
                 />
 
                 {event.status && <CMStandardDBChip

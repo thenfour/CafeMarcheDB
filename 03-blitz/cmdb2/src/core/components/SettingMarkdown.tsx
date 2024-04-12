@@ -6,7 +6,7 @@ import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CompactMarkdownControl, MarkdownControl } from "./RichTextEditor";
-import { gQueryOptions } from "shared/utils";
+import { Setting, SettingKey, gQueryOptions } from "shared/utils";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useAuthenticatedSession } from "@blitzjs/auth";
@@ -106,8 +106,8 @@ export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownCon
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // intended only for admin-editable GUI content (not site content but chrome application content)
 interface SettingMarkdownProps {
-    settingName: string;
-    //requiredEditPermission?: Permission; // sysadmin by default
+    //settingName: string;
+    setting: SettingKey;
 };
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
@@ -116,16 +116,16 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const sess = useAuthenticatedSession();
     const showAdminControls = sess.isSysAdmin && sess.showAdminControls;
 
-    const editable = useAuthorization(`SettingMarkdown:${props.settingName}`, Permission.sysadmin) && showAdminControls;
+    const editable = useAuthorization(`SettingMarkdown:${props.setting}`, Permission.sysadmin) && showAdminControls;
 
-    let [initialValue, { refetch }] = useQuery(getSetting, { name: props.settingName }, gQueryOptions.default);
+    let [initialValue, { refetch }] = useQuery(getSetting, { name: props.setting }, gQueryOptions.default);
     return <MutationMarkdownControl
         initialValue={initialValue}
         refetch={refetch}
         readonly={!editable}
         onChange={(newValue) => {
             //console.log(`settingmarkdown onchange setting:'${props.settingName}' = '${newValue}'`);
-            return updateSetting({ name: props.settingName, value: newValue });
+            return updateSetting({ name: props.setting, value: newValue });
         }}
     />;
 };

@@ -29,7 +29,7 @@ const InstrumentTagListContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="instrumentTagList_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="instrumentTagList_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };

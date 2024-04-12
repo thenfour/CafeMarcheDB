@@ -5,7 +5,7 @@ import * as db3 from "../db3";
 //import * as DB3Client from "../DB3Client";
 import { Button, Chip, FormHelperText } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { Coalesce, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
+import { Coalesce, SettingKey, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
@@ -357,7 +357,7 @@ export interface SelectSingleForeignDialogProps<TForeign> {
     closeOnSelect: boolean;
 
     caption?: string;
-    descriptionSettingName?: string;
+    descriptionSettingName?: SettingKey;
 };
 
 export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
@@ -428,7 +428,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
         </DialogTitle>
         <DialogContent dividers>
 
-            {props.descriptionSettingName && <SettingMarkdown settingName={props.descriptionSettingName} />}
+            {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
 
             {/* <DialogContentText>
                 To subscribe to this website, please enter your email address here. We

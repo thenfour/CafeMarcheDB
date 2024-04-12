@@ -466,7 +466,7 @@ const MainContent = () => {
     };
 
     return <>
-        <SettingMarkdown settingName="frontpage_gallery_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="frontpage_gallery_markdown"></SettingMarkdown>
         <NewGalleryItemComponent client={client} />
 
         <ReactSmoothDndContainer

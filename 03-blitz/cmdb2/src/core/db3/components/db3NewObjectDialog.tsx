@@ -7,7 +7,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
 import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
-import { TAnyModel } from "shared/utils";
+import { SettingKey, TAnyModel } from "shared/utils";
 import { gIconMap } from "./IconSelectDialog";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "src/core/components/RichTextEditor";
@@ -21,7 +21,7 @@ type db3NewObjectDialogProps = {
     clientIntention: db3.xTableClientUsageContext;
 
     caption?: string;
-    descriptionSettingName?: string;
+    descriptionSettingName?: SettingKey;
 };
 
 export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...props }: db3NewObjectDialogProps) {
@@ -79,7 +79,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                 </DialogTitle>
                 <DialogContent dividers>
 
-                    {props.descriptionSettingName && <SettingMarkdown settingName={props.descriptionSettingName} />}
+                    {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
 
                     <FormControl>
 

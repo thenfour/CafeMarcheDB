@@ -33,7 +33,7 @@ const InstrumentListContent = () => {
 
 
     return <>
-        <SettingMarkdown settingName="instrumentList_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="instrumentList_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             renderExtraActions={(args) => <GridActionsCellItem

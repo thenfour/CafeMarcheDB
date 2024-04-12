@@ -134,8 +134,50 @@ export async function RegisterChange(args: RegisterChangeArgs) {
 // if you need to get / set settings on client, useQuery is required.
 
 export enum Setting {
+    // event dialog text
+    EditEventDialogDescription = "EditEventDialogDescription",
+    NewEventSegmentDialogTitle = "NewEventSegmentDialogTitle",
+    EditEventSegmentDialogTitle = "EditEventSegmentDialogTitle",
+    NewEventSegmentDialogDescription = "NewEventSegmentDialogDescription",
+    EditEventSegmentDialogDescription = "EditEventSegmentDialogDescription",
+
+    // mostly pages...
     HomeDescription = "HomeDescription",
+    event_description_mockup_markdown = "event_description_mockup_markdown",
+    EditEventAttendancesPage_markdown = "EditEventAttendancesPage_markdown",
+    editEvents_markdown = "editEvents_markdown",
+    EditEventSegmentsPage_markdown = "EditEventSegmentsPage_markdown",
+    EventSegmentUserResponsePage_markdown = "EventSegmentUserResponsePage_markdown",
+    EditEventSongListsPage_markdown = "EditEventSongListsPage_markdown",
+    EditEventSongListSongsPage_markdown = "EditEventSongListSongsPage_markdown",
+    EditEventStatusesPage_markdown = "EditEventStatusesPage_markdown",
+    EditEventTagsPage_markdown = "EditEventTagsPage_markdown",
+    EditEventTypesPage_markdown = "EditEventTypesPage_markdown",
+    EventUserResponsePage_markdown = "EventUserResponsePage_markdown",
+    EditFilesPage_markdown = "EditFilesPage_markdown",
+    EditFileTagsPage_markdown = "EditFileTagsPage_markdown",
+    EditFrontpageGalleryItemsPage_markdown = "EditFrontpageGalleryItemsPage_markdown",
+    EditSongCreditsPage_markdown = "EditSongCreditsPage_markdown",
+    editSongCreditTypes_markdown = "editSongCreditTypes_markdown",
+    editSongs_markdown = "editSongs_markdown",
+    editSongTags_markdown = "editSongTags_markdown",
+    EditUserTagsPage_markdown = "EditUserTagsPage_markdown",
+    events_markdown = "events_markdown",
+    frontpage_gallery_markdown = "frontpage_gallery_markdown",
+    info_text = "info_text",
+    InstrumentFunctionalGroupList_markdown = "InstrumentFunctionalGroupList_markdown",
+    instrumentList_markdown = "instrumentList_markdown",
+    instrumentTagList_markdown = "instrumentTagList_markdown",
+    MarkdownHelpPage = "MarkdownHelpPage",
+    profile_markdown = "profile_markdown",
+    rolePermissionsMatrixPage_markdown = "rolePermissionsMatrixPage_markdown",
+    RolesAdminPage_markdown = "RolesAdminPage_markdown",
+    settings_markdown = "settings_markdown",
+    songs_markdown = "songs_markdown",
+    UserInstrumentsPage_markdown = "UserInstrumentsPage_markdown",
 };
+
+export type SettingKey = keyof typeof Setting;
 
 export interface SetSettingArgs {
     ctx: Ctx,
@@ -144,11 +186,12 @@ export interface SetSettingArgs {
 };
 
 export async function SetSetting(args: SetSettingArgs) {
+    const settingName = args.setting as string;
     if (args.value === null || args.value === undefined) {
-        const existing = await db.setting.findFirst({ where: { name: args.setting, } });
+        const existing = await db.setting.findFirst({ where: { name: settingName, } });
         if (!existing) return;
 
-        await db.setting.deleteMany({ where: { name: args.setting, } });
+        await db.setting.deleteMany({ where: { name: settingName, } });
 
         await RegisterChange({
             action: ChangeAction.delete,
@@ -164,7 +207,7 @@ export async function SetSetting(args: SetSettingArgs) {
 
     const obj = await db.setting.create({
         data: {
-            name: args.setting,
+            name: settingName,
             value: JSON.stringify(args.value),
         }
     });

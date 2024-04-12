@@ -30,7 +30,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="EventSegmentUserResponsePage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EventSegmentUserResponsePage_markdown"></SettingMarkdown>
         <DB3EditGrid
             tableSpec={tableSpec}
             tableParams={{ eventSegmentId }}

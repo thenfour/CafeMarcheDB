@@ -85,7 +85,7 @@ const SettingsContent = () => {
     return <>
         <CMSinglePageSurfaceCard>
             <div className="content">
-                <SettingMarkdown settingName="settings_markdown"></SettingMarkdown>
+                <SettingMarkdown setting="settings_markdown"></SettingMarkdown>
                 <SettingsControls></SettingsControls>
                 <DB3EditGrid tableSpec={tableSpec} />
             </div>

@@ -26,7 +26,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="EditEventTypesPage_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="EditEventTypesPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };

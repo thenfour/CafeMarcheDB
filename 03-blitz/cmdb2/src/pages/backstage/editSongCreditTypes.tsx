@@ -27,7 +27,7 @@ const MainContent = () => {
     });
 
     return <>
-        <SettingMarkdown settingName="editSongCreditTypes_markdown"></SettingMarkdown>
+        <SettingMarkdown setting="editSongCreditTypes_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
     </>;
 };
