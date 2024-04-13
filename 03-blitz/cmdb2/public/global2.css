@@ -39,16 +39,17 @@ html,
 .BasicNameValuePairContainer {
     border: 1px solid #0002;
     margin: 12px 0;
+    padding: 0;
 }
 
 .BasicNameValuePairContainer>.name {
     font-weight: bold;
-    background-color: #eee;
-    padding: 9px;
+    /* background-color: #eee; */
+    padding: 6px;
 }
 
 .BasicNameValuePairContainer>.value {
-    padding: 9px;
+    background-color: #eee;
 }
 
 .BasicNameValuePairContainer>.description {
@@ -56,6 +57,26 @@ html,
     font-style: italic;
     font-size: 13px;
 }
+
+.BasicNameValuePairContainer>.validationResult {
+    color: #c33;
+    background-color: #fdd;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.BasicNameValuePairContainer.readOnly>.value {
+    background-color: white;
+}
+
+.BasicNameValuePairContainer.validationError {
+    border: 1px solid #c22;
+}
+
+.BasicNameValuePairContainer.validationError>.value {
+    background-color: #fdd;
+}
+
 
 /* - CM Big Chip --------------------------------- */
 .cmbigchip {
@@ -1716,3 +1737,25 @@ in particular the date range picker is wide.*/
 
 /* for events that show on the backstage frontpage, it looks like the EventDetail, but we could apply formatting here to make it more beautiful and less obnoxiously huge.*/
 .EventDashboard .EventDetail {}
+
+
+
+/* input controls for db3 dialogs */
+input.CMTextInputBase.titleText {
+    font-size: 28px;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-transform: uppercase;
+}
+
+.BasicNameValuePairContainer input.CMTextInputBase {
+    border: none;
+    background: none;
+    margin: 6px;
+    /* border-bottom: 1px solid #aaa; */
+    /* background-color: #eee; */
+}
+
+.BasicNameValuePairContainer input.CMTextInputBase:focus {
+    outline: none;
+}

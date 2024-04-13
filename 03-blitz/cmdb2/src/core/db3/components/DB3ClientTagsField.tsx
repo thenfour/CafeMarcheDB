@@ -366,8 +366,9 @@ export interface TagsFieldClientArgs<TAssociation> {
 
     // should render a <li {...props}> for autocomplete
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TAssociation, selected: boolean) => React.ReactElement;
+    className?: string;
     fieldCaption?: string;
-    fieldDescriptionSettingName?: string;
+    fieldDescriptionSettingName?: SettingKey;
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -399,6 +400,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             editable: true,
             width: args.cellWidth,
             visible: true,
+            className: args.className,
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
@@ -437,6 +439,8 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
     renderViewer = (params: RenderViewerArgs<TAssociation[]>) => this.defaultRenderer({
         //key: params.key,
         className: params.className,
+        isReadOnly: true,
+        validationResult: undefined,
         //name: this.columnName,
         value: <TagsView
             associationForeignIDMember={this.typedSchemaColumn.associationForeignIDMember}

@@ -35,7 +35,7 @@ const MainContent = () => {
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
+            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
         ],
     });

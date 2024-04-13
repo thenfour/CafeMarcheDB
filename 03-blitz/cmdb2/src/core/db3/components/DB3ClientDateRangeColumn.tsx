@@ -13,17 +13,19 @@ import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { API } from '../clientAPI';
 import * as db3 from "../db3";
-import { TAnyModel } from "shared/utils";
+import { SettingKey, TAnyModel } from "shared/utils";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface EventDateRangeColumnArgs {
+    headerName: string;
     fieldCaption?: string;
-    fieldDescriptionSettingName?: string;
+    fieldDescriptionSettingName?: SettingKey;
     startsAtColumnName: string;
     durationMillisColumnName: string;
     isAllDayColumnName: string;
+    className?: string;
 };
 export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
     startsAtSchemaColumn: db3fields.EventStartsAtField;
@@ -36,9 +38,10 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         super({
             columnName: args.startsAtColumnName,
             editable: true,
-            headerName: "",
+            headerName: args.headerName,
             width: 250,
             visible: true,
+            className: args.className,
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
@@ -78,11 +81,15 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
 
     renderViewer = (params: DB3ClientCore.RenderViewerArgs<unknown>) => this.defaultRenderer({
         className: params.className,
-        value: <div>{API.events.getEventSegmentFormattedDateRange(params.row as any)}</div>
+        isReadOnly: true,
+        validationResult: undefined,
+        value: <div>{API.events.getEventSegmentFormattedDateRange(params.row as any)}</div>,
     });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return this.defaultRenderer({
+            isReadOnly: !this.editable,
+            validationResult: params.validationResult,
             value: <DateTimeRangeControl
                 items={[]}
                 onChange={(newValue) => {

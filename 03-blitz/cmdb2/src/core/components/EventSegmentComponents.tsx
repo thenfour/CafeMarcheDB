@@ -46,7 +46,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, fieldCaption: "Description", fieldDescriptionSettingName: "EventSegmentDescriptionFieldDescription" }),
 
-            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range", fieldDescriptionSettingName: "EventSegmentDateRangeFieldDescription" }),
+            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range", fieldDescriptionSettingName: "EventSegmentDateRangeFieldDescription" }),
 
             // this must specify all the columns which are required for insertion as well.
             new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention, visible: false }),

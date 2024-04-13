@@ -140,6 +140,9 @@ export enum Setting {
     EditEventSegmentDialogTitle = "EditEventSegmentDialogTitle",
     NewEventSegmentDialogDescription = "NewEventSegmentDialogDescription",
     EditEventSegmentDialogDescription = "EditEventSegmentDialogDescription",
+    NewEventDialogDescription = "NewEventDialogDescription",
+
+    // field text
 
     // mostly pages...
     HomeDescription = "HomeDescription",

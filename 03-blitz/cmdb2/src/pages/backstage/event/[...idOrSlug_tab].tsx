@@ -41,7 +41,7 @@ const MyComponent = () => {
                 // these fields are used by the edit dialog.
                 new DB3Client.PKColumnClient({ columnName: "id" }),
                 //new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
+                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
                 new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
                 //new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
                 //new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),

@@ -18,11 +18,43 @@ import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { GetStyleVariablesForColor } from "./Color";
 import { StandardVariationSpec } from "shared/color";
 
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface CMTextInputBaseProps {
+    value: string | null;
+    onChange: (e, value) => void;
+    autoFocus?: boolean;
+    readOnly?: boolean;
+    className?: string;
+};
+
+// textfield for a string field on an object.
+export function CMTextInputBase({ value, onChange, autoFocus, readOnly, ...props }: CMTextInputBaseProps) {
+    return <input
+        type="text"
+        disabled={!!readOnly}
+        autoFocus={!!autoFocus}
+        onChange={(e) => { onChange(e, e.target.value); }}
+        value={value || ""}
+        className={`CMTextInputBase ${props.className}`}
+        autoComplete="off"
+        data-lpignore="true"
+    />;
+};
+
+
+
+
+
+
+
+
 // validation should probably NOT be done per-field.
 // but rather, validation done as Zod is designed at the object level, then error object is passed down into fields
 
 // callers controls the value
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface CMTextFieldProps {
     validationError?: string | null;

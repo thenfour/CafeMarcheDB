@@ -21,6 +21,7 @@ interface MutationMarkdownControlProps {
     errorMessage?: string,
     debounceMilliseconds?: number,
     editButtonText?: string,
+    helpText?: React.ReactNode,
     readonly?: boolean,
     className?: string;
     closeButtonText?: string,
@@ -52,6 +53,7 @@ export const MutationMarkdownControl = (props: MutationMarkdownControlProps) => 
         onValueChanged={onValueChanged}
         debounceMilliseconds={props.debounceMilliseconds || 1200}
         editButtonText={props.editButtonText}
+        helpText={props.helpText}
         closeButtonText={props.closeButtonText}
     />;
 };
@@ -122,6 +124,7 @@ export const SettingMarkdown = (props: SettingMarkdownProps) => {
     return <MutationMarkdownControl
         initialValue={initialValue}
         refetch={refetch}
+        helpText={`Setting: ${props.setting}`}
         readonly={!editable}
         onChange={(newValue) => {
             //console.log(`settingmarkdown onchange setting:'${props.settingName}' = '${newValue}'`);

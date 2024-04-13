@@ -108,8 +108,9 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
     renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactElement;
 
     visible?: boolean;
+    className?: string;
     fieldCaption?: string;
-    fieldDescriptionSettingName?: string;
+    fieldDescriptionSettingName?: SettingKey;
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -126,6 +127,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             editable: true,
             width: args.cellWidth,
             visible: Coalesce(args.visible, true),
+            className: args.className,
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
@@ -176,6 +178,8 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
     renderViewer = (params: RenderViewerArgs<TForeign>) => this.defaultRenderer({
         //key: params.key,
+        isReadOnly: true,
+        validationResult: undefined,
         className: params.className,
         //name: this.columnName,
         value: <>{this.defaultRenderAsChip({ value: params.value, colorVariant: StandardVariationSpec.Strong })}</>,

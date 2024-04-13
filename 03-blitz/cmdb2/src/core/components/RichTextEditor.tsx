@@ -13,7 +13,7 @@
 //     DeleteOutlined as DeleteIcon,
 //     Edit as EditIcon
 // } from '@mui/icons-material';
-import { Button, CircularProgress } from "@mui/material";
+import { Button, CircularProgress, Tooltip } from "@mui/material";
 import MarkdownIt from 'markdown-it';
 import React from "react";
 //import useDebounce from "shared/useDebounce";
@@ -141,6 +141,7 @@ interface DebouncedControlProps {
     className?: string,
     render: (showingEditor: boolean, value, onChange: (value) => void) => React.ReactElement,
     editButtonText?: string,
+    helpText?: React.ReactNode,
     closeButtonText?: string,
 }
 
@@ -161,16 +162,19 @@ export function DebouncedControl(props: DebouncedControlProps) {
 
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
 
+    const editButton = <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.editButtonText ?? "Edit"}</Button>;
+
     return (
         <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
             <div className='editControlsContainer'>
-                {!showingEditor && <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.editButtonText ?? "Edit"}</Button>}
+                {!showingEditor && editButton}
                 {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.closeButtonText ?? "Close"}</Button>}
                 {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
                     isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
                         <></>
                     )
                 )}
+                {props.helpText && <div className="helpText">{props.helpText}</div>}
             </div>
             {props.render(showingEditor, valueState, onChange)}
         </div>
@@ -189,6 +193,7 @@ interface MarkdownControlProps {
     isSaving: boolean, // show the value as saving in progress
     debounceMilliseconds: number,
     editButtonText?: string,
+    helpText?: React.ReactNode,
     closeButtonText?: string,
     readonly?: boolean,
 }
@@ -202,6 +207,7 @@ export function MarkdownControl(props: MarkdownControlProps) {
         onValueChanged={props.onValueChanged}
         className={`richTextContainer editable ${props.className || ""}`}
         editButtonText={props.editButtonText}
+        helpText={props.helpText}
         closeButtonText={props.closeButtonText}
         render={(showingEditor, value, onChange) => {
             return <div className='richTextContentContainer'>

@@ -66,10 +66,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         table: db3.xEvent,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
-            // i don't actually think description is useful here but it's a required field so adding here generates the default value.
-            // well because we use a custom mutation for event creation, just do it in the mutation.
-            //new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
             new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
             new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention }),
             new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention }),
@@ -96,7 +93,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         },
     };
 
-    const eventValidationResult = eventTableSpec.args.table.ValidateAndComputeDiff(eventValue, eventValue, "new");
+    const eventValidationResult = eventTableSpec.args.table.ValidateAndComputeDiff(eventValue, eventValue, "new", clientIntention);
 
 
     // EVENT SEGMENT BINDINGS
@@ -105,7 +102,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             // event, description, name all need to be 
-            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
+            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
         ],
     });
 
@@ -125,7 +122,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         },
     };
 
-    const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new");
+    const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new", clientIntention);
 
     const handleSaveClick = () => {
         const payload: TinsertEventArgs = {
@@ -142,18 +139,16 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     };
 
     const renderColumn = (table: DB3Client.xTableClientSpec, colName: string, row: TAnyModel, validationResult: db3.ValidateAndComputeDiffResult, api: DB3Client.NewDialogAPI) => {
-        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName] });
+        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], clientIntention });
     };
 
     return <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
 
         <DialogTitle>
-            new event
+            Create a new event
         </DialogTitle>
         <DialogContent dividers>
-            <DialogContentText>
-                description of events and segments?
-            </DialogContentText>
+            <SettingMarkdown setting="NewEventDialogDescription" />
 
             <div className="EventSongListValue">
                 <VisibilityControl value={eventValue.visiblePermission} onChange={(newVisiblePermission) => {
@@ -162,7 +157,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                 }} />
 
                 {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI)}
-                {/* {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI)} */}
                 {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI)}
                 {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI)}
                 {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI)}
@@ -364,22 +358,6 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
 
-
-
-    // const filterModel: db3.CMDBTableFilterModel = {
-    //     quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
-    //     items: [],
-    //     tagIds: filterSpec.tagFilter,
-    //     tableParams: {
-    //         eventTypeIds: filterSpec.typeFilter,
-    //         eventStatusIds: filterSpec.statusFilter,
-    //     }
-    // };
-    // const where = db3.xEventVerbose.CalculateWhereClause({
-    //     filterModel,
-    //     clientIntention,
-    // });
-    // const include = db3.xEventVerbose.CalculateInclude(clientIntention);
     const eventsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
@@ -411,9 +389,6 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     }, [filterSpec]);
 
     return <>
-        {/* <InspectObject src={where} tooltip={`inspect where clause for events query`} />
-        <InspectObject src={include} tooltip={`inspect include clause for events query`} />
-        <InspectObject src={eventsClient.items} tooltip={`inspect events raw results`} /> */}
         {eventsClient.items.map(event => <EventDetail key={event.id} readonly={true} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} isOnlyEventVisible={false} allowRouterPush={false} />)}
     </>;
 };

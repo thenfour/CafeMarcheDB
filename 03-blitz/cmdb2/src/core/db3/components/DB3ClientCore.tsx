@@ -23,6 +23,7 @@ import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
+//import { InspectObject } from "src/core/components/CMCoreComponents";
 //import { NameValuePair } from "./DB3ClientBasicFields";
 
 
@@ -30,26 +31,38 @@ import db3queries from "../queries/db3queries";
 // useful for consistent field rendering including name, value, detailed help etc.
 interface RenderBasicNameValuePairProps {
     key?: string;
-    className?: string;
     name: React.ReactNode;
-    value: React.ReactNode;
     description?: React.ReactNode;
+    value: React.ReactNode;
+    isReadOnly: boolean;
+    className?: string;
+    fieldName: string;
+    validationResult?: db3.ValidateAndComputeDiffResult;
 };
 
 export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) => {
-    return <div key={props.key} className={`BasicNameValuePairContainer ${props.className}`}>
+
+    // validation result is relevant to the whole row; extract THIS field.
+
+    const validationError = props.validationResult?.getErrorForField(props.fieldName) || null;
+
+    return <div key={props.key} className={`BasicNameValuePairContainer ${props.className} ${props.isReadOnly ? "readOnly" : "editable"} ${(props.validationResult && !!validationError) ? "validationError" : "validationSuccess"}`}>
         <div className="name">{props.name}</div>
         {props.description && <div className="description">{props.description}</div>}
         <div className="value">{props.value}</div>
+        {(props.validationResult && !!validationError) && <div className="validationResult">{validationError}</div>}
     </div>;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface NameValuePairProps {
     name: React.ReactNode;
-    value: React.ReactNode;
     description?: React.ReactNode;
+    value: React.ReactNode;
+    isReadOnly: boolean;
     className?: string;
+    fieldName: string;
+    validationResult?: db3.ValidateAndComputeDiffResult;
 };
 
 export const NameValuePair = (props: NameValuePairProps) => {
@@ -88,6 +101,7 @@ export interface IColumnClientArgs {
 
     fieldCaption: string | undefined;
     fieldDescriptionSettingName: string | null | undefined;
+    className: string | undefined;
 
     GridColProps?: Partial<GridColDef>;
 };
@@ -100,10 +114,11 @@ export abstract class IColumnClient {
     visible: boolean;
     width: number;
 
-    GridColProps?: Partial<GridColDef>;
-
     fieldCaption: string | undefined;
     fieldDescriptionSettingName: SettingKey | null | undefined;
+    className: string | undefined;
+
+    GridColProps?: Partial<GridColDef>;
 
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
     abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactElement; // will render as a child of <FormControl>
@@ -133,12 +148,16 @@ export abstract class IColumnClient {
     };
 
     // child classes call this when you want default rendering.
-    defaultRenderer = ({ value, className }: { value: React.ReactNode, className?: string }) => {
+    defaultRenderer = ({ value, className, isReadOnly, validationResult }: { value: React.ReactNode, className?: string, isReadOnly: boolean, validationResult: undefined | db3.ValidateAndComputeDiffResult }) => {
+        const defaultDescriptionSettingName = `${this.schemaTable.tableName}.${this.columnName}.DescriptionMarkdown` as SettingKey;
         return <NameValuePair
             name={this.fieldCaption || this.columnName}
-            description={this.fieldDescriptionSettingName && <SettingMarkdown setting={this.fieldDescriptionSettingName} />}
+            description={<SettingMarkdown setting={this.fieldDescriptionSettingName || defaultDescriptionSettingName} />}
             value={value}
-            className={className}
+            fieldName={this.columnName}
+            isReadOnly={isReadOnly}
+            className={`${className} ${this.className || ""}`}
+            validationResult={validationResult}
         />;
     };
 };
@@ -194,7 +213,7 @@ export class xTableClientSpec {
 // xTableRenderClient is an object that React components use to access functionality, access the items in the table etc.
 
 export const CalculateOrderBy = (sortModel?: GridSortModel) => {
-    let orderBy: any = undefined;//{ id: "asc" }; // default order
+    let orderBy: any = undefined;//{id: "asc" }; // default order
     if (sortModel && sortModel.length > 0) {
         orderBy = { [sortModel[0]!.field]: sortModel[0]!.sort }; // only support 1 ordering (grid does too afaik)
     }
@@ -356,8 +375,8 @@ export class xTableRenderClient {
     // for things like FK, 
     doUpdateMutation = async (row: TAnyModel) => {
         console.assert(!!this.mutateFn); // make sure you request this capability!
-        // const postClientModel = {}; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
-        // const updateModel = {};
+        // const postClientModel = { }; // when applying values, it's client-value -> post-client-value -> db-value. there are 2 stages, to allow client columns to work AND the schema column.
+        // const updateModel = { };
 
         // this.clientColumns.forEach(clientCol => {
         //     // seems to be an eternal problem; probably a bad design in general. well,
@@ -390,8 +409,8 @@ export class xTableRenderClient {
     prepareInsertMutation = <T extends TAnyModel,>(row: TAnyModel): any => {
         const dbModel = this.prepareMutation(row, "new");
 
-        // const postClientModel: T = {} as T;
-        // const dbModel: T = {} as T;
+        // const postClientModel: T = { } as T;
+        // const dbModel: T = { } as T;
 
         // this.clientColumns.forEach(clientCol => {
         //     if (clientCol.ApplyClientToPostClient) {

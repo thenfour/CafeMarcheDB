@@ -194,6 +194,11 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   background: linear-gradient(89deg, #0001, transparent);
 }
 
+.richTextContainer .editControlsContainer>div {
+  /* make things like helpText not go on new lines. */
+  display: inline-block;
+}
+
 .richTextContainer .editControlsContainer button {
   margin: 0;
   padding: 0;
