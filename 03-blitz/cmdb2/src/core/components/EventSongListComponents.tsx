@@ -359,6 +359,13 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         ],
     });
 
+    // necessary to connect columns.
+    const ctx__ = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.None, // i don't think it's necessary to do this when i'm just connecting columns.
+        tableSpec: tableSpec,
+    });
+
     const api: DB3Client.NewDialogAPI = {
         setFieldValues: (fieldValues: TAnyModel) => {
             const newValue = { ...value, ...fieldValues };
@@ -563,7 +570,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 // for new song lists. different from the other editor because this doesn't save automatically, it only saves after you click "save"
 interface EventSongListNewEditorProps {
     event: db3.EventClientPayload_Verbose;
-    tableClient: DB3Client.xTableRenderClient;
+    //tableClient: DB3Client.xTableRenderClient;
     onCancel: () => void;
     onSuccess: () => void;
 };
@@ -669,7 +676,7 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
     return <div className="EventSongListTabContent">
         {insertAuthorized && !readonly && <Button className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
         {newOpen && !readonly && insertAuthorized && (
-            <EventSongListNewEditor event={event} tableClient={tableClient} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
+            <EventSongListNewEditor event={event} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />
         )}
         <EventSongListList event={event} tableClient={tableClient} readonly={readonly} refetch={refetch} />
     </div>;

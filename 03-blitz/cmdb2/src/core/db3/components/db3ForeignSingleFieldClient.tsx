@@ -11,7 +11,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DoneIcon from '@mui/icons-material/Done';
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
+import { IColumnClient, NameValuePair, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import {
     Add as AddIcon,
     Search as SearchIcon
@@ -24,13 +24,15 @@ import {
     List,
     ListItemButton
 } from "@mui/material";
-import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { assert } from "blitz";
 import { useAuthenticatedSession } from "@blitzjs/auth";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { RenderMuiIcon } from "./IconSelectDialog";
 
 
 
@@ -46,6 +48,8 @@ export interface RenderAsChipParams<T> {
     onClick?: () => void;
 }
 
+
+
 export interface ForeignSingleFieldInputProps<TForeign> {
     foreignSpec: ForeignSingleFieldClient<TForeign>;
     value: TForeign | null;
@@ -53,29 +57,97 @@ export interface ForeignSingleFieldInputProps<TForeign> {
     validationError?: string | null;
     readOnly: boolean;
     clientIntention: db3.xTableClientUsageContext,
+    selectStyle: "inline" | "dialog";
+    inlineSelectOpenDialogButtonCaption?: React.ReactNode;
+    openDialogButtonCaption?: React.ReactNode;
 };
 
-// general use "edit cell" for foreign single values
+export const ForeignSingleFieldInlineValues = <TForeign,>(props: ForeignSingleFieldInputProps<TForeign>) => {
+    //const publicData = useAuthenticatedSession();
+    const db3Context = useForeignSingleFieldRenderContext({
+        filterText: "",
+        spec: props.foreignSpec,
+        clientIntention: props.clientIntention,
+    });
+    const items = db3Context.items;
+
+    const isEqual = (a: TForeign | null, b: TForeign | null) => {
+        const anull = (a === null || a === undefined);
+        const bnull = (b === null || b === undefined);
+        if (anull && bnull) {
+            return true;
+        }
+        if (anull !== bnull) {
+            return false;
+        }
+        // both non-null.
+        const ret = a![props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember] === b![props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember];
+        return ret;
+    };
+
+    const handleItemClick = (value) => {
+        props.onChange(value);
+    };
+
+    return <>
+        {
+            items.map(item => {
+                const selected = isEqual(item, props.value);
+                return <React.Fragment key={item[props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
+                    {props.foreignSpec.args.renderAsChip!({
+                        value: item,
+                        onDelete: selected ? (() => { }) : undefined,
+                        onClick: () => handleItemClick(item),
+                        colorVariant: {
+                            selected,
+                            enabled: true,
+                            variation: selected ? "strong" : "weak",
+                            fillOption: "filled",
+                        }
+                    })}</React.Fragment>
+
+            })
+        }
+    </>;
+};
+
+// general use "edit cell" for foreign single values. does not show a label or validation stuff; just the value and a button to select
 export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInputProps<TForeign>) => {
+
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [oldValue, setOldValue] = React.useState<TForeign | null>();
     React.useEffect(() => {
         setOldValue(props.value);
     }, []);
 
-    const chip = props.foreignSpec.args.renderAsChip!({
+    const chip = props.selectStyle === "dialog" ? (props.foreignSpec.args.renderAsChip!({
         value: props.value,
         colorVariant: StandardVariationSpec.Strong,
+        onClick: props.readOnly ? undefined : (() => {
+            setIsOpen(!isOpen)
+        }),
         onDelete: props.readOnly ? undefined : (() => {
             props.onChange(null);
         }),
-    });
+    })) : (
+        <CMChipContainer>
+            <ForeignSingleFieldInlineValues {...props} />
+        </CMChipContainer>
+    );
 
     assert(!!props.foreignSpec.typedSchemaColumn, "schema is not connected to the table spec. you probably need to initiate the client render context");
 
-    return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
+    // inlineSelectOpenDialogButtonCaption?: React.ReactNode;
+    // openDialogButtonCaption?: React.ReactNode;
+    const defaultCaption = `Select ${props.foreignSpec.typedSchemaColumn.member}...`;
+    const openDialogCaption = (props.selectStyle === "dialog" ? props.openDialogButtonCaption : props.inlineSelectOpenDialogButtonCaption) || defaultCaption;
+
+    const openDialogButton = !props.readOnly && <CMSmallButton onClick={() => { setIsOpen(!isOpen) }}>{openDialogCaption}</CMSmallButton>
+
+    return <div className={`chipContainer`}>
         {chip}
-        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.member}</Button>
+        {/* <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.member}</Button> */}
+        {openDialogButton}
         {isOpen && <SelectSingleForeignDialog
             clientIntention={props.clientIntention}
             closeOnSelect={true}
@@ -91,16 +163,17 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
             }}
         />
         }
-        {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
     </div>;
 };
+
+
+
+
+
 
 export interface ForeignSingleFieldClientArgs<TForeign> {
     columnName: string;
     cellWidth: number;
-
-    // used for selecting new items. therefore mode:primary.
-    clientIntention: db3.xTableClientUsageContext,
 
     renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactElement;
 
@@ -111,6 +184,9 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
     className?: string;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
+
+    selectStyle?: "inline" | "dialog";
+    inlineSelectMoreButtonText?: React.ReactNode;
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -119,6 +195,9 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
     args: ForeignSingleFieldClientArgs<TForeign>;
 
     fixedValue: TForeign | null | undefined;
+    foreignClientIntention: db3.xTableClientUsageContext;
+
+    selectStyle: "inline" | "dialog";
 
     constructor(args: ForeignSingleFieldClientArgs<TForeign>) {
         super({
@@ -134,6 +213,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
         this.args = args;
         this.fixedValue = undefined; // for the moment it's not known.
+        this.selectStyle = args.selectStyle || "dialog";
     }
 
     ApplyClientToPostClient = (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => {
@@ -148,25 +228,27 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
         const rowInfo = this.typedSchemaColumn.getForeignTableSchema().getRowInfo(args.value);
 
-        const style = GetStyleVariablesForColor({ color: rowInfo.color, ...args.colorVariant })
-
-        return <Chip
-            className={`cmdbChip applyColor ${style.cssClass}`}
-            style={style.style}
-            size="small"
-            label={rowInfo.name}
+        return <CMChip
+            className={"foreignSingleValue"}
+            color={rowInfo.color}
+            tooltip={rowInfo.description}
+            onClick={args.onClick}
             onDelete={args.onDelete}
-        />;
+            variation={args.colorVariant}
+        >
+            {rowInfo.name}
+            {RenderMuiIcon(rowInfo.iconName)}
+        </CMChip>;
     };
 
     defaultRenderAsListItem = (props, value, selected) => {
         console.assert(value != null);
-        const chip = this.defaultRenderAsChip({ value, colorVariant: StandardVariationSpec.Strong });
-        return <li {...props}>
-            {selected && <DoneIcon />}
+        const chip = this.defaultRenderAsChip({ value, colorVariant: { ...StandardVariationSpec.Strong, selected } });
+        return <div {...props} className="listItemRow">
+            {/* {selected && <DoneIcon />} */}
             {chip}
             {selected && <CloseIcon />}
-        </li>
+        </div>
     };
 
     // renderViewer = (params: RenderViewerArgs<TForeign>) => RenderBasicNameValuePair({
@@ -188,6 +270,15 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
     onSchemaConnected = (tableClient: xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.ForeignSingleField<TForeign>;
 
+        // calculate a client intention based on the table. all args are the asme as the table, except the mode for the relation is primary.
+        this.foreignClientIntention = {
+            mode: "primary",
+            intention: tableClient.args.clientIntention.intention,
+            currentUser: tableClient.args.clientIntention.currentUser,
+            relationPath: tableClient.args.clientIntention.relationPath,
+        };
+
+
         if (tableClient.args.filterModel?.tableParams && tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember] != null) {
             const fkid = parseIntOrNull(tableClient.args.filterModel?.tableParams[this.typedSchemaColumn.fkMember]);
 
@@ -195,7 +286,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                 tableID: this.typedSchemaColumn.getForeignTableSchema().tableID,
                 tableName: this.typedSchemaColumn.getForeignTableSchema().tableName,
                 orderBy: undefined,
-                clientIntention: this.args.clientIntention,
+                clientIntention: this.foreignClientIntention,
                 filter: {
                     items: [{
                         field: this.typedSchemaColumn.getForeignTableSchema().pkMember,
@@ -237,7 +328,8 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                 const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <ForeignSingleFieldInput
                     validationError={vr.result === "success" ? null : vr.errorMessage || null}
-                    clientIntention={this.args.clientIntention}
+                    selectStyle={this.selectStyle}
+                    clientIntention={this.foreignClientIntention}
                     foreignSpec={this}
                     readOnly={false} // always allow switching this; for admin purposes makes sense
                     value={params.value}
@@ -257,7 +349,6 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
         // so when you filter by some master object (editing event segments for event XYZ), the master object is a fixed and pre-selected.
         if (this.fixedValue != null) {
             const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
-            //console.log(`rendering new dlg for foreign single`);
             const currentVal = params.row[this.typedSchemaColumn.member];
             if (currentVal === null || (this.fixedValue[foreignPkMember] !== currentVal[foreignPkMember])) {
                 value = this.fixedValue;
@@ -270,23 +361,27 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
         const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
 
-        return <React.Fragment key={params.key}>
-            {/* <InputLabel>{this.schemaColumn.label}</InputLabel> */}
-            <ForeignSingleFieldInput
-                foreignSpec={this}
-                readOnly={!!this.fixedValue}
-                clientIntention={this.args.clientIntention}
-                validationError={validationValue}
-                value={value}
-                onChange={(newValue: TForeign | null) => {
-                    const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
-                    params.api.setFieldValues({
-                        [this.args.columnName]: newValue,
-                        [this.typedSchemaColumn.fkMember]: !!newValue ? newValue[foreignPkMember] : null,
-                    });
-                }}
-            />
-        </React.Fragment>;
+        return this.defaultRenderer({
+            isReadOnly: !!this.fixedValue,
+            validationResult: params.validationResult,
+            value: <React.Fragment key={params.key}>
+                <ForeignSingleFieldInput
+                    foreignSpec={this}
+                    selectStyle={this.selectStyle}
+                    readOnly={!!this.fixedValue}
+                    clientIntention={this.foreignClientIntention}
+                    validationError={validationValue}
+                    value={value}
+                    onChange={(newValue: TForeign | null) => {
+                        const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
+                        params.api.setFieldValues({
+                            [this.args.columnName]: newValue,
+                            [this.typedSchemaColumn.fkMember]: !!newValue ? newValue[foreignPkMember] : null,
+                        });
+                    }}
+                />
+            </React.Fragment>
+        });
     };
 };
 

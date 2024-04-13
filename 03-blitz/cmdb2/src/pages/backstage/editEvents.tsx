@@ -8,6 +8,8 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { useRouter } from "next/router";
+import { pickFromObject } from "shared/utils";
+import { EventTableClientColumns } from "src/core/components/EventComponents";
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter();
@@ -32,33 +34,30 @@ const MainContent = () => {
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
         columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150 }),
-            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
-            new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
-            new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ConstEnumStringFieldClient({ columnName: "segmentBehavior", cellWidth: 220 }),
-            new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName: "expectedAttendanceUserTag", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-
-            new DB3Client.BoolColumnClient({ columnName: "frontpageVisible" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "frontpageDate", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "frontpageTime", cellWidth: 150 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "frontpageDetails", cellWidth: 150 }),
-
-            new DB3Client.GenericStringColumnClient({ columnName: "frontpageTitle", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "frontpageLocation", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "frontpageLocationURI", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "frontpageTags", cellWidth: 150 }),
-
+            EventTableClientColumns.id,
+            EventTableClientColumns.name,
+            EventTableClientColumns.dateRange,
+            EventTableClientColumns.slug,
+            EventTableClientColumns.description,
+            EventTableClientColumns.isDeleted,
+            EventTableClientColumns.locationDescription,
+            EventTableClientColumns.locationURL,
+            EventTableClientColumns.createdAt,
+            EventTableClientColumns.type,
+            EventTableClientColumns.status,
+            EventTableClientColumns.tags,
+            EventTableClientColumns.segmentBehavior,
+            EventTableClientColumns.expectedAttendanceUserTag,
+            EventTableClientColumns.createdByUser,
+            EventTableClientColumns.visiblePermission,
+            EventTableClientColumns.frontpageVisible,
+            EventTableClientColumns.frontpageDate,
+            EventTableClientColumns.frontpageTime,
+            EventTableClientColumns.frontpageDetails,
+            EventTableClientColumns.frontpageTitle,
+            EventTableClientColumns.frontpageLocation,
+            EventTableClientColumns.frontpageLocationURI,
+            EventTableClientColumns.frontpageTags,
         ],
     });
 

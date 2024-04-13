@@ -1,19 +1,14 @@
 import { BlitzPage, useParams } from "@blitzjs/next";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { Breadcrumbs, Link, Typography } from "@mui/material";
-import HomeIcon from '@mui/icons-material/Home';
-import { EventBreadcrumbs, EventDetail, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
-import { API } from "src/core/db3/clientAPI";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { IsEntirelyIntegral } from "shared/utils";
 import { Suspense } from "react";
-import { InspectObject } from "src/core/components/CMCoreComponents";
+import { Permission } from "shared/permissions";
+import { IsEntirelyIntegral } from "shared/utils";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
+import { EventBreadcrumbs, EventDetail, EventTableClientColumns, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
+import * as DB3Client from "src/core/db3/DB3Client";
+import * as db3 from "src/core/db3/db3";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = () => {
     const params = useParams();
@@ -38,23 +33,17 @@ const MyComponent = () => {
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xEventVerbose,
             columns: [
-                // these fields are used by the edit dialog.
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-                //new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-                new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
-                new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
-                //new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-                //new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
-                new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150 }),
-                new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150 }),
-                //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
-                new DB3Client.ConstEnumStringFieldClient({ columnName: "segmentBehavior", cellWidth: 220 }),
-                new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-                new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-                //new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName: "expectedAttendanceUserTag", cellWidth: 150, clientIntention: { intention: "admin", mode: "primary" } }),
-                new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-                //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-                new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+                EventTableClientColumns.id,
+                EventTableClientColumns.name,
+                EventTableClientColumns.slug,
+                EventTableClientColumns.locationDescription,
+                EventTableClientColumns.locationURL,
+                EventTableClientColumns.segmentBehavior,
+                EventTableClientColumns.type,
+                EventTableClientColumns.status,
+                EventTableClientColumns.tags,
+                EventTableClientColumns.expectedAttendanceUserTag,
+                EventTableClientColumns.visiblePermission,
             ],
         }),
         filterModel: {

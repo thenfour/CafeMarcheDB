@@ -25,6 +25,10 @@ import updateSettingMutation from "src/auth/mutations/updateSetting";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 
+export const getAbsoluteUrl = (slug: string): string => {
+    return `${window.location.origin}${slug}`;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
     filterModel?: GridFilterModel,
@@ -368,10 +372,10 @@ class EventsAPI {
 
         if (typeof eventOrEventIdOrSlug === 'object') {
             if (eventOrEventIdOrSlug.slug) {
-                return `/backstage/event/${eventOrEventIdOrSlug.slug}${tabPart}`;
+                return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug.slug}${tabPart}`);
             }
         }
-        return `/backstage/event/${eventOrEventIdOrSlug}${tabPart}`;
+        return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug}${tabPart}`);
     }
 
     getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {

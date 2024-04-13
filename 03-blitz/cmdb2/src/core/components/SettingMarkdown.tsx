@@ -12,6 +12,9 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 //import { API } from "../db3/clientAPI";
 
+export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MutationMarkdownControlProps {
     initialValue: string | null,

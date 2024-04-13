@@ -122,7 +122,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "userComment", cellWidth: 200 }),
             new DB3Client.BoolColumnClient({ columnName: "isInvited" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120 }),
         ],
     });
 
@@ -133,7 +133,6 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             new DB3Client.ForeignSingleFieldClient({
                 columnName: "attendance",
                 cellWidth: 120,
-                clientIntention: { intention: "admin", mode: "primary" },
                 renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} />,
             }),
         ],
@@ -955,5 +954,31 @@ export const EventDashboard = () => {
     </div>;
 };
 
+export const EventTableClientColumns = {
+    id: new DB3Client.PKColumnClient({ columnName: "id" }),
+    name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
+    dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
+    slug: new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150, fieldCaption: "URL (auto-generated)" }),
+    description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
+    isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
+    locationDescription: new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150, fieldCaption: "Location" }),
+    locationURL: new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150, fieldCaption: "Location URL" }),
+    createdAt: new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
+    type: new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, selectStyle: "inline", fieldCaption: "Event Type" }),
+    status: new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, fieldCaption: "Status" }),
+    segmentBehavior: new DB3Client.ConstEnumStringFieldClient({ columnName: "segmentBehavior", cellWidth: 220, fieldCaption: "Behavior of segments" }),
+    expectedAttendanceUserTag: new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName: "expectedAttendanceUserTag", cellWidth: 150, fieldCaption: "Who's invited?" }),
+    tags: new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags" }),
+    createdByUser: new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, }),
+    visiblePermission: new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, fieldCaption: "Who can view this event?" }),
 
+    frontpageVisible: new DB3Client.BoolColumnClient({ columnName: "frontpageVisible" }),
+    frontpageDate: new DB3Client.GenericStringColumnClient({ columnName: "frontpageDate", cellWidth: 150 }),
+    frontpageTime: new DB3Client.GenericStringColumnClient({ columnName: "frontpageTime", cellWidth: 150 }),
+    frontpageDetails: new DB3Client.MarkdownStringColumnClient({ columnName: "frontpageDetails", cellWidth: 150 }),
 
+    frontpageTitle: new DB3Client.GenericStringColumnClient({ columnName: "frontpageTitle", cellWidth: 150 }),
+    frontpageLocation: new DB3Client.GenericStringColumnClient({ columnName: "frontpageLocation", cellWidth: 150 }),
+    frontpageLocationURI: new DB3Client.GenericStringColumnClient({ columnName: "frontpageLocationURI", cellWidth: 150 }),
+    frontpageTags: new DB3Client.GenericStringColumnClient({ columnName: "frontpageTags", cellWidth: 150 }),
+} as const;

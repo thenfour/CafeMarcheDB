@@ -22,6 +22,8 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
 import { assert } from "blitz";
 import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
+import { API } from "../clientAPI";
+import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
 //import { API } from '../clientAPI';
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,7 +86,6 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
-        console.log(`${this.schemaTable?.tableName}.${this.columnName} cssClass=${this.className}`);
     }
 
     ApplyClientToPostClient = undefined;
@@ -200,16 +201,12 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         if (!this.schemaColumn) throw new Error(`no schemacolumn for slug column '${this.columnName}'`);
         const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "new", clientIntention: params.clientIntention });
 
-        //const [isEditable, setIsEditable] = React.useState<boolean>(false);
-        //const [customValue, setCustomValue] = React.useState<string>("");
-
         // set the calculated value in the object.
-        // if (params.value !== vr.parsedValue) {
-        //     params.api.setFieldValues({ [this.schemaColumn.member]: vr.parsedValue });
-        // }
         if (vr.values[this.columnName] !== params.row[this.columnName]) {
             params.api.setFieldValues(vr.values);
         }
+
+        const slug = vr.values[this.columnName] as string;
 
         // NOTE: do not bother with custom-editable slugs.
         // it causes complications not worth the effort WRT
@@ -227,21 +224,12 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         //     setIsEditable(e.target.checked);
         // };
 
-        return <div className="slugEditField">
-            <CMTextField
-                readOnly={true}
-                key={params.key}
-                autoFocus={false}
-                label={this.headerName}
-                //validationError={null} // don't show validation errors for fields you can't edit.
-                //validationError={vr.errorMessage || null}
-                value={vr.values[this.columnName] as string}
-                onChange={(e, val) => {
-                    //params.api.setFieldValues({ [this.columnName]: val });
-                }}
-            />
-
-        </div>;
+        return this.defaultRenderer({
+            isReadOnly: true,
+            validationResult: undefined,
+            value: API.events.getURIForEvent(slug),
+            className: "slugEditField"
+        });
     };
 };
 
@@ -586,27 +574,58 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         const value = params.value === null ? gNullValue : params.value;
-        return <React.Fragment key={params.key}>
-            <InputLabel>{this.schemaColumn.member}</InputLabel>
-            <Select
-                value={value}
-                error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}
-                onChange={e => {
-                    let userInputValue: (string | null) = e.target.value as string;
-                    if (userInputValue === gNullValue) {
-                        userInputValue = null;
-                    }
-                    return params.api.setFieldValues({ [this.schemaColumn.member]: userInputValue });
-                }}
-            >
-                {
-                    this.gridOptions.map(option => {
-                        return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>;
-                    })
-                }
-            </Select>
-            <FormHelperText>Heres my helper text</FormHelperText>
-        </React.Fragment>;
+
+        const handleClick = (val: typeof this.gridOptions[0]) => {
+            const dbval = val.value === gNullValue ? null : val.value;
+            return params.api.setFieldValues({ [this.schemaColumn.member]: dbval });
+        };
+
+        return this.defaultRenderer({
+            isReadOnly: !this.editable,
+            validationResult: params.validationResult,
+            className: "constEnumStringField",
+            value: <CMChipContainer className="constEnumStringFieldOptions" key={params.key}>
+                {this.gridOptions.map(option => {
+                    return <CMChip
+                        className={`selectable option ${value === option.value ? "selected" : "notSelected"}`}
+                        key={option.value}
+                        onClick={() => handleClick(option)}
+                        shape="rectangle"
+                        variation={{
+                            selected: value === option.value,
+                            fillOption: "filled",
+                            variation: "strong",
+                            enabled: true,
+                        }}
+                    >
+                        {option.label}
+                    </CMChip>;
+                })}
+            </CMChipContainer>,
+        });
+
+
+        // return <React.Fragment key={params.key}>
+        //     <InputLabel>{this.schemaColumn.member}</InputLabel>
+        //     <Select
+        //         value={value}
+        //         error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}
+        //         onChange={e => {
+        //             let userInputValue: (string | null) = e.target.value as string;
+        //             if (userInputValue === gNullValue) {
+        //                 userInputValue = null;
+        //             }
+        //             return params.api.setFieldValues({ [this.schemaColumn.member]: userInputValue });
+        //         }}
+        //     >
+        //         {
+        //             this.gridOptions.map(option => {
+        //                 return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>;
+        //             })
+        //         }
+        //     </Select>
+        //     <FormHelperText>Heres my helper text</FormHelperText>
+        // </React.Fragment>;
 
     };
 };

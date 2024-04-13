@@ -523,6 +523,13 @@ export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTim
 
 
 
+
+export function pickFromObject<T extends object, K extends keyof T>(obj: T, keys: K[]): T[K][] {
+    return keys.map(key => obj[key]);
+}
+
+
+
 // thanks chatgpt
 export interface ParsedMimeType {
     type: string | null;

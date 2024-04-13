@@ -2,7 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { EventSummary, RehearsalSummary } from "src/core/components/CMMockupComponents";
-import { EventDetail } from "src/core/components/EventComponents";
+import { EventDetail, EventTableClientColumns } from "src/core/components/EventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -18,7 +18,7 @@ import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { TAnyModel, gQueryOptions } from "shared/utils";
+import { TAnyModel, gQueryOptions, pickFromObject } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { StandardVariationSpec } from "shared/color";
@@ -65,15 +65,15 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const eventTableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
         columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
-            new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150 }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, clientIntention }),
-            new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, clientIntention }),
-            new DB3Client.ConstEnumStringFieldClient({ columnName: "segmentBehavior", cellWidth: 220 }),
-            new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName: "expectedAttendanceUserTag", cellWidth: 150, clientIntention }),
-            new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention }),
+            EventTableClientColumns.id,
+            EventTableClientColumns.name,
+            EventTableClientColumns.slug,
+            EventTableClientColumns.type,
+            EventTableClientColumns.status,
+            EventTableClientColumns.tags,
+            EventTableClientColumns.segmentBehavior,
+            EventTableClientColumns.expectedAttendanceUserTag,
+            EventTableClientColumns.visiblePermission,
         ],
     });
 
@@ -363,7 +363,6 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
             table: db3.xEventVerbose,
             columns: [
                 new DB3Client.PKColumnClient({ columnName: "id" }),
-                new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             ],
         }),
         filterModel: {
