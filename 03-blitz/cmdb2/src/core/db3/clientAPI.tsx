@@ -1,3 +1,7 @@
+// re dependency cycle between this & db3clientbasicfields...
+// this file NEEDS clientbasicfields because we have tableclients & corresponding columns.
+// so it means the clientbasicfields is lower level than this file, which feels wrong but ok.
+
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
@@ -24,10 +28,7 @@ import getSetting from "src/auth/queries/getSetting";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
-
-export const getAbsoluteUrl = (slug: string): string => {
-    return `${window.location.origin}${slug}`;
-}
+import * as ClientAPILL from "./clientAPILL";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -369,14 +370,15 @@ class EventsAPI {
     // }
 
     getURIForEvent(eventOrEventIdOrSlug: number | string | db3.EventPayloadMinimum, tabSlug?: string) {
-        const tabPart = tabSlug ? `/${tabSlug}` : "";
+        return ClientAPILL.getURIForEvent(eventOrEventIdOrSlug);
+        // const tabPart = tabSlug ? `/${tabSlug}` : "";
 
-        if (typeof eventOrEventIdOrSlug === 'object') {
-            if (eventOrEventIdOrSlug.slug) {
-                return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug.slug}${tabPart}`);
-            }
-        }
-        return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug}${tabPart}`);
+        // if (typeof eventOrEventIdOrSlug === 'object') {
+        //     if (eventOrEventIdOrSlug.slug) {
+        //         return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug.slug}${tabPart}`);
+        //     }
+        // }
+        // return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug}${tabPart}`);
     }
 
     getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {

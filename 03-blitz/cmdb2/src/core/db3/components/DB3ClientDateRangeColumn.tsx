@@ -65,9 +65,9 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
                     items={[]}
                     onChange={(newValue) => {
                         const spec = newValue.getSpec();
-                        params.api.setEditCellValue({ id: params.id, field: this.args.startsAtColumnName, value: spec.startsAtDateTime })!.then(() => {
-                            params.api.setEditCellValue({ id: params.id, field: this.args.durationMillisColumnName, value: spec.durationMillis })!.then(() => {
-                                params.api.setEditCellValue({ id: params.id, field: this.args.isAllDayColumnName, value: spec.isAllDay })!.then(() => {
+                        void params.api.setEditCellValue({ id: params.id, field: this.args.startsAtColumnName, value: spec.startsAtDateTime })!.then(() => {
+                            void params.api.setEditCellValue({ id: params.id, field: this.args.durationMillisColumnName, value: spec.durationMillis })!.then(() => {
+                                void params.api.setEditCellValue({ id: params.id, field: this.args.isAllDayColumnName, value: spec.isAllDay })!.then(() => {
 
                                 });
                             });

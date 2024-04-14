@@ -27,8 +27,8 @@ import { API } from "../clientAPI";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconSelectDialog";
+import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 
 
 

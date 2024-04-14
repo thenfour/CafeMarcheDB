@@ -18,7 +18,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
-import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, EditFieldsDialogButton, EditFieldsDialogButtonApi, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, VisibilityControl, VisibilityValue } from './CMCoreComponents';
+import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceControl } from './EventAttendanceComponents';

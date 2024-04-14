@@ -450,9 +450,9 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     }, []);
 
     React.useEffect(() => {
-        function handleKeyPress(event) {
+        async function handleKeyPress(event) {
             if (event.altKey && event.key === '9') {
-                showAdminControlsMutation.invoke({ toggle: true });
+                await showAdminControlsMutation.invoke({ toggle: true });
             }
         }
 

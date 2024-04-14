@@ -7,24 +7,24 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { Button, Checkbox, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack, Switch } from "@mui/material";
+import { Checkbox, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { assert } from "blitz";
 import dayjs, { Dayjs } from "dayjs";
 import React from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
-import { CoerceToNumberOrNull, CoerceToString, SettingKey, gNullValue } from "shared/utils";
+import { CoerceToNumberOrNull, SettingKey, gNullValue } from "shared/utils";
+import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
+import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
-import { assert } from "blitz";
-import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
-import { API } from "../clientAPI";
-import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
-//import { API } from '../clientAPI';
+// NB: do not use API.* here due to circular dependencies
+import * as ClientAPILL from "../clientAPILL";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -227,7 +227,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         return this.defaultRenderer({
             isReadOnly: true,
             validationResult: undefined,
-            value: API.events.getURIForEvent(slug),
+            value: ClientAPILL.getURIForEvent(slug),
             className: "slugEditField"
         });
     };

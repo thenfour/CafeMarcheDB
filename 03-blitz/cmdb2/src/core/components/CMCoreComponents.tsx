@@ -2,27 +2,25 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { getAntiCSRFToken, useAuthenticatedSession } from "@blitzjs/auth";
-import { Box, Button, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
+import { getAntiCSRFToken } from "@blitzjs/auth";
+import { Box, Button, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { nanoid } from 'nanoid';
 import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
+import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { Coalesce, IsNullOrWhitespace, TAnyModel } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
 import WaveSurfer from "wavesurfer.js";
-import { API } from '../db3/clientAPI';
+//import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { Coord2D, MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadResponsePayload } from "../db3/shared/apiTypes";
+import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { GetStyleVariablesForColor } from './Color';
-import { Coalesce, IsNullOrWhitespace, TAnyModel } from "shared/utils";
-import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
-import { CMDialogContentText } from "./CMCoreComponents2";
 
 const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -364,64 +362,6 @@ export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
 
 
 
-////////////////////////////////////////////////////////////////
-// this control is a button which pops up a dialog.
-// the dialog hosts a db3 client edit form
-export interface EditFieldsDialogButtonApi {
-    close: () => void;
-};
-export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
-    //value: string;
-    readonly: boolean;
-    tableSpec: DB3Client.xTableClientSpec;
-    renderButtonChildren: () => React.ReactNode;
-    onCancel: () => void;
-    onOK: (obj: TRowModel, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => void;
-    initialValue: TRowModel;
-    dialogTitle: string;
-    dialogDescription: React.ReactNode;
-};
-export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: EditFieldsDialogButtonProps<TRowModel>) => {
-    const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-    const publicData = useAuthenticatedSession();
-
-    const authorizedForEdit = props.tableSpec.args.table.authorizeRowForEdit({
-        clientIntention,
-        publicData,
-        model: props.initialValue,
-    });
-
-    const readonly = !authorizedForEdit || props.readonly;
-
-    return <>
-        {!readonly && <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>}
-        {isOpen && !readonly && <DB3EditObjectDialog
-            initialValue={props.initialValue as TAnyModel}
-            onCancel={() => {
-                props.onCancel();
-                setIsOpen(false);
-            }}
-            onOK={(obj, tableClient) => {
-                props.onOK(obj as TRowModel, tableClient, {
-                    close: () => setIsOpen(false),
-                });
-            }}
-            table={props.tableSpec}
-            clientIntention={clientIntention}
-            description={props.dialogDescription}
-        />
-        }
-    </>;
-};
-
-
-
-
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface ConfirmationDialogProps {
@@ -466,85 +406,6 @@ export const InspectObject = (props: { src: any, tooltip?: string }) => {
         </ReactiveInputDialog>}
     </>;
 };
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export type VisibilityControlValue = (db3.PermissionPayload | null);
-
-export interface VisibilityValueProps {
-    permission: db3.PermissionPayload | null;
-    variant: "minimal" | "verbose";
-    onClick?: () => void;
-};
-
-export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValueProps) => {
-    const visInfo = API.users.getVisibilityInfo({ visiblePermission: permission, visiblePermissionId: permission?.id || null });
-    const style = visInfo.getStyleVariablesForColor(StandardVariationSpec.Strong);
-    const classes: string[] = [
-        "visibilityValue applyColor",
-        onClick ? "interactable" : "",
-        variant,
-        visInfo.className,
-        style.cssClass,
-    ];
-
-    let tooltipTitle = "?";
-    if (!permission) {
-        tooltipTitle = "Private visibility: Only you can see this. You'll have to change this in order for others to view.";
-    }
-    else {
-        tooltipTitle = permission!.description || "";
-    }
-
-    return <Tooltip title={tooltipTitle}><div className={classes.join(" ")} style={style.style} onClick={onClick}>
-        {variant === "minimal" ? (
-            permission === null ? <>{gIconMap.Lock()}</> : RenderMuiIcon(permission?.iconName)
-        ) : (
-            permission === null ? <>{gIconMap.Lock()} private</> : <>{RenderMuiIcon(permission.iconName)} {permission.name}</>
-        )}
-        {/*permission === null ? "(private)" : `${permission.name}-nam`*/}
-    </div></Tooltip>;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface VisibilityControlProps {
-    value: VisibilityControlValue;
-    variant?: "minimal" | "verbose";
-    onChange: (value: VisibilityControlValue) => void;
-};
-export const VisibilityControl = (props: VisibilityControlProps) => {
-    const permissions = API.users.getAllPermissions();
-    const variant = props.variant || "verbose";
-    const [currentUser] = useCurrentUser();
-    const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => {
-        return p.isVisibility && p.roles.some(r => r.roleId === currentUser?.roleId);
-    })];
-
-    // value type is PermissionPayload
-    return <div className={`VisibilityControl`}>
-        <ChoiceEditCell
-            isEqual={(a: db3.PermissionPayload, b: db3.PermissionPayload) => a.id === b.id}
-            items={visibilityChoices}
-            readonly={false} // todo!
-            validationError={null}
-            selectDialogTitle='select dialog title here'
-            //selectButtonLabel='change visibility'
-            value={props.value}
-            dialogDescription={<>dialog description her99ee</>}
-            renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
-                return <li {...chprops}>
-                    <VisibilityValue permission={value} variant={"verbose"} />
-                </li>;
-            }}
-            renderValue={(args) => {
-                return <VisibilityValue permission={args.value} variant={variant} onClick={args.handleEnterEdit} />;
-            }}
-            onChange={props.onChange}
-        />
-    </div>;
-};
-
 
 
 ////////////////////////////////////////////////////////////////
@@ -686,72 +547,6 @@ export function CircularProgressWithLabel(props: CircularProgressProps & { value
     );
 }
 
-
-
-export interface AudioPreviewProps {
-    value: db3.FileWithTagsPayload;
-};
-
-export const AudioPreview = (props: AudioPreviewProps) => {
-    const [myWaveSurfer, setWaveSurfer] = React.useState<WaveSurfer | null>(null);
-    const [myID] = React.useState<string>(`waveform-${nanoid()}`);
-    const [myRef, setMyRef] = React.useState<HTMLDivElement | null>(null);
-
-    const UnmountWavesurfer = () => {
-        if (myWaveSurfer) {
-            //console.log(`unmounting wavesurfer`);
-            myWaveSurfer.unAll();
-            myWaveSurfer.destroy();
-            setWaveSurfer(null);
-        }
-    };
-
-    React.useEffect(() => {
-
-        //console.log(`mounting wavesurfer`);
-        if (myRef) {
-            UnmountWavesurfer();
-
-            const ws = WaveSurfer.create({
-                url: API.files.getURIForFile(props.value),
-                //barWidth: 2,
-                //cursorWidth: 1,
-                mediaControls: true,
-                container: myRef,
-                height: 80,
-                progressColor: "#88c",
-                waveColor: "#ddd",
-                cursorColor: "#00f",
-            });
-
-            setWaveSurfer(ws);
-        }
-        return () => {
-            UnmountWavesurfer();
-        };
-    }, [myRef]);
-
-    return <div className="CMDBAudioPreview">
-        <div id={myID} ref={(ref) => setMyRef(ref)} />
-    </div>;
-};
-
-
-
-export interface AudioPreviewBehindButtonProps {
-    value: db3.FileWithTagsPayload;
-};
-
-export const AudioPreviewBehindButton = (props: AudioPreviewBehindButtonProps) => {
-    const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    return <div className="audioPreviewGatewayContainer">
-        {isOpen ? <AudioPreview value={props.value} /> : (<div className="audioPreviewGatewayButton interactable" onClick={() => setIsOpen(true)}>
-            {gIconMap.PlayCircleOutline()}
-            Preview
-        </div>)}
-    </div>;
-
-};
 
 
 export interface UserChipProps {

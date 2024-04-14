@@ -249,7 +249,7 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
     };
 
     const onSave = () => {
-        onValueChanged(value).then(() => {
+        void onValueChanged(value).then(() => {
             setShowingEditor(false);
         });
     };

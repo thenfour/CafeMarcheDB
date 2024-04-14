@@ -236,8 +236,7 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
 export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
     return <ReactiveInputDialog
         onCancel={props.onClose}
-        children={<DB3SelectTagsDialogInner {...props} />}
-    />;
+    ><DB3SelectTagsDialogInner {...props} /></ReactiveInputDialog>;
 }
 
 

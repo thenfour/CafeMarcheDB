@@ -31,7 +31,7 @@ const Inner = () => {
     const missingInDb = codePermissions.filter(cp => !dbps.items.some(dbp => dbp.name === cp));
 
     return <>
-        {missingInDb.map(x => <div style={{ fontSize: "48px" }}>❗🟥 "{x}" is missing in the db; restarting the server will sync it up</div>)}
+        {missingInDb.map(x => <div key={x} style={{ fontSize: "48px" }}>❗🟥 "{x}" is missing in the db; restarting the server will sync it up</div>)}
         <DB3EditGrid tableSpec={PermissionClientSchema} renderExtraActions={(x) => {
             return <div>{codePermissions.some(k => k === x.row.name) ? (
                 <Tooltip title="this permission is in sync with code."><div>☑</div></Tooltip>)

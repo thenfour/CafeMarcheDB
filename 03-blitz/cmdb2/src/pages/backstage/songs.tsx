@@ -9,7 +9,7 @@ import { Permission } from "shared/permissions";
 import { TAnyModel, gQueryOptions } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, ReactiveInputDialog, VisibilityControl } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { EventDetail, EventTableClientColumns } from "src/core/components/EventComponents";
 import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
