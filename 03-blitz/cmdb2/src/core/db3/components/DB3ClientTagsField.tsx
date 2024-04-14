@@ -1,38 +1,36 @@
 import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import { Button, Chip, FormHelperText } from "@mui/material";
+import { Button } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import React, { Suspense } from "react";
 //import * as DB3Client from "../DB3Client";
-import * as db3 from "../db3";
+import { useAuthenticatedSession } from '@blitzjs/auth';
+import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
 import {
     Box,
-    Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+    DialogActions, DialogContent,
+    DialogTitle,
     Divider,
     InputBase,
     List,
     ListItemButton
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
-import { useMutation, useQuery } from "@blitzjs/rpc";
+import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
+import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { CMSmallButton } from 'src/core/components/CMCoreComponents2';
+import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
+import { RenderMuiIcon } from './IconSelectDialog';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
-import { CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
-import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
-import { GetStyleVariablesForColor } from 'src/core/components/Color';
-import { useAuthenticatedSession } from '@blitzjs/auth';
-import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
-import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
-import { CMSmallButton } from 'src/core/components/CMCoreComponents2';
 
 
 const gMaxVisibleTags = 6;
@@ -46,7 +44,7 @@ export interface DB3TagsValueComponentProps<TAssociation> {
 
 };
 export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponentProps<TAssociation>) => {
-    return <>{props.value.map(c => <React.Fragment key={c[props.spec.associationForeignIDMember]}>
+    return <CMChipContainer>{props.value.map(c => <React.Fragment key={c[props.spec.associationForeignIDMember]}>
         {props.spec.args.renderAsChip!({
             value: c,
             onDelete: props.onDelete && (() => props.onDelete!(c)),
@@ -54,7 +52,7 @@ export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponen
             colorVariant: StandardVariationSpec.Strong,
         })}
     </React.Fragment>
-    )}</>;
+    )}</CMChipContainer>;
 };
 
 
@@ -184,7 +182,6 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
             <DialogTitle>
                 {props.caption || <>Select {props.spec.typedSchemaColumn.member}</>}
                 <Box sx={{ p: 0 }}>
-                    Selected:
                     <DB3TagsValueComponent
                         spec={props.spec}
                         value={value}
@@ -344,17 +341,19 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
         throw new Error(`columnSchema is missing getAssociationTableShema.`);
     }
     const rowInfo = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
-    const style = GetStyleVariablesForColor({ color: rowInfo.color, ...StandardVariationSpec.Strong });
 
-    return <Chip
-        className={`cmdbChip applyColor ${style.cssClass}`}
-        style={style.style}
-        size="small"
-        label={rowInfo.name}
+    return <CMChip
+        className={`tagsFieldValue defaultRenderAsChip`}
+        color={rowInfo.color}
+        variation={args.colorVariant}
+        onClick={args.onClick}
         onDelete={args.onDelete}
-        clickable={!!args.onClick}
-        onClick={(e) => args.onClick!}
-    />;
+        tooltip={rowInfo.description}
+        size='small'
+    >
+        {rowInfo.name}
+        {RenderMuiIcon(rowInfo.iconName)}
+    </CMChip>;
 };
 
 
@@ -417,13 +416,15 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
     defaultRenderAsListItem = (props, value, selected) => {
         //console.assert(!!this.typedSchemaColumn.getChipCaption);
         console.assert(value != null);
-        const chip = this.defaultRenderAsChip({ value, colorVariant: StandardVariationSpec.Strong });
+        const chip = this.defaultRenderAsChip({ value, colorVariant: { ...StandardVariationSpec.Strong, selected } });
         return <li {...props}>
-            {selected && <DoneIcon />}
-            {chip}
-            {/* {this.typedSchemaColumn.getChipCaption!(value)}
+            <CMChipContainer>
+                {/* {selected && <DoneIcon />} */}
+                {chip}
+                {/* {this.typedSchemaColumn.getChipCaption!(value)}
             {this.typedSchemaColumn.getChipDescription && this.typedSchemaColumn.getChipDescription!(value)} */}
-            {selected && <CloseIcon />}
+                {selected && <CloseIcon />}
+            </CMChipContainer>
         </li>
     };
 
@@ -462,7 +463,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
                 const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 const value: TAssociation[] = params.value;
                 return <TagsFieldInput
-                    validationError={vr.result === "success" ? null : vr.errorMessage || null}
+                    //validationError={vr.result === "success" ? null : vr.errorMessage || null}
                     spec={this}
                     value={value}
                     row={params.row as TAnyModel}
@@ -496,7 +497,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             value: <React.Fragment key={params.key}>
                 <TagsFieldInput
                     spec={this}
-                    validationError={validationValue}
+                    //validationError={validationValue}
                     row={params.row as TAnyModel}
                     value={params.value as TAssociation[]}
                     onChange={(value: TAssociation[]) => {

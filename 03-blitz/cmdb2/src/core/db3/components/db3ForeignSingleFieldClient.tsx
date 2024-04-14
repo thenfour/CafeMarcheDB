@@ -1,40 +1,34 @@
 'use client';
 
-import React from "react";
-import * as db3 from "../db3";
-//import * as DB3Client from "../DB3Client";
-import { Button, Chip, FormHelperText } from "@mui/material";
-import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
-import { Coalesce, SettingKey, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import CloseIcon from '@mui/icons-material/Close';
-import DoneIcon from '@mui/icons-material/Done';
-import db3mutations from "../mutations/db3mutations";
-import db3queries from "../queries/db3queries";
-import { IColumnClient, NameValuePair, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import {
     Add as AddIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close';
 import {
-    Box,
-    DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Box, Button, DialogActions, DialogContent, DialogTitle,
     Divider,
     InputBase,
     List,
     ListItemButton
 } from "@mui/material";
-import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
-import { GetStyleVariablesForColor } from "src/core/components/Color";
+import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
-import { useAuthenticatedSession } from "@blitzjs/auth";
-import { GenerateDefaultDescriptionSettingName, GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
+import React from "react";
+import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
+import { Coalesce, SettingKey, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
+import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
-import { RenderMuiIcon } from "./IconSelectDialog";
-import getSetting from "src/auth/queries/getSetting";
+import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { API } from "../clientAPI";
+import * as db3 from "../db3";
+import db3mutations from "../mutations/db3mutations";
+import db3queries from "../queries/db3queries";
+import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
+import { RenderMuiIcon } from "./IconSelectDialog";
 
 
 

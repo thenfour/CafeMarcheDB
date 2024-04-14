@@ -65,15 +65,27 @@ export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) =
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface NameValuePairProps {
+interface NameValuePairPropsBase {
     name: React.ReactNode;
     description?: React.ReactNode;
     value: React.ReactNode;
     isReadOnly: boolean;
     className?: string;
-    fieldName: string;
-    validationResult?: db3.ValidateAndComputeDiffResult;
+    //fieldName: string;
+    //validationResult?: db3.ValidateAndComputeDiffResult;
 };
+
+// Variant where validationResult is not provided, fieldName is optional
+interface NameValuePairPropsWithoutValidation extends NameValuePairPropsBase {
+    validationResult?: undefined;
+    fieldName?: string; // Optional because validationResult is not provided
+};
+interface NameValuePairPropsWithValidation extends NameValuePairPropsBase {
+    validationResult: db3.ValidateAndComputeDiffResult;
+    fieldName: string; // Required because validationResult is provided
+};
+
+type NameValuePairProps = NameValuePairPropsWithoutValidation | NameValuePairPropsWithValidation;
 
 export const NameValuePair = (props: NameValuePairProps) => {
     return RenderBasicNameValuePair(props);

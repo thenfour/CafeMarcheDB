@@ -232,7 +232,7 @@ input.CMTextInputBase.titleText {
 }
 
 .CMChip.small {
-    padding: 2;
+    padding: 1px;
     border-radius: 19px;
 }
 

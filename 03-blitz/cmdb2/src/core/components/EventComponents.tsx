@@ -134,7 +134,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             new DB3Client.ForeignSingleFieldClient({
                 columnName: "attendance",
                 cellWidth: 120,
-                renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} />,
+                renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} variation={args.colorVariant} />,
             }),
         ],
     });

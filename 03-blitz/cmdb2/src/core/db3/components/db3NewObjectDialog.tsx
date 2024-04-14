@@ -276,15 +276,18 @@ export interface DB3EditRowButtonAPI {
 export interface DB3EditRowButtonProps {
     row: TAnyModel;
     tableRenderClient: DB3ClientCore.xTableRenderClient;
-    //clientIntention: db3.xTableClientUsageContext;
     onSave: (newRow: TAnyModel, api: DB3EditRowButtonAPI) => void;
+    label?: React.ReactNode;
 };
 
+// like on the user profile, a "Edit" button which pops up a dialog to edit fields
 export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
 
+    const buttonChildren = props.label || <>{gIconMap.Edit()}Edit</>;
+
     return <div className={`DB3EditRowButton`}>
-        <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>
+        <Button onClick={() => setEditOpen(true)}>{buttonChildren}</Button>
         {editOpen && (
             <DB3EditObject2Dialog
                 initialValue={props.row}

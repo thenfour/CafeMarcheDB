@@ -11,6 +11,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import changePassword from "src/auth/mutations/changePassword";
 import * as schemas from "src/auth/schemas";
 import { CMChip, CMSinglePageSurfaceCard, CMStandardDBChip, RowInfoChip } from "src/core/components/CMCoreComponents";
+import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -112,12 +113,12 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
         });
     };
 
-    return <div className={props.validationError ? "instrumentListVertical validationError" : "instrumentListVertical validationSuccess"}>
+    return <div className={"instrumentListVertical"}>
         {props.value.map(value => (
             <div className="instrumentAndPrimaryContainer" key={value[props.spec.associationForeignIDMember]}>
                 {props.spec.renderAsChipForCell!({
                     value,
-                    colorVariant: StandardVariationSpec.Strong,
+                    colorVariant: { ...StandardVariationSpec.Strong, selected: (value.instrumentId === primary?.id) },
                     onDelete: () => {
                         const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
                         props.onChange(newValue);
@@ -126,16 +127,16 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
                 {
                     (value.instrumentId === primary?.id) ? (
                         <>
-                            {gIconMap.CheckCircleOutline()} Primary
+                            This is your default instrument
                         </>
                     ) : (
-                        <Button onClick={() => handleClickMakePrimary(value.instrumentId)}>make primary</Button>
+                        <CMSmallButton onClick={() => handleClickMakePrimary(value.instrumentId)}>make default</CMSmallButton>
                     )
                 }
             </div>
         ))}
 
-        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.member}</Button>
+        <CMSmallButton onClick={() => { setIsOpen(!isOpen) }}>Select instruments...</CMSmallButton>
         {isOpen && <DB3Client.DB3SelectTagsDialog
             row={props.row}
             initialValue={props.value}
@@ -147,7 +148,6 @@ export const UserInstrumentsFieldInput = (props: UserInstrumentsFieldInputProps)
                 props.onChange(newValue);
             }}
         />}
-        {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
     </div>;
 };
 
@@ -180,14 +180,10 @@ const OwnInstrumentsControl = () => {
     });
 
     const row = tableClient.items[0]!;
-    const validationResult = tableClient.schema.ValidateAndComputeDiff(row, row, "update");
-
-    // can't use tableClient.getColumn("instruments").renderForNewDialog,
-    // because it just lists instruments as tag-like-chips. we need the ability to select a primary instrument.
 
     return <UserInstrumentsFieldInput
         spec={tableClient.getColumn("instruments") as any}
-        validationError={validationResult.getErrorForField("instruments")}
+        //validationError={validationResult.getErrorForField("instruments")}
         row={row}
         value={row.instruments}
         refetch={tableClient.refetch}
@@ -270,18 +266,19 @@ const MainContent = () => {
                     {gIconMap.Person()} Your profile
                 </Typography>
 
-                <OwnInstrumentsControl />
+                <DB3Client.NameValuePair isReadOnly={false} name="Your instruments" value={<OwnInstrumentsControl />} />
+
 
                 {client.items.length === 1 && (
                     <>
-                        <DB3EditRowButton row={client.items[0]!} tableRenderClient={client} onSave={handleSave} />
+                        <DB3EditRowButton row={client.items[0]!} tableRenderClient={client} onSave={handleSave} label={"Edit your profile data"} />
                         {/* <DB3EditObjectDialog table={spec} clientIntention={clientIntention} initialValue={client.items[0]!} onOK={handleOk} onCancel={() => { }} /> */}
                         <DB3RowViewer tableRenderClient={client} row={client.items[0]!} />
                     </>
                 )}
 
                 <ResetOwnPasswordControl />
-
+                {/* 
                 <div className="permissionSummary">
                     {DB3Client.RenderBasicNameValuePair({
                         name: "role",
@@ -298,7 +295,7 @@ const MainContent = () => {
                         value: publicData.permissions.map(p => <CMChip>{p}</CMChip>),
                     })}
 
-                </div>
+                </div> */}
 
             </div>
         </CMSinglePageSurfaceCard>
