@@ -12,6 +12,7 @@ import { gIconMap } from "./IconSelectDialog";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { CMDialogContentText } from "src/core/components/CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -183,7 +184,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                 <DialogTitle>{props.title || <>Edit {tableRenderClient.tableSpec.args.table.tableName}</>}</DialogTitle>
                 <DialogContent dividers>
                     {
-                        props.description && <DialogContentText>{props.description}</DialogContentText>
+                        props.description && <CMDialogContentText>{props.description}</CMDialogContentText>
                     }
                     {
                         onDelete && (<div className="deleteConfirmationControlContainer">

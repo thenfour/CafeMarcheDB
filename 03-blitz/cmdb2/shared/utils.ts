@@ -7,6 +7,13 @@ import { Size } from "src/core/db3/shared/apiTypes";
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
 
+// allow serializing bigint to json.
+// https://github.com/GoogleChromeLabs/jsbi/issues/30
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unreachable code error
+BigInt.prototype.toJSON = function (): number {
+    return this.toString();
+};
 
 export const gMinImageDimension = 10;
 

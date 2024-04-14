@@ -24,6 +24,7 @@ import { StandardVariationSpec } from 'shared/color';
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { Permission } from 'shared/permissions';
+import { CMDialogContentText } from './CMCoreComponents2';
 
 
 /*
@@ -224,9 +225,9 @@ export const EventFileEditor = (props: EventFileEditorProps) => {
                 edit file
             </DialogTitle>
             <DialogContent dividers>
-                <DialogContentText>
+                <CMDialogContentText>
                     description of file
-                </DialogContentText>
+                </CMDialogContentText>
 
                 <div className="EventFileValue">
                     <div className="content">

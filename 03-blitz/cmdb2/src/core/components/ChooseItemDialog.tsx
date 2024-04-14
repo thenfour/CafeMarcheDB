@@ -10,6 +10,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React from "react";
+import { CMDialogContentText } from "./CMCoreComponents2";
 
 
 
@@ -77,9 +78,9 @@ export function ChooseItemDialog<T>(props: ChooseItemDialogProps<T>) {
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
-                <DialogContentText>
+                <CMDialogContentText>
                     {props.description}
-                </DialogContentText>
+                </CMDialogContentText>
 
                 {
                     (props.items.length == 0) ?

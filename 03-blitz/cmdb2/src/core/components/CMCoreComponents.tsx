@@ -22,6 +22,7 @@ import { Coalesce, IsNullOrWhitespace, TAnyModel } from "shared/utils";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
+import { CMDialogContentText } from "./CMCoreComponents2";
 
 const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
 
@@ -303,9 +304,9 @@ export const EditTextDialog = (props: EditTextDialogProps) => {
             {props.title}
         </DialogTitle>
         <DialogContent dividers>
-            <DialogContentText>
+            <CMDialogContentText>
                 {props.description}
-            </DialogContentText>
+            </CMDialogContentText>
             <EditTextField
                 columnSpec={props.columnSpec}
                 onChange={(newValue) => { setValue(newValue) }}
@@ -434,9 +435,9 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
             {props.title === undefined ? "Confirm?" : ((typeof props.title === 'string' ? props.title : props.title()))}
         </DialogTitle>
         <DialogContent dividers>
-            {/* <DialogContentText> */}
-            {(props.description !== undefined) && ((typeof props.description === 'string' ? props.description : props.description()))}
-            {/* </DialogContentText> */}
+            <CMDialogContentText>
+                {(props.description !== undefined) && ((typeof props.description === 'string' ? props.description : props.description()))}
+            </CMDialogContentText>
         </DialogContent>
         <DialogActions>
             <Button onClick={props.onCancel}>{props.cancelLabel || "Cancel"}</Button>

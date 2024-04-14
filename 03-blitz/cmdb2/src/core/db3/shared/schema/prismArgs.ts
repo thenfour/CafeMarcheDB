@@ -643,6 +643,15 @@ export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationI
     { id: "asc" },
 ];
 
+export const compareEventSegments = (a: Prisma.EventSegmentGetPayload<{}>, b: Prisma.EventSegmentGetPayload<{}>) => {
+    if (a.startsAt === null) {
+        if (b.startsAt === null) return 0; // both null.
+        return 1;// a is null (future, after)
+    }
+    // a is not null.
+    if (b.startsAt === null) return -1; // null is after.
+    return a.startsAt.getTime() - b.startsAt.getTime();
+};
 
 
 // all info that will appear on an event detail page

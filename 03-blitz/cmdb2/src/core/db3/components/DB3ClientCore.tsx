@@ -18,7 +18,7 @@ import { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid
 import { assert } from "blitz";
 import { Coalesce, HasFlag, SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
@@ -29,16 +29,26 @@ import db3queries from "../queries/db3queries";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // useful for consistent field rendering including name, value, detailed help etc.
-interface RenderBasicNameValuePairProps {
+interface RenderBasicNameValuePairPropsBase {
     key?: string;
     name: React.ReactNode;
     description?: React.ReactNode;
     value: React.ReactNode;
     isReadOnly: boolean;
     className?: string;
-    fieldName: string;
-    validationResult?: db3.ValidateAndComputeDiffResult;
 };
+
+// Variant where validationResult is not provided, fieldName is optional
+interface RenderBasicNameValuePairPropsWithoutValidation extends RenderBasicNameValuePairPropsBase {
+    validationResult?: undefined;
+    fieldName?: string; // Optional because validationResult is not provided
+};
+interface RenderBasicNameValuePairPropsWithValidation extends RenderBasicNameValuePairPropsBase {
+    validationResult: db3.ValidateAndComputeDiffResult;
+    fieldName: string; // Required because validationResult is provided
+};
+
+type RenderBasicNameValuePairProps = RenderBasicNameValuePairPropsWithoutValidation | RenderBasicNameValuePairPropsWithValidation;
 
 export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) => {
 
@@ -149,7 +159,7 @@ export abstract class IColumnClient {
 
     // child classes call this when you want default rendering.
     defaultRenderer = ({ value, className, isReadOnly, validationResult }: { value: React.ReactNode, className?: string, isReadOnly: boolean, validationResult: undefined | db3.ValidateAndComputeDiffResult }) => {
-        const defaultDescriptionSettingName = `${this.schemaTable.tableName}.${this.columnName}.DescriptionMarkdown` as SettingKey;
+        const defaultDescriptionSettingName = GenerateDefaultDescriptionSettingName(this.schemaTable.tableName, this.columnName);
         return <NameValuePair
             name={this.fieldCaption || this.columnName}
             description={<SettingMarkdown setting={this.fieldDescriptionSettingName || defaultDescriptionSettingName} />}

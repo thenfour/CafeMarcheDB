@@ -23,6 +23,7 @@ import { formatSongLength } from 'shared/time';
 import { StandardVariationSpec } from 'shared/color';
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { assert } from 'blitz';
+import { CMDialogContentText } from './CMCoreComponents2';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -414,9 +415,9 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                 edit song list
             </DialogTitle>
             <DialogContent dividers>
-                <DialogContentText>
+                <CMDialogContentText>
                     description of song lists.
-                </DialogContentText>
+                </CMDialogContentText>
 
                 <div className="EventSongListValue">
 

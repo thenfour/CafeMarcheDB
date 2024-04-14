@@ -109,7 +109,8 @@ input.CMTextInputBase.titleText {
     font-size: 23px;
 
     /* margin: 6px; */
-    /* border-bottom: 1px solid #aaa; */
+    /* i don't like the bottom border exactly; but for empty fields it does a good job of directing the user to this cell*/
+    border-bottom: 1px solid #aaa;
     /* background-color: #eee; */
 }
 
@@ -194,6 +195,7 @@ input.CMTextInputBase.titleText {
 .CMChipContainer {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .CMChipContainer .CMChip {
@@ -257,11 +259,13 @@ input.CMTextInputBase.titleText {
 }
 
 .CMChip.selected {
-    border: 2px solid black;
+    /* border: 2px solid black; */
+    outline: 3px solid #000;
+    z-index: 999;
 }
 
 .CMChip.notselected {
-    border: 2px solid transparent;
+    /* border: 2px solid transparent; */
 }
 
 
@@ -1785,4 +1789,16 @@ in particular the date range picker is wide.*/
 /* ad-hoc class for selecting foreign single values in a list, showing selected & delete icons next to a chip in a line.*/
 .listItemRow {
     display: flex;
+}
+
+/* when admin controls show, foreign single values in dialogs allow selecting the default display method. */
+.adminControlFrame {
+    border: 2px solid #f80;
+    background: #f802;
+    padding: 4px;
+    width: max-content;
+}
+
+.adminControlFrame:hover {
+    border: 2px solid #fcc;
 }

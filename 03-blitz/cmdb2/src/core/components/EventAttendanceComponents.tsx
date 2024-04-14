@@ -355,6 +355,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const user = useCurrentUser()[0]!;
   //const responses = Object.values(props.responseInfo.getResponsesBySegmentForUser(user));
   const segmentResponses = Object.values(props.responseInfo.getResponsesBySegmentForUser(user));
+  segmentResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
   const eventResponse = props.responseInfo.getEventResponseForUser(user);
 
   const eventTiming = API.events.getEventTiming(props.event);

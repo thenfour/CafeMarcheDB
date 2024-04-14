@@ -26,12 +26,13 @@ import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
-import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { GetStyleVariablesForColor } from 'src/core/components/Color';
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
+import { CMSmallButton } from 'src/core/components/CMCoreComponents2';
 
 
 const gMaxVisibleTags = 6;
@@ -252,7 +253,7 @@ export interface TagsFieldInputProps<TAssociation> {
 
     // for creating new associations
     row: TAnyModel;
-    validationError?: string | null;
+    //validationError?: string | null;
 };
 
 // general use "edit cell" for tags
@@ -270,7 +271,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         console.error(`props.spec.schemaColumn is null for ${props.spec.columnName}. make sure the schema contains the right info`);
     }
 
-    return <div className={`chipContainer ${props.validationError === undefined ? "" : (props.validationError === null ? "validationSuccess" : "validationError")}`}>
+    return <CMChipContainer>
         {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
             value,
             colorVariant: StandardVariationSpec.Strong,
@@ -281,7 +282,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         })
         }</React.Fragment>)}
 
-        <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.spec.schemaColumn.member}</Button>
+        <CMSmallButton onClick={() => { setIsOpen(!isOpen) }}>Select {props.spec.schemaColumn.member}...</CMSmallButton>
 
         {isOpen && <DB3SelectTagsDialog
             row={props.row}
@@ -295,9 +296,10 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
             }}
         />
         }
-        {props.validationError && <FormHelperText>{props.validationError}</FormHelperText>}
-    </div>;
+    </CMChipContainer>;
 };
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface TagsViewProps<TAssociation> {
@@ -425,17 +427,6 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
         </li>
     };
 
-    // renderViewer = (params: RenderViewerArgs<TAssociation[]>) => RenderBasicNameValuePair({
-    //     key: params.key,
-    //     className: params.className,
-    //     name: this.columnName,
-    //     value: <TagsView
-    //         associationForeignIDMember={this.typedSchemaColumn.associationForeignIDMember}
-    //         renderAsChip={this.renderAsChipForCell}
-    //         value={params.value}
-    //     />
-    // });
-
     renderViewer = (params: RenderViewerArgs<TAssociation[]>) => this.defaultRenderer({
         //key: params.key,
         className: params.className,
@@ -483,18 +474,49 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
         };
     };
 
+    // renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
+    //     const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
+    //     return <TagsFieldInput
+    //         spec={this}
+    //         validationError={validationValue}
+    //         row={params.row as TAnyModel}
+    //         value={params.value as TAssociation[]}
+    //         onChange={(value: TAssociation[]) => {
+    //             params.api.setFieldValues({ [this.schemaColumn.member]: value });
+    //         }}
+    //     />
+    // };
+
     renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
         const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
-        return <TagsFieldInput
-            spec={this}
-            validationError={validationValue}
-            row={params.row as TAnyModel}
-            value={params.value as TAssociation[]}
-            onChange={(value: TAssociation[]) => {
-                params.api.setFieldValues({ [this.schemaColumn.member]: value });
-            }}
-        />
+
+        return this.defaultRenderer({
+            isReadOnly: !this.editable,
+            validationResult: params.validationResult,
+            value: <React.Fragment key={params.key}>
+                <TagsFieldInput
+                    spec={this}
+                    validationError={validationValue}
+                    row={params.row as TAnyModel}
+                    value={params.value as TAssociation[]}
+                    onChange={(value: TAssociation[]) => {
+                        params.api.setFieldValues({ [this.schemaColumn.member]: value });
+                    }}
+                />
+            </React.Fragment>
+        });
+
+        // return <TagsFieldInput
+        //     spec={this}
+        //     validationError={validationValue}
+        //     row={params.row as TAnyModel}
+        //     value={params.value as TAssociation[]}
+        //     onChange={(value: TAssociation[]) => {
+        //         params.api.setFieldValues({ [this.schemaColumn.member]: value });
+        //     }}
+        // />
     };
+
 };
 
 

@@ -282,7 +282,6 @@ class UsersAPI {
     }
 
     getUserTag(userTagId: number | null): null | db3.UserTagPayload {
-        if (!userTagId) return null;
         const ctx = DB3ClientCore.useTableRenderContext({
             requestedCaps: DB3ClientCore.xTableClientCaps.Query,
             clientIntention: { intention: 'user', mode: 'primary' },
@@ -299,6 +298,8 @@ class UsersAPI {
                 }
             },
         });
+        // do not put this above the useTableRenderContext call; hooks must be consistent between renders.
+        if (!userTagId) return null;
         return (ctx.items?.length === 1 ? ctx.items[0] : null) as any;
     }
 

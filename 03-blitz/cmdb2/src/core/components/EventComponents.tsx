@@ -30,8 +30,9 @@ import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown } from './RichTextEditor';
-import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
+import { GenerateDefaultDescriptionSettingName, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import { AddUserButton } from './UserComponents';
+import { CMDialogContentText } from './CMCoreComponents2';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -194,9 +195,9 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             edit event response for user / event
         </DialogTitle>
         <DialogContent dividers>
-            <DialogContentText>
+            <CMDialogContentText>
                 description of events and segments?
-            </DialogContentText>
+            </CMDialogContentText>
 
             <div className="EventSongListValue">
                 {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention)}
@@ -350,10 +351,6 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
 
 
     const canAddUsers = useAuthorization("EventAttendanceDetail:canAddUsers", Permission.manage_events);
-    // db3.xEventUserResponse.authorizeRowBeforeInsert({
-    //     clientIntention,
-    //     publicData
-    // });
 
     // sort rows
     const sortedUsers = [...props.responseInfo.distinctUsers];
@@ -380,6 +377,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
         <DB3Client.RenderBasicNameValuePair
             name="Attendance is expected for this user tag:"
             value={<EventAttendanceUserTagControl event={event} refetch={refetch} readonly={props.readonly} />}
+            isReadOnly={props.readonly}
         />
 
         <table className='attendanceDetailTable'>
@@ -556,9 +554,11 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
             isEqual={(a: db3.UserTagPayload, b: db3.UserTagPayload) => a.id === b.id}
             items={items}
             readonly={readonly}
-            selectDialogTitle="Select who is expected to attend; they'll be expected to respond."
+            selectDialogTitle="Select who should be expected to respond to this event"
             value={event.expectedAttendanceUserTag}
-            dialogDescription={<>dialog description herexxx</>}
+            //event.expectedAttendanceUserTag.DescriptionMarkdown
+            dialogDescription={<SettingMarkdown setting={GenerateDefaultDescriptionSettingName("event", "expectedAttendanceUserTag")} />}
+            //dialogDescription={"asoeunth"}
             renderAsListItem={(chprops, value: db3.UserTagPayload | null, selected: boolean) => {
                 return <li {...chprops}>
                     <EventAttendanceUserTagValue value={value} /></li>;
@@ -963,14 +963,15 @@ export const EventTableClientColumns = {
     isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
     locationDescription: new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150, fieldCaption: "Location" }),
     locationURL: new DB3Client.GenericStringColumnClient({ columnName: "locationURL", cellWidth: 150, fieldCaption: "Location URL" }),
-    createdAt: new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
     type: new DB3Client.ForeignSingleFieldClient<db3.EventTypePayload>({ columnName: "type", cellWidth: 150, selectStyle: "inline", fieldCaption: "Event Type" }),
     status: new DB3Client.ForeignSingleFieldClient<db3.EventStatusPayload>({ columnName: "status", cellWidth: 150, fieldCaption: "Status" }),
     segmentBehavior: new DB3Client.ConstEnumStringFieldClient({ columnName: "segmentBehavior", cellWidth: 220, fieldCaption: "Behavior of segments" }),
     expectedAttendanceUserTag: new DB3Client.ForeignSingleFieldClient<db3.UserTagPayload>({ columnName: "expectedAttendanceUserTag", cellWidth: 150, fieldCaption: "Who's invited?" }),
     tags: new DB3Client.TagsFieldClient<db3.EventTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false, fieldCaption: "Tags" }),
-    createdByUser: new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, }),
     visiblePermission: new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, fieldCaption: "Who can view this event?" }),
+
+    createdAt: new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 150 }),
+    createdByUser: new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, }),
 
     frontpageVisible: new DB3Client.BoolColumnClient({ columnName: "frontpageVisible" }),
     frontpageDate: new DB3Client.GenericStringColumnClient({ columnName: "frontpageDate", cellWidth: 150 }),

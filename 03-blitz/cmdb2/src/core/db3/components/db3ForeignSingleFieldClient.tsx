@@ -30,9 +30,11 @@ import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { assert } from "blitz";
 import { useAuthenticatedSession } from "@blitzjs/auth";
-import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { GenerateDefaultDescriptionSettingName, GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { RenderMuiIcon } from "./IconSelectDialog";
+import getSetting from "src/auth/queries/getSetting";
+import { API } from "../clientAPI";
 
 
 
@@ -51,6 +53,8 @@ export interface RenderAsChipParams<T> {
 
 
 export interface ForeignSingleFieldInputProps<TForeign> {
+    columnName: string;
+    tableName: string;
     foreignSpec: ForeignSingleFieldClient<TForeign>;
     value: TForeign | null;
     onChange: (value: TForeign | null) => void;
@@ -120,9 +124,19 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
         setOldValue(props.value);
     }, []);
 
-    const chip = props.selectStyle === "dialog" ? (props.foreignSpec.args.renderAsChip!({
+    const isShowingAdminControls = API.other.useIsShowingAdminControls();
+    const setSetting = API.settings.updateSetting.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.tableName, props.columnName);
+    const selectStyleSettingValue = API.settings.useSetting(selectStyleSetting);
+    const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
+    const newProps = { ...props };
+    newProps.selectStyle = selectStyle;
+
+    const chip = selectStyle === "dialog" ? (props.foreignSpec.args.renderAsChip!({
         value: props.value,
-        colorVariant: StandardVariationSpec.Strong,
+        colorVariant: { ...StandardVariationSpec.Strong, selected: true },
         onClick: props.readOnly ? undefined : (() => {
             setIsOpen(!isOpen)
         }),
@@ -131,20 +145,34 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
         }),
     })) : (
         <CMChipContainer>
-            <ForeignSingleFieldInlineValues {...props} />
+            <ForeignSingleFieldInlineValues {...newProps} />
         </CMChipContainer>
     );
 
     assert(!!props.foreignSpec.typedSchemaColumn, "schema is not connected to the table spec. you probably need to initiate the client render context");
 
+    const handleChangeSetting = (newVal: ("inline" | "dialog" | null)) => {
+        setSetting.invoke({ name: selectStyleSetting, value: newVal }).then((x) => {
+            showSnackbar({ children: "Saved", severity: 'success' });
+        }).catch((err => {
+            console.log(err);
+            showSnackbar({ children: "Error", severity: 'error' });
+        }));
+    };
+
     // inlineSelectOpenDialogButtonCaption?: React.ReactNode;
     // openDialogButtonCaption?: React.ReactNode;
     const defaultCaption = `Select ${props.foreignSpec.typedSchemaColumn.member}...`;
-    const openDialogCaption = (props.selectStyle === "dialog" ? props.openDialogButtonCaption : props.inlineSelectOpenDialogButtonCaption) || defaultCaption;
+    const openDialogCaption = (selectStyle === "dialog" ? props.openDialogButtonCaption : props.inlineSelectOpenDialogButtonCaption) || defaultCaption;
 
     const openDialogButton = !props.readOnly && <CMSmallButton onClick={() => { setIsOpen(!isOpen) }}>{openDialogCaption}</CMSmallButton>
 
     return <div className={`chipContainer`}>
+        {isShowingAdminControls && <CMChipContainer className="adminControlFrame">
+            <CMChip size="small" onClick={() => handleChangeSetting("inline")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "inline" }}>inline</CMChip>
+            <CMChip size="small" onClick={() => handleChangeSetting("dialog")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "dialog" }}>dialog</CMChip>
+            <CMChip size="small" onClick={() => handleChangeSetting(null)} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyleSettingValue === null }}>default</CMChip>
+        </CMChipContainer>}
         {chip}
         {/* <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.foreignSpec.typedSchemaColumn.member}</Button> */}
         {openDialogButton}
@@ -158,7 +186,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
                 setIsOpen(false);
             }}
             onCancel={() => {
-                props.onChange(oldValue || null);
+                //props.onChange(oldValue || null);
                 setIsOpen(false);
             }}
         />
@@ -235,6 +263,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             onClick={args.onClick}
             onDelete={args.onDelete}
             variation={args.colorVariant}
+            shape="rectangle" // because tags are round
         >
             {rowInfo.name}
             {RenderMuiIcon(rowInfo.iconName)}
@@ -327,6 +356,8 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <ForeignSingleFieldInput
+                    tableName={this.schemaTable.tableName}
+                    columnName={this.columnName}
                     validationError={vr.result === "success" ? null : vr.errorMessage || null}
                     selectStyle={this.selectStyle}
                     clientIntention={this.foreignClientIntention}
@@ -367,6 +398,8 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             value: <React.Fragment key={params.key}>
                 <ForeignSingleFieldInput
                     foreignSpec={this}
+                    tableName={this.schemaTable.tableName}
+                    columnName={this.columnName}
                     selectStyle={this.selectStyle}
                     readOnly={!!this.fixedValue}
                     clientIntention={this.foreignClientIntention}
@@ -527,12 +560,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
         </DialogTitle>
         <DialogContent dividers>
 
-            {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
-
-            {/* <DialogContentText>
-                To subscribe to this website, please enter your email address here. We
-                will send updates occasionally.
-            </DialogContentText> */}
+            {props.descriptionSettingName && <CMDialogContentText><SettingMarkdown setting={props.descriptionSettingName} /></CMDialogContentText>}
 
             <Box>
                 <InputBase

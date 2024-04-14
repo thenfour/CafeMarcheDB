@@ -13,6 +13,7 @@ import { useAuthenticatedSession } from "@blitzjs/auth";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;
+export const GenerateForeignSingleSelectStyleSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.SelectStyle` as SettingKey;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

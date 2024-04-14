@@ -16,6 +16,20 @@ import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
 
+
+
+
+export const EventSegmentClientColumns = {
+    "id": new DB3Client.PKColumnClient({ columnName: "id" }),
+    "name": new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
+    "description": new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, fieldCaption: "Description" }),
+    "dateRange": new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range" }),
+    "event": new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, visible: false }),
+} as const;
+
+
+
+
 /*
 
 <SegmentList> - list of segments for Event default/verbose display
@@ -42,14 +56,11 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSegment,
         columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, fieldCaption: "Description", fieldDescriptionSettingName: "EventSegmentDescriptionFieldDescription" }),
-
-            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay", fieldCaption: "Date/time range", fieldDescriptionSettingName: "EventSegmentDateRangeFieldDescription" }),
-
-            // this must specify all the columns which are required for insertion as well.
-            new DB3Client.ForeignSingleFieldClient({ columnName: "event", cellWidth: 120, clientIntention, visible: false }),
+            EventSegmentClientColumns.id,
+            EventSegmentClientColumns.name,
+            EventSegmentClientColumns.description,
+            EventSegmentClientColumns.dateRange,
+            EventSegmentClientColumns.event,
         ],
     });
 

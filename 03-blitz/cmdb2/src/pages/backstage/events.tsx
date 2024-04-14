@@ -22,6 +22,7 @@ import { TAnyModel, gQueryOptions, pickFromObject } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { StandardVariationSpec } from "shared/color";
+import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
 
 // effectively there are a couple variants of an "event":
 // x 1. grid row, for admins
@@ -100,9 +101,8 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const segmentTableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSegment,
         columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-            // event, description, name all need to be 
-            new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
+            EventSegmentClientColumns.id,
+            EventSegmentClientColumns.dateRange,
         ],
     });
 
