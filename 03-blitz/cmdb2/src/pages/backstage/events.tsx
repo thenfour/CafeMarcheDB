@@ -1,28 +1,25 @@
 import { BlitzPage } from "@blitzjs/next";
-import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { EventSummary, RehearsalSummary } from "src/core/components/CMMockupComponents";
-import { EventDetail, EventTableClientColumns } from "src/core/components/EventComponents";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React, { FC, Suspense } from "react"
-import { Button, Chip, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputBase, TextField } from "@mui/material";
 import {
-    Add as AddIcon,
     Search as SearchIcon
 } from '@mui/icons-material';
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, InspectObject, ReactiveInputDialog, VisibilityControl } from "src/core/components/CMCoreComponents";
+import { Button, DialogActions, DialogContent, DialogTitle, InputBase } from "@mui/material";
+import React, { Suspense } from "react";
+import { StandardVariationSpec } from "shared/color";
+import { Permission } from "shared/permissions";
+import { TAnyModel, gQueryOptions, toggleValueInArray } from "shared/utils";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, ReactiveInputDialog, VisibilityControl } from "src/core/components/CMCoreComponents";
+import { EventDetail, EventTableClientColumns } from "src/core/components/EventComponents";
+import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
-import { DB3NewObjectDialog } from "src/core/db3/components/db3NewObjectDialog";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { TAnyModel, gQueryOptions, pickFromObject } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import * as db3 from "src/core/db3/db3";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
-import { StandardVariationSpec } from "shared/color";
-import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 // effectively there are a couple variants of an "event":
 // x 1. grid row, for admins
@@ -40,16 +37,6 @@ import { EventSegmentClientColumns } from "src/core/components/EventSegmentCompo
 // - "Happening now"
 // - "Done"
 // - "Cancelled"
-
-function toggleValueInArray(array: number[], id: number): number[] {
-    const index = array.indexOf(id);
-    if (index === -1) {
-        array.push(id);
-    } else {
-        array.splice(index, 1);
-    }
-    return array;
-}
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -436,7 +423,9 @@ const MainContent = () => {
     </div>;
 };
 
-const ViewEventsPage: BlitzPage = () => {
+const ViewEventsPage: BlitzPage = (props) => {
+    console.log(`blitz page!`);
+    console.log(props);
     return (
         <DashboardLayout title="Events">
             <MainContent />
@@ -444,6 +433,26 @@ const ViewEventsPage: BlitzPage = () => {
     )
 }
 
-//ViewEventsPage.suppressFirstRenderFlicker = true;
+
+export const getServerSideProps = async ({ params }) => {
+    console.log(`getServerSideProps!`);
+    console.log(params);
+    return { props: { hi: 3 } }
+}
+
+//   function PostPage({ post }) {
+//     return (
+//       <>
+//         <Head>
+//           <title>{post.title}</title>
+//         </Head>
+//         <div>
+//           <h1>{post.title}</h1>
+//           <p>{post.content}</p>
+//         </div>
+//       </>
+//     )
+//   }
+
 
 export default ViewEventsPage;

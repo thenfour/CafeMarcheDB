@@ -522,6 +522,19 @@ export function moveItemInArray<T>(array: T[], oldIndex: number, newIndex: numbe
     return newArray;
 }
 
+// adds or removes a value in an array. ordering is assumed to not matter.
+// returns a new array with the change made.
+export function toggleValueInArray<T>(array: T[], id: T): T[] {
+    const index = array.indexOf(id);
+    const newArray = [...array];  // Create a copy of the array to avoid mutating the original array
+    if (index === -1) {
+        newArray.push(id);
+    } else {
+        newArray.splice(index, 1);
+    }
+    return newArray;
+}
+
 
 
 export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTimeout(() => {

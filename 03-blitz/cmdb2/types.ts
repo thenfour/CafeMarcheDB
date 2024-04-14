@@ -29,7 +29,7 @@ export function CMAuthorize2(args: CMAuthorize2Args) {
   assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
   const ret = (!!args.userId) && (args.isSysAdmin || args.userPermissions.some(p => p === args.permission));
 
-  console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] userId:${args.userId || "<null>"} perm:${args.permission} with userPerms ${JSON.stringify(args.userPermissions)}`);
+  //console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] userId:${args.userId || "<null>"} perm:${args.permission} with userPerms ${JSON.stringify(args.userPermissions)}`);
   return ret || false;
 };
 
