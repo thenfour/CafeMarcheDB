@@ -86,6 +86,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
             }</div>
         <div className='editButtonContainer'>
             {!readonly && <EditTextDialogButton
+                clientIntention={clientIntention}
                 columnSpec={db3.xEvent.getColumn(props.fieldSpec.fieldName)! as db3.FieldBase<string>}
                 dialogTitle={props.fieldSpec.fieldLabel}
                 readOnly={readonly}

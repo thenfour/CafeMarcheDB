@@ -1,10 +1,6 @@
-import { paginate } from "blitz";
 import { resolver } from "@blitzjs/rpc";
-import { NotFoundError } from "blitz";
+import { paginate } from "blitz";
 import db, { Prisma } from "db";
-import {
-    GetObjectByIdSchema
-} from "../schemas";
 import { Permission } from "shared/permissions";
 
 interface QueryInput

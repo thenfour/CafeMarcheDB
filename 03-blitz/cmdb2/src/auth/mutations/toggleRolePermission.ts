@@ -1,13 +1,11 @@
-import { resolver } from "@blitzjs/rpc"
-import db, { Prisma, Role, RolePermission, Permission as DBPermission } from "db";
+import { resolver } from "@blitzjs/rpc";
+import db from "db";
+import { Permission } from "shared/permissions";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+import { z } from "zod";
 import {
     ToggleRolePermission as ToggleRolePermissionSchema,
-} from "../schemas"
-import { z } from "zod"
-import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
-import { randomUUID } from "crypto";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+} from "../schemas";
 
 type InputArgs = z.infer<typeof ToggleRolePermissionSchema>;
 

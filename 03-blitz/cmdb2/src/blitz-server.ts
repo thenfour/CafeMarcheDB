@@ -10,7 +10,7 @@ export const { gSSP, gSP, api } = setupBlitzServer({
   plugins: [
     AuthServerPlugin({
       ...authConfig,
-      storage: PrismaStorage(db),
+      storage: PrismaStorage(db as any), // TODO correct typing or upgrade ? https://github.com/blitz-js/blitz/issues/4172
       isAuthorized: CMDBResolverAuthorize,
       //isAuthorized: simpleRolesIsAuthorized,//CMDBRolesIsAuthorized,
     }),

@@ -218,7 +218,7 @@ class Gallery {
 
     getSelectedPost(): db3.FrontpageGalleryItemPayload | null {
         if (!this.content) return null;
-        return this.content.gallery[this.bringIndexIntoRange(this.selectedIdx)]!;
+        return this.content.gallery[this.bringIndexIntoRange(this.selectedIdx)]! as any; // it's hard to understand the typing here; no time to fix.
     }
 
     getSelectedIndex(): number {
@@ -343,7 +343,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                     props.content.gallery.map((post, idx) => <HomepagePhotoPattern
                         key={post.id}
                         instanceKey={props.instanceKey}
-                        post={post}
+                        post={post as any} // TODO: hackhack asany
                         editable={props.editable}
                     //rotate={props.rotate}
                     />)
@@ -352,7 +352,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                     props.content.gallery.map((post, idx) => <HomepagePhotoMaskPattern
                         key={post.id}
                         instanceKey={props.instanceKey}
-                        post={post}
+                        post={post as any} // TODO: hackhack asany
                         editable={props.editable}
                     //rotate={props.rotate}
                     />)
@@ -544,7 +544,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
         updateLayout();
         resetGalleryTimer();
         return () => {
-            clearTimeout(galleryTimer || undefined);
+            clearTimeout(galleryTimer.current || undefined);
         };
     }, [root2Ref]);
 

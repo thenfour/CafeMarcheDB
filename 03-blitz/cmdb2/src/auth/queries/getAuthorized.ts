@@ -1,6 +1,4 @@
-import { Ctx } from "blitz"
-import db, { prisma } from "db"
-import { User } from "db"
+import { Ctx } from "blitz";
 import { Permission } from "shared/permissions";
 import { CMAuthorize } from "types";
 

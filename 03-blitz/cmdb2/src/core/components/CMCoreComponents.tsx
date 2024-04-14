@@ -24,7 +24,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
 import { CMDialogContentText } from "./CMCoreComponents2";
 
-const DynamicReactJson = dynamic(import('react-json-view'), { ssr: false });
+const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
@@ -263,11 +263,12 @@ export interface EditTextFieldProps {
     value: string;
     onChange: (value: string) => void;
     columnSpec: db3.FieldBase<string>;
+    clientIntention: db3.xTableClientUsageContext;
 };
 export const EditTextField = (props: EditTextFieldProps) => {
     const validationResult = props.columnSpec.ValidateAndParse({
         mode: "update",
-        value: props.value,
+        clientIntention: props.clientIntention,
         row: { [props.columnSpec.member]: props.value }
     });
     return <CMTextField
@@ -294,6 +295,7 @@ export interface EditTextDialogProps {
     onOK: (value: string) => void;
     onCancel: () => void;
     description: React.ReactNode;
+    clientIntention: db3.xTableClientUsageContext
 };
 export const EditTextDialog = (props: EditTextDialogProps) => {
     const [value, setValue] = React.useState<string>(props.value);
@@ -309,6 +311,7 @@ export const EditTextDialog = (props: EditTextDialogProps) => {
             </CMDialogContentText>
             <EditTextField
                 columnSpec={props.columnSpec}
+                clientIntention={props.clientIntention}
                 onChange={(newValue) => { setValue(newValue) }}
                 value={value}
             />
@@ -333,6 +336,7 @@ export interface EditTextDialogButtonProps {
     onChange: (value: string) => void;
     dialogTitle: string;
     dialogDescription: React.ReactNode;
+    clientIntention: db3.xTableClientUsageContext
 };
 export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
@@ -342,6 +346,7 @@ export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
         {isOpen && !props.readOnly && <EditTextDialog
             value={props.value}
             columnSpec={props.columnSpec}
+            clientIntention={props.clientIntention}
             title={props.dialogTitle}
             description={props.dialogDescription}
             onOK={(newValue: string) => {

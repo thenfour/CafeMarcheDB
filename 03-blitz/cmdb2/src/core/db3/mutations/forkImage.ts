@@ -7,33 +7,20 @@ import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import { ForkImageParams, ImageFileFormatOptions } from 'src/core/db3/shared/apiTypes';
 
 
-// entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (args: ForkImageParams, ctx: AuthenticatedMiddlewareCtx) => {
 
-        // TODO
-        //CMDBAuthorizeOrThrow("insertEvent", Permission.comm)
-
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
+        //const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
 
-        // const params: ForkImageParams = {
-        //     parentFileLeaf: CoerceToString(fields.parentFileId),
-        //     outputType: validateStringOption(CoerceToString(fields.outputType), ImageFileFormatOptions),
-        //     editParams: {
-        //         cropBeginX01: CoerceToNumberOr(fields.cropBeginX01, 0),
-        //         cropBeginY01: CoerceToNumberOr(fields.cropBeginY01, 0),
-        //         cropEndX01: CoerceToNumberOr(fields.cropEndX01, 1),
-        //         cropEndY01: CoerceToNumberOr(fields.cropEndY01, 1),
-        //         newSizeFactor: CoerceToNumberOr(fields.newSizeFactor, 1),
-        //     },
-        // };
-
-        const newFile = await mutationCore.ForkImageImpl(params, ctx);
+        const newFile = await mutationCore.ForkImageImpl(args, ctx);
         return newFile;
     },
 );
+
+
+
 
 
 

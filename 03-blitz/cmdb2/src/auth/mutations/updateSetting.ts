@@ -1,10 +1,8 @@
-import { paginate } from "blitz";
-import { resolver } from "@blitzjs/rpc"
-import { NotFoundError } from "blitz";
-import db, { Prisma } from "db";
-import { UpdateSettingSchema } from "../schemas"
+import { resolver } from "@blitzjs/rpc";
+import db from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+import { UpdateSettingSchema } from "../schemas";
 
 // set a setting by name.
 // args is { name, value }

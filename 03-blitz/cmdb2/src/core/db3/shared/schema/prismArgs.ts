@@ -1054,7 +1054,7 @@ export type FrontpageGalleryItemPayloadForUpload = Prisma.FrontpageGalleryItemGe
 }>;
 
 // when editing files, we will graft the parent file onto the file. so create a type that can handle that grafting.
-export const FrontpageGalleryItemArgsWithAncestorFile = Prisma.validator<Prisma.FrontpageGalleryItemArgs>()({
+export const FrontpageGalleryItemArgsWithAncestorFile = Prisma.validator<Prisma.FrontpageGalleryItemDefaultArgs>()({
     include: {
         visiblePermission: {
             include: {

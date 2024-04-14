@@ -1,15 +1,10 @@
-import { paginate } from "blitz";
-import { resolver } from "@blitzjs/rpc"
-import { NotFoundError } from "blitz";
-import db, { Prisma } from "db";
-import {
-    CreateRole as CreateRoleSchema,
-    UpdateRole as UpdateRoleSchema,
-    DeleteRole as DeleteRoleSchema,
-    GetObjectByIdSchema,
-} from "../schemas"
+import { resolver } from "@blitzjs/rpc";
+import db from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+import {
+    UpdateRole as UpdateRoleSchema
+} from "../schemas";
 
 const contextDesc = "updateRoleMutation";
 

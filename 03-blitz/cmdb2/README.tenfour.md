@@ -164,6 +164,10 @@ To get `db seed` to work,
   * also see blitz routes
 
 
+# hotkeys on client
+
+  * <kbd>alt+9</kbd> to show/hide admin controls. some site configuration settings can be configured directly on the site itself via these special controls.
+
 
 # initial site setup
 
@@ -174,7 +178,7 @@ To get `db seed` to work,
 
 # user login/signup/accounts/google
 
-  * any user can create an account, and they will be assigned to a default role.
+  * anyone can create an account, and they will be assigned to a default role.
   * sign in with google will create your default account for you
     * if you already have a password-based account, it can automatically be logged-in with google auth
     * if you signed up with a google account, you won't have an initial password. you may reset it though to be able to log in via password.

@@ -1087,7 +1087,7 @@ const PaletteEntryEditor = (props: PaletteEntryEditorProps) => {
         ["#ddd", "black"],
         ["#eee", "black"],
         ["white", "black"],
-    ] as const;
+    ];
 
     const [previewStyleIndex, setPreviewStyleIndex] = React.useState<number>(previewStyleOptions.length - 1);
     const previewStyle = previewStyleOptions[previewStyleIndex]!;

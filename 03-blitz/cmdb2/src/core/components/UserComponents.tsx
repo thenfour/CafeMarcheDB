@@ -50,15 +50,15 @@ export const AddUserButton = (props: AddUserButtonProps) => {
         {addUserOpen &&
             <ChooseItemDialog
                 closeOnSelect={true}
-                isEqual={(a, b) => a.id === b.id}
+                isEqual={(a: db3.UserMinimumPayload, b: db3.UserMinimumPayload) => a.id === b.id}
                 items={filteredItems}
                 value={null as db3.UserPayload | null}
                 title="select a user"
                 onCancel={() => setAddUserOpen(false)}
-                onOK={(u) => handleOK(u)}
+                onOK={(u: db3.UserPayload) => handleOK(u)}
                 renderValue={(u) => <UserChip value={u.value} />}
-                renderAsListItem={(p, u) => <UserChip value={u} />}
-                renderDescription={() => <>description here</>}
+                renderAsListItem={(p, u: db3.UserPayload) => <UserChip value={u} />}
+                description={<>todo: description</>}
             />}
     </>;
 };

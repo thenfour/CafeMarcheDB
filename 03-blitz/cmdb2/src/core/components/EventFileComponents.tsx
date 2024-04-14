@@ -171,7 +171,7 @@ export const EventFileEditor = (props: EventFileEditorProps) => {
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }), // todo: hide this.
 
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
 
             new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName: "taggedUsers", cellWidth: 150, allowDeleteFromCell: false }),

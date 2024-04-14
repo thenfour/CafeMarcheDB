@@ -18,13 +18,13 @@ const MainContent = () => {
         table: db3.xFrontpageGalleryItem,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "file", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "file", cellWidth: 120, }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, }),
         ],
     });
 

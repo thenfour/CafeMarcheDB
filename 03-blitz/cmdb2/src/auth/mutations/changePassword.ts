@@ -1,12 +1,10 @@
-import { NotFoundError, AuthenticationError, AuthenticatedMiddlewareCtx } from "blitz"
-import { resolver } from "@blitzjs/rpc"
 import { SecurePassword } from "@blitzjs/auth/secure-password"
+import { resolver } from "@blitzjs/rpc"
+import { NotFoundError } from "blitz"
 import db from "db"
-import { authenticateUser } from "./login"
-import { ChangePassword } from "../schemas"
 import { Permission } from "shared/permissions"
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
-import { CMDBAuthorizeOrThrow } from "types"
+import { ChangePassword } from "../schemas"
 
 //resolver.authorize is defined to take only role/roles. so i can't make my own custom resolver.authorize unfortunately,
 // even though it's overridden via isAuthorized: CMDBRolesIsAuthorized.

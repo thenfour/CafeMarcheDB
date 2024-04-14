@@ -1,11 +1,9 @@
-import { resolver } from "@blitzjs/rpc"
-import db, { Prisma } from "db";
-import { UpdateSettingByIdSchema } from "../schemas"
-import { z } from "zod"
+import { resolver } from "@blitzjs/rpc";
+import db from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
-import { randomUUID } from "crypto";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+import { z } from "zod";
+import { UpdateSettingByIdSchema } from "../schemas";
 
 type InputType = z.infer<typeof UpdateSettingByIdSchema>;
 

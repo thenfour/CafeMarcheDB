@@ -65,9 +65,12 @@ export function useDebounceArray<TValue>(valueArray: TValue[], delay?: number): 
         }
     }, [delay, ...valueArray])
 
+    // todo: support isFirstUpdate
+    const isFirstUpdate = false;
+
     return [
         debouncedValue,
-        { isDebouncing },
+        { isDebouncing, isFirstUpdate },
     ];
 };
 

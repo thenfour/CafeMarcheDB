@@ -23,10 +23,8 @@ const MainContent = () => {
             new DB3Client.MarkdownStringColumnClient({ columnName: "userComment", cellWidth: 200 }),
             new DB3Client.BoolColumnClient({ columnName: "isInvited" }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "eventId", cellWidth: 150 }),
-            //new DB3Client.ForeignSingleFieldClient({ columnName: "eventSegment", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            //new DB3Client.ForeignSingleFieldClient({ columnName: "attendance", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120, }),
         ],
     });
 

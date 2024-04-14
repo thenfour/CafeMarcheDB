@@ -18,7 +18,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbsUpDownIcon from '@mui/icons-material/ThumbsUpDown';
 import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import * as db3 from "src/core/db3/db3";
-import { gGeneralPaletteList } from "shared/color";
+import { StandardVariationSpec, gGeneralPaletteList } from "shared/color";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
 
@@ -39,7 +39,7 @@ const MainContent = () => {
 
         <h3>CMBigChip</h3>
         <div>colored chip that can contain a lot of stuff (not like a small chip like a single TAG), used by attendance options</div>
-        <CMCoreComponents.CMBigChip color={"yes"} variant="strong">
+        <CMCoreComponents.CMBigChip color={"yes"} variation={StandardVariationSpec.Strong} >
             <ThumbUpIcon />
             <div>CMCoreComponents.CMBigChip</div>
         </CMCoreComponents.CMBigChip>
@@ -48,28 +48,7 @@ const MainContent = () => {
 
         <h3>CMChip</h3>
         <CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={false} variant="strong">strong notselected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={true} variant="strong">strong selected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={false} variant="strong">strong notselected disabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={true} variant="strong">strong selected disabled</CMCoreComponents.CMChip>
-        </CMCoreComponents.CMChipContainer>
-        <CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={false} variant="strong">strong notselected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={true} variant="strong">strong selected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={false} variant="strong">strong notselected disabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={true} variant="strong">strong selected disabled</CMCoreComponents.CMChip>
-        </CMCoreComponents.CMChipContainer>
-        <CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={false} variant="weak">weak notselected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={true} variant="weak">weak selected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={false} variant="weak">weak notselected disabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={true} variant="weak">weak selected disabled</CMCoreComponents.CMChip>
-        </CMCoreComponents.CMChipContainer>
-        <CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={false} variant="weak">weak notselected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={true} variant="weak">weak selected enabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={false} variant="weak">weak notselected disabled</CMCoreComponents.CMChip>
-            <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={true} variant="weak">weak selected disabled</CMCoreComponents.CMChip>
+            <CMCoreComponents.CMChip color={"yes"} size="small" variation={{ enabled: false, selected: false, fillOption: "filled", variation: "strong" }}>(todo: all variations)</CMCoreComponents.CMChip>
         </CMCoreComponents.CMChipContainer>
 
 
@@ -77,35 +56,14 @@ const MainContent = () => {
         <h3>CMChip on surface </h3>
         <CMCoreComponents.CMSinglePageSurfaceCard>
             <CMCoreComponents.CMChipContainer>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={false} variant="strong">strong notselected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={true} variant="strong">strong selected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={false} variant="strong">strong notselected disabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={true} variant="strong">strong selected disabled</CMCoreComponents.CMChip>
-            </CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChipContainer>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={false} variant="strong">strong notselected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={true} variant="strong">strong selected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={false} variant="strong">strong notselected disabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={true} variant="strong">strong selected disabled</CMCoreComponents.CMChip>
-            </CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChipContainer>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={false} variant="weak">weak notselected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={false} selected={true} variant="weak">weak selected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={false} variant="weak">weak notselected disabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="small" disabled={true} selected={true} variant="weak">weak selected disabled</CMCoreComponents.CMChip>
-            </CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChipContainer>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={false} variant="weak">weak notselected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={false} selected={true} variant="weak">weak selected enabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={false} variant="weak">weak notselected disabled</CMCoreComponents.CMChip>
-                <CMCoreComponents.CMChip color={"yes"} size="big" disabled={true} selected={true} variant="weak">weak selected disabled</CMCoreComponents.CMChip>
+                <CMCoreComponents.CMChip color={"yes"} size="small" variation={{ enabled: false, selected: false, fillOption: "filled", variation: "strong" }}>(todo: all variations)</CMCoreComponents.CMChip>
             </CMCoreComponents.CMChipContainer>
         </CMCoreComponents.CMSinglePageSurfaceCard>
 
 
         <h3>Icons</h3>
         <div>
-            <IconEditCell validationError={null} onOK={() => { }} value={null} />
+            <IconEditCell validationError={null} onOK={() => { }} value={null} readonly={false} />
         </div>
 
 

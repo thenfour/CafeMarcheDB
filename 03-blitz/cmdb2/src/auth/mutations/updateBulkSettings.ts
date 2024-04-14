@@ -1,13 +1,10 @@
 // bulk update settings by name
 
-import { resolver } from "@blitzjs/rpc"
-import db, { Prisma } from "db";
-import { UpdateBulkSettingsSchema } from "../schemas"
-import { z } from "zod"
+import { resolver } from "@blitzjs/rpc";
 import { Permission } from "shared/permissions";
-import { ChangeAction, SetSetting } from "shared/utils"
-import { randomUUID } from "crypto";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { SetSetting } from "shared/utils";
+import { z } from "zod";
+import { UpdateBulkSettingsSchema } from "../schemas";
 
 type InputType = z.infer<typeof UpdateBulkSettingsSchema>;
 

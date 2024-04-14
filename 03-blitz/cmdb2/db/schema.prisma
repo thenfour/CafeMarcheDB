@@ -68,7 +68,7 @@ model Permission {
   visibilityForSongComments          SongComment[]
   visibilityForEvents                Event[]
   visibilityForEventComments         EventComment[]
-  visibilityForEventSongLists        EventSongList[]
+  //visibilityForEventSongLists        EventSongList[]
   visibilityForFiles                 File[]
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
 }
@@ -546,11 +546,13 @@ model EventSongList {
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
 
-  songs        EventSongListSong[]
-  Permission   Permission?         @relation(fields: [permissionId], references: [id])
-  permissionId Int?
-  User         User?               @relation(fields: [userId], references: [id])
-  userId       Int?
+  songs EventSongListSong[]
+  //Permission   Permission?         @relation(fields: [permissionId], references: [id])
+  //permissionId Int?
+
+  // this is really not necessary but it's here so ...
+  User   User? @relation(fields: [userId], references: [id])
+  userId Int?
 }
 
 model EventSongListSong {

@@ -14,8 +14,8 @@ const tableSpec = new DB3Client.xTableClientSpec({
         new DB3Client.PKColumnClient({ columnName: "id" }),
         new DB3Client.GenericStringColumnClient({ columnName: "subtitle", cellWidth: 180 }),
         new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 100 }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-        new DB3Client.ForeignSingleFieldClient({ columnName: "eventSongList", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, }),
+        new DB3Client.ForeignSingleFieldClient({ columnName: "eventSongList", cellWidth: 120, }),
     ],
 });
 

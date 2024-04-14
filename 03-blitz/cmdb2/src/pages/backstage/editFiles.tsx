@@ -28,8 +28,8 @@ const MainContent = () => {
             new DB3Client.GenericIntegerColumnClient({ columnName: "sizeBytes", cellWidth: 80 }),
             new DB3Client.GenericStringColumnClient({ columnName: "customData", cellWidth: 150 }),
 
-            new DB3Client.ForeignSingleFieldClient({ columnName: "uploadedByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "uploadedByUser", cellWidth: 120, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, }),
 
             new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName: "taggedUsers", cellWidth: 150, allowDeleteFromCell: false }),

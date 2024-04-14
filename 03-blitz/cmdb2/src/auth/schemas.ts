@@ -1,5 +1,4 @@
-import db, { Prisma } from "db";
-import { z } from "zod"
+import { z } from "zod";
 
 // generic
 export const GetObjectByNullableIdSchema = z.object({

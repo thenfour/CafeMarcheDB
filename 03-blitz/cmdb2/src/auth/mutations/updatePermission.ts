@@ -1,14 +1,13 @@
-import { resolver } from "@blitzjs/rpc"
+import { resolver } from "@blitzjs/rpc";
+//import { AuthenticatedMiddlewareCtx } from "blitz";
 import db, { Prisma } from "db";
+import { ComputeChangePlan } from "shared/associationUtils";
+import { Permission } from "shared/permissions";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+import { z } from "zod";
 import {
     UpdatePermission as UpdatePermissionSchema,
-} from "../schemas"
-import { z } from "zod"
-import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
-import { randomUUID } from "crypto";
-import { AuthenticatedMiddlewareCtx } from "blitz";
-import { ComputeChangePlan } from "shared/associationUtils";
+} from "../schemas";
 
 type InputType = z.infer<typeof UpdatePermissionSchema>;
 
@@ -17,12 +16,12 @@ export const IsEqualAssociation = (item1: any, item2: any) => {
     return (item1?.roleId == item2?.roleId) && (item1?.permissionId == item2?.permissionId);
 };
 
-const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, ...fields }: InputType, ctx: AuthenticatedMiddlewareCtx) => {
+const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, ...fields }: InputType, ctx) => {
     try {
 
         const changeContext = CreateChangeContext("updatePermissionMutation");
 
-        const currentAssociations = await prisma.rolePermission.findMany({
+        const currentAssociations = await db.rolePermission.findMany({
             where: {
                 permissionId: id
             },
@@ -55,7 +54,7 @@ const op = async (prisma: Prisma.TransactionClient | (typeof db), { id, roles, .
 
         for (let i = 0; i < cp.create.length; ++i) {
             const assoc = cp.create[i]!;
-            const newAssoc = await prisma.rolePermission.create({
+            const newAssoc = await db.rolePermission.create({
                 data: {
                     roleId: assoc.roleId,
                     permissionId: assoc.permissionId,

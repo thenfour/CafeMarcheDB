@@ -21,9 +21,9 @@ const MainContent = () => {
         table: db3.xSongCredit,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "type", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "type", cellWidth: 120, }),
         ],
     });
 

@@ -1,7 +1,5 @@
-import { Ctx } from "blitz"
-import db, { prisma } from "db"
-import { User } from "db"
-import { Permission } from "shared/permissions";
+import { Ctx } from "blitz";
+import db from "db";
 import * as db3 from "src/core/db3/db3";
 
 export default async function getCurrentUser(_ = null, { session }: Ctx) {

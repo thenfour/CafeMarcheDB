@@ -1,8 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
-import { Permission } from "shared/permissions";
 import { AuthenticatedMiddlewareCtx } from "blitz";
-import { CMDBAuthorizeOrThrow } from "types";
+import db from "db";
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),

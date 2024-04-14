@@ -74,7 +74,7 @@ const UserListContent = () => {
             //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
             new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, clientIntention: { intention: "admin", mode: "primary" } }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, }),
         ],
     });
 

@@ -19,7 +19,7 @@ export default resolver.pipe(
 
         // TODO
         //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
+        const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
 
         const clientIntention: db3.xTableClientUsageContext = {
             intention: "user",
@@ -31,8 +31,10 @@ export default resolver.pipe(
         const fields: Prisma.EventSongListUncheckedUpdateInput = {
             //eventId: args.eventId, do not move a setlist from 1 to another
             name: args.name,
-            createdByUserId: currentUser.id,
-            visiblePermissionId: args.visiblePermissionId,
+            //createdByUserId: currentUser.id,
+            userId: currentUser.id,
+            //permissionId: args.,
+            //visiblePermissionId: args.visiblePermissionId,
             description: args.description,
             sortOrder: args.sortOrder,
         };

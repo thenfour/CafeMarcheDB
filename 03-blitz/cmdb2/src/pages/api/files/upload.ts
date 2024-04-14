@@ -31,7 +31,8 @@ export const config = {
 export default api(async (req, res, origCtx: Ctx) => {
     origCtx.session.$authorize(Permission.login);
     const ctx: AuthenticatedMiddlewareCtx = origCtx as any; // authorize ensures this.
-    const currentUser = await mutationCore.getCurrentUserCore(ctx);
+    const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
+    if (!currentUser) throw new Error(`uploads possible only for users`);
 
     return new Promise(async (resolve, reject) => {
         if (req.method == 'POST') {

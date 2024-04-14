@@ -84,7 +84,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     return showUpload ? (
         <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
             <div className="content uploadControlContainer">
-                <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} />
+                <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { throw new Error("url uploads not supported for frontpage gallery") }} />
                 <Button onClick={() => setShowUpload(false)}>Cancel</Button>
             </div>
         </CMSinglePageSurfaceCard>
@@ -317,16 +317,16 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
 
                             {editingValue.file.storedLeafName}
                             ({info.fileDimensions.width.toFixed(0)} x {info.fileDimensions.height.toFixed(0)})
-                            - {formatFileSize(editingValue.file.sizeBytes)}<br />
+                            - {formatFileSize(editingValue.file.sizeBytes || 0)}<br />
 
                             crop: [{info.cropBegin.x.toFixed(0)},{info.cropBegin.y.toFixed(0)}]-[{info.cropEnd.x.toFixed(0)},{info.cropEnd.y.toFixed(0)}]
                             {(croppedSizeP * 100).toFixed(0)}%
                             ({info.cropSize.width.toFixed(0)} x {info.cropSize.height.toFixed(0)})
-                            {formatFileSize(editingValue.file.sizeBytes * croppedSizeP)}
+                            {formatFileSize((editingValue.file.sizeBytes || 0) * croppedSizeP)}
                             <br />
 
                             optimized: ({reducedDimensions.width.toFixed(0)} x {reducedDimensions.height.toFixed(0)})
-                            {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize(editingValue.file.sizeBytes * reducedSizeP)}
+                            {(reducedSizeP * 100).toFixed(0)}%, {formatFileSize((editingValue.file.sizeBytes || 0) * reducedSizeP)}
                             <br />
                             rotate: {info.displayParams.rotate.toFixed(2)} deg
                         </div>
@@ -423,13 +423,13 @@ const MainContent = () => {
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             // fields which are editable through db3mutation need to be specified here.
-            new DB3Client.ForeignSingleFieldClient({ columnName: "file", cellWidth: 120, clientIntention }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "file", cellWidth: 120 }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, clientIntention }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
         ],
     });
 

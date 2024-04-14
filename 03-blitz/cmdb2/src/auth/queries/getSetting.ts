@@ -1,8 +1,6 @@
 import { resolver } from "@blitzjs/rpc";
-import { NotFoundError } from "blitz";
 import db from "db";
 import { GetSettingSchema } from "../schemas";
-import { Permission } from "shared/permissions";
 
 
 export default resolver.pipe(

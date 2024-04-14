@@ -1,5 +1,4 @@
 import { Ctx } from "@blitzjs/next";
-import { AuthenticatedMiddlewareCtx } from "blitz";
 import { randomUUID } from "crypto";
 import db from "db"
 import { Size } from "src/core/db3/shared/apiTypes";

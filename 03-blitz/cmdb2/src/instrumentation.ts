@@ -25,7 +25,7 @@ async function SyncPermissionsTable() {
     // TODO: other startup assertions.
 }
 
-export function register() {
+export async function register() {
     console.log(`INSTRUMENTATION RUNNING`);
-    void SyncPermissionsTable();
+    await SyncPermissionsTable();
 }
