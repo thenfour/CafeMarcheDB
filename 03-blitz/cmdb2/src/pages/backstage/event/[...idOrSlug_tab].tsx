@@ -9,14 +9,16 @@ import { EventBreadcrumbs, EventDetail, EventTableClientColumns, gEventDetailTab
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import db, { Prisma } from "db";
 
-const MyComponent = () => {
+const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
-    const [idOrSlug, tabIdOrSlug] = params.idOrSlug_tab as string[];
+    const [_, tabIdOrSlug] = params.idOrSlug_tab as string[];
 
-    if (!idOrSlug) return <div>no event specified</div>;
+    //if (!idOrSlug) return <div>no event specified</div>;
+    if (!eventId) throw new Error(`song not found`);
 
-    if (!useAuthorization(`event page: ${idOrSlug}`, Permission.view_events)) {
+    if (!useAuthorization(`event page: ${eventId}`, Permission.view_events)) {
         throw new Error(`unauthorized`);
     }
 
@@ -52,11 +54,7 @@ const MyComponent = () => {
         }
     };
 
-    if (IsEntirelyIntegral(idOrSlug)) {
-        queryArgs.filterModel!.tableParams!.eventId = parseInt(idOrSlug);
-    } else {
-        queryArgs.filterModel!.tableParams!.eventSlug = idOrSlug;
-    }
+    queryArgs.filterModel!.tableParams!.eventId = eventId;
 
     let initialTabIndex: undefined | number = undefined;
     if (tabIdOrSlug) {
@@ -67,23 +65,10 @@ const MyComponent = () => {
         }
     }
 
-    // const where = await db3.xEventVerbose.CalculateWhereClause({
-    //     clientIntention,
-    //     filterModel: queryArgs.filterModel!,
-    // });
-
-    //console.log(`[[[ calling calculateInclude`);
-    // const include = db3.xEventVerbose.CalculateInclude(clientIntention);
-    // console.log(`]]] calling calculateInclude`);
-
-    //console.log(`filtermodel: ${JSON.stringify(queryArgs.filterModel)}, params:${JSON.stringify(params)}, idOrSlug:${idOrSlug}, tabIdOrSlug:${tabIdOrSlug}`);
-
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
 
     return <div>
-        {/* <InspectObject src={where || {}} tooltip="where" /> */}
-        {/* <InspectObject src={include} tooltip="include" /> */}
         {event ? <>
             <EventBreadcrumbs event={event} />
             <EventDetail verbosity="verbose" readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} isOnlyEventVisible={true} allowRouterPush={true} />
@@ -98,11 +83,47 @@ const MyComponent = () => {
 };
 
 
-const EventDetailPage: BlitzPage = () => {
+
+interface PageProps {
+    title: string,
+    eventId: number | null,
+};
+
+export const getServerSideProps = async ({ params }) => {
+    const [idOrSlugOptional] = params.idOrSlug_tab as string[];
+    const idOrSlug = idOrSlugOptional || "";
+    const ret: { props: PageProps } = {
+        props: {
+            title: "Event",
+            eventId: null,
+        }
+    };
+    const event = await db.event.findFirst({
+        select: {
+            id: true,
+            name: true,
+        },
+        where: IsEntirelyIntegral(idOrSlug) ? {
+            id: parseInt(idOrSlug),
+        } : {
+            slug: idOrSlug,
+        }
+    });
+    if (event) {
+        ret.props.title = `${event.name}`;
+        ret.props.eventId = event.id;
+    }
+
+    return ret;
+}
+
+
+
+const EventDetailPage: BlitzPage = (props: PageProps) => {
     return (
-        <DashboardLayout title="Event" navRealm={NavRealm.events}>
+        <DashboardLayout title={props.title} navRealm={NavRealm.events}>
             <Suspense>
-                <MyComponent></MyComponent>
+                <MyComponent eventId={props.eventId}></MyComponent>
             </Suspense>
         </DashboardLayout>
     )

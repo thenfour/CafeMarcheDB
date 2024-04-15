@@ -232,6 +232,7 @@ model Token {
 model Song {
   id             Int    @id @default(autoincrement())
   name           String
+  aliases        String @default("")
   slug           String
   description    String @default("")
   startBPM       Int?
@@ -248,7 +249,7 @@ model Song {
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
-  FileSongTag FileSongTag[]
+  taggedFiles FileSongTag[]
   tags        SongTagAssociation[]
   comments    SongComment[]
   credits     SongCredit[]

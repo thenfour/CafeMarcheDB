@@ -9,7 +9,7 @@ import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/utils";
 import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeSlugField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { SongArgs, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance } from "./prismArgs";
+import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 
 
@@ -148,8 +148,7 @@ export const xSongTagAssociation = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-
-export const xSong = new db3.xTable({
+const xSongArgs_Base: db3.TableDesc = {
     tableName: "Song",
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
         return SongArgs.include;
@@ -161,6 +160,14 @@ export const xSong = new db3.xTable({
         description: row.description,
         ownerUserId: null,
     }),
+    getParameterizedWhereClause: (params: { songId?: number, }, clientIntention: db3.xTableClientUsageContext): (Prisma.SongWhereInput[]) => {
+        const ret: Prisma.SongWhereInput[] = [];
+
+        if (params.songId !== undefined) {
+            ret.push({ id: params.songId, });
+        }
+        return ret;
+    },
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
@@ -176,6 +183,12 @@ export const xSong = new db3.xTable({
             columnName: "description",
             allowNull: false,
             format: "markdown",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+        }),
+        new GenericStringField({
+            columnName: "aliases",
+            allowNull: false,
+            format: "plain",
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
@@ -215,7 +228,6 @@ export const xSong = new db3.xTable({
             fkMember: "visiblePermissionId",
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
-
         new TagsField<SongTagAssociationPayload>({
             columnName: "tags",
             associationForeignIDMember: "tagId",
@@ -225,7 +237,16 @@ export const xSong = new db3.xTable({
             associationTableID: "SongTagAssociation",
             foreignTableID: "SongTag",
             authMap: xSongAuthMap_R_EOwn_EManagers,
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.SongWhereInput | boolean => {
+                if (!query.tagIds?.length) return false;
+                const tagIds = query!.tagIds;
+
+                return {
+                    AND: tagIds.map(tagId => ({
+                        tags: { some: { tagId: { equals: tagId } } }
+                    }))
+                };
+            },
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
                 tags: {
                     some: {
@@ -238,12 +259,32 @@ export const xSong = new db3.xTable({
                 }
             }),
         }),
+        new TagsField<SongTaggedFilesPayload>({
+            columnName: "taggedFiles",
+            foreignTableID: "File",
+            associationTableID: "FileSongTag",
+            associationForeignIDMember: "fileId",
+            associationForeignObjectMember: "file",
+            authMap: xSongAuthMap_R_EOwn_EManagers,
+            associationLocalIDMember: "songId",
+            associationLocalObjectMember: "song",
+            getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.SongWhereInput | boolean => false,
+        }), // tags
+
+        new GhostField({ memberName: "credits", authMap: xSongAuthMap_R_EOwn_EManagers }),
     ]
+};
+
+export const xSong = new db3.xTable(xSongArgs_Base);
+
+export const xSong_Verbose = new db3.xTable({
+    ...xSongArgs_Base,
+    tableUniqueName: "xSong_Verbose",
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
+        return SongArgs_Verbose.include;
+    },
 });
-
-
-
-
 
 ////////////////////////////////////////////////////////////////
 export const xSongCreditType = new db3.xTable({

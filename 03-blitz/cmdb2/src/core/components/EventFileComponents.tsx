@@ -171,7 +171,7 @@ export const EventFileEditor = (props: EventFileEditorProps) => {
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "fileLeafName", cellWidth: 150 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-            new DB3Client.BoolColumnClient({ columnName: "isDeleted" }), // todo: hide this.
+            //new DB3Client.BoolColumnClient({ columnName: "isDeleted" }), // todo: hide this.
 
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
 

@@ -29,6 +29,7 @@ import updateSettingMutation from "src/auth/mutations/updateSetting";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import * as ClientAPILL from "./clientAPILL";
+import getPopularSongTags from "src/auth/queries/getPopularSongTags";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -370,15 +371,7 @@ class EventsAPI {
     // }
 
     getURIForEvent(eventOrEventIdOrSlug: number | string | db3.EventPayloadMinimum, tabSlug?: string) {
-        return ClientAPILL.getURIForEvent(eventOrEventIdOrSlug);
-        // const tabPart = tabSlug ? `/${tabSlug}` : "";
-
-        // if (typeof eventOrEventIdOrSlug === 'object') {
-        //     if (eventOrEventIdOrSlug.slug) {
-        //         return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug.slug}${tabPart}`);
-        //     }
-        // }
-        // return getAbsoluteUrl(`/backstage/event/${eventOrEventIdOrSlug}${tabPart}`);
+        return ClientAPILL.getURIForEvent(eventOrEventIdOrSlug, tabSlug);
     }
 
     getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {
@@ -472,13 +465,8 @@ class EventsAPI {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class SongsAPI {
 
-    getURIForSong(songOrIdOrSlug: number | string | db3.SongPayloadMinimum) {
-        if (typeof songOrIdOrSlug === 'object') {
-            if (songOrIdOrSlug.slug) {
-                return `/backstage/song/${songOrIdOrSlug.slug}`;
-            }
-        }
-        return `/backstage/song/${songOrIdOrSlug}`;
+    getURIForSong(songOrIdOrSlug: number | string | db3.SongPayloadMinimum, tabSlug?: string) {
+        return ClientAPILL.getURIForSong(songOrIdOrSlug, tabSlug);
     }
 
     getFormattedBPM(song: db3.SongPayloadMinimum) {
@@ -497,6 +485,10 @@ class SongsAPI {
         }
         return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
     }
+
+    usePopularSongTagsQuery = () => {
+        return useQuery(getPopularSongTags, {}, gQueryOptions.default);
+    };
 
 };
 

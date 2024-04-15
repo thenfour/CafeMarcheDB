@@ -554,6 +554,7 @@ it's not often you'll actually want markdown that's really wide.
   /* margin-bottom: 12px; */
 }
 
+/* this is a vertical column, allowing for a title + subtitle */
 .contentSection .titleText {
   font-size: 38px;
   font-weight: bold;
@@ -561,6 +562,16 @@ it's not often you'll actually want markdown that's really wide.
   text-transform: uppercase;
   /* margin: 3px 0px; */
   margin-right: 20px;
+}
+
+.contentSection .titleText .subtitle {
+  color: #ccc;
+  font-size: 18px;
+  font-weight: normal;
+  /*hug the title a bit*/
+  /* line-height: 20px; */
+  margin-top: -10px;
+  font-style: italic;
 }
 
 .contentSection.rehearsal .titleText {

@@ -803,6 +803,7 @@ export const xEventSongList = new db3.xTable({
             getQuickFilterWhereClause: (query: string): Prisma.EventSongListWhereInput | boolean => false,
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
         }),
+        new GhostField({ memberName: "userId", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 

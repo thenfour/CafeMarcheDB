@@ -434,26 +434,4 @@ const ViewEventsPage: BlitzPage = (props) => {
     )
 }
 
-
-export const getServerSideProps = async ({ params }) => {
-    console.log(`getServerSideProps!`);
-    console.log(params);
-    return { props: { hi: 3 } }
-}
-
-//   function PostPage({ post }) {
-//     return (
-//       <>
-//         <Head>
-//           <title>{post.title}</title>
-//         </Head>
-//         <div>
-//           <h1>{post.title}</h1>
-//           <p>{post.content}</p>
-//         </div>
-//       </>
-//     )
-//   }
-
-
 export default ViewEventsPage;

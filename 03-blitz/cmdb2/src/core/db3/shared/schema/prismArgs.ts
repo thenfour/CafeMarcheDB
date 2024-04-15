@@ -391,6 +391,7 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
 
 
 ////////////////////////////////////////////////////////////////
+// a medium-verbosity song payload, used for non-primary things like song lists etc.
 export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
     include: {
         createdByUser: true,
@@ -409,6 +410,8 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
 
 export type SongPayload = Prisma.SongGetPayload<typeof SongArgs>;
 export type SongPayloadMinimum = Prisma.SongGetPayload<{}>;
+
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -482,6 +485,53 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
 );
 export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>;
 
+
+
+
+
+////////////////////////////////////////////////////////////////
+// for full song page display.
+export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
+    include: {
+        visiblePermission: VisiblePermissionInclude,
+        createdByUser: true,
+        tags: {
+            include: {
+                tag: true, // include foreign object
+            },
+            //orderBy: SongTagNaturalOrderBy, <-- why doesn't this work?
+        },
+        taggedFiles: {
+            include: {
+                file: FileWithTagsArgs,
+            },
+            orderBy: { file: { uploadedAt: 'desc' } }
+        },
+        credits: {
+            include: {
+                type: true,
+                user: true,
+            },
+        }
+        // comments
+        // songLists   EventSongListSong[]
+    }
+});
+
+export type SongPayload_Verbose = Prisma.SongGetPayload<typeof SongArgs_Verbose>;
+
+
+
+export type SongTaggedFilesPayload = Prisma.FileSongTagGetPayload<{
+    include: {
+        file: typeof FileWithTagsArgs,
+    }
+}>;
+
+
+
+
+////////////////////////////////////////////////////////////////
 
 export const EventTagAssignmentArgs = Prisma.validator<Prisma.EventTagAssignmentArgs>()({
     include: {

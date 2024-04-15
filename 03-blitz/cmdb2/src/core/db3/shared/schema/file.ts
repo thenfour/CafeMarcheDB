@@ -2,7 +2,7 @@
 import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { BoolField, ForeignSingleField, GenericIntegerField, GenericStringField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
@@ -108,6 +108,7 @@ export const xFileTag = new db3.xTable({
         MakeSortOrderField("sortOrder", { authMap: xFileAuthMap_AdminObjects }),
         MakeColorField("color", { authMap: xFileAuthMap_AdminObjects }),
         MakeSignificanceField("significance", FileTagSignificance, { authMap: xFileAuthMap_AdminObjects }),
+        new GhostField({ memberName: "fileAssignments", authMap: xFileAuthMap_AdminObjects }),
     ]
 });
 

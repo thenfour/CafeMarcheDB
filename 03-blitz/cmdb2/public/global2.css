@@ -1802,3 +1802,16 @@ in particular the date range picker is wide.*/
 .adminControlFrame:hover {
     border: 2px solid #fcc;
 }
+
+.titleLink {
+    display: flex;
+    align-items: center;
+    ;
+}
+
+/* song introduced year, which is placed after the title but on the same line */
+span.titleTag {
+    color: #ccc;
+    font-size: 30px;
+    font-weight: normal;
+}

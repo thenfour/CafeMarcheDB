@@ -7,15 +7,15 @@ export default resolver.pipe(
     resolver.authorize(Permission.login),
     async (args, ctx: AuthenticatedCtx) => {
         try {
-            const contextDesc = `getPopularEventTags`;
+            const contextDesc = `getPopularSongTags`;
             //CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
 
-            const items = await db.eventTag.findMany({
+            const items = await db.songTag.findMany({
                 include: {
-                    events: true,
+                    songs: true,
                 },
                 orderBy: {
-                    events: {
+                    songs: {
                         _count: "desc",
                     }
                 },
