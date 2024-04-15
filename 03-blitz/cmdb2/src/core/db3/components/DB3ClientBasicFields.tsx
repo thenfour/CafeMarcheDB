@@ -846,3 +846,82 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
         return <>{value.toTimeString()} {ageStr}</>; // todo
     };
 };
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface DateTimeColumnArgs {
+    columnName: string;
+    fieldCaption?: string;
+    className?: string;
+};
+
+
+export class DateTimeColumn extends DB3ClientCore.IColumnClient {
+    //typedSchemaColumn: db3fields.CreatedAtField;
+
+    constructor(args: DateTimeColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: 150,
+            visible: true,
+            className: args.className,
+            fieldCaption: args.fieldCaption,
+            fieldDescriptionSettingName: null,
+        });
+    }
+    ApplyClientToPostClient = undefined;
+
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+        //this.typedSchemaColumn = this.schemaColumn as db3fields.CreatedAtField;
+        this.GridColProps = {
+            type: "dateTime",
+            renderCell: (params: GridRenderCellParams) => {
+                const value = params.value as Date;
+                const now = new Date();
+                const ageStr = `(${formatTimeSpan(value, now)} ago)`;
+                return <>{value.toTimeString()} {ageStr}</>; // todo
+            },
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const value = params.value as Date;
+                const now = new Date();
+                //const age = new TimeSpan(now.valueOf() - value.valueOf());
+                const ageStr = `(${formatTimeSpan(now, value)} ago)`;
+                return <>{value.toTimeString()} {ageStr}</>; // todo
+            },
+        };
+    };
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<Date>) => {
+        const value = params.value;
+        const now = new Date();
+        const ageStr = `(${formatTimeSpan(value, now)} ago)`;
+        return DB3ClientCore.RenderBasicNameValuePair({
+            key: params.key,
+            className: params.className,
+            name: this.columnName,
+            value: <>{value.toTimeString()} {ageStr}</>, // todo,
+            isReadOnly: !this.editable,
+            fieldName: this.columnName,
+        })
+    };
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "new", clientIntention: params.clientIntention });
+
+        // set the calculated value in the object.
+        if (params.value === undefined && vr.values) {
+            params.api.setFieldValues(vr.values);
+        }
+
+        //const value = vr.parsedValue as Date;
+        const value = params.row[this.columnName];
+        const now = new Date();
+        //const age = new TimeSpan(now.valueOf() - value.valueOf());
+        const ageStr = `(${formatTimeSpan(now, value)} ago)`;
+        return <>{value.toTimeString()} {ageStr}</>; // todo
+    };
+};

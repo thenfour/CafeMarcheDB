@@ -47,12 +47,13 @@ const MainContent = () => {
 
             new DB3Client.GenericStringColumnClient({ columnName: "action", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
+            //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "table", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
+            //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "oldValues", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "newValues", cellWidth: 150 }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 150 }),
+            new DB3Client.DateTimeColumn({ columnName: "changedAt" }),
         ],
     });
 
