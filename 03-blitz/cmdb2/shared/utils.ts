@@ -294,6 +294,11 @@ export const CoerceToString = (value: any): string => {
     return `${value}`;
 };
 
+export const CoerceToBoolean = (value: any, defaultVal: boolean): boolean => {
+    if (value == null) return defaultVal;
+    return !!value;
+};
+
 export const ValidateNullableInt = (arg) => {
     return arg === null || Number.isInteger(arg);
 };

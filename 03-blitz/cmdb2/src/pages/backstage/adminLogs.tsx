@@ -123,6 +123,7 @@ const MainContent = () => {
             }
         />
         <DB3EditGrid
+            readOnly={true}
             tableSpec={tableSpec}
             tableParams={{
                 tableNames,

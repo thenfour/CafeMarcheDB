@@ -29,7 +29,7 @@ import { useBeforeunload } from 'react-beforeunload';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
-import { TAnyModel } from 'shared/utils';
+import { CoerceToBoolean, CoerceToNumber, TAnyModel } from 'shared/utils';
 import * as db3 from '../db3';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { gIconMap } from './IconSelectDialog';
@@ -94,10 +94,12 @@ export type DB3EditGridProps = {
     tableSpec: DB3Client.xTableClientSpec,
     renderExtraActions?: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
     tableParams?: TAnyModel,
+    readOnly?: boolean,
 };
 
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const readOnly = CoerceToBoolean(props.readOnly, false);
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
@@ -320,7 +322,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         const c: GridColDef = {
             field: column.columnName,
             headerName: column.headerName,
-            editable: column.editable,
+            editable: !readOnly && column.editable,
             width: column.width,
         };
         if (column.GridColProps) {
@@ -357,14 +359,14 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                 }
 
                 return [
-                    <GridActionsCellItem
+                    readOnly ? <></> : <GridActionsCellItem
                         icon={<EditIcon className="hoverActionIcon" />}
                         key="edit"
                         label="Edit"
                         onClick={handleEditClick(id)}
                         color="inherit"
                     />,
-                    <GridActionsCellItem
+                    readOnly ? <></> : <GridActionsCellItem
                         icon={<DeleteIcon className="hoverActionIcon" />}
                         key="delete"
                         label="Delete"
