@@ -17,7 +17,7 @@ import {
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import React from "react";
-import { ColorVariationSpec, StandardVariationSpec } from "shared/color";
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { Coalesce, SettingKey, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
@@ -47,9 +47,12 @@ export interface RenderAsChipParams<T> {
 
 
 export interface ForeignSingleFieldInputProps<TForeign> {
+    // stuff that could be just passing in a table spec...
     columnName: string;
     tableName: string;
     foreignSpec: ForeignSingleFieldClient<TForeign>;
+    allowNull: boolean;
+
     value: TForeign | null;
     onChange: (value: TForeign | null) => void;
     validationError?: string | null;
@@ -83,29 +86,39 @@ export const ForeignSingleFieldInlineValues = <TForeign,>(props: ForeignSingleFi
         return ret;
     };
 
-    const handleItemClick = (value) => {
+    const handleItemClick = (value: TForeign | null) => {
         props.onChange(value);
     };
 
-    return <>
-        {
-            items.map(item => {
-                const selected = isEqual(item, props.value);
-                return <React.Fragment key={item[props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
-                    {props.foreignSpec.args.renderAsChip!({
-                        value: item,
-                        onDelete: selected ? (() => { }) : undefined,
-                        onClick: () => handleItemClick(item),
-                        colorVariant: {
-                            selected,
-                            enabled: true,
-                            variation: selected ? "strong" : "weak",
-                            fillOption: "filled",
-                        }
-                    })}</React.Fragment>
-
-            })
+    const nullItem = props.allowNull && props.foreignSpec.args.renderAsChip!({
+        value: null,
+        onClick: () => handleItemClick(null),
+        colorVariant: {
+            selected: props.value === null,
+            enabled: true,
+            variation: (props.value === null) ? "strong" : "weak",
+            fillOption: "filled",
         }
+    });
+
+    return <>
+        {nullItem}
+        {items.map(item => {
+            const selected = isEqual(item, props.value);
+            return <React.Fragment key={item[props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
+                {props.foreignSpec.args.renderAsChip!({
+                    value: item,
+                    onDelete: selected ? (() => { }) : undefined,
+                    onClick: () => handleItemClick(item),
+                    colorVariant: {
+                        selected,
+                        enabled: true,
+                        variation: selected ? "strong" : "weak",
+                        fillOption: "filled",
+                    }
+                })}</React.Fragment>
+
+        })}
     </>;
 };
 
@@ -191,7 +204,11 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
 
 
 
-
+export interface ForeignSingleFieldNullItemInfo {
+    label: string;
+    color: ColorPaletteEntry | string | null;
+    tooltip: string | null;
+};
 
 export interface ForeignSingleFieldClientArgs<TForeign> {
     columnName: string;
@@ -209,6 +226,7 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
 
     selectStyle?: "inline" | "dialog";
     inlineSelectMoreButtonText?: React.ReactNode;
+    nullItemInfo?: ForeignSingleFieldNullItemInfo; // for displaying a null item, which of course has no db info... especially useful for visiblePermissionId where a null value represents "private visibility" so displaying "NULL" or "--" is especially bad.
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -245,7 +263,19 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
     defaultRenderAsChip = (args: RenderAsChipParams<TForeign>) => {
         if (!args.value) {
-            return <>--</>;
+            const caption = this.args.nullItemInfo?.label || "--";
+            const color = this.args.nullItemInfo?.color || null;
+            const tooltip = this.args.nullItemInfo?.tooltip || null;
+            return <CMChip
+                className={"foreignSingleValue nullValue"}
+                color={color}
+                tooltip={tooltip}
+                onClick={args.onClick}
+                variation={args.colorVariant}
+                shape="rectangle" // because tags are round
+            >
+                {caption}
+            </CMChip>;
         }
 
         const rowInfo = this.typedSchemaColumn.getForeignTableSchema().getRowInfo(args.value);
@@ -273,13 +303,6 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             {selected && <CloseIcon />}
         </div>
     };
-
-    // renderViewer = (params: RenderViewerArgs<TForeign>) => RenderBasicNameValuePair({
-    //     key: params.key,
-    //     className: params.className,
-    //     name: this.columnName,
-    //     value: <>{this.defaultRenderAsChip({ value: params.value, colorVariant: StandardVariationSpec.Strong })}</>,
-    // });
 
     renderViewer = (params: RenderViewerArgs<TForeign>) => this.defaultRenderer({
         //key: params.key,
@@ -352,6 +375,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                 return <ForeignSingleFieldInput
                     tableName={this.schemaTable.tableName}
                     columnName={this.columnName}
+                    allowNull={this.typedSchemaColumn.allowNull}
                     validationError={vr.result === "success" ? null : vr.errorMessage || null}
                     selectStyle={this.selectStyle}
                     clientIntention={this.foreignClientIntention}
@@ -394,6 +418,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                     foreignSpec={this}
                     tableName={this.schemaTable.tableName}
                     columnName={this.columnName}
+                    allowNull={this.typedSchemaColumn.allowNull}
                     selectStyle={this.selectStyle}
                     readOnly={!!this.fixedValue}
                     clientIntention={this.foreignClientIntention}

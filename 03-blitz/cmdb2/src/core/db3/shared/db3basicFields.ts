@@ -18,7 +18,7 @@
 
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
-import { TAnyModel } from "shared/utils";
+import { CoerceToBoolean, TAnyModel } from "shared/utils";
 import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_Mono, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 import { DateTimeRange, DateTimeRangeSpec } from "shared/time";
 import { assert } from "blitz";
@@ -149,6 +149,7 @@ export type GenericStringFieldArgs = {
     // minLength?: number;
     caseSensitive?: boolean;
     // doTrim?: boolean;
+    allowQuickFilter?: boolean;
 } & DB3AuthSpec;
 
 export class GenericStringField extends FieldBase<string> {
@@ -157,6 +158,7 @@ export class GenericStringField extends FieldBase<string> {
     minLength: number;
     doTrim: boolean;
     format: StringFieldFormatOptions;
+    allowQuickFilter: boolean;
 
     constructor(args: GenericStringFieldArgs) {
         super({
@@ -170,6 +172,7 @@ export class GenericStringField extends FieldBase<string> {
 
         this.format = args.format;
         this.allowNull = args.allowNull;
+        this.allowQuickFilter = CoerceToBoolean(args.allowQuickFilter, args.format !== "markdown");
 
         switch (args.format) {
             case "email":
@@ -205,6 +208,7 @@ export class GenericStringField extends FieldBase<string> {
     connectToTable = (table: xTable) => { };
 
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
+        if (!this.allowQuickFilter) return false;
         return { [this.member]: { contains: query } };
     };
 
@@ -1190,6 +1194,7 @@ export const MakeMarkdownTextField = (columnName: string, authSpec: DB3AuthSpec)
     new GenericStringField({
         columnName,
         allowNull: false,
+        allowQuickFilter: false,
         format: "markdown",
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
@@ -1199,6 +1204,7 @@ export const MakeTitleField = (columnName: string, authSpec: DB3AuthSpec) => (
         columnName: columnName,
         allowNull: false,
         format: "title",
+        allowQuickFilter: true,
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     }));

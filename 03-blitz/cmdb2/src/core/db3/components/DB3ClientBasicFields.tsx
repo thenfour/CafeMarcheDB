@@ -366,19 +366,15 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         const val = params.value as (number | null);
         // for values which are not numeric, simply display as "".
         const displayValue = (val == null) || isNaN(val) ? "" : `${val}`;
-        //console.log(`asString:${asString}, displayValue:${displayValue}, value:${params.value}`);
-        return <CMTextField
-            key={params.key}
-            autoFocus={false}
-            label={this.headerName}
-            validationError={params.validationResult && params.validationResult.getErrorForField(this.columnName)}
-            value={displayValue}
-            onChange={(e, val) => {
-                // so this sets the row model value to a string. that's OK because the value gets parsed later.
-                // in fact it's convenient because it allows temporarily-invalid inputs instead of joltingly changing the user's own input.
+
+        return this.defaultRenderer({
+            isReadOnly: !this.editable,
+            validationResult: params.validationResult,
+            className: `field_${this.columnName}`,
+            value: <CMTextInputBase value={displayValue} readOnly={!this.editable} onChange={(e, val) => {
                 params.api.setFieldValues({ [this.columnName]: CoerceToNumberOrNull(val) });
-            }}
-        />;
+            }} />,
+        });
     };
 };
 

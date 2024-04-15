@@ -35,7 +35,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
                 SongClientColumns.name,
                 SongClientColumns.aliases,
                 SongClientColumns.slug,
-                SongClientColumns.description,
+                //SongClientColumns.description,
                 SongClientColumns.startBPM,
                 SongClientColumns.endBPM,
                 SongClientColumns.introducedYear,

@@ -632,6 +632,23 @@ it's not often you'll actually want markdown that's really wide.
   text-transform: uppercase;
 }
 
+
+.contentSection .contentRow {
+  display: flex;
+  align-items: baseline;
+}
+
+.contentSection .contentRow>* {
+  margin-right: 10px;
+}
+
+
+.contentSection .contentRow.EmphasizedProperty {
+  font-size: 24px;
+  color: #888;
+}
+
+
 .contentSection .approvalSummaryLine {
   display: flex;
   align-items: center;
@@ -812,4 +829,25 @@ table td {
 .columnName-name input {
   font-weight: bold;
   font-size: 20px;
+}
+
+
+div.SingleLineNameValuePairContainer {
+  display: flex;
+  align-items: center;
+  width: min-content;
+  border: 2px solid #ddd;
+}
+
+
+div.SingleLineNameValuePairContainer>div.name {
+  /* for multi-row alignment */
+  width: 100px;
+  background-color: #ddd;
+}
+
+
+div.SingleLineNameValuePairContainer>div.value {
+  /* for multi-row alignment */
+  width: 120px;
 }

@@ -90,6 +90,16 @@ export interface TupdateEventBasicFieldsArgs {
     frontpageTags?: string | null; // null, use normal
 }
 
+
+
+export interface TupdateSongBasicFieldsArgs {
+    songId: number;
+    description?: string;
+}
+
+
+
+
 export interface TupdateUserPrimaryInstrumentMutationArgs {
     userId: number;
     instrumentId: number;

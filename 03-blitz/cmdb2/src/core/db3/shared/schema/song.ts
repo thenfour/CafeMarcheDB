@@ -188,6 +188,7 @@ const xSongArgs_Base: db3.TableDesc = {
         new GenericStringField({
             columnName: "aliases",
             allowNull: false,
+            allowQuickFilter: true,
             format: "plain",
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),

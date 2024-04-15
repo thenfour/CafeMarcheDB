@@ -9,7 +9,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
-import { Timing } from 'shared/time';
+import { Timing, formatSongLength } from 'shared/time';
 import { IsNullOrWhitespace } from 'shared/utils';
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
@@ -47,7 +47,13 @@ export const SongClientColumns = {
     lengthSeconds: new DB3Client.GenericIntegerColumnClient({ columnName: "lengthSeconds", cellWidth: 100 }),
     tags: new DB3Client.TagsFieldClient({ columnName: "tags", cellWidth: 200, allowDeleteFromCell: false }),
     createdByUser: new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
-    visiblePermission: new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
+    visiblePermission: new DB3Client.ForeignSingleFieldClient({
+        columnName: "visiblePermission", cellWidth: 120, nullItemInfo: {
+            label: "Private",
+            color: "red",
+            tooltip: "Only you will be able to view this item for now. You can make it public later when you're ready."
+        }
+    }),
 };
 
 ////////////////////////////////////////////////////////////////
@@ -90,7 +96,36 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.SongPayloadMinimum, refetch: () => void, readonly: boolean }) => {
+    const mutationToken = API.songs.updateSongBasicFields.useToken();
 
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const authorized = db3.xEvent.authorizeColumnForEdit({
+        model: null,
+        columnName: "description",
+        clientIntention,
+        publicData,
+    });
+
+    return <MutationMarkdownControl
+        initialValue={song.description}
+        refetch={refetch}
+        readonly={readonly || !authorized}
+        onChange={(newValue) => mutationToken.invoke({
+            songId: song.id,
+            description: newValue || "",
+        })}
+    />;
+};
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const gSongDetailTabSlugIndices = {
     "info": 0,
     "credits": 1,
@@ -136,11 +171,14 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
     const visInfo = API.users.getVisibilityInfo(song);
 
+    const formattedBPM = API.songs.getFormattedBPM(song);
+    const formattedLength = !!song.lengthSeconds ? formatSongLength(song.lengthSeconds) : null;
+
     return <div className={`EventDetail contentSection event ${visInfo.className}`}>
         <div className='header'>
 
             <div className="location smallInfoBox">
-                <span className="text">some text</span>
+                <span className="text">&nbsp;</span>
             </div>
             <div className='flex-spacer'></div>
             <VisibilityValue permission={song.visiblePermission} variant='verbose' />
@@ -195,9 +233,13 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
             </div>
 
+            {formattedLength && <div className='contentRow EmphasizedProperty SongLength SingleLineNameValuePairContainer'>
+                <div className='name'>Length</div><div className='value'>{formattedLength}</div>
+            </div>}
 
-
-
+            {formattedBPM && <div className='contentRow EmphasizedProperty BPM SingleLineNameValuePairContainer'>
+                <div className='name'>BPM</div><div className='value'>{formattedBPM}</div>
+            </div>}
 
             <Tabs
                 value={selectedTab}
@@ -211,7 +253,8 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
             </Tabs>
 
             <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.info}>
-                <Markdown markdown={song.description} />
+                {/* <Markdown markdown={song.description} /> */}
+                <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
             </CustomTabPanel>
 
             <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.credits}>

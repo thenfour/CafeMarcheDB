@@ -6,7 +6,7 @@ import { InputBase } from "@mui/material";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { gQueryOptions, toggleValueInArray } from "shared/utils";
+import { TAnyModel, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -15,7 +15,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { SongClientColumns, SongDetail } from "src/core/components/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
-import { DB3EditRowButton } from "src/core/db3/components/db3NewObjectDialog";
+import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -114,6 +114,15 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
 
+    const filterModel = {
+        quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
+        items: [],
+        tagIds: filterSpec.tagFilter,
+        tableParams: {
+            // todo
+        }
+    };
+
     const songsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
             table: db3.xSong_Verbose,
@@ -121,14 +130,7 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
                 new DB3Client.PKColumnClient({ columnName: "id" }),
             ],
         }),
-        filterModel: {
-            quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
-            items: [],
-            tagIds: filterSpec.tagFilter,
-            tableParams: {
-                // todo
-            }
-        },
+        filterModel,
         paginationModel: {
             page: 0,
             pageSize: filterSpec.recordCount,
@@ -143,6 +145,13 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
     React.useEffect(() => {
         songsClient.refetch();
     }, [filterSpec]);
+
+    // console.log(`calculating song where clause`);
+    // //const wc = songsClient.schema.GetQuickFilterWhereClauseExpression("roger", clientIntention);
+    // songsClient.schema.CalculateWhereClause({ filterModel, clientIntention, skipVisibilityCheck: true }).then(wc => {
+    //     console.log(`calculated song where clause`);
+    //     console.log(wc);
+    // });
 
     return <div className="songsList">
         {items.map(song => <SongDetail key={song.id} readonly={true} song={song} tableClient={songsClient} isOnlySongVisible={false} allowRouterPush={false} />)}
@@ -178,7 +187,7 @@ const MainContent = () => {
             SongClientColumns.name,
             SongClientColumns.aliases,
             SongClientColumns.slug,
-            SongClientColumns.description,
+            //SongClientColumns.description,
             SongClientColumns.startBPM,
             SongClientColumns.endBPM,
             SongClientColumns.introducedYear,
@@ -196,9 +205,16 @@ const MainContent = () => {
         tableSpec: songTableSpec,
     });
 
-    const handleSave = (obj) => {
-        songTableClient.doInsertMutation(obj).then(() => {
+    const refetch = async () => {
+        setControlSpec({ ...controlSpec, refreshSerial: controlSpec.refreshSerial + 1 });
+        await songTableClient.refetch();
+    };
+
+    const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        songTableClient.doInsertMutation(obj).then(async () => {
             showSnackbar({ severity: "success", children: "success" });
+            await refetch();
+            api.closeDialog();
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "error" });

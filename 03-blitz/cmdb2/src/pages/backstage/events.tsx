@@ -375,6 +375,10 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
         eventsClient.refetch();
     }, [filterSpec]);
 
+    // console.log(`calculating where clause`);
+    // const wc = eventsClient.schema.GetQuickFilterWhereClauseExpression("sill", clientIntention);
+    // console.log(wc);
+
     return <>
         {eventsClient.items.map(event => <EventDetail key={event.id} readonly={true} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} isOnlyEventVisible={false} allowRouterPush={false} />)}
     </>;

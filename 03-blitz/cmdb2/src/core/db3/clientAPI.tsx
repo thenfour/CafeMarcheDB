@@ -30,6 +30,7 @@ import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttend
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import * as ClientAPILL from "./clientAPILL";
 import getPopularSongTags from "src/auth/queries/getPopularSongTags";
+import updateSongBasicFields from "./mutations/updateSongBasicFields";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -490,6 +491,7 @@ class SongsAPI {
         return useQuery(getPopularSongTags, {}, gQueryOptions.default);
     };
 
+    updateSongBasicFields = CreateAPIMutationFunction(updateSongBasicFields);
 };
 
 
