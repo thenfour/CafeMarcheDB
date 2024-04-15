@@ -32,7 +32,7 @@ const SettingsControls = (props) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const onCopy = async () => {
-        const txt = JSON.stringify(items);
+        const txt = JSON.stringify(items, null, 2);
         console.log(items);
         await navigator.clipboard.writeText(txt);
         showSnackbar({ severity: "success", children: `Copied ${items.length} settings to clipboard (${txt.length} characters)` });

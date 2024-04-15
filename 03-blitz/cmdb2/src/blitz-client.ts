@@ -1,8 +1,8 @@
-import { AuthClientPlugin } from "@blitzjs/auth"
+import { AuthClientPlugin, AuthPluginClientOptions } from "@blitzjs/auth"
 import { setupBlitzClient } from "@blitzjs/next"
 import { BlitzRpcPlugin } from "@blitzjs/rpc"
 
-export const authConfig = {
+export const authConfig: AuthPluginClientOptions = {
   cookiePrefix: "cmdb",
 }
 

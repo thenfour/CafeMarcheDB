@@ -183,6 +183,7 @@ export enum Setting {
     RolesAdminPage_markdown = "RolesAdminPage_markdown",
     settings_markdown = "settings_markdown",
     songs_markdown = "songs_markdown",
+    AdminLogsPage_markdown = "AdminLogsPage_markdown",
     UserInstrumentsPage_markdown = "UserInstrumentsPage_markdown",
 };
 
@@ -499,7 +500,6 @@ export function isEmptyArray(obj: any) {
     return 0 === ((obj as any[]).length);
 }
 
-
 export function moveItemInArray<T>(array: T[], oldIndex: number, newIndex: number): T[] {
     if (oldIndex === newIndex) {
         return array; // No need to move if oldIndex and newIndex are the same
@@ -521,19 +521,33 @@ export function moveItemInArray<T>(array: T[], oldIndex: number, newIndex: numbe
     return newArray;
 }
 
+export function existsInArray<T>(
+    array: T[],
+    id: T,
+    compareFn: (a: T, b: T) => boolean = (a, b) => a === b
+): boolean {
+    const index = array.findIndex(item => compareFn(item, id));
+    return (index !== -1);
+}
+
 // adds or removes a value in an array. ordering is assumed to not matter.
 // returns a new array with the change made.
-export function toggleValueInArray<T>(array: T[], id: T): T[] {
-    const index = array.indexOf(id);
+export function toggleValueInArray<T>(
+    array: T[],
+    id: T,
+    compareFn: (a: T, b: T) => boolean = (a, b) => a === b
+): T[] {
+    const index = array.findIndex(item => compareFn(item, id));
     const newArray = [...array];  // Create a copy of the array to avoid mutating the original array
+
     if (index === -1) {
         newArray.push(id);
     } else {
         newArray.splice(index, 1);
     }
+
     return newArray;
 }
-
 
 
 export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTimeout(() => {

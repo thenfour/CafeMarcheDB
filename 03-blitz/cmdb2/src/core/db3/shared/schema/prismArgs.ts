@@ -1072,6 +1072,40 @@ export const FrontpageGalleryItemNaturalOrderBy: Prisma.FrontpageGalleryItemOrde
     { id: 'asc' },
 ];
 
+
+
+
+
+
+
+
+export const ChangeArgs = Prisma.validator<Prisma.ChangeDefaultArgs>()({
+    include: {
+        user: true,
+    }
+});
+
+export type ChangePayload = Prisma.ChangeGetPayload<typeof ChangeArgs>;
+
+export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
+    { changedAt: 'desc' },
+];
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // always returns valid
 // export const getGalleryImageDisplayParams = (f: FrontpageGalleryItemPayload): ImageEditParams => {
 //     return parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
