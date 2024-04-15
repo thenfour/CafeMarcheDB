@@ -89,6 +89,15 @@ const MainContent = () => {
     filterSourceData.tableNames.sort((a, b) => a.tableName.localeCompare(b.tableName));
     filterSourceData.users.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
+    // items that are filtered and selected need to still be shown despite filter
+    // is filtered out
+    // AND is in selection
+    const tableNamePassesFilter = (n: { tableName: string }): boolean => IsNullOrWhitespace(tableNameFilter) ? true : n.tableName.toLowerCase().includes(tableNameFilter);
+    const visibleFilteredTableNames = filterSourceData.tableNames.filter(n => !tableNamePassesFilter(n) && existsInArray(tableNames, n.tableName.toLowerCase()));
+
+    const userPassesFilter = (n: AdHocUser): boolean => IsNullOrWhitespace(userNameFilter) ? true : (n.name.toLowerCase().includes(userNameFilter) || n.email.toLowerCase().includes(userNameFilter));
+    const visibleFilteredUsers = filterSourceData.users.filter(n => !userPassesFilter(n) && existsInArray(users, n, AdHocUsersEqual));
+
     return <>
         <SettingMarkdown setting="AdminLogsPage_markdown"></SettingMarkdown>
         <DB3Client.NameValuePair
@@ -98,7 +107,15 @@ const MainContent = () => {
                 <div>
                     <CMTextInputBase onChange={(e, v) => setTableNameFilter(v.toLowerCase())} value={tableNameFilter} />
                     <CMChipContainer>
-                        {filterSourceData.tableNames.filter(n => IsNullOrWhitespace(tableNameFilter) ? true : n.tableName.toLowerCase().includes(tableNameFilter)).map(n => tableButton(n.tableName))}
+                        {filterSourceData.tableNames
+                            .filter(n => tableNamePassesFilter(n))
+                            .map(n => tableButton(n.tableName))
+                        }
+                    </CMChipContainer>
+                    <CMChipContainer>
+                        {visibleFilteredTableNames
+                            .map(n => tableButton(n.tableName))
+                        }
                     </CMChipContainer>
                 </div>
             }
@@ -110,7 +127,15 @@ const MainContent = () => {
                 <div>
                     <CMTextInputBase onChange={(e, v) => setUserNameFilter(v.toLowerCase())} value={userNameFilter} />
                     <CMChipContainer>
-                        {filterSourceData.users.filter(n => IsNullOrWhitespace(userNameFilter) ? true : (n.name.toLowerCase().includes(userNameFilter) || n.email.toLowerCase().includes(userNameFilter))).map(n => userButton(n))}
+                        {filterSourceData.users
+                            .filter(n => IsNullOrWhitespace(userNameFilter) ? true : (n.name.toLowerCase().includes(userNameFilter) || n.email.toLowerCase().includes(userNameFilter)))
+                            .map(n => userButton(n))
+                        }
+                    </CMChipContainer>
+                    <CMChipContainer>
+                        {visibleFilteredUsers
+                            .map(n => userButton(n))
+                        }
                     </CMChipContainer>
                 </div>
             }
