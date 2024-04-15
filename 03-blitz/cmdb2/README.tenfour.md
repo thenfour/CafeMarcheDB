@@ -211,10 +211,14 @@ will show clearly on the command line.
 
 # Logging
 
-  * `\src\pages\api\rpc\[[...blitz]].ts` contains `rpcHandler({onError: console.log})`
-  * `node_modules\blitz\dist\index-server.d.ts`
+  * `\src\pages\api\rpc\[[...blitz]].ts` configures RPC logging and contains `rpcHandler({onError: console.log})` but i don't quite understand the idea here behind the `console.log`. Verbosity is also set here and is important because verbose means logging all RPC input & output payloads.
+  * `src\blitz-server.ts` configures the main logger.
   * See: https://blitzjs.com/docs/logging and https://blitzjs-com-git-siddhsuresh-blitz-rpc-verbose-blitzjs.vercel.app/docs/rpc-config#blitz-rpc-logging
 
+  * TODO:
+    * log to file?
+    * viewing logs?
+    * clearing / splitting logs etc
 
 # DB3 components
 
