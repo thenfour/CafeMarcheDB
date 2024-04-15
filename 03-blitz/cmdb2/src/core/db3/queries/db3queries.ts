@@ -2,14 +2,14 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import { CMDBAuthorizeOrThrow } from "types";
 import * as mutationCore from "../server/db3mutationCore"
 import { TAnyModel } from "shared/utils";
 
 export default resolver.pipe(
     //resolver.authorize("db3query", Permission.login),
-    async (input: db3.QueryInput, ctx: AuthenticatedMiddlewareCtx) => {
+    async (input: db3.QueryInput, ctx: AuthenticatedCtx) => {
         try {
             const table = db3.GetTableById(input.tableID);
             console.assert(!!table);

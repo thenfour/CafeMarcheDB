@@ -1,6 +1,6 @@
 // updateEventSongListMutation
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -11,7 +11,7 @@ import { CreateChangeContext } from "shared/utils";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TinsertOrUpdateEventSongListArgs, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: TinsertOrUpdateEventSongListArgs, ctx: AuthenticatedCtx) => {
 
         if (!args.id) {
             throw new Error(`can't update a song list without a pk`);

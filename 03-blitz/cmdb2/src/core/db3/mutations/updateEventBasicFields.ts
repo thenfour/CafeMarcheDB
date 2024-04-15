@@ -1,6 +1,6 @@
 // updateEventBasicFields
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -10,7 +10,7 @@ import { TupdateEventBasicFieldsArgs } from "../shared/apiTypes";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TupdateEventBasicFieldsArgs, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: TupdateEventBasicFieldsArgs, ctx: AuthenticatedCtx) => {
 
         // verbose on purpose in order to validate args type against UncheckedUpdateInput
         const fields: Prisma.EventUncheckedUpdateInput = {

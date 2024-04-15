@@ -1,6 +1,6 @@
 // this should be done in a mutation because it's many db operations intertwined, and the return value is important.
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from 'blitz';
+import { AuthenticatedCtx } from 'blitz';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOr, CoerceToString, validateStringOption } from 'shared/utils';
 import * as db3 from 'src/core/db3/db3';
@@ -12,7 +12,7 @@ import db, { Prisma } from "db";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     //resolver.authorize(Permission.login),
-    async (args: UpdateGalleryItemImageParams, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: UpdateGalleryItemImageParams, ctx: AuthenticatedCtx) => {
 
         // // TODO
         // //CMDBAuthorizeOrThrow("UpdateGalleryItemImageParams", Permission.comm)

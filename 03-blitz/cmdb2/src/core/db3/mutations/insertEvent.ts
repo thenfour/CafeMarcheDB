@@ -1,6 +1,6 @@
 // insertEvent
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx, assert } from "blitz";
+import { AuthenticatedCtx, assert } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -11,7 +11,7 @@ import { CMDBAuthorizeOrThrow } from "types";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TinsertEventArgs, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: TinsertEventArgs, ctx: AuthenticatedCtx) => {
 
         // TODO
         //CMDBAuthorizeOrThrow("insertEvent", Permission.comm)

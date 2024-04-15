@@ -1,6 +1,6 @@
 // updateGenericSortOrder
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx, assert } from "blitz";
+import { AuthenticatedCtx, assert } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -12,7 +12,7 @@ import { ChangeAction, CreateChangeContext, RegisterChange, moveItemInArray } fr
 // ASSUMES that the table is not that big; we will update ALL sort orders here.
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TupdateGenericSortOrderArgs, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: TupdateGenericSortOrderArgs, ctx: AuthenticatedCtx) => {
 
         // TODO
         //CMDBAuthorizeOrThrow("updateEventComment", Permission.comm)

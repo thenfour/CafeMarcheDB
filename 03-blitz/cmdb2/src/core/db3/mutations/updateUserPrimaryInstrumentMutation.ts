@@ -1,5 +1,5 @@
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -9,7 +9,7 @@ import { TupdateUserPrimaryInstrumentMutationArgs } from "../shared/apiTypes";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: TupdateUserPrimaryInstrumentMutationArgs, ctx: AuthenticatedCtx) => {
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         const clientIntention: db3.xTableClientUsageContext = {

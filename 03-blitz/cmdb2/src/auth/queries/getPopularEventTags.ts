@@ -1,11 +1,11 @@
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import db from "db";
 import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args, ctx: AuthenticatedCtx) => {
         try {
             const contextDesc = `getPopularEventTags`;
             //CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);

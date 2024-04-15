@@ -1,6 +1,6 @@
 import { EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
 import { SessionContext } from "@blitzjs/auth";
-import { AuthenticatedMiddlewareCtx, assert } from "blitz";
+import { AuthenticatedCtx, assert } from "blitz";
 import db, { Prisma, User } from "db"
 import { Permission, gPublicPermissions } from "shared/permissions";
 import { Ctx } from "@blitzjs/next";
@@ -65,7 +65,7 @@ export function CMAuthorize(args: CMAuthorizeArgs) {
 //   return CMAuthorize({ ...params.args[0], publicData });
 // }
 
-export function CMDBAuthorizeOrThrow(reason: string, permission: Permission, ctx: AuthenticatedMiddlewareCtx) {
+export function CMDBAuthorizeOrThrow(reason: string, permission: Permission, ctx: AuthenticatedCtx) {
   if (!CMAuthorize({ reason, permission, publicData: ctx.session.$publicData })) {
     throw new Error(`Unauthorized: ${reason}`);
   }

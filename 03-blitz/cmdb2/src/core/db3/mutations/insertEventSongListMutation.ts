@@ -1,6 +1,6 @@
 // insertEventSongListMutation
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -12,7 +12,7 @@ import { ComputeChangePlan } from "shared/associationUtils";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TinsertOrUpdateEventSongListArgs, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: TinsertOrUpdateEventSongListArgs, ctx: AuthenticatedCtx) => {
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         const clientIntention: db3.xTableClientUsageContext = {

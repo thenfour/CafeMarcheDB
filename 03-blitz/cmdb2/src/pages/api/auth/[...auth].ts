@@ -10,8 +10,8 @@ import { nanoid } from 'nanoid'
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
-    successRedirectUrl: "http://localhost:3000/",
-    errorRedirectUrl: "http://localhost:3000/",
+    successRedirectUrl: process.env.CMDB_BASE_URL,//"http://localhost:3000/",
+    errorRedirectUrl: process.env.CMDB_BASE_URL,//"http://localhost:3000/",
     strategies: [
       {
         strategy: new GoogleStrategy(

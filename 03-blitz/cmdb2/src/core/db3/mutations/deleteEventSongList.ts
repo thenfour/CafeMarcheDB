@@ -1,6 +1,6 @@
 // deleteEventSongList
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
@@ -11,7 +11,7 @@ import { CMDBAuthorizeOrThrow } from "types";
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: TGeneralDeleteArgs, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: TGeneralDeleteArgs, ctx: AuthenticatedCtx) => {
 
         // TODO
         //CMDBAuthorizeOrThrow("deleteEventComment", Permission.comm)

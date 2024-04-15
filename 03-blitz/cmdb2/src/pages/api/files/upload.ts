@@ -9,7 +9,7 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
 import * as db3 from 'src/core/db3/db3';
-import { AuthenticatedMiddlewareCtx } from 'blitz';
+import { AuthenticatedCtx } from 'blitz';
 import { nanoid } from 'nanoid'
 import * as mime from 'mime';
 
@@ -30,7 +30,7 @@ export const config = {
 // on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
 export default api(async (req, res, origCtx: Ctx) => {
     origCtx.session.$authorize(Permission.login);
-    const ctx: AuthenticatedMiddlewareCtx = origCtx as any; // authorize ensures this.
+    const ctx: AuthenticatedCtx = origCtx as any; // authorize ensures this.
     const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
     if (!currentUser) throw new Error(`uploads possible only for users`);
 

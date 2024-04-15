@@ -1,4 +1,4 @@
-import { AuthenticatedMiddlewareCtx, paginate } from "blitz";
+import { AuthenticatedCtx, paginate } from "blitz";
 import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import * as db3 from "../db3";
@@ -9,7 +9,7 @@ import { TAnyModel } from "shared/utils";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (input: db3.PaginatedQueryInput, ctx: AuthenticatedMiddlewareCtx) => {
+    async (input: db3.PaginatedQueryInput, ctx: AuthenticatedCtx) => {
         try {
             const table = db3.GetTableById(input.tableID);
             const contextDesc = `paginatedQuery:${table.tableName}`;

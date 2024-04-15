@@ -1,5 +1,5 @@
 import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedMiddlewareCtx } from 'blitz';
+import { AuthenticatedCtx } from 'blitz';
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOr, CoerceToString, validateStringOption } from 'shared/utils';
 import * as db3 from 'src/core/db3/db3';
@@ -9,7 +9,7 @@ import { ForkImageParams, ImageFileFormatOptions } from 'src/core/db3/shared/api
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (args: ForkImageParams, ctx: AuthenticatedMiddlewareCtx) => {
+    async (args: ForkImageParams, ctx: AuthenticatedCtx) => {
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         //const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
@@ -50,7 +50,7 @@ export default resolver.pipe(
 // // on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
 // api(async (req, res, origCtx: Ctx) => {
 //     origCtx.session.$authorize(Permission.login);
-//     const ctx: AuthenticatedMiddlewareCtx = origCtx as any; // authorize ensures this.
+//     const ctx: AuthenticatedCtx = origCtx as any; // authorize ensures this.
 
 //     return new Promise(async (resolve, reject) => {
 //         if (req.method == 'POST') {

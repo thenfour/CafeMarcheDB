@@ -2,7 +2,7 @@
 // https://dev.to/victrexx2002/how-to-get-the-mime-type-of-a-file-in-nodejs-p6c
 // https://www.reddit.com/r/node/comments/ecjsg6/how_to_determine_file_mime_type_without_a/
 import { Ctx } from "@blitzjs/next";
-import { AuthenticatedMiddlewareCtx } from 'blitz';
+import { AuthenticatedCtx } from 'blitz';
 import db, { Prisma } from "db";
 import fs from "fs";
 import * as mime from 'mime';

@@ -4,13 +4,13 @@ import { Permission } from "shared/permissions";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel } from "shared/utils"
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
-import { AuthenticatedMiddlewareCtx } from "blitz";
+import { AuthenticatedCtx } from "blitz";
 import * as mutationCore from "../server/db3mutationCore"
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
-    async (input: db3.MutatorInput, ctx: AuthenticatedMiddlewareCtx) => {
+    async (input: db3.MutatorInput, ctx: AuthenticatedCtx) => {
         const table = db3.GetTableById(input.tableID);
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);

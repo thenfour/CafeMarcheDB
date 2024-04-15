@@ -7,7 +7,7 @@ import { Permission } from "shared/permissions";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel, areAllEqual } from "shared/utils"
 import * as db3 from "../db3";
 import { CMDBAuthorizeOrThrow } from "types";
-import { AuthenticatedMiddlewareCtx, Ctx, assert } from "blitz";
+import { AuthenticatedCtx, Ctx, assert } from "blitz";
 import { FileCustomData, ForkImageParams, ImageMetadata, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
 import { nanoid } from 'nanoid'
 import * as mime from 'mime';
@@ -26,7 +26,7 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
     try {
         // attempt to get authenticated ctx. public access will have none.
         unauthenticatedCtx.session.$authorize(Permission.visibility_public);
-        const ctx: AuthenticatedMiddlewareCtx = unauthenticatedCtx as any; // authorize ensures this.
+        const ctx: AuthenticatedCtx = unauthenticatedCtx as any; // authorize ensures this.
         const currentUser = await db.user.findFirst({
             ...db3.UserWithRolesArgs,
             where: {
@@ -70,7 +70,7 @@ export const RecalcEventDateRange = async (eventId: number) => {
 };
 
 export interface UpdateAssociationsArgs {
-    ctx: AuthenticatedMiddlewareCtx;
+    ctx: AuthenticatedCtx;
     changeContext: ChangeContext;
 
     localTable: db3.xTable;
@@ -136,7 +136,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
 
 
 // DELETE ////////////////////////////////////////////////
-export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<boolean> => {
+export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -191,7 +191,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
 };
 
 // INSERT ////////////////////////////////////////////////
-export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<TReturnPayload> => {
+export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<TReturnPayload> => {
     try {
         const contextDesc = `insert:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -273,7 +273,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
 
 
 // UPDATE ////////////////////////////////////////////////
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedMiddlewareCtx, clientIntention: db3.xTableClientUsageContext): Promise<TAnyModel> => {
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<TAnyModel> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -383,7 +383,7 @@ model EventSongListSong {
 */
 
 export interface UpdateEventSongListSongsArgs {
-    ctx: AuthenticatedMiddlewareCtx;
+    ctx: AuthenticatedCtx;
     changeContext: ChangeContext;
     desiredValues: TinsertOrUpdateEventSongListSong[];
     songListID: number;
@@ -693,7 +693,7 @@ export const GetImageMetadata = async (img: sharp.Sharp): Promise<ImageMetadata>
     });
 };
 
-export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedMiddlewareCtx) => {
+export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedCtx) => {
     const currentUser = await getCurrentUserCore(ctx);
     if (!currentUser) {
         throw new Error(`public cannot create files`);

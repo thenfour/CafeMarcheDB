@@ -209,6 +209,13 @@ skott --showCircularDependencies
 
 will show clearly on the command line.
 
+# Logging
+
+  * `\src\pages\api\rpc\[[...blitz]].ts` contains `rpcHandler({onError: console.log})`
+  * `node_modules\blitz\dist\index-server.d.ts`
+  * See: https://blitzjs.com/docs/logging and https://blitzjs-com-git-siddhsuresh-blitz-rpc-verbose-blitzjs.vercel.app/docs/rpc-config#blitz-rpc-logging
+
+
 # DB3 components
 
 ````
