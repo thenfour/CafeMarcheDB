@@ -360,6 +360,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   const eventTiming = API.events.getEventTiming(props.event);
   const eventIsPast = eventTiming === Timing.Past;
+  const anyAnswered = segmentResponses.some(r => !!r.response.attendance);
   const allAnswered = segmentResponses.every(r => !!r.response.attendance);
   const allAffirmative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength > 50);
   const someAffirmative = segmentResponses.some(r => !!r.response.attendance && r.response.attendance!.strength > 50);
@@ -372,6 +373,8 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   //   - invited
   //   - and not all answered
   const inputAlert = !eventIsPast && (isInvited && !allAnswered);
+  const visible = !anyAnswered && isInvited;// hide the control entirely if you're not invited, but still show if you already responded.
+  if (!visible) return null;
 
   //const eventName = props.linkToEvent ? (<div className='eventName'><a href={API.events.getURIForEvent(props.event)}>{props.event.name}</a></div>) : <div className='eventName'>{props.event.name}</div>;
 

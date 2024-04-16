@@ -60,7 +60,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             EventTableClientColumns.type,
             EventTableClientColumns.status,
             EventTableClientColumns.tags,
-            EventTableClientColumns.segmentBehavior,
+            //EventTableClientColumns.segmentBehavior,
             EventTableClientColumns.expectedAttendanceUserTag,
             EventTableClientColumns.visiblePermission,
         ],

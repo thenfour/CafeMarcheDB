@@ -254,6 +254,12 @@ export type DB3AuthTablePermissionMap = {
     Edit: Permission;
     EditOwn: Permission;
     Insert: Permission;
+    // TODO: support deletes.
+    // for now use edit permissions
+    // DeleteOwnHard: Permission;
+    // DeleteOwnPreferSoft: Permission;
+    // DeleteHard: Permission;
+    // DeletePreferSoft: Permission;
 };
 
 
@@ -655,6 +661,16 @@ export class xTable implements TableDesc {
             return gPublicPermissions.some(p => p === requiredPermission);
         }
         return args.publicData.permissions.some(p => p === requiredPermission);
+    };
+
+    authorizeRowForDeletePreferSoft = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+        // todo!
+        return this.authorizeRowForEdit(args);
+    };
+
+    authorizeRowForDeleteHard = <T extends TAnyModel,>(args: DB3AuthorizeForRowArgs<T>) => {
+        // todo!
+        return this.authorizeRowForEdit(args);
     };
 
     authorizeRowBeforeInsert = <T extends TAnyModel,>(args: DB3AuthorizeForBeforeInsertArgs<T>) => {

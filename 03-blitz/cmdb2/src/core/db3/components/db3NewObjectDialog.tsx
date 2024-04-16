@@ -1,18 +1,18 @@
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import {
-    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Button, Dialog, DialogActions, DialogContent,
+    DialogTitle,
     FormControl
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
+import { SettingKey, TAnyModel } from "shared/utils";
+import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
-import { SettingKey, TAnyModel } from "shared/utils";
 import { gIconMap } from "./IconSelectDialog";
-import { useAuthenticatedSession } from "@blitzjs/auth";
-import { Markdown } from "src/core/components/RichTextEditor";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -265,14 +265,11 @@ export function DB3EditObjectDialog({ onOK, onCancel, table, clientIntention, in
 };
 
 
-// ////////////////////////////////////////////////////////////////
-
+//////////////////////////////////////////////////////////////////
 export interface DB3EditRowButtonAPI {
     closeDialog: () => void;
 };
 
-
-////////////////////////////////////////////////////////////////
 export interface DB3EditRowButtonProps {
     row: TAnyModel;
     tableRenderClient: DB3ClientCore.xTableRenderClient;
@@ -285,6 +282,13 @@ export interface DB3EditRowButtonProps {
 // like on the user profile, a "Edit" button which pops up a dialog to edit fields
 export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
+    const publicData = useAuthenticatedSession();
+
+    const deleteAuthorized = props.tableRenderClient.args.tableSpec.args.table.authorizeRowForDeletePreferSoft({
+        clientIntention: props.tableRenderClient.args.clientIntention,
+        publicData,
+        model: props.row,
+    });
 
     const buttonChildren = props.label || <>{gIconMap.Edit()}Edit</>;
 
@@ -292,7 +296,8 @@ export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
         closeDialog: () => setEditOpen(false)
     };
 
-    const onDelete = !!props.onDelete ? () => {
+
+    const onDelete = !!props.onDelete && deleteAuthorized ? () => {
         props.onDelete!(api);
     } : undefined;
 

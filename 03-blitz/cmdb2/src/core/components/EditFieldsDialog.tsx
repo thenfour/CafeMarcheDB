@@ -1,3 +1,6 @@
+
+
+
 // TODO: how is this different from DB3EditRowButton ? is it different at all or did i accidentally write this twice?
 
 import { useAuthenticatedSession } from "@blitzjs/auth";
@@ -17,7 +20,6 @@ export interface EditFieldsDialogButtonApi {
     close: () => void;
 };
 export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
-    //value: string;
     readonly: boolean;
     tableSpec: DB3Client.xTableClientSpec;
     renderButtonChildren: () => React.ReactNode;
@@ -46,7 +48,7 @@ export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: Edit
         close: () => setIsOpen(false),
     };
 
-    const onDelete = !!props.onDelete ? () => {
+    const onDelete = !!props.onDelete && authorizedForEdit ? () => {
         props.onDelete!(api);
     } : undefined;
 
