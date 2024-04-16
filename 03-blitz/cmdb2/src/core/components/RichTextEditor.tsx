@@ -23,6 +23,7 @@ import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
 import { CMSmallButton } from "./CMCoreComponents2";
+import { CoerceToBoolean } from "shared/utils";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const Markdown = (props: { markdown: string | null, id?: string, className?: string }) => {
@@ -237,11 +238,14 @@ interface CompactMarkdownControlProps {
     editButtonMessage?: string,
     editButtonVariant?: "framed" | "default";
     height?: number;
+    alwaysEditMode?: boolean; // avoid edit/save/cancel buttons; just make it always edit. useful for edit object dialogs
 }
 
 export function CompactMarkdownControl({ initialValue, onValueChanged, ...props }: CompactMarkdownControlProps) {
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
     const [value, setValue] = React.useState<string>(initialValue || "");
+    const alwaysEdit = CoerceToBoolean(props.alwaysEditMode, false);
+    const showingEditor2 = showingEditor || alwaysEdit;
 
     const onCancel = () => {
         setValue(initialValue || "");
@@ -254,18 +258,21 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
         });
     };
 
-    if (showingEditor) {
+    if (showingEditor2) {
         return (<div className={`compactMarkdownControlRoot editing ${props.className}`}>
             <div className="CMSmallButtonGroup">
-                <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>
-                <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>
+                {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>}
+                {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>}
                 <span className="helpText">
-                    "Markdown" syntax is supported. <a href="/backstage/markdownhelp" target="_blank">Click here</a> for details.
+                    Markdown syntax is supported. <a href="/backstage/markdownhelp" target="_blank">Click here</a> for details.
                 </span>
             </div>
             <div className="richTextContainer compactMarkdownControl">
                 <div className='richTextContentContainer'>
-                    <MarkdownEditor value={value} onValueChanged={(v) => setValue(v)} height={props.height || 50} />
+                    <MarkdownEditor value={value} onValueChanged={(v) => {
+                        setValue(v);
+                        if (alwaysEdit) onValueChanged(v);
+                    }} height={props.height || 50} />
                 </div>
             </div>
             {value !== "" && <div className="tinyCaption">Preview:</div>}

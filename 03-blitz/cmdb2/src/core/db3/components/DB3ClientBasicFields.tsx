@@ -300,6 +300,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
         isReadOnly: false,
         validationResult: params.validationResult,
         value: <CompactMarkdownControl
+            alwaysEditMode={true} // don't put an inline edit mode in the middle of an edit dialog. either always edit, OR use a new modal.
             initialValue={params.value as string}
             height={120}
             onValueChanged={async (val) => {
