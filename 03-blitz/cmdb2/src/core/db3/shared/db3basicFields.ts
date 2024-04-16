@@ -225,7 +225,7 @@ export class GenericStringField extends FieldBase<string> {
         if (value === undefined) return UndefinedValidateAndParseResult();
         if (value === null) {
             if (this.allowNull) return SuccessfulValidateAndParseResult(objValue);
-            return ErrorValidateAndParseResult("field must be non-null", objValue);
+            return ErrorValidateAndParseResult("field is required", objValue);
         }
         if (typeof value !== 'string') {
             return ErrorValidateAndParseResult("field is of unknown type", objValue);
@@ -324,7 +324,7 @@ export class GenericIntegerField extends FieldBase<number> {
             if (this.allowNull) {
                 return SuccessfulValidateAndParseResult(objValue);
             }
-            return ErrorValidateAndParseResult("field must be non-null", objValue);
+            return ErrorValidateAndParseResult("field is required", objValue);
         }
         // val should be coerced into number, convert to integer.
         if (typeof value === 'string') {
@@ -430,7 +430,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
         if (value === null) {//&& !this.allowNull) {
             if (this.allowNull)
                 return SuccessfulValidateAndParseResult(objValue);
-            return ErrorValidateAndParseResult("field must be non-null", objValue);
+            return ErrorValidateAndParseResult("field is required", objValue);
         }
         if (this.palette.findEntry(value?.id || null) == null) {
             return ErrorValidateAndParseResult("Not found in palette.", objValue);
@@ -573,7 +573,7 @@ export class ConstEnumStringField extends FieldBase<string> {
 
         if (value === null) {
             if (this.allowNull) return SuccessfulValidateAndParseResult(objValue);
-            return ErrorValidateAndParseResult("field must be non-null", objValue);
+            return ErrorValidateAndParseResult("field is required", objValue);
         }
         // make sure val is actually a member of the enum.
         value = value!.trim();
@@ -724,12 +724,12 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             if (fkvalue === undefined) return UndefinedValidateAndParseResult(); // both are undefined.
 
             // operate on fk instead of object.
-            if (fkvalue === null && !this.allowNull) return ErrorValidateAndParseResult("field must be non-null", { [this.fkMember]: fkvalue });
+            if (fkvalue === null && !this.allowNull) return ErrorValidateAndParseResult("field is required", { [this.fkMember]: fkvalue });
             return SuccessfulValidateAndParseResult({ [this.fkMember]: fkvalue });
         }
 
         if (value === null) {
-            if (!this.allowNull) return ErrorValidateAndParseResult("field must be non-null", {
+            if (!this.allowNull) return ErrorValidateAndParseResult("field is required", {
                 [this.member]: null,
                 [this.fkMember]: null,
             });
@@ -950,7 +950,7 @@ export class EventStartsAtField extends FieldBase<Date> {
             if (this.allowNull) {
                 return SuccessfulValidateAndParseResult(objValue);
             }
-            return ErrorValidateAndParseResult("field must be non-null", objValue);
+            return ErrorValidateAndParseResult("field is required", objValue);
         }
         if (typeof (value) === 'string') {
             // string to date conv.

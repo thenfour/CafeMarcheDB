@@ -1,38 +1,23 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HomeIcon from '@mui/icons-material/Home';
-import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, Link, Tab, Tabs, Tooltip } from "@mui/material";
-import { Prisma } from "db";
+import { Breadcrumbs, Link, Tab, Tabs, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
-import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
-import { Permission } from 'shared/permissions';
-import { Timing, formatSongLength } from 'shared/time';
-import { IsNullOrWhitespace } from 'shared/utils';
-import { useAuthorization } from 'src/auth/hooks/useAuthorization';
+import { StandardVariationSpec } from 'shared/color';
+import { formatSongLength } from 'shared/time';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
-import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, } from './CMCoreComponents';
-import { ChoiceEditCell } from './ChooseItemDialog';
-import { GetStyleVariablesForColor } from './Color';
-import { EventAttendanceControl } from './EventAttendanceComponents';
-import { EventFilesTabContent } from './EventFileComponents';
-import { EventFrontpageTabContent } from './EventFrontpageComponents';
-import { SegmentList } from './EventSegmentComponents';
-import { EventSongListTabContent } from './EventSongListComponents';
-import { Markdown } from './RichTextEditor';
-import { GenerateDefaultDescriptionSettingName, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
-import { AddUserButton } from './UserComponents';
-import { CMDialogContentText } from './CMCoreComponents2';
-import { VisibilityValue } from './VisibilityControl';
+import { CMChipContainer, CMStandardDBChip, CustomTabPanel, TabA11yProps } from './CMCoreComponents';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
+import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import { SongCreditsControl } from './SongCreditsControls';
+import { FilesTabContent } from './SongFileComponents';
+import { VisibilityValue } from './VisibilityControl';
 
 
 export const SongClientColumns = {
@@ -279,7 +264,9 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
             </CustomTabPanel>
 
             <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.allFiles}>
-                allFiles
+                <FilesTabContent fileTags={song.taggedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
+                    taggedSongId: song.id,
+                }} />
             </CustomTabPanel>
         </div>
 

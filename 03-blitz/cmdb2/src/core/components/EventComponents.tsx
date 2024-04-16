@@ -25,7 +25,6 @@ import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, C
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { EventFilesTabContent } from './EventFileComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -35,6 +34,7 @@ import { AddUserButton } from './UserComponents';
 import { CMDialogContentText } from './CMCoreComponents2';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
+import { FilesTabContent } from './SongFileComponents';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -848,7 +848,10 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
-                        <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} />
+                        {/* <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} /> */}
+                        <FilesTabContent fileTags={event.fileTags} uploadTags={{
+                            taggedEventId: event.id,
+                        }} refetch={refetch} readonly={props.readonly} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>

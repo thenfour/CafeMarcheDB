@@ -267,12 +267,28 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         console.error(`props.spec.schemaColumn is null for ${props.spec.columnName}. make sure the schema contains the right info`);
     }
 
+    // the "local row" is always available here, 
+    // and the "foreign row" (the tag) is also always available via the association row.
+    // but the association may be missing the link back to the local row.
+    // it's necessary for things like FileTagAssociation which needs to access the File record in getRowInfo() to know the owner.
+    // so artificially link em up.
+    const localPkMember = props.spec.typedSchemaColumn.localTableSpec.pkMember;
+    const associationLocalObjectMember = props.spec.typedSchemaColumn.associationLocalObjectMember;
+    const associationLocalIDMember = props.spec.typedSchemaColumn.associationLocalIDMember;
+    const correctedValue = props.value.map(v => {
+        return {
+            ...v,
+            [associationLocalIDMember]: props.row[localPkMember],
+            [associationLocalObjectMember]: props.row,
+        };
+    });
+
     return <CMChipContainer>
-        {props.value.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
+        {correctedValue.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
             value,
             colorVariant: StandardVariationSpec.Strong,
             onDelete: () => {
-                const newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
+                const newValue = correctedValue.filter(v => v[props.spec.associationForeignIDMember] !== value[props.spec.associationForeignIDMember]);
                 props.onChange(newValue);
             }
         })
@@ -282,7 +298,7 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
 
         {isOpen && <DB3SelectTagsDialog
             row={props.row}
-            initialValue={props.value}
+            initialValue={correctedValue}
             spec={props.spec}
             onClose={() => {
                 setIsOpen(false);
@@ -474,21 +490,8 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
         };
     };
 
-    // renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
-    //     const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
-    //     return <TagsFieldInput
-    //         spec={this}
-    //         validationError={validationValue}
-    //         row={params.row as TAnyModel}
-    //         value={params.value as TAssociation[]}
-    //         onChange={(value: TAssociation[]) => {
-    //             params.api.setFieldValues({ [this.schemaColumn.member]: value });
-    //         }}
-    //     />
-    // };
-
     renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
-        const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
+        //const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
 
         return this.defaultRenderer({
             isReadOnly: !this.editable,
@@ -506,15 +509,6 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             </React.Fragment>
         });
 
-        // return <TagsFieldInput
-        //     spec={this}
-        //     validationError={validationValue}
-        //     row={params.row as TAnyModel}
-        //     value={params.value as TAssociation[]}
-        //     onChange={(value: TAssociation[]) => {
-        //         params.api.setFieldValues({ [this.schemaColumn.member]: value });
-        //     }}
-        // />
     };
 
 };

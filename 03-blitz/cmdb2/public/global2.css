@@ -722,7 +722,8 @@ li.songDropdownOption {
 /* - event files --------------------------------- */
 
 .EventFileValue {
-    --file-type-border-color: #888;
+    --file-type-border-color: #718096;
+
     margin: 10px 0;
     padding: 2px 8px;
     /* background-color: #eee; */
@@ -750,11 +751,18 @@ li.songDropdownOption {
 }
 
 .EventFileValue.mime-type-image {
-    --file-type-border-color: #080;
+    --file-type-border-color: #38a169;
+    /* Green */
 }
 
 .EventFileValue.mime-subtype-pdf {
-    --file-type-border-color: #c84;
+    --file-type-border-color: #e53e3e;
+    /* Red */
+}
+
+.EventFileValue.mime-type-video {
+    --file-type-border-color: #805ad5;
+    /* Purple */
 }
 
 .EventFileValue .stats {

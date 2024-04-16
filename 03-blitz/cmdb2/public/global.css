@@ -832,6 +832,7 @@ table td {
 }
 
 
+/* well this is for song pages length & BPM display so probably not as generic as it sounds */
 div.SingleLineNameValuePairContainer {
   display: flex;
   align-items: center;
@@ -849,5 +850,8 @@ div.SingleLineNameValuePairContainer>div.name {
 
 div.SingleLineNameValuePairContainer>div.value {
   /* for multi-row alignment */
-  width: 120px;
+  width: 150px;
+  font-family: monospace;
+  color: #66e;
+  text-align: right;
 }

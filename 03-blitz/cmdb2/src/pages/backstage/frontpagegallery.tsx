@@ -14,9 +14,9 @@ import { calculateNewDimensions, formatFileSize, gDefaultImageArea } from "share
 import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMDBUploadFile, CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
-import { UploadFileComponent } from "src/core/components/EventFileComponents";
 import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { UploadFileComponent } from "src/core/components/SongFileComponents";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";

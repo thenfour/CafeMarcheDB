@@ -170,12 +170,15 @@ export interface TinsertOrUpdateEventSongListArgs {
     songs: TinsertOrUpdateEventSongListSong[];
 };
 
-// interface from upload.ts to mutation. files themselves contain much of the data; this is only for associations.
-export interface TClientUploadFileArgs {
+export interface TClientFileUploadTags {
     taggedUserId?: number;
     taggedSongId?: number;
     taggedEventId?: number;
     taggedInstrumentId?: number;
+};
+
+// interface from upload.ts to mutation. files themselves contain much of the data; this is only for associations.
+export interface TClientUploadFileArgs extends TClientFileUploadTags {
     visiblePermissionId?: number;
     externalURI?: string | null;
 };
