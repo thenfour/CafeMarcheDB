@@ -12,7 +12,7 @@ import { gIconMap } from "./IconSelectDialog";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { CMDialogContentText } from "src/core/components/CMCoreComponents2";
+import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -278,6 +278,8 @@ export interface DB3EditRowButtonProps {
     tableRenderClient: DB3ClientCore.xTableRenderClient;
     onSave: (newRow: TAnyModel, api: DB3EditRowButtonAPI) => void;
     label?: React.ReactNode;
+    smallButton?: boolean;
+    onDelete?: (api: DB3EditRowButtonAPI) => void;
 };
 
 // like on the user profile, a "Edit" button which pops up a dialog to edit fields
@@ -286,18 +288,28 @@ export const DB3EditRowButton = (props: DB3EditRowButtonProps) => {
 
     const buttonChildren = props.label || <>{gIconMap.Edit()}Edit</>;
 
+    const api: DB3EditRowButtonAPI = {
+        closeDialog: () => setEditOpen(false)
+    };
+
+    const onDelete = !!props.onDelete ? () => {
+        props.onDelete!(api);
+    } : undefined;
+
     return <div className={`DB3EditRowButton`}>
-        <Button onClick={() => setEditOpen(true)}>{buttonChildren}</Button>
+        {!!props.smallButton ? (
+            <CMSmallButton onClick={() => setEditOpen(true)}>{buttonChildren}</CMSmallButton>
+        ) : (
+            <Button onClick={() => setEditOpen(true)}>{buttonChildren}</Button>
+        )}
         {editOpen && (
             <DB3EditObject2Dialog
                 initialValue={props.row}
-                //onDelete={props.onDelete}
+                onDelete={onDelete}
                 //clientIntention={props.clientIntention}
                 onCancel={() => setEditOpen(false)}
                 onOK={(updatedObj: TAnyModel) => {
-                    props.onSave(updatedObj, {
-                        closeDialog: () => setEditOpen(false)
-                    });
+                    props.onSave(updatedObj, api);
                 }}
                 tableRenderClient={props.tableRenderClient}
             />

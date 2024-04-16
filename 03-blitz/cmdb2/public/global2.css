@@ -1815,3 +1815,22 @@ span.titleTag {
     font-size: 30px;
     font-weight: normal;
 }
+
+/* song detail, song credit view */
+div.songCredit {
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    margin: 6px 0px;
+    border-left: 4px solid #ccc;
+}
+
+div.songCredit:hover {
+    border-left: 4px solid #444;
+    background-color: #eee;
+}
+
+
+div.songCredit .comment {
+    padding-left: 10px;
+}

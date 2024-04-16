@@ -32,6 +32,7 @@ import { AddUserButton } from './UserComponents';
 import { CMDialogContentText } from './CMCoreComponents2';
 import { VisibilityValue } from './VisibilityControl';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
+import { SongCreditsControl } from './SongCreditsControls';
 
 
 export const SongClientColumns = {
@@ -94,8 +95,6 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
 };
 
 
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.SongPayloadMinimum, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.songs.updateSongBasicFields.useToken();
@@ -127,9 +126,10 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const gSongDetailTabSlugIndices = {
-    "info": 0,
-    "credits": 1,
-    "files": 2,
+    info: 0,
+    partitions: 1,
+    recordings: 2,
+    allFiles: 3,
 } as const;
 
 export interface SongDetailArgs {
@@ -164,7 +164,6 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
     React.useEffect(() => {
         if (props.allowRouterPush) {
-            console.log(`pushing route: ${eventURI}; song:${song.id}`);
             void router.push(eventURI);
         }
     }, [eventURI]);
@@ -241,6 +240,10 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <div className='name'>BPM</div><div className='value'>{formattedBPM}</div>
             </div>}
 
+            <div className='contentRow songCreditsControl'>
+                <SongCreditsControl value={song} refetch={refetch} readonly={props.readonly} />
+            </div>
+
             <Tabs
                 value={selectedTab}
                 onChange={handleTabChange}
@@ -248,8 +251,9 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 scrollButtons="auto"
             >
                 <Tab label="Song Info" {...TabA11yProps('song', gSongDetailTabSlugIndices.info)} />
-                <Tab label="Credits" {...TabA11yProps('song', gSongDetailTabSlugIndices.credits)} />
-                <Tab label={`Files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.files)} />
+                <Tab label="Partitions" {...TabA11yProps('song', gSongDetailTabSlugIndices.partitions)} />
+                <Tab label="Recordings" {...TabA11yProps('song', gSongDetailTabSlugIndices.recordings)} />
+                <Tab label={`All Files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.allFiles)} />
             </Tabs>
 
             <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.info}>
@@ -257,84 +261,20 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
             </CustomTabPanel>
 
-            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.credits}>
-                credits
+            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.partitions}>
+                partitions
             </CustomTabPanel>
 
-            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.files}>
-                song files
+            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.recordings}>
+                recordings
+            </CustomTabPanel>
+
+            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.allFiles}>
+                allFiles
             </CustomTabPanel>
         </div>
 
     </div>;
 };
 
-
-
-// export interface EventDashboardItemProps {
-//     event: db3.EventClientPayload_Verbose,
-//     onRefetch: () => void;
-// }
-// export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps) => {
-//     const eventURI = API.events.getURIForEvent(event);
-//     const visInfo = API.users.getVisibilityInfo(event);
-//     const expectedAttendanceTag = API.users.getUserTag(event.expectedAttendanceUserTagId);
-//     const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
-//     const eventTiming = API.events.getEventTiming(event);
-
-//     return <div className={`EventDetail contentSection event ${visInfo.className} ${(eventTiming === Timing.Past) ? "past" : "notPast"}`}>
-//         <div className='header'>
-//             <CMChipContainer>
-//                 {event.type && //<EventTypeValue type={event.type} />
-//                     <CMStandardDBChip
-//                         model={event.type}
-//                         getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-//                         variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
-//                     />
-//                 }
-
-//             </CMChipContainer>
-
-//             <div className="date smallInfoBox">
-//                 <CalendarMonthIcon className="icon" />
-//                 <span className="text">{API.events.getEventDateRange(event).toString()}</span>
-//             </div>
-//             <div className="location smallInfoBox">
-//                 <PlaceIcon className="icon" />
-//                 <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
-//             </div>
-//         </div>
-
-//         <div className='content'>
-
-//             <div className='titleLine'>
-//                 <div className="titleText">
-//                     <Link href={eventURI} className="titleLink">
-//                         {event.name}
-//                     </Link>
-//                 </div>
-
-//                 {event.status && <CMStandardDBChip
-//                     variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
-//                     border='border'
-//                     shape="rectangle"
-//                     model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
-//                 />}
-
-//                 <CMChipContainer>
-//                     {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
-//                 </CMChipContainer>
-//             </div>
-
-//             <EventAttendanceControl
-//                 event={event}
-//                 linkToEvent={false}
-//                 onRefetch={props.onRefetch}
-//                 responseInfo={responseInfo}
-//             />
-//         </div>
-//     </div>;
-
-
-// };
 

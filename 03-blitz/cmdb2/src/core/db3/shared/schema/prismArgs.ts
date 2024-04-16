@@ -491,6 +491,14 @@ export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>
 
 ////////////////////////////////////////////////////////////////
 // for full song page display.
+
+export const SongCreditArgsFromSong = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
+    include: {
+        user: true,
+        type: true,
+    }
+});
+
 export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
     include: {
         visiblePermission: VisiblePermissionInclude,
@@ -507,12 +515,7 @@ export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
             },
             orderBy: { file: { uploadedAt: 'desc' } }
         },
-        credits: {
-            include: {
-                type: true,
-                user: true,
-            },
-        }
+        credits: SongCreditArgsFromSong,
         // comments
         // songLists   EventSongListSong[]
     }
@@ -520,6 +523,7 @@ export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
 
 export type SongPayload_Verbose = Prisma.SongGetPayload<typeof SongArgs_Verbose>;
 
+export type SongCreditPayloadFromVerboseSong = Prisma.SongCreditGetPayload<typeof SongCreditArgsFromSong>;
 
 
 export type SongTaggedFilesPayload = Prisma.FileSongTagGetPayload<{

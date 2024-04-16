@@ -4,26 +4,25 @@
 // clipboard custom formats
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { Button, Checkbox, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, InputBase, Menu, MenuItem } from "@mui/material";
+import { useAuthenticatedSession } from '@blitzjs/auth';
+import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, FormControlLabel, InputBase } from "@mui/material";
 import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
+import { assert } from 'blitz';
+import { Prisma } from "db";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
+import { StandardVariationSpec } from 'shared/color';
+import { formatSongLength } from 'shared/time';
 import { TAnyModel, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import db, { Prisma } from "db";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
-import { CMChipContainer, CMStandardDBChip, InspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
-import { Markdown } from "./RichTextEditor";
-import { formatSongLength } from 'shared/time';
-import { StandardVariationSpec } from 'shared/color';
-import { useAuthenticatedSession } from '@blitzjs/auth';
-import { assert } from 'blitz';
+import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText } from './CMCoreComponents2';
+import { Markdown } from "./RichTextEditor";
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{

@@ -363,11 +363,24 @@ export const xSongCredit = new db3.xTable({
         new ForeignSingleField<Prisma.UserGetPayload<{}>>({
             columnName: "user",
             fkMember: "userId",
-            allowNull: false,
+            allowNull: true,
             foreignTableID: "User",
             authMap: xSongAuthMap_R_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
+        new GenericStringField({
+            columnName: "comment",
+            allowNull: false,
+            format: "markdown",
+            authMap: xSongAuthMap_R_EManagers,
+        }),
+        new GenericStringField({
+            columnName: "year",
+            allowNull: false,
+            format: "plain",
+            authMap: xSongAuthMap_R_EManagers,
+        }),
+
         new ForeignSingleField<Prisma.SongGetPayload<{}>>({
             columnName: "song",
             fkMember: "songId",

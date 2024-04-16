@@ -285,16 +285,19 @@ model SongCreditType {
 }
 
 model SongCredit {
-  id     Int  @id @default(autoincrement())
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  id     Int   @id @default(autoincrement())
+  // some authors may not be users; can specify in comments
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
   songId Int
   song   Song @relation(fields: [songId], references: [id], onDelete: Restrict)
 
+  year    String @default("")
+  comment String @default("") // markdown
+
   typeId Int
   type   SongCreditType @relation(fields: [typeId], references: [id], onDelete: Restrict)
-
-  @@unique([userId, songId])
 }
 
 model SongTag {

@@ -14,8 +14,6 @@ export const CMSmallButton = (props: React.PropsWithChildren<CMSmallButtonProps>
     </div>;
 };
 
-
-
 // replacement for <DialogContentText> that doesn't emit a <p>; thus allowing <div> children.
 export const CMDialogContentText = (props: React.PropsWithChildren<{}>) => {
     return <div className="CMDialogContentText">{props.children}</div>;
