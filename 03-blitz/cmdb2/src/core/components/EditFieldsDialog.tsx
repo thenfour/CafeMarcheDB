@@ -1,3 +1,4 @@
+// TODO: how is this different from DB3EditRowButton ? is it different at all or did i accidentally write this twice?
 
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Button } from "@mui/material";
@@ -22,6 +23,7 @@ export interface EditFieldsDialogButtonProps<TRowModel extends TAnyModel> {
     renderButtonChildren: () => React.ReactNode;
     onCancel: () => void;
     onOK: (obj: TRowModel, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => void;
+    onDelete?: (api: EditFieldsDialogButtonApi) => void;
     initialValue: TRowModel;
     dialogTitle: string;
     dialogDescription: React.ReactNode;
@@ -40,6 +42,14 @@ export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: Edit
 
     const readonly = !authorizedForEdit || props.readonly;
 
+    const api: EditFieldsDialogButtonApi = {
+        close: () => setIsOpen(false),
+    };
+
+    const onDelete = !!props.onDelete ? () => {
+        props.onDelete!(api);
+    } : undefined;
+
     return <>
         {!readonly && <Button onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.renderButtonChildren()}</Button>}
         {isOpen && !readonly && <DB3EditObjectDialog
@@ -49,10 +59,9 @@ export const EditFieldsDialogButton = <TRowModel extends TAnyModel,>(props: Edit
                 setIsOpen(false);
             }}
             onOK={(obj, tableClient) => {
-                props.onOK(obj as TRowModel, tableClient, {
-                    close: () => setIsOpen(false),
-                });
+                props.onOK(obj as TRowModel, tableClient, api);
             }}
+            onDelete={onDelete}
             table={props.tableSpec}
             clientIntention={clientIntention}
             description={props.dialogDescription}

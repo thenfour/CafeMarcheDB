@@ -420,9 +420,10 @@ export class xTableRenderClient {
         const ret = await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            updateModel: dbModel,
-            updateId: row[this.schema.pkMember],
             clientIntention: this.args.clientIntention,
+            mutationType: "update",
+            updateId: row[this.schema.pkMember],
+            updateModel: dbModel,
         });
         this.refetch();
         return ret;
@@ -456,19 +457,23 @@ export class xTableRenderClient {
         return await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            insertModel: dbModel,
             clientIntention: this.args.clientIntention,
+            mutationType: "insert",
+            insertModel: dbModel,
         });
     };
 
-    doDeleteMutation = async (pk: number) => {
+    doDeleteMutation = async (pk: number, deleteType: "softWhenPossible" | "hard") => {
         return await this.mutateFn({
             tableID: this.args.tableSpec.args.table.tableID,
             tableName: this.tableSpec.args.table.tableName,
-            deleteId: pk,
             clientIntention: this.args.clientIntention,
+            mutationType: "delete",
+            deleteType,
+            deleteId: pk,
         });
     };
+
 };
 
 

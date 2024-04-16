@@ -17,15 +17,15 @@ export default resolver.pipe(
         input.clientIntention = input.clientIntention || { intention: "user", mode: "primary" };
         input.clientIntention.currentUser = currentUser;
 
-        if (input.deleteId != null) {
+        if (input.mutationType === "delete") {
             // return boolean
-            return await mutationCore.deleteImpl(table, input.deleteId, ctx, input.clientIntention);
+            return await mutationCore.deleteImpl(table, input.deleteId, ctx, input.clientIntention, input.deleteType);
         }
-        if (input.insertModel != null) {
+        if (input.mutationType === "insert") {
             // return new object
             return await mutationCore.insertImpl(table, input.insertModel, ctx, input.clientIntention);
         }
-        if (input.updateModel != null) {
+        if (input.mutationType === "update") {
             // return new object
             return await mutationCore.updateImpl(table, input.updateId!, input.updateModel, ctx, input.clientIntention);
         }

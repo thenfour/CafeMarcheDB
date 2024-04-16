@@ -481,8 +481,9 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             return await this.mutateFn({
                 tableID: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableID,
                 tableName: this.args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
-                insertModel,
                 clientIntention: this.args.clientIntention,
+                mutationType: "insert",
+                insertModel,
             }) as TForeign;
         } catch (e) {
             // ?

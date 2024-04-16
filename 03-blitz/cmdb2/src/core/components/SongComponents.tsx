@@ -205,6 +205,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
                 <EditFieldsDialogButton
                     dialogTitle='Edit song'
+                    dialogDescription={<SettingMarkdown setting='EditSongDialogDescription' />}
                     readonly={props.readonly}
                     initialValue={song}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
@@ -223,7 +224,15 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                             showSnackbar({ children: "update error", severity: 'error' });
                         }).finally(refetch);
                     }}
-                    dialogDescription={<SettingMarkdown setting='EditSongDialogDescription' />}
+                    onDelete={(api: EditFieldsDialogButtonApi) => {
+                        tableClient.doDeleteMutation(song.id, 'softWhenPossible').then(() => {
+                            showSnackbar({ children: "delete successful", severity: 'success' });
+                            api.close();
+                        }).catch(err => {
+                            console.log(err);
+                            showSnackbar({ children: "delete error", severity: 'error' });
+                        }).finally(refetch);
+                    }}
                 />
 
                 <CMChipContainer>

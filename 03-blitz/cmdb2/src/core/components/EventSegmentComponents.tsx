@@ -144,7 +144,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const handleDelete = (saveClient: DB3Client.xTableRenderClient) => {
-        saveClient.doDeleteMutation(props.segment.id).then(e => {
+        saveClient.doDeleteMutation(props.segment.id, 'softWhenPossible').then(e => {
             showSnackbar({ severity: "success", children: "segment deleted" });
             setEditOpen(false);
             refetch();

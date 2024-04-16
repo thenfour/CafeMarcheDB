@@ -136,13 +136,21 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
 
 
 // DELETE ////////////////////////////////////////////////
-export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<boolean> => {
+export const deleteImpl = async (table: db3.xTable, id: number, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext, deleteType: "softWhenPossible" | "hard"): Promise<boolean> => {
     try {
         const contextDesc = `delete:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
         const dbTableClient = db[table.tableName]; // the prisma interface
 
         // TODO: delete row authorization
+
+        if (table.softDeleteSpec && deleteType === "softWhenPossible") {
+            // perform a soft delete.
+            await updateImpl(table, id, {
+                [table.softDeleteSpec.isDeletedColumnName]: true,
+            }, ctx, clientIntention);
+            return true;
+        }
 
         // delete any associations for this item first.
         table.columns.forEach(async (column) => {

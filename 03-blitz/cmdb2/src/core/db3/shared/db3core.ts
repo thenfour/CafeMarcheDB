@@ -59,15 +59,30 @@ export type FieldAssociationWithTable = "tableColumn" | "associationRecord" | "f
 ////////////////////////////////////////////////////////////////
 // the mutation needs to be able to access the xtable in order to
 // validate etc.
-export interface MutatorInput {
+export interface MutatorInputBase {
     tableID: string;
     tableName: string;
-    insertModel?: TAnyModel;
-    deleteId?: number;
-    updateId?: number;
-    updateModel?: TAnyModel;
     clientIntention: xTableClientUsageContext;
 };
+
+interface MutatorDelete extends MutatorInputBase {
+    mutationType: "delete";
+    deleteId: number;
+    deleteType: "softWhenPossible" | "hard";
+};
+
+interface MutatorInsert extends MutatorInputBase {
+    mutationType: "insert";
+    insertModel: TAnyModel;
+};
+
+interface MutatorUpdate extends MutatorInputBase {
+    mutationType: "update";
+    updateId: number;
+    updateModel: TAnyModel;
+};
+
+export type MutatorInput = MutatorDelete | MutatorInsert | MutatorUpdate;
 
 export interface CMDBTableFilterItem { // from MUI GridFilterItem
     id?: number | string;

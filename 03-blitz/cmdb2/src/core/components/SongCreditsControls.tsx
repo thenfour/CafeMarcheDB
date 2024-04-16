@@ -1,24 +1,14 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, FormControlLabel, IconButton, InputBase } from "@mui/material";
-import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
-import { assert } from 'blitz';
-import { Prisma } from "db";
 import React from "react";
-import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { StandardVariationSpec } from 'shared/color';
-import { formatSongLength } from 'shared/time';
-import { TAnyModel, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { TAnyModel } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { API } from '../db3/clientAPI';
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
-import { CMChipContainer, CMStandardDBChip, ConfirmationDialog, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog, UserChip } from "./CMCoreComponents";
-import { CMDialogContentText, CMSmallButton } from './CMCoreComponents2';
+import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
+import { CMStandardDBChip, UserChip } from "./CMCoreComponents";
 import { Markdown } from "./RichTextEditor";
-import { DB3EditObject2Dialog, DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -26,13 +16,15 @@ export interface SongCreditProps {
     refetch: () => void;
     value: db3.SongCreditPayloadFromVerboseSong;
     tableClient: DB3Client.xTableRenderClient;
+    readonly: boolean;
 };
 export const SongCredit = (props: SongCreditProps) => {
     //const [showDeleteConfirmation, setShowDeleteConfirmation] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const publicData = useAuthenticatedSession();
 
     const handleConfirmedDelete = (api: DB3EditRowButtonAPI) => {
-        props.tableClient.doDeleteMutation(props.value.id).then(e => {
+        props.tableClient.doDeleteMutation(props.value.id, 'softWhenPossible').then(e => {
             showSnackbar({ severity: "success", children: "deleted" });
             api.closeDialog();
         }).catch(e => {
@@ -55,17 +47,24 @@ export const SongCredit = (props: SongCreditProps) => {
         });
     };
 
+    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
+        clientIntention: props.tableClient.args.clientIntention,
+        model: props.value,
+        publicData,
+    });
+
+
     return <div className='songCredit'>
         <UserChip value={props.value.user} />
         <CMStandardDBChip model={props.value.type} border='noBorder' />
         <span className='year'>{props.value.year}</span>
-        <DB3EditRowButton
+        {editAuthorized && !props.readonly && <DB3EditRowButton
             smallButton={true}
             tableRenderClient={props.tableClient}
             row={props.value}
             onSave={handleSaveEdits}
             onDelete={handleConfirmedDelete}
-        />
+        />}
         <Markdown className='comment' markdown={props.value.comment} />
     </div>;
 };
@@ -82,6 +81,7 @@ export const SongCreditsControl = (props: SongCreditsControlProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const user = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useAuthenticatedSession();
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xSongCredit,
@@ -124,14 +124,19 @@ export const SongCreditsControl = (props: SongCreditsControlProps) => {
     newObj.songId = props.value.id;
     newObj.year = `${(new Date()).getFullYear()}`;
 
+    const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
+        clientIntention,
+        publicData,
+    });
+
     return <div className='songCreditsContainer'>
-        {props.value.credits.map(c => <SongCredit key={c.id} value={c} refetch={refetch} tableClient={tableClient} />)}
-        <DB3EditRowButton
+        {props.value.credits.map(c => <SongCredit key={c.id} value={c} refetch={refetch} tableClient={tableClient} readonly={props.readonly} />)}
+        {insertAuthorized && !props.readonly && <DB3EditRowButton
             onSave={handleSave}
             row={newObj}
             tableRenderClient={tableClient}
             label={`Add song credit`}
-        />
+        />}
     </div>;
 };
 

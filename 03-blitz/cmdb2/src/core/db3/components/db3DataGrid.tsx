@@ -215,7 +215,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             return null;
         }
         const handleYes = () => {
-            tableClient.doDeleteMutation(deleteRowId).then(() => {
+            tableClient.doDeleteMutation(deleteRowId, 'hard').then(() => {
                 showSnackbar({ children: "deleted successful", severity: 'success' });
                 setDeleteRowId(null);
                 tableClient.refetch();
@@ -232,12 +232,16 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
 
         const handleClose = () => setDeleteRowId(null);
 
+        // if (tableSpec.args.table.softDeleteSpec) {
+
+        // }
+
         return (
             <Dialog
                 open={true}
                 onClose={handleClose}
             >
-                <DialogTitle>Delete row?</DialogTitle>
+                <DialogTitle>Delete row (this is a HARD delete)?</DialogTitle>
                 <DialogContent dividers>
                     confirm delete
                 </DialogContent>

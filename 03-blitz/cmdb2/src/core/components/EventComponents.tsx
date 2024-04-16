@@ -758,6 +758,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     initialValue={event}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
+                    dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
                     onCancel={() => { }}
                     onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         tableClient.doUpdateMutation(obj).then(() => {
@@ -772,7 +773,15 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                             showSnackbar({ children: "update error", severity: 'error' });
                         }).finally(refetch);
                     }}
-                    dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
+                    onDelete={(api: EditFieldsDialogButtonApi) => {
+                        tableClient.doDeleteMutation(event.id, 'softWhenPossible').then(() => {
+                            showSnackbar({ children: "delete successful", severity: 'success' });
+                            api.close();
+                        }).catch(err => {
+                            console.log(err);
+                            showSnackbar({ children: "delete error", severity: 'error' });
+                        }).finally(refetch);
+                    }}
                 />
 
                 {event.status && <CMStandardDBChip
