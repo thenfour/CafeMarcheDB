@@ -4,6 +4,7 @@
   --primary-color: red;
 
   --subtle-elevation: 2px 2px 5px 2px rgba(0, 0, 0, 0.2);
+  --even-more-subtle-elevation: 2px 2px 5px 2px rgba(0, 0, 0, 0.1);
 
   --color-transition-duration: .3s;
 
@@ -576,7 +577,8 @@ it's not often you'll actually want markdown that's really wide.
   font-weight: normal;
   /*hug the title a bit*/
   /* line-height: 20px; */
-  margin-top: -10px;
+  /* no negative margin; it makes things visually uneven when small etc */
+  /* margin-top: -10px; */
   font-style: italic;
 }
 
@@ -614,19 +616,32 @@ it's not often you'll actually want markdown that's really wide.
   margin: 0 0 12px 0;
 }
 
+/* the idea is to make a visual distinction between the filter controls and the items which are listed below */
+.contentSection.filterControls {
+  box-shadow: none;
+  border: 3px solid #bbb;
+  border-radius: 8px;
+  padding: 10px 0px;
+  margin: 10px 0px;
+  background-color: #f8f8f8;
+}
 
 .contentSection .smallInfoBox {
+
   /* background-color: #eee; */
-  /* margin-right: 40px;
-  margin-top: 4px; */
   /* margin-bottom: 10px; */
   display: flex;
   align-items: center;
-  opacity: 70%;
+  /* opacity: 70%; */
   font-size: 19px;
   text-transform: uppercase;
   font-weight: bold;
   white-space: nowrap;
+  color: #aaa;
+  margin: 4px 0px 6px 6px;
+  letter-spacing: 0.7px;
+  /* padding-left: 7px; */
+  /* background-color: black; */
 }
 
 .contentSection .smallInfoBox .icon {
@@ -670,7 +685,34 @@ it's not often you'll actually want markdown that's really wide.
   margin-bottom: 10px;
 }
 
-.approvalSummaryLine .approvalItem .prompt {
+
+
+
+
+/* search results overrides to make it less emphatic */
+.searchResults .contentSection {
+  margin-bottom: 20px;
+  border-left: solid 6px #ccc;
+  box-shadow: var(--even-more-subtle-elevation);
+  padding-bottom: 0px;
+}
+
+.searchResults .contentSection:hover {
+  border-left: solid 6px #88f;
+}
+
+.searchResults .contentSection>.header {
+  opacity: 50%;
+  /* filter: saturate(.5); */
+}
+
+.searchResults .contentSection .titleText {
+  font-size: 30px;
+  ;
+}
+
+
+.contentSection .approvalSummaryLine .approvalItem .prompt {
   font-weight: bold;
   font-size: 18px;
 }
@@ -835,29 +877,4 @@ table td {
 .columnName-name input {
   font-weight: bold;
   font-size: 20px;
-}
-
-
-/* well this is for song pages length & BPM display so probably not as generic as it sounds */
-div.SingleLineNameValuePairContainer {
-  display: flex;
-  align-items: center;
-  width: min-content;
-  border: 2px solid #ddd;
-}
-
-
-div.SingleLineNameValuePairContainer>div.name {
-  /* for multi-row alignment */
-  width: 100px;
-  background-color: #ddd;
-}
-
-
-div.SingleLineNameValuePairContainer>div.value {
-  /* for multi-row alignment */
-  width: 150px;
-  font-family: monospace;
-  color: #66e;
-  text-align: right;
 }

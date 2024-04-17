@@ -7,6 +7,8 @@ import { IsNullOrWhitespace, gQueryOptions } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip } from "src/core/components/CMCoreComponents";
+import { EventDetailContainer } from "src/core/components/EventComponents";
+import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
 import { EventFrontpageTabContent } from "src/core/components/EventFrontpageComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { VisibilityValue } from "src/core/components/VisibilityControl";
@@ -49,46 +51,16 @@ const EventsList = () => {
     const events = eventsClient.items as db3.EventClientPayload_Verbose[];
 
     return <>
-        {events.map(event => <CMSinglePageSurfaceCard key={event.id}>
-            <div className={`EventDetail contentSection event`}>
-                <div className='header'>
+        {events.map(event => {
+            const eventData = CalculateEventMetadata(event);
 
-                    <div className="date smallInfoBox">
-                        {gIconMap.CalendarMonth()}
-                        <span className="text">{API.events.getEventDateRange(event).toString()}</span>
-                    </div>
-                    <div className="location smallInfoBox">
-                        {gIconMap.Place()}
-                        <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
-                    </div>
-                    <div className='flex-spacer'></div>
-                    <VisibilityValue permission={event.visiblePermission} variant='verbose' />
-                </div>
-
-                <div className='content'>
-                    <div className='titleLine'>
-                        <div className="titleText">
-                            <Link href={API.events.getURIForEvent(event)} className="titleLink">
-                                {event.name}
-                            </Link>
-                        </div>
-                    </div>
-
-                    {event.status && <CMStandardDBChip
-                        variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
-                        border='border'
-                        shape="rectangle"
-                        model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
-                    />}
-
-                    <CMChipContainer>
-                        {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
-                    </CMChipContainer>
-
-                    <EventFrontpageTabContent readonly={false} refetch={eventsClient.refetch} event={event} />
-                </div>
-            </div>
-        </CMSinglePageSurfaceCard>)}
+            // return <CMSinglePageSurfaceCard>
+            return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData}>
+                <EventFrontpageTabContent readonly={false} refetch={eventsClient.refetch} event={event} />
+            </EventDetailContainer>;
+            //</CMSinglePageSurfaceCard>
+        }
+        )}
     </>;
 };
 

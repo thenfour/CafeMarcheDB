@@ -454,7 +454,7 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 // however, that has drawbacks:
 // - the init code is a lot, and it would either need to be duplicated or pass a huge amount of data around. neither is nice
 // - will allow a smoother transition between verbosities
-export type EventDetailVerbosity = "compact" | "default" | "verbose";
+//export type EventDetailVerbosity = "compact" | "default" | "verbose";
 
 
 

@@ -26,11 +26,11 @@ import { CMSmallButton } from "./CMCoreComponents2";
 import { CoerceToBoolean } from "shared/utils";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const Markdown = (props: { markdown: string | null, id?: string, className?: string }) => {
+export const Markdown = (props: { markdown: string | null, id?: string, className?: string, compact?: boolean }) => {
     const md = new MarkdownIt;
     if (props.markdown == null) return <></>;
     if (props.markdown.trim().length < 1) return <></>;
-    return <div className={`markdown renderedContent limitedWidth ${props.className || ""}`}>
+    return <div className={`markdown renderedContent limitedWidth ${props.compact && "compact"} ${props.className || ""}`}>
         <div id={props.id} dangerouslySetInnerHTML={{ __html: md.render(props.markdown || "") }}></div>
     </div >;
 };

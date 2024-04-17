@@ -12,7 +12,8 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { SongClientColumns, SongDetail } from "src/core/components/SongComponents";
+import { SongClientColumns, SongDetail, SongDetailContainer, SongMetadataView } from "src/core/components/SongComponents";
+import { CalculateSongMetadata } from "src/core/components/SongComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
@@ -44,10 +45,10 @@ const SongsControls = (props: SongsControlsProps) => {
         props.onChange(newSpec);
     };
 
-    const setRecordCount = (recordCount: number) => {
-        const newSpec: SongsControlsSpec = { ...props.spec, recordCount };
-        props.onChange(newSpec);
-    };
+    // const setRecordCount = (recordCount: number) => {
+    //     const newSpec: SongsControlsSpec = { ...props.spec, recordCount };
+    //     props.onChange(newSpec);
+    // };
 
     const toggleTag = (tagId: number) => {
         const newSpec: SongsControlsSpec = { ...props.spec };
@@ -93,20 +94,22 @@ const SongsControls = (props: SongsControlsProps) => {
 
                 </div>
             </div>
-            <div className="row">
-                <CMChipContainer className="cell">
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 5 }} onClick={() => setRecordCount(5)}>5</CMChip>
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 20 }} onClick={() => setRecordCount(20)}>20</CMChip>
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 100 }} onClick={() => setRecordCount(100)}>100</CMChip>
-                </CMChipContainer>
-            </div>
         </div>{/* content */}
     </div>; // {/* filterControlsContainer */ }
 };
 
 
-
-
+// {items.map(song => <SongListItem key={song.id} readonly={true} song={song} tableClient={songsClient} />)}
+interface SongListItemProps {
+    song: db3.SongPayload_Verbose;
+    tableClient: DB3Client.xTableRenderClient;
+};
+const SongListItem = (props: SongListItemProps) => {
+    const songData = CalculateSongMetadata(props.song);
+    return <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} >
+        <SongMetadataView readonly={true} refetch={props.tableClient.refetch} songData={songData} showCredits={false} />
+    </SongDetailContainer>;
+};
 
 
 const SongsList = ({ filterSpec }: SongsListArgs) => {
@@ -146,15 +149,8 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
         songsClient.refetch();
     }, [filterSpec]);
 
-    // console.log(`calculating song where clause`);
-    // //const wc = songsClient.schema.GetQuickFilterWhereClauseExpression("roger", clientIntention);
-    // songsClient.schema.CalculateWhereClause({ filterModel, clientIntention, skipVisibilityCheck: true }).then(wc => {
-    //     console.log(`calculated song where clause`);
-    //     console.log(wc);
-    // });
-
-    return <div className="songsList">
-        {items.map(song => <SongDetail key={song.id} readonly={true} song={song} tableClient={songsClient} isOnlySongVisible={false} allowRouterPush={false} />)}
+    return <div className="songsList searchResults">
+        {items.map(song => <SongListItem key={song.id} song={song} tableClient={songsClient} />)}
     </div>;
 };
 
@@ -235,7 +231,7 @@ const MainContent = () => {
         />
 
         <Suspense>
-            <CMSinglePageSurfaceCard>
+            <CMSinglePageSurfaceCard className="filterControls">
                 <div className="content">
                     <SongsControls onChange={handleSpecChange} spec={controlSpec} />
                 </div>

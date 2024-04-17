@@ -12,12 +12,15 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
-import { CMChipContainer, CMStandardDBChip, CustomTabPanel, TabA11yProps } from './CMCoreComponents';
+import { CMChipContainer, CMStandardDBChip, CustomTabPanel, TabA11yProps, UserChip } from './CMCoreComponents';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
-import { SongCreditsControl } from './SongCreditsControls';
 import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
+import { CalculateSongMetadata, SongWithMetadata } from './SongComponentsBase';
+import { Markdown } from './RichTextEditor';
+import { IsNullOrWhitespace, TAnyModel } from 'shared/utils';
+import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 
 
 export const SongClientColumns = {
@@ -107,27 +110,176 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.
 };
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface SongCreditEditButtonProps {
+    //songData: SongWithMetadata;
+    value: db3.SongCreditPayloadFromVerboseSong;
+    refetch: () => void;
+    readonly: boolean;
+    creditsTableClient: DB3Client.xTableRenderClient;
+};
+// also checks authorization & readonly to hide this button
+export const SongCreditEditButton = ({ creditsTableClient, ...props }: SongCreditEditButtonProps) => {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const publicData = useAuthenticatedSession();
 
+    const handleConfirmedDelete = (api: DB3EditRowButtonAPI) => {
+        creditsTableClient.doDeleteMutation(props.value.id, 'softWhenPossible').then(e => {
+            showSnackbar({ severity: "success", children: "deleted" });
+            api.closeDialog();
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error deleting" });
+        }).finally(async () => {
+            props.refetch();
+        });
+    };
+
+    const handleSaveEdits = (newRow: TAnyModel, api: DB3EditRowButtonAPI) => {
+        creditsTableClient.doUpdateMutation(newRow).then(e => {
+            showSnackbar({ severity: "success", children: "updated" });
+            api.closeDialog();
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error saving" });
+        }).finally(async () => {
+            props.refetch();
+        });
+    };
+
+    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
+        clientIntention: creditsTableClient.args.clientIntention,
+        model: props.value,
+        publicData,
+    });
+
+    if (!editAuthorized) return null;
+    if (props.readonly) return null;
+
+    return <DB3EditRowButton
+        smallButton={true}
+        label={gIconMap.Edit()}
+        tableRenderClient={creditsTableClient}
+        row={props.value}
+        onSave={handleSaveEdits}
+        onDelete={handleConfirmedDelete}
+    />;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const gSongDetailTabSlugIndices = {
-    info: 0,
-    files: 1,
-} as const;
+export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMetadata, refetch: () => void, readonly: boolean, showCredits: boolean }) => {
 
-export interface SongDetailArgs {
-    song: db3.SongPayload_Verbose;
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const user = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const publicData = useAuthenticatedSession();
+
+    const tableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xSongCredit,
+        columns: [
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "type", cellWidth: 120, }),
+            new DB3Client.GenericStringColumnClient({ columnName: "year", cellWidth: 120 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "comment", cellWidth: 120 }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "song", cellWidth: 120, visible: false }),
+        ],
+    });
+
+    const creditsTableClient = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.Mutation,
+        tableSpec,
+    });
+
+    const handleSaveNew = (updateObj: TAnyModel, api: DB3EditRowButtonAPI) => {
+        creditsTableClient.doInsertMutation(updateObj).then(e => {
+            showSnackbar({ severity: "success", children: "updated" });
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating" });
+        }).finally(async () => {
+            creditsTableClient.refetch();
+            props.refetch();
+            api.closeDialog();
+        });
+    };
+
+    const newObj = db3.xSongCredit.createNew(clientIntention);
+    newObj.song = songData.song;
+    newObj.songId = songData.song.id;
+    newObj.year = `${(new Date()).getFullYear()}`;
+
+    const insertAuthorized = db3.xEventSongList.authorizeRowBeforeInsert({
+        clientIntention,
+        publicData,
+    });
+
+    const refetch = () => {
+        creditsTableClient.refetch();
+        props.refetch();
+    };
+
+    //const rows: { name: React.ReactNode, value: [React.ReactNode, React.ReactNode, React.ReactNode] }[] = [];
+    const rows: { rowClassName: string, cells: React.ReactNode[] }[] = [];
+
+    if (songData.formattedLength) {
+        rows.push({ rowClassName: "length", cells: [<th key={0}>Length</th>, <td key={1} colSpan={1}>{songData.formattedLength}</td>, <td key={2} colSpan={2}></td>, null] });
+    }
+    if (songData.formattedBPM) {
+        rows.push({ rowClassName: "bpm", cells: [<th key={0}>Tempo</th>, <td key={1} colSpan={1}>{songData.formattedBPM}</td>, <td key={2} colSpan={2}></td>, null] });
+    }
+
+    if (props.showCredits) {
+        songData.song.credits.forEach(credit => {
+            rows.push({
+                rowClassName: `credit `,
+                cells: [
+                    <th key={0} className={`creditType ${credit.type.text}`}>{credit.type.text}</th>,
+                    <td key={1} className={`user`}><div className='flexRow'>
+                        <SongCreditEditButton readonly={props.readonly} refetch={refetch} creditsTableClient={creditsTableClient} value={credit} />{credit.user && credit.user.name}
+                    </div>
+                    </td>,
+                    <td key={2} className={`year`}>{credit.year}</td>,
+                    <td key={3} className={`comment`}><Markdown markdown={credit.comment} compact={true} /></td>,
+                ],
+            });
+        });
+    }
+
+    if (!rows.length) return null;
+
+    return <div>
+        <table className='songMetadata'>
+            <tbody>
+                {rows.map((kv, i) => <tr key={i} className={`${kv.rowClassName}`}>
+                    {kv.cells.map((cell, i) => cell)}
+                </tr>)}
+            </tbody>
+        </table>
+
+        {insertAuthorized && !props.readonly && <DB3EditRowButton
+            onSave={handleSaveNew}
+            row={newObj}
+            tableRenderClient={creditsTableClient}
+            label={`Add song credit`}
+        />}
+    </div>;
+
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface SongDetailContainerProps {
+    songData: SongWithMetadata;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTabIndex?: number;
-    isOnlySongVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
-    allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
+    //isOnlySongVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
 }
 
-export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
-    const [user] = useCurrentUser()!;
+export const SongDetailContainer = ({ songData, tableClient, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
+    const song = songData.song;
     const router = useRouter();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
 
@@ -135,42 +287,15 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         tableClient.refetch();
     };
 
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
-
-    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
-    };
-
-    // convert index to tab slug
-    const tabSlug = Object.keys(gSongDetailTabSlugIndices)[selectedTab];
-    const eventURI = API.songs.getURIForSong(song, tabSlug);
-
-    React.useEffect(() => {
-        if (props.allowRouterPush) {
-            void router.push(eventURI);
-        }
-    }, [eventURI]);
-
     const visInfo = API.users.getVisibilityInfo(song);
 
-    const formattedBPM = API.songs.getFormattedBPM(song);
-    const formattedLength = !!song.lengthSeconds ? formatSongLength(song.lengthSeconds) : null;
-
     return <div className={`EventDetail contentSection event ${visInfo.className}`}>
-        <div className='header'>
-
-            <div className="location smallInfoBox">
-                <span className="text">&nbsp;</span>
-            </div>
-            <div className='flex-spacer'></div>
-            <VisibilityValue permission={song.visiblePermission} variant='verbose' />
-        </div>
 
         <div className='content'>
 
             <div className='titleLine'>
                 <div className="titleText">
-                    <Link href={eventURI} className="titleLink">
+                    <Link href={songData.songURI} className="titleLink">
                         <span className='title'>{song.name}</span>
                         {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>({song.introducedYear})</span></Tooltip>}
                     </Link>
@@ -185,6 +310,11 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                         value={song.id}
                     />
                 }
+
+                <CMChipContainer>
+                    {song.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.tag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+                </CMChipContainer>
+                <div className='flex-spacer'></div>
 
                 <EditFieldsDialogButton
                     dialogTitle='Edit song'
@@ -218,47 +348,77 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                     }}
                 />
 
-                <CMChipContainer>
-                    {song.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.tag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
-                </CMChipContainer>
+                <VisibilityValue permission={song.visiblePermission} variant='verbose' />
 
-            </div>
+            </div>{/* title line */}
 
-            {formattedLength && <div className='contentRow EmphasizedProperty SongLength SingleLineNameValuePairContainer'>
-                <div className='name'>Length</div><div className='value'>{formattedLength}</div>
-            </div>}
+            {props.children}
 
-            {formattedBPM && <div className='contentRow EmphasizedProperty BPM SingleLineNameValuePairContainer'>
-                <div className='name'>BPM</div><div className='value'>{formattedBPM}</div>
-            </div>}
-
-            <div className='contentRow songCreditsControl'>
-                <SongCreditsControl value={song} refetch={refetch} readonly={props.readonly} />
-            </div>
-
-            <Tabs
-                value={selectedTab}
-                onChange={handleTabChange}
-                variant="scrollable"
-                scrollButtons="auto"
-            >
-                <Tab label="Song Info" {...TabA11yProps('song', gSongDetailTabSlugIndices.info)} />
-                <Tab label={`Files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.files)} />
-            </Tabs>
-
-            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.info}>
-                {/* <Markdown markdown={song.description} /> */}
-                <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
-            </CustomTabPanel>
-
-            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.files}>
-                <FilesTabContent fileTags={song.taggedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
-                    taggedSongId: song.id,
-                }} />
-            </CustomTabPanel>
-        </div>
+        </div>{/* content */}
 
     </div>;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const gSongDetailTabSlugIndices = {
+    info: 0,
+    files: 1,
+} as const;
+
+export interface SongDetailArgs {
+    song: db3.SongPayload_Verbose;
+    tableClient: DB3Client.xTableRenderClient;
+    readonly: boolean;
+    initialTabIndex?: number;
+}
+
+export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
+    const router = useRouter();
+
+    const refetch = () => {
+        tableClient.refetch();
+    };
+
+    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
+
+    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
+        setSelectedTab(newValue);
+    };
+
+    // convert index to tab slug
+    const tabSlug = Object.keys(gSongDetailTabSlugIndices)[selectedTab];
+    const songData = CalculateSongMetadata(song, tabSlug);
+
+    React.useEffect(() => {
+        void router.push(songData.songURI);
+    }, [songData.songURI]);
+
+    return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient}>
+
+        <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
+
+        <Tabs
+            value={selectedTab}
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+        >
+            <Tab label="Song Info" {...TabA11yProps('song', gSongDetailTabSlugIndices.info)} />
+            <Tab label={`Files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.files)} />
+        </Tabs>
+
+        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.info}>
+            <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
+        </CustomTabPanel>
+
+        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.files}>
+            <FilesTabContent fileTags={song.taggedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
+                taggedSongId: song.id,
+            }} />
+        </CustomTabPanel>
+    </SongDetailContainer>;
+
 };
 
 

@@ -21,7 +21,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconSelectDialog';
-import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, } from './CMCoreComponents';
+import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceControl } from './EventAttendanceComponents';
@@ -706,8 +706,8 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
     return <div className={`EventDetail contentSection event ${visInfo.className} ${(props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
         <div className='header'>
-
             <CMChipContainer>
+
                 {eventData.event.type && //<EventTypeValue type={event.type} />
                     <CMStandardDBChip
                         model={eventData.event.type}
@@ -715,18 +715,50 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                         variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
                     />
                 }
+                {eventData.event.status && <CMStandardDBChip
+                    variation={StandardVariationSpec.Strong}
+                    border='border'
+                    shape="rectangle"
+                    model={eventData.event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
+                />}
+
 
             </CMChipContainer>
-
-            <div className="date smallInfoBox">
-                <CalendarMonthIcon className="icon" />
-                <span className="text">{eventData.dateRange.toString()}</span>
-            </div>
-            <div className="location smallInfoBox">
-                <PlaceIcon className="icon" />
-                <span className="text">{IsNullOrWhitespace(eventData.event.locationDescription) ? "Location TBD" : eventData.event.locationDescription}</span>
-            </div>
             <div className='flex-spacer'></div>
+
+            <EditFieldsDialogButton
+                dialogTitle='Edit event'
+                readonly={props.readonly}
+                initialValue={eventData.event}
+                renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
+                tableSpec={tableClient.tableSpec}
+                dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
+                onCancel={() => { }}
+                onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    tableClient.doUpdateMutation(obj).then(() => {
+                        showSnackbar({ children: "update successful", severity: 'success' });
+                        api.close();
+                        if (obj.slug !== eventData.event.slug) {
+                            const newUrl = API.events.getURIForEvent(obj.slug);
+                            void router.push(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                        }
+                    }).catch(err => {
+                        console.log(err);
+                        showSnackbar({ children: "update error", severity: 'error' });
+                    }).finally(refetch);
+                }}
+                onDelete={(api: EditFieldsDialogButtonApi) => {
+                    tableClient.doDeleteMutation(eventData.event.id, 'softWhenPossible').then(() => {
+                        showSnackbar({ children: "delete successful", severity: 'success' });
+                        api.close();
+                    }).catch(err => {
+                        console.log(err);
+                        showSnackbar({ children: "delete error", severity: 'error' });
+                    }).finally(refetch);
+                }}
+            />
+
+
             <VisibilityValue permission={eventData.event.visiblePermission} variant='verbose' />
         </div>
 
@@ -739,49 +771,23 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     </Link>
                 </div>
 
-                <EditFieldsDialogButton
-                    dialogTitle='Edit event'
-                    readonly={props.readonly}
-                    initialValue={eventData.event}
-                    renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
-                    tableSpec={tableClient.tableSpec}
-                    dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
-                    onCancel={() => { }}
-                    onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
-                        tableClient.doUpdateMutation(obj).then(() => {
-                            showSnackbar({ children: "update successful", severity: 'success' });
-                            api.close();
-                            if (obj.slug !== eventData.event.slug) {
-                                const newUrl = API.events.getURIForEvent(obj.slug);
-                                void router.push(newUrl); // <-- ideally we would show the snackbar on refresh but no.
-                            }
-                        }).catch(err => {
-                            console.log(err);
-                            showSnackbar({ children: "update error", severity: 'error' });
-                        }).finally(refetch);
-                    }}
-                    onDelete={(api: EditFieldsDialogButtonApi) => {
-                        tableClient.doDeleteMutation(eventData.event.id, 'softWhenPossible').then(() => {
-                            showSnackbar({ children: "delete successful", severity: 'success' });
-                            api.close();
-                        }).catch(err => {
-                            console.log(err);
-                            showSnackbar({ children: "delete error", severity: 'error' });
-                        }).finally(refetch);
-                    }}
-                />
-
-                {eventData.event.status && <CMStandardDBChip
-                    variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
-                    border='border'
-                    shape="rectangle"
-                    model={eventData.event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
-                />}
-
                 <CMChipContainer>
                     {eventData.event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
                 </CMChipContainer>
+            </div>
 
+            <div className='titleLine'>
+                <div className="date smallInfoBox">
+                    <CalendarMonthIcon className="icon" />
+                    <span className="text">{eventData.dateRange.toString()}</span>
+                </div>
+            </div>
+
+            <div className='titleLine'>
+                <div className="location smallInfoBox">
+                    <PlaceIcon className="icon" />
+                    <span className="text">{IsNullOrWhitespace(eventData.event.locationDescription) ? "Location TBD" : eventData.event.locationDescription}</span>
+                </div>
             </div>
 
             {props.children}

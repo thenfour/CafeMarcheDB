@@ -9,7 +9,7 @@ import { Permission } from "shared/permissions";
 import { TAnyModel, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { EventDetailContainer, EventDetailFull, EventTableClientColumns } from "src/core/components/EventComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
@@ -194,7 +194,7 @@ interface EventsControlsSpec {
     tagFilter: number[];
     statusFilter: number[];
     typeFilter: number[];
-    verbosity: EventDetailVerbosity;
+    //verbosity: EventDetailVerbosity;
     refreshSerial: number; // increment this in order to trigger a refetch
 };
 
@@ -220,10 +220,10 @@ const EventsControls = (props: EventsControlsProps) => {
         props.onChange(newSpec);
     };
 
-    const setVerbosity = (verbosity: EventDetailVerbosity) => {
-        const newSpec: EventsControlsSpec = { ...props.spec, verbosity };
-        props.onChange(newSpec);
-    };
+    // const setVerbosity = (verbosity: EventDetailVerbosity) => {
+    //     const newSpec: EventsControlsSpec = { ...props.spec, verbosity };
+    //     props.onChange(newSpec);
+    // };
 
     const toggleTag = (tagId: number) => {
         const newSpec: EventsControlsSpec = { ...props.spec };
@@ -276,6 +276,7 @@ const EventsControls = (props: EventsControlsProps) => {
                                     //selected={props.spec.statusFilter.some(id => id === status.id)}
                                     onClick={() => toggleStatus(status.id)}
                                     color={status.color}
+                                    shape="rectangle"
                                     variation={{ ...StandardVariationSpec.Strong, selected: props.spec.statusFilter.some(id => id === status.id) }}
                                 >
                                     {RenderMuiIcon(status.iconName)}{status.label} ({status.events.length})
@@ -320,18 +321,6 @@ const EventsControls = (props: EventsControlsProps) => {
 
 
                 </div>
-            </div>
-            <div className="row">
-                {/* <div className="caption cell">SHOW</div> */}
-                <CMChipContainer className="cell">
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.verbosity === "compact" }} onClick={() => setVerbosity("compact")}>Compact</CMChip>
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.verbosity === "default" }} onClick={() => setVerbosity("default")}>Default</CMChip>
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.verbosity === "verbose" }} onClick={() => setVerbosity("verbose")}>Full</CMChip>
-
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 5 }} onClick={() => setRecordCount(5)}>5</CMChip>
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 20 }} onClick={() => setRecordCount(20)}>20</CMChip>
-                    <CMChip variation={{ ...StandardVariationSpec.Strong, selected: props.spec.recordCount === 100 }} onClick={() => setRecordCount(100)}>100</CMChip>
-                </CMChipContainer>
             </div>
         </div>{/* content */}
     </div>; // {/* filterControlsContainer */ }
@@ -392,9 +381,9 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
 
     const items = eventsClient.items as db3.EventClientPayload_Verbose[];
 
-    return <>
+    return <div className="eventList searchResults">
         {items.map(event => <EventListItem key={event.id} event={event} tableClient={eventsClient} />)}
-    </>;
+    </div>;
 };
 
 const MainContent = () => {
@@ -406,7 +395,6 @@ const MainContent = () => {
         recordCount: 20,
         quickFilter: "",
         tagFilter: [],
-        verbosity: "default",
         statusFilter: [],
         typeFilter: [],
         refreshSerial: 0,
@@ -427,7 +415,7 @@ const MainContent = () => {
         }} />
 
         <Suspense>
-            <CMSinglePageSurfaceCard>
+            <CMSinglePageSurfaceCard className="filterControls">
                 {/* showing {eventsClient.items.length} events */}
                 <div className="content">
                     <EventsControls onChange={handleSpecChange} spec={controlSpec} />
