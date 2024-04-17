@@ -17,13 +17,15 @@ import { TAnyModel, TIconOptions } from "shared/utils";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { GetStyleVariablesForColor } from "./Color";
 import { StandardVariationSpec } from "shared/color";
+import { assert } from "blitz";
 
 
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface CMTextInputBaseProps {
-    value: string | null;
+    value?: string | null;
+    initialValue?: string | null;
     onChange: (e, value) => void;
     autoFocus?: boolean;
     readOnly?: boolean;
@@ -32,20 +34,32 @@ interface CMTextInputBaseProps {
 
 // textfield for a string field on an object.
 export function CMTextInputBase({ value, onChange, autoFocus, readOnly, ...props }: CMTextInputBaseProps) {
+    const [controlledValue, setControlledValue] = React.useState<string>(props.initialValue || "");
+    // if you specify initial value, then we keep the live value internally.
+    const weControlValue = props.initialValue !== undefined;
+    assert(!props.initialValue || !value, "specifying both initial & value is nonsense. either controlled or uncontrolled but not both.");
+
+    const useValue = (weControlValue ? controlledValue : value) || "";
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        if (weControlValue) {
+            setControlledValue(val);
+        }
+        onChange(e, val);
+    };
+
     return <input
         type="text"
         disabled={!!readOnly}
         autoFocus={!!autoFocus}
-        onChange={(e) => { onChange(e, e.target.value); }}
-        value={value || ""}
+        onChange={handleChange}
+        value={useValue}
         className={`CMTextInputBase ${props.className}`}
         autoComplete="off"
         data-lpignore="true"
     />;
 };
-
-
-
 
 
 

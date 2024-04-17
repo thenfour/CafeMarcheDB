@@ -20,7 +20,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gIconMap } from '../db3/components/IconSelectDialog';
+import { gCharMap, gIconMap } from '../db3/components/IconSelectDialog';
 import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, EventDetailVerbosity, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -386,15 +386,15 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
             <thead>
                 <tr>
                     <th>
-                        <div className='interactable' onClick={() => setSortField('user')}>Who {sortField === 'user' && <>&#8595;</>}</div>
+                        <div className='interactable' onClick={() => setSortField('user')}>Who {sortField === 'user' && gCharMap.DownArrow()}</div>
                     </th>
                     <th colSpan={2}>
-                        <div className='interactable' onClick={() => setSortField('instrument')}>Instrument / function {sortField === 'instrument' && <>&#8595;</>}</div>
+                        <div className='interactable' onClick={() => setSortField('instrument')}>Instrument / function {sortField === 'instrument' && gCharMap.DownArrow()}</div>
                     </th>
                     {event.segments.map(seg => <React.Fragment key={seg.id}>
                         <th className='responseCell' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
                             <div className='interactable'>
-                                {seg.name} {sortField === 'response' && seg.id === sortSegmentId && <>&#8595;</>}
+                                {seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
                             </div>
                         </th>
                     </React.Fragment>)}

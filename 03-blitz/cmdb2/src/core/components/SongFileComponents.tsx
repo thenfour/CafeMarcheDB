@@ -1,26 +1,38 @@
 
+import { useAuthenticatedSession } from '@blitzjs/auth';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { Button, DialogActions, DialogContent, DialogContentText, DialogTitle, Tooltip } from "@mui/material";
+import { Button, DialogActions, DialogContent, DialogTitle, Tooltip } from "@mui/material";
 import React from "react";
-import { TAnyModel, formatFileSize, isValidURL, parseMimeType, smartTruncate } from "shared/utils";
+import { StandardVariationSpec } from 'shared/color';
+import { Permission } from 'shared/permissions';
+import { IsNullOrWhitespace, TAnyModel, existsInArray, formatFileSize, isValidURL, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
+import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gIconMap } from "../db3/components/IconSelectDialog";
-import { CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InspectObject, InstrumentChip, ReactiveInputDialog, SongChip, UserChip, } from "./CMCoreComponents";
-import { Markdown } from "./RichTextEditor";
-import { StandardVariationSpec } from 'shared/color';
-import { useAuthenticatedSession } from '@blitzjs/auth';
-import { useAuthorization } from 'src/auth/hooks/useAuthorization';
-import { Permission } from 'shared/permissions';
-import { CMDialogContentText } from './CMCoreComponents2';
-import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { AudioPreviewBehindButton } from './AudioPreview';
+import { gCharMap, gIconMap } from "../db3/components/IconSelectDialog";
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
+import { AudioPreviewBehindButton } from './AudioPreview';
+import { CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InstrumentChip, ReactiveInputDialog, SongChip, UserChip } from "./CMCoreComponents";
+import { CMDialogContentText } from './CMCoreComponents2';
+import { CMTextInputBase } from './CMTextField';
+import { Markdown } from "./RichTextEditor";
+import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 
+type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt"; // keyof File
+type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments";
+
+//////////////////////////////////////////////////////////////////
+
+export interface FileTagBase {
+    id: number;
+    file: db3.FileWithTagsPayload;
+    fileId: number;
+    // plus a songId, eventId, whatever...
+};
 
 
 ////////////////////////////////////////////////////////////////
@@ -153,6 +165,7 @@ interface FileViewerProps {
     value: db3.FileWithTagsPayload;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
     readonly: boolean;
+    statHighlight: SortByKey;
 };
 
 export const FileValueViewer = (props: FileViewerProps) => {
@@ -231,21 +244,25 @@ export const FileValueViewer = (props: FileViewerProps) => {
                 {isAudio && <AudioPreviewBehindButton value={file} />}
             </div>
 
-            {file.externalURI &&
-                <div className="stats externalURI">
-                    <Tooltip title={file.externalURI}>
-                        <div>
+            <Tooltip title={<div>
+                <div>uploaded at {file.uploadedAt.toLocaleString()} by {file.uploadedByUser?.name}</div>
+                {file.externalURI && <div>{file.externalURI}</div>}
+            </div>}>
+                <div className="stats">
+
+                    {file.externalURI &&
+                        <div className="stat externalURI">
                             {smartTruncate(file.externalURI)}
                         </div>
-                    </Tooltip>
-                </div>
-            }
+                    }
 
-            <div className="stats">
-                {file.sizeBytes === null ? "unknown size" : formatFileSize(file.sizeBytes)},
-                uploaded at {file.uploadedAt.toISOString()} by {file.uploadedByUser?.name},
-                {file.mimeType && <>type: {file.mimeType}</>}
-            </div>
+                    {file.sizeBytes !== null && <div className={`stat ${props.statHighlight === 'sizeBytes' && "highlight"}`}>{formatFileSize(file.sizeBytes)}</div>}
+                    {file.mimeType && <div className={`stat ${props.statHighlight === 'mimeType' && "highlight"}`}>{file.mimeType}</div>}
+                    {file.fileCreatedAt && <div className={`stat ${props.statHighlight === 'fileCreatedAt' && "highlight"}`}>created at {file.fileCreatedAt.toLocaleString()}</div>}
+                    {props.statHighlight === 'uploadedByUserId' && <div className='stat highlight'>uploaded by {file.uploadedByUser?.name}</div>}
+                    {props.statHighlight === 'uploadedAt' && <div className='stat highlight'>uploaded at {file.uploadedAt.toLocaleString()}</div>}
+                </div>
+            </Tooltip>
         </div>
     </div>;
 };
@@ -273,12 +290,10 @@ export const FileEditor = (props: FileEditorProps) => {
             // any columns that I intend to update via doUpdateMutation need to be specified here.
             // if they shouldn't be displayed to users, make a hidden version.
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.GenericStringColumnClient({ columnName: "fileLeafName", cellWidth: 150 }),
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
-            //new DB3Client.BoolColumnClient({ columnName: "isDeleted" }), // todo: hide this.
-
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),
-
+            new DB3Client.GenericStringColumnClient({ columnName: "fileLeafName", cellWidth: 150, fieldCaption: "File name" }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
+            new DB3Client.DateTimeColumn({ columnName: "fileCreatedAt" }),
             new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName: "taggedUsers", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName: "taggedSongs", cellWidth: 150, allowDeleteFromCell: false }),
@@ -368,6 +383,266 @@ export const FileEditor = (props: FileEditorProps) => {
 
 
 
+//////////////////////////////////////////////////////////////////
+// this filtering & sorting is done at runtime, not db fetch time.
+interface FileFilterAndSortSpec {
+    quickFilter: string;
+    tagIds: number[];
+    taggedUserIds: number[];
+    taggedInstrumentIds: number[];
+    taggedSongIds: number[];
+    taggedEventIds: number[];
+    mimeTypes: string[];
+
+    sortBy: SortByKey;
+    sortDirection: "asc" | "desc";
+};
+
+function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileTagBase[] {
+
+    // apply filter
+    let filteredItems = items.filter(item => {
+        const tagIds = item.file.tags.map(tag => tag.fileTag.id);
+        if (spec.tagIds.length && !tagIds.some(id => spec.tagIds.includes(id))) return false;
+
+        const userIds = item.file.taggedUsers.map(user => user.user.id);
+        if (spec.taggedUserIds.length && !userIds.some(id => spec.taggedUserIds.includes(id))) return false;
+
+        const instrumentIds = item.file.taggedInstruments.map(instrument => instrument.instrument.id);
+        if (spec.taggedInstrumentIds.length && !instrumentIds.some(id => spec.taggedInstrumentIds.includes(id))) return false;
+
+        const songIds = item.file.taggedSongs.map(song => song.song.id);
+        if (spec.taggedSongIds.length && !songIds.some(id => spec.taggedSongIds.includes(id))) return false;
+
+        const eventIds = item.file.taggedEvents.map(event => event.event.id);
+        if (spec.taggedEventIds.length && !eventIds.some(id => spec.taggedEventIds.includes(id))) return false;
+
+        if (spec.mimeTypes.length) {
+            if (!item.file.mimeType) return false; // we're filtering mime types but this file has none.
+            const parsedMimeType = parseMimeType(item.file.mimeType);
+            if (!spec.mimeTypes.includes(parsedMimeType?.type || "")) { // assumes mime type is the filter (no partial match or subtypes etc)
+                return false;
+            }
+        }
+
+        // quick filter
+        if (IsNullOrWhitespace(spec.quickFilter)) return true;
+
+        const tokensToSearch = [
+            item.file.description.toLocaleLowerCase(),
+            item.file.fileLeafName.toLocaleLowerCase(),
+        ];
+
+        return tokensToSearch.some(t => t.includes(spec.quickFilter.toLocaleLowerCase()));
+    });
+
+    // sort.
+    filteredItems.sort((a, b) => {
+        let aValue = a.file[spec.sortBy];
+        let bValue = b.file[spec.sortBy];
+
+        if (aValue === null || bValue === null) {
+            if (spec.sortDirection === 'asc') {
+                return aValue === null ? 1 : -1;
+            }
+            return aValue === null ? -1 : 1;
+        }
+
+        if (typeof aValue === 'string') {
+            aValue = aValue.toLowerCase();
+            bValue = (bValue as string).toLowerCase();
+        }
+
+        if (spec.sortDirection === 'asc') {
+            return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+        }
+        return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
+    });
+
+    return filteredItems;
+}
+
+
+
+
+
+interface FileFilterAndSortControlsProps {
+    fileTags: FileTagBase[];
+    value: FileFilterAndSortSpec;
+    onChange: (value: FileFilterAndSortSpec) => void;
+};
+
+interface CalculateUniqueTagsReturn<TagPayload> {
+    count: number,
+    tag: TagPayload,
+};
+
+const CalculateUniqueTags = <TagPayload extends { id: number },>(props: { fileTags: FileTagBase[], selector: TagKey, foreignSelector: string }): CalculateUniqueTagsReturn<TagPayload>[] => {
+
+    const uniqueTags: { count: number, tag: TagPayload }[] = [];
+
+    for (var ift = 0; ift < props.fileTags.length; ++ift) {
+        const ft = props.fileTags[ift]!;
+        const tagsArray = ft.file[props.selector];
+        if (tagsArray) {
+            for (var it = 0; it < tagsArray.length; ++it) {
+                const tag = tagsArray[it]!;
+                const xit = uniqueTags.findIndex(ut => ut.tag.id === tag[props.foreignSelector].id);
+                if (xit === -1) {
+                    uniqueTags.push({
+                        tag: tag[props.foreignSelector],
+                        count: 1,
+                    });
+                } else {
+                    uniqueTags[xit]!.count++;
+                }
+            }
+        }
+    }
+
+    uniqueTags.sort((a, b) => b.count - a.count); // sort by count desc
+
+    return uniqueTags;
+};
+
+const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): CalculateUniqueTagsReturn<string>[] => {
+
+    const uniqueTags: { count: number, tag: string }[] = [];
+
+    for (var ift = 0; ift < props.fileTags.length; ++ift) {
+        const ft = props.fileTags[ift]!;
+        const tag = ft.file.mimeType;
+        const mimeInfo = parseMimeType(tag);
+        const key = mimeInfo?.type;
+        if (!key) continue;
+        const xit = uniqueTags.findIndex(ut => ut.tag === key);
+        if (xit === -1) {
+            uniqueTags.push({
+                tag: key,
+                count: 1,
+            });
+        } else {
+            uniqueTags[xit]!.count++;
+        }
+    }
+
+    uniqueTags.sort((a, b) => b.count - a.count); // sort by count desc
+
+    return uniqueTags;
+};
+
+export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps) => {
+
+    const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ selector: 'tags', foreignSelector: "fileTag", fileTags: props.fileTags });
+    const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedInstruments', foreignSelector: "instrument", fileTags: props.fileTags });
+    const uniqueEventTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedEvents', foreignSelector: "event", fileTags: props.fileTags });
+    const uniqueUserTags = CalculateUniqueTags<db3.UserPayloadMinimum>({ selector: 'taggedUsers', foreignSelector: "user", fileTags: props.fileTags });
+    const uniqueSongTags = CalculateUniqueTags<db3.SongPayloadMinimum>({ selector: 'taggedSongs', foreignSelector: "song", fileTags: props.fileTags });
+    const uniqueMimeTypes = CalculateUniqueMimeTypes({ fileTags: props.fileTags });
+
+    const sortArrow = props.value.sortDirection === 'asc' ? gCharMap.DownArrow() : gCharMap.UpArrow();
+
+    return <div className='filterAndSortControls'>
+        <CMTextInputBase value={props.value.quickFilter} onChange={(e, value) => props.onChange({ ...props.value, quickFilter: value })} />
+        <CMChipContainer>
+            {uniqueMimeTypes.map(t => (
+                <CMChip
+                    key={t.tag}
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.mimeTypes, t.tag) }}
+                    tooltip={"File type"}
+                    onClick={() => props.onChange({ ...props.value, mimeTypes: toggleValueInArray(props.value.mimeTypes, t.tag) })}
+                >
+                    {t.tag} ({t.count})
+                </CMChip>))}
+        </CMChipContainer>
+
+        <CMChipContainer>
+            {uniqueTags.map(t => (
+                <CMChip
+                    key={t.tag.id}
+                    color={t.tag.color}
+                    tooltip={t.tag.description}
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.tagIds, t.tag.id) }}
+                    onClick={() => props.onChange({ ...props.value, tagIds: toggleValueInArray(props.value.tagIds, t.tag.id) })}
+                >
+                    {t.tag.text} ({t.count})
+                </CMChip>))}
+        </CMChipContainer>
+        <CMChipContainer>
+            {uniqueInstrumentTags.map(t => (
+                <CMChip
+                    key={t.tag.id}
+                    //color={t.tag.color}
+                    tooltip={t.tag.description}
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.tag.id) }}
+                    onClick={() => props.onChange({ ...props.value, taggedInstrumentIds: toggleValueInArray(props.value.taggedInstrumentIds, t.tag.id) })}
+                >
+                    {t.tag.name} ({t.count})
+                </CMChip>))}
+
+        </CMChipContainer>
+        <CMChipContainer>
+            {uniqueEventTags.map(t => (
+                <CMChip
+                    key={t.tag.id}
+                    //color={t.tag.color}
+                    //tooltip={t.tag.description}
+                    tooltip={"Event"}
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedEventIds, t.tag.id) }}
+                    onClick={() => props.onChange({ ...props.value, taggedEventIds: toggleValueInArray(props.value.taggedEventIds, t.tag.id) })}
+                >
+                    {t.tag.name} ({t.count})
+                </CMChip>))}
+        </CMChipContainer>
+        <CMChipContainer>
+            {uniqueUserTags.map(t => (
+                <CMChip
+                    key={t.tag.id}
+                    //color={t.tag.color}
+                    tooltip={"User"}
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedUserIds, t.tag.id) }}
+                    onClick={() => props.onChange({ ...props.value, taggedUserIds: toggleValueInArray(props.value.taggedUserIds, t.tag.id) })}
+                >
+                    {t.tag.name} ({t.count})
+                </CMChip>))}
+        </CMChipContainer>
+        <CMChipContainer>
+            {uniqueSongTags.map(t => (
+                <CMChip
+                    key={t.tag.id}
+                    //color={t.tag.color}
+                    tooltip={"Song"}
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedSongIds, t.tag.id) }}
+                    onClick={() => props.onChange({ ...props.value, taggedSongIds: toggleValueInArray(props.value.taggedSongIds, t.tag.id) })}
+                >
+                    {t.tag.name} ({t.count})
+                </CMChip>))}
+        </CMChipContainer>
+        Sort by:
+        <CMChipContainer>
+            <CMChip
+                onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedAt', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
+                variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'uploadedAt' }}
+            >Upload Date {props.value.sortBy === 'uploadedAt' && sortArrow}</CMChip>
+            <CMChip
+                onClick={() => props.onChange({ ...props.value, sortBy: 'fileCreatedAt', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
+                variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'fileCreatedAt' }}
+            >File Date {props.value.sortBy === 'fileCreatedAt' && sortArrow}</CMChip>
+            <CMChip
+                onClick={() => props.onChange({ ...props.value, sortBy: 'sizeBytes', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
+                variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'sizeBytes' }}
+            >Size {props.value.sortBy === 'sizeBytes' && sortArrow}</CMChip>
+            <CMChip
+                onClick={() => props.onChange({ ...props.value, sortBy: 'mimeType', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
+                variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'mimeType' }}
+            >Type {props.value.sortBy === 'mimeType' && sortArrow}</CMChip>
+            <CMChip
+                onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedByUserId', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
+                variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'uploadedByUserId' }}
+            >Uploader {props.value.sortBy === 'uploadedByUserId' && sortArrow}</CMChip>
+        </CMChipContainer>
+    </div>;
+};
 
 
 
@@ -377,6 +652,7 @@ interface FileControlProps {
     value: db3.FileWithTagsPayload;
     readonly: boolean;
     refetch: () => void;
+    statHighlight: SortByKey;
 };
 
 export const FileControl = (props: FileControlProps) => {
@@ -387,28 +663,8 @@ export const FileControl = (props: FileControlProps) => {
         {!props.readonly && editMode &&
             <FileEditor initialValue={props.value} onClose={() => { setEditMode(false); props.refetch() }} rowMode="update" />
         }
-        <FileValueViewer value={props.value} onEnterEditMode={() => setEditMode(true)} readonly={props.readonly} />
+        <FileValueViewer value={props.value} onEnterEditMode={() => setEditMode(true)} readonly={props.readonly} statHighlight={props.statHighlight} />
     </>;
-};
-
-// ////////////////////////////////////////////////////////////////
-// export interface FilesListProps {
-//     //event: db3.EventClientPayload_Verbose;
-//     refetch: () => void;
-//     readonly: boolean;
-// };
-
-// export const FilesList = (props: FilesListProps) => {
-//     return <div className="EventFilesList">
-//         {props.event.fileTags.map((file, index) => <FileControl key={file.id} readonly={props.readonly} refetch={props.refetch} value={file.file} />)}
-//     </div>;
-// };
-
-export interface FileTagBase {
-    id: number;
-    file: db3.FileWithTagsPayload;
-    fileId: number;
-    // plus a songId, eventId, whatever...
 };
 
 ////////////////////////////////////////////////////////////////
@@ -429,8 +685,19 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
-    const canUploadFiles = useAuthorization("EventFilesTabContent", Permission.upload_files);
-    // question: other criteria for authorizing attaching files to events?
+    const [filterSpec, setFilterSpec] = React.useState<FileFilterAndSortSpec>({
+        quickFilter: "",
+        tagIds: [],
+        taggedEventIds: [],
+        taggedInstrumentIds: [],
+        taggedSongIds: [],
+        taggedUserIds: [],
+        mimeTypes: [],
+        sortBy: "uploadedAt",
+        sortDirection: "desc",
+    });
+
+    const canUploadFiles = useAuthorization("FilesTabContent", Permission.upload_files);
 
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
@@ -485,6 +752,8 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         });
     };
 
+    const filteredItems = sortAndFilter(props.fileTags, filterSpec);
+
     return <>
         {!props.readonly && canUploadFiles && (showUpload ? <div className="uploadControlContainer">
             <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={handleURLSelect} />
@@ -493,9 +762,15 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
             <Button onClick={() => setShowUpload(true)}>Upload</Button>)
         }
 
+        <DB3Client.NameValuePair
+            isReadOnly={false}
+            name={"Options"}
+            value={<FileFilterAndSortControls value={filterSpec} onChange={(value) => setFilterSpec(value)} fileTags={props.fileTags} />}
+        />
+
         {/* <FilesList refetch={props.refetch} readonly={props.readonly} /> */}
         <div className="EventFilesList">
-            {props.fileTags.map((fileTag, index) => <FileControl key={fileTag.id} readonly={props.readonly} refetch={props.refetch} value={fileTag.file} />)}
+            {filteredItems.map((fileTag, index) => <FileControl key={fileTag.id} readonly={props.readonly} refetch={props.refetch} value={fileTag.file} statHighlight={filterSpec.sortBy} />)}
         </div>
     </>;
 };

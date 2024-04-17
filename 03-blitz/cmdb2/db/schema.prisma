@@ -659,6 +659,10 @@ model File {
 
   externalURI String? // dropbox link for example
 
+  // the date of the file. for example WHEN was the photo taken? WHEN was the recording taken? WHEN was the document created?
+  // some files just don't have dates so probably use uploadDate as a fallback.
+  fileCreatedAt DateTime?
+
   uploadedAt          DateTime
   uploadedByUserId    Int?
   uploadedByUser      User?       @relation(fields: [uploadedByUserId], references: [id], onDelete: SetDefault)

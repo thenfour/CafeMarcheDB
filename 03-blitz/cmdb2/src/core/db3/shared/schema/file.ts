@@ -2,7 +2,7 @@
 import { FileEventTag, FileInstrumentTag, FileSongTag, FileUserTag, Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { BoolField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIntegerField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
@@ -414,7 +414,12 @@ export const xFile = new db3.xTable({
             columnName: "customData",
             allowNull: true,
             format: "raw",
-            authMap: db3.createAuthContextMap_TODO(),
+            authMap: xFileAuthMap_FileObjects,
+        }),
+        new DateTimeField({
+            columnName: "fileCreatedAt",
+            allowNull: true,
+            authMap: xFileAuthMap_FileObjects,
         }),
         MakeCreatedAtField("uploadedAt", { authMap: xFileAuthMap_FileObjects }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xFileAuthMap_FileObjects, allowNull: false }),

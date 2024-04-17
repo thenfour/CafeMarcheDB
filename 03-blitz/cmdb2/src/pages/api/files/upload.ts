@@ -75,6 +75,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             const fields = mutationCore.PrepareNewFileRecord({
                                 humanReadableLeafName: leaf,
                                 sizeBytes: null,
+                                lastModifiedDate: new Date(), // no modified date possible here; it will be safer to just set it to today instead of unknown, so at least some temporal data is saved
                                 uploadedByUserId: currentUser.id,
                                 visiblePermissionId: args.visiblePermissionId || null,
                             }) as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
@@ -99,6 +100,7 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                             const fields = mutationCore.PrepareNewFileRecord({
                                 humanReadableLeafName: file.originalFilename,
+                                lastModifiedDate: file.lastModifiedDate,
                                 sizeBytes: file.size,
                                 uploadedByUserId: currentUser.id,
                                 visiblePermissionId: args.visiblePermissionId || null,

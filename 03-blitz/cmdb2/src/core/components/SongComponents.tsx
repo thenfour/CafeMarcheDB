@@ -112,9 +112,7 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const gSongDetailTabSlugIndices = {
     info: 0,
-    partitions: 1,
-    recordings: 2,
-    allFiles: 3,
+    files: 1,
 } as const;
 
 export interface SongDetailArgs {
@@ -245,9 +243,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 scrollButtons="auto"
             >
                 <Tab label="Song Info" {...TabA11yProps('song', gSongDetailTabSlugIndices.info)} />
-                <Tab label="Partitions" {...TabA11yProps('song', gSongDetailTabSlugIndices.partitions)} />
-                <Tab label="Recordings" {...TabA11yProps('song', gSongDetailTabSlugIndices.recordings)} />
-                <Tab label={`All Files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.allFiles)} />
+                <Tab label={`Files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.files)} />
             </Tabs>
 
             <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.info}>
@@ -255,15 +251,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
             </CustomTabPanel>
 
-            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.partitions}>
-                partitions
-            </CustomTabPanel>
-
-            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.recordings}>
-                recordings
-            </CustomTabPanel>
-
-            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.allFiles}>
+            <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.files}>
                 <FilesTabContent fileTags={song.taggedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
                     taggedSongId: song.id,
                 }} />

@@ -15,7 +15,7 @@ import dayjs, { Dayjs } from "dayjs";
 import React from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
-import { CoerceToNumberOrNull, SettingKey, gNullValue } from "shared/utils";
+import { CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, gNullValue } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
@@ -877,17 +877,23 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "dateTime",
             renderCell: (params: GridRenderCellParams) => {
+                if (params.value === null) {
+                    return <>--</>;
+                }
                 const value = params.value as Date;
                 const now = new Date();
                 const ageStr = `(${formatTimeSpan(value, now)} ago)`;
-                return <>{value.toTimeString()} {ageStr}</>; // todo
+                return <>{value.toLocaleString()} {ageStr}</>; // todo
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
+                if (params.value === null) {
+                    return <>--</>;
+                }
                 const value = params.value as Date;
                 const now = new Date();
                 //const age = new TimeSpan(now.valueOf() - value.valueOf());
                 const ageStr = `(${formatTimeSpan(now, value)} ago)`;
-                return <>{value.toTimeString()} {ageStr}</>; // todo
+                return <>{value.toLocaleString()} {ageStr}</>; // todo
             },
         };
     };
@@ -900,25 +906,52 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
             key: params.key,
             className: params.className,
             name: this.columnName,
-            value: <>{value.toTimeString()} {ageStr}</>, // todo,
+            value: <>{!!value ? value.toLocaleString() : "--"} {ageStr}</>, // todo,
             isReadOnly: !this.editable,
             fieldName: this.columnName,
         })
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "new", clientIntention: params.clientIntention });
 
-        // set the calculated value in the object.
-        if (params.value === undefined && vr.values) {
-            params.api.setFieldValues(vr.values);
+        // while editing, the value literally becomes a string type instead of date type.
+        let valueAsString: string = "";
+        if (!!params.value) {
+            // if (typeof params.value === "string") {
+            //     valueAsString = params.value as string;
+            // } else if (typeof params.value === "object") { // assume date type
+            valueAsString = (params.value as Date).toLocaleString();
+            //}
         }
 
-        //const value = vr.parsedValue as Date;
-        const value = params.row[this.columnName];
-        const now = new Date();
-        //const age = new TimeSpan(now.valueOf() - value.valueOf());
-        const ageStr = `(${formatTimeSpan(now, value)} ago)`;
-        return <>{value.toTimeString()} {ageStr}</>; // todo
+        return this.defaultRenderer({
+            isReadOnly: !this.editable,
+            validationResult: params.validationResult,
+            value: <div>
+                <CMTextInputBase
+                    onChange={(e, val) => {
+                        //console.log(val);
+                        val = IsNullOrWhitespace(val) ? null : new Date(val); // convert to kosher value.
+                        params.api.setFieldValues({ [this.columnName]: val });
+                    }}
+                    initialValue={valueAsString}
+                />
+                <div>{valueAsString}</div>
+            </div>
+        });
+
+        // const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "new", clientIntention: params.clientIntention });
+
+        // // set the calculated value in the object.
+        // if (params.value === undefined && vr.values) {
+        //     params.api.setFieldValues(vr.values);
+        // }
+
+        // //const value = vr.parsedValue as Date;
+        // const value = params.row[this.columnName];
+        // const now = new Date();
+        // //const age = new TimeSpan(now.valueOf() - value.valueOf());
+        // const ageStr = `(${formatTimeSpan(now, value)} ago)`;
+        // return <>{!!value ? value.toTimeString() : "--"} {ageStr}</>; // todo
     };
 };

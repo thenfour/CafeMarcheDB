@@ -553,7 +553,18 @@ export function toggleValueInArray<T>(
     }
 
     return newArray;
-}
+};
+
+
+export function distinctValuesOfArray<T>(items: T[], areEqual: (a: T, b: T) => boolean): T[] {
+    return items.reduce<T[]>((acc, current) => {
+        if (!acc.some(item => areEqual(item, current))) {
+            acc.push(current);
+        }
+        return acc;
+    }, []);
+};
+
 
 
 export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTimeout(() => {

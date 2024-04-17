@@ -766,11 +766,18 @@ li.songDropdownOption {
 }
 
 .EventFileValue .stats {
+    font-family: monospace;
     font-size: small;
     color: #999;
 }
 
-.EventFileValue .stats.externalURI {
+.EventFileValue .stats .stat.highlight {
+    font-size: 15px;
+    font-weight: bold;
+    color: #494;
+}
+
+.EventFileValue .stats .stat.externalURI {
     font-family: monospace;
 }
 

@@ -166,3 +166,7 @@ export function IconEditCell(props: ChooseIconDialogProps) {
     />;
 }
 
+export const gCharMap = {
+    UpArrow: () => <>&#8593;</>,
+    DownArrow: () => <>&#8595;</>,
+} as const;

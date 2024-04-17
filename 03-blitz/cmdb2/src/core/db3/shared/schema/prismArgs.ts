@@ -358,6 +358,7 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
 });
 
 export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
+export type UserPayloadMinimum = Prisma.UserGetPayload<{}>;
 
 
 export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserArgs>()({
@@ -436,6 +437,7 @@ export const InstrumentFunctionalGroupNaturalSortOrder: Prisma.InstrumentFunctio
 
 
 export const UserMinimalSelect = Prisma.validator<Prisma.UserSelect>()({
+    id: true,
     name: true,
 });
 
@@ -829,6 +831,7 @@ export const FileTagArgs = Prisma.validator<Prisma.FileTagArgs>()({
 });
 
 export type FileTagPayload = Prisma.FileTagGetPayload<typeof FileTagArgs>;
+export type FileTagPayloadMinimum = Prisma.FileTagGetPayload<{}>;
 
 export const FileTagNaturalOrderBy: Prisma.FileTagOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
@@ -964,6 +967,11 @@ export const FileInstrumentTagArgs = Prisma.validator<Prisma.FileInstrumentTagAr
     }
 });
 export type FileInstrumentTagPayload = Prisma.FileInstrumentTagGetPayload<typeof FileInstrumentTagArgs>;
+export type FileInstrumentTagPayloadWithInstrument = Prisma.FileInstrumentTagGetPayload<{
+    include: {
+        instrument: true,
+    }
+}>;
 
 export const FileInstrumentTagNaturalOrderBy: Prisma.FileInstrumentTagOrderByWithRelationInput[] = [
     { instrument: { name: 'asc' } },

@@ -17,11 +17,10 @@
 // - CalculatedEventDateRangeField
 
 
+import { assert } from "blitz";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { CoerceToBoolean, TAnyModel } from "shared/utils";
-import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_Mono, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
-import { DateTimeRange, DateTimeRangeSpec } from "shared/time";
-import { assert } from "blitz";
+import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 
 export type DB3AuthSpec = {
     authMap: DB3AuthContextPermissionMap;
@@ -30,7 +29,7 @@ export type DB3AuthSpec = {
 };
 
 
-////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // field types
 export type GhostFieldArgs = {
     memberName: string;
@@ -83,7 +82,7 @@ export class GhostField extends FieldBase<number> {
 }
 
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export type PKFieldArgs = {
     columnName: string;
 };// & DB3AuthSpec;
@@ -139,6 +138,7 @@ export class PKField extends FieldBase<number> {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for validation and client UI behavior.
 export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw";
 
@@ -279,6 +279,7 @@ export class GenericStringField extends FieldBase<string> {
 };
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export type GenericIntegerFieldArgs = {
     columnName: string;
     allowNull: boolean;
@@ -362,6 +363,103 @@ export class GenericIntegerField extends FieldBase<number> {
 };
 
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export type DateTimeFieldArgs = {
+    columnName: string;
+    allowNull: boolean;
+} & DB3AuthSpec;
+
+export class DateTimeField extends FieldBase<Date> {
+
+    allowNull: boolean;
+
+    constructor(args: DateTimeFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: args.allowNull ? null : new Date(),
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
+        });
+        this.allowNull = args.allowNull;
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    getQuickFilterWhereClause = (query: string, clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
+
+    // this column type has no sub-items; no filtering to do.
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (args: ValidateAndParseArgs<string | Date>): ValidateAndParseResult<Date | null> => {
+        let value = args.row[this.member];
+        if (value === undefined) return UndefinedValidateAndParseResult();
+        let objValue = { [this.member]: value };
+        if (value === null) {
+            if (this.allowNull) {
+                return SuccessfulValidateAndParseResult(objValue);
+            }
+            return ErrorValidateAndParseResult("field is required", objValue);
+        }
+
+        if (typeof value === 'object') // assume date
+        {
+            const vad = (value as Date);
+            if (!vad.valueOf) {
+                return ErrorValidateAndParseResult("Input is of unknown type; expected date", objValue);
+            }
+            if (isNaN((value as Date).valueOf())) {
+                return ErrorValidateAndParseResult("Input is an invalid date", objValue);
+            }
+        }
+        else if (typeof value === 'string') {
+            const s = (value as string).trim();
+            if (this.allowNull && s === '') {
+                return SuccessfulValidateAndParseResult(objValue);
+            }
+
+            // more info on string -> date conv:
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date
+            value = new Date(s);
+            if (isNaN(value.valueOf())) {
+                return ErrorValidateAndParseResult("Input string was not convertible to date", objValue);
+            }
+        }
+        // todo here check other constraints like min/max whatever
+        return SuccessfulValidateAndParseResult(objValue);
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
+    };
+
+    isEqual = (a: Date, b: Date) => {
+        return a === b;
+    };
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+        if (clientModel[this.member] === undefined) return;
+        const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
+        mutationModel[this.member] = vr.values[this.member];
+    };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
+        if (dbModel[this.member] === undefined) return;
+        clientModel[this.member] = dbModel[this.member];
+    }
+};
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // this field demonstrates the ability to expose raw db values as structures.
 // here the db value is a string, but the exposed value is a ColorPaletteEntry.
 // 
@@ -440,6 +538,7 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
 
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // booleans are simple checkboxes; therefore null is not supported.
 // for null support use a radio / multi select style field.
 export type BoolFieldArgs = {
@@ -506,6 +605,7 @@ export class BoolField extends FieldBase<boolean> {
 
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // a single select field where
 // - the db value is a string (no relationship enforced)
 // - the enum value is a const typescript key val object (not an 'enum' type, but rather a const MyEnum { val1: "val1", val2: "val2" })

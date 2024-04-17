@@ -640,13 +640,14 @@ export const GetFileServerStoragePath = (storedLeafName: string) => {
 
 export interface PrepareNewFileRecordArgs {
     uploadedByUserId: number;
+    lastModifiedDate: Date | undefined | null;
     humanReadableLeafName: string;
     sizeBytes: number | null;
     visiblePermissionId: number | null;
     parentFileId?: number;
     previewFileId?: number;
 };
-export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, sizeBytes, visiblePermissionId, previewFileId, parentFileId }: PrepareNewFileRecordArgs): Prisma.FileUncheckedCreateInput {
+export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, sizeBytes, visiblePermissionId, previewFileId, parentFileId, lastModifiedDate }: PrepareNewFileRecordArgs): Prisma.FileUncheckedCreateInput {
     //const file = field[iFile];
     //const oldpath = file.filepath; // temp location that formidable has saved it to. 'C:\Users\carl\AppData\Local\Temp\2e3b4218f38f5aedcf765f801'
 
@@ -680,6 +681,7 @@ export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, 
         mimeType,
         previewFileId,
         parentFileId,
+        fileCreatedAt: lastModifiedDate || new Date(), // fall back to today
     };
     return fields;
 };
@@ -731,6 +733,7 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
         uploadedByUserId: currentUser.id,
         visiblePermissionId: parentFile.visiblePermissionId, // theoretically this can result in issues if original uploader is not the same as the new uploader and this is NULL. however NULL implies it's not meant to be seen by others so i don't think it's something that needs to be fixed.
         parentFileId: parentFile.id,
+        lastModifiedDate: new Date(),
     });// as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
 
     // perform the adjustments on parent image + save on disk
