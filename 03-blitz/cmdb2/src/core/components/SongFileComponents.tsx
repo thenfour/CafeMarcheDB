@@ -2,11 +2,11 @@
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { Button, DialogActions, DialogContent, DialogTitle, Tooltip } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
-import { IsNullOrWhitespace, TAnyModel, existsInArray, formatFileSize, isValidURL, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
+import { IsNullOrWhitespace, existsInArray, formatFileSize, isValidURL, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -14,13 +14,13 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from "../db3/components/IconSelectDialog";
+import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AudioPreviewBehindButton } from './AudioPreview';
-import { CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InstrumentChip, ReactiveInputDialog, SongChip, UserChip } from "./CMCoreComponents";
-import { CMDialogContentText } from './CMCoreComponents2';
+import { CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InstrumentChip, SongChip, UserChip } from "./CMCoreComponents";
 import { CMTextInputBase } from './CMTextField';
 import { Markdown } from "./RichTextEditor";
-import { VisibilityControl, VisibilityValue } from './VisibilityControl';
+import { VisibilityValue } from './VisibilityControl';
 
 type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt"; // keyof File
 type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments";
@@ -276,11 +276,8 @@ interface FileEditorProps {
 };
 export const FileEditor = (props: FileEditorProps) => {
 
-    // make sure the caller's object doesn't get modified. esp. create a copy of the songs array so we can manipulate it. any refs we modify should not leak outside of this component.
-    const initialValueCopy = { ...props.initialValue };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-    const [value, setValue] = React.useState<db3.FileWithTagsPayload>(initialValueCopy);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
 
@@ -302,83 +299,32 @@ export const FileEditor = (props: FileEditorProps) => {
         ],
     });
 
-    // required to initialize columns properly.
-    const renderContext = DB3Client.useTableRenderContext({
-        clientIntention,
-        requestedCaps: DB3Client.xTableClientCaps.Mutation,
-        tableSpec,
-    });
-
-    const api: DB3Client.NewDialogAPI = {
-        setFieldValues: (fieldValues: TAnyModel) => {
-            const newValue = { ...value, ...fieldValues };
-            setValue(newValue);
-        },
-    };
-
-    const validationResult = tableSpec.args.table.ValidateAndComputeDiff(value, value, props.rowMode, clientIntention);
-
-    const handleSave = () => {
-        renderContext.doUpdateMutation(value).then(() => {
-            showSnackbar({ severity: "success", children: "file edit successful" });
-        }).catch((e) => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "Error; see console" });
-        }).finally(() => {
-            props.onClose();
-        });
-    };
-
-    const handleDelete = () => {
-        renderContext.doUpdateMutation({ id: value.id, isDeleted: true }).then(() => {
-            showSnackbar({ severity: "success", children: "file delete successful" });
-        }).catch((e) => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "Error; see console" });
-        }).finally(() => {
-            props.onClose();
-        });
-    };
-
-    return <>
-        <ReactiveInputDialog onCancel={props.onClose} className="EventFileEditor EventFileEditor">
-
-            <DialogTitle>
-                edit file
-            </DialogTitle>
-            <DialogContent dividers>
-                <CMDialogContentText>
-                    description of file
-                </CMDialogContentText>
-
-                <div className="EventFileValue">
-                    <div className="content">
-
-                        <VisibilityControl variant="verbose" value={value.visiblePermission} onChange={(newVisiblePermission) => {
-                            const newValue: db3.FileWithTagsPayload = { ...value, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
-                            setValue(newValue);
-                        }} />
-
-                        <Button onClick={handleDelete}>{gIconMap.Delete()}Delete</Button>
-
-                        {
-                            tableSpec.args.columns.map(clientColumn => {
-                                return <React.Fragment key={clientColumn.columnName}>{
-                                    clientColumn.renderForNewDialog && clientColumn.renderForNewDialog({ api, key: clientColumn.columnName, validationResult, value: value[clientColumn.columnName], row: value, clientIntention })
-                                }</React.Fragment>;
-                            })
-                        }
-                    </div>
-
-                </div>
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={props.onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
-                <Button onClick={handleSave} startIcon={gIconMap.Save()}>OK</Button>
-            </DialogActions>
-
-        </ReactiveInputDialog>
-    </>;
+    return <DB3EditObjectDialog
+        initialValue={props.initialValue}
+        onCancel={() => { }}
+        onDelete={(tableClient) => {
+            tableClient.doDeleteMutation(props.initialValue.id, "softWhenPossible").then(() => {
+                showSnackbar({ severity: "success", children: "file delete successful" });
+            }).catch((e) => {
+                console.log(e);
+                showSnackbar({ severity: "error", children: "Error; see console" });
+            }).finally(() => {
+                props.onClose();
+            });
+        }}
+        onOK={(value, tableClient) => {
+            tableClient.doUpdateMutation(value).then(() => {
+                showSnackbar({ severity: "success", children: "file edit successful" });
+            }).catch((e) => {
+                console.log(e);
+                showSnackbar({ severity: "error", children: "Error; see console" });
+            }).finally(() => {
+                props.onClose();
+            });
+        }}
+        clientIntention={clientIntention}
+        table={tableSpec}
+    />;
 };
 
 
@@ -428,12 +374,19 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         // quick filter
         if (IsNullOrWhitespace(spec.quickFilter)) return true;
 
+        const filterTokens = spec.quickFilter.toLocaleLowerCase().split(/\s+/).filter(token => token.length > 0);
+
         const tokensToSearch = [
             item.file.description.toLocaleLowerCase(),
             item.file.fileLeafName.toLocaleLowerCase(),
+            item.file.taggedInstruments.map(i => i.instrument.name.toLocaleLowerCase()),
+            item.file.taggedUsers.map(i => i.user.name.toLocaleLowerCase()),
+            item.file.taggedEvents.map(i => i.event.name.toLocaleLowerCase()),
+            item.file.taggedSongs.map(i => i.song.name.toLocaleLowerCase()),
+            item.file.tags.map(i => i.fileTag.text.toLocaleLowerCase()),
         ];
 
-        return tokensToSearch.some(t => t.includes(spec.quickFilter.toLocaleLowerCase()));
+        return filterTokens.every(searchToken => tokensToSearch.flat().some(t => t.includes(searchToken)));
     });
 
     // sort.
@@ -768,7 +721,6 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
             value={<FileFilterAndSortControls value={filterSpec} onChange={(value) => setFilterSpec(value)} fileTags={props.fileTags} />}
         />
 
-        {/* <FilesList refetch={props.refetch} readonly={props.readonly} /> */}
         <div className="EventFilesList">
             {filteredItems.map((fileTag, index) => <FileControl key={fileTag.id} readonly={props.readonly} refetch={props.refetch} value={fileTag.file} statHighlight={filterSpec.sortBy} />)}
         </div>
