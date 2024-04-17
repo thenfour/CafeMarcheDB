@@ -23,6 +23,7 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText } from './CMCoreComponents2';
 import { Markdown } from "./RichTextEditor";
+import { SettingMarkdown } from './SettingMarkdown';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -674,6 +675,7 @@ export const EventSongListTabContent = ({ event, tableClient, readonly, refetch 
     });
 
     return <div className="EventSongListTabContent">
+        <SettingMarkdown setting='EventSongListTabDescription' />
         {insertAuthorized && !readonly && <Button className='addNewSongListButton' onClick={() => setNewOpen(true)}>{gIconMap.Add()} Add new song list</Button>}
         {newOpen && !readonly && insertAuthorized && (
             <EventSongListNewEditor event={event} onCancel={() => setNewOpen(false)} onSuccess={() => { setNewOpen(false); refetch(); }} />

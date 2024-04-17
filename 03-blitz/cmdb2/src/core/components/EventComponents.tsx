@@ -659,6 +659,7 @@ export const gEventDetailTabSlugIndices = {
     "frontpage": 5,
 } as const;
 
+
 export interface EventDetailArgs {
     event: db3.EventClientPayload_Verbose;
     tableClient: DB3Client.xTableRenderClient;
@@ -840,10 +841,12 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
+                        <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
                         <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} readonly={props.readonly} />
                     </CustomTabPanel>
 
                     <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
+                        <SettingMarkdown setting='EventCompletenessTabMarkdown' />
                         <EventCompletenessTabContent event={event} responseInfo={responseInfo} functionalGroupsClient={functionalGroupsClient} />
                     </CustomTabPanel>
 

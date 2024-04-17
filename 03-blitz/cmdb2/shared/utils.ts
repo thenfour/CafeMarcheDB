@@ -151,7 +151,7 @@ export enum Setting {
 
     // field text
 
-    // mostly pages...
+    // mostly pages or sections of pages...
     HomeDescription = "HomeDescription",
     event_description_mockup_markdown = "event_description_mockup_markdown",
     EditEventAttendancesPage_markdown = "EditEventAttendancesPage_markdown",
@@ -186,6 +186,10 @@ export enum Setting {
     songs_markdown = "songs_markdown",
     AdminLogsPage_markdown = "AdminLogsPage_markdown",
     UserInstrumentsPage_markdown = "UserInstrumentsPage_markdown",
+    EventSongListTabDescription = "EventSongListTabDescription",
+    EventAttendanceDetailMarkdown = "EventAttendanceDetailMarkdown",
+    EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
+    FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
 };
 
 export type SettingKey = keyof typeof Setting;

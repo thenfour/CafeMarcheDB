@@ -22,6 +22,8 @@ import { CMTextInputBase } from './CMTextField';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
 
+const gMaximumFilterTagsPerType = 3 as const;
+
 type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt"; // keyof File
 type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments";
 
@@ -301,7 +303,7 @@ export const FileEditor = (props: FileEditorProps) => {
 
     return <DB3EditObjectDialog
         initialValue={props.initialValue}
-        onCancel={() => { }}
+        onCancel={() => props.onClose()}
         onDelete={(tableClient) => {
             tableClient.doDeleteMutation(props.initialValue.id, "softWhenPossible").then(() => {
                 showSnackbar({ severity: "success", children: "file delete successful" });
@@ -455,7 +457,7 @@ const CalculateUniqueTags = <TagPayload extends { id: number },>(props: { fileTa
 
     uniqueTags.sort((a, b) => b.count - a.count); // sort by count desc
 
-    return uniqueTags;
+    return uniqueTags.slice(0, gMaximumFilterTagsPerType);
 };
 
 const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): CalculateUniqueTagsReturn<string>[] => {
@@ -481,7 +483,7 @@ const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): Calculate
 
     uniqueTags.sort((a, b) => b.count - a.count); // sort by count desc
 
-    return uniqueTags;
+    return uniqueTags.slice(0, gMaximumFilterTagsPerType);
 };
 
 export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps) => {

@@ -321,7 +321,8 @@ const gMenuItemGroups: MenuItemGroup[] = [
         className: "public",
         items: [
             { type: "link", path: "/", linkCaption: "Homepage", renderIcon: () => gIconMap.Public(), permission: Permission.visibility_public, },
-            { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Photo gallery", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
+            { type: "link", path: "/backstage/frontpagegallery", linkCaption: "Homepage Photos", renderIcon: () => gIconMap.Image(), permission: Permission.edit_public_homepage },
+            { type: "link", path: "/backstage/frontpageEvents", linkCaption: "Homepage Agenda", renderIcon: () => <CalendarMonthOutlinedIcon />, permission: Permission.edit_public_homepage },
         ],
     },
     {

@@ -429,8 +429,6 @@ const MainContent = () => {
 };
 
 const ViewEventsPage: BlitzPage = (props) => {
-    console.log(`blitz page!`);
-    console.log(props);
     return (
         <DashboardLayout title="Events">
             <MainContent />

@@ -307,6 +307,14 @@ export const xEventTagAssignment = new db3.xTable({
     ]
 });
 
+export interface EventTableParams {
+    eventId?: number;
+    eventSlug?: string;
+    eventTypeIds?: number[];
+    eventStatusIds?: number[];
+    hidePastEvents?: boolean;
+    forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
+};
 
 const xEventArgs_Base: db3.TableDesc = {
     tableName: "event",
@@ -321,7 +329,7 @@ const xEventArgs_Base: db3.TableDesc = {
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
         ownerUserId: row.createdByUserId,
     }),
-    getParameterizedWhereClause: (params: { eventId?: number, eventSlug?: string, eventTypeIds?: number[], eventStatusIds?: number[], hidePastEvents?: boolean }, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
+    getParameterizedWhereClause: (params: EventTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
 
         //console.assert(clientIntention.currentUser?.id !== undefined);
@@ -355,10 +363,30 @@ const xEventArgs_Base: db3.TableDesc = {
             }
         }
 
-        // a past event is one that ENDED before now. and heck give it a couple days of leeway
+        // a past event is one that ENDED before now. and heck give it 15 days of leeway
         if (params.hidePastEvents) {
+            const minDate = new Date();
+            minDate.setDate(minDate.getDate() - 10);
             const t: Prisma.EventWhereInput = {
-                endDateTime: { gte: new Date() }
+                endDateTime: { gte: minDate }
+            };
+            ret.push(t);
+        }
+
+        // a past event is one that ENDED before now. and heck give it 15 days of leeway
+        if (params.forFrontPageAgenda) {
+            const minDate = new Date();
+            minDate.setDate(minDate.getDate() - 10);
+
+            const t: Prisma.EventWhereInput = {
+                OR: [
+                    {
+                        endDateTime: { gte: minDate }
+                    },
+                    {
+                        frontpageVisible: true,
+                    }
+                ]
             };
             ret.push(t);
         }

@@ -14,6 +14,10 @@ html,
     font-size: 14px;
 }
 
+.CMSidenote.warning {
+    color: #c44;
+}
+
 .HalfOpacity {
     opacity: 50%;
 }
@@ -765,16 +769,20 @@ li.songDropdownOption {
     /* Purple */
 }
 
-.EventFileValue .stats {
+.EventFileValue .stats {}
+
+.EventFileValue .stats .stat {
     font-family: monospace;
     font-size: small;
     color: #999;
+    width: max-content;
 }
 
 .EventFileValue .stats .stat.highlight {
     font-size: 15px;
     font-weight: bold;
     color: #494;
+    background-color: #efe;
 }
 
 .EventFileValue .stats .stat.externalURI {
