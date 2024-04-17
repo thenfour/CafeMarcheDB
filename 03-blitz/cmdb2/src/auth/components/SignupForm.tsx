@@ -6,6 +6,7 @@ import { useMutation } from "@blitzjs/rpc"
 import React, { Suspense } from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { FormControlLabel } from "@mui/material";
+import { NameValuePair } from "src/core/db3/DB3Client";
 
 type SignupFormProps = {
   onSuccess?: () => void
@@ -37,13 +38,31 @@ export const SignupForm = (props: SignupFormProps) => {
     }
   };
 
-  return (<div>
-    <h1>Create an Account</h1>
+  return (<div className="signInBlock">
+    <div className="title">Create an Account</div>
+    <div className="description">
+      Anyone can create an account, but you'll start with limited permissions. An admin will need to grant you elevated permissions after you create your account.
+    </div>
     <form onSubmit={handleSubmit} method="">
-      <div><FormControlLabel label="Full name" control={<input type="text" placeholder="full name" value={name} onChange={e => setName(e.target.value)} />} /></div>
-      <div><FormControlLabel label="Email" control={<input type="text" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />} /></div>
-      <div><FormControlLabel label="Password" control={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />} /></div>
-      <div><input type="submit" value="subm" /></div>
+
+      <NameValuePair
+        isReadOnly={false}
+        name={"Full name"}
+        value={<input type="text" placeholder="full name" value={name} onChange={e => setName(e.target.value)} />}
+      />
+
+      <NameValuePair
+        isReadOnly={false}
+        name={"Email"}
+        value={<input type="text" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />}
+      />
+
+      <NameValuePair
+        isReadOnly={false}
+        name={"Password"}
+        value={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />}
+      />
+      <div><input type="submit" value="Submit" /></div>
     </form>
   </div>);
 }

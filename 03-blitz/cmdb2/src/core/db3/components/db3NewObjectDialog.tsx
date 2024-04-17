@@ -335,7 +335,7 @@ export interface DB3RowViewerProps {
 
 export const DB3RowViewer = (props: DB3RowViewerProps) => {
     return <div className="DB3RowViewer">
-        {props.tableRenderClient.clientColumns.map((cc, i) => cc.renderViewer({ key: i, row: props.row, value: props.row[cc.columnName] }))}
+        {props.tableRenderClient.clientColumns.map((cc, i) => <React.Fragment key={i}>{cc.renderViewer({ key: i, row: props.row, value: props.row[cc.columnName] })}</React.Fragment>)}
     </div>;
 };
 

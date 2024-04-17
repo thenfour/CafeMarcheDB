@@ -190,6 +190,7 @@ export enum Setting {
     EventAttendanceDetailMarkdown = "EventAttendanceDetailMarkdown",
     EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
     FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
+    BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
 };
 
 export type SettingKey = keyof typeof Setting;

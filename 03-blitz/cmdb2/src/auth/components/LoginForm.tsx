@@ -10,6 +10,7 @@ import { FormControlLabel } from "@mui/material"
 import React, { Suspense } from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { Routes } from "@blitzjs/next";
+import { NameValuePair } from "src/core/db3/DB3Client"
 
 type LoginFormProps = {
   onSuccess?: (user: PromiseReturnType<typeof login>) => void
@@ -41,11 +42,19 @@ export const LoginForm = (props: LoginFormProps) => {
 
   return (<div>
     <div className="link createNewAccount">
-      Login to an existing account
+      Login using email & password
     </div>
     <form onSubmit={handleSubmit} method="">
-      <div><FormControlLabel label="Email" control={<input type="text" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />} /></div>
-      <div><FormControlLabel label="Password" control={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />} /></div>
+      <NameValuePair
+        isReadOnly={false}
+        name={"Email"}
+        value={<input type="text" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />}
+      />
+      <NameValuePair
+        isReadOnly={false}
+        name={"Password"}
+        value={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />}
+      />
       <div><input type="submit" value="Login" /></div>
       <Link href={Routes.ForgotPasswordPage()}>Forgot your password?</Link>
     </form>

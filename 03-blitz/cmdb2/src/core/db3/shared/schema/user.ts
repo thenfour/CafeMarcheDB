@@ -565,7 +565,7 @@ export const xUser = new db3.xTable({
             associationTableID: "UserTagAssignment",
             foreignTableID: "UserTag",
             //authMap: xUserAuthMap_R_EManagers,
-            authMap: xUserAuthMap_R_EOwn_EManagers,
+            authMap: xUserAuthMap_R_EAdmins,
             getQuickFilterWhereClause: (query: string): Prisma.UserWhereInput => ({
                 tags: {
                     some: {

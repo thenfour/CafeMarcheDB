@@ -10,7 +10,7 @@ import { nanoid } from 'nanoid'
 
 export default api(
   passportAuth(({ ctx, req, res }) => ({
-    successRedirectUrl: process.env.CMDB_BASE_URL,//"http://localhost:3000/",
+    successRedirectUrl: process.env.CMDB_LOGIN_SUCCESS_REDIRECT,//"http://localhost:3000/",
     errorRedirectUrl: process.env.CMDB_BASE_URL,//"http://localhost:3000/",
     strategies: [
       {

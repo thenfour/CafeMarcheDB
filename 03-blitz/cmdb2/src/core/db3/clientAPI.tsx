@@ -21,7 +21,7 @@ import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
 import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
-import { ClientSession, useAuthenticatedSession } from "@blitzjs/auth";
+import { ClientSession, useSession } from "@blitzjs/auth";
 import { GetStyleVariablesForColor } from "../components/Color";
 import { ColorVariationSpec, gAppColors } from "shared/color";
 import getSetting from "src/auth/queries/getSetting";
@@ -525,7 +525,7 @@ class OtherAPI {
     setShowingAdminControlsMutation = CreateAPIMutationFunction(setShowingAdminControls);
 
     useIsShowingAdminControls() {
-        const sess = useAuthenticatedSession();
+        const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
         return sess.isSysAdmin && sess.showAdminControls;
     };
 };

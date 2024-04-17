@@ -100,7 +100,6 @@ function DB3SelectTagsDialogList<TAssociation>(props: DB3SelectTagsDialogListPro
     };
 
     const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({ clientIntention, publicData });
-    console.log(`insertAuthorized: ${insertAuthorized} alowfromstr:${props.spec.typedSchemaColumn.allowInsertFromString}`);
 
     return <>
         {
@@ -443,8 +442,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
         </li>
     };
 
-    renderViewer = (params: RenderViewerArgs<TAssociation[]>) => this.defaultRenderer({
-        //key: params.key,
+    renderViewer = (params: RenderViewerArgs<TAssociation[]>) => <React.Fragment key={params.key}>{this.defaultRenderer({
         className: params.className,
         isReadOnly: true,
         validationResult: undefined,
@@ -454,7 +452,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             renderAsChip={this.renderAsChipForCell}
             value={params.value}
         />
-    });
+    })}</React.Fragment>;
 
     onSchemaConnected = (tableClient: xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3.TagsField<TAssociation>;
@@ -493,7 +491,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
     renderForNewDialog = (params: RenderForNewItemDialogArgs) => {
         //const validationValue = params.validationResult ? (params.validationResult.hasErrorForField(this.columnName) ? params.validationResult.getErrorForField(this.columnName) : null) : undefined;
 
-        return this.defaultRenderer({
+        return <React.Fragment key={params.key}>{this.defaultRenderer({
             isReadOnly: !this.editable,
             validationResult: params.validationResult,
             value: <React.Fragment key={params.key}>
@@ -507,7 +505,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
                     }}
                 />
             </React.Fragment>
-        });
+        })}</React.Fragment>;
 
     };
 

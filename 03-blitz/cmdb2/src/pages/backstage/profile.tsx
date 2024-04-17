@@ -219,16 +219,16 @@ const MainContent = () => {
     const spec = new DB3Client.xTableClientSpec({
         table: db3.xUser,
         columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 160 }),
-            //new DB3Client.GenericStringColumnClient({ columnName: "compactName", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "email", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "phone", cellWidth: 120 }),
+            new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+            new DB3Client.PKColumnClient({ columnName: "id" }),
+
             //new DB3Client.CreatedAtColumn({ columnName: "createdAt", cellWidth: 200 }),
             //new DB3Client.BoolColumnClient({ columnName: "isSysAdmin" }),
             //new DB3Client.BoolColumnClient({ columnName: "isActive" }),
             //new DB3Client.TagsFieldClient<db3.UserInstrumentPayload>({ columnName: "instruments", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.UserTagPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "role", cellWidth: 180, clientIntention }),
         ],
     });
@@ -267,7 +267,6 @@ const MainContent = () => {
                 </Typography>
 
                 <DB3Client.NameValuePair isReadOnly={false} name="Your instruments" value={<OwnInstrumentsControl />} />
-
 
                 {client.items.length === 1 && (
                     <>

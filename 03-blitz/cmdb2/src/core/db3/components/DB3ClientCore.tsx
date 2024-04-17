@@ -30,7 +30,6 @@ import db3queries from "../queries/db3queries";
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // useful for consistent field rendering including name, value, detailed help etc.
 interface RenderBasicNameValuePairPropsBase {
-    key?: string;
     name: React.ReactNode;
     description?: React.ReactNode;
     value: React.ReactNode;
@@ -56,7 +55,7 @@ export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) =
 
     const validationError = props.validationResult?.getErrorForField(props.fieldName) || null;
 
-    return <div key={props.key} className={`BasicNameValuePairContainer ${props.className} ${props.isReadOnly ? "readOnly" : "editable"} ${(props.validationResult && !!validationError) ? "validationError" : "validationSuccess"}`}>
+    return <div className={`BasicNameValuePairContainer ${props.className} ${props.isReadOnly ? "readOnly" : "editable"} ${(props.validationResult && !!validationError) ? "validationError" : "validationSuccess"}`}>
         {!IsNullOrWhitespace(props.name) && <div className="name">{props.name}</div>}
         {props.description && <div className="description">{props.description}</div>}
         <div className="value">{props.value}</div>
@@ -71,8 +70,6 @@ interface NameValuePairPropsBase {
     value: React.ReactNode;
     isReadOnly: boolean;
     className?: string;
-    //fieldName: string;
-    //validationResult?: db3.ValidateAndComputeDiffResult;
 };
 
 // Variant where validationResult is not provided, fieldName is optional
@@ -173,6 +170,7 @@ export abstract class IColumnClient {
     defaultRenderer = ({ value, className, isReadOnly, validationResult }: { value: React.ReactNode, className?: string, isReadOnly: boolean, validationResult: undefined | db3.ValidateAndComputeDiffResult }) => {
         const defaultDescriptionSettingName = GenerateDefaultDescriptionSettingName(this.schemaTable.tableName, this.columnName);
         return <NameValuePair
+            key={this.columnName} // not 100% accurate but probably 99.99%
             name={this.fieldCaption || this.columnName}
             description={<SettingMarkdown setting={this.fieldDescriptionSettingName || defaultDescriptionSettingName} />}
             value={value}
