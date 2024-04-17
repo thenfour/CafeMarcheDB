@@ -11,7 +11,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
-import { EventDetailVerbosity } from './CMCoreComponents';
+//import { EventDetailVerbosity } from './CMCoreComponents';
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
@@ -129,7 +129,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 export interface EventSegmentPanelProps {
     event: db3.EventPayloadClient,
     //segmentInfo: db3.SegmentAndResponse,
-    verbosity: EventDetailVerbosity;
+    //verbosity: EventDetailVerbosity;
     //myEventInfo: db3.EventInfoForUser,
     segment: db3.EventVerbose_EventSegmentPayload,
     readonly: boolean;
@@ -204,11 +204,11 @@ interface SegmentListProps {
     event: db3.EventClientPayload_Verbose;
     //myEventInfo: db3.EventInfoForUser;
     tableClient: DB3Client.xTableRenderClient;
-    verbosity: EventDetailVerbosity;
+    //verbosity: EventDetailVerbosity;
     readonly: boolean;
 };
 
-export const SegmentList = ({ event, tableClient, verbosity, ...props }: SegmentListProps) => {
+export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) => {
     return <div className='segmentListContainer'>
         {!props.readonly && <NewEventSegmentButton
             event={event}
@@ -226,7 +226,7 @@ export const SegmentList = ({ event, tableClient, verbosity, ...props }: Segment
                     //myEventInfo={myEventInfo}
                     event={event}
                     refetch={tableClient.refetch}
-                    verbosity={verbosity}
+                //verbosity={verbosity}
                 />;
             })}
         </div>

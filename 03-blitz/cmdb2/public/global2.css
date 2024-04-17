@@ -655,9 +655,12 @@ li.songDropdownOption {
     border-radius: 3px;
     padding: 2px 7px;
     user-select: none;
-
 }
 
+
+.contentSection .header .visibilityValue {
+    opacity: 25%;
+}
 
 .flex-spacer {
     flex-grow: 1;

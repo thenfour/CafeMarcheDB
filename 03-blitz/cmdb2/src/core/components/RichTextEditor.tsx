@@ -271,7 +271,9 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
                 <div className='richTextContentContainer'>
                     <MarkdownEditor value={value} onValueChanged={(v) => {
                         setValue(v);
-                        if (alwaysEdit) onValueChanged(v);
+                        if (alwaysEdit) {
+                            void onValueChanged(v); // async throwaway
+                        }
                     }} height={props.height || 50} />
                 </div>
             </div>

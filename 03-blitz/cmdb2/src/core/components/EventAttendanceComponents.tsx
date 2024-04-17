@@ -106,6 +106,7 @@ import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
 import { CMChip, CMChipContainer } from './CMCoreComponents';
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { CMSmallButton } from "./CMCoreComponents2";
+import { EventWithMetadata } from "./EventComponentsBase";
 
 
 ////////////////////////////////////////////////////////////////
@@ -319,8 +320,8 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
 // frame for event segment:
 // shows your answer & comment, small button to show edit controls.
 export interface EventAttendanceSegmentControlProps {
-  event: db3.EventClientPayload_Verbose,
-  eventResponseInfo: db3.EventResponseInfo;
+  eventData: EventWithMetadata;
+  //eventResponseInfo: db3.EventResponseInfo;
   eventUserResponse: db3.EventUserResponse;
   segmentUserResponse: db3.EventSegmentUserResponse;
   onRefetch: () => void,
@@ -345,20 +346,20 @@ export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }:
 // frame for event:
 // big attendance alert (per event, multiple segments)
 export interface EventAttendanceControlProps {
-  event: db3.EventClientPayload_Verbose,
-  responseInfo: db3.EventResponseInfo;
-  linkToEvent: boolean;
+  eventData: EventWithMetadata;
+  //responseInfo: db3.EventResponseInfo;
+  //linkToEvent: boolean;
   onRefetch: () => void,
 };
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const user = useCurrentUser()[0]!;
   //const responses = Object.values(props.responseInfo.getResponsesBySegmentForUser(user));
-  const segmentResponses = Object.values(props.responseInfo.getResponsesBySegmentForUser(user));
+  const segmentResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));
   segmentResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
-  const eventResponse = props.responseInfo.getEventResponseForUser(user);
+  const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user);
 
-  const eventTiming = API.events.getEventTiming(props.event);
+  const eventTiming = props.eventData.eventTiming;
   const eventIsPast = eventTiming === Timing.Past;
   const anyAnswered = segmentResponses.some(r => !!r.response.attendance);
   const allAnswered = segmentResponses.every(r => !!r.response.attendance);
@@ -373,10 +374,9 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   //   - invited
   //   - and not all answered
   const inputAlert = !eventIsPast && (isInvited && !allAnswered);
-  const visible = !anyAnswered && isInvited;// hide the control entirely if you're not invited, but still show if you already responded.
-  if (!visible) return null;
+  const visible = anyAnswered || isInvited;// hide the control entirely if you're not invited, but still show if you already responded.
 
-  //const eventName = props.linkToEvent ? (<div className='eventName'><a href={API.events.getURIForEvent(props.event)}>{props.event.name}</a></div>) : <div className='eventName'>{props.event.name}</div>;
+  if (!visible) return null;
 
   const captionMap = {};
   captionMap[Timing.Past] = [
@@ -420,8 +420,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             onRefetch={props.onRefetch}
             eventUserResponse={eventResponse}
             segmentUserResponse={segment}
-            event={props.event}
-            eventResponseInfo={props.responseInfo}
+            eventData={props.eventData}
           />;
         })}
       </div>

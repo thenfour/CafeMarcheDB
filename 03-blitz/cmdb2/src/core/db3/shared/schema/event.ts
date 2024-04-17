@@ -368,7 +368,11 @@ const xEventArgs_Base: db3.TableDesc = {
             const minDate = new Date();
             minDate.setDate(minDate.getDate() - 10);
             const t: Prisma.EventWhereInput = {
-                endDateTime: { gte: minDate }
+                OR: [
+                    { endDateTime: { gte: minDate } },
+                    {
+                        endDateTime: null,
+                    },]
             };
             ret.push(t);
         }
@@ -382,6 +386,9 @@ const xEventArgs_Base: db3.TableDesc = {
                 OR: [
                     {
                         endDateTime: { gte: minDate }
+                    },
+                    {
+                        endDateTime: null,
                     },
                     {
                         frontpageVisible: true,

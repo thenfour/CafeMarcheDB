@@ -22,7 +22,7 @@ export default resolver.pipe(
             mode: "primary",
             currentUser,
         };
-        await mutationCore.deleteImpl(db3.xEventSongList, args.id, ctx, clientIntention);
+        await mutationCore.deleteImpl(db3.xEventSongList, args.id, ctx, clientIntention, "softWhenPossible");
 
         return args;
     }

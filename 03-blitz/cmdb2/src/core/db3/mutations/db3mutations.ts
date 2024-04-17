@@ -9,7 +9,7 @@ import * as mutationCore from "../server/db3mutationCore"
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
+    resolver.authorize(Permission.login) as any, // i think because MutatorInput is a combined type, this fails.
     async (input: db3.MutatorInput, ctx: AuthenticatedCtx) => {
         const table = db3.GetTableById(input.tableID);
 

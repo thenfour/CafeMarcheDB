@@ -1,15 +1,15 @@
 import { BlitzPage, useParams } from "@blitzjs/next";
+import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { IsEntirelyIntegral } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
-import { EventBreadcrumbs, EventDetail, EventTableClientColumns, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
+import { EventBreadcrumbs, EventDetailFull, EventTableClientColumns, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import db, { Prisma } from "db";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
@@ -71,7 +71,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     return <div>
         {event ? <>
             <EventBreadcrumbs event={event} />
-            <EventDetail verbosity="verbose" readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} isOnlyEventVisible={true} allowRouterPush={true} />
+            <EventDetailFull readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} />
         </> : <>
             no event was found. some possibilities:
             <ul>

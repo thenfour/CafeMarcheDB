@@ -8,7 +8,7 @@ import * as mutationCore from "../server/db3mutationCore"
 import { TAnyModel } from "shared/utils";
 
 export default resolver.pipe(
-    resolver.authorize("getDistinctChangeFilterValues", Permission.sysadmin),
+    resolver.authorize(Permission.sysadmin),
     async (input: {}, ctx: AuthenticatedCtx) => {
         try {
             const tableNames: { tableName: string }[] = await db.$queryRaw`

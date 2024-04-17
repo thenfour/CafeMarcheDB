@@ -12,7 +12,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
-import { Timing } from 'shared/time';
+import { DateTimeRange, Timing } from 'shared/time';
 import { IsNullOrWhitespace } from 'shared/utils';
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
@@ -35,6 +35,7 @@ import { CMDialogContentText } from './CMCoreComponents2';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { FilesTabContent } from './SongFileComponents';
+import { CalculateEventMetadata, EventWithMetadata } from './EventComponentsBase';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -309,8 +310,9 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceDetailProps {
-    event: db3.EventClientPayload_Verbose;
-    responseInfo: db3.EventResponseInfo;
+    //event: db3.EventClientPayload_Verbose;
+    //responseInfo: db3.EventResponseInfo;
+    eventData: EventWithMetadata;
     tableClient: DB3Client.xTableRenderClient;
     //expectedAttendanceTag: db3.UserTagPayload | null;
     //functionalGroups: db3.InstrumentFunctionalGroupPayload[];
@@ -320,8 +322,10 @@ export interface EventAttendanceDetailProps {
 
 type EventAttendanceDetailSortField = "user" | "instrument" | "response";
 
-export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }: EventAttendanceDetailProps) => {
-    const segAttendees = API.events.getAttendeeCountPerSegment({ event });
+export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...props }: EventAttendanceDetailProps) => {
+    const event = eventData.event;
+    const responseInfo = eventData.responseInfo;
+    const segAttendees = API.events.getAttendeeCountPerSegment({ event: eventData.event });
     const token = API.events.updateUserEventAttendance.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
@@ -355,18 +359,18 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
     const canAddUsers = useAuthorization("EventAttendanceDetail:canAddUsers", Permission.manage_events);
 
     // sort rows
-    const sortedUsers = [...props.responseInfo.distinctUsers];
+    const sortedUsers = [...responseInfo.distinctUsers];
     sortedUsers.sort((a, b) => {
         if (sortField === 'instrument') {
-            const ar = props.responseInfo.getEventResponseForUser(a);
-            const br = props.responseInfo.getEventResponseForUser(b);
+            const ar = responseInfo.getEventResponseForUser(a);
+            const br = responseInfo.getEventResponseForUser(b);
             if (!ar.instrument) return -1;
             if (!br.instrument) return 1;
             return ar.instrument.functionalGroup.sortOrder < br.instrument.functionalGroup.sortOrder ? -1 : 1;
         }
         if (sortField === 'response' && !!sortSegment) {
-            const ar = props.responseInfo.getResponseForUserAndSegment({ user: a, segment: sortSegment });
-            const br = props.responseInfo.getResponseForUserAndSegment({ user: b, segment: sortSegment });
+            const ar = responseInfo.getResponseForUserAndSegment({ user: a, segment: sortSegment });
+            const br = responseInfo.getResponseForUserAndSegment({ user: b, segment: sortSegment });
             if (!ar.response.attendance) return -1;
             if (!br.response.attendance) return 1;
             return ar.response.attendance.sortOrder < br.response.attendance.sortOrder ? -1 : 1;
@@ -404,7 +408,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
             <tbody>
                 {
                     sortedUsers.map(user => {
-                        return <EventAttendanceDetailRow key={user.id} responseInfo={props.responseInfo} event={event} user={user} refetch={refetch} readonly={props.readonly} />
+                        return <EventAttendanceDetailRow key={user.id} responseInfo={responseInfo} event={event} user={user} refetch={refetch} readonly={props.readonly} />
                     })
                 }
             </tbody>
@@ -415,7 +419,7 @@ export const EventAttendanceDetail = ({ refetch, event, tableClient, ...props }:
                             onSelect={onAddUser}
                             filterPredicate={(u) => {
                                 // don't show users who are already being displayed.
-                                const isDisplayed = props.responseInfo.allEventResponses.some(r => r.user.id === u.id && r.isRelevantForDisplay);
+                                const isDisplayed = responseInfo.allEventResponses.some(r => r.user.id === u.id && r.isRelevantForDisplay);
                                 return !isDisplayed;
                                 //!props.responseInfo.distinctUsers.some(d => d.id === u.id)
                             }}
@@ -576,14 +580,32 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
 
 
 export interface EventCompletenessTabContentProps {
-    event: db3.EventClientPayload_Verbose;
-    responseInfo: db3.EventResponseInfo;
-    functionalGroupsClient: DB3Client.xTableRenderClient;
+    //event: db3.EventClientPayload_Verbose;
+    //responseInfo: db3.EventResponseInfo;
+    eventData: EventWithMetadata;
+    //functionalGroupsClient: DB3Client.xTableRenderClient;
 }
 
-export const EventCompletenessTabContent = ({ event, responseInfo, functionalGroupsClient }: EventCompletenessTabContentProps) => {
+export const EventCompletenessTabContent = ({ eventData }: EventCompletenessTabContentProps) => {
     const [minStrength, setMinStrength] = React.useState<number>(50);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
+    const event = eventData.event;
+    const responseInfo = eventData.responseInfo;
+
+    const [user] = useCurrentUser()!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const functionalGroupsClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention,
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xInstrumentFunctionalGroup,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+            ],
+        }),
+    });
+
     return <div>
         <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" />
         <table className='EventCompletenessTabContent'>
@@ -659,73 +681,37 @@ export const gEventDetailTabSlugIndices = {
     "frontpage": 5,
 } as const;
 
-
-export interface EventDetailArgs {
-    event: db3.EventClientPayload_Verbose;
+export interface EventDetailContainerProps {
+    eventData: EventWithMetadata;
     tableClient: DB3Client.xTableRenderClient;
-    verbosity: EventDetailVerbosity;
+    //verbosity: EventDetailVerbosity;
     readonly: boolean;
-    initialTabIndex?: number;
-    isOnlyEventVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
-    allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
+    //initialTabIndex?: number;
+    //isOnlyEventVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
+    //allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
+    fadePastEvents: boolean;
 }
 
-export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDetailArgs) => {
+export const EventDetailContainer = ({ eventData, tableClient, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
     const [user] = useCurrentUser()!;
     const router = useRouter();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    //assert(HasFlag(tableClient.args.requestedCaps, DB3Client.xTableClientCaps.Mutation), "EventDetail control requires mutation caps");
-
-    const functionalGroupsClient = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xInstrumentFunctionalGroup,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
-        }),
-    });
-    //const functionalGroups: db3.InstrumentFunctionalGroupPayload[] = functionalGroupsClient.items as any || [];
-
-    const expectedAttendanceTag = API.users.getUserTag(event.expectedAttendanceUserTagId);
 
     const refetch = () => {
         tableClient.refetch();
-        functionalGroupsClient.refetch();
     };
 
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
+    const visInfo = API.users.getVisibilityInfo(eventData.event);
 
-    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
-    };
-
-    // convert index to tab slug
-    const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
-    const eventURI = API.events.getURIForEvent(event, tabSlug);
-
-    React.useEffect(() => {
-        if (props.allowRouterPush) {
-            void router.push(eventURI);
-        }
-    }, [eventURI]);
-
-    const visInfo = API.users.getVisibilityInfo(event);
-    const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
-    const eventTiming = API.events.getEventTiming(event);
-
-    return <div className={`EventDetail contentSection event ${verbosity}Verbosity ${visInfo.className} ${(!props.isOnlyEventVisible && (eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
+    return <div className={`EventDetail contentSection event ${visInfo.className} ${(props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
         <div className='header'>
 
             <CMChipContainer>
-                {event.type && //<EventTypeValue type={event.type} />
+                {eventData.event.type && //<EventTypeValue type={event.type} />
                     <CMStandardDBChip
-                        model={event.type}
+                        model={eventData.event.type}
                         getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                        // shape='rectangle'
-                        //border='border'
                         variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
                     />
                 }
@@ -734,29 +720,29 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
 
             <div className="date smallInfoBox">
                 <CalendarMonthIcon className="icon" />
-                <span className="text">{API.events.getEventDateRange(event).toString()}</span>
+                <span className="text">{eventData.dateRange.toString()}</span>
             </div>
             <div className="location smallInfoBox">
                 <PlaceIcon className="icon" />
-                <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
+                <span className="text">{IsNullOrWhitespace(eventData.event.locationDescription) ? "Location TBD" : eventData.event.locationDescription}</span>
             </div>
             <div className='flex-spacer'></div>
-            <VisibilityValue permission={event.visiblePermission} variant='verbose' />
+            <VisibilityValue permission={eventData.event.visiblePermission} variant='verbose' />
         </div>
 
         <div className='content'>
 
             <div className='titleLine'>
                 <div className="titleText">
-                    <Link href={eventURI} className="titleLink">
-                        {event.name}
+                    <Link href={eventData.eventURI} className="titleLink">
+                        {eventData.event.name}
                     </Link>
                 </div>
 
                 <EditFieldsDialogButton
                     dialogTitle='Edit event'
                     readonly={props.readonly}
-                    initialValue={event}
+                    initialValue={eventData.event}
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
@@ -765,7 +751,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
-                            if (obj.slug !== event.slug) {
+                            if (obj.slug !== eventData.event.slug) {
                                 const newUrl = API.events.getURIForEvent(obj.slug);
                                 void router.push(newUrl); // <-- ideally we would show the snackbar on refresh but no.
                             }
@@ -775,7 +761,7 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                         }).finally(refetch);
                     }}
                     onDelete={(api: EditFieldsDialogButtonApi) => {
-                        tableClient.doDeleteMutation(event.id, 'softWhenPossible').then(() => {
+                        tableClient.doDeleteMutation(eventData.event.id, 'softWhenPossible').then(() => {
                             showSnackbar({ children: "delete successful", severity: 'success' });
                             api.close();
                         }).catch(err => {
@@ -785,156 +771,127 @@ export const EventDetail = ({ event, tableClient, verbosity, ...props }: EventDe
                     }}
                 />
 
-                {event.status && <CMStandardDBChip
+                {eventData.event.status && <CMStandardDBChip
                     variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
                     border='border'
                     shape="rectangle"
-                    model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
+                    model={eventData.event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
                 />}
 
                 <CMChipContainer>
-                    {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+                    {eventData.event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
                 </CMChipContainer>
 
             </div>
 
+            {props.children}
 
-            <EventAttendanceControl
-                event={event}
-                linkToEvent={false}
-                onRefetch={refetch}
-                responseInfo={responseInfo}
-            />
-
-            {verbosity === 'verbose' && <SegmentList
-                event={event}
-                //myEventInfo={myEventInfo}
-                tableClient={tableClient}
-                verbosity={verbosity}
-                readonly={props.readonly}
-            />}
-
-            {verbosity === 'verbose' && (
-                <>
-                    <Tabs
-                        value={selectedTab}
-                        onChange={handleTabChange}
-                        variant="scrollable"
-                        scrollButtons="auto"
-                    >
-                        <Tab label="Event Info" {...TabA11yProps('event', 0)} />
-                        <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
-                        <Tab label={`Attendance`} {...TabA11yProps('event', 2)} />
-                        <Tab label={`Completeness`} {...TabA11yProps('event', 3)} />
-                        <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
-                        <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />
-                    </Tabs>
-
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
-                        <div className='descriptionLine'>
-                            <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
-                        </div>
-                    </CustomTabPanel>
-
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
-                        <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
-                    </CustomTabPanel>
-
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
-                        <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
-                        <EventAttendanceDetail event={event} tableClient={tableClient} responseInfo={responseInfo} refetch={refetch} readonly={props.readonly} />
-                    </CustomTabPanel>
-
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
-                        <SettingMarkdown setting='EventCompletenessTabMarkdown' />
-                        <EventCompletenessTabContent event={event} responseInfo={responseInfo} functionalGroupsClient={functionalGroupsClient} />
-                    </CustomTabPanel>
-
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
-                        {/* <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} /> */}
-                        <FilesTabContent fileTags={event.fileTags} uploadTags={{
-                            taggedEventId: event.id,
-                        }} refetch={refetch} readonly={props.readonly} />
-                    </CustomTabPanel>
-
-                    <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
-                        <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
-                    </CustomTabPanel>
-
-                </>
-            )}
         </div>
 
     </div>;
 };
 
 
+export interface EventDetailFullProps {
+    event: db3.EventClientPayload_Verbose,
+    tableClient: DB3Client.xTableRenderClient;
+    initialTabIndex?: number;
+    readonly: boolean;
+}
+export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
+
+    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
+    const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
+    const router = useRouter();
+
+    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
+        setSelectedTab(newValue);
+    };
+
+    const eventData = CalculateEventMetadata(event, tabSlug);
+
+    React.useEffect(() => {
+        void router.push(eventData.eventURI);
+    }, [eventData.eventURI]);
+
+    const refetch = tableClient.refetch;
+
+    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false}>
+        <EventAttendanceControl
+            eventData={eventData}
+            onRefetch={tableClient.refetch}
+        />
+
+        <SegmentList
+            event={event}
+            tableClient={tableClient}
+            readonly={props.readonly}
+        />
+
+        <Tabs
+            value={selectedTab}
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons="auto"
+        >
+            <Tab label="Event Info" {...TabA11yProps('event', 0)} />
+            <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
+            <Tab label={`Attendance`} {...TabA11yProps('event', 2)} />
+            <Tab label={`Completeness`} {...TabA11yProps('event', 3)} />
+            <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
+            <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />
+        </Tabs>
+
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
+            <div className='descriptionLine'>
+                <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
+            </div>
+        </CustomTabPanel>
+
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
+            <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+        </CustomTabPanel>
+
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
+            <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
+            <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} />
+        </CustomTabPanel>
+
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
+            <SettingMarkdown setting='EventCompletenessTabMarkdown' />
+            <EventCompletenessTabContent eventData={eventData} />
+        </CustomTabPanel>
+
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
+            {/* <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} /> */}
+            <FilesTabContent fileTags={event.fileTags} uploadTags={{
+                taggedEventId: event.id,
+            }} refetch={refetch} readonly={props.readonly} />
+        </CustomTabPanel>
+
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
+            <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
+        </CustomTabPanel>
+
+    </EventDetailContainer>;
+};
+
+
 
 export interface EventDashboardItemProps {
     event: db3.EventClientPayload_Verbose,
-    onRefetch: () => void;
+    tableClient: DB3Client.xTableRenderClient;
 }
 export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps) => {
-    const eventURI = API.events.getURIForEvent(event);
-    const visInfo = API.users.getVisibilityInfo(event);
-    const expectedAttendanceTag = API.users.getUserTag(event.expectedAttendanceUserTagId);
-    const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
-    const eventTiming = API.events.getEventTiming(event);
 
-    return <div className={`EventDetail contentSection event ${visInfo.className} ${(eventTiming === Timing.Past) ? "past" : "notPast"}`}>
-        <div className='header'>
-            <CMChipContainer>
-                {event.type && //<EventTypeValue type={event.type} />
-                    <CMStandardDBChip
-                        model={event.type}
-                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                        variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
-                    />
-                }
+    const eventData = CalculateEventMetadata(event);
 
-            </CMChipContainer>
-
-            <div className="date smallInfoBox">
-                <CalendarMonthIcon className="icon" />
-                <span className="text">{API.events.getEventDateRange(event).toString()}</span>
-            </div>
-            <div className="location smallInfoBox">
-                <PlaceIcon className="icon" />
-                <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
-            </div>
-        </div>
-
-        <div className='content'>
-
-            <div className='titleLine'>
-                <div className="titleText">
-                    <Link href={eventURI} className="titleLink">
-                        {event.name}
-                    </Link>
-                </div>
-
-                {event.status && <CMStandardDBChip
-                    variation={{ ...StandardVariationSpec.Strong, fillOption: 'hollow' }}
-                    border='border'
-                    shape="rectangle"
-                    model={event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
-                />}
-
-                <CMChipContainer>
-                    {event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
-                </CMChipContainer>
-            </div>
-
-            <EventAttendanceControl
-                event={event}
-                linkToEvent={false}
-                onRefetch={props.onRefetch}
-                responseInfo={responseInfo}
-            />
-        </div>
-    </div>;
-
-
+    return <EventDetailContainer eventData={eventData} readonly={true} tableClient={props.tableClient} fadePastEvents={true}>
+        <EventAttendanceControl
+            eventData={eventData}
+            onRefetch={props.tableClient.refetch}
+        />
+    </EventDetailContainer>;
 };
 
 
@@ -966,7 +923,7 @@ export const EventDashboard = () => {
             Nothing here!
         </div>) : eventsClient.items.map(event => <EventDashboardItem key={event.id}
             event={event as db3.EventClientPayload_Verbose}
-            onRefetch={eventsClient.refetch}
+            tableClient={eventsClient}
         />)}
     </div>;
 };

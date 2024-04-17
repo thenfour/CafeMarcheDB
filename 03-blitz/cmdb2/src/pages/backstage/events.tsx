@@ -10,7 +10,8 @@ import { TAnyModel, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, EventDetailVerbosity, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
-import { EventDetail, EventTableClientColumns } from "src/core/components/EventComponents";
+import { EventDetailContainer, EventDetailFull, EventTableClientColumns } from "src/core/components/EventComponents";
+import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -336,6 +337,20 @@ const EventsControls = (props: EventsControlsProps) => {
     </div>; // {/* filterControlsContainer */ }
 };
 
+interface EventListItemProps {
+    event: db3.EventClientPayload_Verbose;
+    tableClient: DB3Client.xTableRenderClient;
+};
+
+const EventListItem = (props: EventListItemProps) => {
+
+    const eventData = CalculateEventMetadata(props.event);
+
+    return <EventDetailContainer eventData={eventData} fadePastEvents={true} readonly={true} tableClient={props.tableClient} >
+    </EventDetailContainer>;
+
+};
+
 interface EventsListArgs {
     // in order for callers to be able to tell this to refetch, just increment a value in the filter
     filterSpec: EventsControlsSpec,
@@ -375,12 +390,10 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
         eventsClient.refetch();
     }, [filterSpec]);
 
-    // console.log(`calculating where clause`);
-    // const wc = eventsClient.schema.GetQuickFilterWhereClauseExpression("sill", clientIntention);
-    // console.log(wc);
+    const items = eventsClient.items as db3.EventClientPayload_Verbose[];
 
     return <>
-        {eventsClient.items.map(event => <EventDetail key={event.id} readonly={true} event={event as db3.EventClientPayload_Verbose} tableClient={eventsClient} verbosity={filterSpec.verbosity} isOnlyEventVisible={false} allowRouterPush={false} />)}
+        {items.map(event => <EventListItem key={event.id} event={event} tableClient={eventsClient} />)}
     </>;
 };
 
