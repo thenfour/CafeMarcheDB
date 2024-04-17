@@ -21,6 +21,7 @@ import { CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProg
 import { CMTextInputBase } from './CMTextField';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
+import { CMSmallButton } from './CMCoreComponents2';
 
 const gMaximumFilterTagsPerType = 3 as const;
 
@@ -498,13 +499,16 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
     const sortArrow = props.value.sortDirection === 'asc' ? gCharMap.DownArrow() : gCharMap.UpArrow();
 
     return <div className='filterAndSortControls'>
+        <span className='HalfOpacity'>{gIconMap.Search()}</span>
         <CMTextInputBase value={props.value.quickFilter} onChange={(e, value) => props.onChange({ ...props.value, quickFilter: value })} />
+        {!IsNullOrWhitespace(props.value.quickFilter) && <CMSmallButton onClick={() => props.onChange({ ...props.value, quickFilter: "" })}>{gIconMap.Close()}</CMSmallButton>}
         <CMChipContainer>
             {uniqueMimeTypes.map(t => (
                 <CMChip
                     key={t.tag}
                     variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.mimeTypes, t.tag) }}
                     tooltip={"File type"}
+                    size='small'
                     onClick={() => props.onChange({ ...props.value, mimeTypes: toggleValueInArray(props.value.mimeTypes, t.tag) })}
                 >
                     {t.tag} ({t.count})
@@ -517,25 +521,27 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                     key={t.tag.id}
                     color={t.tag.color}
                     tooltip={t.tag.description}
+                    size='small'
                     variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.tagIds, t.tag.id) }}
                     onClick={() => props.onChange({ ...props.value, tagIds: toggleValueInArray(props.value.tagIds, t.tag.id) })}
                 >
                     {t.tag.text} ({t.count})
                 </CMChip>))}
         </CMChipContainer>
-        <CMChipContainer>
+        {<CMChipContainer>
             {uniqueInstrumentTags.map(t => (
                 <CMChip
                     key={t.tag.id}
                     //color={t.tag.color}
                     tooltip={t.tag.description}
+                    size='small'
                     variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.tag.id) }}
                     onClick={() => props.onChange({ ...props.value, taggedInstrumentIds: toggleValueInArray(props.value.taggedInstrumentIds, t.tag.id) })}
                 >
                     {t.tag.name} ({t.count})
                 </CMChip>))}
 
-        </CMChipContainer>
+        </CMChipContainer>}
         <CMChipContainer>
             {uniqueEventTags.map(t => (
                 <CMChip
@@ -543,6 +549,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                     //color={t.tag.color}
                     //tooltip={t.tag.description}
                     tooltip={"Event"}
+                    size='small'
                     variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedEventIds, t.tag.id) }}
                     onClick={() => props.onChange({ ...props.value, taggedEventIds: toggleValueInArray(props.value.taggedEventIds, t.tag.id) })}
                 >
@@ -555,6 +562,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                     key={t.tag.id}
                     //color={t.tag.color}
                     tooltip={"User"}
+                    size='small'
                     variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedUserIds, t.tag.id) }}
                     onClick={() => props.onChange({ ...props.value, taggedUserIds: toggleValueInArray(props.value.taggedUserIds, t.tag.id) })}
                 >
@@ -566,6 +574,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                 <CMChip
                     key={t.tag.id}
                     //color={t.tag.color}
+                    size='small'
                     tooltip={"Song"}
                     variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedSongIds, t.tag.id) }}
                     onClick={() => props.onChange({ ...props.value, taggedSongIds: toggleValueInArray(props.value.taggedSongIds, t.tag.id) })}
@@ -576,22 +585,27 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
         Sort by:
         <CMChipContainer>
             <CMChip
+                size='small'
                 onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedAt', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
                 variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'uploadedAt' }}
             >Upload Date {props.value.sortBy === 'uploadedAt' && sortArrow}</CMChip>
             <CMChip
+                size='small'
                 onClick={() => props.onChange({ ...props.value, sortBy: 'fileCreatedAt', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
                 variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'fileCreatedAt' }}
             >File Date {props.value.sortBy === 'fileCreatedAt' && sortArrow}</CMChip>
             <CMChip
+                size='small'
                 onClick={() => props.onChange({ ...props.value, sortBy: 'sizeBytes', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
                 variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'sizeBytes' }}
             >Size {props.value.sortBy === 'sizeBytes' && sortArrow}</CMChip>
             <CMChip
+                size='small'
                 onClick={() => props.onChange({ ...props.value, sortBy: 'mimeType', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
                 variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'mimeType' }}
             >Type {props.value.sortBy === 'mimeType' && sortArrow}</CMChip>
             <CMChip
+                size='small'
                 onClick={() => props.onChange({ ...props.value, sortBy: 'uploadedByUserId', sortDirection: props.value.sortDirection === 'asc' ? 'desc' : 'asc' })}
                 variation={{ ...StandardVariationSpec.Strong, selected: props.value.sortBy === 'uploadedByUserId' }}
             >Uploader {props.value.sortBy === 'uploadedByUserId' && sortArrow}</CMChip>
@@ -719,7 +733,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
         <DB3Client.NameValuePair
             isReadOnly={false}
-            name={"Options"}
+            name={""}
             value={<FileFilterAndSortControls value={filterSpec} onChange={(value) => setFilterSpec(value)} fileTags={props.fileTags} />}
         />
 

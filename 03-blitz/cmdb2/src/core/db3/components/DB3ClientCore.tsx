@@ -16,7 +16,7 @@ import React from "react";
 //import * as db3 from "../db3";
 import { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
-import { Coalesce, HasFlag, SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
+import { Coalesce, HasFlag, IsNullOrWhitespace, SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
@@ -57,7 +57,7 @@ export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) =
     const validationError = props.validationResult?.getErrorForField(props.fieldName) || null;
 
     return <div key={props.key} className={`BasicNameValuePairContainer ${props.className} ${props.isReadOnly ? "readOnly" : "editable"} ${(props.validationResult && !!validationError) ? "validationError" : "validationSuccess"}`}>
-        <div className="name">{props.name}</div>
+        {!IsNullOrWhitespace(props.name) && <div className="name">{props.name}</div>}
         {props.description && <div className="description">{props.description}</div>}
         <div className="value">{props.value}</div>
         {(props.validationResult && !!validationError) && <div className="validationResult">{validationError}</div>}

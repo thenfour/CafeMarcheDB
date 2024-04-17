@@ -1829,12 +1829,6 @@ in particular the date range picker is wide.*/
     border: 2px solid #fcc;
 }
 
-.titleLink {
-    display: flex;
-    align-items: center;
-    ;
-}
-
 /* song introduced year, which is placed after the title but on the same line */
 span.titleTag {
     color: #ccc;
