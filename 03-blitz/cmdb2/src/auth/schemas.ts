@@ -36,18 +36,11 @@ export const Signup = z.object({
   roleId: z.number().nullable().optional(),
 })
 
-export const InsertUserSchema = z.object({
-  email: UserEmailSchema,
-  name: UserNameSchema,
-  roleId: z.number().nullable().optional(),
-})
-
-export const UpdateUserFromGrid = z.object({
-  id: z.number(),
-  email: UserEmailSchema,
-  name: UserNameSchema,
-  roleId: z.number().nullable().optional(),
-})
+// export const InsertUserSchema = z.object({
+//   email: UserEmailSchema,
+//   name: UserNameSchema,
+//   roleId: z.number().nullable().optional(),
+// })
 
 export const Login = z.object({
   email: UserEmailSchema,
@@ -75,36 +68,36 @@ export const ChangePassword = z.object({
 })
 
 // model Role {
-export const CreateRole = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-});
+// export const CreateRole = z.object({
+//   name: z.string().min(1),
+//   description: z.string().optional(),
+// });
 
-export const UpdateRole = z.object({
-  id: z.number(),
-  name: z.string().min(1),
-  description: z.string().optional(),
-});
+// export const UpdateRole = z.object({
+//   id: z.number(),
+//   name: z.string().min(1),
+//   description: z.string().optional(),
+// });
 
-export const DeleteRole = z.object({
-  id: z.number(),
-});
+// export const DeleteRole = z.object({
+//   id: z.number(),
+// });
 
-export const CreatePermission = z.object({
-  name: z.string().min(1),
-  description: z.string(),
-});
+// export const CreatePermission = z.object({
+//   name: z.string().min(1),
+//   description: z.string(),
+// });
 
-export const UpdatePermission = z.object({
-  id: z.number(),
-  name: z.string().min(1),
-  description: z.string(),
-  sortOrder: z.number(),
-  roles: z.object({
-    roleId: z.number(),
-    permissionId: z.number(),
-  }).array(),
-});
+// export const UpdatePermission = z.object({
+//   id: z.number(),
+//   name: z.string().min(1),
+//   description: z.string(),
+//   sortOrder: z.number(),
+//   roles: z.object({
+//     roleId: z.number(),
+//     permissionId: z.number(),
+//   }).array(),
+// });
 
 export const DeletePermission = z.object({
   id: z.number(),
@@ -122,10 +115,10 @@ export const ToggleRolePermission = z.object({
 });
 
 
-export const RegisterActivitySchema = z.object({
-  action: z.string(), // x = column = role
-  data: z.unknown(),
-});
+// export const RegisterActivitySchema = z.object({
+//   action: z.string(), // x = column = role
+//   data: z.unknown(),
+// });
 
 // SETTING
 export const SettingNameSchema = z.string().min(1);

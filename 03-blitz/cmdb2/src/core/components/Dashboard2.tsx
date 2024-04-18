@@ -9,30 +9,28 @@ import {
     MusicNoteOutlined as MusicNoteOutlinedIcon,
     Settings as SettingsIcon
 } from '@mui/icons-material';
+import CollectionsIcon from '@mui/icons-material/Collections';
 import CommentIcon from '@mui/icons-material/Comment';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import HomeIcon from '@mui/icons-material/Home';
 import MenuIcon from '@mui/icons-material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import PersonIcon from '@mui/icons-material/Person';
-import SearchIcon from '@mui/icons-material/Search';
 import SecurityIcon from '@mui/icons-material/Security';
-import { AppBar, Avatar, Badge, Box, Button, Divider, Drawer, IconButton, InputBase, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
-import { alpha, styled, useTheme } from "@mui/material/styles";
+import { AppBar, Avatar, Box, Button, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { useTheme } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { assert } from "blitz";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
+import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
-import CollectionsIcon from '@mui/icons-material/Collections';
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
-import { Permission } from "shared/permissions";
-import { CMAuthorize } from "types";
 import { API } from "../db3/clientAPI";
-import { assert } from "blitz";
+import { gIconMap } from "../db3/components/IconSelectDialog";
 
 const drawerWidth = 300;
 
@@ -78,11 +76,46 @@ const drawerWidth = 300;
 
 const AppBarUserIcon_MenuItems = () => {
     const [logoutMutation] = useMutation(logout);
+    const router = useRouter();
+    //const [currentUser] = useCurrentUser();
+    const sess = useSession();
+    const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
+    const isShowingAdminControls = !!sess.showAdminControls;
+
+    const [stopImpersonatingMutation] = useMutation(stopImpersonating);
+
+    const onClickStopImpersonating = async () => {
+        await stopImpersonatingMutation();
+    };
+
+    const onClickShowAdminControls = async (showAdminControls: boolean) => {
+        await showAdminControlsMutation.invoke({ showAdminControls });
+    };
+
     return <>
+
+        {(!!sess.isSysAdmin) && <>
+            {(sess.impersonatingFromUserId != null) && (
+                <MenuItem onClick={onClickStopImpersonating}>Stop impersonating</MenuItem>
+            )}
+
+            {isShowingAdminControls ?
+                <MenuItem onClick={() => onClickShowAdminControls(false)}>Hide admin config {gIconMap.Settings()}</MenuItem>
+                : <MenuItem onClick={() => onClickShowAdminControls(true)}>Show admin config {gIconMap.Settings()}</MenuItem>
+            }
+
+            <Divider /></>
+        }
         <MenuItem component={Link} href='/backstage/profile'>Your profile</MenuItem>
+
         <MenuItem onClick={async () => {
             await logoutMutation();
-        }}>Log out</MenuItem>
+            router.push("/backstage");
+        }}>
+            Log out
+        </MenuItem>
+
+
     </>;
 };
 
@@ -173,24 +206,14 @@ interface PrimarySearchAppBarProps {
 
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const theme = useTheme();
-    const router = useRouter();
-    const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
+    // const router = useRouter();
+    //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
     const session = useSession();
     let backgroundColor: string | undefined = undefined;
     if (session.impersonatingFromUserId != null) {
         backgroundColor = "#844";
     }
-
-    const [stopImpersonatingMutation] = useMutation(stopImpersonating);
-
-    const onClickStopImpersonating = async () => {
-        await stopImpersonatingMutation();
-    };
-
-    const onClickShowAdminControls = async (showAdminControls: boolean) => {
-        await showAdminControlsMutation.invoke({ showAdminControls });
-    };
 
     return (
         <>
@@ -224,15 +247,6 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                             inputProps={{ 'aria-label': 'search' }}
                         />
                     </Search>} */}
-                    {(!!session.isSysAdmin) && (
-                        session.showAdminControls ?
-                            <Button size="small" variant="contained" onClick={() => onClickShowAdminControls(false)}>Hide {gIconMap.Settings()}</Button>
-                            : <Button size="small" variant="contained" onClick={() => onClickShowAdminControls(true)}>Show {gIconMap.Settings()}</Button>
-
-                    )}
-                    {(session.impersonatingFromUserId != null) && (
-                        <Button size="small" variant="contained" onClick={onClickStopImpersonating}>Stop impersonating</Button>
-                    )}
                     <Box sx={{ flexGrow: 1 }} />{/* spacing to separate left from right sides */}
 
                     {(session.userId != null) && <>
@@ -444,7 +458,6 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
     const session = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
-    const isShowingAdminControls = API.other.useIsShowingAdminControls();
 
     React.useEffect(() => {
         document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");

@@ -564,8 +564,7 @@ export const xUser = new db3.xTable({
             associationLocalObjectMember: "user",
             associationTableID: "UserTagAssignment",
             foreignTableID: "UserTag",
-            //authMap: xUserAuthMap_R_EManagers,
-            authMap: xUserAuthMap_R_EAdmins,
+            authMap: xUserAuthMap_R_EManagers, // don't allow editing your own tags; they're used for things like invites etc so only for managers.
             getQuickFilterWhereClause: (query: string): Prisma.UserWhereInput => ({
                 tags: {
                     some: {

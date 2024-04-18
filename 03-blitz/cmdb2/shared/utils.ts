@@ -245,31 +245,11 @@ export async function SetSetting(args: SetSettingArgs) {
 // }
 
 
-// ACTIONS /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-export enum Action {
-    SignIn = "SignIn",
-    SignOut = "SignOut",
-    VisitRoute = "VisitRoute",
-}
-
-export type RegisterActionArgs = {
-    action: Action, // user operation
-    data?: any, // additional data depending on action. will be serialized as JSON.
-    ctx: Ctx,
-}
-
-export async function RegisterActivity(args: RegisterActionArgs) {
-    return await db.activity.create({
-        data: {
-            userId: args.ctx?.session?.userId || null,
-            sessionHandle: args.ctx?.session?.$handle || null,
-            happenedAt: new Date(),
-            action: args.action,
-            data: JSON.stringify(args.data),
-        }
-    });
-}
+// export enum Action {
+//     SignIn = "SignIn",
+//     SignOut = "SignOut",
+//     VisitRoute = "VisitRoute",
+// }
 
 
 export const CoerceToNumberOr = <Tfallback,>(value, fallbackValue: Tfallback): number | Tfallback => {

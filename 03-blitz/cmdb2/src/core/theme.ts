@@ -14,13 +14,13 @@ export const themeOptions: ThemeOptions = {
   },
   transitions: {
     duration: {
-      shortest: 100,
-      shorter: 100,
-      short: 100,
-      standard: 100,// most basic recommended timing (default 300)
-      complex: 100,// this is to be used in complex animations (default 375)
-      enteringScreen: 100,// recommended when something is entering screen (default 225)
-      leavingScreen: 100,// recommended when something is leaving screen (default 195)
+      shortest: 0,
+      shorter: 0,
+      short: 0,
+      standard: 0,// most basic recommended timing (default 300)
+      complex: 0,// this is to be used in complex animations (default 375)
+      enteringScreen: 0,// recommended when something is entering screen (default 225)
+      leavingScreen: 0,// recommended when something is leaving screen (default 195)
     },
   },
   components: {

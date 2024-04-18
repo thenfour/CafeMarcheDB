@@ -6,8 +6,6 @@
   --subtle-elevation: 2px 2px 5px 2px rgba(0, 0, 0, 0.2);
   --even-more-subtle-elevation: 2px 2px 5px 2px rgba(0, 0, 0, 0.1);
 
-  --color-transition-duration: .3s;
-
   /* todo: get rid of these and use proper coloring*/
   --general-interactable-bgcolor: #79b;
   --general-interactable-color: #eee;

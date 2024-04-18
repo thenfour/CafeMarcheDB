@@ -927,10 +927,11 @@ export const EventDashboard = () => {
         <h1>Upcoming events</h1>
         {eventsClient.items.length < 1 ? (<div>
             Nothing here!
-        </div>) : eventsClient.items.map(event => <EventDashboardItem key={event.id}
+        </div>) : <div className='searchResults'>{eventsClient.items.map(event => <EventDashboardItem key={event.id}
             event={event as db3.EventClientPayload_Verbose}
             tableClient={eventsClient}
-        />)}
+        />)}</div>
+        }
     </div>;
 };
 
