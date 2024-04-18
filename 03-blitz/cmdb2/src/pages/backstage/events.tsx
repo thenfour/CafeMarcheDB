@@ -335,7 +335,7 @@ const EventListItem = (props: EventListItemProps) => {
 
     const eventData = CalculateEventMetadata(props.event);
 
-    return <EventDetailContainer eventData={eventData} fadePastEvents={true} readonly={true} tableClient={props.tableClient} >
+    return <EventDetailContainer eventData={eventData} fadePastEvents={true} readonly={true} tableClient={props.tableClient} showVisibility={false}>
     </EventDetailContainer>;
 
 };

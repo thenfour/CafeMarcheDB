@@ -689,6 +689,7 @@ export interface EventDetailContainerProps {
     //isOnlyEventVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
     //allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
     fadePastEvents: boolean;
+    showVisibility?: boolean;
 }
 
 export const EventDetailContainer = ({ eventData, tableClient, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
@@ -776,7 +777,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                 }}
             />
 
-            <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />
+            {props.showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
 
             <TimingChip value={eventData.eventTiming}>
                 {timingLabel[eventData.eventTiming]}
@@ -844,7 +845,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
     const refetch = tableClient.refetch;
 
-    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false}>
+    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true}>
         <EventAttendanceControl
             eventData={eventData}
             onRefetch={tableClient.refetch}
@@ -914,7 +915,7 @@ export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps)
 
     const eventData = CalculateEventMetadata(event);
 
-    return <EventDetailContainer eventData={eventData} readonly={true} tableClient={props.tableClient} fadePastEvents={true}>
+    return <EventDetailContainer eventData={eventData} readonly={true} tableClient={props.tableClient} fadePastEvents={true} showVisibility={false}>
         <EventAttendanceControl
             eventData={eventData}
             onRefetch={props.tableClient.refetch}

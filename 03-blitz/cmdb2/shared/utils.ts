@@ -191,8 +191,10 @@ export enum Setting {
     EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
     FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
     BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
+    DashboardStats_SongsMarkdown = "DashboardStats_SongsMarkdown",
+    DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
 
-    // not markdown.
+    // not markdown....
 
     // on the backstage home dashboard, which events to display
     BackstageFrontpageEventMaxAgeDays = "BackstageFrontpageEventMaxAgeDays",

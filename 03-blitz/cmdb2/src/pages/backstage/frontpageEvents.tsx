@@ -54,11 +54,9 @@ const EventsList = () => {
         {events.map(event => {
             const eventData = CalculateEventMetadata(event);
 
-            // return <CMSinglePageSurfaceCard>
-            return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData}>
+            return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData} showVisibility={false}>
                 <EventFrontpageTabContent readonly={false} refetch={eventsClient.refetch} event={event} />
             </EventDetailContainer>;
-            //</CMSinglePageSurfaceCard>
         }
         )}
     </>;

@@ -274,7 +274,7 @@ export interface SongDetailContainerProps {
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTabIndex?: number;
-    //isOnlySongVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
+    showVisibility?: boolean;
 }
 
 export const SongDetailContainer = ({ songData, tableClient, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
@@ -351,7 +351,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     }}
                 />
 
-                <VisibilityValue permission={song.visiblePermission} variant='minimal' />
+                {props.showVisibility && <VisibilityValue permission={song.visiblePermission} variant='minimal' />}
 
             </div>{/* title line */}
 
@@ -397,7 +397,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         void router.push(songData.songURI);
     }, [songData.songURI]);
 
-    return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient}>
+    return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} showVisibility={true}>
 
         <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
 
@@ -469,7 +469,7 @@ export const CurrentSongsDashboard = (props: CurrentSongsDashboardProps) => {
         {songs.map(s => {
             const songData = CalculateSongMetadata(s);
             const dashEntry = props.songs.find(s2 => s2.songId === s.id)!;
-            return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} >
+            return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} showVisibility={false}>
                 <CMChipContainer orientation='vertical'>
                     {dashEntry.appearsInEvents.map(e => <CMChip
                         key={e.id}

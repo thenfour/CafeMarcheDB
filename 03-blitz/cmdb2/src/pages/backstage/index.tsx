@@ -12,6 +12,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from "src/core/db3/clientAPI";
 import { DateSubtractInDays, Timing, floorToDay } from "shared/time";
+import { Tab, Tabs } from "@mui/material";
 
 
 const DashboardInner = () => {
@@ -23,6 +24,9 @@ const DashboardInner = () => {
   const today = floorToDay(new Date());
   const minDate = floorToDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
   const futureDate = floorToDay(new Date());
+
+  const [selectedTab, setSelectedTab] = React.useState<"songs" | "events">("events");
+
   minDate.setDate(minDate.getDate() - queryMaxAge);
   futureDate.setDate(futureDate.getDate() + 365);
 
@@ -113,11 +117,30 @@ const DashboardInner = () => {
     return a.startsAt!.valueOf() - b.startsAt!.valueOf();
   });
 
-  return <div>
-    <h1>Current songs</h1>
-    <CurrentSongsDashboard songs={currentSongs} />
-    <h1>Current events</h1>
-    <EventDashboard items={currentEvents} tableClient={eventsClient} />
+  return <div className="dashboardStatsContainer">
+
+    <Tabs
+      className="dashboardStatsTabButtonContainer"
+      value={selectedTab}
+      onChange={(e, v) => setSelectedTab(v as any)}
+    >
+      <Tab label="Agenda" value={"events"} />
+      <Tab label="Repertoire" value={"songs"} />
+    </Tabs>
+
+    {selectedTab === "songs" && <div className="dashboardStatsTabContent songs">
+      <SettingMarkdown setting="DashboardStats_SongsMarkdown" />
+      <CurrentSongsDashboard songs={currentSongs} />
+    </div>
+    }
+
+    {selectedTab === "events" && <div className="dashboardStatsTabContent events">
+      <SettingMarkdown setting="DashboardStats_EventsMarkdown" />
+      <EventDashboard items={currentEvents} tableClient={eventsClient} />
+    </div>
+    }
+
+
   </div>;
 };
 

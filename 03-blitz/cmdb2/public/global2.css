@@ -1879,6 +1879,7 @@ div.songCredit .comment {
     padding-left: 10px;
 }
 
+/* -  --------------------------------- */
 
 table.songMetadata {
     border: 0;
@@ -1932,6 +1933,7 @@ table.songMetadata tr:hover td .CMSmallButton {
     opacity: 100%;
 }
 
+/* -  --------------------------------- */
 
 .noInstrumentsWarning {
     font-weight: bold;
@@ -1949,6 +1951,8 @@ table.songMetadata tr:hover td .CMSmallButton {
     /* margin: 7px; */
 }
 
+/* -  --------------------------------- */
+
 .googleIdentityControl {
     display: flex;
     align-items: center;
@@ -1959,9 +1963,14 @@ table.songMetadata tr:hover td .CMSmallButton {
     margin: 10px;
 }
 
+/* -  --------------------------------- */
+
 .emphasizedURL {
     white-space: nowrap;
 }
+
+/* -  --------------------------------- */
+
 
 .resetPasswordURLCopyButton {
     outline: 2px solid black;
@@ -2000,4 +2009,9 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 .resetPasswordContent .error {
     color: red;
+}
+
+/* -  --------------------------------- */
+.dashboardStatsTabButtonContainer {
+    margin-bottom: 15px;
 }

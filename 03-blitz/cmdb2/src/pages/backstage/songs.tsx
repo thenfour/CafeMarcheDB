@@ -106,7 +106,7 @@ interface SongListItemProps {
 };
 const SongListItem = (props: SongListItemProps) => {
     const songData = CalculateSongMetadata(props.song);
-    return <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} >
+    return <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={false}>
         <SongMetadataView readonly={true} refetch={props.tableClient.refetch} songData={songData} showCredits={false} />
     </SongDetailContainer>;
 };
