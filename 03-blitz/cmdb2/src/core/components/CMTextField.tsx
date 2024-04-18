@@ -30,6 +30,7 @@ interface CMTextInputBaseProps {
     autoFocus?: boolean;
     readOnly?: boolean;
     className?: string;
+    type?: "password" | "text"; // "password" | "text" etc.
 };
 
 // textfield for a string field on an object.
@@ -50,7 +51,7 @@ export function CMTextInputBase({ value, onChange, autoFocus, readOnly, ...props
     };
 
     return <input
-        type="text"
+        type={props.type || "text"}
         disabled={!!readOnly}
         autoFocus={!!autoFocus}
         onChange={handleChange}

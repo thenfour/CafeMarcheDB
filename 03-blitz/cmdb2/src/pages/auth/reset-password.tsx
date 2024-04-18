@@ -1,6 +1,5 @@
 import Layout from "src/core/layouts/Layout"
 import { LabeledTextField } from "src/core/components/LabeledTextField"
-//import { Form, FORM_ERROR } from "src/core/components/Form"
 import { ResetPassword } from "src/auth/schemas"
 import resetPassword from "src/auth/mutations/resetPassword"
 import { BlitzPage, Routes } from "@blitzjs/next"
@@ -8,70 +7,94 @@ import { useRouter } from "next/router"
 import { useMutation } from "@blitzjs/rpc"
 import Link from "next/link"
 import { assert } from "blitz"
+import { Form } from "react-final-form"
+import { CMTextInputBase } from "src/core/components/CMTextField"
+import { NameValuePair } from "src/core/db3/DB3Client"
+import React, { Suspense } from "react";
+import { Button } from "@mui/base"
+import * as z from "zod"
 
-// const ResetPasswordPage: BlitzPage = () => {
-//   const router = useRouter()
-//   const token = router.query.token?.toString()
-//   const [resetPasswordMutation, { isSuccess }] = useMutation(resetPassword)
-
-//   return (
-//     <div>
-//       <h1>Set a New Password</h1>
-
-//       {isSuccess ? (
-//         <div>
-//           <h2>Password Reset Successfully</h2>
-//           <p>
-//             Go to the <Link href={Routes.Home()}>homepage</Link>
-//           </p>
-//         </div>
-//       ) : (
-//         <Form
-//           submitText="Reset Password"
-//           schema={ResetPassword}
-//           initialValues={{
-//             password: "",
-//             passwordConfirmation: "",
-//             token,
-//           }}
-//           onSubmit={async (values) => {
-//             try {
-//               assert(token, "token is required.")
-//               await resetPasswordMutation({ ...values, token })
-//             } catch (error: any) {
-//               if (error.name === "ResetPasswordError") {
-//                 return {
-//                   [FORM_ERROR]: error.message,
-//                 }
-//               } else {
-//                 return {
-//                   [FORM_ERROR]: "Sorry, we had an unexpected error. Please try again.",
-//                 }
-//               }
-//             }
-//           }}
-//         >
-//           <LabeledTextField name="password" label="New Password" type="password" />
-//           <LabeledTextField
-//             name="passwordConfirmation"
-//             label="Confirm New Password"
-//             type="password"
-//           />
-//         </Form>
-//       )}
-//     </div>
-//   )
-// }
-
-// ResetPasswordPage.redirectAuthenticatedTo = "/"
-// ResetPasswordPage.getLayout = (page) => <Layout title="Reset Your Password">{page}</Layout>
-
-// export default ResetPasswordPage
-
-
-
-const ResetPasswordPage = () => {
-  return <>not implemented; ask an admin to reset it for you</>;
+interface Result {
+  success: boolean;
+  message: string;
 }
+
+const ResetPasswordPage: BlitzPage = () => {
+  const router = useRouter()
+  const token = router.query.token?.toString()
+  const [resetPasswordMutation, mutationInfo] = useMutation(resetPassword);
+  const [password, setPassword] = React.useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = React.useState("");
+  const [result, setResult] = React.useState<Result | null>(null);
+
+  const handleSubmit = async () => {
+
+    try {
+      ResetPassword.parse({
+        password,
+        passwordConfirmation,
+        token,
+      });
+
+      await resetPasswordMutation({ token: token || "", password, passwordConfirmation })
+      setResult({
+        success: true,
+        message: "", // unused
+      });
+    } catch (e) {
+      console.log(e);
+      if (e instanceof z.ZodError) {
+        setResult({
+          success: false,
+          message: (e as any).errors[0].message,
+        });
+      }
+      else if (e.name === "ResetPasswordError") {
+        setResult({
+          success: false,
+          message: e.message,
+        });
+      } else {
+        setResult({
+          success: false,
+          message: "Sorry, we had an unexpected error. Please try again.",
+        });
+      }
+    }
+  };
+
+  const formDisable = mutationInfo.isLoading;
+
+  return (
+    <div className="resetPasswordPage">
+      <div className="resetPasswordContent">
+        {result?.success ? (
+          <div>
+            <h2>Password Reset Successfully</h2>
+            <p>
+              Go to the <a href="/backstage">backstage.</a>
+            </p>
+          </div>
+        ) : (
+          <div>
+            <h1>Set a New Password</h1>
+
+            <NameValuePair isReadOnly={formDisable} name="New password" value={
+              <CMTextInputBase autoFocus={true} value={password} onChange={(e, value) => setPassword(value)} type="password" />
+            } />
+            <NameValuePair isReadOnly={formDisable} name="Confirm your new password" value={
+              <CMTextInputBase value={passwordConfirmation} onChange={(e, value) => setPasswordConfirmation(value)} type="password" />
+            } />
+            <Button onClick={handleSubmit} disabled={formDisable}>Submit</Button>
+            {result?.success === false && <div className="error">{result.message}</div>}
+          </div>
+
+        )}
+      </div>
+    </div>
+  )
+}
+
+ResetPasswordPage.getLayout = (page) => <Layout title="Reset Your Password">{page}</Layout>
 
 export default ResetPasswordPage

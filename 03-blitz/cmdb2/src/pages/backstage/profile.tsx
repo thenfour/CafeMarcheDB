@@ -22,87 +22,22 @@ import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { SafeParseReturnType } from "zod";
 
-const GoogleIdentityControl = () => {
+const OwnIdentityControl = () => {
     const [currentUser, { refetch }] = useCurrentUser();
     const haveGoogleIdentity = !!currentUser?.googleId;
+
+    // if you don't have a google identity there's just not much to show here; don't show anything.
     if (!haveGoogleIdentity) return null;
 
-    return <div className="googleIdentityControl">
-        <img src="/web_light_rd_na.svg" />
-        <div>You have a Google identity and can sign in with your Google account. You still have the option of signing in with an email & password.</div>
-    </div>;
-};
-
-const OwnIdentityControl = () => {
     return <DB3Client.NameValuePair
         isReadOnly={false}
         name={"Identity and login"}
-        value={<div>
-            <GoogleIdentityControl />
+        value={<div className="googleIdentityControl">
+            <img src="/web_light_rd_na.svg" />
+            <div>You have a Google identity and can sign in with your Google account. You still have the option of signing in with an email & password.</div>
         </div>}
     />;
 }
-
-// export const ResetOwnPasswordControl = () => {
-//     //const router = useRouter();
-//     //const token = router.query.token?.toString();
-//     const [changePasswordMutation, { isSuccess }] = useMutation(changePassword);
-//     //const [currentPassword, setCurrentPassword] = React.useState<string>("");
-//     const [newPassword, setNewPassword] = React.useState<string>("");
-//     const [newPasswordConfirmation, setNewPasswordConfirmation] = React.useState<string>("");
-
-//     const [newPasswordValidationResult, setNewPasswordValidationResult] = React.useState<SafeParseReturnType<string, string> | null>(null);
-
-//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-//     const onSubmit = () => {
-//         changePasswordMutation({ currentPassword: "unused", newPassword }).then(() => {
-//             showSnackbar({ severity: "success", children: "password updated" });
-//         }).catch(e => {
-//             console.log(e);
-//             showSnackbar({ severity: "error", children: "error updating password" });
-//         });
-//     };
-
-//     const handleChange = () => {
-//         const r = schemas.password.safeParse(newPassword);
-//         console.log(r);
-//         setNewPasswordValidationResult(r);
-//     }
-
-//     return <div className="resetPasswordControlContainer formFieldContainer">
-//         <div className="title">Change your password</div>
-//         {/* <TextField
-//             className="passwordField currentPassword"
-//             label="Current password"
-//             type="password"
-//             value={currentPassword}
-//             onChange={(v) => setCurrentPassword(v.target.value)}
-//         /> */}
-//         <TextField
-//             label="New Password"
-//             className="passwordField newPassword"
-//             type="password"
-//             error={!newPasswordValidationResult?.success}
-//             helperText={(newPasswordValidationResult?.success === false) && newPasswordValidationResult.error.flatten().formErrors.toLocaleString()}
-//             size="small"
-//             margin="dense"
-//             value={newPassword}
-//             onChange={(v) => { setNewPassword(v.target.value); handleChange() }}
-//         />
-//         <TextField
-//             label="Confirm new password"
-//             className="passwordField newPasswordConfirmation"
-//             type="password"
-//             size="small"
-//             margin="dense"
-//             error={newPassword !== newPasswordConfirmation}
-//             value={newPasswordConfirmation}
-//             onChange={(v) => { setNewPasswordConfirmation(v.target.value); handleChange() }}
-//         />
-//         <Button onClick={onSubmit}>Submit</Button>
-//     </div>;
-// };
 
 type UserInstrumentsFieldInputProps = DB3Client.TagsFieldInputProps<db3.UserInstrumentPayload> & {
     refetch: () => void;

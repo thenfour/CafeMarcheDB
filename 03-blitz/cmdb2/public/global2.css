@@ -1951,3 +1951,46 @@ table.songMetadata tr:hover td .CMSmallButton {
 .googleIdentityControl img {
     margin: 10px;
 }
+
+.emphasizedURL {
+    white-space: nowrap;
+}
+
+.resetPasswordURLCopyButton {
+    outline: 2px solid black;
+    font-family: monospace;
+    color: #64f;
+    font-weight: bold;
+    font-size: 20px;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.resetPasswordURLCopyButton:hover {
+    background-color: rgb(234, 220, 255);
+    outline: 2px solid #64f;
+}
+
+.resetPasswordURLDialog .MuiPaper-root {
+    max-width: none;
+}
+
+.resetPasswordURLDialog .copiedIndicator {
+    color: green;
+}
+
+.resetPasswordPage {
+    display: flex;
+    justify-content: center;
+}
+
+
+.resetPasswordContent {
+    width: max-content;
+    padding: 20px;
+}
+
+.resetPasswordContent .error {
+    color: red;
+}

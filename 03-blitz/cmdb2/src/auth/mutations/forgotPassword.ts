@@ -1,16 +1,17 @@
 import { generateToken, hash256 } from "@blitzjs/auth"
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
-import { forgotPasswordMailer } from "mailers/forgotPasswordMailer"
 import { ForgotPassword } from "../schemas"
+import { Permission } from "shared/permissions"
 
-const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 4
+const RESET_PASSWORD_TOKEN_EXPIRATION_IN_HOURS = 48
 
 export default resolver.pipe(
   resolver.zod(ForgotPassword),
+  resolver.authorize(Permission.manage_users),
   async ({ email }) => {
     // 1. Get the user
-    const user = await db.user.findFirst({ where: { email: email.toLowerCase() } })
+    const user = await db.user.findFirst({ where: { email: email.toLowerCase() } });
 
     // 2. Generate the token and expiration date.
     const token = generateToken()
@@ -32,13 +33,15 @@ export default resolver.pipe(
           sentTo: user.email,
         },
       })
-      // 6. Send the email
-      await forgotPasswordMailer({ to: user.email, token }).send()
+
     } else {
       // 7. If no user found wait the same time so attackers can't tell the difference
-      await new Promise((resolve) => setTimeout(resolve, 750))
+      // this is no longer necessary because this feature is only available to admins
+      //await new Promise((resolve) => setTimeout(resolve, 750))
     }
 
     // 8. Return the same result whether a password reset email was sent or not
-    return
+    const origin = process.env.APP_ORIGIN || process.env.BLITZ_DEV_SERVER_ORIGIN
+    const resetUrl = `${origin}/auth/reset-password?token=${token}`
+    return resetUrl;
   })

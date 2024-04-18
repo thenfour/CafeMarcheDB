@@ -1,4 +1,3 @@
-// TODO: forgot password caps. only email integrations are not possible atm.
 
 // const ForgotPasswordPage: BlitzPage = () => {
 //   const [forgotPasswordMutation, { isSuccess }] = useMutation(forgotPassword)
@@ -38,7 +37,15 @@
 // }
 
 const ForgotPasswordPage = () => {
-  return <>not implemented; ask an admin to reset it for you</>;
+  return <div className="resetPasswordPage">
+    <div className="resetPasswordContent">
+
+      <h1>Reset password</h1>
+      <p>Please ask an admin to reset your password. They will then send you a link where you can set a new password.
+      </p>
+    </div>
+  </div>
+    ;
 }
 
 export default ForgotPasswordPage

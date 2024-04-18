@@ -93,11 +93,11 @@ const AppBarUserIcon_MenuItems = () => {
     };
 
     return <>
+        {(sess.impersonatingFromUserId != null) && (
+            <MenuItem onClick={onClickStopImpersonating}>Stop impersonating</MenuItem>
+        )}
 
         {(!!sess.isSysAdmin) && <>
-            {(sess.impersonatingFromUserId != null) && (
-                <MenuItem onClick={onClickStopImpersonating}>Stop impersonating</MenuItem>
-            )}
 
             {isShowingAdminControls ?
                 <MenuItem onClick={() => onClickShowAdminControls(false)}>Hide admin config {gIconMap.Settings()}</MenuItem>

@@ -24,7 +24,7 @@ export const googleId = z
 
 export const password = z
   .string()
-  .min(8)
+  .min(8, { message: "Password is required and must be at least 8 characters long" })
   .max(100)
   .transform((str) => str.trim())
 

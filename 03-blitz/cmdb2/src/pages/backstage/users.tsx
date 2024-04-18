@@ -1,46 +1,4 @@
-// next steps:
-// - make things generic; use mui existing components as model
-// - validation for all fields in all scenarios
-// - authorization for pages, components, columns, db queries & mutations
-// - fix some flicker problem what is going on? maybe just long loads too high in tree?
-// - separate signup from google signup from admin create, regarding fields & auth
-//   - note huge bug right now where adding a user makes you become that user.
-// - impersonation
-// - other datatypes (boolean, datetime...)
-// - selected item scrolls off screen on the select item dialog
 
-// there are 2 ways to select objects:
-// from an edit cell
-//   not much space, demanding a dialog which can allow:
-//      - seeing more detailed view of all items
-//      - filtering & adding new items
-//      - with a dialog there's enough space to see ALL options
-// from an existing dialog. like creating a new user, select a role for that new user.
-//   so we can't show all items, need to find a compact way to do this.
-//   mui auto-complete is perfect for this.
-//   see https://mui.com/material-ui/react-autocomplete/#creatable
-
-// - support pagination on the [SELECT...] selection dialog.
-// main features to consider:
-// x snackbar to notify async changes
-// x confirmation dialog
-// ADDING: let's not add directly in the grid.
-//   doing so would result in weirdness wrt paging / sorting /filtering. Better to just display a modal or inline form specifically for adding items.
-//   grid is just not a great UI regarding validation etc. better for modifying existing fields
-// EDITING in grid: should not be a problem.
-// DELETING
-//   esp. for users, i think i should not actually cascade delete users. probably just mark users as inactive
-// JOURNALING / AUDIT TRACING
-//   register every mutation in a journal - done at the mutation level, not here in a datagrid.
-// SERVER-BACKED DATA:
-//   not completely trivial because now instead of the grid performing filtering, sorting, pagination, it must be passed to a query.
-//  - filtering
-//  - sorting
-//  - pagination
-// RESPONSIVE
-//   list of cards feels the most useful: https://github.com/mui/mui-x/issues/6460#issuecomment-1409912710
-// FILTERING
-//   stuff like freeform text + tag text or something may require custom
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
@@ -48,12 +6,82 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import { Button } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import impersonateUser from "src/auth/mutations/impersonateUser";
 import { useMutation } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
 import { Routes } from "@blitzjs/next"
+import * as React from 'react';
+import forgotPassword from "src/auth/mutations/forgotPassword";
+import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 
+const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {
+    const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
+    const [resetURL, setResetURL] = React.useState<string | null>(null);
+    const [showCopied, setShowCopied] = React.useState<boolean>(false);
+    const [forgotPasswordMutation, { isSuccess }] = useMutation(forgotPassword);
+
+    const handleConfirmClick = () => {
+        forgotPasswordMutation({ email: user.email }).then((r) => {
+            setShowConfirm(false);
+            setResetURL(r);
+        }).catch(e => {
+            console.log(e);
+            alert(`error; see console.`);
+        });
+    };
+
+
+    const onCopy = async () => {
+        console.log(resetURL);
+        await navigator.clipboard.writeText(resetURL || "");
+        setShowCopied(true);
+    };
+
+
+    return <>
+        <Button onClick={() => setShowConfirm(true)}>
+            Reset password
+        </Button>
+        {showConfirm &&
+            <Dialog
+                disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
+                open={true}
+                onClose={() => setShowConfirm(false)}
+            >
+                <DialogTitle>Reset password for {user.name} ({user.email})</DialogTitle>
+                <DialogContent dividers>
+                    This will generate a temporary URL which can be used to reset a user's password.
+                    Send it to the user so they can restore their password.
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowConfirm(false)}>Cancel</Button>
+                    <Button autoFocus={true} onClick={handleConfirmClick}>Continue</Button>
+                </DialogActions>
+            </Dialog>
+        }
+        {resetURL &&
+            <Dialog
+                disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
+                open={true}
+                className="resetPasswordURLDialog"
+                onClose={() => { setShowCopied(false); setResetURL(null) }}
+            >
+                <DialogTitle>Here's your link</DialogTitle>
+                <DialogContent dividers>
+                    Click to copy the link to the clipboard
+                    <div role="button" className="resetPasswordURLCopyButton" onClick={onCopy}>
+                        <div className="emphasizedURL">{resetURL}</div>
+                    </div>
+                    {showCopied && <div className="copiedIndicator">Copied!</div>}
+                </DialogContent>
+                <DialogActions>
+                    <Button autoFocus={true} onClick={() => { setShowCopied(false); setResetURL(null) }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+        }
+    </>;
+};
 
 const UserListContent = () => {
     if (!useAuthorization("users admin page", Permission.admin_users)) {
@@ -81,16 +109,21 @@ const UserListContent = () => {
     const [impersonateUserMutation] = useMutation(impersonateUser);
 
     const extraActions = (args: DB3EditGridExtraActionsArgs) => {
-        return (<Button onClick={() => {
-            impersonateUserMutation({
-                userId: args.row.id,
-            }).then(() => {
-                // navigate to home page
-                void router.push(Routes.Home());
-            }).catch((e) => {
-                console.log(e);
-            });
-        }}>Impersonate</Button>);
+        return <div>
+            <Button onClick={() => {
+                impersonateUserMutation({
+                    userId: args.row.id,
+                }).then(() => {
+                    // navigate to home page
+                    void router.push(Routes.Home());
+                }).catch((e) => {
+                    console.log(e);
+                });
+            }}>
+                Impersonate
+            </Button>
+            <AdminResetPasswordButton user={args.row as db3.UserPayload} />
+        </div>;
     }
 
     return <DB3EditGrid tableSpec={tableSpec} renderExtraActions={extraActions} />;
