@@ -820,9 +820,9 @@ export const OpenCloseIcon = ({ isOpen }: { isOpen: boolean }) => {
 
 export const TimingChip = ({ value, children }: React.PropsWithChildren<{ value: Timing }>) => {
     const configMap: { [key in Timing]: CMChipProps } = {
-        [Timing.Past]: { color: gSwatchColors.dark_gray },
-        [Timing.Present]: { color: gSwatchColors.orange },
-        [Timing.Future]: { color: gSwatchColors.purple },
+        [Timing.Past]: { color: gSwatchColors.light_gray, variation: StandardVariationSpec.Weak, shape: "rectangle" },
+        [Timing.Present]: { color: gSwatchColors.orange, variation: StandardVariationSpec.Weak, shape: "rectangle" },
+        [Timing.Future]: { color: gSwatchColors.purple, variation: StandardVariationSpec.Weak, shape: "rectangle" },
     };
     return <CMChip {...configMap[value]}>{children}</CMChip>;
 }

@@ -107,6 +107,7 @@ import { CMChip, CMChipContainer } from './CMCoreComponents';
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { CMSmallButton } from "./CMCoreComponents2";
 import { EventWithMetadata } from "./EventComponentsBase";
+import { Markdown } from "./RichTextEditor";
 
 
 ////////////////////////////////////////////////////////////////
@@ -120,11 +121,11 @@ interface EventAttendanceInstrumentButtonProps {
 const EventAttendanceInstrumentButton = ({ value, selected, onSelect }: EventAttendanceInstrumentButtonProps) => {
   return <CMChip
     onClick={() => onSelect && onSelect(value)}
-    shape='rectangle'
+    shape='rounded'
     className={`attendanceInstrument CMChipNoMargin ${selected ? "" : "HalfOpacity"}`}
     border='noBorder'
     color={value?.functionalGroup.color}
-    size='small'
+    //size='small'
     tooltip={value?.description}
     variation={{
       enabled: true,
@@ -146,6 +147,7 @@ const EventAttendanceInstrumentButton = ({ value, selected, onSelect }: EventAtt
 interface EventAttendanceInstrumentControlProps {
   eventUserResponse: db3.EventUserResponse;
   onRefetch: () => void,
+  readonly?: boolean,
 };
 
 const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
@@ -177,10 +179,15 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
 
   if (instrumentList.length < 2) return null;
 
-  return <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-    {instrumentList.map(option =>
-      <EventAttendanceInstrumentButton key={option.id} selected={option.id === selectedInstrument?.id} value={option} onSelect={() => handleChange(option)} />)}
-  </CMChipContainer>
+  return <DB3Client.NameValuePair
+    isReadOnly={props.readonly || false}
+    name="Instrument"
+    value={<CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
+      {!!props.readonly ? (
+        selectedInstrument !== null && <EventAttendanceInstrumentButton key={"__"} selected={true} value={selectedInstrument} />
+      ) : (instrumentList.map(option =>
+        <EventAttendanceInstrumentButton key={option.id} selected={option.id === selectedInstrument?.id} value={option} onSelect={() => handleChange(option)} />))}
+    </CMChipContainer>} />
     ;
 };
 
@@ -192,6 +199,7 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
 interface EventAttendanceCommentControlProps {
   userResponse: db3.EventUserResponse,
   onRefetch: () => void,
+  readonly: boolean,
 };
 
 const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
@@ -202,6 +210,7 @@ const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps
     editButtonMessage={val === "" ? "Add a comment" : "Edit comment"}
     editButtonVariant={val === "" ? "default" : "framed"}
     refetch={props.onRefetch}
+    readonly={props.readonly}
     className="compact"
     onChange={async (value) => {
       return await token.invoke({
@@ -250,6 +259,7 @@ const EventAttendanceAnswerButton = ({ value, selected, noItemSelected, onSelect
 interface EventAttendanceAnswerControlProps {
   eventUserResponse: db3.EventUserResponse;
   segmentUserResponse: db3.EventSegmentUserResponse;
+  //readonly: boolean;
   onRefetch: () => void,
 };
 
@@ -304,7 +314,6 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
             <EventAttendanceAnswerButton key={option.id} noItemSelected={selectedAttendanceId === null} selected={option.id === selectedAttendanceId} value={option} onSelect={() => handleChange(option)} />)}
           <EventAttendanceAnswerButton noItemSelected={selectedAttendanceId === null} selected={null === selectedAttendanceId} value={null} onSelect={() => handleChange(null)} />
         </CMChipContainer>
-        {/* <Button onClick={() => setExplicitEdit(false)}>close</Button> */}
       </>) : (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
@@ -321,25 +330,34 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
 // shows your answer & comment, small button to show edit controls.
 export interface EventAttendanceSegmentControlProps {
   eventData: EventWithMetadata;
-  //eventResponseInfo: db3.EventResponseInfo;
   eventUserResponse: db3.EventUserResponse;
   segmentUserResponse: db3.EventSegmentUserResponse;
+  //readonly: boolean;
+  //showHeader: boolean;
   onRefetch: () => void,
 };
 
 export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }: EventAttendanceSegmentControlProps) => {
-  //const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
-  //const editMode = (explicitEdit || props.userResponse.isAlert);
 
-  return <div className="segment">
-    <div className='header'>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</div>
-    <EventAttendanceAnswerControl
+  return <DB3Client.NameValuePair
+    isReadOnly={false}
+    name={<>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</>}
+    value={<EventAttendanceAnswerControl
       eventUserResponse={props.eventUserResponse}
       segmentUserResponse={segmentUserResponse}
       onRefetch={props.onRefetch}
     />
-  </div>;
+    }
+  />;
 
+  // return <div className="segment">
+  //   <div className='header'>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</div>
+  //   <EventAttendanceAnswerControl
+  //     eventUserResponse={props.eventUserResponse}
+  //     segmentUserResponse={segmentUserResponse}
+  //     onRefetch={props.onRefetch}
+  //   />
+  // </div>;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -347,14 +365,12 @@ export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }:
 // big attendance alert (per event, multiple segments)
 export interface EventAttendanceControlProps {
   eventData: EventWithMetadata;
-  //responseInfo: db3.EventResponseInfo;
-  //linkToEvent: boolean;
   onRefetch: () => void,
 };
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
+  const [userExpanded, setUserExpanded] = React.useState<boolean>(false);
   const user = useCurrentUser()[0]!;
-  //const responses = Object.values(props.responseInfo.getResponsesBySegmentForUser(user));
   const segmentResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));
   segmentResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
   const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user);
@@ -374,6 +390,8 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   //   - invited
   //   - and not all answered
   const inputAlert = !eventIsPast && (isInvited && !allAnswered);
+  const isVerbose = inputAlert || userExpanded;
+  const canExpandUnexpand = !inputAlert;
   const visible = anyAnswered || isInvited;// hide the control entirely if you're not invited, but still show if you already responded.
 
   if (!visible) return null;
@@ -402,29 +420,48 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   return <div className={`eventAttendanceControl ${inputAlert && "alert"}`}>
 
-    <div className='header'>{captionMap[eventTiming][mapIndex]}</div>
+    <div className='header'>
+      <div>{captionMap[eventTiming][mapIndex]}</div>
+      {canExpandUnexpand && <CMSmallButton variant="framed" onClick={() => setUserExpanded(!userExpanded)}>{isVerbose ? "Close" : "More..."}</CMSmallButton>}
+    </div>
+
     <div className="attendanceResponseInput">
       <div className='comment'>
-        <EventAttendanceCommentControl onRefetch={props.onRefetch} userResponse={eventResponse} />
+        <EventAttendanceCommentControl onRefetch={props.onRefetch} userResponse={eventResponse} readonly={!isVerbose} />
       </div>
-      {someAffirmative && <div className='instrument'>
-        <EventAttendanceInstrumentControl
-          eventUserResponse={eventResponse}
-          onRefetch={props.onRefetch}
-        />
-      </div>}
-      <div className="segmentList">
-        {segmentResponses.map(segment => {
-          return <EventAttendanceSegmentControl
-            key={segment.segment.id}
-            onRefetch={props.onRefetch}
+
+      {isVerbose ? (<>
+        {someAffirmative && <div className='instrument'>
+          <EventAttendanceInstrumentControl
             eventUserResponse={eventResponse}
-            segmentUserResponse={segment}
-            eventData={props.eventData}
-          />;
-        })}
-      </div>
+            onRefetch={props.onRefetch}
+          />
+          <div className="segmentList">
+            {segmentResponses.map(segment => {
+              return <EventAttendanceSegmentControl
+                key={segment.segment.id}
+                //showHeader={isVerbose}
+                //readonly={!isVerbose}
+                onRefetch={props.onRefetch}
+                eventUserResponse={eventResponse}
+                segmentUserResponse={segment}
+                eventData={props.eventData}
+              />;
+            })}
+          </div>
+        </div>}
+      </>
+      ) : (
+        <CMChipContainer>
+          <EventAttendanceInstrumentButton key={"__"} selected={false} value={eventResponse.instrument} />
+          {segmentResponses.map(segment =>
+            <EventAttendanceAnswerButton key={segment.response.id} noItemSelected={false} selected={false} value={segment.response.attendance} onSelect={() => { }} />)}
+        </CMChipContainer>
+      )}
+
+
     </div>
+
   </div>;
 };
 

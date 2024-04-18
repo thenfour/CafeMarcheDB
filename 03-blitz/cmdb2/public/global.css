@@ -617,11 +617,20 @@ it's not often you'll actually want markdown that's really wide.
 /* the idea is to make a visual distinction between the filter controls and the items which are listed below */
 .contentSection.filterControls {
   box-shadow: none;
-  border: 3px solid #bbb;
+  border: 5px solid #bbb;
   border-radius: 8px;
-  padding: 10px 0px;
+  padding-bottom: 10px;
   margin: 10px 0px;
   background-color: #f8f8f8;
+}
+
+.contentSection.filterControls>.header {
+  font-size: 20px;
+  text-transform: uppercase;
+  background-color: #ddd;
+  color: #bbb;
+  /* font-weight: bold; */
+  letter-spacing: 1.2px;
 }
 
 .contentSection .smallInfoBox {
@@ -699,16 +708,15 @@ it's not often you'll actually want markdown that's really wide.
   border-left: solid 6px #88f;
 }
 
-/* 
-.searchResults .contentSection>.header {
-  opacity: 50%;
-} */
-
 .searchResults .contentSection .titleText {
   font-size: 30px;
   ;
 }
 
+/* when showing the attendance control in search results list, where items are more compact and reduced padding, it butts up to the bottom and this compensates. */
+.searchResults .contentSection .eventAttendanceControl {
+  margin-bottom: 10px;
+}
 
 .contentSection .approvalSummaryLine .approvalItem .prompt {
   font-weight: bold;

@@ -779,10 +779,6 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
             {props.showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
 
-            <TimingChip value={eventData.eventTiming}>
-                {timingLabel[eventData.eventTiming]}
-            </TimingChip>
-
         </div>
 
         <div className='content'>
@@ -801,8 +797,13 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
             <div className='titleLine'>
                 <div className="date smallInfoBox">
-                    <CalendarMonthIcon className="icon" />
+
+                    <TimingChip value={eventData.eventTiming}>
+                        <CalendarMonthIcon className="icon" />
+                        {timingLabel[eventData.eventTiming]}
+                    </TimingChip>
                     <span className="text">{eventData.dateRange.toString()}</span>
+
                 </div>
             </div>
 

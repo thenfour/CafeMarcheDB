@@ -75,6 +75,7 @@ interface CompactMutationMarkdownControlProps {
     editButtonVariant?: "framed" | "default";
     cancelButtonMessage?: string,
     saveButtonMessage?: string,
+    readonly?: boolean,
     editButtonMessage?: string,
 };
 
@@ -96,6 +97,7 @@ export const CompactMutationMarkdownControl = (props: CompactMutationMarkdownCon
         initialValue={props.initialValue}
         onValueChanged={onValueChanged}
         className={props.className}
+        readonly={props.readonly}
         cancelButtonMessage={props.cancelButtonMessage}
         saveButtonMessage={props.saveButtonMessage}
         editButtonMessage={props.editButtonMessage}

@@ -10,6 +10,7 @@ import { TAnyModel, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { EventDetailContainer, EventDetailFull, EventTableClientColumns } from "src/core/components/EventComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
 import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
@@ -167,7 +168,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 const NewEventButton = (props: { onOK: () => void }) => {
     const [open, setOpen] = React.useState<boolean>(false);
     return <>
-        <Button onClick={() => setOpen(true)}>{gIconMap.Add()} New event</Button>
+        <Button onClick={() => setOpen(true)}>{gIconMap.Add()} Create a new event</Button>
         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
             {/* <NewEventDialogContent onCancel={() => setOpen(false)} onOK={() => setOpen(false)} /> */}
             <NewEventDialogWrapper
@@ -336,6 +337,10 @@ const EventListItem = (props: EventListItemProps) => {
     const eventData = CalculateEventMetadata(props.event);
 
     return <EventDetailContainer eventData={eventData} fadePastEvents={true} readonly={true} tableClient={props.tableClient} showVisibility={false}>
+        <EventAttendanceControl
+            eventData={eventData}
+            onRefetch={props.tableClient.refetch}
+        />
     </EventDetailContainer>;
 
 };
@@ -417,6 +422,9 @@ const MainContent = () => {
         <Suspense>
             <CMSinglePageSurfaceCard className="filterControls">
                 {/* showing {eventsClient.items.length} events */}
+                <div className="header">
+                    Search events
+                </div>
                 <div className="content">
                     <EventsControls onChange={handleSpecChange} spec={controlSpec} />
                 </div>

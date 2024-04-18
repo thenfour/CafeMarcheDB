@@ -16,6 +16,7 @@ import { SongClientColumns, SongDetail, SongDetailContainer, SongMetadataView } 
 import { CalculateSongMetadata } from "src/core/components/SongComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
+import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -227,11 +228,14 @@ const MainContent = () => {
             onSave={handleSave}
             tableRenderClient={songTableClient}
             row={db3.xSong.createNew(clientIntention)}
-            label={"Add new song"}
+            label={<>{gIconMap.Add()} Create new song</>}
         />
 
         <Suspense>
             <CMSinglePageSurfaceCard className="filterControls">
+                <div className="header">
+                    Search songs
+                </div>
                 <div className="content">
                     <SongsControls onChange={handleSpecChange} spec={controlSpec} />
                 </div>

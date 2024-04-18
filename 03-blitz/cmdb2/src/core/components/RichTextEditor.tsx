@@ -238,6 +238,7 @@ interface CompactMarkdownControlProps {
     editButtonMessage?: string,
     editButtonVariant?: "framed" | "default";
     height?: number;
+    readonly?: boolean;
     alwaysEditMode?: boolean; // avoid edit/save/cancel buttons; just make it always edit. useful for edit object dialogs
 }
 
@@ -245,7 +246,7 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
     const [value, setValue] = React.useState<string>(initialValue || "");
     const alwaysEdit = CoerceToBoolean(props.alwaysEditMode, false);
-    const showingEditor2 = showingEditor || alwaysEdit;
+    const showingEditor2 = !props.readonly && (showingEditor || alwaysEdit);
 
     const onCancel = () => {
         setValue(initialValue || "");
@@ -285,6 +286,6 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
     // not editor just viewer.
     return <div className={`richTextContainer compactMarkdownControl notEditing sameLineButton compactMarkdownControlRoot ${props.className}`}>
         <Markdown markdown={value} className={props.className} />
-        <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>
+        {!props.readonly && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
     </div >;
 };
