@@ -13,11 +13,12 @@ import CloseIcon from '@mui/icons-material/Close';
 //import { useDebounce } from "shared/useDebounce";
 import { DebouncedControl, DebouncedControlCustomRender, DebouncedControlCustomRenderArgs } from "./RichTextEditor";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { TAnyModel, TIconOptions } from "shared/utils";
+import { CoerceToNumberOrNull, TAnyModel, TIconOptions } from "shared/utils";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { GetStyleVariablesForColor } from "./Color";
 import { StandardVariationSpec } from "shared/color";
 import { assert } from "blitz";
+import { formatSongLength, parseSongLengthSeconds } from "shared/time";
 
 
 
@@ -339,3 +340,28 @@ export const MutationButtonSelectControl = (props: MutationButtonSelectControlPr
     />;
 };
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface SongLengthInputProps {
+    initialValue: string | number | null;
+    onChange: (value: number | null) => void;
+    readonly?: boolean;
+};
+export const SongLengthInput = (props: SongLengthInputProps) => {
+    const [controlledValue, setControlledValue] = React.useState<string>(() => {
+        const seconds = CoerceToNumberOrNull(props.initialValue);
+        if (seconds === null) return "";
+        return formatSongLength(seconds) || "";
+    });
+
+    // round trip to give a preview.
+    const lengthSeconds = parseSongLengthSeconds(controlledValue);
+    const previewLength = lengthSeconds === null ? "" : formatSongLength(lengthSeconds);
+
+    return <div className="songLengthInputContainer">
+        <CMTextInputBase value={controlledValue} onChange={(e, v) => setControlledValue(v)} />
+        <div className="preview">{previewLength}</div>
+    </div>
+        ;
+};

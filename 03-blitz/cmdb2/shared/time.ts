@@ -62,19 +62,41 @@ export const DateToYYYYMMDDHHMMSS = (x: Date) => {
 }
 
 
-export function formatSongLength(seconds: number): string {
-    if (isNaN(seconds) || seconds < 0) {
-        return "Invalid duration";
-    }
-
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-
-    const formattedMinutes = String(minutes).padStart(2, '0');
-    const formattedSeconds = String(remainingSeconds).padStart(2, '0');
-
-    return `${formattedMinutes}:${formattedSeconds}`;
+export function formatSongLength(totalSeconds: number): string | null {
+    if (isNaN(totalSeconds) || totalSeconds < 0) return null;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds.toString();
+    return `${minutes}:${formattedSeconds}`;
 }
+
+// M:S format
+// or just S format
+export function parseSongLengthSeconds(value: string): number | null {
+    if (value.includes(':')) {
+        // Process "mm:ss" format
+        const parts = value.split(':');
+        if (parts.length !== 2) return null;
+
+        const minutes = parseInt(parts[0]!, 10);
+        const seconds = parseInt(parts[1]!, 10);
+
+        if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds > 59) {
+            return null;
+        }
+
+        return minutes * 60 + seconds;
+    } else {
+        // Process string as total seconds if it contains only digits
+        const totalSeconds = parseInt(value, 10);
+        if (isNaN(totalSeconds) || totalSeconds < 0) {
+            return null;
+        }
+
+        return totalSeconds;
+    }
+}
+
 
 export function combineDateAndTime(datePart: Date, timePart: Date): Date {
     // Extract year, month, and day from the datePart

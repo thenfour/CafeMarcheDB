@@ -17,7 +17,7 @@ import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, gNullValue } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
-import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
+import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
 import * as db3fields from "../shared/db3basicFields";
@@ -378,6 +378,82 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         });
     };
 };
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface SongLengthSecondsColumnArgs {
+    columnName: string;
+    cellWidth: number;
+    fieldCaption?: string;
+    fieldDescriptionSettingName?: SettingKey;
+    className?: string;
+};
+
+export class SongLengthSecondsColumnClient extends DB3ClientCore.IColumnClient {
+    constructor(args: SongLengthSecondsColumnArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: args.cellWidth,
+            visible: true,
+            className: args.className,
+            fieldCaption: args.fieldCaption,
+            fieldDescriptionSettingName: args.fieldDescriptionSettingName,
+        });
+    }
+    ApplyClientToPostClient = undefined;
+
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+        // TODO: this can be enhanced like renderForNewDialog
+        this.GridColProps = {
+            type: "string", // we will do our own number conversion
+            renderEditCell: (params: GridRenderEditCellParams) => {
+                const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
+                return <CMTextField
+                    key={params.key}
+                    autoFocus={params.hasFocus}
+                    label={this.headerName}
+                    validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
+                    value={params.value as string}
+                    onChange={(e, value) => {
+                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                    }}
+                />;
+            },
+        };
+    };
+
+    // TODO: this can be enhanced like renderForNewDialog
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => DB3ClientCore.RenderBasicNameValuePair({
+        className: params.className,
+        name: this.columnName,
+        value: params.value,
+        isReadOnly: !this.editable,
+        fieldName: this.columnName,
+    });
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        const val = params.value as (number | null);
+        // for values which are not numeric, simply display as "".
+        //const displayValue = (val == null) || isNaN(val) ? "" : `${val}`;
+
+        return this.defaultRenderer({
+            isReadOnly: !this.editable,
+            validationResult: params.validationResult,
+            className: `field_${this.columnName}`,
+            value: <SongLengthInput
+                initialValue={val}
+                readonly={!this.editable}
+                onChange={(val) => {
+                    params.api.setFieldValues({ [this.columnName]: CoerceToNumberOrNull(val) });
+                }} />,
+        });
+    };
+};
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface BoolColumnArgs {
