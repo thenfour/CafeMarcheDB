@@ -12,7 +12,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
-import { CMChipContainer, CMStandardDBChip, CustomTabPanel, TabA11yProps, UserChip } from './CMCoreComponents';
+import { CMChip, CMChipContainer, CMStandardDBChip, CustomTabPanel, EventChip, InspectObject, TabA11yProps, UserChip } from './CMCoreComponents';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';
@@ -302,19 +302,22 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     <div className='subtitle'><Tooltip title={"Aliases"}><span>{song.aliases}</span></Tooltip></div>
                 </div>
 
-                {
-                    isShowingAdminControls &&
-                    <DB3Client.NameValuePair
-                        isReadOnly={true}
-                        name={"songId"}
-                        value={song.id}
-                    />
-                }
-
                 <CMChipContainer>
                     {song.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.tag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
                 </CMChipContainer>
+
                 <div className='flex-spacer'></div>
+
+                {
+                    isShowingAdminControls && <>
+                        <DB3Client.NameValuePair
+                            isReadOnly={true}
+                            name={"songId"}
+                            value={song.id}
+                        />
+                        <InspectObject src={song} />
+                    </>
+                }
 
                 <EditFieldsDialogButton
                     dialogTitle='Edit song'
@@ -348,7 +351,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     }}
                 />
 
-                <VisibilityValue permission={song.visiblePermission} variant='verbose' />
+                <VisibilityValue permission={song.visiblePermission} variant='minimal' />
 
             </div>{/* title line */}
 
@@ -421,4 +424,62 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export interface CurrentSongsDashboardItem {
+    songId: number;
+    mostRecentAppearance: Date;
+    appearsInPresentOrFutureEvents: boolean;
+    appearsInEvents: db3.EventClientPayload_Verbose[];
+};
+
+export interface CurrentSongsDashboardProps {
+    songs: CurrentSongsDashboardItem[];
+};
+
+export const CurrentSongsDashboard = (props: CurrentSongsDashboardProps) => {
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
+    // song table bindings
+    const songTableSpec = new DB3Client.xTableClientSpec({
+        table: db3.xSong,
+        columns: [
+            SongClientColumns.id,
+        ],
+    });
+
+    // necessary to connect all the columns in the spec.
+    const tableClient = DB3Client.useTableRenderContext({
+        clientIntention,
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        tableSpec: songTableSpec,
+        filterModel: {
+            items: [],
+            tableParams: {
+                songIds: props.songs.map(s => s.songId),
+            }
+        }
+    });
+
+    const songs = tableClient.items as db3.SongPayload_Verbose[];
+
+    return <div className='searchResults'>
+        {songs.map(s => {
+            const songData = CalculateSongMetadata(s);
+            const dashEntry = props.songs.find(s2 => s2.songId === s.id)!;
+            return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} >
+                <CMChipContainer orientation='vertical'>
+                    {dashEntry.appearsInEvents.map(e => <CMChip
+                        key={e.id}
+                        shape={'rectangle'}
+                    >
+                        {e.name}
+                    </CMChip>)}
+                </CMChipContainer>
+            </SongDetailContainer>;
+        })}
+    </div>;
+};
 

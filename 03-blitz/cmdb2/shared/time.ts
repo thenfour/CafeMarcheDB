@@ -146,6 +146,11 @@ function formatDate(date: Date): string {
     return date.toLocaleDateString(undefined, options);
 }
 
+// like a datediff or whatever to calculate age, measured in days.
+export function DateSubtractInDays(a: Date, b: Date) {
+    const ms = a.getTime() - b.getTime();
+    return ms / gMillisecondsPerDay;
+}
 
 ////////////////////////////////////////////////////////////////
 export const IsEarlierDateWithLateNull = (a: Date | null, b: Date | null) => {

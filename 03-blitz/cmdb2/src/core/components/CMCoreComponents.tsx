@@ -9,7 +9,7 @@ import { nanoid } from 'nanoid';
 import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
 import { Coalesce, IsNullOrWhitespace, TAnyModel } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
@@ -21,6 +21,7 @@ import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { GetStyleVariablesForColor } from './Color';
+import { Timing } from "shared/time";
 
 const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -124,8 +125,8 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const CMChipContainer = (props: React.PropsWithChildren<{ className?: string }>) => {
-    return <div className={`CMChipContainer ${props.className || ""}`}>{props.children}</div>
+export const CMChipContainer = (props: React.PropsWithChildren<{ className?: string, orientation?: "vertical" | "horizontal" }>) => {
+    return <div className={`CMChipContainer ${props.className || ""} ${props.orientation}`}>{props.children}</div>
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -816,3 +817,12 @@ export const OpenCloseIcon = ({ isOpen }: { isOpen: boolean }) => {
     return isOpen ? <>&#9207;</> : <>&#9205;</>;
 };
 
+
+export const TimingChip = ({ value, children }: React.PropsWithChildren<{ value: Timing }>) => {
+    const configMap: { [key in Timing]: CMChipProps } = {
+        [Timing.Past]: { color: gSwatchColors.dark_gray },
+        [Timing.Present]: { color: gSwatchColors.orange },
+        [Timing.Future]: { color: gSwatchColors.purple },
+    };
+    return <CMChip {...configMap[value]}>{children}</CMChip>;
+}

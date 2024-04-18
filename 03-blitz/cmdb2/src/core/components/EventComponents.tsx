@@ -21,7 +21,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconSelectDialog';
-import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, } from './CMCoreComponents';
+import { AttendanceChip, CMChip, CMChipContainer, CMChipProps, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, TimingChip, } from './CMCoreComponents';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceControl } from './EventAttendanceComponents';
@@ -578,7 +578,6 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
 };
 
 
-
 export interface EventCompletenessTabContentProps {
     //event: db3.EventClientPayload_Verbose;
     //responseInfo: db3.EventResponseInfo;
@@ -697,12 +696,19 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
     const router = useRouter();
     //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const isShowingAdminControls = API.other.useIsShowingAdminControls();
 
     const refetch = () => {
         tableClient.refetch();
     };
 
     const visInfo = API.users.getVisibilityInfo(eventData.event);
+
+    const timingLabel: { [key in Timing]: string } = {
+        [Timing.Past]: "Past event",
+        [Timing.Present]: "Ongoing event",
+        [Timing.Future]: "Future event",
+    } as const;
 
     return <div className={`EventDetail contentSection event ${visInfo.className} ${(props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
         <div className='header'>
@@ -724,7 +730,19 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
 
             </CMChipContainer>
+
             <div className='flex-spacer'></div>
+
+            {
+                isShowingAdminControls && <>
+                    <DB3Client.NameValuePair
+                        isReadOnly={true}
+                        name={"eventId"}
+                        value={eventData.event.id}
+                    />
+                    <InspectObject src={eventData} />
+                </>
+            }
 
             <EditFieldsDialogButton
                 dialogTitle='Edit event'
@@ -758,8 +776,12 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                 }}
             />
 
+            <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />
 
-            <VisibilityValue permission={eventData.event.visiblePermission} variant='verbose' />
+            <TimingChip value={eventData.eventTiming}>
+                {timingLabel[eventData.eventTiming]}
+            </TimingChip>
+
         </div>
 
         <div className='content'>
@@ -900,36 +922,19 @@ export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps)
     </EventDetailContainer>;
 };
 
+export interface EventDashboardProps {
+    items: db3.EventClientPayload_Verbose[];
+    tableClient: DB3Client.xTableRenderClient;
+};
 
-export const EventDashboard = () => {
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    const [currentUser] = useCurrentUser();
-    clientIntention.currentUser = currentUser!;
-
-    const eventsClient = DB3Client.useTableRenderContext({
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xEventVerbose,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
-        }),
-        filterModel: {
-            items: [],
-            tableParams: {
-                hidePastEvents: true,
-            }
-        },
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
-    });
+export const EventDashboard = (props: EventDashboardProps) => {
 
     return <div className='EventDashboard'>
-        <h1>Upcoming events</h1>
-        {eventsClient.items.length < 1 ? (<div>
+        {props.items.length < 1 ? (<div>
             Nothing here!
-        </div>) : <div className='searchResults'>{eventsClient.items.map(event => <EventDashboardItem key={event.id}
+        </div>) : <div className='searchResults'>{props.items.map(event => <EventDashboardItem key={event.id}
             event={event as db3.EventClientPayload_Verbose}
-            tableClient={eventsClient}
+            tableClient={props.tableClient}
         />)}</div>
         }
     </div>;

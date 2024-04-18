@@ -312,7 +312,7 @@ export interface EventTableParams {
     eventSlug?: string;
     eventTypeIds?: number[];
     eventStatusIds?: number[];
-    hidePastEvents?: boolean;
+    minDate?: Date;
     forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
 };
 
@@ -363,13 +363,11 @@ const xEventArgs_Base: db3.TableDesc = {
             }
         }
 
-        // a past event is one that ENDED before now. and heck give it 15 days of leeway
-        if (params.hidePastEvents) {
-            const minDate = new Date();
-            minDate.setDate(minDate.getDate() - 10);
+        // a past event is one that ENDED before now.
+        if (params.minDate !== undefined) {
             const t: Prisma.EventWhereInput = {
                 OR: [
-                    { endDateTime: { gte: minDate } },
+                    { endDateTime: { gte: params.minDate! } },
                     {
                         endDateTime: null,
                     },]
@@ -377,7 +375,7 @@ const xEventArgs_Base: db3.TableDesc = {
             ret.push(t);
         }
 
-        // a past event is one that ENDED before now. and heck give it 15 days of leeway
+        // a past event is one that ENDED before now.
         if (params.forFrontPageAgenda) {
             const minDate = new Date();
             minDate.setDate(minDate.getDate() - 10);

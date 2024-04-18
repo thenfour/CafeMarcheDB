@@ -160,12 +160,16 @@ const xSongArgs_Base: db3.TableDesc = {
         description: row.description,
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: { songId?: number, }, clientIntention: db3.xTableClientUsageContext): (Prisma.SongWhereInput[]) => {
+    getParameterizedWhereClause: (params: { songId?: number, songIds?: number[] }, clientIntention: db3.xTableClientUsageContext): (Prisma.SongWhereInput[]) => {
         const ret: Prisma.SongWhereInput[] = [];
 
         if (params.songId !== undefined) {
             ret.push({ id: params.songId, });
         }
+        if (params.songIds !== undefined) {
+            ret.push({ id: { in: params.songIds } });
+        }
+
         return ret;
     },
     softDeleteSpec: {

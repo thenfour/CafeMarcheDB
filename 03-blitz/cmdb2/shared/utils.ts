@@ -191,6 +191,14 @@ export enum Setting {
     EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
     FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
     BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
+
+    // not markdown.
+
+    // on the backstage home dashboard, which events to display
+    BackstageFrontpageEventMaxAgeDays = "BackstageFrontpageEventMaxAgeDays",
+
+    // on the backstage home dashboard, a song is considered "current" if it's at MOST this long since playing it.
+    BackstageFrontpageCurrentSongMaxAgeDays = "BackstageFrontpageCurrentSongMaxAgeDays",
 };
 
 export type SettingKey = keyof typeof Setting;
@@ -253,6 +261,8 @@ export async function SetSetting(args: SetSettingArgs) {
 
 
 export const CoerceToNumberOr = <Tfallback,>(value, fallbackValue: Tfallback): number | Tfallback => {
+    if (value === null) return fallbackValue;
+    if (typeof value === "number") return value;
     if (typeof value === "string") {
         if (value.trim() === "") {
             return fallbackValue;
@@ -699,4 +709,14 @@ export function smartTruncate(url: string, maxLength: number = 120) {
     const start = url.slice(0, maxLength / 2);
     const end = url.slice(-maxLength / 2);
     return `${start}...${end}`;
+}
+
+export function getExcelColumnName(index: number): string {
+    let columnName = '';
+    while (index > 0) {
+        const remainder = (index - 1) % 26;
+        columnName = String.fromCharCode(65 + remainder) + columnName;
+        index = Math.floor((index - 1) / 26);
+    }
+    return columnName;
 }

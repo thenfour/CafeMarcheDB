@@ -7,7 +7,7 @@ import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { DateTimeRange, Timing } from "shared/time";
-import { Clamp, TAnyModel, gMinImageDimension, gQueryOptions } from "shared/utils";
+import { Clamp, CoerceToNumberOr, SettingKey, TAnyModel, gMinImageDimension, gQueryOptions } from "shared/utils";
 import getPopularEventTags from "src/auth/queries/getPopularEventTags";
 import * as db3 from "src/core/db3/db3";
 import * as DB3ClientFields from './components/DB3ClientBasicFields';
@@ -532,12 +532,17 @@ class OtherAPI {
 
 class SettingsAPI {
 
-    useSetting = (settingName: string) => {
+    useSetting = (settingName: string | SettingKey) => {
         const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
         return value;
     }
 
-    useMutableSetting = (settingName: string): [value: string | null, mutateFn: (args: { name: string, value: string | null }) => Promise<any>] => {
+    useNumberSetting = (settingName: SettingKey, defaultVal: number) => {
+        const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
+        return CoerceToNumberOr(value, defaultVal);
+    }
+
+    useMutableSetting = (settingName: string | SettingKey): [value: string | null, mutateFn: (args: { name: string, value: string | null }) => Promise<any>] => {
         const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
         const [mutateFn] = useMutation(updateSettingMutation);
         return [value, mutateFn];

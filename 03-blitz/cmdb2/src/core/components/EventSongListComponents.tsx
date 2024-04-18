@@ -13,7 +13,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { TAnyModel, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { TAnyModel, getExcelColumnName, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -587,7 +587,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
         currentUser: currentUser!,
     };
     const initialValue = db3.xEventSongList.createNew(clientIntention) as db3.EventSongListPayload;
-    initialValue.name = `Set ${props.event.songLists.length + 1}`;
+    initialValue.name = `Set ${getExcelColumnName(props.event.songLists.length + 1)}`;
 
     const handleSave = (value: db3.EventSongListPayload) => {
         insertMutation.invoke({

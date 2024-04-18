@@ -202,6 +202,12 @@ input.CMTextInputBase.titleText {
     align-items: center;
 }
 
+.CMChipContainer.vertical {
+    flex-direction: column;
+    align-content: flex-start;
+    align-items: flex-start;
+}
+
 .CMChipContainer .CMChip {
     margin: 1px 1px;
 }
@@ -658,7 +664,8 @@ li.songDropdownOption {
 }
 
 
-.contentSection .header .visibilityValue {
+.contentSection .header .visibilityValue,
+.titleLine .visibilityValue {
     opacity: 25%;
 }
 
