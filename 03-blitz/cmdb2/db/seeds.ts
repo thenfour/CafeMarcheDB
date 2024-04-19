@@ -747,6 +747,14 @@ const main = async () => {
   await SeedTable("setting", prisma.setting,
     [
       {
+        "name": "EnableNewPublicHomepageBackstageLink",
+        "value": "0"
+      },
+      {
+        "name": "EnableOldPublicHomepageBackstageLink",
+        "value": "1"
+      },
+      {
         "name": "EditEventDialogDescription",
         "value": "edit events here."
       },

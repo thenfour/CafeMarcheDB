@@ -512,6 +512,8 @@ export interface HomepageAgendaItemSpec {
 export interface HomepageContentSpec {
     agenda: HomepageAgendaItemSpec[];
     gallery: db3.FrontpageGalleryItemPayloadWithAncestorFile[];
+    enableOldBackstageLink: boolean;
+    enableNewBackstageLink: boolean;
 };
 
 
@@ -532,7 +534,7 @@ class OtherAPI {
 
 class SettingsAPI {
 
-    useSetting = (settingName: string | SettingKey) => {
+    useSetting = (settingName: SettingKey) => {
         const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
         return value;
     }
@@ -542,7 +544,7 @@ class SettingsAPI {
         return CoerceToNumberOr(value, defaultVal);
     }
 
-    useMutableSetting = (settingName: string | SettingKey): [value: string | null, mutateFn: (args: { name: string, value: string | null }) => Promise<any>] => {
+    useMutableSetting = (settingName: SettingKey): [value: string | null, mutateFn: (args: { name: string, value: string | null }) => Promise<any>] => {
         const [value, { refetch }] = useQuery(getSetting, { name: settingName }, gQueryOptions.default);
         const [mutateFn] = useMutation(updateSettingMutation);
         return [value, mutateFn];

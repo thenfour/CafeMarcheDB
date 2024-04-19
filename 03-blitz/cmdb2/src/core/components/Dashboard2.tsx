@@ -17,7 +17,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
-import { AppBar, Avatar, Box, Button, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
+import { AppBar, Avatar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, ListSubheader, Menu, MenuItem, Toolbar, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from "@mui/material/styles";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -26,6 +26,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
+import { CoerceToBoolean, CoerceToNumberOr } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
@@ -33,6 +34,39 @@ import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 
 const drawerWidth = 300;
+
+const BackstageLinkEnableMenuItem = () => {
+    const oldLink = API.settings.useMutableSetting("EnableOldPublicHomepageBackstageLink");
+    const newLink = API.settings.useMutableSetting("EnableNewPublicHomepageBackstageLink");
+
+    console.log(`BackstageLinkEnableMenuItem`);
+
+    const showingOld = CoerceToNumberOr(oldLink[0], 1) === 1;
+    const showingNew = CoerceToNumberOr(newLink[0], 0) === 1;
+
+    const handleClickOld = () => {
+        oldLink[1]({ name: "EnableOldPublicHomepageBackstageLink", value: showingOld ? "0" : "1" }).then(e => {
+            alert(`success.`);
+        }).catch(e => {
+            console.log(e);
+            alert(e);
+        });
+    };
+
+    const handleClickNew = () => {
+        newLink[1]({ name: "EnableNewPublicHomepageBackstageLink", value: showingNew ? "0" : "1" }).then(e => {
+            alert(`success.`);
+        }).catch(e => {
+            console.log(e);
+            alert(e);
+        });
+    };
+
+    return <>
+        <MenuItem onClick={handleClickOld}>{showingOld ? "Showing old backstage link" : "Not showing old backstage link"}</MenuItem>
+        <MenuItem onClick={handleClickNew}>{showingNew ? "Showing new backstage link" : "Not showing new backstage link"}</MenuItem>
+    </>;
+};
 
 // const Search = styled('div')(({ theme }) => ({
 //     position: 'relative',
@@ -103,6 +137,8 @@ const AppBarUserIcon_MenuItems = () => {
                 <MenuItem onClick={() => onClickShowAdminControls(false)}>Hide admin config {gIconMap.Settings()}</MenuItem>
                 : <MenuItem onClick={() => onClickShowAdminControls(true)}>Show admin config {gIconMap.Settings()}</MenuItem>
             }
+
+            <BackstageLinkEnableMenuItem />
 
             <Divider /></>
         }

@@ -616,7 +616,8 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
                     <img className="nbrussel" src="/homepage/CMbrusselicon.png" />
                 </div>
 
-                <div className="backstageContainer"><a href={gSettings.backstageURL}><img src="/homepage/CMbackstage.png"></img></a></div>
+                {content.enableOldBackstageLink && <div className="backstageContainer old"><a href="https://backstage.cafemarche.be/"><img src="/homepage/CMbackstage.png"></img></a></div>}
+                {content.enableNewBackstageLink && <div className="backstageContainer new"><a href={gSettings.backstageURL}><img src="/homepage/CMbackstage.png"></img></a></div>}
             </>
             }
         </div>

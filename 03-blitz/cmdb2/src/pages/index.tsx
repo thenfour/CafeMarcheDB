@@ -51,9 +51,14 @@ const MainContent = () => {
         //filterModel: ,
     });
 
+    const enableOldBackstageLink = API.settings.useNumberSetting("EnableOldPublicHomepageBackstageLink", 1) === 1;
+    const enableNewBackstageLink = API.settings.useNumberSetting("EnableNewPublicHomepageBackstageLink", 0) === 1;
+
     const content: HomepageContentSpec = {
         gallery: (galleryClient.items as db3.FrontpageGalleryItemPayload[]),
         agenda: (eventsClient.items as db3.EventPayload[]).map((x): HomepageAgendaItemSpec => API.events.getAgendaItem(x)),
+        enableNewBackstageLink,
+        enableOldBackstageLink,
     };
 
     return <NoSsr>

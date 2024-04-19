@@ -201,6 +201,10 @@ export enum Setting {
 
     // on the backstage home dashboard, a song is considered "current" if it's at MOST this long since playing it.
     BackstageFrontpageCurrentSongMaxAgeDays = "BackstageFrontpageCurrentSongMaxAgeDays",
+
+    textPalette = "textPalette",
+    EnableOldPublicHomepageBackstageLink = "EnableOldPublicHomepageBackstageLink",
+    EnableNewPublicHomepageBackstageLink = "EnableNewPublicHomepageBackstageLink",
 };
 
 export type SettingKey = keyof typeof Setting;
