@@ -1,15 +1,15 @@
 // NB: THis should not reference  "../db3/clientAPI", because it would be a circular dependency.
 
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import React, { Suspense } from "react";
+import React from "react";
+import { Permission } from "shared/permissions";
+import { SettingKey, gQueryOptions } from "shared/utils";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CompactMarkdownControl, MarkdownControl } from "./RichTextEditor";
-import { Setting, SettingKey, gQueryOptions } from "shared/utils";
-import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { useAuthenticatedSession } from "@blitzjs/auth";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;

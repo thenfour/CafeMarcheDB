@@ -465,21 +465,26 @@ export const CurrentSongsDashboard = (props: CurrentSongsDashboardProps) => {
 
     const songs = tableClient.items as db3.SongPayload_Verbose[];
 
-    return <div className='searchResults'>
-        {songs.map(s => {
-            const songData = CalculateSongMetadata(s);
-            const dashEntry = props.songs.find(s2 => s2.songId === s.id)!;
-            return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} showVisibility={false}>
-                <CMChipContainer orientation='vertical'>
-                    {dashEntry.appearsInEvents.map(e => <CMChip
-                        key={e.id}
-                        shape={'rectangle'}
-                    >
-                        {e.name}
-                    </CMChip>)}
-                </CMChipContainer>
-            </SongDetailContainer>;
-        })}
-    </div>;
+    return <div className=''>
+        {songs.length < 1 ? (<div>
+            Nothing here!
+        </div>) : <div className='searchResults'>
+            {songs.map(s => {
+                const songData = CalculateSongMetadata(s);
+                const dashEntry = props.songs.find(s2 => s2.songId === s.id)!;
+                return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} showVisibility={false}>
+                    <CMChipContainer orientation='vertical'>
+                        {dashEntry.appearsInEvents.map(e => <CMChip
+                            key={e.id}
+                            shape={'rectangle'}
+                        >
+                            {e.name}
+                        </CMChip>)}
+                    </CMChipContainer>
+                </SongDetailContainer>;
+            })}
+        </div>}
+    </div>
+        ;
 };
 

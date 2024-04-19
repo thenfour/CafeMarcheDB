@@ -89,6 +89,7 @@ export const gPermissionOrdered: Permission[] = [
     Permission.admin_files,
     Permission.manage_files,
     Permission.view_files,
+    Permission.upload_files,
     Permission.admin_instruments,
     Permission.manage_instruments,
     Permission.admin_users,

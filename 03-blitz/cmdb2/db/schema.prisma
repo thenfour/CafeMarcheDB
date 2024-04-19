@@ -52,6 +52,8 @@ model Role {
   sortOrder         Int              @default(0)
   permissions       RolePermission[]
   User              User[]
+
+  @@index([name])
 }
 
 model Permission {
@@ -71,6 +73,9 @@ model Permission {
   //visibilityForEventSongLists        EventSongList[]
   visibilityForFiles                 File[]
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
+
+  @@index([name])
+  @@index([sortOrder])
 }
 
 model RolePermission {
@@ -97,6 +102,9 @@ model UserTag {
   sortOrder                 Int                 @default(0)
   userAssignments           UserTagAssignment[]
   eventsExpectingAttendance Event[]
+
+  @@index([text])
+  @@index([sortOrder])
 }
 
 // copied from FileTagAssignment
@@ -143,18 +151,20 @@ model User {
   creatorForEvents               Event[]
   creatorForEventSongLists       EventSongList[]
   creatorForFrontpageGalleryItem FrontpageGalleryItem[]
+
+  @@index([name])
+  @@index([isDeleted])
+  @@index([email])
+  @@index([phone])
+  @@index([googleId])
 }
 
 model Setting {
   id    Int    @id @default(autoincrement())
   name  String @unique @default("")
   value String @default("") // json value
-}
 
-model Markdown {
-  id    Int    @id @default(autoincrement())
-  name  String @unique @default("")
-  value String @default("") // json value
+  @@index([name])
 }
 
 model Change {
@@ -175,6 +185,10 @@ model Change {
   newValues     String? // for create & update, JSON of fields. for delete, empty.
 
   user User? @relation(fields: [userId], references: [id], onDelete: Restrict) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
+
+  @@index([table])
+  @@index([recordId])
+  @@index([userId])
 }
 
 // activity & changes are different.
@@ -254,6 +268,12 @@ model Song {
   comments    SongComment[]
   credits     SongCredit[]
   songLists   EventSongListSong[]
+
+  @@index([name])
+  @@index([aliases])
+  @@index([slug])
+  @@index([isDeleted])
+  @@index([visiblePermissionId])
 }
 
 model SongComment {
@@ -270,7 +290,9 @@ model SongComment {
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
 
-  //@@unique([songId, commentId])
+  @@index([songId])
+  @@index([text])
+  @@index([visiblePermissionId])
 }
 
 // composer / arranger / whatever
@@ -282,6 +304,9 @@ model SongCreditType {
   sortOrder   Int     @default(0)
 
   songCredits SongCredit[]
+
+  @@index([text])
+  @@index([sortOrder])
 }
 
 model SongCredit {
@@ -298,6 +323,10 @@ model SongCredit {
 
   typeId Int
   type   SongCreditType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([songId])
+  @@index([typeId])
 }
 
 model SongTag {
@@ -309,6 +338,11 @@ model SongTag {
   showOnSongLists Boolean              @default(false)
   sortOrder       Int                  @default(0)
   songs           SongTagAssociation[]
+
+  @@index([text])
+  @@index([significance])
+  @@index([showOnSongLists])
+  @@index([sortOrder])
 }
 
 model SongTagAssociation {
@@ -337,6 +371,9 @@ model InstrumentFunctionalGroup {
   sortOrder   Int
   color       String?
   instruments Instrument[]
+
+  @@index([name])
+  @@index([sortOrder])
 }
 
 model Instrument {
@@ -352,6 +389,11 @@ model Instrument {
   fileTags           FileInstrumentTag[]
   users              UserInstrument[]
   eventUserResponses EventUserResponse[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([sortOrder])
+  @@index([functionalGroupId])
 }
 
 model InstrumentTag {
@@ -362,6 +404,10 @@ model InstrumentTag {
   color        String?
   significance String? // "uses electricity" for example?
   instruments  InstrumentTagAssociation[]
+
+  @@index([text])
+  @@index([sortOrder])
+  @@index([significance])
 }
 
 // association table
@@ -382,6 +428,8 @@ model UserInstrument {
   isPrimary    Boolean    @default(false)
   userId       Int
   user         User       @relation(fields: [userId], references: [id], onDelete: Restrict) // cascade delete association
+
+  @@index([userId])
 }
 
 // concerts vs. rehearsals? i originally thought these would be tags, but should it just be a dropdown?
@@ -456,6 +504,17 @@ model Event {
   segments  EventSegment[]
   songLists EventSongList[]
   responses EventUserResponse[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([description])
+  @@index([typeId])
+  @@index([isDeleted])
+  @@index([statusId])
+  @@index([startsAt])
+  @@index([endDateTime])
+  @@index([visiblePermissionId])
+  @@index([frontpageVisible])
 }
 
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
@@ -474,6 +533,10 @@ model EventSegment {
   isAllDay       Boolean   @default(true)
 
   responses EventSegmentUserResponse[]
+
+  @@index([name])
+  @@index([startsAt])
+  @@index([eventId])
 }
 
 model EventType {
@@ -486,6 +549,11 @@ model EventType {
   iconName     String?
   isDeleted    Boolean @default(false)
   events       Event[]
+
+  @@index([text])
+  @@index([sortOrder])
+  @@index([significance])
+  @@index([isDeleted])
 }
 
 model EventStatus {
@@ -499,6 +567,11 @@ model EventStatus {
   isDeleted    Boolean @default(false)
 
   events Event[]
+
+  @@index([label])
+  @@index([sortOrder])
+  @@index([significance])
+  @@index([isDeleted])
 }
 
 model EventTag {
@@ -510,6 +583,11 @@ model EventTag {
   sortOrder          Int                  @default(0)
   visibleOnFrontpage Boolean              @default(false)
   events             EventTagAssignment[]
+
+  @@index([text])
+  @@index([significance])
+  @@index([sortOrder])
+  @@index([visibleOnFrontpage])
 }
 
 model EventTagAssignment {
@@ -534,6 +612,9 @@ model EventComment {
 
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+
+  @@index([eventId])
+  @@index([visiblePermissionId])
 }
 
 model EventSongList {
@@ -542,21 +623,18 @@ model EventSongList {
   name        String
   description String @default("")
 
-  // createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  // createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
-  // visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  // visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
-
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
 
   songs EventSongListSong[]
-  //Permission   Permission?         @relation(fields: [permissionId], references: [id])
-  //permissionId Int?
 
   // this is really not necessary but it's here so ...
   User   User? @relation(fields: [userId], references: [id])
   userId Int?
+
+  @@index([sortOrder])
+  @@index([name])
+  @@index([eventId])
 }
 
 model EventSongListSong {
@@ -569,6 +647,9 @@ model EventSongListSong {
 
   eventSongListId Int
   eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
+
+  @@index([songId])
+  @@index([eventSongListId])
 }
 
 // things like yes, no, not-sure-yes, not-sure-no, partially
@@ -588,6 +669,10 @@ model EventAttendance {
   isDeleted   Boolean @default(false)
 
   responses EventSegmentUserResponse[]
+
+  @@index([sortOrder])
+  @@index([strength])
+  @@index([isDeleted])
 }
 
 model EventUserResponse {
@@ -634,6 +719,10 @@ model FileTag {
   significance    String? // 
   sortOrder       Int                 @default(0)
   fileAssignments FileTagAssignment[]
+
+  @@index([text])
+  @@index([significance])
+  @@index([sortOrder])
 }
 
 model FileTagAssignment {
@@ -690,6 +779,14 @@ model File {
 
   previewForFile File[] @relation("previewFiles")
   childFiles     File[] @relation("fileHierarchy")
+
+  @@index([fileLeafName])
+  @@index([storedLeafName])
+  @@index([isDeleted])
+  @@index([visiblePermissionId])
+  @@index([mimeType])
+  @@index([previewFileId])
+  @@index([parentFileId])
 }
 
 model FileUserTag {
@@ -700,6 +797,8 @@ model FileUserTag {
   userId Int
 
   @@unique([fileId, userId]) // 
+  @@index([fileId])
+  @@index([userId])
 }
 
 model FileSongTag {
@@ -710,6 +809,8 @@ model FileSongTag {
   songId Int
 
   @@unique([fileId, songId]) // 
+  @@index([fileId])
+  @@index([songId])
 }
 
 model FileEventTag {
@@ -720,6 +821,8 @@ model FileEventTag {
   eventId Int
 
   @@unique([fileId, eventId]) // 
+  @@index([fileId])
+  @@index([eventId])
 }
 
 // this is hm. i suppose this is correct, but tagging instrument groups may be more accurate in some scenarios?
@@ -731,6 +834,8 @@ model FileInstrumentTag {
   instrumentId Int
 
   @@unique([fileId, instrumentId]) // 
+  @@index([fileId])
+  @@index([instrumentId])
 }
 
 model FrontpageGalleryItem {
@@ -746,4 +851,9 @@ model FrontpageGalleryItem {
   createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
   visiblePermissionId Int?
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+
+  @@index([isDeleted])
+  @@index([sortOrder])
+  @@index([fileId])
+  @@index([visiblePermissionId])
 }

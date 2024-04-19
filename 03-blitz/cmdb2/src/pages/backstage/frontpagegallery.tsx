@@ -475,7 +475,7 @@ const MainContent = () => {
             lockAxis="y"
             onDrop={onDrop}
         >
-            {items.map(i =>
+            {items.length < 1 ? "Nothing here!" : items.map(i =>
                 <ReactSmoothDndDraggable key={i.id}>
                     <GalleryItem value={i} client={client} />
                 </ReactSmoothDndDraggable>)

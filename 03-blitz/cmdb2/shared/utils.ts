@@ -248,20 +248,6 @@ export async function SetSetting(args: SetSettingArgs) {
     });
 }
 
-// export async function GetSetting(setting: Setting) {
-//     const existing = await db.setting.findFirst({ where: { name: setting, } });
-//     if (!existing) return null;
-//     return JSON.parse(existing!.value);
-// }
-
-
-// export enum Action {
-//     SignIn = "SignIn",
-//     SignOut = "SignOut",
-//     VisitRoute = "VisitRoute",
-// }
-
-
 export const CoerceToNumberOr = <Tfallback,>(value, fallbackValue: Tfallback): number | Tfallback => {
     if (value === null) return fallbackValue;
     if (typeof value === "number") return value;

@@ -3,15 +3,41 @@ import { Permission, gPermissionOrdered } from '../shared/permissions'
 const prisma = new PrismaClient()
 
 
+// https://gist.github.com/codeguy/6684588
+export const slugify = (...args: (string | number)[]): string => {
+  const value = args.join(' ')
 
+  return value
+    .normalize('NFD') // split an accented letter in the base letter and the acent
+    .replace(/[\u0300-\u036f]/g, '') // remove all previously split accents
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9 ]/g, '') // remove all chars not letters, numbers and spaces (to be replaced)
+    .replace(/\s+/g, '-') // separator
+}
 
 const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
   console.log(`Seeding table ${tableName}`);
+
+  // This array will store the original input items along with their new primary keys
+  type TUpdatedItem = (TuncheckedCreateInput & { id: number });
+  const updatedItems: TUpdatedItem[] = [];
+
   for (let i = 0; i < items.length; ++i) {
     const ret = await table.create({
       data: items[i]!
     });
 
+    // Create a new item entry with the id added
+    const updatedItem: TUpdatedItem = {
+      ...items[i]!,
+      id: ret.id as number // Assuming 'id' is the primary key and is returned by the create method
+    };
+
+    // Add the new item to the updatedItems array
+    updatedItems.push(updatedItem);
+
+    // Logging depending on available properties
     if (ret.name) {
       console.log(`created '${tableName}': { name:'${ret.name}', id: '${ret.id}'}`);
     } else if (ret.text) {
@@ -20,7 +46,28 @@ const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreate
       console.log(`created '${tableName}': { id: '${ret.id}'}`);
     }
   }
+
+  // Return the updated array
+  return updatedItems;
 };
+
+
+// const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
+//   console.log(`Seeding table ${tableName}`);
+//   for (let i = 0; i < items.length; ++i) {
+//     const ret = await table.create({
+//       data: items[i]!
+//     });
+
+//     if (ret.name) {
+//       console.log(`created '${tableName}': { name:'${ret.name}', id: '${ret.id}'}`);
+//     } else if (ret.text) {
+//       console.log(`created '${tableName}': { text:'${ret.text}', id: '${ret.id}'}`);
+//     } else {
+//       console.log(`created '${tableName}': { id: '${ret.id}'}`);
+//     }
+//   }
+// };
 
 
 const UpdateTable = async <Ttable extends { update: (inp: { data: TuncheckedUpdateInput, where: any }) => any }, TuncheckedUpdateInput>(tableName: string, matchField: string, table: Ttable, items: TuncheckedUpdateInput[]) => {
@@ -152,74 +199,79 @@ const main = async () => {
     }
   ]);
 
-  await SeedTable("eventStatus", prisma.eventStatus, [
-    {
-      "isDeleted": false,
-      "label": "Cancelled",
-      "description": "",
-      "sortOrder": 100,
-      "color": null,
-      "significance": "Cancelled",
-      "iconName": "Cancel"
-    },
-    {
-      "isDeleted": false,
-      "label": "Confirmed",
-      "description": "",
-      "sortOrder": 50,
-      "color": null,
-      "significance": "FinalConfirmation",
-      "iconName": "Schedule"
-    },
-    {
-      "isDeleted": false,
-      "label": "Checking musician availability",
-      "description": "",
-      "sortOrder": 30,
-      "color": null,
-      "significance": null,
-      "iconName": "Campaign"
-    },
-    {
-      "isDeleted": false,
-      "label": "New",
-      "description": "The initial status for events before any confirmations or actions.",
-      "sortOrder": 0,
-      "color": null,
-      "significance": "New",
-      "iconName": "AutoAwesome"
-    }
-  ]);
+  await SeedTable("eventStatus", prisma.eventStatus,
+    [
+      {
+        "label": "New",
+        "description": "The initial status for events before any confirmations or actions.",
+        "sortOrder": 0,
+        "color": "purple",
+        "significance": "New",
+        "iconName": "AutoAwesome"
+      },
+      {
+        "label": "Checking musician availability",
+        "description": "",
+        "sortOrder": 30,
+        "color": "red",
+        "significance": null,
+        "iconName": "Campaign"
+      },
+      {
+        "label": "Confirmed",
+        "description": "The event requires no further confirmations; it's happening or has happened.",
+        "sortOrder": 50,
+        "color": "green",
+        "significance": "FinalConfirmation",
+        "iconName": "Done"
+      },
+      {
+        "label": "Cancelled",
+        "description": "",
+        "sortOrder": 100,
+        "color": "light_gray",
+        "significance": "Cancelled",
+        "iconName": "Cancel"
+      }
+    ]
+  );
 
-  await SeedTable("eventType", prisma.eventType, [
-    {
-      "isDeleted": false,
-      "text": "Concert",
-      "description": "",
-      "sortOrder": 0,
-      "color": null,
-      "significance": "Concert",
-      "iconName": "MusicNote"
-    },
-    {
-      "isDeleted": false,
-      "text": "Rehearsal",
-      "description": "",
-      "sortOrder": 0,
-      "color": null,
-      "significance": "Rehearsal",
-      "iconName": "MusicNote"
-    },
-    {
-      "isDeleted": false,
-      "text": "Weekend",
-      "description": "",
-      "sortOrder": 0,
-      "color": null,
-      "significance": "Weekend",
-      "iconName": null
-    }
-  ]);
+  await SeedTable("eventType", prisma.eventType,
+    [
+      {
+        "text": "Concert",
+        "description": "",
+        "sortOrder": 0,
+        "color": "light_blue",
+        "significance": "Concert",
+        "iconName": "MusicNote"
+      },
+      {
+        "text": "Meeting",
+        "description": "",
+        "sortOrder": 0,
+        "color": "teal",
+        "significance": null,
+        "iconName": "Group"
+      },
+      {
+        "text": "Rehearsal",
+        "description": "",
+        "sortOrder": 0,
+        "color": "light_brown",
+        "significance": "Rehearsal",
+        "iconName": "MusicNote"
+      },
+      {
+        "text": "Weekend",
+        "description": "",
+        "sortOrder": 0,
+        "color": "light_purple",
+        "significance": "Weekend",
+        "iconName": "Celebration"
+      }
+    ]
+  );
 
 
   await SeedTable("eventAttendance", prisma.eventAttendance,
@@ -301,52 +353,173 @@ const main = async () => {
 
   let instrumentOrder: number = 0;
 
-  const GenerateInstrumentAndFunctionalGroupSeed = (instrumentName: string, functionalGroupName?: string): Prisma.InstrumentCreateInput => {
-    functionalGroupName = functionalGroupName || instrumentName;
-    console.log(`Generating seed for instrument ${instrumentName} and group ${functionalGroupName}, order ${instrumentOrder}`);
-    instrumentOrder += 10;
-    return {
-      name: instrumentName,
-      sortOrder: instrumentOrder,
-      functionalGroup: {
-        connectOrCreate: {
-          where: {
-            name: functionalGroupName,
-          },
-          create: {
-            name: functionalGroupName,
-            description: "",
-            color: null,
-            sortOrder: instrumentOrder,
-          },
-        }
-      }
-    };
-  };
+  // const GenerateInstrumentAndFunctionalGroupSeed = (instrumentName: string, functionalGroupName?: string): Prisma.InstrumentCreateInput => {
+  //   functionalGroupName = functionalGroupName || instrumentName;
+  //   console.log(`Generating seed for instrument ${instrumentName} and group ${functionalGroupName}, order ${instrumentOrder}`);
+  //   instrumentOrder += 10;
+  //   return {
+  //     name: instrumentName,
+  //     sortOrder: instrumentOrder,
+  //     functionalGroup: {
+  //       connectOrCreate: {
+  //         where: {
+  //           name: functionalGroupName,
+  //         },
+  //         create: {
+  //           name: functionalGroupName,
+  //           description: "",
+  //           color: "olive",
+  //           sortOrder: instrumentOrder,
+  //         },
+  //       }
+  //     }
+  //   };
+  // };
 
-  const instrumentSeed: Prisma.InstrumentCreateInput[] = [
-    GenerateInstrumentAndFunctionalGroupSeed("Flute"),
-    GenerateInstrumentAndFunctionalGroupSeed("Clarinet"),
-    GenerateInstrumentAndFunctionalGroupSeed("Bass Clarinet"),
-    GenerateInstrumentAndFunctionalGroupSeed("Soprano sax"),
-    GenerateInstrumentAndFunctionalGroupSeed("Alto sax"),
-    GenerateInstrumentAndFunctionalGroupSeed("Tenor sax"),
-    GenerateInstrumentAndFunctionalGroupSeed("Bari sax"),
-    GenerateInstrumentAndFunctionalGroupSeed("Trumpet"),
-    GenerateInstrumentAndFunctionalGroupSeed("Tenor Trombone"),
-    GenerateInstrumentAndFunctionalGroupSeed("Bass Tuba"),
-    GenerateInstrumentAndFunctionalGroupSeed("Violin"),
-    GenerateInstrumentAndFunctionalGroupSeed("Accordion"),
-    GenerateInstrumentAndFunctionalGroupSeed("Guitar"),
-    GenerateInstrumentAndFunctionalGroupSeed("Snare drum"),
-    GenerateInstrumentAndFunctionalGroupSeed("Bass drum"),
-    GenerateInstrumentAndFunctionalGroupSeed("Percussion"),
+  // const instrumentSeed: Prisma.InstrumentCreateInput[] = [
+  //   GenerateInstrumentAndFunctionalGroupSeed("Flute"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Clarinet"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Bass Clarinet"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Soprano sax"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Alto sax"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Tenor sax"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Bari sax"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Trumpet"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Tenor Trombone"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Bass Tuba"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Violin"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Accordion"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Guitar"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Snare drum"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Bass drum"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Percussion"),
 
-    GenerateInstrumentAndFunctionalGroupSeed("Oboe", "Flute"),
-    GenerateInstrumentAndFunctionalGroupSeed("Djembe", "Percussion"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Oboe", "Flute"),
+  //   GenerateInstrumentAndFunctionalGroupSeed("Djembe", "Percussion"),
+  // ];
+
+  const functionalGroupSeed = [
+    {
+      "name": "Bass guitar",
+      "description": "",
+      "color": "dark_gray",
+      "sortOrder": 135
+    },
+    {
+      "name": "Oboe",
+      "description": "",
+      "color": "light_gold",
+      "sortOrder": 15
+    },
+    {
+      "name": "Flute",
+      "description": "",
+      "color": "gold",
+      "sortOrder": 10
+    },
+    {
+      "name": "Clarinet",
+      "description": "",
+      "color": "brown",
+      "sortOrder": 20
+    },
+    {
+      "name": "Bass Clarinet",
+      "description": "",
+      "color": "light_brown",
+      "sortOrder": 30
+    },
+    {
+      "name": "Soprano sax",
+      "description": "",
+      "color": "light_orange",
+      "sortOrder": 40
+    },
+    {
+      "name": "Alto sax",
+      "description": "",
+      "color": "orange",
+      "sortOrder": 50
+    },
+    {
+      "name": "Tenor sax",
+      "description": "",
+      "color": "orange",
+      "sortOrder": 60
+    },
+    {
+      "name": "Bari sax",
+      "description": "",
+      "color": "purple",
+      "sortOrder": 70
+    },
+    {
+      "name": "Trumpet",
+      "description": "",
+      "color": "maroon",
+      "sortOrder": 80
+    },
+    {
+      "name": "Trombone",
+      "description": "",
+      "color": "maroon",
+      "sortOrder": 90
+    },
+    {
+      "name": "Bass Tuba",
+      "description": "",
+      "color": "dark_gray",
+      "sortOrder": 100
+    },
+    {
+      "name": "Violin",
+      "description": "",
+      "color": "light_gold",
+      "sortOrder": 110
+    },
+    {
+      "name": "Accordion",
+      "description": "",
+      "color": "light_green",
+      "sortOrder": 120
+    },
+    {
+      "name": "Guitar",
+      "description": "",
+      "color": "green",
+      "sortOrder": 130
+    },
+    {
+      "name": "Snare drum",
+      "description": "",
+      "color": "blue",
+      "sortOrder": 140
+    },
+    {
+      "name": "Bass drum",
+      "description": "",
+      "color": "blue",
+      "sortOrder": 150
+    },
+    {
+      "name": "Percussion",
+      "description": "",
+      "color": "light_blue",
+      "sortOrder": 160
+    }
   ];
 
-  await SeedTable("instrument", prisma.instrument, instrumentSeed);
+  const functionalGroupsResult = await SeedTable("instrumentFunctionalGroup", prisma.instrumentFunctionalGroup, functionalGroupSeed);
+
+  await SeedTable("instrument", prisma.instrument,
+    functionalGroupSeed.map(g => ({
+      name: g.name,
+      slug: slugify(g.name),
+      description: "",
+      sortOrder: g.sortOrder,
+      functionalGroupId: functionalGroupsResult.find(x => x.name === g.name)!.id
+    }))
+  );
 
   const adminRoleName = "Admin";
   const publicRoleName = "Public";
@@ -571,17 +744,78 @@ const main = async () => {
   // todo: grant public perms to public, remaining mappings
   // 
 
-  const settingsSeed: Prisma.SettingUncheckedCreateInput[] = [
-    {
-      "name": "info_text",
-      "value": "oaeuoeuoeue"
-    },
-    {
-      "name": "textPalette",
-      "value": "#000\n#444\n#666\n#888\n#aaa\n#ccc\n#ddd\n#eee\n#fff\n\n-\n// near-black\n-- // {\"c\":[\"hsl(232deg 17% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":2,\"op\":\"column rev\"}\nx#000000\nx#262732\n#474a61\n#6a7095\n\n;-- // {\"c\":[\"hsl(232deg 17% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":7,\"op\":\"row\"}\nx#7c81a2\n#8e92af\nx#a0a3bc\n#b3b5c9\nx#c6c7d6\n#d8d9e4\nx#ececf1\n\n\n// lime green\n\n-- // {\"c\":[\"hsl(72deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#272d10\n#475614\n#6a8311\n#8fb300\n#afc657\n#ccd98f\n#e6ecc7\n\n// green\n-- // {\"c\":[\"hsl(120deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#152d0f\n#1b5613\n#198310\n#00b300\n#69c755\n#a0db8e\n#d0edc6\n\n// teal\n;-- // {\"c\":[\"hsl(173deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#152d28\n#1b564d\n#198374\n#00b39e\n#68c7b5\n#9edacd\n#cfede6\n\n// blue\n-- // {\"c\":[\"hsl(212deg 100% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#19203c\n#213b77\n#1f58b9\n#0077ff\n#7696ff\n#abb8ff\n#d7dbff\n\n// purple\n;-- // {\"c\":[\"#92d\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#291435\n#4c1c69\n#7221a1\n#9922dd\n#b865e7\n#d399f0\n#eaccf8\n\n\n\n\n-- // {\"c\":[\"#e00000\",\"white\",\"black\"],\"m\":\"rgb\",\"z\":5,\"op\":\"TL\"}\n;#4b0000\n#600000\n;#950000\n#900\n#e00000\n#f77\n#faa\n#fdd\n;#ea5555\n;#f08080\n;#f5aaaa\n;#fad5d5\n\n\n\n// maroon\n;-- // {\"c\":[\"hsl(342deg 60% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#33161c\n#622131\n#962b49\n#cc3361\n#df6e86\n#ee9fac\n#f9cfd5\n\n\n// orange\n- // {\"c\":[\"#f70\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3e210e\n#793c11\n#ba590e\n#ff7700\n#ff9a51\n#ffbc8a\n#ffddc4\n\n\n// brown\n// interestingly generated by\n// taking diag from\n// {\"c\":[\"red\",\"white\",\"black\",\"green\"],\"m\":\"lab\",\"z\":3,\"op\":\"diagBL\"}\n\n;-- // {\"c\":[\"hsl(36deg 46% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#2f2517\n#5a4426\n#886635\n#ba8b45\n#cea772\n#e1c3a0\n#f1e1cf\n\n\n// ochre yellow\n-- // {\"c\":[\"#fc0\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3d3112\n#786117\n#ba9415\n#ffcc00\n#ffd85f\n#ffe596\n#fff2cb\n\n// light yellow\n// {\"c\":[\"#ef0\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3a3b15\n#71771b\n#adb918\n#eeff00\nx#f7ff67\n#fdff9d\nx#ffffcf\n"
-    }
-  ]
-  await SeedTable("setting", prisma.setting, settingsSeed);
+  await SeedTable("setting", prisma.setting,
+    [
+      {
+        "name": "EditEventDialogDescription",
+        "value": "edit events here."
+      },
+      {
+        "name": "EventSegment",
+        "value": "The time span for this segment. \"TBD\" = \"To be decided\""
+      },
+      {
+        "name": "EventSegment.startsAt.DescriptionMarkdown",
+        "value": "srsrchsrch"
+      },
+      {
+        "name": "File.visiblePermission.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "MarkdownHelpPage",
+        "value": "\n\"Markdown\" is a way of adding basic formatting and rich content to text.\n\n[Click here for markdown syntax guide](https://www.markdownguide.org/basic-syntax/)"
+      },
+      {
+        "name": "NewEventSegmentDialogDescription",
+        "value": "\"Segments\" are subdivisions of events, so people can specify they're coming only to a part of the show. For example the Weekend this could be one \"segment\" per day. Or for a concert with multiple sets. For simplicity, only create more segments when it's important to know if people can only attend for part of the event."
+      },
+      {
+        "name": "NewEventSegmentDialogTitle",
+        "value": "Edit event segment"
+      },
+      {
+        "name": "Song.visiblePermission.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "event.expectedAttendanceUserTag.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "event.status.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "event.type.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "event.visiblePermission.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "eventSegmentUserResponse.attendance.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "info_text",
+        "value": "todo: general info about Café Marché or this website here."
+      },
+      {
+        "name": "profile_markdown",
+        "value": "here's your profile; check it out."
+      },
+      {
+        "name": "songCredit.type.SelectStyle",
+        "value": "inline"
+      },
+      {
+        "name": "textPalette",
+        "value": "#000\n#444\n#666\n#888\n#aaa\n#ccc\n#ddd\n#eee\n#fff\n\n-\n// near-black\n-- // {\"c\":[\"hsl(232deg 17% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":2,\"op\":\"column rev\"}\nx#000000\nx#262732\n#474a61\n#6a7095\n\n;-- // {\"c\":[\"hsl(232deg 17% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":7,\"op\":\"row\"}\nx#7c81a2\n#8e92af\nx#a0a3bc\n#b3b5c9\nx#c6c7d6\n#d8d9e4\nx#ececf1\n\n\n// lime green\n\n-- // {\"c\":[\"hsl(72deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#272d10\n#475614\n#6a8311\n#8fb300\n#afc657\n#ccd98f\n#e6ecc7\n\n// green\n-- // {\"c\":[\"hsl(120deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#152d0f\n#1b5613\n#198310\n#00b300\n#69c755\n#a0db8e\n#d0edc6\n\n// teal\n;-- // {\"c\":[\"hsl(173deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#152d28\n#1b564d\n#198374\n#00b39e\n#68c7b5\n#9edacd\n#cfede6\n\n// blue\n-- // {\"c\":[\"hsl(212deg 100% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#19203c\n#213b77\n#1f58b9\n#0077ff\n#7696ff\n#abb8ff\n#d7dbff\n\n// purple\n;-- // {\"c\":[\"#92d\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#291435\n#4c1c69\n#7221a1\n#9922dd\n#b865e7\n#d399f0\n#eaccf8\n\n\n\n\n-- // {\"c\":[\"#e00000\",\"white\",\"black\"],\"m\":\"rgb\",\"z\":5,\"op\":\"TL\"}\n;#4b0000\n#600000\n;#950000\n#900\n#e00000\n#f77\n#faa\n#fdd\n;#ea5555\n;#f08080\n;#f5aaaa\n;#fad5d5\n\n\n\n// maroon\n;-- // {\"c\":[\"hsl(342deg 60% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#33161c\n#622131\n#962b49\n#cc3361\n#df6e86\n#ee9fac\n#f9cfd5\n\n\n// orange\n- // {\"c\":[\"#f70\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3e210e\n#793c11\n#ba590e\n#ff7700\n#ff9a51\n#ffbc8a\n#ffddc4\n\n\n// brown\n// interestingly generated by\n// taking diag from\n// {\"c\":[\"red\",\"white\",\"black\",\"green\"],\"m\":\"lab\",\"z\":3,\"op\":\"diagBL\"}\n\n;-- // {\"c\":[\"hsl(36deg 46% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#2f2517\n#5a4426\n#886635\n#ba8b45\n#cea772\n#e1c3a0\n#f1e1cf\n\n\n// ochre yellow\n-- // {\"c\":[\"#fc0\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3d3112\n#786117\n#ba9415\n#ffcc00\n#ffd85f\n#ffe596\n#fff2cb\n\n// light yellow\n// {\"c\":[\"#ef0\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3a3b15\n#71771b\n#adb918\n#eeff00\nx#f7ff67\n#fdff9d\nx#ffffcf\n"
+      }
+    ]
+  );
 
 }
 

@@ -125,6 +125,10 @@ export const xInstrumentTag = new db3.xTable({
             options: InstrumentTagSignificance,
             authMap: xInstrumentAuthMap_R_EManagers,
         }),
+        new GhostField({
+            memberName: "instruments",
+            authMap: xInstrumentAuthMap_R_EManagers,
+        }),
     ]
 });
 
