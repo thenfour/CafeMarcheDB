@@ -50,7 +50,7 @@ const EventsList = () => {
 
     const events = eventsClient.items as db3.EventClientPayload_Verbose[];
 
-    return events.length < 1 ? "Nothing here!" : <>
+    return <>{events.length < 1 ? "Nothing here!" : <>
         {events.map(event => {
             const eventData = CalculateEventMetadata(event);
 
@@ -59,6 +59,7 @@ const EventsList = () => {
             </EventDetailContainer>;
         }
         )}
+    </>}
     </>;
 };
 

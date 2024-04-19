@@ -10,7 +10,7 @@ const LogoutPage: BlitzPage = () => {
 
     useEffect(() => {
         logoutMutation().then(() => {
-            router.push('/backstage');
+            void router.push('/backstage');
         }).catch((e) => {
             console.log(e);
         });

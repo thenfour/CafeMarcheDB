@@ -110,7 +110,7 @@ const AppBarUserIcon_MenuItems = () => {
 
         <MenuItem onClick={async () => {
             await logoutMutation();
-            router.push("/backstage");
+            void router.push("/backstage");
         }}>
             Log out
         </MenuItem>

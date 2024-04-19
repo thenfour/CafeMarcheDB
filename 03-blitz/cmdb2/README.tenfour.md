@@ -158,8 +158,8 @@ To get `db seed` to work,
 
 # special URLs:
 
-  * http://localhost:3000/auth/stopImpersonating
-  * http://localhost:3000/auth/logout
+  * http://localhost:10455/auth/stopImpersonating
+  * http://localhost:10455/auth/logout
 
   * Also: `import { Routes } from "@blitzjs/next";` has all your `BlitzPage` in an accessible object.
   * Also see `blitz routes` from cmd line

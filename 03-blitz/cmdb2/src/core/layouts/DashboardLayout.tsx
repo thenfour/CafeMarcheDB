@@ -33,7 +33,7 @@ const LoginSignup = () => {
                     onSuccess={(_user) => {
                         //const next = router.query.next ? decodeURIComponent(router.query.next as string) : "/"
                         //return router.push(next)
-                        router.push("/backstage");
+                        void router.push("/backstage");
                     }}
                 />
             </div>

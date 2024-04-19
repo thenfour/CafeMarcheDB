@@ -68,7 +68,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     return <div>
         {song ? <>
             <SongBreadcrumbs song={song} />
-            <SongDetail readonly={false} song={song} tableClient={tableClient} initialTabIndex={initialTabIndex} isOnlySongVisible={true} allowRouterPush={true} />
+            <SongDetail readonly={false} song={song} tableClient={tableClient} initialTabIndex={initialTabIndex} />
         </> : <>
             no song was found. some possibilities:
             <ul>
