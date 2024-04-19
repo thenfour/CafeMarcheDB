@@ -56,7 +56,7 @@ export const LoginForm = (props: LoginFormProps) => {
         value={<input type="password" placeholder="password" value={password} onChange={e => setPassword(e.target.value)} />}
       />
       <div><input type="submit" value="Login" /></div>
-      <Link href={Routes.ForgotPasswordPage()}>Forgot your password?</Link>
+      <Link href={"/auth/forgot-password"}>Forgot your password?</Link>
     </form>
 
     {/*

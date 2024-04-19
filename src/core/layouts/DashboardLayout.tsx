@@ -37,7 +37,7 @@ const LoginSignup = () => {
                     }}
                 />
             </div>
-            <Link href={Routes.SignupPage()} className="signInBlock link createNewAccount">
+            <Link href={"/auth/signup"} className="signInBlock link createNewAccount">
                 <div className="title">
                     Create a new account using email & password
                 </div>
