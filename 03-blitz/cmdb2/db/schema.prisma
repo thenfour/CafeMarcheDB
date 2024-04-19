@@ -1,3 +1,6 @@
+// why VarChar(768) ? because it's the largest indexable unicode string type.
+// https://stackoverflow.com/questions/72937232/error-1071-42000-specified-key-was-too-long-max-key-length-is-3072-bytes
+
 // some common patterns:
 // todo: languages / strings
 // TODO: website integration (fields for events, image editing, whether it's published etc)
@@ -32,7 +35,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -42,13 +45,12 @@ generator client {
 }
 
 // --------------------------------------
-
 model Role {
   id                Int              @id @default(autoincrement())
-  name              String           @unique
+  name              String           @unique @db.VarChar(768)
   isRoleForNewUsers Boolean          @default(false)
   isPublicRole      Boolean          @default(false)
-  description       String?
+  description       String?          @db.MediumText
   sortOrder         Int              @default(0)
   permissions       RolePermission[]
   User              User[]
@@ -58,19 +60,18 @@ model Role {
 
 model Permission {
   id           Int     @id @default(autoincrement())
-  name         String  @unique
+  name         String  @unique @db.VarChar(768)
   isVisibility Boolean @default(false)
-  description  String?
+  description  String? @db.MediumText
   sortOrder    Int     @default(0)
-  color        String?
-  iconName     String?
+  color        String? @db.VarChar(768)
+  iconName     String? @db.VarChar(768)
 
   roles                              RolePermission[]
   visibilityForSongs                 Song[]
   visibilityForSongComments          SongComment[]
   visibilityForEvents                Event[]
   visibilityForEventComments         EventComment[]
-  //visibilityForEventSongLists        EventSongList[]
   visibilityForFiles                 File[]
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
 
@@ -95,8 +96,8 @@ model RolePermission {
 // copied from FileTag
 model UserTag {
   id                        Int                 @id @default(autoincrement())
-  text                      String
-  description               String              @default("")
+  text                      String              @db.VarChar(768)
+  description               String              @db.MediumText
   color                     String?
   significance              String? // 
   sortOrder                 Int                 @default(0)
@@ -120,11 +121,11 @@ model UserTagAssignment {
 
 model User {
   id             Int      @id @default(autoincrement())
-  name           String   @default("")
+  name           String   @default("") @db.VarChar(768)
   isSysAdmin     Boolean  @default(false)
   isDeleted      Boolean  @default(false)
-  email          String   @unique
-  phone          String?
+  email          String   @unique @db.VarChar(768)
+  phone          String?  @db.VarChar(768)
   hashedPassword String?
   googleId       String?
   createdAt      DateTime @default(now())
@@ -161,8 +162,8 @@ model User {
 
 model Setting {
   id    Int    @id @default(autoincrement())
-  name  String @unique @default("")
-  value String @default("") // json value
+  name  String @unique @default("") @db.VarChar(768)
+  value String @db.MediumText // json value et al
 
   @@index([name])
 }
@@ -172,7 +173,7 @@ model Change {
 
   action String // create, update, delete
 
-  context     String // depends on 
+  context     String @db.VarChar(768) // depends on action / context / whatever
   operationId String // a GUID that groups together all changes that were performed in 1 logical update (for example updating permission relations is many ops, or multiple changing fields)
 
   table    String
@@ -181,8 +182,8 @@ model Change {
   changedAt     DateTime @default(now())
   userId        Int?
   sessionHandle String?
-  oldValues     String? // for create, empty. for update, JSON of fields. for delete, all column values.
-  newValues     String? // for create & update, JSON of fields. for delete, empty.
+  oldValues     String?  @db.MediumText // for create, empty. for update, JSON of fields. for delete, all column values.
+  newValues     String?  @db.MediumText // for create & update, JSON of fields. for delete, empty.
 
   user User? @relation(fields: [userId], references: [id], onDelete: Restrict) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
 
@@ -201,7 +202,7 @@ model Activity {
   sessionHandle String?
 
   action String //
-  data   String? // additional data for the action
+  data   String? @db.MediumText // additional data for the action
 
   happenedAt DateTime @default(now())
 
@@ -214,8 +215,8 @@ model Session {
   handle             String    @unique
   hashedSessionToken String?
   antiCSRFToken      String?
-  publicData         String?
-  privateData        String?
+  publicData         String?   @db.MediumText
+  privateData        String?   @db.MediumText
 
   user   User? @relation(fields: [userId], references: [id])
   userId Int?
@@ -228,7 +229,7 @@ model Token {
   // See note below about TokenType enum
   // type        TokenType
   expiresAt   DateTime
-  sentTo      String
+  sentTo      String   @db.VarChar(768)
 
   user   User @relation(fields: [userId], references: [id])
   userId Int
@@ -245,10 +246,10 @@ model Token {
 
 model Song {
   id             Int    @id @default(autoincrement())
-  name           String
-  aliases        String @default("")
-  slug           String
-  description    String @default("")
+  name           String @db.VarChar(768)
+  aliases        String @default("") @db.VarChar(768)
+  slug           String @db.VarChar(768)
+  description    String @db.MediumText
   startBPM       Int?
   endBPM         Int?
   introducedYear Int? // purposely fuzzy
@@ -259,9 +260,9 @@ model Song {
   // so what about variations like roger variete, or tango long/short versions? do we relate them? or score stuff? i think don't bother; maybe there can be related songs or something but not yet.
 
   createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   taggedFiles FileSongTag[]
   tags        SongTagAssociation[]
@@ -284,14 +285,13 @@ model SongComment {
   userId    Int
   createdAt DateTime
   updatedAt DateTime
-  text      String
+  text      String   @db.MediumText
   user      User     @relation(fields: [userId], references: [id], onDelete: Restrict) // users are soft delete; if an admin wants to force delete, then they can go through this.
 
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   @@index([songId])
-  @@index([text])
   @@index([visiblePermissionId])
 }
 
@@ -299,7 +299,7 @@ model SongComment {
 model SongCreditType {
   id          Int     @id @default(autoincrement())
   text        String
-  description String  @default("")
+  description String  @db.MediumText
   color       String?
   sortOrder   Int     @default(0)
 
@@ -318,8 +318,8 @@ model SongCredit {
   songId Int
   song   Song @relation(fields: [songId], references: [id], onDelete: Restrict)
 
-  year    String @default("")
-  comment String @default("") // markdown
+  year    String @default("") @db.VarChar(768)
+  comment String @db.MediumText // markdown
 
   typeId Int
   type   SongCreditType @relation(fields: [typeId], references: [id], onDelete: Restrict)
@@ -331,8 +331,8 @@ model SongCredit {
 
 model SongTag {
   id              Int                  @id @default(autoincrement())
-  text            String
-  description     String               @default("")
+  text            String               @db.VarChar(768)
+  description     String               @db.MediumText
   color           String?
   significance    String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
   showOnSongLists Boolean              @default(false)
@@ -367,7 +367,7 @@ model SongTagAssociation {
 model InstrumentFunctionalGroup {
   id          Int          @id @default(autoincrement())
   name        String       @unique
-  description String       @default("")
+  description String       @db.MediumText
   sortOrder   Int
   color       String?
   instruments Instrument[]
@@ -378,9 +378,9 @@ model InstrumentFunctionalGroup {
 
 model Instrument {
   id                Int                        @id @default(autoincrement())
-  name              String                     @unique
-  slug              String                     @default("")
-  description       String                     @default("")
+  name              String                     @unique @db.VarChar(768)
+  slug              String                     @default("") @db.VarChar(768)
+  description       String                     @db.MediumText
   sortOrder         Int
   functionalGroupId Int
   functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Restrict) // if you want to delete a functional group, you need to manually reassign
@@ -398,8 +398,8 @@ model Instrument {
 
 model InstrumentTag {
   id           Int                        @id @default(autoincrement())
-  text         String
-  description  String                     @default("")
+  text         String                     @db.VarChar(768)
+  description  String                     @db.MediumText
   sortOrder    Int                        @default(0)
   color        String?
   significance String? // "uses electricity" for example?
@@ -445,14 +445,14 @@ model UserInstrument {
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 model Event {
   id          Int        @id @default(autoincrement())
-  name        String
-  slug        String
-  description String // what's the diff between a description & comment? description is the pinned general description in markdown.
+  name        String     @db.VarChar(768)
+  slug        String     @db.VarChar(768)
+  description String     @db.MediumText // what's the diff between a description & comment? description is the pinned general description in markdown.
   typeId      Int?
   type        EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
 
-  locationDescription String       @default("")
-  locationURL         String       @default("")
+  locationDescription String       @default("") @db.VarChar(768)
+  locationURL         String       @default("") @db.VarChar(768)
   isDeleted           Boolean      @default(false)
   // "status" seems kinda more like business logic than a db field. it depends on approvals and spits out either unconfirmed or confirmed.
   // so ideally status is calculated based off approvals & other things. but that locks us into designing for ideal scenarios where everyone is diligent.
@@ -482,21 +482,21 @@ model Event {
   endDateTime    DateTime? // after calculating the date range, this is the "end time" or TBD
 
   createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   expectedAttendanceUserTagId Int?
   expectedAttendanceUserTag   UserTag? @relation(fields: [expectedAttendanceUserTagId], references: [id], onDelete: SetNull)
 
   frontpageVisible     Boolean @default(false)
-  frontpageDate        String  @default("") // e.g. "Zaterdag 11 november"
-  frontpageTime        String  @default("") // e.g. 14u
-  frontpageDetails     String  @default("")
-  frontpageTitle       String? // null = use normal one
-  frontpageLocation    String? // null = use normal
-  frontpageLocationURI String? // null = use normal
-  frontpageTags        String? // null, use normal
+  frontpageDate        String  @default("") @db.VarChar(768) // e.g. "Zaterdag 11 november"
+  frontpageTime        String  @default("") @db.VarChar(768) // e.g. 14u
+  frontpageDetails     String  @default("") @db.VarChar(768)
+  frontpageTitle       String? @db.VarChar(768) // null = use normal one
+  frontpageLocation    String? @db.VarChar(768) // null = use normal
+  frontpageLocationURI String? @db.VarChar(768) // null = use normal
+  frontpageTags        String? @db.VarChar(768) // null, use normal
 
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
@@ -507,7 +507,6 @@ model Event {
 
   @@index([name])
   @@index([slug])
-  @@index([description])
   @@index([typeId])
   @@index([isDeleted])
   @@index([statusId])
@@ -524,8 +523,8 @@ model EventSegment {
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
 
-  name        String
-  description String // short description, like 
+  name        String @db.VarChar(768)
+  description String @db.MediumText // short description, like 
 
   // conform to DateTimeRangeSpec
   startsAt       DateTime? // date null means TBD
@@ -541,8 +540,8 @@ model EventSegment {
 
 model EventType {
   id           Int     @id @default(autoincrement())
-  text         String
-  description  String
+  text         String  @db.VarChar(768)
+  description  String  @db.MediumText
   color        String?
   sortOrder    Int     @default(0)
   significance String?
@@ -558,8 +557,8 @@ model EventType {
 
 model EventStatus {
   id           Int     @id @default(autoincrement())
-  label        String
-  description  String
+  label        String  @db.VarChar(768)
+  description  String  @db.MediumText
   color        String?
   sortOrder    Int     @default(0)
   significance String?
@@ -576,8 +575,8 @@ model EventStatus {
 
 model EventTag {
   id                 Int                  @id @default(autoincrement())
-  text               String
-  description        String               @default("")
+  text               String               @db.VarChar(768)
+  description        String               @db.MediumText
   color              String?
   significance       String? // we care about some tags, for example gathering specific statistics (you played N concerts - we need to know which events are concerts specifically which is done via tagging)
   sortOrder          Int                  @default(0)
@@ -607,11 +606,11 @@ model EventComment {
   userId    Int
   createdAt DateTime
   updatedAt DateTime
-  text      String
+  text      String   @db.MediumText
   user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   @@index([eventId])
   @@index([visiblePermissionId])
@@ -620,8 +619,8 @@ model EventComment {
 model EventSongList {
   id          Int    @id @default(autoincrement())
   sortOrder   Int    @default(0)
-  name        String
-  description String @default("")
+  name        String @db.VarChar(768)
+  description String @db.MediumText
 
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
@@ -639,7 +638,7 @@ model EventSongList {
 
 model EventSongListSong {
   id        Int     @id @default(autoincrement())
-  subtitle  String? // could be a small comment like "short version"
+  subtitle  String? @db.MediumText // could be a small comment like "short version"
   sortOrder Int     @default(0)
 
   songId Int
@@ -657,12 +656,12 @@ model EventAttendance {
   id        Int @id @default(autoincrement())
   sortOrder Int @default(0)
 
-  text             String // generic button text ("yes", "probably")
+  text             String @db.VarChar(768) // generic button text ("yes", "probably")
   personalText     String @default("") // more personal text explanation ("you are going", "you are probably going")
   pastText         String @default("") // "went"
   pastPersonalText String @default("") // "you went"
 
-  description String  @default("") // explanation
+  description String  @db.MediumText // explanation
   color       String?
   iconName    String?
   strength    Int // in order to be able to filter people who aren't coming. let's consider like, 50 = threshold for YES/NO. effectively a sort order.
@@ -684,9 +683,9 @@ model EventUserResponse {
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   isInvited    Boolean?
-  userComment  String?
+  userComment  String?     @db.MediumText
   instrumentId Int? // specify the specific instrument
-  instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: SetDefault) // delete instrument, set to null
+  instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: SetNull) // delete instrument, set to null
 
   @@unique([userId, eventId]) // 
 }
@@ -699,13 +698,8 @@ model EventSegmentUserResponse {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   eventSegment EventSegment @relation(fields: [eventSegmentId], references: [id], onDelete: Cascade)
 
-  //expectAttendance  Boolean?
   attendanceId Int?
-  attendance   EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetDefault)
-  //attendanceComment String? // comment
-
-  // instrumentId Int? // specify the specific instrument
-  // instrument   Instrument? @relation(fields: [instrumentId], references: [id], onDelete: SetDefault) // delete instrument, set to null
+  attendance   EventAttendance? @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
 
   @@unique([userId, eventSegmentId]) // 
 }
@@ -713,8 +707,8 @@ model EventSegmentUserResponse {
 // tech rider, partition, invoice, contract, event media, other, what is the usage?
 model FileTag {
   id              Int                 @id @default(autoincrement())
-  text            String
-  description     String              @default("")
+  text            String              @db.VarChar(768)
+  description     String              @db.MediumText
   color           String?
   significance    String? // 
   sortOrder       Int                 @default(0)
@@ -740,13 +734,13 @@ model FileTagAssignment {
 // so let's not work on this now; see how it feels necessary.
 model File {
   id             Int     @id @default(autoincrement())
-  fileLeafName   String // the name of the file as it was uploaded, visible to (& editable) users. IMG20113.jpg for example.
-  storedLeafName String  @unique // a unique filename used in server storage; a guid probably. this is also what is used in params for identifying files.
-  description    String
+  fileLeafName   String  @db.VarChar(768) // the name of the file as it was uploaded, visible to (& editable) users. IMG20113.jpg for example.
+  storedLeafName String  @unique @db.VarChar(768) // a unique filename used in server storage; a guid probably. this is also what is used in params for identifying files.
+  description    String  @db.MediumText
   isDeleted      Boolean @default(false)
   sizeBytes      Int? // null for external URIs
 
-  externalURI String? // dropbox link for example
+  externalURI String? @db.VarChar(768) // dropbox link for example
 
   // the date of the file. for example WHEN was the photo taken? WHEN was the recording taken? WHEN was the document created?
   // some files just don't have dates so probably use uploadDate as a fallback.
@@ -754,12 +748,12 @@ model File {
 
   uploadedAt          DateTime
   uploadedByUserId    Int?
-  uploadedByUser      User?       @relation(fields: [uploadedByUserId], references: [id], onDelete: SetDefault)
+  uploadedByUser      User?       @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   mimeType   String?
-  customData String? // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
+  customData String? @db.MediumText // JSON of FileCustomData that will depend how i feel like using it based on mimetype. links to thumbnails, metadata, pdf series of thumbnails, whatev.
 
   // a file (which should be a child) which serves as a preview. for example if the audio file is some huge .wav, this can be a lower-quality download-friendly MP3 version
   // or for huge photos, this is a low-bandwidth small preview.
@@ -841,16 +835,16 @@ model FileInstrumentTag {
 model FrontpageGalleryItem {
   id            Int     @id @default(autoincrement())
   isDeleted     Boolean @default(false) //  soft delete. when hidden, users won't see them.
-  caption       String // markdown
+  caption       String  @db.MediumText // markdown
   sortOrder     Int     @default(0)
   fileId        Int
   file          File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  displayParams String // JSON of GalleryImageDisplayParams
+  displayParams String  @db.MediumText // JSON of GalleryImageDisplayParams
 
   createdByUserId     Int? // required in order to know visibility when visiblePermissionId is NULL
-  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetDefault)
+  createdByUser       User?       @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetDefault)
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   @@index([isDeleted])
   @@index([sortOrder])
