@@ -1,17 +1,14 @@
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
-import { useMutation } from "@blitzjs/rpc";
-import { Button, TextField, Typography } from "@mui/material";
+import { Typography } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "shared/utils";
 import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import changePassword from "src/auth/mutations/changePassword";
-import * as schemas from "src/auth/schemas";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -20,7 +17,6 @@ import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { SafeParseReturnType } from "zod";
 
 const OwnIdentityControl = () => {
     const [currentUser, { refetch }] = useCurrentUser();
@@ -29,7 +25,7 @@ const OwnIdentityControl = () => {
     // if you don't have a google identity there's just not much to show here; don't show anything.
     if (!haveGoogleIdentity) return null;
 
-    return <DB3Client.NameValuePair
+    return <NameValuePair
         isReadOnly={false}
         name={"Identity and login"}
         value={<div className="googleIdentityControl">
@@ -223,7 +219,7 @@ const MainContent = () => {
                     {gIconMap.Person()} Your profile
                 </Typography>
 
-                <DB3Client.NameValuePair isReadOnly={false} name="Your instruments" value={<OwnInstrumentsControl />} />
+                <NameValuePair isReadOnly={false} name="Your instruments" value={<OwnInstrumentsControl />} />
 
                 {client.items.length === 1 && (
                     <>
@@ -234,27 +230,6 @@ const MainContent = () => {
                 )}
 
                 <OwnIdentityControl />
-
-                {/* <ResetOwnPasswordControl /> */}
-
-                {/* 
-                <div className="permissionSummary">
-                    {DB3Client.RenderBasicNameValuePair({
-                        name: "role",
-                        value: <RowInfoChip item={value.role} tableSpec={db3.xRole} />,
-                    })}
-
-                    {DB3Client.RenderBasicNameValuePair({
-                        name: "permissions",
-                        value: value.role?.permissions.map(p => <CMChip>{p.permissionId}</CMChip>),
-                    })}
-
-                    {DB3Client.RenderBasicNameValuePair({
-                        name: "publicData permissions",
-                        value: publicData.permissions.map(p => <CMChip>{p}</CMChip>),
-                    })}
-
-                </div> */}
 
             </div>
         </CMSinglePageSurfaceCard>

@@ -11,10 +11,9 @@ import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid
 import { DateTimeRangeControl } from "src/core/components/DateTimeRangeControl";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
-import { API } from '../clientAPI';
+//import { API } from '../clientAPI';
 import * as db3 from "../db3";
 import { SettingKey, TAnyModel } from "shared/utils";
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +56,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
             type: "custom",
             renderCell: (params: GridRenderCellParams) => {
                 // renders only the value (because the grid header shows the name)
-                return <div>{API.events.getEventSegmentFormattedDateRange(params.row)}</div>;
+                return <div>{db3.getEventSegmentDateTimeRange(params.row).toString()}</div>;
             },
             renderEditCell: (params: GridRenderEditCellParams) => {
                 // renders only the editor
@@ -83,7 +82,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         className: params.className,
         isReadOnly: true,
         validationResult: undefined,
-        value: <div>{API.events.getEventSegmentFormattedDateRange(params.row as any)}</div>,
+        value: <div>{db3.getEventSegmentDateTimeRange(params.row as any).toString()}</div>,
     });
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {

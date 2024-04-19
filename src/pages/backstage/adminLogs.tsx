@@ -1,20 +1,19 @@
 import { BlitzPage } from "@blitzjs/next";
-import { Button } from "@mui/material";
-import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { useRouter } from "next/router";
-import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
+import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
 import { StandardVariationSpec } from "shared/color";
-import { useQuery } from "@blitzjs/rpc";
-import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
+import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsNullOrWhitespace, existsInArray, toggleValueInArray } from "shared/utils";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
+import * as db3 from "src/core/db3/db3";
+import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 interface AdHocUser {
     name: string,
@@ -100,7 +99,7 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="AdminLogsPage_markdown"></SettingMarkdown>
-        <DB3Client.NameValuePair
+        <NameValuePair
             isReadOnly={false}
             name={"Table"}
             value={
@@ -120,7 +119,7 @@ const MainContent = () => {
                 </div>
             }
         />
-        <DB3Client.NameValuePair
+        <NameValuePair
             isReadOnly={false}
             name={"Users"}
             value={
@@ -140,7 +139,7 @@ const MainContent = () => {
                 </div>
             }
         />
-        <DB3Client.NameValuePair
+        <NameValuePair
             isReadOnly={false}
             name={"Record ID"}
             value={

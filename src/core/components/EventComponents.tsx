@@ -31,7 +31,7 @@ import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown } from './RichTextEditor';
 import { GenerateDefaultDescriptionSettingName, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import { AddUserButton } from './UserComponents';
-import { CMDialogContentText } from './CMCoreComponents2';
+import { CMDialogContentText, NameValuePair } from './CMCoreComponents2';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { FilesTabContent } from './SongFileComponents';
@@ -380,7 +380,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     });
 
     return <>
-        <DB3Client.RenderBasicNameValuePair
+        <NameValuePair
             name="Attendance is expected for this user tag:"
             value={<EventAttendanceUserTagControl event={event} refetch={refetch} readonly={props.readonly} />}
             isReadOnly={props.readonly}
@@ -736,7 +736,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
             {
                 isShowingAdminControls && <>
-                    <DB3Client.NameValuePair
+                    <NameValuePair
                         isReadOnly={true}
                         name={"eventId"}
                         value={eventData.event.id}

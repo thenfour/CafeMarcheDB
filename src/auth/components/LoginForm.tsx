@@ -10,7 +10,7 @@ import { FormControlLabel } from "@mui/material"
 import React, { Suspense } from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { Routes } from "@blitzjs/next";
-import { NameValuePair } from "src/core/db3/DB3Client"
+import { NameValuePair } from "src/core/components/CMCoreComponents2"
 
 type LoginFormProps = {
   onSuccess?: (user: PromiseReturnType<typeof login>) => void

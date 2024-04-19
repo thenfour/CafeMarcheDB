@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuthenticatedSession } from "@blitzjs/auth";
+import { useAuthenticatedSession, useSession } from "@blitzjs/auth";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
     Add as AddIcon,
@@ -23,12 +23,22 @@ import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/component
 import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { API } from "../clientAPI";
+//import { API } from "../clientAPI";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import { RenderMuiIcon } from "./IconSelectDialog";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
+import updateSetting from "src/auth/mutations/updateSetting";
+import getSetting from "src/auth/queries/getSetting";
+
+
+// local versions of clientAPI fns
+function useIsShowingAdminControls() {
+    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
+    return sess.isSysAdmin && sess.showAdminControls;
+};
+
 
 
 
@@ -131,12 +141,15 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
         setOldValue(props.value);
     }, []);
 
-    const isShowingAdminControls = API.other.useIsShowingAdminControls();
-    const setSetting = API.settings.updateSetting.useToken();
+    const isShowingAdminControls = useIsShowingAdminControls();
+
+    const [setSetting] = useMutation(updateSetting);
+
+    //const setSetting = API.settings.updateSetting.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.tableName, props.columnName);
-    const selectStyleSettingValue = API.settings.useSetting(selectStyleSetting);
+    const [selectStyleSettingValue] = useQuery(getSetting, { name: selectStyleSetting });//  API.settings.useSetting(selectStyleSetting);
     const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
     const newProps = { ...props };
     newProps.selectStyle = selectStyle;
@@ -159,7 +172,7 @@ export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInpu
     assert(!!props.foreignSpec.typedSchemaColumn, "schema is not connected to the table spec. you probably need to initiate the client render context");
 
     const handleChangeSetting = (newVal: ("inline" | "dialog" | null)) => {
-        setSetting.invoke({ name: selectStyleSetting, value: newVal }).then((x) => {
+        setSetting({ name: selectStyleSetting, value: newVal }).then((x) => {
             showSnackbar({ children: "Saved", severity: 'success' });
         }).catch((err => {
             console.log(err);

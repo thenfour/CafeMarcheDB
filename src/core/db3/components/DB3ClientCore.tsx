@@ -23,70 +23,8 @@ import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
-//import { InspectObject } from "src/core/components/CMCoreComponents";
-//import { NameValuePair } from "./DB3ClientBasicFields";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// useful for consistent field rendering including name, value, detailed help etc.
-interface RenderBasicNameValuePairPropsBase {
-    name: React.ReactNode;
-    description?: React.ReactNode;
-    value: React.ReactNode;
-    isReadOnly: boolean;
-    className?: string;
-};
-
-// Variant where validationResult is not provided, fieldName is optional
-interface RenderBasicNameValuePairPropsWithoutValidation extends RenderBasicNameValuePairPropsBase {
-    validationResult?: undefined;
-    fieldName?: string; // Optional because validationResult is not provided
-};
-interface RenderBasicNameValuePairPropsWithValidation extends RenderBasicNameValuePairPropsBase {
-    validationResult: db3.ValidateAndComputeDiffResult;
-    fieldName: string; // Required because validationResult is provided
-};
-
-type RenderBasicNameValuePairProps = RenderBasicNameValuePairPropsWithoutValidation | RenderBasicNameValuePairPropsWithValidation;
-
-export const RenderBasicNameValuePair = (props: RenderBasicNameValuePairProps) => {
-
-    // validation result is relevant to the whole row; extract THIS field.
-
-    const validationError = props.validationResult?.getErrorForField(props.fieldName) || null;
-
-    return <div className={`BasicNameValuePairContainer ${props.className} ${props.isReadOnly ? "readOnly" : "editable"} ${(props.validationResult && !!validationError) ? "validationError" : "validationSuccess"}`}>
-        {!IsNullOrWhitespace(props.name) && <div className="name">{props.name}</div>}
-        {props.description && <div className="description">{props.description}</div>}
-        <div className="value">{props.value}</div>
-        {(props.validationResult && !!validationError) && <div className="validationResult">{validationError}</div>}
-    </div>;
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface NameValuePairPropsBase {
-    name: React.ReactNode;
-    description?: React.ReactNode;
-    value: React.ReactNode;
-    isReadOnly: boolean;
-    className?: string;
-};
-
-// Variant where validationResult is not provided, fieldName is optional
-interface NameValuePairPropsWithoutValidation extends NameValuePairPropsBase {
-    validationResult?: undefined;
-    fieldName?: string; // Optional because validationResult is not provided
-};
-interface NameValuePairPropsWithValidation extends NameValuePairPropsBase {
-    validationResult: db3.ValidateAndComputeDiffResult;
-    fieldName: string; // Required because validationResult is provided
-};
-
-type NameValuePairProps = NameValuePairPropsWithoutValidation | NameValuePairPropsWithValidation;
-
-export const NameValuePair = (props: NameValuePairProps) => {
-    return RenderBasicNameValuePair(props);
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface NewDialogAPI {

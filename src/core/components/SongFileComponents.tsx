@@ -21,7 +21,7 @@ import { CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProg
 import { CMTextInputBase } from './CMTextField';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
-import { CMSmallButton } from './CMCoreComponents2';
+import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 
 const gMaximumFilterTagsPerType = 3 as const;
 
@@ -731,7 +731,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
             <Button onClick={() => setShowUpload(true)}>Upload</Button>)
         }
 
-        <DB3Client.NameValuePair
+        <NameValuePair
             isReadOnly={false}
             name={""}
             value={<FileFilterAndSortControls value={filterSpec} onChange={(value) => setFilterSpec(value)} fileTags={props.fileTags} />}

@@ -6,7 +6,7 @@ import { useMutation } from "@blitzjs/rpc"
 import React, { Suspense } from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { FormControlLabel } from "@mui/material";
-import { NameValuePair } from "src/core/db3/DB3Client";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
 
 type SignupFormProps = {
   onSuccess?: () => void

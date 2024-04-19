@@ -21,6 +21,7 @@ import { CalculateSongMetadata, SongWithMetadata } from './SongComponentsBase';
 import { Markdown } from './RichTextEditor';
 import { IsNullOrWhitespace, TAnyModel } from 'shared/utils';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
+import { NameValuePair } from './CMCoreComponents2';
 
 
 export const SongClientColumns = {
@@ -310,7 +311,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
 
                 {
                     isShowingAdminControls && <>
-                        <DB3Client.NameValuePair
+                        <NameValuePair
                             isReadOnly={true}
                             name={"songId"}
                             value={song.id}

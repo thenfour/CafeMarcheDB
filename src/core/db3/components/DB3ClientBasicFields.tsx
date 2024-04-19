@@ -25,6 +25,7 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import * as ClientAPILL from "../clientAPILL";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -50,13 +51,13 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
 
     renderForNewDialog = undefined;// (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: params.value,
-        isReadOnly: true,
-        fieldName: this.columnName,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        isReadOnly={true}
+        fieldName={this.columnName}
+    />;
 
     onSchemaConnected() { };
     ApplyClientToPostClient = undefined;
@@ -113,27 +114,13 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: params.value,
-        fieldName: this.columnName,
-        isReadOnly: false,
-    });
-
-    // renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-    //     return <CMTextField
-    //         className={`columnName-${this.columnName}`}
-    //         key={params.key}
-    //         autoFocus={false}
-    //         label={this.headerName}
-    //         validationError={params.validationResult && params.validationResult.getErrorForField(this.columnName)}
-    //         value={params.value as string}
-    //         onChange={(e, val) => {
-    //             params.api.setFieldValues({ [this.columnName]: val });
-    //         }}
-    //     />;
-    // };
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        fieldName={this.columnName}
+        isReadOnly={false}
+    />;
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => this.defaultRenderer({
         validationResult: params.validationResult,
@@ -186,13 +173,13 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: params.value,
-        fieldName: this.columnName,
-        isReadOnly: true,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        fieldName={this.columnName}
+        isReadOnly={true}
+    />;
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         if (!this.schemaColumn) throw new Error(`no schemacolumn for slug column '${this.columnName}'`);
@@ -284,13 +271,13 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: <Markdown key={params.key} markdown={params.value} />,
-        fieldName: this.columnName,
-        isReadOnly: false,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={<Markdown key={params.key} markdown={params.value} />}
+        fieldName={this.columnName}
+        isReadOnly={false}
+    />
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => this.defaultRenderer({
         isReadOnly: false,
@@ -350,13 +337,13 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: params.value,
-        isReadOnly: !this.editable,
-        fieldName: this.columnName,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        isReadOnly={!this.editable}
+        fieldName={this.columnName}
+    />;
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         const val = params.value as (number | null);
@@ -421,13 +408,13 @@ export class SongLengthSecondsColumnClient extends DB3ClientCore.IColumnClient {
     };
 
     // TODO: this can be enhanced like renderForNewDialog
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: params.value,
-        isReadOnly: !this.editable,
-        fieldName: this.columnName,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        isReadOnly={!this.editable}
+        fieldName={this.columnName}
+    />;
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         const val = params.value as (number | null);
@@ -492,13 +479,13 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
         };
     };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<boolean>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: !!params.value ? "Yes" : "No",
-        fieldName: this.columnName,
-        isReadOnly: !this.editable,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<boolean>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={!!params.value ? "Yes" : "No"}
+        fieldName={this.columnName}
+        isReadOnly={!this.editable}
+    />;
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.member} control={
@@ -556,13 +543,13 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
 
     onSchemaConnected() { };
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<ColorPaletteEntry | null>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: <ColorSwatch color={params.value} variation={{ enabled: true, selected: true, fillOption: "filled", variation: "strong" }} />,
-        fieldName: this.columnName,
-        isReadOnly: !this.editable,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<ColorPaletteEntry | null>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={<ColorSwatch color={params.value} variation={{ enabled: true, selected: true, fillOption: "filled", variation: "strong" }} />}
+        fieldName={this.columnName}
+        isReadOnly={!this.editable}
+    />
 
     // will render as a child of <FormControl>
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
@@ -606,13 +593,13 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     }
     ApplyClientToPostClient = undefined;
 
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => DB3ClientCore.RenderBasicNameValuePair({
-        className: params.className,
-        name: this.columnName,
-        value: params.value,
-        isReadOnly: !this.editable,
-        fieldName: this.columnName,
-    });
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<string>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        isReadOnly={!this.editable}
+        fieldName={this.columnName}
+    />
 
     onSchemaConnected(tableClient: DB3ClientCore.xTableRenderClient) {
         this.enumSchemaColumn = this.schemaColumn as db3fields.ConstEnumStringField;
@@ -885,13 +872,13 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
         const value = params.value;
         const now = new Date();
         const ageStr = `(${formatTimeSpan(value, now)} ago)`;
-        return DB3ClientCore.RenderBasicNameValuePair({
-            className: params.className,
-            name: this.columnName,
-            value: <>{value.toTimeString()} {ageStr}</>, // todo,
-            isReadOnly: !this.editable,
-            fieldName: this.columnName,
-        })
+        return <NameValuePair
+            className={params.className}
+            name={this.columnName}
+            value={<>{value.toTimeString()} {ageStr}</>}// todo
+            isReadOnly={!this.editable}
+            fieldName={this.columnName}
+        />;
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
@@ -969,13 +956,13 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
         const value = params.value;
         const now = new Date();
         const ageStr = `(${formatTimeSpan(value, now)} ago)`;
-        return DB3ClientCore.RenderBasicNameValuePair({
-            className: params.className,
-            name: this.columnName,
-            value: <>{!!value ? value.toLocaleString() : "--"} {ageStr}</>, // todo,
-            isReadOnly: !this.editable,
-            fieldName: this.columnName,
-        })
+        return <NameValuePair
+            className={params.className}
+            name={this.columnName}
+            value={<>{!!value ? value.toLocaleString() : "--"} {ageStr}</>} // todo
+            isReadOnly={!this.editable}
+            fieldName={this.columnName}
+        />;
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {

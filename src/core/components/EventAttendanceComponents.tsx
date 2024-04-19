@@ -105,7 +105,7 @@ import { API } from '../db3/clientAPI';
 import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
 import { AdminInspectObject, CMChip, CMChipContainer, InspectObject } from './CMCoreComponents';
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
-import { CMSmallButton } from "./CMCoreComponents2";
+import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { EventWithMetadata } from "./EventComponentsBase";
 import { Markdown } from "./RichTextEditor";
 
@@ -179,7 +179,7 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
 
   if (instrumentList.length < 2) return null;
 
-  return <DB3Client.NameValuePair
+  return <NameValuePair
     isReadOnly={props.readonly || false}
     name="Instrument"
     value={<CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
@@ -339,7 +339,7 @@ export interface EventAttendanceSegmentControlProps {
 
 export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }: EventAttendanceSegmentControlProps) => {
 
-  return <DB3Client.NameValuePair
+  return <NameValuePair
     isReadOnly={false}
     name={<>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</>}
     value={<EventAttendanceAnswerControl
