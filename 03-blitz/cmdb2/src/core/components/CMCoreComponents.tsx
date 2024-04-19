@@ -2,7 +2,7 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { getAntiCSRFToken } from "@blitzjs/auth";
+import { getAntiCSRFToken, useSession } from "@blitzjs/auth";
 import { Box, Button, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { nanoid } from 'nanoid';
@@ -14,7 +14,7 @@ import { Coalesce, IsNullOrWhitespace, TAnyModel } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
 import WaveSurfer from "wavesurfer.js";
-//import { API } from '../db3/clientAPI';
+//import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { Coord2D, MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadResponsePayload } from "../db3/shared/apiTypes";
 import { CMDialogContentText } from "./CMCoreComponents2";
@@ -407,6 +407,24 @@ export const InspectObject = (props: { src: any, tooltip?: string }) => {
         </ReactiveInputDialog>}
     </>;
 };
+
+
+export const AdminInspectObject = (props: { src: any, tooltip?: string }) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
+    const show = sess.isSysAdmin && sess.showAdminControls;
+    if (!show) return null;
+
+    return <>
+        <Tooltip title={props.tooltip || "Open object inspector"}>
+            <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
+        </Tooltip>
+        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+            <DynamicReactJson src={props.src} />
+        </ReactiveInputDialog>}
+    </>;
+};
+
 
 
 ////////////////////////////////////////////////////////////////

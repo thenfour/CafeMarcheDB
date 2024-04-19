@@ -103,7 +103,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
-import { CMChip, CMChipContainer } from './CMCoreComponents';
+import { AdminInspectObject, CMChip, CMChipContainer, InspectObject } from './CMCoreComponents';
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { CMSmallButton } from "./CMCoreComponents2";
 import { EventWithMetadata } from "./EventComponentsBase";
@@ -396,6 +396,22 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   if (!visible) return null;
 
+  const inspectable = {
+    eventTiming,
+    eventIsPast,
+    anyAnswered,
+    allAnswered,
+    allAffirmative,
+    someAffirmative,
+    allNegative,
+    isInvited,
+    inputAlert,
+    isVerbose,
+    canExpandUnexpand,
+    visible,
+    segmentResponses,
+  };
+
   const captionMap = {};
   captionMap[Timing.Past] = [
     "Did you go?",// any non-responses
@@ -421,6 +437,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   return <div className={`eventAttendanceControl ${inputAlert && "alert"}`}>
 
     <div className='header'>
+      <AdminInspectObject src={inspectable} />
       <div>{captionMap[eventTiming][mapIndex]}</div>
       {canExpandUnexpand && <CMSmallButton variant="framed" onClick={() => setUserExpanded(!userExpanded)}>{isVerbose ? "Close" : "More..."}</CMSmallButton>}
     </div>
@@ -431,25 +448,26 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
       </div>
 
       {isVerbose ? (<>
-        {someAffirmative && <div className='instrument'>
-          <EventAttendanceInstrumentControl
-            eventUserResponse={eventResponse}
-            onRefetch={props.onRefetch}
-          />
-          <div className="segmentList">
-            {segmentResponses.map(segment => {
-              return <EventAttendanceSegmentControl
-                key={segment.segment.id}
-                //showHeader={isVerbose}
-                //readonly={!isVerbose}
-                onRefetch={props.onRefetch}
-                eventUserResponse={eventResponse}
-                segmentUserResponse={segment}
-                eventData={props.eventData}
-              />;
-            })}
-          </div>
-        </div>}
+        {someAffirmative &&
+          <div className='instrument'>
+            <EventAttendanceInstrumentControl
+              eventUserResponse={eventResponse}
+              onRefetch={props.onRefetch}
+            />
+          </div>}
+        <div className="segmentList">
+          {segmentResponses.map(segment => {
+            return <EventAttendanceSegmentControl
+              key={segment.segment.id}
+              //showHeader={isVerbose}
+              //readonly={!isVerbose}
+              onRefetch={props.onRefetch}
+              eventUserResponse={eventResponse}
+              segmentUserResponse={segment}
+              eventData={props.eventData}
+            />;
+          })}
+        </div>
       </>
       ) : (
         <CMChipContainer>

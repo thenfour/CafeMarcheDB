@@ -2,9 +2,9 @@
   "name": "cmdb",
   "version": "1.0.0",
   "scripts": {
-    "dev": "blitz dev",
+    "dev": "blitz dev --port 10455",
     "build": "blitz build",
-    "start": "blitz start",
+    "start": "blitz start --port 10455",
     "studio": "blitz prisma studio",
     "lint": "eslint --ignore-path .gitignore --ext .js,.ts,.tsx .",
     "test": "vitest run --passWithNoTests",
