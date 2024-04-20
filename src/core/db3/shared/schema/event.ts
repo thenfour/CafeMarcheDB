@@ -2,13 +2,14 @@
 // for example i should be able to edit my own posts but not others. etc.
 // or think about the concept of user blocking, or not being able to see responses of certain kinds of events or people. todo...
 
-import db, { Prisma } from "db";
-import { ColorPalette, ColorPaletteEntry, gGeneralPaletteList } from "shared/color";
+import { Prisma } from "db";
+import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoalesceBool, CoerceToNumberOrNull, Date_MAX_VALUE, KeysOf, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
+import { DateTimeRange } from "shared/time";
+import { CoalesceBool, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSlugField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, BoolField, PKField, TagsField, MakePlainTextField, MakeMarkdownTextField, MakeSortOrderField, MakeColorField, MakeSignificanceField, MakeIntegerField, MakeSlugField, MakeTitleField, MakeCreatedAtField, MakeIconField, MakeNullableRawTextField, MakeRawTextField, EventStartsAtField, GhostField } from "../db3basicFields";
-import { CreatedByUserField, VisiblePermissionField, xPermission, xUser } from "./user";
+import { getUserPrimaryInstrument } from "./instrument";
 import {
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadMinimum, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
@@ -17,11 +18,11 @@ import {
     EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload,
     EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     EventUserResponsePayload,
-    EventVerbose_EventSegmentPayload, InstrumentArgs, InstrumentPayload, UserPayload, UserTagPayload, UserWithInstrumentsPayload
+    EventVerbose_EventSegmentPayload,
+    InstrumentPayload,
+    UserTagPayload, UserWithInstrumentsPayload
 } from "./prismArgs";
-import { getUserPrimaryInstrument, xInstrument } from "./instrument";
-import { xFileEventTag } from "./file";
-import { DateTimeRange, IsEarlierDateWithLateNull, MinDateOrLateNull } from "shared/time";
+import { CreatedByUserField, VisiblePermissionField } from "./user";
 
 
 

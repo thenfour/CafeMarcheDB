@@ -46,9 +46,12 @@ export default resolver.pipe(
         };
 
         // create the initial segment.
-        await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx, clientIntention);
+        const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx, clientIntention);
 
-        return args;
+        return {
+            event: newEvent,
+            segment,
+        };
     }
 );
 

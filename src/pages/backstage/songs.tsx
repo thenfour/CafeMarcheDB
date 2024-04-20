@@ -3,6 +3,7 @@ import {
     Search as SearchIcon
 } from '@mui/icons-material';
 import { InputBase } from "@mui/material";
+import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
@@ -156,6 +157,8 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
 };
 
 const MainContent = () => {
+    const router = useRouter();
+
     if (!useAuthorization("ViewSongsPage", Permission.view_songs)) {
         throw new Error(`unauthorized`);
     }
@@ -208,10 +211,12 @@ const MainContent = () => {
     };
 
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
-        songTableClient.doInsertMutation(obj).then(async () => {
+        songTableClient.doInsertMutation(obj).then(async (ret) => {
+            console.log(ret);
             showSnackbar({ severity: "success", children: "success" });
             await refetch();
-            api.closeDialog();
+            //api.closeDialog();
+            void router.push(API.songs.getURIForSong((ret as any).id));
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "error" });

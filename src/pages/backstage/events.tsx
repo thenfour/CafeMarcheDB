@@ -3,6 +3,7 @@ import {
     Search as SearchIcon
 } from '@mui/icons-material';
 import { Button, DialogActions, DialogContent, DialogTitle, InputBase } from "@mui/material";
+import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
@@ -48,6 +49,7 @@ interface NewEventDialogProps {
 
 const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const router = useRouter();
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
@@ -119,9 +121,12 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),
         };
-        mut.invoke(payload).then(() => {
+        mut.invoke(payload).then((ret) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
+
+            void router.push(API.events.getURIForEvent(ret.event));
+
         }).catch(err => {
             console.log(err);
             showSnackbar({ children: "insert error", severity: 'error' });
