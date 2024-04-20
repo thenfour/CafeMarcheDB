@@ -505,7 +505,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
     const onSelectPhoto = (i) => {
         gallery.setSelectedIdx(i);
         resetGalleryTimer();
-        //setRefreshSerial(refreshSerial + 1);
+        setRefreshSerial(refreshSerial + 1);
     }
 
     const onClickPhotoNext = () => {

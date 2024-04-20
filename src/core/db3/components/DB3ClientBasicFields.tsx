@@ -323,17 +323,27 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
         this.GridColProps = {
             type: "string", // we will do our own number conversion
             renderEditCell: (params: GridRenderEditCellParams) => {
-                const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
-                return <CMTextField
-                    key={params.key}
+                //const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
+                // return <CMTextField
+                //     key={params.key}
+                //     autoFocus={params.hasFocus}
+                //     label={this.headerName}
+                //     validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
+                //     value={params.value as string}
+                //     onChange={(e, value) => {
+                //         void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
+                //     }}
+                ///>;
+                const val = params.value;
+                const displayValue = (val == null) || isNaN(val) ? "" : `${val}`;
+                return <CMTextInputBase
                     autoFocus={params.hasFocus}
-                    label={this.headerName}
-                    validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
-                    value={params.value as string}
-                    onChange={(e, value) => {
-                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
-                    }}
-                />;
+                    initialValue={displayValue}
+                    readOnly={!this.editable}
+                    onChange={(e, val) => {
+                        //params.api.set({ [this.columnName]: CoerceToNumberOrNull(val) });
+                        void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value: CoerceToNumberOrNull(val) });
+                    }} />;
             },
         };
     };
