@@ -61,7 +61,7 @@ children:
     /* because middle content is absolutely positioned (so it can live in harmony with headerchrome) */
     position: relative;
     /* as layout changes,the SVG can become wildly different sizes and various page elements should be scaled to match.*/
-    --page-zoom: 100%;
+    /* --page-zoom: 100%; */
     --gallery-photo-transition: 1.0s;
 }
 
@@ -122,6 +122,7 @@ children:
 }
 
 .toprighttitle {
+    pointer-events: none;
     display: flex;
     z-index: var(--z-index-chrome);
     flex-direction: column;
@@ -130,8 +131,9 @@ children:
     justify-content: flex-start;
     align-items: flex-end;
     align-content: flex-end;
+    opacity: 33%;
 
-    zoom: var(--page-zoom);
+    /* zoom: var(--page-zoom); */
     /* space for cm logo*/
     /* -webkit-text-stroke: 1px var(--cm-yellow);
     text-stroke: 1px var(--cm-yellow); */
@@ -141,7 +143,7 @@ children:
 .subtitle1 {
     color: var(--cm-blue);
     font-size: 35px;
-    text-align: right;
+    text-align: left;
     word-break: break-word;
     /* border: 2px solid green; */
 }
@@ -153,6 +155,21 @@ children:
     /* width: 263px; */
     word-break: break-word;
     /* border: 2px solid green; */
+}
+
+text.subtitle1SVG {
+    fill: var(--cm-blue);
+    background-color: #444;
+    font-size: 45px;
+}
+
+text.subtitle2SVG {
+    fill: var(--cm-red);
+    font-size: 41px;
+}
+
+.subtitle2SVG path {
+    fill: red;
 }
 
 .socicons {
@@ -169,6 +186,21 @@ children:
     flex-direction: row;
     vertical-align: middle;
     /* border: 2px solid red; */
+}
+
+.sociconSVG {
+    fill: var(--cm-blue);
+    object-fit: fill;
+    /* width: 40px; */
+    /* height: 40px; */
+}
+
+.socmedLinkSVG {
+    z-index: 999;
+}
+
+.hoverme:hover {
+    fill: #f008;
 }
 
 .socicon {
@@ -202,7 +234,7 @@ children:
 }
 
 .agendaContentContainer {
-    zoom: var(--page-zoom);
+    /* zoom: var(--page-zoom); */
 }
 
 /* 
@@ -229,7 +261,7 @@ children:
 .photoCaption {
     font-size: 24px;
     text-shadow: 0 0 2px #fff4;
-    zoom: var(--page-zoom);
+    /* zoom: var(--page-zoom); */
 }
 
 .photoCaption p {
