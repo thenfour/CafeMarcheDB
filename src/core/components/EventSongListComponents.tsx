@@ -73,7 +73,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             {/* id:{props.value.id} so:{props.value.sortOrder} */}
         </div>
         <div className="td songName">
-            <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)}>{props.value.song.name}</a>
+            <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song.id, props.value.song.slug)}>{props.value.song.name}</a>
         </div>
         <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
         <div className="td tempo">{formattedBPM}</div>

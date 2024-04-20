@@ -15,7 +15,7 @@ export interface EventWithMetadata {
 
 export const CalculateEventMetadata = (event: db3.EventClientPayload_Verbose, tabSlug?: string | undefined): EventWithMetadata => {
     const expectedAttendanceTag = API.users.getUserTag(event.expectedAttendanceUserTagId);
-    const eventURI = API.events.getURIForEvent(event, tabSlug);
+    const eventURI = API.events.getURIForEvent(event.id, event.slug, tabSlug);
     const responseInfo = db3.GetEventResponseInfo({ event, expectedAttendanceTag });
     const eventTiming = API.events.getEventTiming(event);
     return {

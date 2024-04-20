@@ -17,13 +17,16 @@ const InstrumentListContent = () => {
     }
     const router = useRouter();
 
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xInstrument,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 120 }),
+            new DB3Client.SlugColumnClient({
+                columnName: "slug", cellWidth: 120, previewSlug: (obj) => {
+                    return null;
+                }
+            }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupPayload>({ columnName: "functionalGroup", cellWidth: 200, }),

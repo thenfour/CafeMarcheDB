@@ -78,7 +78,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
         <Link
             underline="hover"
             color="inherit"
-            href={API.events.getURIForEvent(props.event)}
+            href={API.events.getURIForEvent(props.event.id, props.event.slug)}
             sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.event.name}
@@ -758,7 +758,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                         showSnackbar({ children: "update successful", severity: 'success' });
                         api.close();
                         if (obj.slug !== eventData.event.slug) {
-                            const newUrl = API.events.getURIForEvent(obj.slug);
+                            const newUrl = API.events.getURIForEvent(obj.id, obj.slug);
                             void router.push(newUrl); // <-- ideally we would show the snackbar on refresh but no.
                         }
                     }).catch(err => {
@@ -946,7 +946,13 @@ export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),
     name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
     dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
-    slug: new DB3Client.SlugColumnClient({ columnName: "slug", cellWidth: 150, fieldCaption: "URL (auto-generated)" }),
+    slug: new DB3Client.SlugColumnClient({
+        columnName: "slug", cellWidth: 150, fieldCaption: "URL (auto-generated)", previewSlug: (obj) => {
+            const id = obj.id || "???";
+            const slug = obj.slug || undefined;
+            return API.events.getURIForEvent(id, slug);
+        }
+    }),
     description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
     isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
     locationDescription: new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150, fieldCaption: "Location" }),

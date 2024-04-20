@@ -366,15 +366,9 @@ class EventsAPI {
         return r.hitTestDateTime();
     }
 
-    // getEventInfoForUser(args: { event: db3.EventClientPayload_Verbose, user: db3.UserWithInstrumentsPayload }) {
-    //     const i = new db3.EventInfoForUser({ event: args.event, user: args.user });
-    //     return i;
-    // }
-
-    getURIForEvent(eventOrEventIdOrSlug: number | string | db3.EventPayloadMinimum, tabSlug?: string) {
-        return ClientAPILL.getURIForEvent(eventOrEventIdOrSlug, tabSlug);
+    getURIForEvent(eventId: number | string, eventSlug?: string, tabSlug?: string) {
+        return ClientAPILL.getURIForEvent(eventId, eventSlug, tabSlug);
     }
-
     getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {
         const ret: EventMinMaxAttendeesResult = {
             minAttendees: null,
@@ -466,8 +460,8 @@ class EventsAPI {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class SongsAPI {
 
-    getURIForSong(songOrIdOrSlug: number | string | db3.SongPayloadMinimum, tabSlug?: string) {
-        return ClientAPILL.getURIForSong(songOrIdOrSlug, tabSlug);
+    getURIForSong(songId: number | string, songSlug?: string, tabSlug?: string) {
+        return ClientAPILL.getURIForSong(songId, songSlug, tabSlug);
     }
 
     getFormattedBPM(song: db3.SongPayloadMinimum) {

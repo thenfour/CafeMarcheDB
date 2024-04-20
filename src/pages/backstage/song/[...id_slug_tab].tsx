@@ -2,7 +2,7 @@ import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
-import { IsEntirelyIntegral } from "shared/utils";
+import { CoerceToNumberOrNull, IsEntirelyIntegral } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
@@ -13,7 +13,12 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();
-    const [_, tabIdOrSlug] = params.idOrSlug_tab as string[];
+    const [id__, slug, tab] = params.id_slug_tab as string[];
+    //const id = CoerceToNumberOrNull(id__);
+    //if (!id) throw new Error(`no id`);
+
+    //console.log(params);
+    //const [_, tabIdOrSlug] = params.idOrSlug_tab as string[];
 
     if (!songId) throw new Error(`song not found`);
 
@@ -53,12 +58,8 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     queryArgs.filterModel!.tableParams!.songId = songId;
 
     let initialTabIndex: undefined | number = undefined;
-    if (tabIdOrSlug) {
-        if (IsEntirelyIntegral(tabIdOrSlug)) {
-            initialTabIndex = parseInt(tabIdOrSlug);
-        } else {
-            initialTabIndex = gSongDetailTabSlugIndices[tabIdOrSlug];
-        }
+    if (!!tab) {
+        initialTabIndex = gSongDetailTabSlugIndices[tab] || 0;
     }
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
@@ -85,8 +86,19 @@ interface PageProps {
 };
 
 export const getServerSideProps = async ({ params }) => {
-    const [idOrSlugOptional] = params.idOrSlug_tab as string[];
-    const idOrSlug = idOrSlugOptional || "";
+    const [id__, slug, tab] = params.id_slug_tab as string[];
+    const id = CoerceToNumberOrNull(id__);
+    if (!id) throw new Error(`no id`);
+
+    // id: required always. even though we have "slugs", we require the ID to avoid conflicts.
+    // slug: ignored.
+    // tab: optional string
+
+    // formats supported:
+    // /backstage/song/2             => ["2"]
+    // /backstage/song/2/slug/info   => ["2", "slug", "info"]
+    // /backstage/song/2/whateveridontcare/info
+
     const ret: { props: PageProps } = {
         props: {
             title: "Song",
@@ -98,10 +110,8 @@ export const getServerSideProps = async ({ params }) => {
             id: true,
             name: true,
         },
-        where: IsEntirelyIntegral(idOrSlug) ? {
-            id: parseInt(idOrSlug),
-        } : {
-            slug: idOrSlug,
+        where: {
+            id,
         }
     });
     if (song) {

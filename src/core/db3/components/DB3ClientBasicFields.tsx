@@ -15,7 +15,7 @@ import dayjs, { Dayjs } from "dayjs";
 import React from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
-import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, gNullValue } from "shared/utils";
+import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, TAnyModel, gNullValue } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
@@ -134,10 +134,15 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
 };
 
 
+export interface SlugColumnClientArgs extends GenericStringColumnArgs {
+    previewSlug: (obj: TAnyModel) => string | null;
+}
+
 export class SlugColumnClient extends DB3ClientCore.IColumnClient {
     typedSchemaColumn: db3fields.SlugField;
+    previewSlug: (obj: TAnyModel) => string | null;
 
-    constructor(args: GenericStringColumnArgs) {
+    constructor(args: SlugColumnClientArgs) {
         super({
             columnName: args.columnName,
             editable: true,
@@ -148,6 +153,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
+        this.previewSlug = args.previewSlug;
     }
     ApplyClientToPostClient = undefined;
 
@@ -207,11 +213,12 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
         //     }
         //     setIsEditable(e.target.checked);
         // };
+        const preview = this.previewSlug({ ...params.row, ...vr.values });
 
         return this.defaultRenderer({
             isReadOnly: true,
             validationResult: undefined,
-            value: ClientAPILL.getURIForEvent(slug),
+            value: preview || "",
             className: "slugEditField"
         });
     };
