@@ -1,0 +1,14 @@
+.next/
+public/
+src/
+db/
+integrations/
+mailers/
+shared/
+package.json
+package-lock.json
+next.config.js
+tsconfig.json
+types.ts
+.npmrc
+.env
