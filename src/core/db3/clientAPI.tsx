@@ -316,6 +316,20 @@ const gUsersAPI = new UsersAPI();
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class EventsAPI {
 
+
+    // sorts by start date, from newest to latest, NULL = future.
+    sortEvents<T extends { startsAt: null | Date }>(events: T[]): T[] {
+        const ret = [...events];
+        ret.sort((a, b) => {
+            if (a.startsAt === null || b.startsAt === null) {
+                return a.startsAt === null ? 1 : -1;
+            }
+            return a.startsAt.valueOf() - b.startsAt.valueOf();
+        });
+
+        return ret;
+    }
+
     getAgendaItem(event: db3.EventWithTagsPayload): HomepageAgendaItemSpec {
         const fallbacks = this.getAgendaItemFallbackValues(event);
         const ret: HomepageAgendaItemSpec = {

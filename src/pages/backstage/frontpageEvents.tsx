@@ -1,20 +1,15 @@
 import { BlitzPage } from "@blitzjs/next";
-import Link from "next/link";
 import { Suspense } from "react";
-import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, gQueryOptions } from "shared/utils";
+import { gQueryOptions } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip } from "src/core/components/CMCoreComponents";
 import { EventDetailContainer } from "src/core/components/EventComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
 import { EventFrontpageTabContent } from "src/core/components/EventFrontpageComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { VisibilityValue } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
@@ -48,13 +43,13 @@ const EventsList = () => {
         queryOptions: gQueryOptions.liveData,
     });
 
-    const events = eventsClient.items as db3.EventClientPayload_Verbose[];
+    const events = API.events.sortEvents(eventsClient.items as db3.EventClientPayload_Verbose[]);
 
     return <>{events.length < 1 ? "Nothing here!" : <>
         {events.map(event => {
             const eventData = CalculateEventMetadata(event);
 
-            return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData} showVisibility={false}>
+            return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData} showVisibility={true}>
                 <EventFrontpageTabContent readonly={false} refetch={eventsClient.refetch} event={event} />
             </EventDetailContainer>;
         }

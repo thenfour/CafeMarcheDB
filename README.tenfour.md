@@ -254,10 +254,9 @@ will show clearly on the command line.
 
 # how: build / deployment?
 
-  * `npm run lint`
-  * `npm run build`
-
+  * `yarn install`
   * `blitz build` - builds for prod [docs](https://blitzjs.com/docs/cli-build)
+
   * `blitz start` - starts prod server [docs](https://blitzjs.com/docs/cli-start)
 
   * things i need to work out:
@@ -266,5 +265,4 @@ will show clearly on the command line.
     * updating prod database (how do migrations work)
     * logging: viewing
     * certainly more admin tools would be needed
-      * inspecting activity / changes etc
 

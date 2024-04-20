@@ -1,14 +1,11 @@
-import { BlitzPage, Routes } from "@blitzjs/next";
+import { BlitzPage } from "@blitzjs/next";
 import { NoSsr } from "@mui/material";
-import { useRouter } from "next/router";
-import React, { FC, Suspense } from "react"
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { InspectObject } from "src/core/components/CMCoreComponents";
+import Head from "next/head";
+import { Suspense } from "react";
 import { HomepageMain } from "src/core/components/homepageComponents";
+import * as DB3Client from "src/core/db3/DB3Client";
 import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
-import Head from "next/head"
 
 const MainContent = () => {
     const eventsTableSpec = new DB3Client.xTableClientSpec({
@@ -51,12 +48,11 @@ const MainContent = () => {
         //filterModel: ,
     });
 
-    // const enableOldBackstageLink = API.settings.useNumberSetting("EnableOldPublicHomepageBackstageLink", 1) === 1;
-    // const enableNewBackstageLink = API.settings.useNumberSetting("EnableNewPublicHomepageBackstageLink", 0) === 1;
+    const events = API.events.sortEvents(eventsClient.items as db3.EventPayload[]);
 
     const content: HomepageContentSpec = {
         gallery: (galleryClient.items as db3.FrontpageGalleryItemPayload[]),
-        agenda: (eventsClient.items as db3.EventPayload[]).map((x): HomepageAgendaItemSpec => API.events.getAgendaItem(x)),
+        agenda: (events).map((x): HomepageAgendaItemSpec => API.events.getAgendaItem(x)),
     };
 
     return <NoSsr>
