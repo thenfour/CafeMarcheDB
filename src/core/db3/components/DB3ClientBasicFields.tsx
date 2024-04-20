@@ -15,7 +15,7 @@ import dayjs, { Dayjs } from "dayjs";
 import React from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
-import { CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, gNullValue } from "shared/utils";
+import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, gNullValue } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
@@ -225,6 +225,7 @@ export interface MarkdownStringColumnArgs {
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
     className?: string;
+    visible?: boolean;
 };
 
 export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
@@ -236,7 +237,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
-            visible: true,
+            visible: CoerceToBoolean(args.visible, true),
             className: args.className,
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,

@@ -35,38 +35,38 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 
 const drawerWidth = 300;
 
-const BackstageLinkEnableMenuItem = () => {
-    const oldLink = API.settings.useMutableSetting("EnableOldPublicHomepageBackstageLink");
-    const newLink = API.settings.useMutableSetting("EnableNewPublicHomepageBackstageLink");
+// const BackstageLinkEnableMenuItem = () => {
+//     const oldLink = API.settings.useMutableSetting("EnableOldPublicHomepageBackstageLink");
+//     const newLink = API.settings.useMutableSetting("EnableNewPublicHomepageBackstageLink");
 
-    console.log(`BackstageLinkEnableMenuItem`);
+//     console.log(`BackstageLinkEnableMenuItem`);
 
-    const showingOld = CoerceToNumberOr(oldLink[0], 1) === 1;
-    const showingNew = CoerceToNumberOr(newLink[0], 0) === 1;
+//     const showingOld = CoerceToNumberOr(oldLink[0], 1) === 1;
+//     const showingNew = CoerceToNumberOr(newLink[0], 0) === 1;
 
-    const handleClickOld = () => {
-        oldLink[1]({ name: "EnableOldPublicHomepageBackstageLink", value: showingOld ? "0" : "1" }).then(e => {
-            alert(`success.`);
-        }).catch(e => {
-            console.log(e);
-            alert(e);
-        });
-    };
+//     const handleClickOld = () => {
+//         oldLink[1]({ name: "EnableOldPublicHomepageBackstageLink", value: showingOld ? "0" : "1" }).then(e => {
+//             alert(`success.`);
+//         }).catch(e => {
+//             console.log(e);
+//             alert(e);
+//         });
+//     };
 
-    const handleClickNew = () => {
-        newLink[1]({ name: "EnableNewPublicHomepageBackstageLink", value: showingNew ? "0" : "1" }).then(e => {
-            alert(`success.`);
-        }).catch(e => {
-            console.log(e);
-            alert(e);
-        });
-    };
+//     const handleClickNew = () => {
+//         newLink[1]({ name: "EnableNewPublicHomepageBackstageLink", value: showingNew ? "0" : "1" }).then(e => {
+//             alert(`success.`);
+//         }).catch(e => {
+//             console.log(e);
+//             alert(e);
+//         });
+//     };
 
-    return <>
-        <MenuItem onClick={handleClickOld}>{showingOld ? "Showing old backstage link" : "Not showing old backstage link"}</MenuItem>
-        <MenuItem onClick={handleClickNew}>{showingNew ? "Showing new backstage link" : "Not showing new backstage link"}</MenuItem>
-    </>;
-};
+//     return <>
+//         <MenuItem onClick={handleClickOld}>{showingOld ? "Showing old backstage link" : "Not showing old backstage link"}</MenuItem>
+//         <MenuItem onClick={handleClickNew}>{showingNew ? "Showing new backstage link" : "Not showing new backstage link"}</MenuItem>
+//     </>;
+// };
 
 // const Search = styled('div')(({ theme }) => ({
 //     position: 'relative',
@@ -138,7 +138,7 @@ const AppBarUserIcon_MenuItems = () => {
                 : <MenuItem onClick={() => onClickShowAdminControls(true)}>Show admin config {gIconMap.Settings()}</MenuItem>
             }
 
-            <BackstageLinkEnableMenuItem />
+            {/* <BackstageLinkEnableMenuItem /> */}
 
             <Divider /></>
         }

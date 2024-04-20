@@ -5,25 +5,21 @@
 import { getAntiCSRFToken, useSession } from "@blitzjs/auth";
 import { Box, Button, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { nanoid } from 'nanoid';
-import dynamic from 'next/dynamic';
+//import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
 import { Coalesce, IsNullOrWhitespace, TAnyModel } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
-import WaveSurfer from "wavesurfer.js";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
+import { Timing } from "shared/time";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { Coord2D, MakeErrorUploadResponsePayload, TClientUploadFileArgs, UploadResponsePayload } from "../db3/shared/apiTypes";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
-import { ChoiceEditCell } from "./ChooseItemDialog";
 import { GetStyleVariablesForColor } from './Color';
-import { Timing } from "shared/time";
 
-const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
+//const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
 
 // https://github.com/kutlugsahin/react-smooth-dnd/issues/88
@@ -396,34 +392,47 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+// export const InspectObject = (props: { src: any, tooltip?: string }) => {
+//     const [open, setOpen] = React.useState<boolean>(false);
+//     return <>
+//         <Tooltip title={props.tooltip || "Open object inspector"}>
+//             <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
+//         </Tooltip>
+//         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+//             todo{/* <DynamicReactJson src={props.src} /> */}
+//         </ReactiveInputDialog>}
+//     </>;
+// };
+
+
+// export const AdminInspectObject = (props: { src: any, tooltip?: string }) => {
+//     const [open, setOpen] = React.useState<boolean>(false);
+//     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
+//     const show = sess.isSysAdmin && sess.showAdminControls;
+//     if (!show) return null;
+
+//     return <>
+//         <Tooltip title={props.tooltip || "Open object inspector"}>
+//             <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
+//         </Tooltip>
+//         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+//             todo{/* <DynamicReactJson src={props.src} /> */}
+//         </ReactiveInputDialog>}
+//     </>;
+// };
+
 export const InspectObject = (props: { src: any, tooltip?: string }) => {
-    const [open, setOpen] = React.useState<boolean>(false);
-    return <>
-        <Tooltip title={props.tooltip || "Open object inspector"}>
-            <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
-        </Tooltip>
-        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-            <DynamicReactJson src={props.src} />
-        </ReactiveInputDialog>}
-    </>;
+    return <div className='debugInspectorOpen' onClick={() => console.log(props.src)}>{gIconMap.Visibility()}</div>
 };
 
 
 export const AdminInspectObject = (props: { src: any, tooltip?: string }) => {
-    const [open, setOpen] = React.useState<boolean>(false);
     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
     const show = sess.isSysAdmin && sess.showAdminControls;
     if (!show) return null;
-
-    return <>
-        <Tooltip title={props.tooltip || "Open object inspector"}>
-            <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
-        </Tooltip>
-        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-            <DynamicReactJson src={props.src} />
-        </ReactiveInputDialog>}
-    </>;
+    return <InspectObject {...props} />;
 };
+
 
 
 

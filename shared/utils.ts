@@ -203,8 +203,8 @@ export enum Setting {
     BackstageFrontpageCurrentSongMaxAgeDays = "BackstageFrontpageCurrentSongMaxAgeDays",
 
     textPalette = "textPalette",
-    EnableOldPublicHomepageBackstageLink = "EnableOldPublicHomepageBackstageLink",
-    EnableNewPublicHomepageBackstageLink = "EnableNewPublicHomepageBackstageLink",
+    //EnableOldPublicHomepageBackstageLink = "EnableOldPublicHomepageBackstageLink",
+    //EnableNewPublicHomepageBackstageLink = "EnableNewPublicHomepageBackstageLink",
 };
 
 export type SettingKey = keyof typeof Setting;

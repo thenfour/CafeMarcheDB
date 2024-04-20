@@ -512,8 +512,6 @@ export interface HomepageAgendaItemSpec {
 export interface HomepageContentSpec {
     agenda: HomepageAgendaItemSpec[];
     gallery: db3.FrontpageGalleryItemPayloadWithAncestorFile[];
-    enableOldBackstageLink: boolean;
-    enableNewBackstageLink: boolean;
 };
 
 

@@ -184,7 +184,7 @@ const MainContent = () => {
             SongClientColumns.name,
             SongClientColumns.aliases,
             SongClientColumns.slug,
-            //SongClientColumns.description,
+            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, visible: false }), // required field but it's distracting to see here.
             SongClientColumns.startBPM,
             SongClientColumns.endBPM,
             SongClientColumns.introducedYear,

@@ -268,8 +268,6 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
     const content: HomepageContentSpec = {
         agenda: [],
         gallery: [editingValue],
-        enableNewBackstageLink: false,
-        enableOldBackstageLink: false,
     };
 
     const origArea = info.fileDimensions.width * info.fileDimensions.height;
