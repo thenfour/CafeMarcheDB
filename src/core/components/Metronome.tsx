@@ -31,7 +31,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm }) => {
         if (audioContextRef.current) {
             if (!tickBufferRef.current) {
                 wantInitialTick.current = true;
-                console.log(`want initial tick!`);
                 return;
             }
 
@@ -43,9 +42,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm }) => {
         }
     };
 
-    // Load the tick sample
     const loadTickSample = async (audioContext: AudioContext, filePath: string) => {
-        console.log(`BEGIN loadTickSample; want initial tick=${wantInitialTick.current}`);
         const response = await fetch(filePath);
         const arrayBuffer = await response.arrayBuffer();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -59,7 +56,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm }) => {
     const scheduleTick = () => {
         if (audioContextRef.current) {
             if (!tickBufferRef.current) {
-                console.log(`want initial tick!`);
                 wantInitialTick.current = true;
                 return;
             }
@@ -73,7 +69,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm }) => {
                 tickSource.buffer = tickBufferRef.current;
                 tickSource.connect(audioContextRef.current.destination);
                 tickSource.start(nextTickTimeRef.current);
-                console.log(`playing tick @ ${nextTickTimeRef.current}`);
 
                 nextTickTimeRef.current += 60 / bpm;
             }
@@ -81,31 +76,24 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm }) => {
     };
 
     const resetMetronome = () => {
-        console.log(`resetMetronome`);
         if (audioContextRef.current) {
-            // Reset the next tick time to current
             nextTickTimeRef.current = audioContextRef.current.currentTime;
 
-            // Clear any existing timer
             if (timerIDRef.current) {
                 clearInterval(timerIDRef.current);
             }
 
-            // Immediately play a tick
-            console.log(`playing tick`);
-            playTick();  // This is a new function to handle playing a tick
+            playTick();
 
-            // Set up the interval again for subsequent ticks
             timerIDRef.current = window.setInterval(scheduleTick, 1000 * 60 / bpm);
         }
     };
 
     // Start the metronome
     const startMetronome = () => {
-        console.log(`startMetronome`);
         if (!audioContextRef.current) {
             audioContextRef.current = new AudioContext();
-            loadTickSample(audioContextRef.current, gTickSampleFilePath);
+            void loadTickSample(audioContextRef.current, gTickSampleFilePath);
         }
         resetMetronome();
     };
