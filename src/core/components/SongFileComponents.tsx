@@ -103,29 +103,29 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
     }, []);
 
     // drag & drop support
-    const [isDragging, setIsDragging] = React.useState(false);
+    //const [isDragging, setIsDragging] = React.useState(false);
     const isBusy = props.progress !== null;
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        setIsDragging(false);
+    // const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    //     e.preventDefault();
+    //     setIsDragging(false);
 
-        const { files } = e.dataTransfer;
-        if (files.length > 0) {
-            props.onFileSelect(files);
-        }
-        else if (e.dataTransfer.types.includes('text/uri-list') || e.dataTransfer.types.includes('text/plain')) {
-            const droppedURL = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
-            if (isValidURL(droppedURL)) {
-                console.log('Dropped URL:', droppedURL);
-                props.onURLUpload(droppedURL);
-            }
-        }
-    };
+    //     const { files } = e.dataTransfer;
+    //     if (files.length > 0) {
+    //         props.onFileSelect(files);
+    //     }
+    //     else if (e.dataTransfer.types.includes('text/uri-list') || e.dataTransfer.types.includes('text/plain')) {
+    //         const droppedURL = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+    //         if (isValidURL(droppedURL)) {
+    //             console.log('Dropped URL:', droppedURL);
+    //             props.onURLUpload(droppedURL);
+    //         }
+    //     }
+    // };
 
     const classes: string[] = [
         `UploadFileComponent interactable interactableWithBorder`,
-        (!isBusy && isDragging) ? "dragging" : "notDragging",
+        //(!isBusy && isDragging) ? "dragging" : "notDragging",
         isBusy ? "busy" : "notBusy",
     ];
 
@@ -133,10 +133,10 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
         <div
             className={classes.join(" ")}
             onClick={openFileDialog}
-            onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
-            onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
-            onDrop={handleDrop}
+        // onDragEnter={(e) => { e.preventDefault(); setIsDragging(true) }}
+        // onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+        // onDragLeave={(e) => { e.preventDefault(); setIsDragging(false) }}
+        // onDrop={handleDrop}
         >
             <div className="UploadFileComponentInterior">
                 <input
@@ -164,6 +164,58 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
     </div>
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface FileDropWrapperProps {
+    className?: string;
+    onFileSelect: (files: FileList) => void;
+    onURLUpload: (url: string) => void;
+};
+
+export const FileDropWrapper = (props: React.PropsWithChildren<FileDropWrapperProps>) => {
+    const [isDragging, setIsDragging] = React.useState(false);
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        console.log(`handleDrop -> dragging=true`);
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        const { files } = e.dataTransfer;
+        if (files.length > 0) {
+            props.onFileSelect(files);
+        }
+        else if (e.dataTransfer.types.includes('text/uri-list') || e.dataTransfer.types.includes('text/plain')) {
+            const droppedURL = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
+            if (isValidURL(droppedURL)) {
+                console.log('Dropped URL:', droppedURL);
+                props.onURLUpload(droppedURL);
+            }
+        }
+    };
+
+    return <div
+        className={`${props.className} ${isDragging ? "dragging" : "notDragging"} fileDropWrapper`}
+        onDragEnter={(e) => {
+            console.log(`onDragEnter -> dragging=true`);
+            e.preventDefault(); e.stopPropagation();
+            setIsDragging(true);
+        }}
+        onDragOver={(e) => {
+            console.log(`onDragOver -> dragging=true`);
+            e.preventDefault(); e.stopPropagation();
+            setIsDragging(true);
+        }}
+        onDragLeave={(e) => {
+            console.log(`onDragLeave -> dragging=true`);
+            e.preventDefault(); e.stopPropagation();
+            setIsDragging(false);
+        }}
+        onDrop={handleDrop}
+    >
+        {isDragging && <div className='dragOverlay'>Upload files...</div>}
+        {props.children}
+    </div>;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileViewerProps {
@@ -671,8 +723,8 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const permissionId = API.users.getDefaultVisibilityPermission().id;
 
     const user = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    //const publicData = useAuthenticatedSession();
+    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const [filterSpec, setFilterSpec] = React.useState<FileFilterAndSortSpec>({
         quickFilter: "",
@@ -743,7 +795,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
     const filteredItems = sortAndFilter(props.fileTags, filterSpec);
 
-    return <>
+    return <FileDropWrapper onFileSelect={handleFileSelect} onURLUpload={handleURLSelect}>
         {!props.readonly && canUploadFiles && (showUpload ? <div className="uploadControlContainer">
             <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={handleURLSelect} />
             <Button onClick={() => setShowUpload(false)}>Cancel</Button>
@@ -760,6 +812,6 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         <div className="EventFilesList">
             {filteredItems.map((fileTag, index) => <FileControl key={fileTag.id} readonly={props.readonly} refetch={props.refetch} value={fileTag.file} statHighlight={filterSpec.sortBy} />)}
         </div>
-    </>;
+    </FileDropWrapper>;
 };
 
