@@ -24,7 +24,7 @@ import { VisibilityValue } from './VisibilityControl';
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
 
-const gMaximumFilterTagsPerType = 10 as const;
+//const gMaximumFilterTagsPerType = 10 as const;
 
 type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt"; // keyof File
 type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments";
@@ -470,7 +470,8 @@ const CalculateUniqueTags = <TagPayload extends { id: number },>(props: { fileTa
 
     uniqueTags.sort((a, b) => b.count - a.count); // sort by count desc
 
-    return uniqueTags.slice(0, gMaximumFilterTagsPerType);
+    // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
+    return uniqueTags;// .slice(0, gMaximumFilterTagsPerType);
 };
 
 const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): CalculateUniqueTagsReturn<string>[] => {
