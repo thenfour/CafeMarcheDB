@@ -359,8 +359,12 @@ export const SongLengthInput = (props: SongLengthInputProps) => {
     const lengthSeconds = parseSongLengthSeconds(controlledValue);
     const previewLength = lengthSeconds === null ? "" : formatSongLength(lengthSeconds);
 
+    React.useEffect(() => {
+        props.onChange(lengthSeconds);
+    }, [lengthSeconds]);
+
     return <div className="songLengthInputContainer">
-        <CMTextInputBase value={controlledValue} onChange={(e, v) => setControlledValue(v)} />
+        <CMTextInputBase value={controlledValue} onChange={(e, v) => { setControlledValue(v); }} />
         <div className="preview">{previewLength}</div>
     </div>
         ;

@@ -449,6 +449,9 @@ export const gIconOptions = {
     Tune: "Tune",
     Visibility: "Visibility",
     VisibilityOff: "VisibilityOff",
+    VolumeDown: "VolumeDown",
+    VolumeUp: "VolumeUp",
+    VolumeOff: "VolumeOff",
 } as const;
 
 export type TIconOptions = keyof typeof gIconOptions;

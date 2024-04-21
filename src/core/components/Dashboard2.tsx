@@ -26,13 +26,13 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
-import { CoerceToBoolean, CoerceToNumberOr } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { DashboardContextProvider } from "./DashboardContext";
+import { MetronomeDialogButton } from "./Metronome";
 
 const drawerWidth = 300;
 
@@ -202,6 +202,8 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                     >
                         <a href={"/backstage"} className="logo">Café Marché Backstage</a>
                     </Typography>
+
+                    <MetronomeDialogButton />
 
                     {/* {(session.userId != null) && <Search>
                         <SearchIconWrapper>

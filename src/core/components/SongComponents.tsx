@@ -22,6 +22,7 @@ import { Markdown } from './RichTextEditor';
 import { IsNullOrWhitespace, TAnyModel } from 'shared/utils';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { NameValuePair } from './CMCoreComponents2';
+import { MetronomeButton, MetronomePlayer } from './Metronome';
 
 
 export const SongClientColumns = {
@@ -234,7 +235,17 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         rows.push({ rowClassName: "length", cells: [<th key={0}>Length</th>, <td key={1} colSpan={1}>{songData.formattedLength}</td>, <td key={2} colSpan={2}></td>, null] });
     }
     if (songData.formattedBPM) {
-        rows.push({ rowClassName: "bpm", cells: [<th key={0}>Tempo</th>, <td key={1} colSpan={1}>{songData.formattedBPM}</td>, <td key={2} colSpan={2}></td>, null] });
+        rows.push({
+            rowClassName: "bpm", cells: [<th key={0}>Tempo</th>,
+            <td key={1} colSpan={1} className='bpmControlsTD' >
+                <div className='bpmControlsContainer'>
+                    {songData.song.startBPM !== null && <MetronomeButton bpm={songData.song.startBPM} />}
+                    <div className='bpmValue'>{songData.formattedBPM}</div>
+                    {songData.song.endBPM !== null && (songData.song.startBPM != songData.song.endBPM) && <MetronomeButton bpm={songData.song.endBPM} />}
+                </div>
+            </td>,
+            <td key={2} colSpan={2}></td>, null]
+        });
     }
 
     if (props.showCredits) {

@@ -2026,6 +2026,160 @@ table.songMetadata tr:hover td .CMSmallButton {
     color: #20f4;
 }
 
+/* -  --------------------------------- */
 .tagsFieldView {
     max-width: 500px;
+}
+
+/* -  --------------------------------- */
+td.bpmControlsTD {}
+
+.bpmControlsContainer {
+    display: flex;
+    align-items: center;
+}
+
+.metronomeButton {
+    opacity: 50%;
+    color: #0008;
+    margin: 0px 15px;
+    padding: 6px;
+    border-radius: 6px;
+    border: 2px solid #0004;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ddd;
+}
+
+.metronomeButton.playing {
+    opacity: 100%;
+    /* color: #84f; */
+    /* background-color: #f0f2; */
+}
+
+.globalMetronomeButton {
+    /* required to make it vertically center correctly */
+    display: flex;
+    color: #fff4;
+    background-color: #fff2;
+    border-radius: 6px;
+    margin: 0 10px;
+    padding: 6px;
+}
+
+
+@keyframes MetronomeFlash1 {
+    0% {
+        background-color: var(--color1);
+        box-shadow: 0 0 15px var(--color1);
+    }
+
+    100% {
+        background-color: var(--color2);
+        box-shadow: 0 0 15px var(--color25);
+    }
+}
+
+@keyframes MetronomeFlash2 {
+    0% {
+        background-color: var(--color1);
+        box-shadow: 0 0 15px var(--color1);
+    }
+
+    100% {
+        background-color: var(--color2);
+        box-shadow: 0 0 15px var(--color25);
+    }
+}
+
+
+.metronomeIndicator {
+    --color1: #0f0f;
+    --color2: #0f00;
+    --color25: #0f03;
+    box-shadow: 0 0 15px var(--color1);
+    border-radius: 50%;
+    margin: 0 10px;
+    width: 32px;
+    height: 32px;
+    border: 2px solid #0004;
+}
+
+.metronomeIndicator.tick {
+    animation: MetronomeFlash1 .2s forwards;
+}
+
+.metronomeIndicator.tock {
+    animation: MetronomeFlash2 .2s forwards;
+}
+
+
+.GlobalMetronomeDialog .bpmAndTapRow {
+    display: flex;
+}
+
+.GlobalMetronomeDialog input {
+    margin: 15px;
+    font-size: 58px;
+    font-weight: bold;
+    font-family: monospace;
+    text-align: center;
+    width: 80%;
+}
+
+
+
+@keyframes MetronomeTapFlash1 {
+    0% {
+        opacity: 100%;
+    }
+
+    100% {
+        opacity: 50%;
+    }
+}
+
+@keyframes MetronomeTapFlash2 {
+    0% {
+        opacity: 100%;
+    }
+
+    100% {
+        opacity: 50%;
+    }
+}
+
+.GlobalMetronomeDialog .tapTempoButton {
+    margin: 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    background-color: #88f;
+    color: white;
+    width: 100px;
+    font-size: 32px;
+    text-transform: uppercase;
+    text-decoration: none;
+    width: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.GlobalMetronomeDialog .tapTempoButton.tick {
+    animation: MetronomeTapFlash1 .5s forwards;
+}
+
+.GlobalMetronomeDialog .tapTempoButton.tock {
+    animation: MetronomeTapFlash2 .5s forwards;
+}
+
+.GlobalMetronomeDialog svg {
+    width: 100px;
+    height: 100px;
+}
+
+.GlobalMetronomeDialog .metronomeIndicator {
+    width: 100px;
+    height: 100px;
 }

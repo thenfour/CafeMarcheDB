@@ -60,6 +60,7 @@ import ContentCutIcon from '@mui/icons-material/ContentCut';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
+import { VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -124,6 +125,9 @@ export const gIconMap /*: IIconMap*/ = {
     Tune: () => <TuneIcon />,
     Visibility: () => <VisibilityIcon />,
     VisibilityOff: () => <VisibilityOffIcon />,
+    VolumeDown: () => <VolumeDown />,
+    VolumeUp: () => <VolumeUp />,
+    VolumeOff: () => <VolumeOff />,
 
 } as const;
 

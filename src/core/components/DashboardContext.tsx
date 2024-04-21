@@ -6,15 +6,18 @@ import * as db3 from "src/core/db3/db3";
 
 interface DashboardContextType {
     instrumentFunctionalGroups: db3.InstrumentFunctionalGroupPayload[];
+    metronomeSilencers: (() => void)[];
 };
 
 export const DashboardContext = React.createContext<DashboardContextType>({
     instrumentFunctionalGroups: [],
+    metronomeSilencers: [],
 });
 
 export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{}>) => {
     const valueRef = React.useRef<DashboardContextType>({
-        instrumentFunctionalGroups: []
+        instrumentFunctionalGroups: [],
+        metronomeSilencers: [],
     });
 
     const [user] = useCurrentUser();
