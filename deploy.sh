@@ -13,7 +13,8 @@ DESTINATION="$1"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FILES_LIST="$PROJECT_DIR/files_to_deploy.txt"
 
-ARCHIVE_NAME="cmdb_v1_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
+# ARCHIVE_NAME="cmdb_v1_$(date +%Y-%m-%d_%H-%M-%S).tar.gz"
+ARCHIVE_NAME="cmdb_deploy.tar.gz"
 
 echo "PROJECT_DIR: $PROJECT_DIR"
 echo "DESTINATION: $DESTINATION"
