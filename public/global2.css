@@ -2032,7 +2032,17 @@ table.songMetadata tr:hover td .CMSmallButton {
 }
 
 /* -  --------------------------------- */
-td.bpmControlsTD {}
+
+/* the button on the dashboard */
+.globalMetronomeButton {
+    /* required to make it vertically center correctly */
+    display: flex;
+    color: #fff4;
+    background-color: #fff2;
+    border-radius: 6px;
+    margin: 0 10px;
+    padding: 6px;
+}
 
 .bpmControlsContainer {
     display: flex;
@@ -2052,20 +2062,17 @@ td.bpmControlsTD {}
     background-color: #ddd;
 }
 
+
+
 .metronomeButton.playing {
     opacity: 100%;
+
+    /* butt up against sync button */
+    margin-right: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
     /* color: #84f; */
     /* background-color: #f0f2; */
-}
-
-.globalMetronomeButton {
-    /* required to make it vertically center correctly */
-    display: flex;
-    color: #fff4;
-    background-color: #fff2;
-    border-radius: 6px;
-    margin: 0 10px;
-    padding: 6px;
 }
 
 
@@ -2119,6 +2126,10 @@ td.bpmControlsTD {}
     display: flex;
 }
 
+.GlobalMetronomeDialog .sliderContainer {
+    display: flex;
+}
+
 .GlobalMetronomeDialog input {
     margin: 15px;
     font-size: 58px;
@@ -2128,7 +2139,9 @@ td.bpmControlsTD {}
     width: 80%;
 }
 
-
+.GlobalMetronomeDialog .metronomeButton {
+    flex-grow: 1;
+}
 
 @keyframes MetronomeTapFlash1 {
     0% {
@@ -2150,7 +2163,8 @@ td.bpmControlsTD {}
     }
 }
 
-.GlobalMetronomeDialog .tapTempoButton {
+.GlobalMetronomeDialog .tapTempoButton,
+.GlobalMetronomeDialog .sliderContainer .nudge {
     margin: 15px;
     border-radius: 8px;
     font-weight: bold;
@@ -2164,6 +2178,16 @@ td.bpmControlsTD {}
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.GlobalMetronomeDialog .tapTempoButton {
+    width: 150px;
+}
+
+.GlobalMetronomeDialog .sliderContainer .nudge {
+    font-size: 40px;
+    height: 60px;
+    width: 60px;
 }
 
 .GlobalMetronomeDialog .tapTempoButton.tick {
@@ -2184,11 +2208,12 @@ td.bpmControlsTD {}
     height: 100px;
 }
 
-.metronomePlayerContainer {
+
+.metronomeButtonContainer {
     display: flex;
 }
 
-.metronomePlayerContainer .metronomeSyncButton {
+.metronomeButtonContainer .metronomeSyncButton {
     background-color: #ccc;
     border: 1px solid #aaa;
     border-radius: 6px;
@@ -2200,14 +2225,25 @@ td.bpmControlsTD {}
     margin: 0 10px;
     color: #666;
     text-decoration: none;
+    /* but upp against play control */
+    margin-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    ;
+
 }
 
-.metronomePlayerContainer .metronomeSyncButton:hover {
+.metronomeButtonContainer .metronomeSyncButton:hover {
     background-color: #aaf;
 }
 
-.GlobalMetronomeDialog .metronomePlayerContainer .metronomeSyncButton {
+.GlobalMetronomeDialog .metronomeButtonContainer .metronomeSyncButton {
     font-size: 32px;
     padding: 0 20px;
-    margin-left: 30px;
+    /* margin-left: 30px; */
+    text-decoration: none;
+}
+
+.GlobalMetronomeDialog .metronomeButtonContainer .metronomeSyncButton:hover {
+    text-decoration: none;
 }

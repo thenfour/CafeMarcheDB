@@ -265,6 +265,7 @@ export const CoerceToNumberOr = <Tfallback,>(value, fallbackValue: Tfallback): n
         if (!isNaN(asNumber)) {
             return asNumber;
         }
+        return fallbackValue;
     }
     return value;
 };
