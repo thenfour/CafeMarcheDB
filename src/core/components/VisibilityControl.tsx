@@ -6,6 +6,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { ChoiceEditCell } from "./ChooseItemDialog";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,6 +52,7 @@ interface VisibilityControlProps {
     value: VisibilityControlValue;
     variant?: "minimal" | "verbose";
     onChange: (value: VisibilityControlValue) => void;
+    selectDialogTitle?: React.ReactNode;
 };
 export const VisibilityControl = (props: VisibilityControlProps) => {
     const permissions = API.users.getAllPermissions();
@@ -67,10 +69,11 @@ export const VisibilityControl = (props: VisibilityControlProps) => {
             items={visibilityChoices}
             readonly={false} // todo!
             validationError={null}
-            selectDialogTitle='select dialog title here'
+            selectDialogTitle={props.selectDialogTitle || "Select who can see this"}
             //selectButtonLabel='change visibility'
             value={props.value}
-            dialogDescription={<>dialog description her99ee</>}
+            //dialogDescription={<>dialog description her99ee</>}
+            dialogDescription={<SettingMarkdown setting="VisibilityControlSelectDialogDescription" />}
             renderAsListItem={(chprops, value: db3.PermissionPayload | null, selected: boolean) => {
                 return <li {...chprops}>
                     <VisibilityValue permission={value} variant={"verbose"} />

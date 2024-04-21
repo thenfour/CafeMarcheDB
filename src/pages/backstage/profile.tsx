@@ -136,6 +136,7 @@ const OwnInstrumentsControl = () => {
 
     return <UserInstrumentsFieldInput
         spec={tableClient.getColumn("instruments") as any}
+        selectStyle="dialog"
         //validationError={validationResult.getErrorForField("instruments")}
         row={row}
         value={row.instruments}

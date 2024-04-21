@@ -254,16 +254,16 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
         });
     }
 
-    if (!rows.length) return null;
-
     return <div>
-        <table className='songMetadata'>
-            <tbody>
-                {rows.map((kv, i) => <tr key={i} className={`${kv.rowClassName}`}>
-                    {kv.cells.map((cell, i) => cell)}
-                </tr>)}
-            </tbody>
-        </table>
+        {rows.length > 0 &&
+            <table className='songMetadata'>
+                <tbody>
+                    {rows.map((kv, i) => <tr key={i} className={`${kv.rowClassName}`}>
+                        {kv.cells.map((cell, i) => cell)}
+                    </tr>)}
+                </tbody>
+            </table>
+        }
 
         {insertAuthorized && !props.readonly && <DB3EditRowButton
             onSave={handleSaveNew}

@@ -2025,3 +2025,7 @@ table.songMetadata tr:hover td .CMSmallButton {
     font-weight: bold;
     color: #20f4;
 }
+
+.tagsFieldView {
+    max-width: 500px;
+}

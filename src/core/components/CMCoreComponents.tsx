@@ -170,6 +170,7 @@ export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStan
 export interface RowInfoChipProps {
     tableSpec: db3.xTable;
     item: TAnyModel | null;
+    overrideRowInfo?: (value: any, rowInfo: db3.RowInfo) => db3.RowInfo;
 
     onClick?: () => void;
     className?: string;
@@ -177,10 +178,11 @@ export interface RowInfoChipProps {
     border?: CMChipBorderOption;
 };
 export const RowInfoChip = (props: RowInfoChipProps) => {
-    const rowInfo: db3.RowInfo = props.item ? props.tableSpec.getRowInfo(props.item) : {
+    const rowInfo1: db3.RowInfo = props.item ? props.tableSpec.getRowInfo(props.item) : {
         name: "--",
         ownerUserId: null,
     };
+    const rowInfo = props.overrideRowInfo ? props.overrideRowInfo(props.item, rowInfo1) : rowInfo1;
     return <CMChip
         color={rowInfo.color}
         onClick={props.onClick}

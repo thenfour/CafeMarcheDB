@@ -3,8 +3,18 @@
 import React, { Suspense } from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3/db3";
+import { useSession } from "@blitzjs/auth";
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// local versions of clientAPI fns
+export function useIsShowingAdminControls() {
+    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
+    return sess.isSysAdmin && sess.showAdminControls;
+};
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSmallButtonProps {
     onClick?: () => void;
     variant?: "framed" | "default";

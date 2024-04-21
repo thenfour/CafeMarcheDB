@@ -4,7 +4,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { Button, Tooltip } from "@mui/material";
 import React from "react";
-import { StandardVariationSpec } from 'shared/color';
+import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { IsNullOrWhitespace, existsInArray, formatFileSize, isValidURL, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
@@ -22,8 +22,9 @@ import { CMTextInputBase } from './CMTextField';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
+import { DashboardContext } from './DashboardContext';
 
-const gMaximumFilterTagsPerType = 3 as const;
+const gMaximumFilterTagsPerType = 10 as const;
 
 type SortByKey = "uploadedAt" | "uploadedByUserId" | "mimeType" | "sizeBytes" | "fileCreatedAt"; // keyof File
 type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedInstruments";
@@ -280,6 +281,7 @@ interface FileEditorProps {
 export const FileEditor = (props: FileEditorProps) => {
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = React.useContext(DashboardContext);
 
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
@@ -294,11 +296,21 @@ export const FileEditor = (props: FileEditorProps) => {
             new DB3Client.GenericStringColumnClient({ columnName: "fileLeafName", cellWidth: 150, fieldCaption: "File name" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
             new DB3Client.DateTimeColumn({ columnName: "fileCreatedAt" }),
-            new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false }),
+
+            new DB3Client.TagsFieldClient<db3.FileTagAssignmentPayload>({ columnName: "tags", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline' }),
+            new DB3Client.TagsFieldClient<db3.FileInstrumentTagPayload>({
+                columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
+                overrideRowInfo: (association: db3.FileInstrumentTagPayload, rowInfo: db3.RowInfo) => {
+                    // because the query doesn't include instrument functional group, get it from global dashboard context
+                    console.log('aoeu');
+                    const fg = dashboardContext.instrumentFunctionalGroups.find(fg => fg.id === association.instrument.functionalGroupId);
+                    if (!fg) return rowInfo;
+                    return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
+                }
+            }),
             new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName: "taggedUsers", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName: "taggedSongs", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({ columnName: "taggedEvents", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileInstrumentTagPayload>({ columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false }),
         ],
     });
 
@@ -369,7 +381,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         if (spec.mimeTypes.length) {
             if (!item.file.mimeType) return false; // we're filtering mime types but this file has none.
             const parsedMimeType = parseMimeType(item.file.mimeType);
-            if (!spec.mimeTypes.includes(parsedMimeType?.type || "")) { // assumes mime type is the filter (no partial match or subtypes etc)
+            if (!spec.mimeTypes.includes(parsedMimeType?.forDisplay || "")) { // assumes mime type is the filter (no partial match or subtypes etc)
                 return false;
             }
         }
@@ -469,7 +481,7 @@ const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): Calculate
         const ft = props.fileTags[ift]!;
         const tag = ft.file.mimeType;
         const mimeInfo = parseMimeType(tag);
-        const key = mimeInfo?.type;
+        const key = mimeInfo?.forDisplay;
         if (!key) continue;
         const xit = uniqueTags.findIndex(ut => ut.tag === key);
         if (xit === -1) {
@@ -488,6 +500,13 @@ const CalculateUniqueMimeTypes = (props: { fileTags: FileTagBase[] }): Calculate
 };
 
 export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const getInstrumentColor = (instrument: db3.InstrumentPayloadMinimum) => {
+        const fg = dashboardContext.instrumentFunctionalGroups.find(fg => fg.id === instrument.functionalGroupId);
+        if (!fg) return null;
+        return fg.color;
+    };
 
     const uniqueTags = CalculateUniqueTags<db3.FileTagPayloadMinimum>({ selector: 'tags', foreignSelector: "fileTag", fileTags: props.fileTags });
     const uniqueInstrumentTags = CalculateUniqueTags<db3.InstrumentPayloadMinimum>({ selector: 'taggedInstruments', foreignSelector: "instrument", fileTags: props.fileTags });
@@ -502,7 +521,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
         <span className='HalfOpacity'>{gIconMap.Search()}</span>
         <CMTextInputBase value={props.value.quickFilter} onChange={(e, value) => props.onChange({ ...props.value, quickFilter: value })} />
         {!IsNullOrWhitespace(props.value.quickFilter) && <CMSmallButton onClick={() => props.onChange({ ...props.value, quickFilter: "" })}>{gIconMap.Close()}</CMSmallButton>}
-        <CMChipContainer>
+        {uniqueMimeTypes.length > 1 && <CMChipContainer>
             {uniqueMimeTypes.map(t => (
                 <CMChip
                     key={t.tag}
@@ -513,9 +532,9 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                 >
                     {t.tag} ({t.count})
                 </CMChip>))}
-        </CMChipContainer>
+        </CMChipContainer>}
 
-        <CMChipContainer>
+        {uniqueTags.length > 1 && <CMChipContainer>
             {uniqueTags.map(t => (
                 <CMChip
                     key={t.tag.id}
@@ -527,12 +546,12 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                 >
                     {t.tag.text} ({t.count})
                 </CMChip>))}
-        </CMChipContainer>
-        {<CMChipContainer>
+        </CMChipContainer>}
+        {uniqueInstrumentTags.length > 1 && <CMChipContainer>
             {uniqueInstrumentTags.map(t => (
                 <CMChip
                     key={t.tag.id}
-                    //color={t.tag.color}
+                    color={getInstrumentColor(t.tag)}
                     tooltip={t.tag.description}
                     size='small'
                     variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedInstrumentIds, t.tag.id) }}
@@ -542,7 +561,33 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                 </CMChip>))}
 
         </CMChipContainer>}
-        <CMChipContainer>
+        {uniqueUserTags.length > 1 && <CMChipContainer>
+            {uniqueUserTags.map(t => (
+                <CMChip
+                    key={t.tag.id}
+                    //color={t.tag.color}
+                    tooltip={"User"}
+                    size='small'
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedUserIds, t.tag.id) }}
+                    onClick={() => props.onChange({ ...props.value, taggedUserIds: toggleValueInArray(props.value.taggedUserIds, t.tag.id) })}
+                >
+                    {t.tag.name} ({t.count})
+                </CMChip>))}
+        </CMChipContainer>}
+        {uniqueSongTags.length > 1 && <CMChipContainer>
+            {uniqueSongTags.map(t => (
+                <CMChip
+                    key={t.tag.id}
+                    //color={t.tag.color}
+                    size='small'
+                    tooltip={"Song"}
+                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedSongIds, t.tag.id) }}
+                    onClick={() => props.onChange({ ...props.value, taggedSongIds: toggleValueInArray(props.value.taggedSongIds, t.tag.id) })}
+                >
+                    {t.tag.name} ({t.count})
+                </CMChip>))}
+        </CMChipContainer>}
+        {uniqueEventTags.length > 1 && <CMChipContainer>
             {uniqueEventTags.map(t => (
                 <CMChip
                     key={t.tag.id}
@@ -555,33 +600,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
                 >
                     {t.tag.name} ({t.count})
                 </CMChip>))}
-        </CMChipContainer>
-        <CMChipContainer>
-            {uniqueUserTags.map(t => (
-                <CMChip
-                    key={t.tag.id}
-                    //color={t.tag.color}
-                    tooltip={"User"}
-                    size='small'
-                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedUserIds, t.tag.id) }}
-                    onClick={() => props.onChange({ ...props.value, taggedUserIds: toggleValueInArray(props.value.taggedUserIds, t.tag.id) })}
-                >
-                    {t.tag.name} ({t.count})
-                </CMChip>))}
-        </CMChipContainer>
-        <CMChipContainer>
-            {uniqueSongTags.map(t => (
-                <CMChip
-                    key={t.tag.id}
-                    //color={t.tag.color}
-                    size='small'
-                    tooltip={"Song"}
-                    variation={{ ...StandardVariationSpec.Strong, selected: existsInArray(props.value.taggedSongIds, t.tag.id) }}
-                    onClick={() => props.onChange({ ...props.value, taggedSongIds: toggleValueInArray(props.value.taggedSongIds, t.tag.id) })}
-                >
-                    {t.tag.name} ({t.count})
-                </CMChip>))}
-        </CMChipContainer>
+        </CMChipContainer>}
         Sort by:
         <CMChipContainer>
             <CMChip

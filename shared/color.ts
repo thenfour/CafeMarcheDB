@@ -600,10 +600,15 @@ export class ColorPaletteList {
         return this.palettes[0]!.defaultEntry;
     }
 
-    findEntry(id: string | null): ColorPaletteEntry | null {
+    findEntry(id: string | null | ColorPaletteEntry): ColorPaletteEntry | null {
         if (id == null) return null;
+        if (typeof id === 'object') {
+            if (id.id) {
+                id = id.id; // assuming ColorPaletteEntry; search again.
+            }
+        }
         for (let i = 0; i < this.palettes.length; ++i) {
-            const found = this.palettes[i]?.findEntry(id);
+            const found = this.palettes[i]?.findEntry(id as string);
             if (found) return found;
         }
         return null;

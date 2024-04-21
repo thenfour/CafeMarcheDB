@@ -59,6 +59,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -144,7 +145,7 @@ export interface ChooseIconDialogProps {
 export function IconEditCell(props: ChooseIconDialogProps) {
     return <ChoiceEditCell
         selectDialogTitle="Select icon"
-        dialogDescription={<>a description here</>}
+        dialogDescription={<SettingMarkdown setting={`IconEditCellDialogDescription`} />}
         items={Object.keys(gIconOptions)}
         readonly={props.readonly}
         value={props.value}

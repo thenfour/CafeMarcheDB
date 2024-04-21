@@ -18,12 +18,12 @@ import {
     List,
     ListItemButton
 } from "@mui/material";
-import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
-import { CMSmallButton } from 'src/core/components/CMCoreComponents2';
-import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
+import { CMSmallButton, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
+import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
@@ -31,6 +31,8 @@ import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderMuiIcon } from './IconSelectDialog';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
+import getSetting from 'src/auth/queries/getSetting';
+import updateSetting from 'src/auth/mutations/updateSetting';
 
 
 const gMaxVisibleTags = 6;
@@ -248,16 +250,63 @@ export interface TagsFieldInputProps<TAssociation> {
 
     // for creating new associations
     row: TAnyModel;
-    //validationError?: string | null;
+
+    selectStyle: "inline" | "dialog";
 };
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const ChipsFieldInlineValues = <TAssociation,>(props: TagsFieldInputProps<TAssociation>) => {
+    const currentUser = useCurrentUser()[0]!;
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
+    const dbctx = useTagsFieldRenderContext({
+        filterText: "",
+        row: props.row,
+        spec: props.spec,
+        clientIntention,
+    });
+
+    const itemIsSelected = (x: TAssociation) => {
+        return props.value.some(v => v[props.spec.associationForeignIDMember] === x[props.spec.associationForeignIDMember]);
+    }
+    const handleItemToggle = (item: TAssociation) => {
+        const isSelected = itemIsSelected(item);
+        let newValue;
+        if (isSelected) {
+            newValue = props.value.filter(v => v[props.spec.associationForeignIDMember] !== item[props.spec.associationForeignIDMember]);
+        } else {
+            newValue = [...props.value, item];
+        }
+        props.onChange(newValue);
+    };
+    return <>
+        {dbctx.options.map(item => {
+            const selected = itemIsSelected(item);
+            return (
+                <React.Fragment key={item[props.spec.associationForeignIDMember]}>
+                    {props.spec.args.renderAsChip!({
+                        value: item,
+                        colorVariant: { selected, variation: selected ? "strong" : "weak", enabled: true, fillOption: 'filled' },
+                        onClick: () => handleItemToggle(item),
+                    })}
+                </React.Fragment>
+            );
+        })
+        }
+    </>;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // general use "edit cell" for tags
 export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssociation>) => {
+    const [setSetting] = useMutation(updateSetting);
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const [oldValue, setOldValue] = React.useState<TAssociation[]>([]);
-    React.useEffect(() => {
-        setOldValue(props.value);
-    }, []);
+    const isShowingAdminControls = useIsShowingAdminControls();
+    //const [oldValue, setOldValue] = React.useState<TAssociation[]>([]);
+    // React.useEffect(() => {
+    //     setOldValue(props.value);
+    // }, []);
 
     if (!props.value) {
         console.error(`props.value is null for ${props.spec.columnName}. make sure it's included in the query.`);
@@ -282,8 +331,26 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         };
     });
 
-    return <CMChipContainer>
-        {correctedValue.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
+    const selectStyleSetting = GenerateForeignSingleSelectStyleSettingName(props.spec.schemaTable.tableName, props.spec.columnName);
+    const [selectStyleSettingValue] = useQuery(getSetting, { name: selectStyleSetting });//  API.settings.useSetting(selectStyleSetting);
+    const selectStyle = (selectStyleSettingValue || props.selectStyle) as ("inline" | "dialog");
+    const newProps = { ...props };
+    newProps.selectStyle = selectStyle;
+
+    const handleChangeSetting = (newVal: ("inline" | "dialog" | null)) => {
+        setSetting({ name: selectStyleSetting, value: newVal }).then((x) => {
+            showSnackbar({ children: "Saved", severity: 'success' });
+        }).catch((err => {
+            console.log(err);
+            showSnackbar({ children: "Error", severity: 'error' });
+        }));
+    };
+
+    let chips: React.ReactNode[] = [];
+
+    if (selectStyle === "dialog") {
+
+        chips = correctedValue.map(value => <React.Fragment key={value[props.spec.associationForeignIDMember]}>{props.spec.renderAsChipForCell!({
             value,
             colorVariant: StandardVariationSpec.Strong,
             onDelete: () => {
@@ -291,7 +358,20 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
                 props.onChange(newValue);
             }
         })
-        }</React.Fragment>)}
+        }</React.Fragment>);
+
+    } else { // inline select style. show all options always and selection indicators.
+        chips = [<ChipsFieldInlineValues key={"v"} {...newProps} />];
+    }
+
+    return <CMChipContainer className='tagsFieldView'>
+        {isShowingAdminControls && <CMChipContainer className="adminControlFrame">
+            <CMChip size="small" onClick={() => handleChangeSetting("inline")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "inline" }}>inline</CMChip>
+            <CMChip size="small" onClick={() => handleChangeSetting("dialog")} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyle === "dialog" }}>dialog</CMChip>
+            <CMChip size="small" onClick={() => handleChangeSetting(null)} variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: selectStyleSettingValue === null }}>default</CMChip>
+        </CMChipContainer>}
+
+        {chips}
 
         <CMSmallButton onClick={() => { setIsOpen(!isOpen) }}>Select {props.spec.schemaColumn.member}...</CMSmallButton>
 
@@ -309,6 +389,8 @@ export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssoci
         }
     </CMChipContainer>;
 };
+
+
 
 
 
@@ -342,6 +424,7 @@ export interface DefaultRenderAsChipParams<TAssociation> {
     colorVariant: ColorVariationSpec;
     onDelete?: () => void;
     onClick?: () => void;
+    overrideRowInfo?: (value: TAssociation, rowInfo: db3.RowInfo) => db3.RowInfo,
 }
 
 export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipParams<TAssociation>) => {
@@ -354,7 +437,12 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
     if (!args.columnSchema.getAssociationTableShema) {
         throw new Error(`columnSchema is missing getAssociationTableShema.`);
     }
-    const rowInfo = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
+    if (args.columnSchema.member === 'taggedInstruments') {
+        console.log(`defaultrender as chip ${args.columnSchema.member}`);
+
+    }
+    const rowInfo1 = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
+    const rowInfo = args.overrideRowInfo ? args.overrideRowInfo(args.value, rowInfo1) : rowInfo1;
 
     return <CMChip
         className={`tagsFieldValue defaultRenderAsChip`}
@@ -384,6 +472,8 @@ export interface TagsFieldClientArgs<TAssociation> {
     className?: string;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
+    selectStyle?: "inline" | "dialog",
+    overrideRowInfo?: (value: TAssociation, rowInfo: db3.RowInfo) => db3.RowInfo,
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -392,6 +482,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
     args: TagsFieldClientArgs<TAssociation>;
 
     ApplyClientToPostClient = undefined;
+    selectStyle: "inline" | "dialog";
 
     renderAsChipForCell = (args: RenderAsChipParams<TAssociation>) => {
         if (this.args.allowDeleteFromCell) {
@@ -420,11 +511,12 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
         this.args = args;
+        this.selectStyle = args.selectStyle || "dialog";
         if (this.args.allowDeleteFromCell === undefined) this.args.allowDeleteFromCell = true;
     }
 
     defaultRenderAsChip = (args: RenderAsChipParams<TAssociation>) => {
-        return DefaultRenderAsChip({ ...args, columnSchema: this.typedSchemaColumn });
+        return DefaultRenderAsChip({ ...args, columnSchema: this.typedSchemaColumn, overrideRowInfo: this.args.overrideRowInfo });
     };
 
     defaultRenderAsListItem = (props, value, selected) => {
@@ -477,6 +569,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
                 const value: TAssociation[] = params.value;
                 return <TagsFieldInput
                     //validationError={vr.result === "success" ? null : vr.errorMessage || null}
+                    selectStyle={this.selectStyle}
                     spec={this}
                     value={value}
                     row={params.row as TAnyModel}
@@ -494,17 +587,18 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
         return <React.Fragment key={params.key}>{this.defaultRenderer({
             isReadOnly: !this.editable,
             validationResult: params.validationResult,
-            value: <React.Fragment key={params.key}>
+            value:
                 <TagsFieldInput
+                    key={params.key}
                     spec={this}
                     //validationError={validationValue}
+                    selectStyle={this.selectStyle}
                     row={params.row as TAnyModel}
                     value={params.value as TAssociation[]}
                     onChange={(value: TAssociation[]) => {
                         params.api.setFieldValues({ [this.schemaColumn.member]: value });
                     }}
                 />
-            </React.Fragment>
         })}</React.Fragment>;
 
     };

@@ -29,7 +29,7 @@ export const config = {
 
 // on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
 export default api(async (req, res, origCtx: Ctx) => {
-    origCtx.session.$authorize(Permission.login);
+    origCtx.session.$authorize(Permission.upload_files);
     const ctx: AuthenticatedCtx = origCtx as any; // authorize ensures this.
     const currentUser = (await mutationCore.getCurrentUserCore(ctx))!;
     if (!currentUser) throw new Error(`uploads possible only for users`);

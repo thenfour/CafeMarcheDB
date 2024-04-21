@@ -32,81 +32,10 @@ import logout from "src/auth/mutations/logout";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
+import { DashboardContextProvider } from "./DashboardContext";
 
 const drawerWidth = 300;
 
-// const BackstageLinkEnableMenuItem = () => {
-//     const oldLink = API.settings.useMutableSetting("EnableOldPublicHomepageBackstageLink");
-//     const newLink = API.settings.useMutableSetting("EnableNewPublicHomepageBackstageLink");
-
-//     console.log(`BackstageLinkEnableMenuItem`);
-
-//     const showingOld = CoerceToNumberOr(oldLink[0], 1) === 1;
-//     const showingNew = CoerceToNumberOr(newLink[0], 0) === 1;
-
-//     const handleClickOld = () => {
-//         oldLink[1]({ name: "EnableOldPublicHomepageBackstageLink", value: showingOld ? "0" : "1" }).then(e => {
-//             alert(`success.`);
-//         }).catch(e => {
-//             console.log(e);
-//             alert(e);
-//         });
-//     };
-
-//     const handleClickNew = () => {
-//         newLink[1]({ name: "EnableNewPublicHomepageBackstageLink", value: showingNew ? "0" : "1" }).then(e => {
-//             alert(`success.`);
-//         }).catch(e => {
-//             console.log(e);
-//             alert(e);
-//         });
-//     };
-
-//     return <>
-//         <MenuItem onClick={handleClickOld}>{showingOld ? "Showing old backstage link" : "Not showing old backstage link"}</MenuItem>
-//         <MenuItem onClick={handleClickNew}>{showingNew ? "Showing new backstage link" : "Not showing new backstage link"}</MenuItem>
-//     </>;
-// };
-
-// const Search = styled('div')(({ theme }) => ({
-//     position: 'relative',
-//     borderRadius: theme.shape.borderRadius,
-//     backgroundColor: alpha(theme.palette.common.white, 0.15),
-//     '&:hover': {
-//         backgroundColor: alpha(theme.palette.common.white, 0.25),
-//     },
-//     marginRight: theme.spacing(2),
-//     marginLeft: 0,
-//     width: '100%',
-//     [theme.breakpoints.up('sm')]: {
-//         marginLeft: theme.spacing(3),
-//         width: 'auto',
-//     },
-// }));
-
-// const SearchIconWrapper = styled('div')(({ theme }) => ({
-//     padding: theme.spacing(0, 2),
-//     height: '100%',
-//     position: 'absolute',
-//     pointerEvents: 'none',
-//     display: 'flex',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-// }));
-
-// const StyledInputBase = styled(InputBase)(({ theme }) => ({
-//     color: 'inherit',
-//     '& .MuiInputBase-input': {
-//         padding: theme.spacing(1, 1, 1, 0),
-//         // vertical padding + font size from searchIcon
-//         paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-//         transition: theme.transitions.create('width'),
-//         width: '100%',
-//         [theme.breakpoints.up('md')]: {
-//             width: '20ch',
-//         },
-//     },
-// }));
 
 const AppBarUserIcon_MenuItems = () => {
     const [logoutMutation] = useMutation(logout);
@@ -516,13 +445,7 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     }, []);
 
     const theme = useTheme();
-    //console.log(theme.direction);
-    //const isPortrait = useMediaQuery({ orientation: 'portrait' }, true);
-    //useResponsiveQuery();
-    //console.log(`isportrait: ${isPortrait}`);
-
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-    //const router = useRouter();
 
     const [open, setOpen] = React.useState(false);
 
@@ -536,6 +459,8 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
         setOpen(!open);
     };
+
+    //
 
     // flatten our list of menu groups & items based on permissions.
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
@@ -580,37 +505,39 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box sx={{ display: "flex" }} className="CMDashboard2">
-                <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
-                <Drawer
-                    sx={{
-                        flexShrink: 0,
-                        width: drawerWidth
+                <DashboardContextProvider>
+                    <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
+                    <Drawer
+                        sx={{
+                            flexShrink: 0,
+                            width: drawerWidth
+                        }}
+                        variant={isMdUp ? "permanent" : "temporary"}
+                        anchor="left"
+                        open={open}
+                        onClose={toggleDrawer}
+                    >
+                        <Box sx={{ ...theme.mixins.toolbar }} />
+                        <List component="nav" className="CMMenu">
+                            {
+                                menuItems.map((item, index) => <MenuItemComponent key={index} item={item} realm={navRealm} />)
+                            }
+                            <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
+                        </List>
+                    </Drawer>
+                    <Box sx={{
+                        flexGrow: 1,
+                        backgroundColor: theme.palette.background.default,
+                        padding: theme.spacing(3)
                     }}
-                    variant={isMdUp ? "permanent" : "temporary"}
-                    anchor="left"
-                    open={open}
-                    onClose={toggleDrawer}
-                >
-                    <Box sx={{ ...theme.mixins.toolbar }} />
-                    <List component="nav" className="CMMenu">
-                        {
-                            menuItems.map((item, index) => <MenuItemComponent key={index} item={item} realm={navRealm} />)
-                        }
-                        <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
-                    </List>
-                </Drawer>
-                <Box sx={{
-                    flexGrow: 1,
-                    backgroundColor: theme.palette.background.default,
-                    padding: theme.spacing(3)
-                }}
-                    className="mainContentBackdrop"
-                >
-                    <Toolbar />
-                    <React.Suspense>
-                        {children}
-                    </React.Suspense>
-                </Box>
+                        className="mainContentBackdrop"
+                    >
+                        <Toolbar />
+                        <React.Suspense>
+                            {children}
+                        </React.Suspense>
+                    </Box>
+                </DashboardContextProvider>
             </Box>
         </LocalizationProvider>
     );

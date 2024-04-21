@@ -11,7 +11,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
 import { calculateNewDimensions, formatFileSize, gDefaultImageArea } from "shared/utils";
-import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
+import { useAuthorization, useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMDBUploadFile, CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -82,7 +82,10 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
             });
         }
     };
-    return showUpload ? (
+
+    const canUpload = useAuthorization("FrontpageGalleryUpload", Permission.upload_files);
+
+    return canUpload && showUpload ? (
         <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
             <div className="content uploadControlContainer">
                 <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { throw new Error("url uploads not supported for frontpage gallery") }} />

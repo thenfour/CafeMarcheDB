@@ -20,7 +20,7 @@ import React from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { Coalesce, SettingKey, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
-import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 //import { API } from "../clientAPI";
@@ -31,13 +31,6 @@ import { RenderMuiIcon } from "./IconSelectDialog";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import updateSetting from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
-
-
-// local versions of clientAPI fns
-function useIsShowingAdminControls() {
-    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-    return sess.isSysAdmin && sess.showAdminControls;
-};
 
 
 
@@ -136,10 +129,10 @@ export const ForeignSingleFieldInlineValues = <TForeign,>(props: ForeignSingleFi
 export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInputProps<TForeign>) => {
 
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const [oldValue, setOldValue] = React.useState<TForeign | null>();
-    React.useEffect(() => {
-        setOldValue(props.value);
-    }, []);
+    //const [oldValue, setOldValue] = React.useState<TForeign | null>();
+    // React.useEffect(() => {
+    //     setOldValue(props.value);
+    // }, []);
 
     const isShowingAdminControls = useIsShowingAdminControls();
 

@@ -25,7 +25,7 @@ export interface ChooseItemDialogProps<T> {
     onOK: (value: T | null) => void;
     onCancel: () => void;
     closeOnSelect: boolean;
-    title: string;
+    title: React.ReactNode;
     description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     // how to treat items of unknown type...
@@ -120,7 +120,7 @@ export interface ChoiceEditCellProps {
     readonly: boolean;
     selectButtonLabel?: string; // if behavior includes extra button this is needed. if not specified then the button won't be rendered.
 
-    selectDialogTitle: string;
+    selectDialogTitle: React.ReactNode;
     dialogDescription: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     isEqual: (a: any, b: any) => boolean;

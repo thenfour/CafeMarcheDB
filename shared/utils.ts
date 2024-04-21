@@ -148,6 +148,8 @@ export enum Setting {
     EditEventSegmentDialogDescription = "EditEventSegmentDialogDescription",
     NewEventDialogDescription = "NewEventDialogDescription",
     EditSongDialogDescription = "EditSongDialogDescription",
+    IconEditCellDialogDescription = "IconEditCellDialogDescription",
+    VisibilityControlSelectDialogDescription = "VisibilityControlSelectDialogDescription",
 
     // field text
 
@@ -572,8 +574,33 @@ export interface ParsedMimeType {
     type: string | null;
     subtype: string | null;
     parameters: Record<string, string>;
+    forDisplay: string; // custom filtering for chip display, grouping, etc.
 }
 
+// common values to consider:
+// *     = (null)
+// .gform = (null)
+
+// .gdoc = application/vnd.google-apps.document
+// .gsheet = application/vnd.google-apps.spreadsheet
+// .pages = application/vnd.apple.pages
+// .xls  = application/vnd.ms-excel
+// .xlsx = application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+// .docx = application/vnd.openxmlformats-officedocument.wordprocessingml.document
+// .pdf  = application/pdf
+// .doc  = application/msword
+// .json = application/json
+// .xml  = application/xml
+
+// .txt  = text/plain
+// .html = text/html
+// .wav  = audio/wav
+// .mp3  = audio/mpeg
+// .ogg  = audio/ogg
+// .png  = image/png
+// .svg  = image/svg+xml
+// .m4v  = video/x-m4v
+// .avi  = video/x-msvideo
 export function parseMimeType(mimeTypeStringOrNullish: string | null | undefined): ParsedMimeType | null {
     if (!mimeTypeStringOrNullish) return null;
     const mimeTypeString = mimeTypeStringOrNullish as string;
@@ -596,10 +623,18 @@ export function parseMimeType(mimeTypeStringOrNullish: string | null | undefined
         }
     });
 
+    let display = type || "--";
+
+    if ((type === "application") && ((subtype || "").length < 10)) {
+        // we want some better granularity here.
+        display = subtype || type;
+    }
+
     return {
         type,
         subtype,
         parameters,
+        forDisplay: display,
     };
 }
 

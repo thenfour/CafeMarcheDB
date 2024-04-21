@@ -9,6 +9,7 @@ import { EditTextDialogButton } from "./CMCoreComponents";
 import { AgendaItem } from './homepageComponents';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { useAuthenticatedSession } from "@blitzjs/auth";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 
 interface FrontpageControlSpec {
@@ -90,7 +91,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                 columnSpec={db3.xEvent.getColumn(props.fieldSpec.fieldName)! as db3.FieldBase<string>}
                 dialogTitle={props.fieldSpec.fieldLabel}
                 readOnly={readonly}
-                dialogDescription={<>description here</>}
+                dialogDescription={<SettingMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
                 selectButtonLabel='edit'
                 value={value || defaultValue}
                 onChange={handleChange}
