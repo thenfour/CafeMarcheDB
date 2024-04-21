@@ -2183,3 +2183,31 @@ td.bpmControlsTD {}
     width: 100px;
     height: 100px;
 }
+
+.metronomePlayerContainer {
+    display: flex;
+}
+
+.metronomePlayerContainer .metronomeSyncButton {
+    background-color: #ccc;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    text-transform: uppercase;
+    margin: 0 10px;
+    color: #666;
+    text-decoration: none;
+}
+
+.metronomePlayerContainer .metronomeSyncButton:hover {
+    background-color: #aaf;
+}
+
+.GlobalMetronomeDialog .metronomePlayerContainer .metronomeSyncButton {
+    font-size: 32px;
+    padding: 0 20px;
+    margin-left: 30px;
+}
