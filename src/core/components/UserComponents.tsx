@@ -13,6 +13,8 @@ export interface AddUserButtonProps {
     buttonChildren?: React.ReactNode;
     filterPredicate?: (u: db3.UserPayload) => boolean;
     onSelect: (u: db3.UserPayload | null) => void;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
 };
 
 // todo: potential to make this more generic. add vs. change, for generic values.
@@ -53,12 +55,12 @@ export const AddUserButton = (props: AddUserButtonProps) => {
                 isEqual={(a: db3.UserMinimumPayload, b: db3.UserMinimumPayload) => a.id === b.id}
                 items={filteredItems}
                 value={null as db3.UserPayload | null}
-                title="select a user"
+                title={props.title || "Add user"}
                 onCancel={() => setAddUserOpen(false)}
                 onOK={(u: db3.UserPayload) => handleOK(u)}
                 renderValue={(u) => <UserChip value={u.value} />}
                 renderAsListItem={(p, u: db3.UserPayload) => <UserChip value={u} />}
-                description={<>todo: description</>}
+                description={props.description}
             />}
     </>;
 };

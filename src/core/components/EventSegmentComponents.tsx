@@ -15,6 +15,7 @@ import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
+import { IsNullOrWhitespace } from "shared/utils";
 
 
 
@@ -128,9 +129,6 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 ////////////////////////////////////////////////////////////////
 export interface EventSegmentPanelProps {
     event: db3.EventPayloadClient,
-    //segmentInfo: db3.SegmentAndResponse,
-    //verbosity: EventDetailVerbosity;
-    //myEventInfo: db3.EventInfoForUser,
     segment: db3.EventVerbose_EventSegmentPayload,
     readonly: boolean;
     refetch: () => void;
@@ -156,7 +154,6 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 
     const handleSave = (updatedFields, saveClient: DB3Client.xTableRenderClient) => {
         const updateObj = {
-            id: event.id,
             ...updatedFields,
         };
         saveClient.doUpdateMutation(updateObj).then(e => {
@@ -209,6 +206,15 @@ interface SegmentListProps {
 };
 
 export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) => {
+
+    // if there is only 1 segment and there's no description for the segment, don't display at all.
+    // the only time to show segment lists is when there's something that's not shown elsewhere.
+    if (event.segments.length === 1) {
+        if (IsNullOrWhitespace(event.segments[0]?.description)) {
+            return null;
+        }
+    }
+
     return <div className='segmentListContainer'>
         {!props.readonly && <NewEventSegmentButton
             event={event}
@@ -231,4 +237,52 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
             })}
         </div>
     </div>;
+};
+
+
+export interface EditSingleSegmentDateButtonProps {
+    event: db3.EventPayloadClient,
+    segment: db3.EventVerbose_EventSegmentPayload,
+    readonly: boolean;
+    refetch: () => void;
+};
+
+export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonProps) => {
+    const [editOpen, setEditOpen] = React.useState<boolean>(false);
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const handleSave = (updatedFields, saveClient: DB3Client.xTableRenderClient) => {
+        const updateObj = {
+            ...updatedFields,
+        };
+        saveClient.doUpdateMutation(updateObj).then(e => {
+            showSnackbar({ severity: "success", children: "segment updated" });
+            setEditOpen(false);
+            props.refetch();
+        }).catch(e => {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating segment" });
+        });
+    };
+
+    const editAuthorized = db3.xEventSegment.authorizeRowForEdit({
+        clientIntention,
+        publicData,
+        model: props.segment,
+    });
+    if (!editAuthorized || props.readonly) return null;
+
+    return <>
+        <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Change date</Button>
+        {editOpen && (<EventSegmentEditDialog
+            initialValue={props.segment}
+            isNewObject={false}
+            onCancel={() => setEditOpen(false)}
+            onSave={handleSave}
+        />)}
+
+    </>;
 };

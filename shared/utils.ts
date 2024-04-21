@@ -150,6 +150,7 @@ export enum Setting {
     EditSongDialogDescription = "EditSongDialogDescription",
     IconEditCellDialogDescription = "IconEditCellDialogDescription",
     VisibilityControlSelectDialogDescription = "VisibilityControlSelectDialogDescription",
+    EventInviteUsersDialogDescriptionMarkdown = "EventInviteUsersDialogDescriptionMarkdown",
 
     // field text
 

@@ -26,7 +26,7 @@ import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EventAttendanceControl } from './EventAttendanceComponents';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
-import { SegmentList } from './EventSegmentComponents';
+import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown } from './RichTextEditor';
 import { GenerateDefaultDescriptionSettingName, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
@@ -424,6 +424,8 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                                 //!props.responseInfo.distinctUsers.some(d => d.id === u.id)
                             }}
                             buttonChildren={<>{gIconMap.Add()} Invite someone</>}
+                            title={"Invite users"}
+                            description={<SettingMarkdown setting='EventInviteUsersDialogDescriptionMarkdown' />}
                         />}
                     </td>
                     <td>{/*Instrument*/}</td>
@@ -797,12 +799,14 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
             <div className='titleLine'>
                 <div className="date smallInfoBox">
+                    <span className="text">{eventData.dateRange.toString()}</span>
+
+                    {(eventData.event.segments.length === 1) && <EditSingleSegmentDateButton readonly={props.readonly} refetch={refetch} event={eventData.event} segment={eventData.event.segments[0]!} />}
 
                     <TimingChip value={eventData.eventTiming}>
                         <CalendarMonthIcon className="icon" />
                         {timingLabel[eventData.eventTiming]}
                     </TimingChip>
-                    <span className="text">{eventData.dateRange.toString()}</span>
 
                 </div>
             </div>

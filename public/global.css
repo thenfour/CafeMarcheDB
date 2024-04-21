@@ -634,12 +634,8 @@ it's not often you'll actually want markdown that's really wide.
 }
 
 .contentSection .smallInfoBox {
-
-  /* background-color: #eee; */
-  /* margin-bottom: 10px; */
   display: flex;
   align-items: center;
-  /* opacity: 70%; */
   font-size: 19px;
   text-transform: uppercase;
   font-weight: bold;
@@ -647,8 +643,15 @@ it's not often you'll actually want markdown that's really wide.
   color: #aaa;
   margin: 4px 0px 6px 6px;
   letter-spacing: 0.7px;
-  /* padding-left: 7px; */
-  /* background-color: black; */
+}
+
+.contentSection .smallInfoBox.date {
+  color: #666;
+  font-size: 22px;
+}
+
+.contentSection .smallInfoBox.date .text {
+  padding-right: 10px;
 }
 
 .contentSection .smallInfoBox .icon {

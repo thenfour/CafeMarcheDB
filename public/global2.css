@@ -8,6 +8,11 @@ html,
     display: flex;
 }
 
+.CMDashboard2.smallScreen .mainContentBackdrop {
+    padding-left: 4px;
+    padding-right: 10px;
+}
+
 .CMSidenote {
     color: #999;
     font-style: italic;
@@ -98,7 +103,16 @@ html,
     background-color: #fdd;
 }
 
+.BasicNameValuePairContainer.bare,
+.BasicNameValuePairContainer.bare>* {
+    border: none;
+    background: none;
+}
 
+.BasicNameValuePairContainer.bare>.name {
+    opacity: 100%;
+    font-weight: bold;
+}
 
 
 /* input controls for db3 dialogs */

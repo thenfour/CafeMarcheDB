@@ -332,16 +332,18 @@ export interface EventAttendanceSegmentControlProps {
   eventData: EventWithMetadata;
   eventUserResponse: db3.EventUserResponse;
   segmentUserResponse: db3.EventSegmentUserResponse;
-  //readonly: boolean;
-  //showHeader: boolean;
+  isSingleSegment: boolean;
   onRefetch: () => void,
 };
 
 export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }: EventAttendanceSegmentControlProps) => {
 
+  const name = props.isSingleSegment ? null : (<>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</>);
+
   return <NameValuePair
+    className={props.isSingleSegment ? "bare" : ""}
     isReadOnly={false}
-    name={<>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</>}
+    name={name}
     value={<EventAttendanceAnswerControl
       eventUserResponse={props.eventUserResponse}
       segmentUserResponse={segmentUserResponse}
@@ -349,15 +351,6 @@ export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }:
     />
     }
   />;
-
-  // return <div className="segment">
-  //   <div className='header'>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</div>
-  //   <EventAttendanceAnswerControl
-  //     eventUserResponse={props.eventUserResponse}
-  //     segmentUserResponse={segmentUserResponse}
-  //     onRefetch={props.onRefetch}
-  //   />
-  // </div>;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -458,9 +451,8 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
         <div className="segmentList">
           {segmentResponses.map(segment => {
             return <EventAttendanceSegmentControl
+              isSingleSegment={segmentResponses.length === 1}
               key={segment.segment.id}
-              //showHeader={isVerbose}
-              //readonly={!isVerbose}
               onRefetch={props.onRefetch}
               eventUserResponse={eventResponse}
               segmentUserResponse={segment}

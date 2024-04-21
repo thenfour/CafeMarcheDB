@@ -506,7 +506,7 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box sx={{ display: "flex" }} className="CMDashboard2">
+            <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"}`}>
                 <DashboardContextProvider>
                     <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
                     <Drawer
