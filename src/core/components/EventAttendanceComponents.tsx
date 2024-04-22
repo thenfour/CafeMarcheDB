@@ -362,6 +362,7 @@ export interface EventAttendanceControlProps {
 };
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
+  if (!props.eventData.responseInfo) return null;
   const [userExpanded, setUserExpanded] = React.useState<boolean>(false);
   const user = useCurrentUser()[0]!;
   const segmentResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));

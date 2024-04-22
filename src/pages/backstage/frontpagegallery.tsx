@@ -85,7 +85,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
 
     const canUpload = useAuthorization("FrontpageGalleryUpload", Permission.upload_files);
 
-    return canUpload &&
+    return !canUpload ? null :
 
         <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }}>
             {

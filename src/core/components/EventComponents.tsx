@@ -323,6 +323,7 @@ export interface EventAttendanceDetailProps {
 type EventAttendanceDetailSortField = "user" | "instrument" | "response";
 
 export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...props }: EventAttendanceDetailProps) => {
+    if (!eventData.responseInfo) return null;
     const event = eventData.event;
     const responseInfo = eventData.responseInfo;
     const segAttendees = API.events.getAttendeeCountPerSegment({ event: eventData.event });
@@ -588,6 +589,7 @@ export interface EventCompletenessTabContentProps {
 }
 
 export const EventCompletenessTabContent = ({ eventData }: EventCompletenessTabContentProps) => {
+    if (!eventData.responseInfo) return null;
     const [minStrength, setMinStrength] = React.useState<number>(50);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const event = eventData.event;
