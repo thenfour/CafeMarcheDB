@@ -27,8 +27,8 @@ import { CreatedByUserField, VisiblePermissionField } from "./user";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.view_events,
-    PostQuery: Permission.view_events,
+    PostQueryAsOwner: Permission.view_events_nonpublic,
+    PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.respond_to_events,
     PreMutate: Permission.manage_events,
     PreInsert: Permission.respond_to_events,
@@ -36,23 +36,23 @@ export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
 
 export const xEventAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.public,
-    PostQuery: Permission.view_events,
-    PreMutateAsOwner: Permission.view_events,
+    PostQuery: Permission.view_events_nonpublic,
+    PreMutateAsOwner: Permission.view_events_nonpublic,
     PreMutate: Permission.manage_events,
     PreInsert: Permission.manage_events,
 };
 
 export const xEventAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.view_events,
-    PostQuery: Permission.view_events,
+    PostQueryAsOwner: Permission.view_events_nonpublic,
+    PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.manage_events,
     PreMutate: Permission.manage_events,
     PreInsert: Permission.manage_events,
 };
 
 export const xEventAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.view_events,
-    PostQuery: Permission.view_events,
+    PostQueryAsOwner: Permission.view_events_nonpublic,
+    PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.admin_events,
     PreMutate: Permission.admin_events,
     PreInsert: Permission.admin_events,
@@ -475,7 +475,7 @@ const xEventArgs_Base: db3.TableDesc = {
             associationLocalIDMember: "eventId",
             associationLocalObjectMember: "event",
             associationTableID: "EventTagAssignment",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
+            authMap: xEventAuthMap_Homepage,
             foreignTableID: "EventTag",
             getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput => ({
                 tags: {
@@ -524,21 +524,21 @@ const xEventArgs_Base: db3.TableDesc = {
         new EventStartsAtField({
             allowNull: true,
             columnName: "startsAt",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
+            authMap: xEventAuthMap_Homepage,
         }),
         new GenericIntegerField({
             allowNull: false,
             columnName: "durationMillis",
-            authMap: xEventAuthMap_R_EOwn_EManagers,
+            authMap: xEventAuthMap_Homepage,
         }),
         new BoolField({
             columnName: "isAllDay",
             defaultValue: true,
-            authMap: xEventAuthMap_R_EOwn_EManagers,
+            authMap: xEventAuthMap_Homepage,
             allowNull: false
         }),
 
-        new GhostField({ memberName: "endDateTime", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "endDateTime", authMap: xEventAuthMap_Homepage }),
     ]
 };
 
@@ -1114,7 +1114,8 @@ interface EventResponsesPerUserArgs {
 };
 
 // returns array of response info per user. so each element has unique user.
-export function GetEventResponseInfo({ event, expectedAttendanceTag }: EventResponsesPerUserArgs): EventResponseInfo {
+export function GetEventResponseInfo({ event, expectedAttendanceTag }: EventResponsesPerUserArgs): (EventResponseInfo | null) {
+    if (!event.segments) return null; // limited users don't see segments.
 
     let defaultInvitationUserIds = new Set<number>();
 

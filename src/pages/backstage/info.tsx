@@ -9,7 +9,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MyContent = () => {
 
-    useAuthorizationOrThrow("info page", Permission.basic_trust);
+    useAuthorizationOrThrow("info page", Permission.visibility_members);
 
     // this page is for like, general Café Marché info. but ideally we have a full wiki. we're not far off but ya....
 

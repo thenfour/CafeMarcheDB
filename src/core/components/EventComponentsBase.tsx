@@ -7,7 +7,7 @@ export interface EventWithMetadata {
     event: db3.EventClientPayload_Verbose;
     tabSlug: string | undefined;
     eventURI: string;
-    responseInfo: db3.EventResponseInfo;
+    responseInfo: db3.EventResponseInfo | null;
     eventTiming: Timing;
     expectedAttendanceTag: null | db3.UserTagPayload;
     dateRange: DateTimeRange,

@@ -13,6 +13,8 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "src/core/db3/clientAPI";
 import { DateSubtractInDays, Timing, floorToDay } from "shared/time";
 import { Tab, Tabs } from "@mui/material";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { Permission } from "shared/permissions";
 
 
 const DashboardInner = () => {
@@ -33,6 +35,14 @@ const DashboardInner = () => {
   const eventsTableParams: db3.EventTableParams = {
     minDate,
   };
+
+  if (!useAuthorization("backstage dashboard - events", Permission.view_events_nonpublic)) {
+    return null;
+  }
+  if (!useAuthorization("backstage dashboard - songs", Permission.view_songs)) {
+    return null;
+  }
+
 
   const eventsClient = DB3Client.useTableRenderContext({
     tableSpec: new DB3Client.xTableClientSpec({

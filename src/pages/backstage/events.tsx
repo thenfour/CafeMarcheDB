@@ -397,7 +397,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
 };
 
 const MainContent = () => {
-    if (!useAuthorization("events page", Permission.view_events)) {
+    if (!useAuthorization("events page", Permission.view_events_nonpublic)) {
         throw new Error(`unauthorized`);
     }
 

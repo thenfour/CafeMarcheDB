@@ -42,7 +42,8 @@ export enum Permission {
     // ******************** event permissions.
     admin_events = "admin_events",// require this for managing event attributes like type, status, tags
     manage_events = "manage_events",// require this for editing events: descriptions, creating / editing / deleting events
-    view_events = "view_events",
+    view_events = "view_events", // careful: events get public visibility but not everything in events is public.
+    view_events_nonpublic = "view_events_nonpublic", // for things like description or attendance which is not public despite the event being public vis
     respond_to_events = "respond_to_events",
 
     // ******************** song permissions.

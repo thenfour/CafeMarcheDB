@@ -18,7 +18,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     //if (!idOrSlug) return <div>no event specified</div>;
     if (!eventId) throw new Error(`song not found`);
 
-    if (!useAuthorization(`event page: ${eventId}`, Permission.view_events)) {
+    if (!useAuthorization(`event page: ${eventId}`, Permission.view_events_nonpublic)) {
         throw new Error(`unauthorized`);
     }
 
