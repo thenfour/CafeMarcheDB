@@ -2205,6 +2205,7 @@ table.songMetadata tr:hover td .CMSmallButton {
 }
 
 .GlobalMetronomeDialog .tapTempoButton,
+.GlobalMetronomeDialog .closeButton,
 .GlobalMetronomeDialog .sliderContainer .nudge {
     margin: 15px;
     border-radius: 8px;
@@ -2222,7 +2223,13 @@ table.songMetadata tr:hover td .CMSmallButton {
 }
 
 .GlobalMetronomeDialog .tapTempoButton {
+    /* because caption changes, fix the width. */
     width: 150px;
+}
+
+.GlobalMetronomeDialog .closeButton {
+    width: min-content;
+    padding: 20px;
 }
 
 .GlobalMetronomeDialog .sliderContainer .nudge {

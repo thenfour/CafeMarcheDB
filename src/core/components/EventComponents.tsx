@@ -761,7 +761,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                         api.close();
                         if (obj.slug !== eventData.event.slug) {
                             const newUrl = API.events.getURIForEvent(obj.id, obj.slug);
-                            void router.push(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                            void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
                         }
                     }).catch(err => {
                         console.log(err);
@@ -845,7 +845,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
     const eventData = CalculateEventMetadata(event, tabSlug);
 
     React.useEffect(() => {
-        void router.push(eventData.eventURI);
+        void router.replace(eventData.eventURI);
     }, [eventData.eventURI]);
 
     const refetch = tableClient.refetch;

@@ -428,7 +428,7 @@ const MainContent = () => {
             <CMSinglePageSurfaceCard className="filterControls">
                 {/* showing {eventsClient.items.length} events */}
                 <div className="header">
-                    Search events
+                    Search & filter events
                 </div>
                 <div className="content">
                     <EventsControls onChange={handleSpecChange} spec={controlSpec} />

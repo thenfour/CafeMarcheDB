@@ -452,7 +452,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             </div>
         </DialogContent>
         <DialogActions>
-            <Button onClick={props.onClose}>Close</Button>
+            <Button className="closeButton" onClick={props.onClose}>Close</Button>
         </DialogActions>
 
     </ReactiveInputDialog>;

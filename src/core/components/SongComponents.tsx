@@ -351,7 +351,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                             api.close();
                             if (obj.slug !== song.slug) {
                                 const newUrl = API.songs.getURIForSong(obj.id, obj.slug);
-                                void router.push(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                                void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
                             }
                         }).catch(err => {
                             console.log(err);
@@ -412,7 +412,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const songData = CalculateSongMetadata(song, tabSlug);
 
     React.useEffect(() => {
-        void router.push(songData.songURI);
+        void router.replace(songData.songURI);
     }, [songData.songURI]);
 
     return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} showVisibility={true}>

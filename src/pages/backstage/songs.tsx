@@ -239,7 +239,7 @@ const MainContent = () => {
         <Suspense>
             <CMSinglePageSurfaceCard className="filterControls">
                 <div className="header">
-                    Search songs
+                    Search & filter songs
                 </div>
                 <div className="content">
                     <SongsControls onChange={handleSpecChange} spec={controlSpec} />
