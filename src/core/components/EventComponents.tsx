@@ -836,7 +836,7 @@ export interface EventDetailFullProps {
 }
 export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
 
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.fileTags?.length > 0)) ? gEventDetailTabSlugIndices['set-lists'] : gEventDetailTabSlugIndices.info));
+    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices['set-lists'] : gEventDetailTabSlugIndices.info));
     const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
     const router = useRouter();
 
