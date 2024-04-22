@@ -515,6 +515,11 @@ it's not often you'll actually want markdown that's really wide.
   margin-bottom: 40px;
   box-shadow: var(--subtle-elevation);
   max-width: 1500px;
+  width: max-content;
+}
+
+.searchResults .contentSection {
+  width: unset;
 }
 
 .contentSection>.header {
@@ -561,6 +566,7 @@ it's not often you'll actually want markdown that's really wide.
   text-transform: uppercase;
   /* margin: 3px 0px; */
   margin-right: 20px;
+  white-space: nowrap;
 }
 
 .contentSection .titleText .titleLink {

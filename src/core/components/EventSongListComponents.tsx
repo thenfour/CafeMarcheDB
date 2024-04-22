@@ -100,7 +100,7 @@ interface EventSongListValueViewerProps {
 
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     //const [currentUser] = useCurrentUser();
-    const [showTags, setShowTags] = React.useState<boolean>(true);
+    const [showTags, setShowTags] = React.useState<boolean>(false);
     //const visInfo = API.users.getVisibilityInfo(props.value);
 
     const user = useCurrentUser()[0]!;

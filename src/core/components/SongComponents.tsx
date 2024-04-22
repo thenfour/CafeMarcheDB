@@ -401,7 +401,8 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         tableClient.refetch();
     };
 
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
+    //const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
+    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(song.description) && (song.taggedFiles.length > 0)) ? gSongDetailTabSlugIndices.files : gSongDetailTabSlugIndices.info));
 
     const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
