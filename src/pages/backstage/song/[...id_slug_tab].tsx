@@ -6,6 +6,7 @@ import { CoerceToNumberOrNull, IsEntirelyIntegral } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
+import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SongBreadcrumbs, SongClientColumns, SongDetail, gSongDetailTabSlugIndices } from "src/core/components/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
@@ -66,7 +67,8 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     if (tableClient.items.length > 1) throw new Error(`db returned too many songs; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
     const song = tableClient.items[0]! as db3.SongPayload_Verbose;
 
-    return <div>
+    return <div className="songsDetailComponent">
+        <NewSongButton />
         {song ? <>
             <SongBreadcrumbs song={song} />
             <SongDetail readonly={false} song={song} tableClient={tableClient} initialTabIndex={initialTabIndex} />

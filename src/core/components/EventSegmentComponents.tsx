@@ -44,7 +44,8 @@ export const EventSegmentClientColumns = {
 ////////////////////////////////////////////////////////////////
 interface EventSegmentEditDialogProps {
     initialValue: db3.EventVerbose_EventSegmentPayload;
-    isNewObject: boolean,
+    //isNewObject: boolean,
+    markdownSettingPrefix: string,
     onSave: (newValue: db3.EventVerbose_EventSegmentPayload, tableRenderClient: DB3Client.xTableRenderClient) => void;
     onCancel: () => void;
     onDelete?: (tableRenderClient: DB3Client.xTableRenderClient) => void;
@@ -72,8 +73,10 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         onCancel={props.onCancel}
         onOK={props.onSave}
         table={tableSpec}
-        title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
-        description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
+        // title={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogTitle" : "EditEventSegmentDialogTitle"} />}
+        // description={<SettingMarkdown setting={props.isNewObject ? "NewEventSegmentDialogDescription" : "EditEventSegmentDialogDescription"} />}
+        title={<SettingMarkdown setting={`${props.markdownSettingPrefix}DialogTitle` as any} />}
+        description={<SettingMarkdown setting={`${props.markdownSettingPrefix}DialogDescription` as any} />}
     />;
 };
 
@@ -117,7 +120,7 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
         {authorized && <Button className="newSegmentButton" onClick={() => setOpen(true)}>{gIconMap.Add()} New segment</Button>}
         {open && <EventSegmentEditDialog
             onCancel={() => setOpen(false)}
-            isNewObject={true}
+            markdownSettingPrefix="NewEventSegment"
             onSave={handleSave}
             initialValue={blankObject}
         />
@@ -185,7 +188,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
             <Markdown markdown={props.segment.description} />
             {!props.readonly && editOpen && (<EventSegmentEditDialog
                 initialValue={props.segment}
-                isNewObject={false}
+                markdownSettingPrefix="EditEventSegment"
                 onDelete={handleDelete}
                 onCancel={() => setEditOpen(false)}
                 onSave={handleSave}
@@ -209,11 +212,7 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
 
     // if there is only 1 segment and there's no description for the segment, don't display at all.
     // the only time to show segment lists is when there's something that's not shown elsewhere.
-    if (event.segments.length === 1) {
-        if (IsNullOrWhitespace(event.segments[0]?.description)) {
-            return null;
-        }
-    }
+    const enableList = (event.segments.length > 1) || !IsNullOrWhitespace(event.segments[0]?.description);
 
     return <div className='segmentListContainer'>
         {!props.readonly && <NewEventSegmentButton
@@ -221,7 +220,7 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
             initialName={`Set ${event.segments.length + 1}`}
             refetch={tableClient.refetch}
         />}
-        <div className="segmentList">
+        {enableList && <div className="segmentList">
             {event.segments.map(segment => {
                 //const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
                 return <EventSegmentPanel
@@ -235,7 +234,7 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
                 //verbosity={verbosity}
                 />;
             })}
-        </div>
+        </div>}
     </div>;
 };
 
@@ -279,7 +278,7 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
         <Button onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Change date</Button>
         {editOpen && (<EventSegmentEditDialog
             initialValue={props.segment}
-            isNewObject={false}
+            markdownSettingPrefix="EditSingleEventSegment"
             onCancel={() => setEditOpen(false)}
             onSave={handleSave}
         />)}

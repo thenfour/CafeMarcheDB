@@ -7,6 +7,7 @@ import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { EventBreadcrumbs, EventDetailFull, EventTableClientColumns, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
+import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -64,7 +65,8 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
 
-    return <div>
+    return <div className="eventDetailComponent">
+        <NewEventButton onOK={() => { }} />
         {event ? <>
             <EventBreadcrumbs event={event} />
             <EventDetailFull readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} />

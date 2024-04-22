@@ -11,6 +11,7 @@ import { TAnyModel, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { SongClientColumns, SongDetail, SongDetailContainer, SongMetadataView } from "src/core/components/SongComponents";
@@ -108,7 +109,7 @@ interface SongListItemProps {
 };
 const SongListItem = (props: SongListItemProps) => {
     const songData = CalculateSongMetadata(props.song);
-    return <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={false}>
+    return <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={true}>
         <SongMetadataView readonly={true} refetch={props.tableClient.refetch} songData={songData} showCredits={false} />
     </SongDetailContainer>;
 };
@@ -157,12 +158,12 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
 };
 
 const MainContent = () => {
-    const router = useRouter();
+    //const router = useRouter();
 
     if (!useAuthorization("ViewSongsPage", Permission.view_songs)) {
         throw new Error(`unauthorized`);
     }
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     //const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
@@ -179,49 +180,31 @@ const MainContent = () => {
     };
 
 
-    // song table bindings
-    const songTableSpec = new DB3Client.xTableClientSpec({
-        table: db3.xSong,
-        columns: [
-            SongClientColumns.id,
-            SongClientColumns.name,
-            SongClientColumns.aliases,
-            SongClientColumns.slug,
-            new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, visible: false }), // required field but it's distracting to see here.
-            SongClientColumns.startBPM,
-            SongClientColumns.endBPM,
-            SongClientColumns.introducedYear,
-            SongClientColumns.lengthSeconds,
-            SongClientColumns.tags,
-            //SongClientColumns.createdByUser,
-            SongClientColumns.visiblePermission,
-        ],
-    });
+    // // song table bindings
+    // const songTableSpec = new DB3Client.xTableClientSpec({
+    //     table: db3.xSong,
+    //     columns: [
+    //         SongClientColumns.id,
+    //         SongClientColumns.name,
+    //         SongClientColumns.aliases,
+    //         SongClientColumns.slug,
+    //         new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, visible: false }), // required field but it's distracting to see here.
+    //         SongClientColumns.startBPM,
+    //         SongClientColumns.endBPM,
+    //         SongClientColumns.introducedYear,
+    //         SongClientColumns.lengthSeconds,
+    //         SongClientColumns.tags,
+    //         //SongClientColumns.createdByUser,
+    //         SongClientColumns.visiblePermission,
+    //     ],
+    // });
 
-    // necessary to connect all the columns in the spec.
-    const songTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
-        requestedCaps: DB3Client.xTableClientCaps.Mutation,
-        tableSpec: songTableSpec,
-    });
-
-    const refetch = async () => {
-        setControlSpec({ ...controlSpec, refreshSerial: controlSpec.refreshSerial + 1 });
-        await songTableClient.refetch();
-    };
-
-    const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
-        songTableClient.doInsertMutation(obj).then(async (ret) => {
-            console.log(ret);
-            showSnackbar({ severity: "success", children: "success" });
-            await refetch();
-            //api.closeDialog();
-            void router.push(API.songs.getURIForSong((ret as any).id));
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error" });
-        });
-    };
+    // // necessary to connect all the columns in the spec.
+    // const songTableClient = DB3Client.useTableRenderContext({
+    //     clientIntention,
+    //     requestedCaps: DB3Client.xTableClientCaps.Mutation,
+    //     tableSpec: songTableSpec,
+    // });
 
     return <div className="songsMainContent">
 
@@ -229,12 +212,7 @@ const MainContent = () => {
             <SettingMarkdown setting="songs_markdown"></SettingMarkdown>
         </Suspense>
 
-        <DB3EditRowButton
-            onSave={handleSave}
-            tableRenderClient={songTableClient}
-            row={db3.xSong.createNew(clientIntention)}
-            label={<>{gIconMap.Add()} Create new song</>}
-        />
+        <NewSongButton />
 
         <Suspense>
             <CMSinglePageSurfaceCard className="filterControls">
