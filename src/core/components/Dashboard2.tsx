@@ -33,12 +33,13 @@ import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
+import { Routes } from "@blitzjs/next";
 
 const drawerWidth = 300;
 
 
 const AppBarUserIcon_MenuItems = () => {
-    const [logoutMutation] = useMutation(logout);
+    //const [logoutMutation] = useMutation(logout);
     const router = useRouter();
     //const [currentUser] = useCurrentUser();
     const sess = useSession();
@@ -74,8 +75,8 @@ const AppBarUserIcon_MenuItems = () => {
         <MenuItem component={Link} href='/backstage/profile'>Your profile</MenuItem>
 
         <MenuItem onClick={async () => {
-            await logoutMutation();
-            void router.push("/backstage");
+            // just doing the mutation here will keep a bunch of app state; better to cleanly navigate to a simple logout page where we don't risk access exceptions.
+            void router.push(Routes.LogoutPage());
         }}>
             Log out
         </MenuItem>

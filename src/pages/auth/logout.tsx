@@ -8,9 +8,12 @@ const LogoutPage: BlitzPage = () => {
     const [logoutMutation] = useMutation(logout);
     const router = useRouter();
 
+    // all this to avoid triggering current state stuff and getting unauthorized exceptions instead of a clean login option.
     useEffect(() => {
         logoutMutation().then(() => {
-            void router.push('/backstage');
+            window.setTimeout(() => {
+                window.location.href = "/backstage";
+            }, 0);
         }).catch((e) => {
             console.log(e);
         });
