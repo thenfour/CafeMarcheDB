@@ -16,7 +16,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMDBUploadFile, CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { UploadFileComponent } from "src/core/components/SongFileComponents";
+import { FileDropWrapper, UploadFileComponent } from "src/core/components/SongFileComponents";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -85,20 +85,27 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
 
     const canUpload = useAuthorization("FrontpageGalleryUpload", Permission.upload_files);
 
-    return canUpload && showUpload ? (
-        <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
-            <div className="content uploadControlContainer">
-                <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { throw new Error("url uploads not supported for frontpage gallery") }} />
-                <Button onClick={() => setShowUpload(false)}>Cancel</Button>
-            </div>
-        </CMSinglePageSurfaceCard>
-    ) : (
-        <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
-            <div className="content uploadControlContainer">
-                <Button onClick={() => setShowUpload(true)}>Upload</Button>
-            </div>
-        </CMSinglePageSurfaceCard>
-    );
+    return canUpload &&
+
+        <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }}>
+            {
+                showUpload ? (
+                    <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
+                        <div className="content uploadControlContainer">
+                            <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
+                            <Button onClick={() => setShowUpload(false)}>Cancel</Button>
+                        </div>
+                    </CMSinglePageSurfaceCard>
+                ) : (
+                    <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
+                        <div className="content uploadControlContainer">
+                            <Button onClick={() => setShowUpload(true)}>Upload</Button>
+                        </div>
+                    </CMSinglePageSurfaceCard>
+                )}
+        </FileDropWrapper>
+
+
 };
 
 
@@ -406,6 +413,7 @@ const GalleryItem = (props: GalleryItemProps) => {
             <Button onClick={handleSoftDeleteClick} startIcon={gIconMap.Delete()}>Delete</Button>
         </div>
         <div className="content">
+            {props.value.file.sizeBytes && <div className="filesize">{formatFileSize(props.value.file.sizeBytes)}</div>}
             <GalleryItemDescriptionControl value={props.value} client={props.client} />
             <GalleryItemImageControl value={props.value} client={props.client} />
         </div>

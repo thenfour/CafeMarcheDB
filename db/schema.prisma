@@ -52,9 +52,11 @@ model Role {
   isPublicRole      Boolean          @default(false)
   description       String?          @db.MediumText
   sortOrder         Int              @default(0)
+  significance      String? // 
   permissions       RolePermission[]
   User              User[]
 
+  @@index([significance])
   @@index([name])
 }
 
@@ -64,6 +66,7 @@ model Permission {
   isVisibility Boolean @default(false)
   description  String? @db.MediumText
   sortOrder    Int     @default(0)
+  significance String? // 
   color        String? @db.VarChar(768)
   iconName     String? @db.VarChar(768)
 
@@ -76,6 +79,7 @@ model Permission {
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
 
   @@index([name])
+  @@index([significance])
   @@index([sortOrder])
 }
 

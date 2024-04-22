@@ -22,6 +22,7 @@ const MainContent = () => {
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.BoolColumnClient({ columnName: "isRoleForNewUsers" }),
             new DB3Client.BoolColumnClient({ columnName: "isPublicRole" }),
+            new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 120 }),
             new DB3Client.TagsFieldClient({ columnName: "permissions", cellWidth: 300, allowDeleteFromCell: false }),
         ],
     });

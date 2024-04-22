@@ -674,29 +674,6 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             </CMChipContainer>,
         });
 
-
-        // return <React.Fragment key={params.key}>
-        //     <InputLabel>{this.schemaColumn.member}</InputLabel>
-        //     <Select
-        //         value={value}
-        //         error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}
-        //         onChange={e => {
-        //             let userInputValue: (string | null) = e.target.value as string;
-        //             if (userInputValue === gNullValue) {
-        //                 userInputValue = null;
-        //             }
-        //             return params.api.setFieldValues({ [this.schemaColumn.member]: userInputValue });
-        //         }}
-        //     >
-        //         {
-        //             this.gridOptions.map(option => {
-        //                 return <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>;
-        //             })
-        //         }
-        //     </Select>
-        //     <FormHelperText>Heres my helper text</FormHelperText>
-        // </React.Fragment>;
-
     };
 };
 

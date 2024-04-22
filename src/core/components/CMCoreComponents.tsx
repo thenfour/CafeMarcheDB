@@ -423,8 +423,8 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
 //     </>;
 // };
 
-export const InspectObject = (props: { src: any, tooltip?: string }) => {
-    return <div className='debugInspectorOpen' onClick={() => console.log(props.src)}>{gIconMap.Visibility()}</div>
+export const InspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
+    return <div className='debugInspectorOpen' onClick={() => console.log(props.src)}>{gIconMap.Visibility()} {props.label}</div>
 };
 
 

@@ -21,9 +21,11 @@ import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { DashboardContext } from './DashboardContext';
 
 export const NewSongButton = () => {
     const router = useRouter();
+    const dashboardContext = React.useContext(DashboardContext);
 
     if (!useAuthorization("ViewSongsPage", Permission.manage_songs)) {
         return null;
@@ -32,6 +34,14 @@ export const NewSongButton = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+
+    const emptyRow = (() => {
+        const ret = db3.xSong.createNew(clientIntention);
+        // default to members visibility.
+        // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
+        ret.visiblePermission = dashboardContext.permissions.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null;
+        return ret;
+    })();
 
     // song table bindings
     const songTableSpec = new DB3Client.xTableClientSpec({
@@ -72,7 +82,7 @@ export const NewSongButton = () => {
     return <DB3EditRowButton
         onSave={handleSave}
         tableRenderClient={songTableClient}
-        row={db3.xSong.createNew(clientIntention)}
+        row={emptyRow}
         label={<>{gIconMap.Add()} Create new song</>}
     />;
 };

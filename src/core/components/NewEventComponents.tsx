@@ -14,6 +14,7 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
+import { DashboardContext } from "./DashboardContext";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -26,6 +27,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    const dashboardContext = React.useContext(DashboardContext);
 
     // EVENT table bindings
     const eventTableSpec = new DB3Client.xTableClientSpec({
@@ -50,7 +52,14 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         tableSpec: eventTableSpec,
     });
 
-    const [eventValue, setEventValue] = React.useState<db3.EventPayload>(db3.xEvent.createNew(clientIntention));
+    const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
+        const ret = db3.xEvent.createNew(clientIntention);
+        // default to members visibility.
+        // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
+        //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//
+        ret.visiblePermission = dashboardContext.permissions.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null;
+        return ret;
+    });
 
     const eventAPI: DB3Client.NewDialogAPI = {
         setFieldValues: (fieldValues: TAnyModel) => {

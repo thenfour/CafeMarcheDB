@@ -20,6 +20,7 @@ const Inner = () => {
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.BoolColumnClient({ columnName: "isVisibility" }),
+            new DB3Client.ConstEnumStringFieldClient({ columnName: "significance", cellWidth: 120 }),
             new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 120 }),
             new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120 }),
         ],

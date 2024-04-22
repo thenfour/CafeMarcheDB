@@ -34,6 +34,7 @@ import * as db3 from '../db3';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { gIconMap } from './IconSelectDialog';
 import { useAuthenticatedSession } from '@blitzjs/auth';
+import { API } from '../clientAPI';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -100,6 +101,7 @@ export type DB3EditGridProps = {
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const readOnly = CoerceToBoolean(props.readOnly, false);
+    const isShowingAdminControls = API.other.useIsShowingAdminControls();
 
     // set initial pagination values + get pagination state.
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
@@ -398,6 +400,8 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         />}
 
         <ClipboardControls client={tableClient} />
+
+        {isShowingAdminControls && <InspectObject label={"items"} src={tableClient.items} />}
 
         <DataGrid
             // basic config

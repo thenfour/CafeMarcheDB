@@ -3,9 +3,9 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel, gIconOptions } from "shared/utils";
-import { BoolField, DB3AuthSpec, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ConstEnumStringField, DB3AuthSpec, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance } from "./prismArgs";
+import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, PermissionSignificance, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance } from "./prismArgs";
 
 // for basic user fields.
 // everyone can view
@@ -186,6 +186,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             authMap: xUserAuthMap_R_EOwn_EManagers,
             allowNull: false,
         }),
+        MakeSignificanceField("significance", PermissionSignificance, { authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeColorField("color", { authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeIconField("iconName", gIconOptions, { authMap: xUserAuthMap_R_EOwn_EManagers }),
         new TagsField<RolePermissionAssociationPayload>({
@@ -318,6 +319,7 @@ export const xRole = new db3.xTable({
             allowNull: false,
             authMap: xUserAuthMap_R_EAdmins,
         }),
+        MakeSignificanceField("significance", RoleSignificance, { authMap: xUserAuthMap_R_EAdmins }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",
             associationForeignIDMember: "permissionId",

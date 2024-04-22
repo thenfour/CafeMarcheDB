@@ -202,9 +202,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 ////////////////////////////////////////////////////////////////
 interface SegmentListProps {
     event: db3.EventClientPayload_Verbose;
-    //myEventInfo: db3.EventInfoForUser;
     tableClient: DB3Client.xTableRenderClient;
-    //verbosity: EventDetailVerbosity;
     readonly: boolean;
 };
 
@@ -222,16 +220,12 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
         />}
         {enableList && <div className="segmentList">
             {event.segments.map(segment => {
-                //const segInfo = myEventInfo.getSegmentUserInfo(segment.id);
                 return <EventSegmentPanel
                     key={segment.id}
                     segment={segment}
                     readonly={props.readonly}
-                    //segmentInfo={segInfo}
-                    //myEventInfo={myEventInfo}
                     event={event}
                     refetch={tableClient.refetch}
-                //verbosity={verbosity}
                 />;
             })}
         </div>}
