@@ -29,7 +29,6 @@ export function CMAuthorize2(args: CMAuthorize2Args) {
   assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
   const ret = (!!args.userId) && (args.isSysAdmin || args.userPermissions.some(p => p === args.permission));
 
-  //console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] userId:${args.userId || "<null>"} perm:${args.permission} with userPerms ${JSON.stringify(args.userPermissions)}`);
   return ret || false;
 };
 
@@ -47,23 +46,7 @@ export function CMAuthorize(args: CMAuthorizeArgs) {
     permission: args.permission,
     userId: args.publicData.userId || null,
   });
-  // assert(!!args.permission && args.permission.length, `CMAuthorize: Permission is invalid; Maybe a call was improperly made. args=${JSON.stringify(args)}`);
-  // assert(!!args.reason && args.reason.length, `CMAuthorize: Permission is invalid; this is required for diagnostics and tracing. Maybe a call was improperly made. args=${JSON.stringify(args)}`);
-  // const ret = (!!args.publicData?.userId) && (args.publicData?.isSysAdmin || args.publicData?.permissions?.some(p => p === args.permission));
-  // console.log(`********** CMAuthorize<${args.reason}> [${ret ? "AUTHORIZED" : "DENIED"}] perm:${args.permission} for user ${args.publicData?.userId || "<null>"} with perms ${JSON.stringify(args.publicData?.permissions || [])}`);
-  // return ret || false;
 };
-
-// interface CMDBRolesIsAuthorizedArgs {
-//   ctx: Ctx,
-//   reason: string;
-//   permission: Permission;
-// };
-
-// export function CMDBRolesIsAuthorized(params: CMDBRolesIsAuthorizedArgs) {
-//   const publicData = (params.ctx.session as SessionContext).$publicData;
-//   return CMAuthorize({ ...params.args[0], publicData });
-// }
 
 export function CMDBAuthorizeOrThrow(reason: string, permission: Permission, ctx: AuthenticatedCtx) {
   if (!CMAuthorize({ reason, permission, publicData: ctx.session.$publicData })) {

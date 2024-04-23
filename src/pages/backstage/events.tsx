@@ -43,7 +43,6 @@ interface EventsControlsProps {
 const EventsControls = (props: EventsControlsProps) => {
 
     const [popularTags, { refetch }] = API.events.usePopularEventTagsQuery();
-    //console.log(popularTags);
 
     const statusesClient = API.events.getEventStatusesClient();
     const typesClient = API.events.getEventTypesClient();
@@ -57,11 +56,6 @@ const EventsControls = (props: EventsControlsProps) => {
         const newSpec: EventsControlsSpec = { ...props.spec, recordCount };
         props.onChange(newSpec);
     };
-
-    // const setVerbosity = (verbosity: EventDetailVerbosity) => {
-    //     const newSpec: EventsControlsSpec = { ...props.spec, verbosity };
-    //     props.onChange(newSpec);
-    // };
 
     const toggleTag = (tagId: number) => {
         const newSpec: EventsControlsSpec = { ...props.spec };

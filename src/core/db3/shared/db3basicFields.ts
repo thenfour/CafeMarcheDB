@@ -73,7 +73,6 @@ export class GhostField extends FieldBase<number> {
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel) => {
         //assert(false, "ghost fields should not be applying to db model.");
-        //console.log(`Ghost field skipping applying to db model. tableID:${this.table.tableID}, column:${this.member}`);
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
         if (dbModel[this.member] === undefined) return;

@@ -36,7 +36,6 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const handleChange = (newValue: string | null) => {
-        console.log(`setting field ${props.fieldSpec.fieldName} to ${newValue}`);
         mutationToken.invoke({
             eventId: props.event.id,
             [props.fieldSpec.fieldName]: newValue,

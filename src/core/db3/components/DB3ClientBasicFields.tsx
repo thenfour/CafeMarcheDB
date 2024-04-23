@@ -798,7 +798,6 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
                         d = null;
                     }
                 }
-                //console.log(`date picker onChange: ${value} => ${d}`);
                 setDatePickerValue(d);
                 //invokeOnChange();
             }}
@@ -809,7 +808,6 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
             <FormControlLabel className='CMFormControlLabel' control={<Checkbox
                 checked={noDateChecked}
                 onChange={(e) => {
-                    //console.log(`checkbox change checked=${e.target.checked}, changing to ${e.target.checked ? null : datePickerValue} `);
                     setNoDateChecked(e.target.checked);
                     if (!e.target.checked) {
                         setQueueFocus(true);
@@ -990,7 +988,6 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
             value: <div>
                 <CMTextInputBase
                     onChange={(e, val) => {
-                        //console.log(val);
                         val = IsNullOrWhitespace(val) ? null : new Date(val); // convert to kosher value.
                         params.api.setFieldValues({ [this.columnName]: val });
                     }}

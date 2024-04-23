@@ -402,14 +402,11 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
-        //console.log(args);
         value.songs = moveItemInArray(value.songs, args.removedIndex, args.addedIndex).map((song, index) => ({ ...song, sortOrder: index }));
         setValue({ ...value });
-        //setItems(items => arrayMove(items, removedIndex, addedIndex));
     };
 
     const nameColumn = tableSpec.getColumn("name");
-    console.log(`aoeu`);
     const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention, autoFocus: true });
 
     return <>

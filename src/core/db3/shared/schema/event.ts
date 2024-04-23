@@ -332,10 +332,6 @@ const xEventArgs_Base: db3.TableDesc = {
     getParameterizedWhereClause: (params: EventTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
 
-        //console.assert(clientIntention.currentUser?.id !== undefined);
-        //console.assert(clientIntention.currentUser?.role?.permissions !== undefined);
-        //console.log(`getParameterizedWhereClause for event with params:${JSON.stringify(params)}, clientintention:${JSON.stringify([clientIntention.mode, clientIntention.intention])}`);
-
         if (params.eventId !== undefined) {
             console.assert(params.eventSlug === undefined);
             ret.push({ id: params.eventId, });
@@ -1034,7 +1030,6 @@ export const getEventResponseForUser = ({ event, user, defaultInvitationUserIds 
     if (response) {
         const isInvited = CoalesceBool(response.isInvited, defaultInvitationUserIds.has(user.id));
         const instrument = getInstrumentForEventUserResponse(response, user);
-        //console.log(`user: ${user.name}, instrument: ${instrument}`);
         return {
             isInvited,
             event,

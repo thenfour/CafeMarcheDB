@@ -99,7 +99,6 @@ export abstract class IColumnClient {
     // called when the table client is initialized to make sure this column object knows about its sibling column in the schema.
     connectColumn = (schemaTable: db3.xTable, tableClient: xTableRenderClient) => {
         console.assert(this.columnName.length > 0);
-        //console.log(`connecting column ${this.columnName}`);
         this.schemaTable = schemaTable;
         this.schemaColumn = schemaTable.columns.find(c => c.member === this.columnName)!;
         if (!this.schemaColumn) {
@@ -290,11 +289,6 @@ export class xTableRenderClient {
             };
             const [{ items, ...remainingQueryResults }, { refetch, ...queryOutput }] = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
             items_ = items;
-
-            // console.log(`basic client query items on table ${this.args.tableSpec.args.table.tableName}:`);
-            // console.log(items);
-            // console.log(`filtermodel:`);
-            // console.log(args.filterModel);
 
             this.remainingQueryStatus = queryOutput;
             this.remainingQueryResults = remainingQueryResults;

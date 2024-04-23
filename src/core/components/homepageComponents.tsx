@@ -523,8 +523,6 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);// to induce re-render, increment
     const [layoutUpdateTimer, setLayoutUpdateTimer] = React.useState<NodeJS.Timeout | null>(null);
 
-    //console.log(`render - serial:${0}`);
-
     const svgRefs = React.useRef<MainSVGRefs>({
         photoCaptionRef: null,
         photoSelectRef: null,
@@ -566,7 +564,6 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
             if (root2) {
                 //const root2 = document.querySelector(".root2") as HTMLElement;
                 const horizOrientation = (window.innerHeight < window.innerWidth);
-                //console.log(`update layout ${getNextSequenceId()} - orient:${horizOrientation} (${window.innerHeight} x ${window.innerWidth}) - serial:${0 + 1}`);
                 // because the overall page layout depends on orientation, the natural width changes depending on orient. so use different default widths.
                 const zoomFact = horizOrientation ? (root2.clientWidth / gSettings.landscapeNaturalWidth) : (root2.clientWidth / gSettings.portraitNaturalWidth);
                 root2.style.setProperty("--page-zoom", `${(zoomFact * 100).toFixed(2)}%`);
@@ -580,11 +577,9 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
 
     const resetGalleryTimer = () => {
         if (galleryTimer.current !== null) {
-            //console.log(`resetGalleryTimer: clearing gallery timer ${galleryTimer.current}`);
             clearTimeout(galleryTimer.current);
         }
         const t = setTimeout(galleryTimerProc, gSettings.photoCarrouselAutoPlayIntervalMS);
-        //console.log(`resetGalleryTimer: ${gSettings.photoCarrouselAutoPlayIntervalMS} -> new timer ${t}`);
         galleryTimer.current = t;
     };
 

@@ -840,8 +840,6 @@ export class xTable implements TableDesc {
         }
 
         const ret = (and.length > 0) ? { AND: and } : undefined;
-        // console.log(`calculate where clause on table ${this.tableName}`);
-        // console.log(ret);
         return ret;
     };
 
@@ -927,28 +925,18 @@ export const GetTableById = (tableID: string): xTable => {
     return ret;
 }
 
-//let gIndent = 0;
-
 ////////////////////////////////////////////////////////////////
 export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, memberName: string, localTableName: string, foreignMemberOnAssociation: string, foreignTableID: string, clientIntention: xTableClientUsageContext) => {
-    // console.log(`${"--".repeat(gIndent)}{{ ApplyIncludeFilteringToRelation(${localTableName}.${memberName}, foreign:${foreignTableID}) incoming include:`);
-    // console.log(include);
-    // gIndent++;
     const foreignTable = GetTableById(foreignTableID);
     let member = include[memberName];
     if (!member) { // applies to === false, === null, === undefined
         // this member is not present in the include; nothing to be done; silent NOP.
-        // console.log(`${"--".repeat(gIndent)}-> nothing to do; this member (${memberName}) is not in the include. (include:)`);
-        // console.log(include);
-        // gIndent--;
-        // console.log(`${"--".repeat(gIndent)}}}`);
         return;
     }
     if (member !== true) {
         // assume member is an object which is the typical case, like Prisma.UserInclude.
         // if there's already a where clause there, it's not clear what to do. likely "AND" them, but overall not worth supporting this case.
         if (member.where) {
-            //console.log(member.where);
             throw new Error(`can't apply a WHERE clause when one already exists. probably a bug. table.member: ${localTableName}.${memberName}`);
         }
     } else {
@@ -972,12 +960,6 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
         }
     });
 
-    // console.log(`${"--".repeat(gIndent)}WHERE clause for table:${localTableName} col:${memberName} with foreignTable:${foreignTableID}`);
-    // console.log(where);
-
-    // console.log(`${"--".repeat(gIndent)}about to update include for member. here is before:`);
-    // console.log(include[memberName]);
-
     // replace it. no longer use `member` after this.
     // include[memberName] = {
     //     ...member,
@@ -990,17 +972,10 @@ export const ApplyIncludeFilteringToRelation = async (include: TAnyModel, member
         },
     };
 
-    // console.log(`${"--".repeat(gIndent)}updated include so now its:`);
-    // console.log(include[memberName]);
-
     // now we should do children. for all members, apply its table filtering. see the example hierarchy:
     if (include[memberName].include) {
-        //console.log(`${"--".repeat(gIndent)}applying include for children`);
         foreignTable.ApplyIncludeFiltering(include[memberName].include, newClientIntention);
     }
-
-    // gIndent--;
-    // console.log(`${"--".repeat(gIndent)}}}`);
 };
 
 export const ApplySoftDeleteWhereClause = (ret: Array<any>, clientIntention: xTableClientUsageContext, isDeletedColumnName?: string) => {

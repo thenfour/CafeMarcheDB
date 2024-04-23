@@ -175,7 +175,6 @@ export const FileDropWrapper = (props: React.PropsWithChildren<FileDropWrapperPr
     const [isDragging, setIsDragging] = React.useState(false);
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-        console.log(`handleDrop -> dragging=true`);
         e.preventDefault();
         e.stopPropagation();
         setIsDragging(false);
@@ -196,17 +195,14 @@ export const FileDropWrapper = (props: React.PropsWithChildren<FileDropWrapperPr
     return <div
         className={`${props.className} ${isDragging ? "dragging" : "notDragging"} fileDropWrapper`}
         onDragEnter={(e) => {
-            console.log(`onDragEnter -> dragging=true`);
             e.preventDefault(); e.stopPropagation();
             setIsDragging(true);
         }}
         onDragOver={(e) => {
-            console.log(`onDragOver -> dragging=true`);
             e.preventDefault(); e.stopPropagation();
             setIsDragging(true);
         }}
         onDragLeave={(e) => {
-            console.log(`onDragLeave -> dragging=true`);
             e.preventDefault(); e.stopPropagation();
             setIsDragging(false);
         }}
@@ -355,7 +351,6 @@ export const FileEditor = (props: FileEditorProps) => {
                 columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileInstrumentTagPayload, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
-                    console.log('aoeu');
                     const fg = dashboardContext.instrumentFunctionalGroups.find(fg => fg.id === association.instrument.functionalGroupId);
                     if (!fg) return rowInfo;
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
@@ -751,7 +746,6 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
                 },
                 files,
                 onProgress: (prog01, uploaded, total) => {
-                    //console.log(`progress:${prog}, uploaded:${uploaded}, total:${total}`);
                     setProgress(prog01);
                 },
             }).then(() => {

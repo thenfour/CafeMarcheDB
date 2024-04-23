@@ -325,9 +325,6 @@ function calculateBPM(tapIntervals) {
 //         totalWeight += weight;
 //     });
 
-//     console.log(filteredIntervals.map(i => 60000 / i));
-//     console.log(`filtered out ${tapIntervals.length - filteredIntervals.length} taps; weightedSumSquares=${weightedSumSquares} totalWeight=${totalWeight}`);
-
 //     const rmsInterval = Math.sqrt(weightedSumSquares / totalWeight);
 
 //     // Convert RMS interval to BPM

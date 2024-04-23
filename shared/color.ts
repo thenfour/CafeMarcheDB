@@ -584,7 +584,6 @@ export class ColorPalette extends ColorPaletteArgs {
 //             e.weakContrastColor = weakContrastMixed.cssColor;// `black`;
 //             ret.entries.push(e);
 //         };
-//         //console.log(ret.entries);
 //         return ret;
 //     }
 // }

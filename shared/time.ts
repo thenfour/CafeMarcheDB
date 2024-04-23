@@ -440,7 +440,6 @@ export class DateTimeRange {
             return null as any;
         }
         if (!this.isAllDay()) {
-            // console.log(`getLastDateTime: not all day`);
             return new Date(startDate.valueOf() + this.spec.durationMillis - 1);
         }
 
@@ -448,17 +447,12 @@ export class DateTimeRange {
         let ret = dayjs(startDate);
         ret = ret.add(durationDays, "day");
 
-        // console.log(`getLastDateTime: duration days: ${durationDays}`);
-        // console.log(`getLastDateTime: start date: ${startDate.toISOString()}`);
-        // console.log(`getLastDateTime: END date (+days): ${ret.toISOString()}`);
-
         assert(ret.millisecond() === 0, "expecting this time to land on a midnight boundary.");
         assert(ret.second() === 0, "expecting this time to land on a midnight boundary.");
         assert(ret.minute() === 0, "expecting this time to land on a midnight boundary.");
         assert(ret.hour() === 0, "expecting this time to land on a midnight boundary.");
 
         ret = ret.add(-1, "millisecond");
-        // console.log(`getLastDateTime: return date: ${ret.toISOString()}`);
 
         return ret.toDate();
     }

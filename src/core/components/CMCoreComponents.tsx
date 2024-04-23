@@ -747,7 +747,6 @@ export const JoystickDiv = ({ enabled, children, className, ...props }: React.Pr
 
         containerRef.setPointerCapture(e.pointerId);
         props.onDragStateChange && props.onDragStateChange("dragging", "idle");
-        //console.log(`handlePointerDown, pointerid ${e.pointerId}`);
     };
 
     const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -756,7 +755,6 @@ export const JoystickDiv = ({ enabled, children, className, ...props }: React.Pr
         setTouchIdentifier(null);
         setPrevPagePos(null);
         props.onDragStateChange && props.onDragStateChange("idle", "dragging");
-        //console.log(`handlePointerUp pointerid ${e.pointerId}`);
     };
 
     const handleTouchUp = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -764,7 +762,6 @@ export const JoystickDiv = ({ enabled, children, className, ...props }: React.Pr
         setTouchIdentifier(null);
         setPrevPagePos(null);
         props.onDragStateChange && props.onDragStateChange("idle", "dragging");
-        //console.log(`handleTouchUp`);
     };
 
     const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -774,7 +771,6 @@ export const JoystickDiv = ({ enabled, children, className, ...props }: React.Pr
 
         const dx = e.pageX - prevPagePos.x;
         const dy = e.pageY - prevPagePos.y;
-        //console.log(`handlePointerMove d:[${dx}, ${dy}]`);
 
         setPrevPagePos({
             x: e.pageX,
@@ -797,8 +793,6 @@ export const JoystickDiv = ({ enabled, children, className, ...props }: React.Pr
         });
 
         props.onDragStateChange && props.onDragStateChange("dragging", "idle");
-
-        //console.log(`handleTouchStart, identifier ${touch.identifier}`);
     }
 
     const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -810,7 +804,6 @@ export const JoystickDiv = ({ enabled, children, className, ...props }: React.Pr
 
         const dx = touch.pageX - prevPagePos.x;
         const dy = touch.pageY - prevPagePos.y;
-        console.log(`handleTouchMove d:[${dx}, ${dy}]`);
 
         setPrevPagePos({
             x: touch.pageX,

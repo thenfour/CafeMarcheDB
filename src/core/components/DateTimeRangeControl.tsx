@@ -121,8 +121,6 @@ export const EventCalendarMonth = (props: EventCalendarMonthProps) => {
                 setView(view);
             }}
             onChange={(v, state) => {
-                //console.log(state);
-                //console.log(`clicked a date: ${DateToDebugString(v?.toDate()!)}`);
                 props.onChange(v?.toDate()!);
             }}
             slots={{ day: DaySlot }}

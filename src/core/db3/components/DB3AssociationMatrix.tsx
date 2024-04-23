@@ -131,7 +131,6 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
                     }
 
                     // create an update obj with just the id & the tags field.
-                    console.log(`doing update mutation`);
                     dbRows.doUpdateMutation({
                         [props.localTableSpec.args.table.pkMember]: params.row[props.localTableSpec.args.table.pkMember],
                         [props.tagsField.columnName]: newFieldVal,
@@ -189,7 +188,6 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
             }
         }
 
-        console.log(obj);
         const txt = `[\n${objRows.join(`,\n`)}\n]\n`; // JSON.stringify(obj, null, 2);
         await navigator.clipboard.writeText(txt);
         showSnackbar({ severity: "success", children: `Copied ${Object.entries(obj).length} associations to clipboard (${txt.length} characters)` });

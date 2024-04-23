@@ -437,10 +437,6 @@ export const DefaultRenderAsChip = <TAssociation,>(args: DefaultRenderAsChipPara
     if (!args.columnSchema.getAssociationTableShema) {
         throw new Error(`columnSchema is missing getAssociationTableShema.`);
     }
-    if (args.columnSchema.member === 'taggedInstruments') {
-        console.log(`defaultrender as chip ${args.columnSchema.member}`);
-
-    }
     const rowInfo1 = args.columnSchema.getAssociationTableShema().getRowInfo(args.value);
     const rowInfo = args.overrideRowInfo ? args.overrideRowInfo(args.value, rowInfo1) : rowInfo1;
 

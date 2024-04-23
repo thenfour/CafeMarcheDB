@@ -18,7 +18,6 @@ export const AudioPreview = (props: AudioPreviewProps) => {
 
     const UnmountWavesurfer = () => {
         if (myWaveSurfer) {
-            //console.log(`unmounting wavesurfer`);
             myWaveSurfer.unAll();
             myWaveSurfer.destroy();
             setWaveSurfer(null);
@@ -27,7 +26,6 @@ export const AudioPreview = (props: AudioPreviewProps) => {
 
     React.useEffect(() => {
 
-        //console.log(`mounting wavesurfer`);
         if (myRef) {
             UnmountWavesurfer();
 

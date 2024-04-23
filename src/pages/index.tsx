@@ -56,8 +56,6 @@ const MainContent = () => {
         agenda,
     };
 
-    console.log(content);
-
     return <NoSsr>
         <HomepageMain content={content} className="realFrontpage" fullPage={true} />
     </NoSsr>;

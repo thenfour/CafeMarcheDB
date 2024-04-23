@@ -163,7 +163,6 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     const [confirmDialogArgs, setConfirmDialogArgs] = React.useState<any>(null);
 
     const processRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
-        //console.log(`processRowUpdate ${JSON.stringify(newRow)}`);
         return new Promise<GridRowModel>((resolve, reject) => {
             const validateResult = tableSpec.args.table.ValidateAndComputeDiff(oldRow, newRow, "update", clientIntention);
             // there are 3 possible paths:
@@ -261,8 +260,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             return null;
         }
 
-        const { oldRow, newRow, validateResult } = confirmDialogArgs;
-        //console.log(validateResult);
+        // const { oldRow, newRow, validateResult } = confirmDialogArgs;
 
         return (
             <Dialog
@@ -284,14 +282,11 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
     };
 
     const onAddOK = (obj) => {
-        //console.log(`let's tr a mutation`);
-        //console.log(`Sending insert mutation with object:`);
-        //console.log(obj);
         tableClient.doInsertMutation(obj).then((newRow) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             tableClient.refetch();
         }).catch(err => {
-            //console.log(err);
+            console.log(err);
             showSnackbar({ children: "insert error", severity: 'error' });
             tableClient.refetch();
             throw err;

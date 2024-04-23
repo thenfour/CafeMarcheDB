@@ -1187,20 +1187,6 @@ export const ChangeNaturalOrderBy: Prisma.ChangeOrderByWithRelationInput[] = [
 
 
 
-
-
-
-
-
-// always returns valid
-// export const getGalleryImageDisplayParams = (f: FrontpageGalleryItemPayload): ImageEditParams => {
-//     return parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {
-//         console.log(`failed to parse display param data for gallery item id ${f.id}`);
-//     });
-// };
-
-
-
 // always returns valid
 export const getGalleryItemDisplayParams = (f: Prisma.FrontpageGalleryItemGetPayload<{}>): ImageEditParams => {
     const ret = parsePayloadJSON<ImageEditParams>(f.displayParams, MakeDefaultImageEditParams, (e) => {

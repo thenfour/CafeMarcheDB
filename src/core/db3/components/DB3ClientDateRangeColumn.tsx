@@ -109,9 +109,6 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
         updateModel[this.args.startsAtColumnName] = clientRow[this.args.startsAtColumnName];
         updateModel[this.args.durationMillisColumnName] = clientRow[this.args.durationMillisColumnName];
         updateModel[this.args.isAllDayColumnName] = clientRow[this.args.isAllDayColumnName];
-        // console.log(`ApplyClientToPostClient`);
-        // console.log(clientRow);
-        // console.log(updateModel);
     };
 };
 
