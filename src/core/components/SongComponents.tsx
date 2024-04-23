@@ -23,11 +23,13 @@ import { IsNullOrWhitespace, TAnyModel } from 'shared/utils';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { NameValuePair } from './CMCoreComponents2';
 import { MetronomeButton, MetronomePlayer } from './Metronome';
+import { SearchableNameColumnClient } from './SearchableNameColumnClient';
 
 
 export const SongClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),
-    name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 250 }),
+    name: new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
+    //searchableName: new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
     aliases: new DB3Client.GenericStringColumnClient({ columnName: "aliases", cellWidth: 180 }),
     slug: new DB3Client.SlugColumnClient({
         columnName: "slug", cellWidth: 120, previewSlug: (obj) => {
@@ -41,7 +43,7 @@ export const SongClientColumns = {
     startBPM: new DB3Client.GenericIntegerColumnClient({ columnName: "startBPM", cellWidth: 100 }),
     endBPM: new DB3Client.GenericIntegerColumnClient({ columnName: "endBPM", cellWidth: 100 }),
     introducedYear: new DB3Client.GenericIntegerColumnClient({ columnName: "introducedYear", cellWidth: 100 }),
-    lengthSeconds: new DB3Client.SongLengthSecondsColumnClient({ columnName: "lengthSeconds", cellWidth: 100 }),
+    lengthSeconds: new DB3Client.SongLengthSecondsColumnClient({ columnName: "lengthSeconds", cellWidth: 100, fieldCaption: "Length / duration" }),
     tags: new DB3Client.TagsFieldClient({ columnName: "tags", cellWidth: 200, allowDeleteFromCell: false }),
     createdByUser: new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120 }),
     visiblePermission: new DB3Client.ForeignSingleFieldClient({

@@ -24,7 +24,7 @@ import { formatSongLength, parseSongLengthSeconds } from "shared/time";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface CMTextInputBaseProps {
+export interface CMTextInputBaseProps {
     value?: string | null;
     initialValue?: string | null;
     onChange: (e, value) => void;

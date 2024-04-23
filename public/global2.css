@@ -95,10 +95,6 @@ html,
     opacity: 50%;
 }
 
-.BasicNameValuePairContainer.validationError {
-    border: 1px solid #c22;
-}
-
 .BasicNameValuePairContainer.validationError>.value {
     background-color: #fdd;
 }
@@ -2304,4 +2300,28 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 .content.yourProfile {
     min-width: 450px;
+}
+
+
+.searchableValueContainer .searchableValueResult {
+    font-size: 13px;
+    color: #999;
+}
+
+
+.searchableValueContainer .existingMatchLabel {
+    display: inline-block;
+}
+
+
+.searchableValueContainer .existingMatchValue {
+    display: inline-block;
+    color: black;
+
+}
+
+
+
+.searchableValueContainer .littleHelpText {
+    font-style: italic;
 }

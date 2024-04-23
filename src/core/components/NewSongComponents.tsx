@@ -22,6 +22,7 @@ import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/d
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { DashboardContext } from './DashboardContext';
+import { SearchableNameColumnClient } from "./SearchableNameColumnClient";
 
 export const NewSongButton = () => {
     const router = useRouter();
@@ -49,6 +50,7 @@ export const NewSongButton = () => {
         columns: [
             SongClientColumns.id,
             SongClientColumns.name,
+            //new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
             SongClientColumns.aliases,
             SongClientColumns.slug,
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, visible: false }), // required field but it's distracting to see here.

@@ -277,6 +277,7 @@ export const SongCreditNaturalOrderBy: Prisma.SongCreditOrderByWithRelationInput
 
 
 export const SongNaturalOrderBy: Prisma.SongOrderByWithRelationInput[] = [
+    { name: 'asc' },
     { id: 'asc' },
 ];
 

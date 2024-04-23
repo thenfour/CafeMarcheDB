@@ -2,7 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import {
     Search as SearchIcon
 } from '@mui/icons-material';
-import { InputBase } from "@mui/material";
+import { InputBase, Pagination } from "@mui/material";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
@@ -89,6 +89,7 @@ const EventsControls = (props: EventsControlsProps) => {
                         <InputBase
                             size="small"
                             placeholder="Filter"
+                            autoFocus={true}
                             sx={{
                                 backgroundColor: "#f0f0f0",
                                 borderRadius: 3,
@@ -185,6 +186,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
+    const [page, setPage] = React.useState<number>(0);
 
     const eventsClient = DB3Client.useTableRenderContext({
         tableSpec: new DB3Client.xTableClientSpec({
@@ -203,10 +205,10 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
             }
         },
         paginationModel: {
-            page: 0,
+            page: page,
             pageSize: filterSpec.recordCount,
         },
-        requestedCaps: DB3Client.xTableClientCaps.Query,// | DB3Client.xTableClientCaps.Mutation,
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,// | DB3Client.xTableClientCaps.Mutation,
         clientIntention,
         queryOptions: gQueryOptions.liveData,
     });
@@ -216,9 +218,20 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     }, [filterSpec]);
 
     const items = eventsClient.items as db3.EventClientPayload_Verbose[];
+    const itemBaseOrdinal = page * filterSpec.recordCount;
 
     return <div className="eventList searchResults">
         {items.map(event => <EventListItem key={event.id} event={event} tableClient={eventsClient} />)}
+        <div className="searchRecordCount">
+            Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + items.length} of {eventsClient.rowCount} total
+        </div>
+        <Pagination
+            count={Math.ceil(eventsClient.rowCount / filterSpec.recordCount)}
+            page={page + 1}
+            onChange={(e, newPage) => {
+                setPage(newPage - 1);
+                eventsClient.refetch();
+            }} />
     </div>;
 };
 

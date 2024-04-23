@@ -17,7 +17,7 @@ import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, TAnyModel, gNullValue } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
-import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
+import { CMTextField, CMTextInputBase, CMTextInputBaseProps, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
 import * as db3fields from "../shared/db3basicFields";
@@ -26,6 +26,8 @@ import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import * as ClientAPILL from "../clientAPILL";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { xTableClientUsageContext } from "../db3";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -136,7 +138,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     });
 };
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SlugColumnClientArgs extends GenericStringColumnArgs {
     previewSlug: (obj: TAnyModel) => string | null;
 }

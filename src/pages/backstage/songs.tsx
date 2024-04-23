@@ -2,7 +2,7 @@ import { BlitzPage } from "@blitzjs/next";
 import {
     Search as SearchIcon
 } from '@mui/icons-material';
-import { InputBase } from "@mui/material";
+import { InputBase, Pagination } from "@mui/material";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
@@ -62,6 +62,7 @@ const SongsControls = (props: SongsControlsProps) => {
 
                     <div className="row quickFilter">
                         <InputBase
+                            autoFocus={true}
                             size="small"
                             placeholder="Filter"
                             sx={{
@@ -115,6 +116,7 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
+    const [page, setPage] = React.useState<number>(0);
 
     const filterModel = {
         quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
@@ -134,7 +136,7 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
         }),
         filterModel,
         paginationModel: {
-            page: 0,
+            page: page,
             pageSize: filterSpec.recordCount,
         },
         requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
@@ -147,14 +149,20 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
     React.useEffect(() => {
         songsClient.refetch();
     }, [filterSpec]);
-
-    console.log('aoeu');
+    const itemBaseOrdinal = page * filterSpec.recordCount;
 
     return <div className="songsList searchResults">
         {items.map(song => <SongListItem key={song.id} song={song} tableClient={songsClient} />)}
         <div className="searchRecordCount">
-            Displaying {items.length} items (rowcount:{songsClient.rowCount})
+            Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + items.length} of {songsClient.rowCount} total
         </div>
+        <Pagination
+            count={Math.ceil(songsClient.rowCount / filterSpec.recordCount)}
+            page={page + 1}
+            onChange={(e, newPage) => {
+                setPage(newPage - 1);
+                songsClient.refetch();
+            }} />
     </div>;
 };
 
