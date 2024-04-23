@@ -6,7 +6,7 @@ import { Button, Tooltip } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
-import { IsNullOrWhitespace, existsInArray, formatFileSize, isValidURL, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
+import { IsNullOrWhitespace, SplitQuickFilter, existsInArray, formatFileSize, isValidURL, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -437,7 +437,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         // quick filter
         if (IsNullOrWhitespace(spec.quickFilter)) return true;
 
-        const filterTokens = spec.quickFilter.toLocaleLowerCase().split(/\s+/).filter(token => token.length > 0);
+        const filterTokens = SplitQuickFilter(spec.quickFilter);
 
         const tokensToSearch = [
             item.file.description.toLocaleLowerCase(),

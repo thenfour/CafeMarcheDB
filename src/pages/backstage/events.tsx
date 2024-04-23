@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { gQueryOptions, toggleValueInArray } from "shared/utils";
+import { SplitQuickFilter, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -181,7 +181,7 @@ const EventsControls = (props: EventsControlsProps) => {
                         />
                     </div>
 
-                    {/* The way we store the filter results here allows the sus */}
+                    {/* The way we store the filter results here allows the suspense to be less flickry, rendering the same content during fallback. */}
                     <Suspense fallback={<EventsFilterControlsValue {...props} filterInfo={filterInfo} readonly={true} />}>
                         <EventsFilterControlsDyn {...props} filterInfo={filterInfo} onFilterInfoChanged={(v) => setFilterInfo(v)} />
                     </Suspense>
@@ -232,7 +232,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
             ],
         }),
         filterModel: {
-            quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
+            quickFilterValues: SplitQuickFilter(filterSpec.quickFilter),
             items: [],
             tagIds: filterSpec.tagFilter,
             tableParams: {

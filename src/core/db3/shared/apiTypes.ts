@@ -322,4 +322,11 @@ export interface GetEventFilterInfoRet {
 };
 
 
+export interface GetSongFilterInfoRet {
+    tags: GetEventFilterInfoChipInfo[];
+    tagsQuery: string;
+};
+
+
+
 

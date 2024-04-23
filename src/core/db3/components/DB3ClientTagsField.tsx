@@ -17,7 +17,7 @@ import {
     ListItemButton
 } from "@mui/material";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
-import { SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
+import { SettingKey, SplitQuickFilter, TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
@@ -634,7 +634,7 @@ export class TagsFieldRenderContext<TAssociation> {
             filter: {
                 items: [],
                 tableParams: {},
-                quickFilterValues: args.filterText.split(/\s+/).filter(token => token.length > 0),
+                quickFilterValues: SplitQuickFilter(args.filterText),
             },
             cmdbQueryContext: `TagsFieldRenderContext for table.field: ${args.spec.schemaTable.tableName}.${args.spec.columnName}`,
         }, gQueryOptions.default);

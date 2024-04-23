@@ -1,10 +1,11 @@
 import { BlitzPage } from "@blitzjs/next";
+import { useQuery } from "@blitzjs/rpc";
 import { InputBase, Pagination } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { gQueryOptions, toggleValueInArray } from "shared/utils";
+import { SplitQuickFilter, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -15,7 +16,11 @@ import { SongDetailContainer } from "src/core/components/SongComponents";
 import { CalculateSongMetadata } from "src/core/components/SongComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
+import { RenderMuiIcon } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
+import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
+import getSongFilterInfo from "src/core/db3/queries/getSongFilterInfo";
+import { GetSongFilterInfoRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 interface SongsControlsSpec {
@@ -34,7 +39,73 @@ interface SongsControlsProps {
     onChange: (value: SongsControlsSpec) => void;
 };
 
+type SongsControlsValueProps = SongsControlsProps & {
+    filterInfo: GetSongFilterInfoRet,
+    readonly: boolean;
+};
+
+type SongsControlsDynProps = SongsControlsProps & {
+    filterInfo: GetSongFilterInfoRet,
+    onFilterInfoChanged: (value: GetSongFilterInfoRet) => void;
+};
+
+
+
+const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValueProps) => {
+
+    const toggleTag = (tagId: number) => {
+        const newSpec: SongsControlsSpec = { ...props.spec };
+        newSpec.tagFilter = toggleValueInArray(newSpec.tagFilter, tagId);
+        props.onChange(newSpec);
+    };
+
+    return <div className={`SongsFilterControlsValue ${props.readonly && "HalfOpacity"}`}>
+        <div className="row">
+            {/* <div className="caption cell">tags</div> */}
+            <CMChipContainer className="cell">
+                {filterInfo.tags.map(tag => (
+                    <CMChip
+                        key={tag.id}
+                        variation={{ ...StandardVariationSpec.Strong, selected: props.spec.tagFilter.some(id => id === tag.id) }}
+                        onClick={props.readonly ? undefined : (() => toggleTag(tag.id))}
+                        color={tag.color}
+                    //tooltip={status.tooltip} // no. it gets in the way and is annoying.
+                    >
+                        {RenderMuiIcon(tag.iconName)}{tag.label} ({tag.rowCount})
+                    </CMChip>
+                ))}
+            </CMChipContainer>
+        </div>
+    </div>;
+};
+
+
+const SongsFilterControlsDyn = (props: SongsControlsDynProps) => {
+
+    const [filterInfo, filterInfoExtra] = useQuery(getSongFilterInfo, {
+        filterSpec: {
+            quickFilter: props.spec.quickFilter,
+            tagIds: props.spec.tagFilter,
+        }
+    });
+
+    React.useEffect(() => {
+        props.onFilterInfoChanged(filterInfo);
+    }, [filterInfo]);
+
+    return <SongsFilterControlsValue {...props} readonly={false} />;
+};
+
+
+
+
 const SongsControls = (props: SongsControlsProps) => {
+    const [filterInfo, setFilterInfo] = React.useState<GetSongFilterInfoRet>(
+        {
+            tags: [],
+            tagsQuery: "",
+        }
+    );
 
     const [popularTags, { refetch }] = API.songs.usePopularSongTagsQuery();
 
@@ -62,6 +133,12 @@ const SongsControls = (props: SongsControlsProps) => {
                         />
                     </div>
 
+                    {/* The way we store the filter results here allows the suspense to be less flickry, rendering the same content during fallback. */}
+                    <Suspense fallback={<SongsFilterControlsValue {...props} filterInfo={filterInfo} readonly={true} />}>
+                        <SongsFilterControlsDyn {...props} filterInfo={filterInfo} onFilterInfoChanged={(v) => setFilterInfo(v)} />
+                    </Suspense>
+
+                    {/* 
                     <div className="row">
                         <CMChipContainer className="cell">
                             {popularTags.filter(t => t.songs.length > 0).map(tag => (
@@ -76,7 +153,7 @@ const SongsControls = (props: SongsControlsProps) => {
                                 </CMChip>
                             ))}
                         </CMChipContainer>
-                    </div>
+                    </div> */}
 
 
                 </div>
@@ -109,7 +186,7 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
     const [page, setPage] = React.useState<number>(0);
 
     const filterModel = {
-        quickFilterValues: filterSpec.quickFilter.split(/\s+/).filter(token => token.length > 0),
+        quickFilterValues: SplitQuickFilter(filterSpec.quickFilter),
         items: [],
         tagIds: filterSpec.tagFilter,
         tableParams: {

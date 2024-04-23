@@ -65,6 +65,7 @@ export default resolver.pipe(
             ];
             if (!u.isSysAdmin) {
                 AND.push(`Event.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)})`);
+                // TODO: handle private visibility (Event.visiblePermissionId is null && creator = self)
             }
             if (!IsNullOrWhitespace(eventFilterExpression)) {
                 AND.push(eventFilterExpression);
@@ -106,7 +107,7 @@ export default resolver.pipe(
             EventStatus.sortOrder asc
         `;
 
-            const statusesResult: ({ event_count: number } & Prisma.EventStatusGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(statusesQuery));
+            const statusesResult: ({ event_count: bigint } & Prisma.EventStatusGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(statusesQuery));
 
             const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({
                 color: r.color,
@@ -134,7 +135,7 @@ export default resolver.pipe(
             EventType.sortOrder asc
             `;
 
-            const typesResult: ({ event_count: number } & Prisma.EventTypeGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(typesQuery));
+            const typesResult: ({ event_count: bigint } & Prisma.EventTypeGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(typesQuery));
 
             const types: GetEventFilterInfoChipInfo[] = typesResult.map(r => ({
                 color: r.color,
@@ -165,7 +166,7 @@ export default resolver.pipe(
 
         `;
 
-            const tagsResult: ({ event_count: number } & Prisma.EventTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
+            const tagsResult: ({ event_count: bigint } & Prisma.EventTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
 
             const tags: GetEventFilterInfoChipInfo[] = tagsResult.map(r => ({
                 color: r.color,

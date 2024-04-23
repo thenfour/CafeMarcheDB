@@ -781,3 +781,6 @@ export function mysql_real_escape_string(str) {
     });
 }
 
+export function SplitQuickFilter(quickFilter: string): string[] {
+    return quickFilter.toLowerCase().split(/\s+/).filter(token => token.length > 0);
+}
