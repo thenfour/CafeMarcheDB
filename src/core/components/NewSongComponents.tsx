@@ -1,28 +1,17 @@
-import { BlitzPage } from "@blitzjs/next";
-import {
-    Search as SearchIcon
-} from '@mui/icons-material';
-import { InputBase } from "@mui/material";
 import { useRouter } from "next/router";
-import React, { Suspense } from "react";
-import { StandardVariationSpec } from "shared/color";
+import React from "react";
 import { Permission } from "shared/permissions";
-import { TAnyModel, gQueryOptions, toggleValueInArray } from "shared/utils";
+import { TAnyModel } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { SongClientColumns, SongDetail, SongDetailContainer, SongMetadataView } from "src/core/components/SongComponents";
-import { CalculateSongMetadata } from "src/core/components/SongComponentsBase";
+import { SongClientColumns } from "src/core/components/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { DashboardContext } from './DashboardContext';
-import { SearchableNameColumnClient } from "./SearchableNameColumnClient";
 
 export const NewSongButton = () => {
     const router = useRouter();

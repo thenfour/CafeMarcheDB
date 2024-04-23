@@ -1,8 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
-import {
-    Search as SearchIcon
-} from '@mui/icons-material';
-import { InputBase, Pagination } from "@mui/material";
+import { Pagination } from "@mui/material";
+import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
@@ -10,6 +8,7 @@ import { gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { SearchInput } from "src/core/components/CMTextField";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { EventDetailContainer } from "src/core/components/EventComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
@@ -86,18 +85,12 @@ const EventsControls = (props: EventsControlsProps) => {
                 <div className="filterControls">
 
                     <div className="row quickFilter">
-                        <InputBase
-                            size="small"
-                            placeholder="Filter"
-                            autoFocus={true}
-                            sx={{
-                                backgroundColor: "#f0f0f0",
-                                borderRadius: 3,
-                            }}
+                        <SearchInput
+                            onChange={(v) => setFilterText(v)}
                             value={props.spec.quickFilter}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            startAdornment={<SearchIcon />}
+                            autoFocus={true}
                         />
+
                     </div>
 
                     <div className="row">
@@ -165,15 +158,18 @@ interface EventListItemProps {
 };
 
 const EventListItem = (props: EventListItemProps) => {
-
+    const router = useRouter();
     const eventData = CalculateEventMetadata(props.event);
 
+    // can't make these items a link because they contain interactable attendance control
+    // return <div className="searchListItem" onClick={() => router.push(API.events.getURIForEvent(props.event.id, props.event.slug))}>
     return <EventDetailContainer eventData={eventData} fadePastEvents={true} readonly={true} tableClient={props.tableClient} showVisibility={true}>
         <EventAttendanceControl
             eventData={eventData}
             onRefetch={props.tableClient.refetch}
         />
-    </EventDetailContainer>;
+    </EventDetailContainer>
+    //</div>;
 
 };
 

@@ -1,16 +1,14 @@
 'use client';
 
-import { useAuthenticatedSession, useSession } from "@blitzjs/auth";
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
-    Add as AddIcon,
-    Search as SearchIcon
+    Add as AddIcon
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import {
     Box, Button, DialogActions, DialogContent, DialogTitle,
     Divider,
-    InputBase,
     List,
     ListItemButton
 } from "@mui/material";
@@ -24,13 +22,14 @@ import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "s
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 //import { API } from "../clientAPI";
+import updateSetting from "src/auth/mutations/updateSetting";
+import getSetting from "src/auth/queries/getSetting";
+import { SearchInput } from "src/core/components/CMTextField";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
-import { RenderMuiIcon } from "./IconSelectDialog";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
-import updateSetting from "src/auth/mutations/updateSetting";
-import getSetting from "src/auth/queries/getSetting";
+import { RenderMuiIcon } from "./IconSelectDialog";
 
 
 
@@ -590,16 +589,10 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
             {props.descriptionSettingName && <CMDialogContentText><SettingMarkdown setting={props.descriptionSettingName} /></CMDialogContentText>}
 
             <Box>
-                <InputBase
-                    size="small"
-                    placeholder="Filter"
-                    sx={{
-                        backgroundColor: "#f0f0f0",
-                        borderRadius: 3,
-                    }}
+                <SearchInput
+                    onChange={(v) => setFilterText(v)}
                     value={filterText}
-                    onChange={(e) => setFilterText(e.target.value)}
-                    startAdornment={<SearchIcon />}
+                    autoFocus={true}
                 />
             </Box>
 

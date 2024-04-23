@@ -316,6 +316,10 @@ input.CMTextInputBase.titleText {
     background-color: white;
 }
 
+.searchListItem {
+    cursor: pointer;
+}
+
 /* general purpose style for interactable things like buttons. avoid selection which is awkward with mouse.
 what's the diff between interactable, freeButton, and iconButton? so far not much...
 */

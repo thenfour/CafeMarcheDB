@@ -5,6 +5,7 @@ import {
     CircularProgress,
     FormHelperText,
     Input,
+    InputBase,
     InputLabel,
     TextField
 } from "@mui/material";
@@ -19,6 +20,10 @@ import { GetStyleVariablesForColor } from "./Color";
 import { StandardVariationSpec } from "shared/color";
 import { assert } from "blitz";
 import { formatSongLength, parseSongLengthSeconds } from "shared/time";
+import {
+    Search as SearchIcon
+} from '@mui/icons-material';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 
 
@@ -369,3 +374,26 @@ export const SongLengthInput = (props: SongLengthInputProps) => {
     </div>
         ;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface SearchInputProps {
+    value: string;
+    onChange: (v) => void;
+    autoFocus?: boolean;
+};
+
+export const SearchInput = (props: SearchInputProps) => {
+    return <InputBase
+        autoFocus={props.autoFocus}
+        size="small"
+        placeholder="Search"
+        sx={{
+            backgroundColor: "#f0f0f0",
+            borderRadius: 3,
+        }}
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value)}
+        startAdornment={<SearchIcon className="HalfOpacity" />}
+        endAdornment={<div className="freeButton HalfOpacity" onClick={() => props.onChange("")}><CancelIcon /></div>}
+    />;
+}

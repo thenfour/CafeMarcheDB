@@ -6,23 +6,24 @@ import React, { Suspense } from "react";
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import {
-    Add as AddIcon,
-    Search as SearchIcon
+    Add as AddIcon
 } from '@mui/icons-material';
 import {
     Box,
     DialogActions, DialogContent,
     DialogTitle,
     Divider,
-    InputBase,
     List,
     ListItemButton
 } from "@mui/material";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from 'shared/color';
+import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
+import updateSetting from 'src/auth/mutations/updateSetting';
+import getSetting from 'src/auth/queries/getSetting';
 import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMSmallButton, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
+import { SearchInput } from 'src/core/components/CMTextField';
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "../db3";
@@ -31,8 +32,6 @@ import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderMuiIcon } from './IconSelectDialog';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
-import getSetting from 'src/auth/queries/getSetting';
-import updateSetting from 'src/auth/mutations/updateSetting';
 
 
 const gMaxVisibleTags = 6;
@@ -194,17 +193,12 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
                 {props.descriptionSettingName && <SettingMarkdown setting={props.descriptionSettingName} />}
 
                 <Box>
-                    <InputBase
-                        size="small"
-                        placeholder="Filter"
-                        sx={{
-                            backgroundColor: "#f0f0f0",
-                            borderRadius: 3,
-                        }}
+                    <SearchInput
+                        onChange={(v) => setFilterText(v)}
                         value={filterText}
-                        onChange={(e) => setFilterText(e.target.value)}
-                        startAdornment={<SearchIcon />}
+                        autoFocus={true}
                     />
+
                 </Box>
 
                 <Suspense>

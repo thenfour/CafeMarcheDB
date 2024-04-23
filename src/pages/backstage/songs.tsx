@@ -1,8 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
-import {
-    Search as SearchIcon
-} from '@mui/icons-material';
 import { InputBase, Pagination } from "@mui/material";
+import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
@@ -10,6 +8,7 @@ import { gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { SearchInput } from "src/core/components/CMTextField";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SongDetailContainer } from "src/core/components/SongComponents";
@@ -61,17 +60,10 @@ const SongsControls = (props: SongsControlsProps) => {
                 <div className="filterControls">
 
                     <div className="row quickFilter">
-                        <InputBase
-                            autoFocus={true}
-                            size="small"
-                            placeholder="Filter"
-                            sx={{
-                                backgroundColor: "#f0f0f0",
-                                borderRadius: 3,
-                            }}
+                        <SearchInput
+                            onChange={(v) => setFilterText(v)}
                             value={props.spec.quickFilter}
-                            onChange={(e) => setFilterText(e.target.value)}
-                            startAdornment={<SearchIcon />}
+                            autoFocus={true}
                         />
                     </div>
 
@@ -105,10 +97,13 @@ interface SongListItemProps {
     tableClient: DB3Client.xTableRenderClient;
 };
 const SongListItem = (props: SongListItemProps) => {
+    const router = useRouter();
     const songData = CalculateSongMetadata(props.song);
-    return <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={true}>
-        {/* <SongMetadataView readonly={true} refetch={props.tableClient.refetch} songData={songData} showCredits={false} /> */}
-    </SongDetailContainer>;
+    return <div className="searchListItem" onClick={() => router.push(API.songs.getURIForSong(props.song.id, props.song.slug))}>
+        <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={true}>
+            {/* <SongMetadataView readonly={true} refetch={props.tableClient.refetch} songData={songData} showCredits={false} /> */}
+        </SongDetailContainer>
+    </div>;
 };
 
 
