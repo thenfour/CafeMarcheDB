@@ -60,8 +60,15 @@ export default resolver.pipe(
                 eventFilterExpressions.push(`(Event.statusId IN (${args.filterSpec.statusIds}))`);
             }
 
+            let havingClause = "";
+
             if (args.filterSpec.tagIds.length > 0) {
                 eventFilterExpressions.push(`(EventTagAssignment.eventTagId IN (${args.filterSpec.tagIds}))`);
+                // make sure items have matched ALL tags, not just any.
+                havingClause = `
+                HAVING
+    				COUNT(DISTINCT EventTagAssignment.eventTagId) = ${args.filterSpec.tagIds.length}
+                `;
             }
 
             const eventFilterExpression = eventFilterExpressions.length > 0 ? `(${eventFilterExpressions.join(" and ")})` : "";
@@ -93,6 +100,7 @@ export default resolver.pipe(
                 ${AND.join("\n AND ")}
             group by
 				Event.id
+            ${havingClause}
         )
         `;
 

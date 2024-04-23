@@ -46,8 +46,15 @@ export default resolver.pipe(
                 songFilterExpressions.push(`(${tokensExpr.join(" AND ")})`);
             }
 
+            let havingClause = "";
+
             if (args.filterSpec.tagIds.length > 0) {
                 songFilterExpressions.push(`(SongTagAssociation.tagId IN (${args.filterSpec.tagIds}))`);
+                // make sure songs have matched ALL tags, not just any.
+                havingClause = `
+                HAVING
+    				COUNT(DISTINCT SongTagAssociation.tagId) = ${args.filterSpec.tagIds.length}
+                `;
             }
 
             const songFilterExpression = songFilterExpressions.length > 0 ? `(${songFilterExpressions.join(" and ")})` : "";
@@ -63,6 +70,7 @@ export default resolver.pipe(
                 AND.push(songFilterExpression);
             }
 
+            // this CTE should return a list of songs which match the filter.
             const filteredSongsCTE = `
         WITH FilteredSongs AS (
             SELECT 
@@ -75,7 +83,8 @@ export default resolver.pipe(
                 ${AND.join("\n AND ")}
             group by
                 Song.id
-        )
+            ${havingClause}
+            )
         `;
 
             // TAGS
@@ -110,7 +119,7 @@ export default resolver.pipe(
 
             return {
                 tags,
-                tagsQuery: "",
+                tagsQuery,
             };
         } catch (e) {
             console.error(e);

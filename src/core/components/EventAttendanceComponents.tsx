@@ -103,11 +103,10 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
-import { AdminInspectObject, CMChip, CMChipContainer, InspectObject } from './CMCoreComponents';
-import { CompactMutationMarkdownControl } from './SettingMarkdown';
+import { AdminInspectObject, CMChip, CMChipContainer } from './CMCoreComponents';
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { EventWithMetadata } from "./EventComponentsBase";
-import { Markdown } from "./RichTextEditor";
+import { CompactMutationMarkdownControl } from './SettingMarkdown';
 
 
 ////////////////////////////////////////////////////////////////
@@ -119,6 +118,7 @@ interface EventAttendanceInstrumentButtonProps {
 
 
 const EventAttendanceInstrumentButton = ({ value, selected, onSelect }: EventAttendanceInstrumentButtonProps) => {
+  if (!value?.name) return null;
   return <CMChip
     onClick={() => onSelect && onSelect(value)}
     shape='rounded'
@@ -134,7 +134,7 @@ const EventAttendanceInstrumentButton = ({ value, selected, onSelect }: EventAtt
       selected,
     }}
   >
-    {value?.name || "(no answer)"}
+    {value!.name}
   </CMChip>;
 }
 
@@ -228,10 +228,11 @@ interface EventAttendanceAnswerButtonProps {
   selected: boolean,
   noItemSelected: boolean, // when you have no selected item, color all items as strong
   onSelect?: ((value: db3.EventAttendanceBasePayload | null) => void),
+  tooltip: string; // value?.description
 };
 
 
-const EventAttendanceAnswerButton = ({ value, selected, noItemSelected, onSelect }: EventAttendanceAnswerButtonProps) => {
+const EventAttendanceAnswerButton = ({ value, selected, noItemSelected, onSelect, tooltip }: EventAttendanceAnswerButtonProps) => {
   const yesNoStyle = value && (value.strength > 50) ? "yes" : "no";
   return <CMChip
     onClick={() => onSelect && onSelect(value)}
@@ -240,7 +241,7 @@ const EventAttendanceAnswerButton = ({ value, selected, noItemSelected, onSelect
     //border='border'
     color={value?.color}
     size='big'
-    tooltip={value?.description}
+    tooltip={tooltip}
     variation={{
       enabled: true,
       fillOption: 'filled',
@@ -306,18 +307,21 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     });
   };
 
+  const optionDesc = selectedResponse.attendance ? (`${selectedResponse.attendance.text} : ${selectedResponse.attendance.description}`) : `no answer`;
+  const tooltip = `${props.segmentUserResponse.segment.name}: ${optionDesc}`;
+
   return <>
     {editMode ? (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
           {(optionsClient.items as db3.EventAttendancePayload[]).map(option =>
-            <EventAttendanceAnswerButton key={option.id} noItemSelected={selectedAttendanceId === null} selected={option.id === selectedAttendanceId} value={option} onSelect={() => handleChange(option)} />)}
-          <EventAttendanceAnswerButton noItemSelected={selectedAttendanceId === null} selected={null === selectedAttendanceId} value={null} onSelect={() => handleChange(null)} />
+            <EventAttendanceAnswerButton key={option.id} noItemSelected={selectedAttendanceId === null} selected={option.id === selectedAttendanceId} value={option} onSelect={() => handleChange(option)} tooltip={tooltip} />)}
+          <EventAttendanceAnswerButton noItemSelected={selectedAttendanceId === null} selected={null === selectedAttendanceId} value={null} onSelect={() => handleChange(null)} tooltip={tooltip} />
         </CMChipContainer>
       </>) : (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedResponse.attendance} onSelect={() => setExplicitEdit(true)} />
+          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedResponse.attendance} onSelect={() => setExplicitEdit(true)} tooltip={tooltip} />
           <CMSmallButton onClick={() => setExplicitEdit(true)}>change</CMSmallButton>
         </CMChipContainer>
       </>
@@ -462,13 +466,28 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
           })}
         </div>
       </>
-      ) : (
-        <CMChipContainer>
-          <EventAttendanceInstrumentButton key={"__"} selected={false} value={eventResponse.instrument} />
-          {segmentResponses.map(segment =>
-            <EventAttendanceAnswerButton key={segment.response.id} noItemSelected={false} selected={false} value={segment.response.attendance} onSelect={() => { }} />)}
-        </CMChipContainer>
-      )}
+      ) : // compact view when you've answered:
+        (
+          <CMChipContainer>
+            <EventAttendanceInstrumentButton key={"__"} selected={false} value={eventResponse.instrument} />
+            {segmentResponses.map(segment => {
+
+              const optionDesc = segment.response.attendance ? (`${segment.response.attendance.text} : ${segment.response.attendance.description}`) : `no answer`;
+              const tooltip = `${segment.segment.name}: ${optionDesc}`;
+
+              //const tooltip = `${segment.segment.name}: ${segment.response.attendance?.text || "no answer"}`;
+              return <EventAttendanceAnswerButton
+                key={segment.response.id}
+                noItemSelected={false}
+                selected={true}
+                value={segment.response.attendance}
+                onSelect={() => { }}
+                tooltip={tooltip}
+              />;
+            })
+            }
+          </CMChipContainer>
+        )}
 
 
     </div>

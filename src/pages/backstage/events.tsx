@@ -1,6 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { Pagination } from "@mui/material";
+import { Button, Pagination } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
@@ -169,8 +169,17 @@ const EventsControls = (props: EventsControlsProps) => {
         props.onChange(newSpec);
     };
 
+    const handleClearFilter = () => {
+        props.onChange({
+            ...props.spec,
+            quickFilter: "",
+            statusFilter: [],
+            tagFilter: [],
+            typeFilter: [],
+        });
+    };
+
     return <div className="filterControlsContainer">
-        {/* <div className="header">FILTER</div> */}
         <div className="content">
             <div className="row">
                 <div className="filterControls">
@@ -181,6 +190,7 @@ const EventsControls = (props: EventsControlsProps) => {
                             value={props.spec.quickFilter}
                             autoFocus={true}
                         />
+                        <Button onClick={handleClearFilter}>Clear filter</Button>
                     </div>
 
                     {/* The way we store the filter results here allows the suspense to be less flickry, rendering the same content during fallback. */}
@@ -262,6 +272,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     });
 
     React.useEffect(() => {
+        setPage(0);
         eventsClient.refetch();
     }, [filterSpec]);
 
@@ -301,7 +312,7 @@ const MainContent = () => {
         setControlSpec(value);
     };
 
-    return <div className="eventsMainContent">
+    return <div className="eventsMainContent searchPage">
 
         <Suspense>
             <SettingMarkdown setting="events_markdown"></SettingMarkdown>
@@ -314,10 +325,10 @@ const MainContent = () => {
         <Suspense>
             <CMSinglePageSurfaceCard className="filterControls">
                 {/* showing {eventsClient.items.length} events */}
-                <div className="header">
-                    Search & filter events
-                </div>
                 <div className="content">
+                    <div className="header">
+                        Search & filter events
+                    </div>
                     <EventsControls onChange={handleSpecChange} spec={controlSpec} />
                 </div>
             </CMSinglePageSurfaceCard>

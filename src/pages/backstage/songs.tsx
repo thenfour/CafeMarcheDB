@@ -1,6 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { InputBase, Pagination } from "@mui/material";
+import { Button, InputBase, Pagination } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
@@ -9,6 +9,7 @@ import { SplitQuickFilter, gQueryOptions, toggleValueInArray } from "shared/util
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -108,17 +109,17 @@ const SongsControls = (props: SongsControlsProps) => {
         }
     );
 
-    const [popularTags, { refetch }] = API.songs.usePopularSongTagsQuery();
-
     const setFilterText = (quickFilter: string) => {
         const newSpec: SongsControlsSpec = { ...props.spec, quickFilter };
         props.onChange(newSpec);
     };
 
-    const toggleTag = (tagId: number) => {
-        const newSpec: SongsControlsSpec = { ...props.spec };
-        newSpec.tagFilter = toggleValueInArray(newSpec.tagFilter, tagId);
-        props.onChange(newSpec);
+    const handleClearFilter = () => {
+        props.onChange({
+            ...props.spec,
+            quickFilter: "",
+            tagFilter: [],
+        });
     };
 
     return <div className="filterControlsContainer">
@@ -132,30 +133,13 @@ const SongsControls = (props: SongsControlsProps) => {
                             value={props.spec.quickFilter}
                             autoFocus={true}
                         />
+                        <Button onClick={handleClearFilter}>Clear filter</Button>
                     </div>
 
                     {/* The way we store the filter results here allows the suspense to be less flickry, rendering the same content during fallback. */}
                     <Suspense fallback={<SongsFilterControlsValue {...props} filterInfo={filterInfo} readonly={true} />}>
                         <SongsFilterControlsDyn {...props} filterInfo={filterInfo} onFilterInfoChanged={(v) => setFilterInfo(v)} />
                     </Suspense>
-
-                    {/* 
-                    <div className="row">
-                        <CMChipContainer className="cell">
-                            {popularTags.filter(t => t.songs.length > 0).map(tag => (
-                                <CMChip
-                                    key={tag.id}
-                                    //selected={props.spec.tagFilter.some(id => id === tag.id)}
-                                    variation={{ ...StandardVariationSpec.Strong, selected: props.spec.tagFilter.some(id => id === tag.id) }}
-                                    onClick={() => toggleTag(tag.id)}
-                                    color={tag.color}
-                                >
-                                    {tag.text} ({tag.songs.length})
-                                </CMChip>
-                            ))}
-                        </CMChipContainer>
-                    </div> */}
-
 
                 </div>
             </div>
@@ -215,7 +199,11 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
 
     const items = songsClient.items as db3.SongPayload_Verbose[];
 
+    // React.useEffect(() => {
+    // }, [items]);
+
     React.useEffect(() => {
+        setPage(0);
         songsClient.refetch();
     }, [filterSpec]);
     const itemBaseOrdinal = page * filterSpec.recordCount;
@@ -267,10 +255,10 @@ const MainContent = () => {
 
         <Suspense>
             <CMSinglePageSurfaceCard className="filterControls">
-                <div className="header">
-                    Search & filter songs
-                </div>
                 <div className="content">
+                    <div className="header">
+                        Search & filter songs
+                    </div>
                     <SongsControls onChange={handleSpecChange} spec={controlSpec} />
                 </div>
             </CMSinglePageSurfaceCard>
