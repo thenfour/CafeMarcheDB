@@ -633,6 +633,7 @@ it's not often you'll actually want markdown that's really wide.
 /* the idea is to make a visual distinction between the filter controls and the items which are listed below */
 .contentSection.filterControls {
   box-shadow: none;
+  min-width: 450px;
   /* border: 4px solid #bbb; */
   /* border-radius: 4px; */
   padding-bottom: 10px;

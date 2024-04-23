@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3/db3";
 import { useSession } from "@blitzjs/auth";
+import { Button } from "@mui/material";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -13,6 +14,15 @@ export function useIsShowingAdminControls() {
 };
 
 
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const DebugCollapsibleText = ({ text, caption }: { text: string, caption: string }) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    return <div>
+        <Button onClick={() => setOpen(!open)}>{caption}</Button>
+        {open && <pre>{text}</pre>}
+    </div>;
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSmallButtonProps {

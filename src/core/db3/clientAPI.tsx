@@ -402,35 +402,35 @@ class EventsAPI {
         }));
     }
 
-    getEventTypesClient() {
-        return DB3ClientCore.useTableRenderContext({
-            tableSpec: new DB3ClientCore.xTableClientSpec({
-                table: db3.xEventType,
-                columns: [
-                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
-                ],
-            }),
-            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-            clientIntention: { intention: 'user', mode: 'primary' },
-        });
-    }
+    // getEventTypesClient() {
+    //     return DB3ClientCore.useTableRenderContext({
+    //         tableSpec: new DB3ClientCore.xTableClientSpec({
+    //             table: db3.xEventType,
+    //             columns: [
+    //                 new DB3ClientFields.PKColumnClient({ columnName: "id" }),
+    //             ],
+    //         }),
+    //         requestedCaps: DB3ClientCore.xTableClientCaps.Query,
+    //         clientIntention: { intention: 'user', mode: 'primary' },
+    //     });
+    // }
 
-    getEventStatusesClient() {
-        return DB3ClientCore.useTableRenderContext({
-            tableSpec: new DB3ClientCore.xTableClientSpec({
-                table: db3.xEventStatus,
-                columns: [
-                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
-                ],
-            }),
-            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-            clientIntention: { intention: 'user', mode: 'primary' },
-        });
-    }
+    // getEventStatusesClient() {
+    //     return DB3ClientCore.useTableRenderContext({
+    //         tableSpec: new DB3ClientCore.xTableClientSpec({
+    //             table: db3.xEventStatus,
+    //             columns: [
+    //                 new DB3ClientFields.PKColumnClient({ columnName: "id" }),
+    //             ],
+    //         }),
+    //         requestedCaps: DB3ClientCore.xTableClientCaps.Query,
+    //         clientIntention: { intention: 'user', mode: 'primary' },
+    //     });
+    // }
 
-    usePopularEventTagsQuery = () => {
-        return useQuery(getPopularEventTags, {}, gQueryOptions.default);
-    };
+    // usePopularEventTagsQuery = () => {
+    //     return useQuery(getPopularEventTags, {}, gQueryOptions.default);
+    // };
 
     getInstrumentForUserResponse = (response: db3.EventUserResponsePayload, user: db3.UserWithInstrumentsPayload): (db3.InstrumentPayload | null) => {
         return db3.getInstrumentForEventUserResponse(response, user);

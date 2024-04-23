@@ -1,5 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
-import { Pagination } from "@mui/material";
+import { useQuery } from "@blitzjs/rpc";
+import { Button, Pagination } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
@@ -8,6 +9,7 @@ import { gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { EventDetailContainer } from "src/core/components/EventComponents";
@@ -18,6 +20,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
+import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 /// there's a problem with showing calendars.
@@ -28,10 +31,11 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 interface EventsControlsSpec {
     recordCount: number;
     quickFilter: string;
+
     tagFilter: number[];
     statusFilter: number[];
     typeFilter: number[];
-    //verbosity: EventDetailVerbosity;
+
     refreshSerial: number; // increment this in order to trigger a refetch
 };
 
@@ -39,22 +43,22 @@ interface EventsControlsProps {
     spec: EventsControlsSpec;
     onChange: (value: EventsControlsSpec) => void;
 };
-const EventsControls = (props: EventsControlsProps) => {
 
-    const [popularTags, { refetch }] = API.events.usePopularEventTagsQuery();
+const EventsFilterControlsDyn = (props: EventsControlsProps) => {
 
-    const statusesClient = API.events.getEventStatusesClient();
-    const typesClient = API.events.getEventTypesClient();
+    // NB: because of the way this query works, visibility permission is not considered.
+    const [filterInfo, filterInfoExtra] = useQuery(getEventFilterInfo, {
+        filterSpec: {
+            quickFilter: props.spec.quickFilter,
+            statusIds: props.spec.statusFilter,
+            tagIds: props.spec.tagFilter,
+            typeIds: props.spec.typeFilter,
+        }
+    });
 
-    const setFilterText = (quickFilter: string) => {
-        const newSpec: EventsControlsSpec = { ...props.spec, quickFilter };
-        props.onChange(newSpec);
-    };
-
-    const setRecordCount = (recordCount: number) => {
-        const newSpec: EventsControlsSpec = { ...props.spec, recordCount };
-        props.onChange(newSpec);
-    };
+    if (filterInfo.statusesQuery) {
+        console.log(filterInfo.statusesQuery);
+    }
 
     const toggleTag = (tagId: number) => {
         const newSpec: EventsControlsSpec = { ...props.spec };
@@ -74,10 +78,76 @@ const EventsControls = (props: EventsControlsProps) => {
         props.onChange(newSpec);
     };
 
+    return <>
+        <div className="row">
+            <CMChipContainer className="cell">
+                {
+                    filterInfo.statuses.map(status => (
+                        <CMChip
+                            key={status.id}
+                            onClick={() => toggleStatus(status.id)}
+                            color={status.color}
+                            shape="rectangle"
+                            variation={{ ...StandardVariationSpec.Strong, selected: props.spec.statusFilter.some(id => id === status.id) }}
+                        //tooltip={status.tooltip} // no. it gets in the way and is annoying.
+                        >
+                            {RenderMuiIcon(status.iconName)}{status.label} ({status.rowCount})
+                        </CMChip>
+                    ))}
+            </CMChipContainer>
+        </div>
+
+        <div className="row">
+            {/* <div className="caption cell">event type</div> */}
+            <CMChipContainer className="cell">
+                {(filterInfo.types).map(type => (
+                    <CMChip
+                        key={type.id}
+                        variation={{ ...StandardVariationSpec.Strong, selected: props.spec.typeFilter.some(id => id === type.id) }}
+                        onClick={() => toggleType(type.id)}
+                        color={type.color}
+                    //tooltip={status.tooltip} // no. it gets in the way and is annoying.
+                    >
+                        {RenderMuiIcon(type.iconName)}{type.label} ({type.rowCount})
+                    </CMChip>
+                ))}
+
+
+            </CMChipContainer>
+        </div>
+
+        <div className="row">
+            {/* <div className="caption cell">tags</div> */}
+            <CMChipContainer className="cell">
+                {filterInfo.tags.map(tag => (
+                    <CMChip
+                        key={tag.id}
+                        variation={{ ...StandardVariationSpec.Strong, selected: props.spec.tagFilter.some(id => id === tag.id) }}
+                        onClick={() => toggleTag(tag.id)}
+                        color={tag.color}
+                    //tooltip={status.tooltip} // no. it gets in the way and is annoying.
+                    >
+                        {RenderMuiIcon(tag.iconName)}{tag.label} ({tag.rowCount})
+                    </CMChip>
+                ))}
+            </CMChipContainer>
+        </div>
+    </>;
+};
+
+
+const EventsControls = (props: EventsControlsProps) => {
+
+    const setFilterText = (quickFilter: string) => {
+        const newSpec: EventsControlsSpec = { ...props.spec, quickFilter };
+        props.onChange(newSpec);
+    };
+
 
     // FILTER: [upcoming] [past] [concert] [rehearsals] [majorettes] [__________________]
     // SHOW:   [compact] [default] [full] [verbose]
     // 20 100 all
+    const x = <EventsFilterControlsDyn {...props} />;
     return <div className="filterControlsContainer">
         {/* <div className="header">FILTER</div> */}
         <div className="content">
@@ -90,61 +160,11 @@ const EventsControls = (props: EventsControlsProps) => {
                             value={props.spec.quickFilter}
                             autoFocus={true}
                         />
-
                     </div>
 
-                    <div className="row">
-                        {/* <div className="caption cell">status</div> */}
-                        <CMChipContainer className="cell">
-                            {(statusesClient.items as db3.EventStatusPayload[]).filter(i => i.events.length > 0).map(status => (
-                                <CMChip
-                                    key={status.id}
-                                    //selected={props.spec.statusFilter.some(id => id === status.id)}
-                                    onClick={() => toggleStatus(status.id)}
-                                    color={status.color}
-                                    shape="rectangle"
-                                    variation={{ ...StandardVariationSpec.Strong, selected: props.spec.statusFilter.some(id => id === status.id) }}
-                                >
-                                    {RenderMuiIcon(status.iconName)}{status.label} ({status.events.length})
-                                </CMChip>
-                            ))}
-                        </CMChipContainer>
-                    </div>
-
-                    <div className="row">
-                        {/* <div className="caption cell">event type</div> */}
-                        <CMChipContainer className="cell">
-                            {(typesClient.items as db3.EventTypePayload[]).filter(i => i.events.length > 0).map(type => (
-                                <CMChip
-                                    key={type.id}
-                                    //selected={props.spec.typeFilter.some(id => id === type.id)}
-                                    variation={{ ...StandardVariationSpec.Strong, selected: props.spec.typeFilter.some(id => id === type.id) }}
-                                    onClick={() => toggleType(type.id)}
-                                    color={type.color}
-                                >
-                                    {RenderMuiIcon(type.iconName)}{type.text} ({type.events.length})
-                                </CMChip>
-                            ))}
-                        </CMChipContainer>
-                    </div>
-
-                    <div className="row">
-                        {/* <div className="caption cell">tags</div> */}
-                        <CMChipContainer className="cell">
-                            {popularTags.filter(t => t.events.length > 0).map(tag => (
-                                <CMChip
-                                    key={tag.id}
-                                    //selected={props.spec.tagFilter.some(id => id === tag.id)}
-                                    variation={{ ...StandardVariationSpec.Strong, selected: props.spec.tagFilter.some(id => id === tag.id) }}
-                                    onClick={() => toggleTag(tag.id)}
-                                    color={tag.color}
-                                >
-                                    {tag.text} ({tag.events.length})
-                                </CMChip>
-                            ))}
-                        </CMChipContainer>
-                    </div>
-
+                    <Suspense>
+                        <EventsFilterControlsDyn {...props} />
+                    </Suspense>
 
                 </div>
             </div>

@@ -408,7 +408,16 @@ const xEventArgs_Base: db3.TableDesc = {
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         MakePlainTextField("locationDescription", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
-        MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        //MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+
+        new GenericStringField({
+            columnName: "locationURL",
+            allowNull: false,
+            format: "plain",
+            allowQuickFilter: false,
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
+
         //new CalculatedEventDateRangeField(),
         MakeCreatedAtField("createdAt", { authMap: xEventAuthMap_CreatedAt, }),
         new ConstEnumStringField({

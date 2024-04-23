@@ -43,11 +43,6 @@ const SongsControls = (props: SongsControlsProps) => {
         props.onChange(newSpec);
     };
 
-    // const setRecordCount = (recordCount: number) => {
-    //     const newSpec: SongsControlsSpec = { ...props.spec, recordCount };
-    //     props.onChange(newSpec);
-    // };
-
     const toggleTag = (tagId: number) => {
         const newSpec: SongsControlsSpec = { ...props.spec };
         newSpec.tagFilter = toggleValueInArray(newSpec.tagFilter, tagId);
@@ -169,8 +164,8 @@ const MainContent = () => {
     }
     //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     //const mut = API.events.newEventMutation.useToken();
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    //const currentUser = useCurrentUser()[0]!;
+    //const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
 
     const [controlSpec, setControlSpec] = React.useState<SongsControlsSpec>({
         recordCount: 20,
