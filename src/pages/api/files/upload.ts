@@ -62,7 +62,6 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
 
-                    //await sleep(1000);
                     if (!files || Object.values(files).length < 1) {
                         if (args.externalURI) {
                             // you have uploaded a URI.

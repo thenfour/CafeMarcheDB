@@ -297,3 +297,29 @@ export interface UpdateGalleryItemImageParams {
     galleryItemId: number;
     imageParams: ForkImageParams;
 };
+
+
+
+export interface GetEventFilterInfoChipInfo {
+    rowCount: number;
+
+    id: number;
+
+    label: string;
+    color: string | null;
+    iconName: string | null;
+    tooltip: string | null;
+};
+
+export interface GetEventFilterInfoRet {
+    types: GetEventFilterInfoChipInfo[];
+    statuses: GetEventFilterInfoChipInfo[];
+    tags: GetEventFilterInfoChipInfo[];
+
+    typesQuery: string;
+    statusesQuery: string;
+    tagsQuery: string;
+};
+
+
+

@@ -1,10 +1,11 @@
 
 import { resolver } from "@blitzjs/rpc";
+import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { AuthenticatedCtx } from "blitz";
+import { IsNullOrWhitespace, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { IsNullOrWhitespace, assertIsNumberArray, mysql_real_escape_string, sleep } from "shared/utils";
+import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet } from "../shared/apiTypes";
 
 interface TArgs {
     filterSpec: {
@@ -15,84 +16,63 @@ interface TArgs {
     }
 };
 
-interface ChipInfo {
-    rowCount: number;
-
-    id: number;
-
-    label: string;
-    color: string | null;
-    iconName: string | null;
-    tooltip: string | null;
-};
-
-interface TRet {
-    types: ChipInfo[];
-    statuses: ChipInfo[];
-    tags: ChipInfo[];
-
-    typesQuery: string;
-    statusesQuery: string;
-    tagsQuery: string;
-};
-
 export default resolver.pipe(
     resolver.authorize(Permission.view_events_nonpublic),
-    async (args: TArgs, ctx: AuthenticatedCtx): Promise<TRet> => {
+    async (args: TArgs, ctx: AuthenticatedCtx): Promise<GetEventFilterInfoRet> => {
+        try {
+            const u = (await getCurrentUserCore(ctx))!;
+            if (!u.role || u.role.permissions.length < 1) {
+                return {
+                    statuses: [],
+                    tags: [],
+                    types: [],
+                    typesQuery: "",
+                    statusesQuery: "",
+                    tagsQuery: "",
+                };
+            }
 
-        const u = (await getCurrentUserCore(ctx))!;
-        if (!u.role || u.role.permissions.length < 1) {
-            return {
-                statuses: [],
-                tags: [],
-                types: [],
-                typesQuery: "",
-                statusesQuery: "",
-                tagsQuery: "",
-            };
-        }
+            assertIsNumberArray(args.filterSpec.statusIds);
+            assertIsNumberArray(args.filterSpec.tagIds);
+            assertIsNumberArray(args.filterSpec.typeIds);
 
-        assertIsNumberArray(args.filterSpec.statusIds);
-        assertIsNumberArray(args.filterSpec.tagIds);
-        assertIsNumberArray(args.filterSpec.typeIds);
+            const eventFilterExpressions: string[] = [];
+            if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
+                const qf = mysql_real_escape_string(args.filterSpec.quickFilter);
+                const qfItems = [
+                    `(Event.name LIKE '%${qf}%')`,
+                    `(Event.locationDescription LIKE '%${qf}%')`,
+                ];
+                eventFilterExpressions.push(`(${qfItems.join(" or ")})`);
+            }
 
-        const eventFilterExpressions: string[] = [];
-        if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
-            const qf = mysql_real_escape_string(args.filterSpec.quickFilter);
-            const qfItems = [
-                `(Event.name LIKE '%${qf}%')`,
-                `(Event.locationDescription LIKE '%${qf}%')`,
+            if (args.filterSpec.typeIds.length > 0) {
+                eventFilterExpressions.push(`(Event.typeId IN (${args.filterSpec.typeIds}))`);
+            }
+
+            if (args.filterSpec.statusIds.length > 0) {
+                eventFilterExpressions.push(`(Event.statusId IN (${args.filterSpec.statusIds}))`);
+            }
+
+            if (args.filterSpec.tagIds.length > 0) {
+                eventFilterExpressions.push(`(EventTagAssignment.eventTagId IN (${args.filterSpec.tagIds}))`);
+            }
+
+            const eventFilterExpression = eventFilterExpressions.length > 0 ? `(${eventFilterExpressions.join(" and ")})` : "";
+
+            const AND: string[] = [
+                `Event.isDeleted = FALSE`,
             ];
-            eventFilterExpressions.push(`(${qfItems.join(" or ")})`);
-        }
+            if (!u.isSysAdmin) {
+                AND.push(`Event.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)})`);
+            }
+            if (!IsNullOrWhitespace(eventFilterExpression)) {
+                AND.push(eventFilterExpression);
+            }
 
-        if (args.filterSpec.typeIds.length > 0) {
-            eventFilterExpressions.push(`(Event.typeId IN (${args.filterSpec.typeIds}))`);
-        }
-
-        if (args.filterSpec.statusIds.length > 0) {
-            eventFilterExpressions.push(`(Event.statusId IN (${args.filterSpec.statusIds}))`);
-        }
-
-        if (args.filterSpec.tagIds.length > 0) {
-            eventFilterExpressions.push(`(EventTagAssignment.eventTagId IN (${args.filterSpec.tagIds}))`);
-        }
-
-        const eventFilterExpression = eventFilterExpressions.length > 0 ? `(${eventFilterExpressions.join(" and ")})` : "";
-
-        const AND: string[] = [
-            `Event.isDeleted = FALSE`,
-        ];
-        if (!u.isSysAdmin) {
-            AND.push(`Event.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)})`);
-        }
-        if (!IsNullOrWhitespace(eventFilterExpression)) {
-            AND.push(eventFilterExpression);
-        }
-
-        // even though we're accessing the EventTagAssignment table here, it will filter out relevant tags we want later so
-        // don't be tempted to access it. the output of this query is really just the Event table.
-        const filteredEventsCTE = `
+            // even though we're accessing the EventTagAssignment table here, it will filter out relevant tags we want later so
+            // don't be tempted to access it. the output of this query is really just the Event table.
+            const filteredEventsCTE = `
         WITH FilteredEvents AS (
             SELECT 
                 Event.id AS EventId,
@@ -109,8 +89,8 @@ export default resolver.pipe(
         )
         `;
 
-        // STATUSES
-        const statusesQuery = `
+            // STATUSES
+            const statusesQuery = `
         ${filteredEventsCTE}
         SELECT 
             EventStatus.*,
@@ -122,22 +102,23 @@ export default resolver.pipe(
         GROUP BY 
             EventStatus.id
         order by
-            count(distinct(FilteredEvents.EventId)) desc
+            count(distinct(FilteredEvents.EventId)) desc,
+            EventStatus.sortOrder asc
         `;
 
-        const statusesResult: ({ event_count: number } & Prisma.EventStatusGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(statusesQuery));
+            const statusesResult: ({ event_count: number } & Prisma.EventStatusGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(statusesQuery));
 
-        const statuses: ChipInfo[] = statusesResult.map(r => ({
-            color: r.color,
-            iconName: r.iconName,
-            id: r.id,
-            label: r.label,
-            tooltip: r.description,
-            rowCount: new Number(r.event_count).valueOf(),
-        }));
+            const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({
+                color: r.color,
+                iconName: r.iconName,
+                id: r.id,
+                label: r.label,
+                tooltip: r.description,
+                rowCount: new Number(r.event_count).valueOf(),
+            }));
 
-        // TYPES
-        const typesQuery = `
+            // TYPES
+            const typesQuery = `
         ${filteredEventsCTE}
         SELECT 
             EventType.*,
@@ -149,25 +130,23 @@ export default resolver.pipe(
         GROUP BY 
             EventType.id
         order by
-            count(distinct(FilteredEvents.EventId)) desc
+            count(distinct(FilteredEvents.EventId)) desc,
+            EventType.sortOrder asc
             `;
 
-        const typesResult: ({ event_count: number } & Prisma.EventTypeGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(typesQuery));
+            const typesResult: ({ event_count: number } & Prisma.EventTypeGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(typesQuery));
 
-        const types: ChipInfo[] = typesResult.map(r => ({
-            color: r.color,
-            iconName: r.iconName,
-            id: r.id,
-            label: r.text,
-            tooltip: r.description,
-            rowCount: new Number(r.event_count).valueOf(),
-        }));
+            const types: GetEventFilterInfoChipInfo[] = typesResult.map(r => ({
+                color: r.color,
+                iconName: r.iconName,
+                id: r.id,
+                label: r.text,
+                tooltip: r.description,
+                rowCount: new Number(r.event_count).valueOf(),
+            }));
 
-
-
-
-        // TAGS
-        const tagsQuery = `
+            // TAGS
+            const tagsQuery = `
         ${filteredEventsCTE}
     select
         ET.*,
@@ -181,21 +160,22 @@ export default resolver.pipe(
     group by
         ET.id
     order by
-        count(distinct(FE.EventId)) desc
+        count(distinct(FE.EventId)) desc,
+        ET.sortOrder asc
+
         `;
 
-        const tagsResult: ({ event_count: number } & Prisma.EventTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
+            const tagsResult: ({ event_count: number } & Prisma.EventTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
 
-        const tags: ChipInfo[] = tagsResult.map(r => ({
-            color: r.color,
-            iconName: null,
-            id: r.id,
-            label: r.text,
-            tooltip: r.description,
-            rowCount: new Number(r.event_count).valueOf(),
-        }));
+            const tags: GetEventFilterInfoChipInfo[] = tagsResult.map(r => ({
+                color: r.color,
+                iconName: null,
+                id: r.id,
+                label: r.text,
+                tooltip: r.description,
+                rowCount: new Number(r.event_count).valueOf(),
+            }));
 
-        try {
             return {
                 types,
                 statuses,
