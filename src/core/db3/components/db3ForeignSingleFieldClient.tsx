@@ -251,6 +251,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
             headerName: args.columnName,
             editable: true,
             width: args.cellWidth,
+            isAutoFocusable: false,
             visible: Coalesce(args.visible, true),
             className: args.className,
             fieldCaption: args.fieldCaption,

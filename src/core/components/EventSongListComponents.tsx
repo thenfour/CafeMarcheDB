@@ -408,6 +408,10 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         //setItems(items => arrayMove(items, removedIndex, addedIndex));
     };
 
+    const nameColumn = tableSpec.getColumn("name");
+    console.log(`aoeu`);
+    const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention, autoFocus: true });
+
     return <>
         <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
 
@@ -430,9 +434,9 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
                     {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
-                    {tableSpec.getColumn("name").renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention })}
-                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention })}
-                    {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention })}
+                    {nameField}
+                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}
+                    {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })}
 
                     {/*
           TITLE                  DURATION    BPM      Comment

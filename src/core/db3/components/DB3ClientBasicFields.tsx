@@ -42,6 +42,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
             width: 40,
             className: undefined,
             fieldCaption: "id",
+            isAutoFocusable: false,
             fieldDescriptionSettingName: undefined,
             GridColProps: {
                 type: "number",
@@ -83,6 +84,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             width: args.cellWidth,
             visible: true,
             className: args.className,
+            isAutoFocusable: true,
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
@@ -127,6 +129,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         isReadOnly: false,
         value: <CMTextInputBase
             onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
+            autoFocus={params.autoFocus}
             value={params.value as string}
             className={this.className}
         />
@@ -148,6 +151,7 @@ export class SlugColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            isAutoFocusable: false,
             visible: true,
             className: args.className,
             fieldCaption: args.fieldCaption,
@@ -243,6 +247,7 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
+            isAutoFocusable: true,
             width: args.cellWidth,
             visible: CoerceToBoolean(args.visible, true),
             className: args.className,
@@ -317,6 +322,7 @@ export class GenericIntegerColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
+            isAutoFocusable: true,
             width: args.cellWidth,
             visible: true,
             className: args.className,
@@ -397,6 +403,7 @@ export class SongLengthSecondsColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
+            isAutoFocusable: true,
             visible: true,
             className: args.className,
             fieldCaption: args.fieldCaption,
@@ -471,6 +478,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             width: 80,//args.cellWidth,
+            isAutoFocusable: false,
             visible: true,
             className: args.className,
             fieldCaption: args.fieldCaption,
@@ -537,6 +545,7 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
             editable: true,
             headerName: args.columnName,
             className: args.className,
+            isAutoFocusable: false,
             width: args.cellWidth,
             visible: true,
             GridColProps: {
@@ -600,6 +609,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     constructor(args: ConstEnumStringFieldClientArgs) {
         super({
             columnName: args.columnName,
+            isAutoFocusable: true,
             headerName: args.columnName,
             editable: true,
             width: args.cellWidth,
@@ -832,6 +842,7 @@ export class CreatedAtColumn extends DB3ClientCore.IColumnClient {
     constructor(args: CreatedAtColumnArgs) {
         super({
             columnName: args.columnName,
+            isAutoFocusable: false,
             editable: true,
             headerName: args.columnName,
             width: args.cellWidth,
@@ -910,6 +921,7 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
     constructor(args: DateTimeColumnArgs) {
         super({
             columnName: args.columnName,
+            isAutoFocusable: true,
             editable: true,
             headerName: args.columnName,
             width: 150,

@@ -203,8 +203,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             </CMDialogContentText>
 
             <div className="EventSongListValue">
-                {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention)}
-                {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention)}
+                {eventResponseTableSpec.renderEditor("isInvited", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
+                {eventResponseTableSpec.renderEditor("instrument", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
 
                 {
                     props.event.segments.map(segment => {
@@ -212,12 +212,12 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                         const response = eventSegmentResponseValues[segment.id]!;
                         return <div key={segment.id}>
                             <div>{segment.name}
-                                {eventSegmentResponseTableSpec.renderEditor("attendance", response, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), clientIntention)}
+                                {eventSegmentResponseTableSpec.renderEditor("attendance", response, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), clientIntention, false)}
                             </div>
                         </div>;
                     })
                 }
-                {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention)}
+                {eventResponseTableSpec.renderEditor("userComment", eventResponseValue, eventValidationResult, handleChangedEventResponse, clientIntention, false)}
 
             </div>
         </DialogContent>

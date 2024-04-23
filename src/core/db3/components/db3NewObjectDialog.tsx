@@ -66,6 +66,8 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
         },
     };
 
+    let encounteredAutofocusable = false;
+
     return (
         <Suspense>
             <Dialog
@@ -74,6 +76,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                 scroll="paper"
                 className={`ReactiveInputDialog`}
                 fullScreen={fullScreen}
+                disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >
                 <DialogTitle>
                     {props.caption || <>New {table.args.table.tableName}</>}
@@ -94,9 +97,15 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                                     publicData,
                                 });
                             }).map(column => {
+                                let autoFocus = false;
+                                if (!encounteredAutofocusable && column.isAutoFocusable) {
+                                    encounteredAutofocusable = true;
+                                    autoFocus = true;
+                                }
                                 return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
                                     key: column.columnName,
                                     api,
+                                    autoFocus,
                                     row: obj,
                                     value: obj[column.columnName],
                                     validationResult,
@@ -172,6 +181,8 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
         onDelete!(tableRenderClient);
     }
 
+    let encounteredAutofocusable = false;
+
     return (
         <Suspense>
             <Dialog
@@ -180,6 +191,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                 scroll="paper"
                 className={`ReactiveInputDialog`}
                 fullScreen={fullScreen}
+                disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >
                 <DialogTitle>{props.title || <>Edit {tableRenderClient.tableSpec.args.table.tableName}</>}</DialogTitle>
                 <DialogContent dividers>
@@ -207,10 +219,16 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                                     publicData,
                                 }));
                             }).map(column => {
+                                let autoFocus = false;
+                                if (!encounteredAutofocusable && column.isAutoFocusable) {
+                                    encounteredAutofocusable = true;
+                                    autoFocus = true;
+                                }
                                 return column.renderForNewDialog && <React.Fragment key={column.columnName}>{column.renderForNewDialog!({
                                     key: column.columnName,
                                     api,
                                     row: obj,
+                                    autoFocus,
                                     value: obj[column.columnName],
                                     validationResult,
                                     clientIntention: tableRenderClient.args.clientIntention,

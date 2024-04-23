@@ -115,8 +115,8 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         });
     };
 
-    const renderColumn = (table: DB3Client.xTableClientSpec, colName: string, row: TAnyModel, validationResult: db3.ValidateAndComputeDiffResult, api: DB3Client.NewDialogAPI) => {
-        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], clientIntention });
+    const renderColumn = (table: DB3Client.xTableClientSpec, colName: string, row: TAnyModel, validationResult: db3.ValidateAndComputeDiffResult, api: DB3Client.NewDialogAPI, autoFocus: boolean) => {
+        return table.getColumn(colName).renderForNewDialog!({ key: colName, row, validationResult, api, value: row[colName], clientIntention, autoFocus });
     };
 
     return <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
@@ -133,14 +133,14 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                     setEventValue(newValue);
                 }} />
 
-                {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI)}
-                {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI)}
-                {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI)}
-                {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI)}
-                {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI)}
-                {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI)}
+                {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI, true)}
+                {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI, false)}
+                {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI, false)}
+                {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI, false)}
+                {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI, false)}
+                {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI, false)}
 
-                {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI)}
+                {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)}
 
             </div>
         </DialogContent>

@@ -36,6 +36,7 @@ export class EventDateRangeColumn extends DB3ClientCore.IColumnClient {
     constructor(args: EventDateRangeColumnArgs) {
         super({
             columnName: args.startsAtColumnName,
+            isAutoFocusable: false,
             editable: true,
             headerName: args.headerName,
             width: 250,

@@ -73,6 +73,7 @@ export const NewSongButton = () => {
         songTableClient.doInsertMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
             void router.push(API.songs.getURIForSong((ret as any).id));
+            api.closeDialog();
         }).catch(e => {
             console.log(e);
             showSnackbar({ severity: "error", children: "error" });

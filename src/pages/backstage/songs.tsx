@@ -137,7 +137,7 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
             page: 0,
             pageSize: filterSpec.recordCount,
         },
-        requestedCaps: DB3Client.xTableClientCaps.Query,
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
         clientIntention,
         queryOptions: gQueryOptions.liveData,
     });
@@ -148,8 +148,13 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
         songsClient.refetch();
     }, [filterSpec]);
 
+    console.log('aoeu');
+
     return <div className="songsList searchResults">
         {items.map(song => <SongListItem key={song.id} song={song} tableClient={songsClient} />)}
+        <div className="searchRecordCount">
+            Displaying {items.length} items (rowcount:{songsClient.rowCount})
+        </div>
     </div>;
 };
 

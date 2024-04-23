@@ -42,6 +42,7 @@ interface MarkdownEditorProps {
     value: string | null, // value which may be coming from the database.
     onValueChanged: (val: string) => void, // caller can save the changed value to a db here.
     height?: number,
+    autoFocus?: boolean;
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
@@ -56,7 +57,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         <ReactTextareaAutocomplete
             containerClassName="editorContainer"
             loadingComponent={Loading}
-            autoFocus={true}
+            autoFocus={!!props.autoFocus}
             //ref={rta => setRta(rta)}
             //innerRef={textarea => setTa(textarea)}
             containerStyle={{

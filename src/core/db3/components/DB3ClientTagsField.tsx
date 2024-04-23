@@ -505,6 +505,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
             headerName: args.columnName,
             editable: true,
             width: args.cellWidth,
+            isAutoFocusable: false,
             visible: true,
             className: args.className,
             fieldCaption: args.fieldCaption,

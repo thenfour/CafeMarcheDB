@@ -39,6 +39,7 @@ export interface RenderForNewItemDialogArgs {
     validationResult?: db3.ValidateAndComputeDiffResult;
     api: NewDialogAPI,
     clientIntention: db3.xTableClientUsageContext;
+    autoFocus: boolean; // should the renderer set focus on mount?
 };
 
 export interface RenderViewerArgs<T> {
@@ -55,6 +56,7 @@ export interface IColumnClientArgs {
     editable: boolean;
     visible: boolean;
     width: number;
+    isAutoFocusable: boolean;
 
     fieldCaption: string | undefined;
     fieldDescriptionSettingName: string | null | undefined;
@@ -74,6 +76,8 @@ export abstract class IColumnClient {
     fieldCaption: string | undefined;
     fieldDescriptionSettingName: SettingKey | null | undefined;
     className: string | undefined;
+
+    isAutoFocusable: boolean;
 
     GridColProps?: Partial<GridColDef>;
 
@@ -145,11 +149,12 @@ export class xTableClientSpec {
         });
     }
 
-    renderEditor = <T extends TAnyModel,>(columnName: string, row: T, validationResult: db3.ValidateAndComputeDiffResult, onChange: (row: T) => void, clientIntention: db3.xTableClientUsageContext) => {
+    renderEditor = <T extends TAnyModel,>(columnName: string, row: T, validationResult: db3.ValidateAndComputeDiffResult, onChange: (row: T) => void, clientIntention: db3.xTableClientUsageContext, autoFocus: boolean) => {
         const col = this.getColumn(columnName);
 
         return col.renderForNewDialog && col.renderForNewDialog({
             validationResult,
+            autoFocus,
             clientIntention,
             api: {
                 setFieldValues: (fieldValues: { [key: string]: any }) => {

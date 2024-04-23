@@ -242,6 +242,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             <Dialog
                 open={true}
                 onClose={handleClose}
+                disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >
                 <DialogTitle>Delete row (this is a HARD delete)?</DialogTitle>
                 <DialogContent dividers>
