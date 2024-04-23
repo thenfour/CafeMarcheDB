@@ -550,12 +550,12 @@ export async function CMDBUploadFile(args: CMDBUploadFilesArgs): Promise<UploadR
 
 
 ////////////////////////////////////////////////////////////////
-export function CircularProgressWithLabel(props: CircularProgressProps & { value: number }) {
+export function CircularProgressWithLabel(props: CircularProgressProps & { value: number, size?: number, textCssClass?: string }) {
     //props.size = props.size || 70;
     //props.thickness = props.thickness || 7;
     return (
         <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <CircularProgress variant="determinate" {...props} style={{ color: "#0a0" }} size={70} thickness={7} />
+            <CircularProgress variant="determinate" {...props} style={{ color: "#0a0" }} size={props.size} thickness={7} />
             <Box
                 sx={{
                     top: 0,
@@ -572,6 +572,7 @@ export function CircularProgressWithLabel(props: CircularProgressProps & { value
                     variant="caption"
                     component="div"
                     color="text.secondary"
+                    className={props.textCssClass}
                 >{`${Math.round(props.value)}%`}</Typography>
             </Box>
         </Box>

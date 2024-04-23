@@ -2,7 +2,7 @@
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { Button, Tooltip } from "@mui/material";
+import { Button, CircularProgress, Modal, Tooltip } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
@@ -169,10 +169,13 @@ interface FileDropWrapperProps {
     className?: string;
     onFileSelect: (files: FileList) => void;
     onURLUpload: (url: string) => void;
+    progress: number | null;
 };
 
 export const FileDropWrapper = (props: React.PropsWithChildren<FileDropWrapperProps>) => {
-    const [isDragging, setIsDragging] = React.useState(false);
+    let [isDragging, setIsDragging] = React.useState(false);
+
+    //isDragging = true;
 
     const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -208,7 +211,22 @@ export const FileDropWrapper = (props: React.PropsWithChildren<FileDropWrapperPr
         }}
         onDrop={handleDrop}
     >
-        {isDragging && <div className='dragOverlay'>Upload files...</div>}
+        {(isDragging) && <div className='dragOverlay'>Upload files... {props.progress}</div>}
+
+        <Modal
+            open={!!props.progress}
+            className='uploadProgressModal'
+        >
+            <div className='progressContainer'>
+                <CircularProgressWithLabel
+                    variant='determinate'
+                    value={100 * (props.progress || 0)}
+                    className='progressIndicator'
+                    size={200}
+                    textCssClass='progressLabel'
+                />
+            </div>
+        </Modal>
         {props.children}
     </div>;
 };
@@ -789,7 +807,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
 
     const filteredItems = sortAndFilter(props.fileTags, filterSpec);
 
-    return <FileDropWrapper onFileSelect={handleFileSelect} onURLUpload={handleURLSelect}>
+    return <FileDropWrapper onFileSelect={handleFileSelect} onURLUpload={handleURLSelect} progress={progress}>
         {!props.readonly && canUploadFiles && (showUpload ? <div className="uploadControlContainer">
             <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={handleURLSelect} />
             <Button onClick={() => setShowUpload(false)}>Cancel</Button>
