@@ -481,17 +481,19 @@ const xEventArgs_Base: db3.TableDesc = {
             associationTableID: "EventTagAssignment",
             authMap: xEventAuthMap_Homepage,
             foreignTableID: "EventTag",
-            getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput => ({
-                tags: {
-                    some: {
-                        eventTag: {
-                            text: {
-                                contains: query
-                            }
-                        }
-                    }
-                }
-            }),
+            // don't allow quick search on tag; it interferes with getEventFilterInfo.ts
+            getQuickFilterWhereClause: () => false,
+            // getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput => ({
+            //     tags: {
+            //         some: {
+            //             eventTag: {
+            //                 text: {
+            //                     contains: query
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }),
             getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventWhereInput | boolean => {
                 if (!query.tagIds?.length) return false;
                 const tagIds = query!.tagIds;

@@ -295,6 +295,7 @@ export interface SongDetailContainerProps {
     readonly: boolean;
     initialTabIndex?: number;
     showVisibility?: boolean;
+    highlightedTagIds?: number[];
 }
 
 export const SongDetailContainer = ({ songData, tableClient, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
@@ -302,6 +303,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
     const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
+    const highlightedTagIds = props.highlightedTagIds || [];
 
     const refetch = () => {
         tableClient.refetch();
@@ -373,7 +375,13 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
 
 
             <CMChipContainer>
-                {song.tags.map(tag => <CMStandardDBChip key={tag.id} size='small' model={tag.tag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+                {song.tags.map(tag => <CMStandardDBChip
+                    key={tag.id}
+                    size='small'
+                    model={tag.tag}
+                    variation={{ ...StandardVariationSpec.Weak, selected: highlightedTagIds.includes(tag.tagId) }}
+                    getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
+                />)}
             </CMChipContainer>
 
 

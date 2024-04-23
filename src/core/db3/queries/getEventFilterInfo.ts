@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
+import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet } from "../shared/apiTypes";
 
@@ -38,12 +38,18 @@ export default resolver.pipe(
 
             const eventFilterExpressions: string[] = [];
             if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
-                const qf = mysql_real_escape_string(args.filterSpec.quickFilter);
-                const qfItems = [
-                    `(Event.name LIKE '%${qf}%')`,
-                    `(Event.locationDescription LIKE '%${qf}%')`,
-                ];
-                eventFilterExpressions.push(`(${qfItems.join(" or ")})`);
+                // tokens are AND'd together.
+                const tokens = SplitQuickFilter(args.filterSpec.quickFilter);
+                const tokensExpr = tokens.map(t => {
+                    const qf = mysql_real_escape_string(t);
+                    const or = [
+                        `(Event.name LIKE '%${qf}%')`,
+                        `(Event.locationDescription LIKE '%${qf}%')`,
+                    ];
+                    return `(${or.join(" OR ")})`;
+                });
+
+                eventFilterExpressions.push(`(${tokensExpr.join(" AND ")})`);
             }
 
             if (args.filterSpec.typeIds.length > 0) {
@@ -100,10 +106,12 @@ export default resolver.pipe(
             EventStatus
         JOIN 
             FilteredEvents ON EventStatus.id = FilteredEvents.statusId
+        where
+            EventStatus.isDeleted = FALSE
         GROUP BY 
             EventStatus.id
         order by
-            count(distinct(FilteredEvents.EventId)) desc,
+            --count(distinct(FilteredEvents.EventId)) desc, -- seems natural to do this but it causes things to constantly reorder
             EventStatus.sortOrder asc
         `;
 
@@ -128,10 +136,12 @@ export default resolver.pipe(
             EventType
         JOIN 
             FilteredEvents ON EventType.id = FilteredEvents.typeId
+        where
+            EventType.isDeleted = FALSE
         GROUP BY 
             EventType.id
         order by
-            count(distinct(FilteredEvents.EventId)) desc,
+            -- count(distinct(FilteredEvents.EventId)) desc, -- seems natural to do this but it causes things to constantly reorder
             EventType.sortOrder asc
             `;
 
@@ -161,7 +171,7 @@ export default resolver.pipe(
     group by
         ET.id
     order by
-        count(distinct(FE.EventId)) desc,
+        -- count(distinct(FE.EventId)) desc, -- seems natural to do this but it causes things to constantly reorder
         ET.sortOrder asc
 
         `;

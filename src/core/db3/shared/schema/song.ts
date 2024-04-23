@@ -257,17 +257,19 @@ const xSongArgs_Base: db3.TableDesc = {
                     }))
                 };
             },
-            getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
-                tags: {
-                    some: {
-                        tag: {
-                            text: {
-                                contains: query
-                            }
-                        }
-                    }
-                }
-            }),
+            // don't allow quick search on tag; it interferes with getSongFilterInfo.ts
+            getQuickFilterWhereClause: () => false,
+            // getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput => ({
+            //     tags: {
+            //         some: {
+            //             tag: {
+            //                 text: {
+            //                     contains: query
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }),
         }),
         new TagsField<SongTaggedFilesPayload>({
             columnName: "taggedFiles",

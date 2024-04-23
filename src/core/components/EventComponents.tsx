@@ -687,21 +687,23 @@ export const gEventDetailTabSlugIndices = {
 export interface EventDetailContainerProps {
     eventData: EventWithMetadata;
     tableClient: DB3Client.xTableRenderClient;
-    //verbosity: EventDetailVerbosity;
     readonly: boolean;
-    //initialTabIndex?: number;
-    //isOnlyEventVisible: boolean; // some formatting stuff cares about whether this is a part of a list of events, or is the only one on the screen.
-    //allowRouterPush: boolean; // if true, selecting tabs updates the window location for shareability. if this control is in a list then don't set tihs.
     fadePastEvents: boolean;
     showVisibility?: boolean;
+
+    highlightTagIds?: number[];
+    highlightStatusId?: number[];
+    highlightTypeId?: number[];
 }
 
 export const EventDetailContainer = ({ eventData, tableClient, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
     const [user] = useCurrentUser()!;
     const router = useRouter();
-    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
+    const highlightTagIds = props.highlightTagIds || [];
+    const highlightStatusIds = props.highlightStatusId || [];
+    const highlightTypeIds = props.highlightTypeId || [];
 
     const refetch = () => {
         tableClient.refetch();
@@ -728,18 +730,17 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     <CMStandardDBChip
                         model={eventData.event.type}
                         getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                        variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
+                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(eventData.event.typeId!) }}
                     />
                 }
 
                 {eventData.event.status && <CMStandardDBChip
-                    variation={StandardVariationSpec.Strong}
+                    variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(eventData.event.statusId!) }}
                     border='border'
                     shape="rectangle"
                     model={eventData.event.status}
                     getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
                 />}
-
 
                 <TimingChip value={eventData.eventTiming} tooltip={eventData.dateRange.toString()}>
                     <CalendarMonthIcon className="icon" />
@@ -824,7 +825,13 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
             </div>
 
             <CMChipContainer>
-                {eventData.event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} size='small' variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+                {eventData.event.tags.map(tag => <CMStandardDBChip
+                    key={tag.id}
+                    model={tag.eventTag}
+                    size='small'
+                    variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
+                    getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
+                />)}
             </CMChipContainer>
 
             {props.children}

@@ -66,7 +66,8 @@ const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValuePr
                 {filterInfo.tags.map(tag => (
                     <CMChip
                         key={tag.id}
-                        variation={{ ...StandardVariationSpec.Strong, selected: props.spec.tagFilter.some(id => id === tag.id) }}
+                        variation={{ ...StandardVariationSpec.Weak, selected: props.spec.tagFilter.some(id => id === tag.id) }}
+                        size="small"
                         onClick={props.readonly ? undefined : (() => toggleTag(tag.id))}
                         color={tag.color}
                     //tooltip={status.tooltip} // no. it gets in the way and is annoying.
@@ -167,12 +168,13 @@ const SongsControls = (props: SongsControlsProps) => {
 interface SongListItemProps {
     song: db3.SongPayload_Verbose;
     tableClient: DB3Client.xTableRenderClient;
+    filterSpec: SongsControlsSpec;
 };
 const SongListItem = (props: SongListItemProps) => {
     const router = useRouter();
     const songData = CalculateSongMetadata(props.song);
     return <div className="searchListItem" onClick={() => router.push(API.songs.getURIForSong(props.song.id, props.song.slug))}>
-        <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={true}>
+        <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={true} highlightedTagIds={props.filterSpec.tagFilter}>
             {/* <SongMetadataView readonly={true} refetch={props.tableClient.refetch} songData={songData} showCredits={false} /> */}
         </SongDetailContainer>
     </div>;
@@ -219,7 +221,7 @@ const SongsList = ({ filterSpec }: SongsListArgs) => {
     const itemBaseOrdinal = page * filterSpec.recordCount;
 
     return <div className="songsList searchResults">
-        {items.map(song => <SongListItem key={song.id} song={song} tableClient={songsClient} />)}
+        {items.map(song => <SongListItem key={song.id} song={song} tableClient={songsClient} filterSpec={filterSpec} />)}
         <div className="searchRecordCount">
             Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + items.length} of {songsClient.rowCount} total
         </div>

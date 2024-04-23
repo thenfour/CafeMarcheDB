@@ -75,23 +75,6 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
     };
 
     return <div className={`EventsFilterControlsValue ${props.readonly && "HalfOpacity"}`}>
-        <div className="row">
-            <CMChipContainer className="cell">
-                {
-                    filterInfo.statuses.map(status => (
-                        <CMChip
-                            key={status.id}
-                            onClick={props.readonly ? undefined : (() => toggleStatus(status.id))}
-                            color={status.color}
-                            shape="rectangle"
-                            variation={{ ...StandardVariationSpec.Strong, selected: props.spec.statusFilter.some(id => id === status.id) }}
-                        //tooltip={status.tooltip} // no. it gets in the way and is annoying.
-                        >
-                            {RenderMuiIcon(status.iconName)}{status.label} ({status.rowCount})
-                        </CMChip>
-                    ))}
-            </CMChipContainer>
-        </div >
 
         <div className="row">
             {/* <div className="caption cell">event type</div> */}
@@ -112,12 +95,31 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
         </div>
 
         <div className="row">
+            <CMChipContainer className="cell">
+                {
+                    filterInfo.statuses.map(status => (
+                        <CMChip
+                            key={status.id}
+                            onClick={props.readonly ? undefined : (() => toggleStatus(status.id))}
+                            color={status.color}
+                            shape="rectangle"
+                            variation={{ ...StandardVariationSpec.Strong, selected: props.spec.statusFilter.some(id => id === status.id) }}
+                        //tooltip={status.tooltip} // no. it gets in the way and is annoying.
+                        >
+                            {RenderMuiIcon(status.iconName)}{status.label} ({status.rowCount})
+                        </CMChip>
+                    ))}
+            </CMChipContainer>
+        </div >
+
+        <div className="row">
             {/* <div className="caption cell">tags</div> */}
             <CMChipContainer className="cell">
                 {filterInfo.tags.map(tag => (
                     <CMChip
                         key={tag.id}
-                        variation={{ ...StandardVariationSpec.Strong, selected: props.spec.tagFilter.some(id => id === tag.id) }}
+                        size="small"
+                        variation={{ ...StandardVariationSpec.Weak, selected: props.spec.tagFilter.some(id => id === tag.id) }}
                         onClick={props.readonly ? undefined : (() => toggleTag(tag.id))}
                         color={tag.color}
                     //tooltip={status.tooltip} // no. it gets in the way and is annoying.
@@ -195,6 +197,7 @@ const EventsControls = (props: EventsControlsProps) => {
 interface EventListItemProps {
     event: db3.EventClientPayload_Verbose;
     tableClient: DB3Client.xTableRenderClient;
+    filterSpec: EventsControlsSpec;
 };
 
 const EventListItem = (props: EventListItemProps) => {
@@ -203,7 +206,16 @@ const EventListItem = (props: EventListItemProps) => {
 
     // can't make these items a link because they contain interactable attendance control
     // return <div className="searchListItem" onClick={() => router.push(API.events.getURIForEvent(props.event.id, props.event.slug))}>
-    return <EventDetailContainer eventData={eventData} fadePastEvents={true} readonly={true} tableClient={props.tableClient} showVisibility={true}>
+    return <EventDetailContainer
+        eventData={eventData}
+        fadePastEvents={true}
+        readonly={true}
+        tableClient={props.tableClient}
+        showVisibility={true}
+        highlightStatusId={props.filterSpec.statusFilter}
+        highlightTypeId={props.filterSpec.typeFilter}
+        highlightTagIds={props.filterSpec.tagFilter}
+    >
         <EventAttendanceControl
             eventData={eventData}
             onRefetch={props.tableClient.refetch}
@@ -257,7 +269,7 @@ const EventsList = ({ filterSpec }: EventsListArgs) => {
     const itemBaseOrdinal = page * filterSpec.recordCount;
 
     return <div className="eventList searchResults">
-        {items.map(event => <EventListItem key={event.id} event={event} tableClient={eventsClient} />)}
+        {items.map(event => <EventListItem key={event.id} event={event} tableClient={eventsClient} filterSpec={filterSpec} />)}
         <div className="searchRecordCount">
             Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + items.length} of {eventsClient.rowCount} total
         </div>

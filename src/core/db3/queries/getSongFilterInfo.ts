@@ -4,7 +4,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
+import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet } from "../shared/apiTypes";
 
@@ -31,12 +31,19 @@ export default resolver.pipe(
 
             const songFilterExpressions: string[] = [];
             if (!IsNullOrWhitespace(args.filterSpec.quickFilter)) {
-                const qf = mysql_real_escape_string(args.filterSpec.quickFilter);
-                const qfItems = [
-                    `(Song.name LIKE '%${qf}%')`,
-                    `(Song.aliases LIKE '%${qf}%')`,
-                ];
-                songFilterExpressions.push(`(${qfItems.join(" or ")})`);
+
+                // tokens are AND'd together.
+                const tokens = SplitQuickFilter(args.filterSpec.quickFilter);
+                const tokensExpr = tokens.map(t => {
+                    const qf = mysql_real_escape_string(t);
+                    const or = [
+                        `(Song.name LIKE '%${qf}%')`,
+                        `(Song.aliases LIKE '%${qf}%')`,
+                    ];
+                    return `(${or.join(" OR ")})`;
+                });
+
+                songFilterExpressions.push(`(${tokensExpr.join(" AND ")})`);
             }
 
             if (args.filterSpec.tagIds.length > 0) {
@@ -86,7 +93,7 @@ export default resolver.pipe(
     group by
         ST.id
     order by
-        count(distinct(FS.SongId)) desc,
+        -- count(distinct(FS.SongId)) desc, -- seems natural to do this but it causes things to constantly reorder
         ST.sortOrder asc
         `;
 
