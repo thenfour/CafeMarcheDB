@@ -715,10 +715,15 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
         [Timing.Future]: "Future event",
     } as const;
 
-    return <div className={`EventDetail contentSection event ${visInfo.className} ${(props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
+    const typeStyle = GetStyleVariablesForColor({
+        ...StandardVariationSpec.Strong,
+        color: eventData.event.type?.color || null,
+    });
+
+
+    return <div style={typeStyle.style} className={`EventDetail contentSection event ApplyBorderLeftColor ${eventData.event.type?.text} ${visInfo.className} ${(props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
         <div className='header'>
             <CMChipContainer>
-
                 {eventData.event.type && //<EventTypeValue type={event.type} />
                     <CMStandardDBChip
                         model={eventData.event.type}
@@ -726,13 +731,20 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                         variation={{ ...StandardVariationSpec.Strong /*, fillOption: 'hollow'*/ }}
                     />
                 }
+
                 {eventData.event.status && <CMStandardDBChip
                     variation={StandardVariationSpec.Strong}
                     border='border'
                     shape="rectangle"
-                    model={eventData.event.status} getTooltip={(_, c) => !!c ? `Status: ${c}` : `Status`}
+                    model={eventData.event.status}
+                    getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
                 />}
 
+
+                <TimingChip value={eventData.eventTiming} tooltip={eventData.dateRange.toString()}>
+                    <CalendarMonthIcon className="icon" />
+                    {timingLabel[eventData.eventTiming]}
+                </TimingChip>
 
             </CMChipContainer>
 
@@ -793,10 +805,6 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                         {eventData.event.name}
                     </Link>
                 </div>
-
-                <CMChipContainer>
-                    {eventData.event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
-                </CMChipContainer>
             </div>
 
             <div className='titleLine'>
@@ -804,11 +812,6 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     <span className="text">{eventData.dateRange.toString()}</span>
 
                     {(eventData.event.segments.length === 1) && <EditSingleSegmentDateButton readonly={props.readonly} refetch={refetch} event={eventData.event} segment={eventData.event.segments[0]!} />}
-
-                    <TimingChip value={eventData.eventTiming}>
-                        <CalendarMonthIcon className="icon" />
-                        {timingLabel[eventData.eventTiming]}
-                    </TimingChip>
 
                 </div>
             </div>
@@ -819,6 +822,10 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     <span className="text">{IsNullOrWhitespace(eventData.event.locationDescription) ? "Location TBD" : eventData.event.locationDescription}</span>
                 </div>
             </div>
+
+            <CMChipContainer>
+                {eventData.event.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.eventTag} size='small' variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+            </CMChipContainer>
 
             {props.children}
 

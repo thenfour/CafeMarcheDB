@@ -215,7 +215,7 @@ const MainContent = () => {
     return <>
         <SettingMarkdown setting="profile_markdown"></SettingMarkdown>
         <CMSinglePageSurfaceCard>
-            <div className="content">
+            <div className="content yourProfile">
                 <Typography gutterBottom variant="h4" component="div">
                     {gIconMap.Person()} Your profile
                 </Typography>

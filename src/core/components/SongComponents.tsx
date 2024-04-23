@@ -315,14 +315,10 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                 <div className="titleText">
                     <Link href={songData.songURI} className="titleLink">
                         <span className='title'>{song.name}</span>
-                        {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>({song.introducedYear})</span></Tooltip>}
+                        {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>{song.introducedYear}</span></Tooltip>}
                     </Link>
-                    <div className='subtitle'><Tooltip title={"Aliases"}><span>{song.aliases}</span></Tooltip></div>
+                    {!IsNullOrWhitespace(song.aliases) && <div className='subtitle songAliases'><Tooltip title={"Aliases"}><span>{song.aliases}</span></Tooltip></div>}
                 </div>
-
-                <CMChipContainer>
-                    {song.tags.map(tag => <CMStandardDBChip key={tag.id} model={tag.tag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
-                </CMChipContainer>
 
                 <div className='flex-spacer'></div>
 
@@ -373,11 +369,19 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
 
             </div>{/* title line */}
 
+
+            <CMChipContainer>
+                {song.tags.map(tag => <CMStandardDBChip key={tag.id} size='small' model={tag.tag} variation={StandardVariationSpec.Weak} getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`} />)}
+            </CMChipContainer>
+
+
+
+
             {props.children}
 
         </div>{/* content */}
 
-    </div>;
+    </div >;
 };
 
 

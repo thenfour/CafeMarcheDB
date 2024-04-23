@@ -69,6 +69,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            allowSearchingThisField: false,
             authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new GhostField({ memberName: "instruments", authMap: xInstrumentAuthMap_R_EManagers }),
@@ -110,6 +111,7 @@ export const xInstrumentTag = new db3.xTable({
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            allowSearchingThisField: false,
             authMap: xInstrumentAuthMap_R_EManagers,
         }),
         new ColorField({
@@ -196,6 +198,7 @@ export const xInstrument = new db3.xTable({
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
+            allowSearchingThisField: false,
             allowNull: false,
             authMap: xInstrumentAuthMap_R_EManagers,
         }),

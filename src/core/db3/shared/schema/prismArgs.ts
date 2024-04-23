@@ -231,11 +231,11 @@ export const SongTagNaturalOrderBy: Prisma.SongTagOrderByWithRelationInput[] = [
     { text: 'asc' },
     { id: 'asc' },
 ];
-export const SongTagAssociationArgs = Prisma.validator<Prisma.SongTagAssociationArgs>()({
+export const SongTagAssociationArgs = Prisma.validator<Prisma.SongTagAssociationDefaultArgs>()({
     include: {
         song: true,
         tag: true,
-    }
+    },
 });
 
 export type SongTagAssociationPayload = Prisma.SongTagAssociationGetPayload<typeof SongTagAssociationArgs>;
@@ -363,6 +363,11 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
         tags: {
             include: {
                 userTag: true,
+            },
+            orderBy: {
+                userTag: {
+                    sortOrder: 'asc'
+                }
             }
         },
     }
@@ -415,6 +420,9 @@ export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
         tags: {
             include: {
                 tag: true, // include foreign object
+            },
+            orderBy: {
+                tag: { sortOrder: 'asc' }
             }
         },
     }
@@ -461,6 +469,11 @@ export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
         tags: {
             include: {
                 fileTag: true,
+            },
+            orderBy: {
+                fileTag: {
+                    sortOrder: 'asc'
+                }
             }
         },
         taggedEvents: {
@@ -520,7 +533,7 @@ export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
             include: {
                 tag: true, // include foreign object
             },
-            //orderBy: SongTagNaturalOrderBy, <-- why doesn't this work?
+            orderBy: SongTagAssociationNaturalOrderBy,
         },
         taggedFiles: {
             include: {
@@ -591,7 +604,7 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
             orderBy: EventTagAssignmentNaturalOrderBy,
             include: {
                 eventTag: true,
-            }
+            },
         },
         expectedAttendanceUserTag: true,
         type: true,

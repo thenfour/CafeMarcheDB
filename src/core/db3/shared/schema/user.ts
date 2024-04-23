@@ -178,6 +178,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
         new GenericIntegerField({
             columnName: "sortOrder",
             allowNull: false,
+            allowSearchingThisField: false,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
         new BoolField({
@@ -316,6 +317,7 @@ export const xRole = new db3.xTable({
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
+            allowSearchingThisField: false,
             allowNull: false,
             authMap: xUserAuthMap_R_EAdmins,
         }),

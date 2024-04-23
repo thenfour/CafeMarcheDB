@@ -49,11 +49,14 @@ const MainContent = () => {
     });
 
     const events = API.events.sortEvents(eventsClient.items as db3.EventPayload[]);
+    const agenda = events.map(x => API.events.getAgendaItem(x));
 
     const content: HomepageContentSpec = {
         gallery: (galleryClient.items as db3.FrontpageGalleryItemPayload[]),
-        agenda: (events).map((x): HomepageAgendaItemSpec => API.events.getAgendaItem(x)),
+        agenda,
     };
+
+    console.log(content);
 
     return <NoSsr>
         <HomepageMain content={content} className="realFrontpage" fullPage={true} />

@@ -25,7 +25,6 @@ import {
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 
 
-
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
@@ -35,7 +34,7 @@ export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
 };
 
 export const xEventAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.public,
+    PostQueryAsOwner: Permission.view_events_nonpublic,
     PostQuery: Permission.view_events_nonpublic,
     PreMutateAsOwner: Permission.view_events_nonpublic,
     PreMutate: Permission.manage_events,
@@ -61,8 +60,8 @@ export const xEventAuthMap_R_EAdmin: db3.DB3AuthContextPermissionMap = {
 export const xEventAuthMap_CreatedAt = xEventAuthMap_R_EAdmin;
 
 export const xEventAuthMap_Homepage: db3.DB3AuthContextPermissionMap = {
-    PostQueryAsOwner: Permission.basic_trust,
-    PostQuery: Permission.basic_trust,
+    PostQueryAsOwner: Permission.public,
+    PostQuery: Permission.public,
     PreMutateAsOwner: Permission.edit_public_homepage,
     PreMutate: Permission.edit_public_homepage,
     PreInsert: Permission.edit_public_homepage,
@@ -528,6 +527,7 @@ const xEventArgs_Base: db3.TableDesc = {
         }),
         new GenericIntegerField({
             allowNull: false,
+            allowSearchingThisField: false,
             columnName: "durationMillis",
             authMap: xEventAuthMap_Homepage,
         }),
@@ -591,6 +591,7 @@ export const xEventSegment = new db3.xTable({
         new GenericIntegerField({
             allowNull: false,
             columnName: "durationMillis",
+            allowSearchingThisField: false,
             authMap: xEventAuthMap_R_EOwn_EManagers,
         }),
         new BoolField({

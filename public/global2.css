@@ -1898,9 +1898,14 @@ in particular the date range picker is wide.*/
 
 /* song introduced year, which is placed after the title but on the same line */
 span.titleTag {
-    color: #ccc;
-    font-size: 30px;
+    color: #aaa;
+    font-size: 20px;
     font-weight: normal;
+    padding-left: 10px;
+}
+
+.subtitle.songAliases {
+    margin-top: -10px;
 }
 
 /* song detail, song credit view */
@@ -2294,4 +2299,9 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 .GlobalMetronomeDialog .metronomeButtonContainer .metronomeSyncButton:hover {
     text-decoration: none;
+}
+
+
+.content.yourProfile {
+    min-width: 450px;
 }

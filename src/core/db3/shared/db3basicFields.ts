@@ -19,7 +19,7 @@
 
 import { assert } from "blitz";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
-import { CoerceToBoolean, TAnyModel } from "shared/utils";
+import { CoerceToBoolean, CoerceToNumberOrNull, TAnyModel } from "shared/utils";
 import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 
 export type DB3AuthSpec = {
@@ -283,11 +283,13 @@ export class GenericStringField extends FieldBase<string> {
 export type GenericIntegerFieldArgs = {
     columnName: string;
     allowNull: boolean;
+    allowSearchingThisField?: boolean;
 } & DB3AuthSpec;
 
 export class GenericIntegerField extends FieldBase<number> {
 
     allowNull: boolean;
+    allowSearchingThisField: boolean;
 
     constructor(args: GenericIntegerFieldArgs) {
         super({
@@ -299,12 +301,16 @@ export class GenericIntegerField extends FieldBase<number> {
             _customAuth: (args as any)._customAuth || null,
         });
         this.allowNull = args.allowNull;
+        this.allowSearchingThisField = CoerceToBoolean(args.allowSearchingThisField, true);
     }
 
     connectToTable = (table: xTable) => { };
 
-    getQuickFilterWhereClause = (query: string, clientIntention: xTableClientUsageContext): TAnyModel | boolean => {
-        const r = this.ValidateAndParse({ row: { [this.member]: query }, mode: "view", clientIntention }); // passing empty row because it's not used by this class.
+    getQuickFilterWhereClause = (query: string, clientIntention: xTableClientUsageContext): TAnyModel | false => {
+        if (!this.allowSearchingThisField) return false;
+        const queryAsNumber = CoerceToNumberOrNull(query);
+        if (queryAsNumber === null) return false;
+        const r = this.ValidateAndParse({ row: { [this.member]: queryAsNumber }, mode: "view", clientIntention }); // passing empty row because it's not used by this class.
         if (r.result !== "success") return false;
         return { [this.member]: { equals: r.values[this.member] } };
     };
@@ -1312,6 +1318,7 @@ export const MakeTitleField = (columnName: string, authSpec: DB3AuthSpec) => (
 export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericIntegerField({
         columnName,
+        allowSearchingThisField: false,
         allowNull: false,
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
@@ -1329,6 +1336,7 @@ export const MakeColorField = (columnName: string, authSpec: DB3AuthSpec) => (
 export const MakeSortOrderField = (columnName: string, authSpec: DB3AuthSpec) => (
     new GenericIntegerField({
         columnName,
+        allowSearchingThisField: false,
         allowNull: false,
         authMap: createAuthContextMap_GrantAll(), // safe enough to never hide this field.
     }));

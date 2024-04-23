@@ -385,7 +385,12 @@ export const xFile = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("fileLeafName", { authMap: xFileAuthMap_FileObjects_AdminEdit }),
-        new GenericIntegerField({ columnName: "sizeBytes", allowNull: true, authMap: xFileAuthMap_FileObjects_AdminEdit }),
+        new GenericIntegerField({
+            columnName: "sizeBytes",
+            allowNull: true,
+            allowSearchingThisField: false,
+            authMap: xFileAuthMap_FileObjects_AdminEdit,
+        }),
         new GenericStringField({
             columnName: "storedLeafName",
             allowNull: false,

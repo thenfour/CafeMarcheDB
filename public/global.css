@@ -547,6 +547,11 @@ it's not often you'll actually want markdown that's really wide.
   align-items: center;
 }
 
+.contentSection .titleLine+.titleLine {
+  /*pull title lines closer together*/
+  margin-top: -8px;
+}
+
 .contentSection .titleLine>* {
   margin-right: 10px;
 }
@@ -591,18 +596,23 @@ it's not often you'll actually want markdown that's really wide.
 }
 
 .contentSection.event {
-  border-left: solid 16px var(--primary-color);
+  --border-left-color: #3575;
+  border-left: solid 16px var(--border-left-color);
 }
+
+.contentSection.event.ApplyBorderLeftColor {
+  --border-left-color: var(--color-foreground);
+}
+
+/* .contentSection.event.Concert {}
+
+.contentSection.event {
+  border-color: var(--color-foreground);
+} */
 
 .contentSection.EventDetail.past {
   opacity: 50%;
 }
-
-/* 
-.contentSection.event.visibility-public>.header {
-  background-color: #eee;
-  color: black;
-} */
 
 
 .contentSection .statusIndicator {
@@ -623,8 +633,8 @@ it's not often you'll actually want markdown that's really wide.
 /* the idea is to make a visual distinction between the filter controls and the items which are listed below */
 .contentSection.filterControls {
   box-shadow: none;
-  border: 5px solid #bbb;
-  border-radius: 8px;
+  border: 4px solid #bbb;
+  border-radius: 4px;
   padding-bottom: 10px;
   margin: 10px 0px;
   background-color: #f8f8f8;
@@ -636,24 +646,24 @@ it's not often you'll actually want markdown that's really wide.
   background-color: #ddd;
   color: #bbb;
   /* font-weight: bold; */
-  letter-spacing: 1.2px;
+  letter-spacing: 1px;
 }
 
 .contentSection .smallInfoBox {
   display: flex;
   align-items: center;
-  font-size: 19px;
+  font-size: 21px;
   text-transform: uppercase;
   font-weight: bold;
   white-space: nowrap;
   color: #aaa;
   margin: 4px 0px 6px 6px;
-  letter-spacing: 0.7px;
+  /* letter-spacing: 0.7px; */
 }
 
 .contentSection .smallInfoBox.date {
-  color: #666;
-  font-size: 22px;
+  /* color: #666;
+  font-size: 22px; */
 }
 
 .contentSection .smallInfoBox.date .text {
@@ -708,13 +718,15 @@ it's not often you'll actually want markdown that's really wide.
 /* search results overrides to make it less emphatic */
 .searchResults .contentSection {
   margin-bottom: 20px;
-  border-left: solid 6px #ccc;
+  --border-left-color: #ccc;
+  border-left: solid 6px var(--border-left-color);
   box-shadow: var(--even-more-subtle-elevation);
   padding-bottom: 0px;
 }
 
 .searchResults .contentSection:hover {
-  border-left: solid 6px #88f;
+  /* border-left: solid 6px #88f; */
+  outline: 1px solid blue;
 }
 
 .searchResults .contentSection .titleText {

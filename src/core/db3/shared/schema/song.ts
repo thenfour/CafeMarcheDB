@@ -90,6 +90,7 @@ export const xSongTag = new db3.xTable({
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
+            allowSearchingThisField: false,
             allowNull: false,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
@@ -198,16 +199,19 @@ const xSongArgs_Base: db3.TableDesc = {
         }),
         new GenericIntegerField({
             columnName: "startBPM",
+            allowSearchingThisField: false,
             allowNull: true,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
             columnName: "endBPM",
+            allowSearchingThisField: false,
             allowNull: true,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
         new GenericIntegerField({
             columnName: "introducedYear",
+            allowSearchingThisField: false,
             allowNull: true,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
@@ -219,6 +223,7 @@ const xSongArgs_Base: db3.TableDesc = {
         }),
         new GenericIntegerField({ // todo: a column type specifically for song lengths
             columnName: "lengthSeconds",
+            allowSearchingThisField: false,
             allowNull: true,
             authMap: xSongAuthMap_R_EOwn_EManagers,
         }),
@@ -324,6 +329,7 @@ export const xSongCreditType = new db3.xTable({
         }),
         new GenericIntegerField({
             columnName: "sortOrder",
+            allowSearchingThisField: false,
             allowNull: false,
             authMap: xSongAuthMap_R_EManagers,
         }),
