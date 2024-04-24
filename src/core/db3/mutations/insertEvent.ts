@@ -30,6 +30,7 @@ export default resolver.pipe(
             typeId: args.event.typeId,
             statusId: args.event.statusId,
             tags: args.event.tags,
+            expectedAttendanceUserTagId: args.event.expectedAttendanceUserTagId,
             visiblePermissionId: args.event.visiblePermissionId,
         };
 

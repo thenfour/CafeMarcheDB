@@ -121,6 +121,7 @@ export interface TinsertEventArgs {
         typeId: number | null,
         statusId: number | null,
         tags: number[],
+        expectedAttendanceUserTagId: number | null,
         visiblePermissionId: number | null;
     },
     segment: {
