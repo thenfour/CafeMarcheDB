@@ -37,9 +37,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
     bpm = Clamp(bpm, gMinBPM, gMaxBPM);
 
     const scheduleTick = (t?: number | undefined) => {
-        if (t && t < 0) {
-            debugger;
-        }
         const ctx = audioContextRef.current!;
         const tickSource = ctx.createBufferSource();
         tickSource.buffer = tickBufferRef.current;

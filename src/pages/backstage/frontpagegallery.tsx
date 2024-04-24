@@ -5,7 +5,8 @@
 // all of which propagate up to a db controller
 
 import { BlitzPage } from "@blitzjs/next";
-import { Button, Tooltip } from "@mui/material";
+import { CheckBox } from "@mui/icons-material";
+import { Button, Checkbox, FormControlLabel, Tooltip } from "@mui/material";
 import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
@@ -14,6 +15,7 @@ import { calculateNewDimensions, formatFileSize, gDefaultImageArea } from "share
 import { useAuthorization, useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMDBUploadFile, CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { FileDropWrapper, UploadFileComponent } from "src/core/components/SongFileComponents";
@@ -31,6 +33,8 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 ////////////////////////////////////////////////////////////////
 export interface NewGalleryItemComponentProps {
     client: DB3Client.xTableRenderClient;
+    showImages: boolean;
+    onChangeShowImages: (newValue: boolean) => void;
 };
 
 
@@ -88,21 +92,37 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     return !canUpload ? null :
 
         <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }} progress={progress}>
-            {
-                showUpload ? (
-                    <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
-                        <div className="content uploadControlContainer">
-                            <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
-                            <Button onClick={() => setShowUpload(false)}>Cancel</Button>
+
+            <CMSinglePageSurfaceCard className="filterControls">
+                <div className="content">
+                    <div className="header">
+                        Manage gallery items on the public homepage
+                    </div>
+
+                    <FormControlLabel label="Show images" control={
+                        <div>
+                            <div><Checkbox size="small" checked={props.showImages} onClick={() => props.onChangeShowImages(!props.showImages)} /></div>
                         </div>
-                    </CMSinglePageSurfaceCard>
-                ) : (
-                    <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
-                        <div className="content uploadControlContainer">
-                            <Button onClick={() => setShowUpload(true)}>Upload</Button>
-                        </div>
-                    </CMSinglePageSurfaceCard>
-                )}
+                    } />
+
+                    <div className="CMSidenote">
+                        Images may be a big / heavy download, so they're hidden by default. This also can facilitate re-ordering.
+                    </div>
+                    {
+                        showUpload ? (
+                            <div className="uploadControlContainer">
+                                <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
+                                <Button onClick={() => setShowUpload(false)}>Cancel</Button>
+                            </div>
+                        ) : (
+                            <div className="content uploadControlContainer">
+                                <Button onClick={() => setShowUpload(true)}>Upload</Button>
+                            </div>
+                        )}
+                </div>
+            </CMSinglePageSurfaceCard>
+
+
         </FileDropWrapper>
 
 
@@ -146,23 +166,30 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
         const ev: db3.FrontpageGalleryItemPayloadWithAncestorFile = { ...props.value }; // create our own copy of the item, for live editing
         let editParams: ImageEditParams = MakeDefaultImageEditParams();
 
-        if (!!props.value.file.parentFile && !!props.value.file.parentFileId) {
-            // file has a parent. we should operate on the parent not the child which has been cropped/edited/whatev.
+        // DONT operate on parent, because it gets very confusing when trying to re-edit what was a baked file.
+        // e.g. you have a huge 16mb image.
+        // so you make edits and bake into a 100kb file.
+        // then you want to re-edit, so you click "Edit" and imagine we're now going back to the parent so you can tweak your edits.
+        // you click "Save". what now? the baked file you made will be lost, we're back to a 16mb file.
+        // basically let's not turn this into a full editor.
 
-            // use the params which were used to CREATE the current file
-            const cd = getFileCustomData(ev.file);
-            if (cd.forkedImage) {
-                editParams = { ...cd.forkedImage.creationEditParams };
-            }
+        // if (!!props.value.file.parentFile && !!props.value.file.parentFileId) {
+        //     // file has a parent. we should operate on the parent not the child which has been cropped/edited/whatev.
 
-            ev.file = props.value.file.parentFile!;
-            ev.fileId = props.value.file.parentFileId!;
+        //     // use the params which were used to CREATE the current file
+        //     const cd = getFileCustomData(ev.file);
+        //     if (cd.forkedImage) {
+        //         editParams = { ...cd.forkedImage.creationEditParams };
+        //     }
 
-            console.log(`grafting parent file ${ev.file.storedLeafName}`);
-        } else {
-            const info = API.files.getGalleryItemImageInfo(props.value);
-            editParams = { ...info.displayParams }; // we need to adjust the file & edit params; start with a copy of existing edit params
-        }
+        //     ev.file = props.value.file.parentFile!;
+        //     ev.fileId = props.value.file.parentFileId!;
+
+        //     console.log(`grafting parent file ${ev.file.storedLeafName}`);
+        // } else {
+        const info = API.files.getGalleryItemImageInfo(props.value);
+        editParams = { ...info.displayParams }; // we need to adjust the file & edit params; start with a copy of existing edit params
+        //}
 
         if (!editParams.cropSize) {// coalesce cropSize for convenience / simplicity.
             const info = API.files.getGalleryItemImageInfo(props.value);
@@ -198,6 +225,7 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
         updateImageMutation.invoke(args).then((r) => {
             showSnackbar({ severity: "success", children: `image updated.` });
             setEditParams({ ...r.newDisplayParams });
+            props.onExitEditMode();
         }).catch((e) => {
             console.log(e);
             showSnackbar({ severity: "error", children: `error updating: ${e}` });
@@ -304,13 +332,13 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
             </Tooltip>
             <Tooltip title={"Click here to process the image with cropping. The idea is your crops probably result in a smaller image for more efficient page download. If you didn't crop anything don't bother with this. 'Bake' and 'Save' result in the same for public users, but bake generates a new smaller image file. Do this if you are sure you're done with edits."}>
                 <span>
-                    <Button disabled={!hasCroppingApplied} onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</Button>
+                    <Button onClick={handleSaveClick} className={`toolbutton save`}>{gIconMap.Save()} Bake new image</Button>
                 </span>
             </Tooltip>
             <Tooltip title={"Click here to save your edits. The underlying image file won't be modified but the edits will be updated for the public homepage. Do this if you didn't perform any cropping, or if you are just tweaking the image a little bit. Avoids creating a new image file."}>
                 <Button onClick={handleSaveRotationClick} className={`toolbutton save`}>{gIconMap.Save()} Save edits</Button>
             </Tooltip>
-            <Button onClick={props.onExitEditMode} startIcon={gIconMap.Edit()}>Cancel</Button>
+            <Button onClick={props.onExitEditMode} startIcon={gIconMap.Edit()}>Close</Button>
         </div>
         <JoystickDiv
             enabled={true}
@@ -375,6 +403,7 @@ export const GalleryItemImageControl = (props: GalleryItemImageControlProps) => 
 ////////////////////////////////////////////////////////////////
 interface GalleryItemProps {
     value: db3.FrontpageGalleryItemPayload;
+    showImages: boolean;
     client: DB3Client.xTableRenderClient;
 };
 
@@ -406,6 +435,8 @@ const GalleryItem = (props: GalleryItemProps) => {
         });
     };
 
+    const largeFile = (props.value.file.sizeBytes || 0) > 1000000;
+
     return <CMSinglePageSurfaceCard className="GalleryItem">
         <div className="header">
             <div className="dragHandle draggable">☰ Order: {props.value.sortOrder}</div>
@@ -413,9 +444,17 @@ const GalleryItem = (props: GalleryItemProps) => {
             <Button onClick={handleSoftDeleteClick} startIcon={gIconMap.Delete()}>Delete</Button>
         </div>
         <div className="content">
-            {props.value.file.sizeBytes && <div className="filesize">{formatFileSize(props.value.file.sizeBytes)}</div>}
+            {props.value.file.sizeBytes && <div className={`filesize ${largeFile && "largeFileWarn"}`}>
+                <div>{formatFileSize(props.value.file.sizeBytes)}</div>
+                <div>{largeFile && "Big file warning: Consider baking a new one with web-friendly dimensions & compression factor."}</div>
+            </div>}
             <GalleryItemDescriptionControl value={props.value} client={props.client} />
-            <GalleryItemImageControl value={props.value} client={props.client} />
+            {props.showImages &&
+                <>
+                    <GalleryItemImageControl value={props.value} client={props.client} />
+                    <div>NOTE: This preview does not apply any edits you've made.</div>
+                </>
+            }
         </div>
     </CMSinglePageSurfaceCard>;
 };
@@ -426,6 +465,7 @@ const MainContent = () => {
 
     useAuthorizationOrThrow("front page gallery", Permission.edit_public_homepage);
 
+    const [showImages, setShowImages] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
@@ -479,7 +519,7 @@ const MainContent = () => {
 
     return <>
         <SettingMarkdown setting="frontpage_gallery_markdown"></SettingMarkdown>
-        <NewGalleryItemComponent client={client} />
+        <NewGalleryItemComponent client={client} showImages={showImages} onChangeShowImages={setShowImages} />
 
         <ReactSmoothDndContainer
             dragHandleSelector=".dragHandle"
@@ -488,7 +528,7 @@ const MainContent = () => {
         >
             {items.length < 1 ? "Nothing here!" : items.map(i =>
                 <ReactSmoothDndDraggable key={i.id}>
-                    <GalleryItem value={i} client={client} />
+                    <GalleryItem value={i} client={client} showImages={showImages} />
                 </ReactSmoothDndDraggable>)
             }
         </ReactSmoothDndContainer>

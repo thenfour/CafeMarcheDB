@@ -459,6 +459,12 @@ text.subtitle2SVG {
 }
 
 
+.agendaPost a {
+    color: var(--cm-blue);
+    text-decoration: underline;
+}
+
+
 .agendaTitle {
     color: var(--cm-red);
     font-size: 40px;

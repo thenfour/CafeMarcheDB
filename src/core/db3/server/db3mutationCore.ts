@@ -747,13 +747,13 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
         // image metadata will be populated later in post-processing.
     };
 
-    let newImage = sharp(parentFullPath);
-    // const parentMetadata = await newImage.metadata();
+    // we must add ".rotate()" here to tell sharp to bake the metadata orientation into the image, so we're working with the same dimensions as the user expects.
+    // https://stackoverflow.com/questions/48716266/sharp-image-library-rotates-image-when-resizing
+    let newImage = sharp(parentFullPath).rotate();
+    //const parentMetadata = await newImage.metadata();
+    //console.log(`(${parentMetadata.width}, ${parentMetadata.height}`);
     // if (parentMetadata.width === undefined) throw new Error(`unable to access parent image dimensions; invalid file? obsolete file? not actually an image?`);
     // if (parentMetadata.height === undefined) throw new Error(`width was fine but height isn't? I'm not even sure what this is.`);
-
-    // TODO: use EXIF orientation otherwise it will be lost...
-    // https://stackoverflow.com/questions/48716266/sharp-image-library-rotates-image-when-resizing
 
     const info = SharedAPI.files.getImageFileEditInfo(parentFile, params.editParams);
 

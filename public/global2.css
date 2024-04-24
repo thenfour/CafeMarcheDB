@@ -1280,16 +1280,6 @@ li.songDropdownOption {
 
 }
 
-.ImageEditor.editorMain .toolbar .toolbutton.resetIcon {
-    background-color: #eee;
-    border-radius: 0;
-    /* height: 12px; */
-    border: 0;
-    /* line-height: 10px; */
-    color: #0004;
-}
-
-
 .ImageEditor.editorMain .toolbar .toolbutton.selected {
     border-color: red;
     background-color: #f002;
@@ -1327,6 +1317,22 @@ li.songDropdownOption {
 
 .contentSection.GalleryItem .header {}
 
+.contentSection.GalleryItem .content {
+    padding-right: 20px;
+
+}
+
+
+.contentSection.GalleryItem .filesize {
+    color: #888;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.contentSection.GalleryItem .filesize.largeFileWarn {
+    color: red;
+}
+
 
 .contentSection.GalleryItem .dragHandle {
     /* make drag handle the whole header and push visibility to the right*/
@@ -1337,9 +1343,8 @@ li.songDropdownOption {
     border: 2px dashed #ccc;
     padding: 10px 10px;
     width: min-content;
+    margin-top: 10px;
 }
-
-.galleryPatternMask {}
 
 .galleryPatternMask .imageStroke {
     stroke-width: 10px;
