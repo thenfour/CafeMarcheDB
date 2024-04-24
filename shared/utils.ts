@@ -196,6 +196,7 @@ export enum Setting {
     BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
     DashboardStats_SongsMarkdown = "DashboardStats_SongsMarkdown",
     DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
+    CustomLinksPageMarkdown = "CustomLinksPageMarkdown",
 
     // not markdown....
 
@@ -287,6 +288,11 @@ export const CoerceToString = (value: any): string => {
 };
 
 export const CoerceToBoolean = (value: any, defaultVal: boolean): boolean => {
+    if (value == null) return defaultVal;
+    return !!value;
+};
+
+export const CoerceToNullableBoolean = (value: any, defaultVal: boolean | null): boolean | null => {
     if (value == null) return defaultVal;
     return !!value;
 };

@@ -12,7 +12,7 @@ import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { assert } from "blitz";
 import dayjs, { Dayjs } from "dayjs";
-import React from "react";
+import React, { Suspense } from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey, TAnyModel, gNullValue } from "shared/utils";
@@ -28,6 +28,7 @@ import * as ClientAPILL from "../clientAPILL";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { xTableClientUsageContext } from "../db3";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -97,7 +98,13 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
         this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
 
-        assert(this.typedSchemaColumn.format === "raw" || this.typedSchemaColumn.format === "plain" || this.typedSchemaColumn.format === "email" || this.typedSchemaColumn.format === "title", `GenericStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type.`);
+        assert(this.typedSchemaColumn.format === "raw" ||
+            this.typedSchemaColumn.format === "plain" ||
+            this.typedSchemaColumn.format === "email" ||
+            this.typedSchemaColumn.format === "title" ||
+            this.typedSchemaColumn.format === "customLinkSlug" ||
+            this.typedSchemaColumn.format === "uri"
+            , `GenericStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type.`);
 
         this.GridColProps = {
             type: "string",
@@ -596,17 +603,25 @@ export class ColorColumnClient extends DB3ClientCore.IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface ConstEnumStringFieldClientItemInfo {
+    color?: string | null;
+    label?: string;
+    descriptionMarkdownSettingKey?: string;
+};
+
 export interface ConstEnumStringFieldClientArgs {
     columnName: string;
     cellWidth: number;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
     className?: string;
+    getItemInfo?: (option: { value: string, label: string }) => ConstEnumStringFieldClientItemInfo;
 };
 
 export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     gridOptions: { value: string, label: string }[];
     enumSchemaColumn: db3fields.ConstEnumStringField;
+    getItemInfo?: (option: { value: string, label: string }) => ConstEnumStringFieldClientItemInfo;
 
     constructor(args: ConstEnumStringFieldClientArgs) {
         super({
@@ -620,6 +635,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
+        this.getItemInfo = args.getItemInfo;
     }
     ApplyClientToPostClient = undefined;
 
@@ -657,6 +673,13 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         const value = params.value === null ? gNullValue : params.value;
 
+        let selectedDescriptionSettingMarkdownKey: string | undefined = undefined;
+        if (this.getItemInfo) {
+            const selectedOption = this.gridOptions.find(o => o.value === value)!;
+            const selectedInfo = this.getItemInfo(selectedOption);
+            selectedDescriptionSettingMarkdownKey = selectedInfo.descriptionMarkdownSettingKey;
+        }
+
         const handleClick = (val: typeof this.gridOptions[0]) => {
             const dbval = val.value === gNullValue ? null : val.value;
             return params.api.setFieldValues({ [this.schemaColumn.member]: dbval });
@@ -666,24 +689,39 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             isReadOnly: !this.editable,
             validationResult: params.validationResult,
             className: "constEnumStringField",
-            value: <CMChipContainer className="constEnumStringFieldOptions" key={params.key}>
-                {this.gridOptions.map(option => {
-                    return <CMChip
-                        className={`selectable option ${value === option.value ? "selected" : "notSelected"}`}
-                        key={option.value}
-                        onClick={() => handleClick(option)}
-                        shape="rectangle"
-                        variation={{
-                            selected: value === option.value,
-                            fillOption: "filled",
-                            variation: "strong",
-                            enabled: true,
-                        }}
-                    >
-                        {option.label}
-                    </CMChip>;
-                })}
-            </CMChipContainer>,
+            value: <div>
+                <CMChipContainer className="constEnumStringFieldOptions" key={params.key}>
+                    {this.gridOptions.map(option => {
+                        let color: string | undefined = undefined;
+                        let label: string = option.label;
+                        if (this.getItemInfo) {
+                            const itemInfo = this.getItemInfo(option);
+                            color = itemInfo.color || color;
+                            label = itemInfo.label || label;
+                        }
+                        return <CMChip
+                            className={`selectable option ${value === option.value ? "selected" : "notSelected"}`}
+                            key={option.value}
+                            onClick={() => handleClick(option)}
+                            color={color}
+                            shape="rectangle"
+                            variation={{
+                                selected: value === option.value,
+                                fillOption: "filled",
+                                variation: "strong",
+                                enabled: true,
+                            }}
+                        >
+                            {label}
+                        </CMChip>;
+                    })}
+                </CMChipContainer>
+                {selectedDescriptionSettingMarkdownKey && <div className="description">
+                    <Suspense>
+                        <SettingMarkdown setting={selectedDescriptionSettingMarkdownKey as any} />
+                    </Suspense>
+                </div>}
+            </div>
         });
 
     };

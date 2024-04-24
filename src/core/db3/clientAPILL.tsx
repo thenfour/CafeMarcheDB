@@ -3,7 +3,10 @@
 import { IsNullOrWhitespace } from "shared/utils";
 
 export const getAbsoluteUrl = (slug: string): string => {
-    return `${window.location.origin}${slug}`;
+    if (!slug.startsWith('/')) {
+        slug = '/' + slug;
+    }
+    return `${window.location.origin}${encodeURI(slug)}`;
 }
 
 

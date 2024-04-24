@@ -151,6 +151,7 @@ model User {
   eventComments         EventComment[]
   songComments          SongComment[]
   instruments           UserInstrument[]
+  createdCustomLinks    CustomLink[]
 
   creatorForSongs                Song[]
   creatorForEvents               Event[]
@@ -854,4 +855,36 @@ model FrontpageGalleryItem {
   @@index([sortOrder])
   @@index([fileId])
   @@index([visiblePermissionId])
+}
+
+model CustomLink {
+  id                  Int     @id @default(autoincrement())
+  name                String  @db.VarChar(768)
+  description         String  @db.MediumText
+  slug                String  @db.VarChar(768)
+  destinationURL      String  @db.VarChar(768)
+  redirectType        String // potentially various options like temporary / permanent redirect etc.
+  forwardQuery        Boolean @default(false) // forward the query string?
+  intermediateMessage String? @db.MediumText // for intermediate page type, this is the message users will see.
+
+  createdByUserId Int?
+  createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+
+  visits CustomLinkVisit[]
+
+  @@unique([slug])
+  @@index([name])
+}
+
+model CustomLinkVisit {
+  id           Int      @id @default(autoincrement())
+  customLinkId Int
+  visitedAt    DateTime @default(now())
+  visitorIP    String?  @db.VarChar(256)
+  userAgent    String?  @db.MediumText
+  referrerURL  String?  @db.MediumText
+  URI          String?  @db.MediumText
+
+  customLink CustomLink @relation(fields: [customLinkId], references: [id], onDelete: Cascade)
 }

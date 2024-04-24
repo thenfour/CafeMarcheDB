@@ -2353,3 +2353,7 @@ table.songMetadata tr:hover td .CMSmallButton {
     /* on a search page, limit width to make filter controls more accessible*/
     max-width: 900px;
 }
+
+.customURLslugValueRow {
+    display: flex;
+}

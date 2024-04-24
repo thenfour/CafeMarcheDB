@@ -19,7 +19,7 @@
 
 import { assert } from "blitz";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
-import { CoerceToBoolean, CoerceToNumberOrNull, TAnyModel } from "shared/utils";
+import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, TAnyModel, isValidURL } from "shared/utils";
 import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 
 export type DB3AuthSpec = {
@@ -139,7 +139,7 @@ export class PKField extends FieldBase<number> {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // for validation and client UI behavior.
-export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw";
+export type StringFieldFormatOptions = "plain" | "email" | "markdown" | "title" | "raw" | "uri" | "customLinkSlug";
 
 export type GenericStringFieldArgs = {
     columnName: string;
@@ -174,6 +174,16 @@ export class GenericStringField extends FieldBase<string> {
         this.allowQuickFilter = CoerceToBoolean(args.allowQuickFilter, args.format !== "markdown");
 
         switch (args.format) {
+            case "customLinkSlug":
+                this.minLength = 1;
+                this.doTrim = true;
+                this.caseSensitive = CoerceToBoolean(args.caseSensitive, true);
+                break;
+            case "uri":
+                this.minLength = 5;
+                this.doTrim = true;
+                this.caseSensitive = CoerceToBoolean(args.caseSensitive, true);
+                break;
             case "email":
                 this.minLength = 1;
                 this.doTrim = true;
@@ -182,7 +192,7 @@ export class GenericStringField extends FieldBase<string> {
             case "markdown":
                 this.minLength = 0;
                 this.doTrim = false; // trailing whitespace is normal on long text entries.
-                this.caseSensitive = args.caseSensitive || true;
+                this.caseSensitive = CoerceToBoolean(args.caseSensitive, true);
                 break;
             case "plain":
                 this.minLength = 0;
@@ -247,6 +257,16 @@ export class GenericStringField extends FieldBase<string> {
             };
             if (!validateEmail(value)) {
                 return ErrorValidateAndParseResult("email not in the correct format", objValue);
+            }
+        } else if (this.format === "uri") {
+            if (!isValidURL(value)) {
+                return ErrorValidateAndParseResult("URI not in the correct format", objValue);
+            }
+        } else if (this.format === "customLinkSlug") {
+            // custom URL slugs can be any URL segment, and can include slashes.
+            const pattern = /^[a-zA-Z0-9\-_\/]+$/;
+            if (!pattern.test(value)) {
+                return ErrorValidateAndParseResult("Custom slug not in the correct format", objValue);
             }
         }
         return SuccessfulValidateAndParseResult(objValue);
@@ -588,7 +608,7 @@ export class BoolField extends FieldBase<boolean> {
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return;
         const dbVal: boolean | null = dbModel[this.member]; // db may have null values so need to coalesce
-        clientModel[this.member] = dbVal || this.defaultValue;
+        clientModel[this.member] = CoerceToNullableBoolean(dbVal, this.defaultValue);
     }
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode) => {

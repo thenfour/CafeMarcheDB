@@ -9,6 +9,7 @@ export * from "./shared/schema/user"
 export * from "./shared/schema/song"
 export * from "./shared/schema/event"
 export * from "./shared/schema/file"
+export * from "./shared/schema/customLinks"
 export * from "./shared/schema/admin"
 
 

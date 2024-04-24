@@ -556,6 +556,10 @@ it's not often you'll actually want markdown that's really wide.
   margin-right: 10px;
 }
 
+.contentSection .subtitleLine {
+  color: #888;
+}
+
 .contentSection .infoLine {
   display: flex;
   align-items: center;
@@ -572,6 +576,12 @@ it's not often you'll actually want markdown that's really wide.
   /* margin: 3px 0px; */
   margin-right: 20px;
   white-space: nowrap;
+}
+
+.CustomLink.contentSection .titleText {
+  font-size: 28px;
+  font-weight: bold;
+  text-transform: none;
 }
 
 .contentSection .titleText .titleLink {

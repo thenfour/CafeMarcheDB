@@ -307,6 +307,7 @@ const gMenuItemGroups: MenuItemGroup[] = [
             { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
             { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon />, permission: Permission.visibility_members },
             { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
+            { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
         ],
     },
     {

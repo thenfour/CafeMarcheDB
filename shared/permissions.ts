@@ -64,6 +64,11 @@ export enum Permission {
     // ******************** user permissions.
     admin_users = "admin_users", // creating / deleting / editing users in general.
     manage_users = "manage_users",
+
+    // ******************** custom links
+    // VISITING custom links is always permitted.
+    view_custom_links = "view_custom_links",
+    manage_custom_links = "manage_custom_links",
 };
 
 export const gPermissionOrdered: Permission[] = [
@@ -95,6 +100,8 @@ export const gPermissionOrdered: Permission[] = [
     Permission.manage_instruments,
     Permission.admin_users,
     Permission.manage_users,
+    Permission.view_custom_links,
+    Permission.manage_custom_links,
 ];
 
 // these are granted automatically to public.
