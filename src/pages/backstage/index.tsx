@@ -134,8 +134,8 @@ const DashboardInner = () => {
       value={selectedTab}
       onChange={(e, v) => setSelectedTab(v as any)}
     >
-      <Tab label="Agenda" value={"events"} />
-      <Tab label="Repertoire" value={"songs"} />
+      <Tab label="What's on the agenda?" value={"events"} />
+      <Tab label="What are we playing?" value={"songs"} />
     </Tabs>
 
     {selectedTab === "songs" && <div className="dashboardStatsTabContent songs">

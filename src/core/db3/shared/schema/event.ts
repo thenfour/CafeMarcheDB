@@ -403,11 +403,11 @@ const xEventArgs_Base: db3.TableDesc = {
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeTitleField("name", { authMap: xEventAuthMap_Homepage, }),
         MakeSlugField("slug", "name", { authMap: xEventAuthMap_R_EAdmin, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
-        MakePlainTextField("locationDescription", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakePlainTextField("locationDescription", { authMap: xEventAuthMap_Homepage, }),
         //MakePlainTextField("locationURL", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
 
         new GenericStringField({
@@ -415,7 +415,7 @@ const xEventArgs_Base: db3.TableDesc = {
             allowNull: false,
             format: "plain",
             allowQuickFilter: false,
-            authMap: xEventAuthMap_R_EOwn_EManagers,
+            authMap: xEventAuthMap_Homepage,
         }),
 
         //new CalculatedEventDateRangeField(),
