@@ -85,13 +85,11 @@ const CustomLinkClient = (props: CustomLinkClientProps) => {
         </div>;
     }
 
-    router.replace(destinationURL);
+    void router.replace(destinationURL);
     return null;
 };
 
 const CustomURLSlug: BlitzPage<{ destinationURL?: string, intermediate?: boolean, serverHash?: string | null, intermediateMessage?: string | null, forwardQuery?: boolean | null }> = (props) => {
-    console.log(props);
-
     if (!props.destinationURL) throw new Error();
     return <NoSsr>
         <CustomLinkClient

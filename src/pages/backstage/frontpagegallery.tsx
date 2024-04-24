@@ -87,7 +87,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
 
     return !canUpload ? null :
 
-        <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }}>
+        <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }} progress={progress}>
             {
                 showUpload ? (
                     <CMSinglePageSurfaceCard className="GalleryNewItem GalleryItem">
