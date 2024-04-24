@@ -158,7 +158,9 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
                 value={<div className="customURLslugValueRow">
                     <div>{absoluteLocalURL}</div>
                     <div className="flex-spacer"></div>
-                    <div><Tooltip title={"Copy URL to clipboard. Useful for testing."}><CMSmallButton onClick={() => { void clipboardCopy(absoluteLocalURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></Tooltip></div>
+                    <Tooltip title={"Copy URL to clipboard. Useful for testing."}>
+                        <div><CMSmallButton onClick={() => { void clipboardCopy(absoluteLocalURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></div>
+                    </Tooltip>
                 </div>}
             />
 
@@ -168,7 +170,9 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
                 value={<div className="customURLslugValueRow">
                     <div>{props.item.destinationURL}</div>
                     <div className="flex-spacer"></div>
-                    <div><Tooltip title={"Copy URL to clipboard."}><CMSmallButton onClick={() => { void clipboardCopy(props.item.destinationURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></Tooltip></div>
+                    <Tooltip title={"Copy URL to clipboard."}>
+                        <div><CMSmallButton onClick={() => { void clipboardCopy(props.item.destinationURL) }} >{gIconMap.ContentCopy()}</CMSmallButton></div>
+                    </Tooltip>
                 </div>}
             />
 
