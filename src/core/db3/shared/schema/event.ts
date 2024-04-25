@@ -526,6 +526,8 @@ const xEventArgs_Base: db3.TableDesc = {
         new GhostField({ memberName: "segments", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "updatedAt", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "uid", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
         new EventStartsAtField({
             allowNull: true,

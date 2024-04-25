@@ -1,6 +1,7 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import { Button, InputBase, Pagination } from "@mui/material";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
@@ -155,10 +156,12 @@ interface SongListItemProps {
     filterSpec: SongsControlsSpec;
 };
 const SongListItem = (props: SongListItemProps) => {
-    const router = useRouter();
+    //const router = useRouter();
     const songData = CalculateSongMetadata(props.song);
-    return <div className="searchListItem" onClick={() => router.push(API.songs.getURIForSong(props.song.id, props.song.slug))}>
-        <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={true} highlightedTagIds={props.filterSpec.tagFilter}>
+    return <div className="searchListItem">
+        <SongDetailContainer readonly={true} tableClient={props.tableClient} songData={songData} showVisibility={true} highlightedTagIds={props.filterSpec.tagFilter}
+            renderAsLinkTo={API.songs.getURIForSong(props.song.id, props.song.slug)}
+        >
             {/* <SongMetadataView readonly={true} refetch={props.tableClient.refetch} songData={songData} showCredits={false} /> */}
         </SongDetailContainer>
     </div>;

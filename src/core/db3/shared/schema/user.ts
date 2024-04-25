@@ -287,6 +287,7 @@ export const xRole = new db3.xTable({
     getRowInfo: (row: RolePayload) => ({
         name: row.name,
         description: row.description || "",
+        color: row.color,
         ownerUserId: null,
     }),
     columns: [
@@ -321,6 +322,7 @@ export const xRole = new db3.xTable({
             allowNull: false,
             authMap: xUserAuthMap_R_EAdmins,
         }),
+        MakeColorField("color", { authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeSignificanceField("significance", RoleSignificance, { authMap: xUserAuthMap_R_EAdmins }),
         new TagsField<RolePermissionAssociationPayload>({
             columnName: "permissions",

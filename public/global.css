@@ -14,6 +14,7 @@
   --color-background: #eee;
   --color-border-style: "dotted";
 
+  --content-max-width: 800px;
 }
 
 a,
@@ -284,7 +285,7 @@ it's not often you'll actually want markdown that's really wide.
 }
 
 .cmcard.event {
-  max-width: 800px;
+  max-width: var(--content-max-width);
 }
 
 .cmcardList-vertical {
@@ -514,12 +515,16 @@ it's not often you'll actually want markdown that's really wide.
   background-color: white;
   margin-bottom: 40px;
   box-shadow: var(--subtle-elevation);
-  max-width: 1500px;
-  width: max-content;
+  /* max-width: var(--content-max-width);
+  width: max-content; */
+
+  /* the simplest way to deal with responsive layout is to just keep everything exactly the same width
+  representing a comfortable mobile experience.*/
+  width: var(--content-max-width);
 }
 
 .searchResults .contentSection {
-  width: unset;
+  /* width: unset; */
 }
 
 .contentSection>.header {
@@ -575,7 +580,8 @@ it's not often you'll actually want markdown that's really wide.
   text-transform: uppercase;
   /* margin: 3px 0px; */
   margin-right: 20px;
-  white-space: nowrap;
+  /* we need to allow very long titles to wrap */
+  /* white-space: nowrap; */
 }
 
 .CustomLink.contentSection .titleText {
@@ -642,7 +648,7 @@ it's not often you'll actually want markdown that's really wide.
   padding-bottom: 10px;
   margin: 10px 0px;
   background-color: #ddd;
-  width: unset;
+  /* width: unset; */
   border-bottom: 6px solid black;
 }
 

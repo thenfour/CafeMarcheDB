@@ -296,6 +296,7 @@ export interface SongDetailContainerProps {
     initialTabIndex?: number;
     showVisibility?: boolean;
     highlightedTagIds?: number[];
+    renderAsLinkTo?: string;
 }
 
 export const SongDetailContainer = ({ songData, tableClient, ...props }: React.PropsWithChildren<SongDetailContainerProps>) => {
@@ -311,16 +312,24 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
 
     const visInfo = API.users.getVisibilityInfo(song);
 
-    return <div className={`EventDetail contentSection event ${visInfo.className}`}>
-
+    return React.createElement(props.renderAsLinkTo ? "a" : "div", {
+        href: props.renderAsLinkTo,
+        className: `EventDetail contentSection event ${visInfo.className}`
+    },
         <div className='content'>
 
             <div className='titleLine'>
                 <div className="titleText">
-                    <Link href={songData.songURI} className="titleLink">
-                        <span className='title'>{song.name}</span>
-                        {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>{song.introducedYear}</span></Tooltip>}
-                    </Link>
+                    {props.renderAsLinkTo ?
+                        <div className="titleLink">
+                            <span className='title'>{song.name}</span>
+                            {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>{song.introducedYear}</span></Tooltip>}
+                        </div>
+                        :
+                        <Link href={songData.songURI} className="titleLink">
+                            <span className='title'>{song.name}</span>
+                            {song.introducedYear && <Tooltip title={`Introduced in ${song.introducedYear}`}><span className='titleTag'>{song.introducedYear}</span></Tooltip>}
+                        </Link>}
                     {!IsNullOrWhitespace(song.aliases) && <div className='subtitle songAliases'><Tooltip title={"Aliases"}><span>{song.aliases}</span></Tooltip></div>}
                 </div>
 
@@ -389,9 +398,8 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
 
             {props.children}
 
-        </div>{/* content */}
-
-    </div >;
+        </div>// content
+    );
 };
 
 

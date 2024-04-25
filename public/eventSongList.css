@@ -1,0 +1,230 @@
+.EventSongListValueEditor .columnName-name input,
+.EventSongListValueViewer .columnName-name {
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-right: 20px;
+    display: flex;
+    align-items: center;
+}
+
+
+.EventSongListValueViewer .dragHandleIcon {
+    padding: 6px;
+    padding-right: 12px;
+    opacity: 30%;
+    font-size: 15px;
+}
+
+.EventSongListList.saving {
+    opacity: 30%;
+    cursor: wait;
+}
+
+.addNewSongListButton {
+    margin: 14px;
+}
+
+.EventSongListValue .stats {
+    margin: 2px;
+}
+
+.songListSongTable {
+    /* width: 1000px; */
+    /* for small windows this makes it smaller so it doesn't overflow the screen. */
+    /* max-width: 100%; */
+    border-bottom: 1px solid #ccc;
+}
+
+
+.songListSongTable .tr {
+    display: flex;
+    /*
+     interacts with the max-width:100% of the table to allow the comments field to wrap to the next line
+     actually this is very ugly; cannot make wrapping cells to look nice. better to make cells wrap internally like the tag list
+    */
+    /* flex-wrap: wrap; */
+}
+
+.songListSongTable .tbody .tr {
+    /* makes icons and things center vertically within cells; looks cleaner */
+    align-items: center;
+}
+
+
+.songListSongTable .td,
+.songListSongTable .th {
+    display: flex;
+    justify-content: center;
+    white-space: nowrap;
+    margin: 2px 0;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.songListSongTable .th {
+    font-weight: bold;
+    background-color: #0001;
+    color: #0005;
+    border-bottom: 1px solid #0003;
+    /* font-style: italic; */
+}
+
+.songListSongTable .td:hover {
+    background-color: #8881;
+}
+
+.songListSongTable .td.dragHandle,
+.songListSongTable .th.dragHandle {
+    user-select: none;
+    width: 30px;
+}
+
+.songListSongTable .td.songIndex,
+.songListSongTable .th.songIndex {
+    width: 44px;
+}
+
+.songListSongTable .th.songIndex:hover {
+    /* background-color: var(--general-interactable-bgcolor); */
+    color: var(--general-interactable-bgcolor);
+}
+
+.songListSongTable .td.songIndex {
+    font-family: monospace;
+}
+
+.songListSongTable .td.icon,
+.songListSongTable .th.icon {
+    width: 30px;
+}
+
+.songListSongTable .tr.invalidItem .td.songIndex,
+.songListSongTable .tr.invalidItem .td.dragHandle,
+.songListSongTable .tr.invalidItem .td.icon {
+    color: #0002;
+}
+
+.songListSongTable .tr.existingItem {
+    border-bottom: 1px dotted #0002;
+}
+
+.songListSongTable .td.icon {
+    color: #0005;
+}
+
+.songListSongTable .td.icon svg {
+    height: 20px;
+}
+
+.songListSongTable .td.songName,
+.songListSongTable .th.songName {
+    width: 220px;
+    display: flex;
+    justify-content: flex-start;
+    font-weight: bold;
+}
+
+.songListSongTable .td.songName .cmdbSimpleInput {
+    font-weight: bold;
+    padding: 0;
+}
+
+.songListSongTable .td.length,
+.songListSongTable .th.length {
+    width: 60px;
+}
+
+.songListSongTable .td.length {
+    font-family: monospace;
+    justify-content: flex-end;
+}
+
+.songListSongTable .td.tempo,
+.songListSongTable .th.tempo {
+    width: 80px;
+}
+
+.songListSongTable .td.tempo {
+    font-family: monospace;
+    justify-content: flex-end;
+    color: blue;
+}
+
+.songListSongTable .td.comment,
+.songListSongTable .th.comment {
+    display: flex;
+    flex-grow: 1;
+}
+
+.songListSongTable .th.comment {
+    /* left-justify */
+    justify-content: flex-start;
+}
+
+.songListSongTable .td.comment {
+    font-style: italic;
+    color: #0008;
+    font-style: italic;
+    /* allow tag lists to wrap*/
+    white-space: wrap;
+    flex-wrap: wrap;
+    /* so long as the comment is nowrap, then this works fine to keep things on 1 line when possible.*/
+    width: min-content;
+}
+
+.songListSongTable .td.comment div.comment {
+    /* when no tags, the comment container will fill the cell.*/
+    flex-grow: 1;
+}
+
+.songListSongTable .td.comment .CMChipContainer {
+    flex-wrap: wrap;
+}
+
+.songListSongTable .td.comment .cmdbSimpleInput {
+    width: 100%;
+}
+
+.songListSongTable .td.comment input::placeholder {
+    color: #0005;
+    font-size: 12px;
+}
+
+.songListSongTable .td.comment:hover input::placeholder {
+    color: #000;
+    font-size: 12px;
+}
+
+
+.EventSongListValue {
+    /*allow the header to touch edges*/
+    padding: 0;
+    border-radius: 8px;
+    /*fea*/
+    border: 2px solid #eee;
+    border-left: 8px solid #ccc;
+    margin: 0 10px;
+    margin-bottom: 19px;
+}
+
+.EventSongListValue:hover {
+    border-left: 8px solid #88f;
+}
+
+.EventSongListValue>.header {
+    background-color: #eee;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+}
+
+.EventSongListValue>.content {
+    padding: 10px;
+}
+
+
+/* autocomplete dropdown for songs */
+li.songDropdownOption {
+    white-space: nowrap;
+}

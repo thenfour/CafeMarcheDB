@@ -358,6 +358,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
 
     const canAddUsers = useAuthorization("EventAttendanceDetail:canAddUsers", Permission.manage_events);
+    const isSingleSegment = eventData.event.segments.length === 1;
 
     // sort rows
     const sortedUsers = [...responseInfo.distinctUsers];
@@ -396,7 +397,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     <th colSpan={2}>
                         <div className='interactable' onClick={() => setSortField('instrument')}>Instrument / function {sortField === 'instrument' && gCharMap.DownArrow()}</div>
                     </th>
-                    {event.segments.map(seg => <React.Fragment key={seg.id}>
+                    {isSingleSegment ? <th key="__">Response</th> : event.segments.map(seg => <React.Fragment key={seg.id}>
                         <th className='responseCell' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
                             <div className='interactable'>
                                 {seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
@@ -609,13 +610,15 @@ export const EventCompletenessTabContent = ({ eventData }: EventCompletenessTabC
         }),
     });
 
+    const isSingleSegment = eventData.event.segments.length === 1;
+
     return <div>
         <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" />
         <table className='EventCompletenessTabContent'>
             <tbody>
                 <tr>
                     <th>Instrument group</th>
-                    {event.segments.map((seg) => {
+                    {isSingleSegment ? <th key="__">Response</th> : event.segments.map((seg) => {
                         return <th key={seg.id}>{seg.name}</th>;
                     })}
                 </tr>
@@ -866,6 +869,9 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
     const refetch = tableClient.refetch;
 
+    const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => acc + ((((resp.response.attendance?.strength || 0) > 50) ? 1 : 0)), 0));
+    const segmentResponseCountStr = `(${segmentResponseCounts.join(",")})`;
+
     return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true}>
         <EventAttendanceControl
             eventData={eventData}
@@ -886,7 +892,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         >
             <Tab label="Event Info" {...TabA11yProps('event', 0)} />
             <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
-            <Tab label={`Attendance`} {...TabA11yProps('event', 2)} />
+            <Tab label={`Attendance ${segmentResponseCountStr}`} {...TabA11yProps('event', 2)} />
             <Tab label={`Completeness`} {...TabA11yProps('event', 3)} />
             <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
             <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />

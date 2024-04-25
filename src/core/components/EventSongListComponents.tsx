@@ -422,13 +422,6 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
                 <div className="EventSongListValue">
 
-                    {/* <VisibilityControl value={value.visiblePermission} onChange={(newVisiblePermission) => {
-                        const newValue: db3.EventSongListPayload = { ...value, visiblePermission: newVisiblePermission, visiblePermissionId: newVisiblePermission?.id || null };
-                        setValue(newValue);
-                    }} /> */}
-
-                    <div className="flex-spacer"></div>
-
                     {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
 
                     {nameField}

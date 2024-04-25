@@ -12,8 +12,8 @@ export default resolver.pipe(
     async (input: {}, ctx: AuthenticatedCtx) => {
         try {
             const tableNames: { tableName: string }[] = await db.$queryRaw`
-    SELECT DISTINCT [table] as tableName
-    FROM Change;
+    SELECT DISTINCT \`table\` as tableName
+    FROM \`Change\`;
 `;
 
             // circumvent soft deletion etc.

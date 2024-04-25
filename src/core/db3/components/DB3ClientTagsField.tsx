@@ -555,6 +555,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
                     value={params.value}
                 />;
             },
+            sortable: false, // https://github.com/thenfour/CafeMarcheDB/issues/120
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 const value: TAssociation[] = params.value;

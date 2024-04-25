@@ -376,6 +376,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                     {this.args.renderAsChip!({ value: args.value, colorVariant: StandardVariationSpec.Strong })}
                 </div>;
             },
+            sortable: false, // https://github.com/thenfour/CafeMarcheDB/issues/120
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.typedSchemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <ForeignSingleFieldInput
