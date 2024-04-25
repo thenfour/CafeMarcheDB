@@ -2126,3 +2126,15 @@ table.songMetadata tr:hover td .CMSmallButton {
 .MuiTabs-indicator {
     visibility: hidden;
 }
+
+.attendanceResponseInput .comment {
+    margin-bottom: 2px;
+}
+
+/*
+test cases:
+- long paragraph text in dialog descriptions
+*/
+.markdown.renderedContent {
+    max-width: var(--content-max-width);
+}

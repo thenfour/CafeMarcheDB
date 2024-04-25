@@ -23,15 +23,82 @@ import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
 import { CMSmallButton } from "./CMCoreComponents2";
-import { CoerceToBoolean } from "shared/utils";
+import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
+import Token from 'markdown-it/lib/token';
+
+// experimental plugin...
+const checkboxPlugin = (md) => {
+    md.core.ruler.push('checkboxes', (state) => {
+        state.tokens.forEach((token) => {
+            if (token.type === 'inline' && token.children) {
+                token.children.forEach((child, index) => {
+                    if (child.type === 'text') {
+                        const checkboxRegex = /\[([ x])\](?!\S)/g;  // Adjusted regex pattern
+                        let match;
+                        const newTokens: Token[] = [];
+                        let lastIndex = 0;
+
+                        while ((match = checkboxRegex.exec(child.content)) !== null) {
+                            const checked = match[1].trim() === 'x' ? 'checked' : '';
+
+                            // Add text before checkbox
+                            if (match.index > lastIndex) {
+                                const textToken = new Token('text', '', 0);
+                                textToken.content = child.content.slice(lastIndex, match.index);
+                                newTokens.push(textToken);
+                            }
+
+                            // Create the checkbox
+                            const labelOpen = new Token('html_inline', '', 0);
+                            labelOpen.content = `<label class="markdown-checkbox"><input type="checkbox" ${checked} disabled>`;
+                            newTokens.push(labelOpen);
+
+                            const labelClose = new Token('html_inline', '', 0);
+                            labelClose.content = `</label>`;
+                            newTokens.push(labelClose);
+
+                            lastIndex = match.index + match[0].length;
+                        }
+
+                        // Add remaining text after last checkbox
+                        if (lastIndex < child.content.length) {
+                            const textToken = new Token('text', '', 0);
+                            textToken.content = child.content.slice(lastIndex);
+                            newTokens.push(textToken);
+                        }
+
+                        // Replace the current child with the new tokens
+                        token.children = token.children.slice(0, index).concat(newTokens).concat(token.children.slice(index + 1));
+                    }
+                });
+            }
+        });
+    });
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const Markdown = (props: { markdown: string | null, id?: string, className?: string, compact?: boolean }) => {
-    const md = new MarkdownIt;
-    if (props.markdown == null) return <></>;
-    if (props.markdown.trim().length < 1) return <></>;
-    return <div className={`markdown renderedContent limitedWidth ${props.compact && "compact"} ${props.className || ""}`}>
-        <div id={props.id} dangerouslySetInnerHTML={{ __html: md.render(props.markdown || "") }}></div>
+interface MarkdownProps {
+    markdown: string | null,
+    id?: string,
+    className?: string,
+    compact?: boolean,
+    onClick?: () => void,
+}
+export const Markdown = (props: MarkdownProps) => {
+    const [html, setHtml] = React.useState('');
+
+    React.useEffect(() => {
+        if (IsNullOrWhitespace(props.markdown)) {
+            setHtml("");
+            return;
+        }
+        const md = new MarkdownIt();
+        md.use(checkboxPlugin); // Use your custom checkbox plugin
+        setHtml(md.render(props.markdown));
+    }, [props.markdown]);
+
+    return <div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
+        <div id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
     </div >;
 };
 
@@ -263,8 +330,8 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
     if (showingEditor2) {
         return (<div className={`compactMarkdownControlRoot editing ${props.className}`}>
             <div className="CMSmallButtonGroup">
-                {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>}
                 {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>}
+                {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>}
                 <span className="helpText">
                     Markdown syntax is supported. <a href="/backstage/markdownhelp" target="_blank">Click here</a> for details.
                 </span>
@@ -285,8 +352,8 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
     }
 
     // not editor just viewer.
-    return <div className={`richTextContainer compactMarkdownControl notEditing sameLineButton compactMarkdownControlRoot ${props.className}`}>
+    return <div className={`richTextContainer compactMarkdownControl notEditing ${props.readonly ? "readonly" : "editable interactable"} sameLineButton compactMarkdownControlRoot ${props.className}`} onClick={() => setShowingEditor(true)} >
         <Markdown markdown={value} className={props.className} />
-        {!props.readonly && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
+        {!props.readonly && IsNullOrWhitespace(value) && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
     </div >;
 };

@@ -177,6 +177,18 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   flex-direction: row;
 }
 
+.markdown.renderedContent.compact {
+  /* allow the rendered content to shrink so it doesn't always fill up the row 100%, and some padding to allow the button on the same line.
+  see: attendance comment control
+  */
+  flex: 0 1;
+  padding-right: 10px;
+}
+
+.richTextContainer.compactMarkdownControlRoot.compact.editable:hover {
+  text-decoration: underline;
+}
+
 .richTextContainer.compactMarkdownControlRoot.compact {
   margin: 0;
   min-height: auto;
@@ -226,14 +238,6 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   margin: 15px;
   margin-top: 0;
   flex: 1;
-}
-
-/*
-you want to be able to just paste a paragraph of text without it spanning across the screen.
-it's not often you'll actually want markdown that's really wide.
-*/
-.renderedContent.limitedWidth {
-  max-width: 700px;
 }
 
 .richTextContainer .renderedContent>*,

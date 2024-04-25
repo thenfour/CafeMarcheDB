@@ -9,7 +9,7 @@ import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, Tab, Tabs, Tooltip } from "@mui/material";
 import { Prisma } from "db";
 import { useRouter } from "next/router";
-import React from "react";
+import React, { Suspense } from "react";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
@@ -850,39 +850,27 @@ export interface EventDetailFullProps {
     tableClient: DB3Client.xTableRenderClient;
     initialTabIndex?: number;
     readonly: boolean;
-}
-export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
+};
 
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices['set-lists'] : gEventDetailTabSlugIndices.info));
-    const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
-    const router = useRouter();
+type EventDetailFullTabAreaProps = EventDetailFullProps & {
+    selectedTab: number;
+    setSelectedTab: (v: number) => void;
+    refetch: () => void;
+    eventData: EventWithMetadata;
+};
+
+
+
+export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event, tableClient, ...props }: EventDetailFullTabAreaProps) => {
 
     const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
+        props.setSelectedTab(newValue);
     };
-
-    const eventData = CalculateEventMetadata(event, tabSlug);
-
-    React.useEffect(() => {
-        void router.replace(eventData.eventURI);
-    }, [eventData.eventURI]);
-
-    const refetch = tableClient.refetch;
 
     const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => acc + ((((resp.response.attendance?.strength || 0) > 50) ? 1 : 0)), 0));
     const segmentResponseCountStr = `(${segmentResponseCounts.join(",")})`;
 
-    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true}>
-        <EventAttendanceControl
-            eventData={eventData}
-            onRefetch={tableClient.refetch}
-        />
-
-        <SegmentList
-            event={event}
-            tableClient={tableClient}
-            readonly={props.readonly}
-        />
+    return <>
 
         <Tabs
             value={selectedTab}
@@ -890,10 +878,10 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
             variant="scrollable"
             scrollButtons="auto"
         >
-            <Tab label="Event Info" {...TabA11yProps('event', 0)} />
+            <Tab label="Info" {...TabA11yProps('event', 0)} />
             <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
             <Tab label={`Attendance ${segmentResponseCountStr}`} {...TabA11yProps('event', 2)} />
-            <Tab label={`Completeness`} {...TabA11yProps('event', 3)} />
+            <Tab label={`By Instrument`} {...TabA11yProps('event', 3)} />
             <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
             <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />
         </Tabs>
@@ -928,7 +916,37 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
             <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
         </CustomTabPanel>
+    </>;
+}
+export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
 
+    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices['set-lists'] : gEventDetailTabSlugIndices.info));
+    const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
+    const router = useRouter();
+
+    const eventData = CalculateEventMetadata(event, tabSlug);
+
+    React.useEffect(() => {
+        void router.replace(eventData.eventURI);
+    }, [eventData.eventURI]);
+
+    const refetch = tableClient.refetch;
+
+    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true}>
+        <EventAttendanceControl
+            eventData={eventData}
+            onRefetch={tableClient.refetch}
+        />
+
+        <SegmentList
+            event={event}
+            tableClient={tableClient}
+            readonly={props.readonly}
+        />
+
+        <Suspense>
+            <EventDetailFullTabArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} />
+        </Suspense>
     </EventDetailContainer>;
 };
 
