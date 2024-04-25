@@ -34,8 +34,10 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 import { DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
 import { Routes } from "@blitzjs/next";
+import { DebugCollapsibleText } from "./CMCoreComponents2";
+import refreshSessionPermissions from "src/auth/mutations/refreshSessionPermissions";
 
-const drawerWidth = 300;
+const drawerWidth = 260;
 
 
 const AppBarUserIcon_MenuItems = () => {
@@ -425,7 +427,15 @@ const gMenuItemGroups: MenuItemGroup[] = [
 
 const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
 
+    const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
+    const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
+
+    React.useEffect(() => {
+        refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
+    }, []);
+
     const session = useSession();
+
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
     React.useEffect(() => {

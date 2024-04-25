@@ -15,6 +15,7 @@ import { DateSubtractInDays, Timing, floorToDay } from "shared/time";
 import { Tab, Tabs } from "@mui/material";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { Permission } from "shared/permissions";
+import { DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
 
 
 const DashboardInner = () => {

@@ -566,6 +566,30 @@ export function distinctValuesOfArray<T>(items: T[], areEqual: (a: T, b: T) => b
 };
 
 
+export function arraysContainSameValues<T>(arr1: T[], arr2: T[]): boolean {
+    if (arr1.length !== arr2.length) {
+        return false;
+    }
+
+    const sortFunc = (a: T, b: T) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+    };
+
+    const sortedArr1 = [...arr1].sort(sortFunc);
+    const sortedArr2 = [...arr2].sort(sortFunc);
+
+    for (let i = 0; i < sortedArr1.length; i++) {
+        if (sortedArr1[i] !== sortedArr2[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 
 export const sleep = (ms: number, seed?: any) => new Promise((resolve) => setTimeout(() => {
     resolve(`you slept for ${ms} millis with seed ${seed}`);

@@ -17,7 +17,7 @@ export const NewSongButton = () => {
     const router = useRouter();
     const dashboardContext = React.useContext(DashboardContext);
 
-    if (!useAuthorization("ViewSongsPage", Permission.manage_songs)) {
+    if (!useAuthorization("NewSongButton", Permission.manage_songs)) {
         return null;
     }
 
@@ -75,6 +75,6 @@ export const NewSongButton = () => {
         onSave={handleSave}
         tableRenderClient={songTableClient}
         row={emptyRow}
-        label={<>{gIconMap.Add()} Create new song</>}
+        label={<>{gIconMap.Add()} Add a song</>}
     />;
 };

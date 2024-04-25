@@ -1,6 +1,6 @@
-import { EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
+import { BlitzCtx, EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
 import { SessionContext } from "@blitzjs/auth";
-import { AuthenticatedCtx, assert } from "blitz";
+import { AuthenticatedCtx, RequestMiddleware, assert } from "blitz";
 import db, { Prisma, User } from "db"
 import { Permission, gPublicPermissions } from "shared/permissions";
 import { Ctx } from "@blitzjs/next";
@@ -11,6 +11,7 @@ export type PublicDataType = {
   impersonatingFromUserId?: User["id"],
   isSysAdmin: boolean,
   permissions: string[],
+  permissionsLastRefreshedAt: string, // iso utc string new Date().toISOString()
 
   showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
 };
@@ -90,6 +91,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
       permissions: [...gPublicPermissions],
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
+      permissionsLastRefreshedAt: new Date().toISOString(),
     };
   }
   return {
@@ -98,5 +100,6 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     permissions: [...gPublicPermissions, ...((args.user.role?.permissions)?.map(p => p.permission?.name) || [])],
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,
+    permissionsLastRefreshedAt: new Date().toISOString(),
   };
 };

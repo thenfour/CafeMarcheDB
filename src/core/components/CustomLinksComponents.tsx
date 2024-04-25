@@ -246,7 +246,7 @@ export const CustomLinkList = () => {
                 tableRenderClient={client}
                 label={<>{gIconMap.Add()} New custom link</>}
             />}
-        {/* <DebugCollapsibleText text={JSON.stringify(client.items, undefined, 2)} caption='aoeu' /> */}
+
         <div className='EventDashboard'>
             {items.map(i => <CustomLinkItem key={i.id} item={i} client={client} readonly={!canEdit} />)}
         </div>

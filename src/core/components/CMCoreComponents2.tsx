@@ -16,11 +16,12 @@ export function useIsShowingAdminControls() {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const DebugCollapsibleText = ({ text, caption }: { text: string, caption: string }) => {
+export const DebugCollapsibleText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {
     const [open, setOpen] = React.useState<boolean>(false);
     return <div>
-        <Button onClick={() => setOpen(!open)}>{caption}</Button>
-        {open && <pre>{text}</pre>}
+        <Button onClick={() => setOpen(!open)}>{caption || "expand>"}</Button>
+        {open && (text !== undefined) && <pre>{text}</pre>}
+        {open && (obj !== undefined) && <pre>{JSON.stringify(obj, undefined, 2)}</pre>}
     </div>;
 };
 

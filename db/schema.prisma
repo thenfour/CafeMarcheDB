@@ -52,6 +52,7 @@ model Role {
   isPublicRole      Boolean          @default(false)
   description       String?          @db.MediumText
   sortOrder         Int              @default(0)
+  color        String? @db.VarChar(768)
   significance      String? // 
   permissions       RolePermission[]
   User              User[]
@@ -77,6 +78,7 @@ model Permission {
   visibilityForEventComments         EventComment[]
   visibilityForFiles                 File[]
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
+  visibilityForWikiPages WikiPage[]
 
   @@index([name])
   @@index([significance])
@@ -152,6 +154,7 @@ model User {
   songComments          SongComment[]
   instruments           UserInstrument[]
   createdCustomLinks    CustomLink[]
+  createdWikiPages WikiPage[]
 
   creatorForSongs                Song[]
   creatorForEvents               Event[]
@@ -472,6 +475,8 @@ model Event {
   // isCancelled Boolean   @default(false) // used as an input for calculating status
 
   createdAt DateTime
+  updatedAt  DateTime @default(now()) @updatedAt
+  uid           String   @default(uuid())
 
   // conforms to DateTimeRangeSpec, to encompass all segments. the idea is to be able to sort by event date.
   // normally these are stored in EventSegment, but sorting based on relation like that is not possible (and if it was, it would be VERY messy to manage)
@@ -887,4 +892,23 @@ model CustomLinkVisit {
   URI          String?  @db.MediumText
 
   customLink CustomLink @relation(fields: [customLinkId], references: [id], onDelete: Cascade)
+}
+
+model WikiPage {
+  id           Int      @id @default(autoincrement())
+  name                String  @db.VarChar(768)
+  slug                String  @db.VarChar(768)
+  content         String  @db.MediumText
+  updatedAt  DateTime @default(now()) @updatedAt
+  createdByUserId Int?
+  createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+
+  // visible only to users with this permission. if this is null, then it's only visible to the creator (a sort of draft mode)
+  visiblePermissionId Int?
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+
+  // TODO: revision support
+
+  @@index([visiblePermissionId])
 }

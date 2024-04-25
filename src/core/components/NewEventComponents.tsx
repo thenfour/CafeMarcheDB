@@ -15,6 +15,8 @@ import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { DashboardContext } from "./DashboardContext";
+import { Permission } from "shared/permissions";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -154,6 +156,11 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
 export const NewEventButton = (props: { onOK: () => void }) => {
     const [open, setOpen] = React.useState<boolean>(false);
+
+    if (!useAuthorization("NewEventButton", Permission.manage_events)) {
+        return null;
+    }
+
     return <>
         <Button onClick={() => setOpen(true)}>{gIconMap.Add()} Create a new event</Button>
         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
