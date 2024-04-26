@@ -1,12 +1,10 @@
 // deleteEventSongList
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TGeneralDeleteArgs } from "../shared/apiTypes";
-import { CMDBAuthorizeOrThrow } from "types";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(

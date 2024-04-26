@@ -4,7 +4,6 @@ import { Typography } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { TAnyModel } from "shared/utils";
 import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -16,6 +15,7 @@ import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
+import { TAnyModel } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const OwnIdentityControl = () => {

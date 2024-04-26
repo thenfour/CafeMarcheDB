@@ -9,7 +9,6 @@ import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { GenericStringField, PKField } from "./db3basicFields";
 import { DB3AuthContextPermissionMap, DB3AuthTablePermissionMap, xTable, xTableClientUsageContext } from "./db3core";
-import { TAnyModel } from "shared/utils";
 
 
 export const xSettingsAuthMap: DB3AuthContextPermissionMap = {

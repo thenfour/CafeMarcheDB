@@ -1,12 +1,11 @@
 // updateGenericSortOrder
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, assert } from "blitz";
-import db, { Prisma } from "db";
+import db from "db";
 import { Permission } from "shared/permissions";
-import * as db3 from "../db3";
-import * as mutationCore from "../server/db3mutationCore";
-import { TupdateGenericSortOrderArgs } from "../shared/apiTypes";
 import { ChangeAction, CreateChangeContext, RegisterChange, moveItemInArray } from "shared/utils";
+import * as db3 from "../db3";
+import { TupdateGenericSortOrderArgs } from "../shared/apiTypes";
 
 // ASSUMES that the table's sort order column is called "sortOrder"
 // ASSUMES that the table is not that big; we will update ALL sort orders here.

@@ -16,14 +16,15 @@ import React from "react";
 //import * as db3 from "../db3";
 import { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
 import { assert } from "blitz";
-import { Coalesce, HasFlag, IsNullOrWhitespace, SettingKey, TAnyModel, gQueryOptions } from "shared/utils";
+import { Coalesce, HasFlag, SettingKey, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
-import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -199,7 +200,7 @@ export interface xTableClientArgs {
 
     // optional for example for new item dialog which doesn't do any querying at all.
     sortModel?: GridSortModel,
-    filterModel?: db3.CMDBTableFilterModel,
+    filterModel?: CMDBTableFilterModel,
     paginationModel?: GridPaginationModel,
 
     queryOptions?: any; // of gQueryOptions
@@ -251,7 +252,7 @@ export class xTableRenderClient {
 
         let items_: TAnyModel[] = [];
 
-        const filter: db3.CMDBTableFilterModel = args.filterModel || { items: [] };
+        const filter: CMDBTableFilterModel = args.filterModel || { items: [] };
 
         if (HasFlag(args.requestedCaps, xTableClientCaps.PaginatedQuery)) {
             console.assert(!HasFlag(args.requestedCaps, xTableClientCaps.Query)); // don't do both. why would you do both types of queries.??

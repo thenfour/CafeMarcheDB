@@ -16,7 +16,7 @@ import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid
 import { assert } from "blitz";
 import React from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
-import { Coalesce, SettingKey, TAnyModel, gQueryOptions, parseIntOrNull } from "shared/utils";
+import { Coalesce, SettingKey, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -30,6 +30,7 @@ import db3mutations from "../mutations/db3mutations";
 import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { RenderMuiIcon } from "./IconSelectDialog";
+import { TAnyModel } from "../shared/apiTypes";
 
 
 

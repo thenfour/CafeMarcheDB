@@ -19,8 +19,9 @@
 
 import { assert } from "blitz";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
-import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, TAnyModel, isValidURL } from "shared/utils";
-import { ApplyIncludeFilteringToRelation, CMDBTableFilterModel, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
+import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, isValidURL } from "shared/utils";
+import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
+import { CMDBTableFilterModel, TAnyModel } from "./apiTypes";
 
 export type DB3AuthSpec = {
     authMap: DB3AuthContextPermissionMap;

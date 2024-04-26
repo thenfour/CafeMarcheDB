@@ -2,14 +2,21 @@
 // this file NEEDS clientbasicfields because we have tableclients & corresponding columns.
 // so it means the clientbasicfields is lower level than this file, which feels wrong but ok.
 
+import { ClientSession, useSession } from "@blitzjs/auth";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
+import { ColorVariationSpec, gAppColors } from "shared/color";
 import { Permission } from "shared/permissions";
-import { DateTimeRange, Timing } from "shared/time";
-import { Clamp, CoerceToNumberOr, SettingKey, TAnyModel, gMinImageDimension, gQueryOptions } from "shared/utils";
-import getPopularEventTags from "src/auth/queries/getPopularEventTags";
+import { DateTimeRange } from "shared/time";
+import { Clamp, CoerceToNumberOr, SettingKey, gMinImageDimension, gQueryOptions } from "shared/utils";
+import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
+import updateSettingMutation from "src/auth/mutations/updateSetting";
+import getPopularSongTags from "src/auth/queries/getPopularSongTags";
+import getSetting from "src/auth/queries/getSetting";
 import * as db3 from "src/core/db3/db3";
+import { GetStyleVariablesForColor } from "../components/Color";
+import * as ClientAPILL from "./clientAPILL";
 import * as DB3ClientFields from './components/DB3ClientBasicFields';
 import * as DB3ClientCore from './components/DB3ClientCore';
 import deleteEventSongList from "./mutations/deleteEventSongList";
@@ -19,18 +26,10 @@ import updateEventBasicFields from "./mutations/updateEventBasicFields";
 import updateEventSongListMutation from "./mutations/updateEventSongListMutation";
 import updateGalleryItemImage from "./mutations/updateGalleryItemImage";
 import updateGenericSortOrder from "./mutations/updateGenericSortOrder";
-import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
-import { AddCoord2DSize, Coord2D, ImageEditParams, Size, getFileCustomData } from "./shared/apiTypes";
-import { ClientSession, useSession } from "@blitzjs/auth";
-import { GetStyleVariablesForColor } from "../components/Color";
-import { ColorVariationSpec, gAppColors } from "shared/color";
-import getSetting from "src/auth/queries/getSetting";
-import updateSettingMutation from "src/auth/mutations/updateSetting";
-import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
-import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
-import * as ClientAPILL from "./clientAPILL";
-import getPopularSongTags from "src/auth/queries/getPopularSongTags";
 import updateSongBasicFields from "./mutations/updateSongBasicFields";
+import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
+import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
+import { AddCoord2DSize, Coord2D, ImageEditParams, Size, TAnyModel, getFileCustomData } from "./shared/apiTypes";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {

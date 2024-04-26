@@ -2,10 +2,10 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import { AreAnyDefined } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateUserEventAttendanceMutationArgs } from "../shared/apiTypes";
-import { AreAllDefined, AreAnyDefined } from "shared/utils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(

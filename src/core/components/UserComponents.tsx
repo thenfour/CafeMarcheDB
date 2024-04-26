@@ -1,11 +1,10 @@
+import { Button } from "@mui/material";
+import React from "react";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { API } from '../db3/clientAPI';
-import { Button } from "@mui/material";
 import { gIconMap } from "../db3/components/IconSelectDialog";
-import { ChooseItemDialog } from "./ChooseItemDialog";
-import React, { Suspense } from "react";
 import { UserChip } from "./CMCoreComponents";
+import { ChooseItemDialog } from "./ChooseItemDialog";
 
 
 //////////////////////////////////////////////////////////////////////////////////////

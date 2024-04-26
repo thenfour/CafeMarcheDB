@@ -2,8 +2,9 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { TAnyModel, gIconOptions } from "shared/utils";
-import { BoolField, ConstEnumStringField, DB3AuthSpec, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { gIconOptions } from "shared/utils";
+import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
+import { BoolField, DB3AuthSpec, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, PermissionSignificance, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance } from "./prismArgs";
 
@@ -142,6 +143,7 @@ export const xUserMinimum = new db3.xTable({
         MakeCreatedAtField("createdAt", { authMap: xUserAuthMap_R_EAdmins }),
         new GhostField({ memberName: "isDeleted", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
     ]
 });
 
@@ -198,7 +200,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
             associationLocalObjectMember: "permission",
             associationTableID: "RolePermission",
             foreignTableID: "Role",
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel) => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel) => false,
             getQuickFilterWhereClause: (query: string): Prisma.PermissionWhereInput | boolean => false,
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
@@ -287,7 +289,7 @@ export const xRole = new db3.xTable({
     getRowInfo: (row: RolePayload) => ({
         name: row.name,
         description: row.description || "",
-        color: row.color,
+        color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
     columns: [
@@ -333,7 +335,7 @@ export const xRole = new db3.xTable({
             associationTableID: "RolePermission",
             foreignTableID: "Permission",
             authMap: xUserAuthMap_R_EAdmins,
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 permissions: {
                     some: {
@@ -559,7 +561,7 @@ export const xUser = new db3.xTable({
             associationTableID: "UserInstrument",
             foreignTableID: "Instrument",
             authMap: xUserAuthMap_R_EOwn_EManagers,
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.InstrumentWhereInput | boolean => false,
             getQuickFilterWhereClause: (query: string) => false,
         }),
         new TagsField<UserTagAssignmentPayload>({
@@ -582,7 +584,7 @@ export const xUser = new db3.xTable({
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.UserWhereInput | boolean => {
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.UserWhereInput | boolean => {
                 // see events tagIds on how to filter by this field.
                 return false;
             },
@@ -591,7 +593,7 @@ export const xUser = new db3.xTable({
         new GhostField({ memberName: "isDeleted", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "googleId", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
-
+        new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
     ]
 });
 

@@ -6,6 +6,7 @@ import { BoolField, DateTimeField, ForeignSingleField, GenericIntegerField, Gene
 import * as db3 from "../db3core";
 import { FileArgs, FileEventTagArgs, FileEventTagNaturalOrderBy, FileEventTagPayload, FileInstrumentTagArgs, FileInstrumentTagNaturalOrderBy, FileInstrumentTagPayload, FileNaturalOrderBy, FilePayload, FileSongTagArgs, FileSongTagNaturalOrderBy, FileSongTagPayload, FileTagArgs, FileTagAssignmentArgs, FileTagAssignmentNaturalOrderBy, FileTagAssignmentPayload, FileTagNaturalOrderBy, FileTagPayload, FileTagSignificance, FileUserTagArgs, FileUserTagNaturalOrderBy, FileUserTagPayload, FrontpageGalleryItemArgs, FrontpageGalleryItemNaturalOrderBy, FrontpageGalleryItemPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { CMDBTableFilterModel } from "../apiTypes";
 
 export const xFrontpageTableAuthMap: db3.DB3AuthTablePermissionMap = {
     ViewOwn: Permission.basic_trust,
@@ -477,7 +478,7 @@ export const xFile = new db3.xTable({
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.FileWhereInput | boolean => {
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => {
                 // see events tagIds on how to filter by this field.
                 return false;
             },
@@ -503,7 +504,7 @@ export const xFile = new db3.xTable({
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedUsers
 
         new TagsField<FileSongTag>({
@@ -526,7 +527,7 @@ export const xFile = new db3.xTable({
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedSongs
 
         new TagsField<FileEventTag>({
@@ -549,7 +550,7 @@ export const xFile = new db3.xTable({
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedEvents
 
         new TagsField<FileInstrumentTag>({
@@ -572,7 +573,7 @@ export const xFile = new db3.xTable({
                     }
                 }
             }),
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.FileWhereInput | boolean => false,
         }), // column: taggedInstruments
     ]
 

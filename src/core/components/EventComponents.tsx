@@ -797,19 +797,24 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                 }}
             />
 
+            <Tooltip title="Add to your calendar (iCal)">
+                <a href={`/api/ical/event/${eventData.event.id}`} target='_blank' rel="noreferrer"><Button>{gIconMap.Share()}</Button></a>
+            </Tooltip>
+
             {props.showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
 
         </div>
 
         <div className='content'>
 
-            <div className='titleLine'>
-                <div className="titleText">
-                    <Link href={eventData.eventURI} className="titleLink">
+            {/* for search results it's really best if we allow the whole row to be clickable. */}
+            <Link href={eventData.eventURI} className="titleLink">
+                <div className='titleLine'>
+                    <div className="titleText">
                         {eventData.event.name}
-                    </Link>
+                    </div>
                 </div>
-            </div>
+            </Link>
 
             <div className='titleLine'>
                 <div className="date smallInfoBox">

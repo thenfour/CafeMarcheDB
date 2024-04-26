@@ -39,6 +39,7 @@ import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import TuneIcon from '@mui/icons-material/Tune';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import ShareIcon from '@mui/icons-material/Share';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import React from "react";
 import { TIconOptions, gIconOptions } from "shared/utils";
@@ -118,6 +119,7 @@ export const gIconMap /*: IIconMap*/ = {
     Search: () => <SearchIcon />,
     Security: () => <SecurityIcon />,
     Settings: () => <SettingsIcon />,
+    Share: () => <ShareIcon />,
     Stars: () => <StarsIcon />,
     Tag: () => <TagIcon />,
     ThumbDown: () => <ThumbDownIcon />,

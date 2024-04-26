@@ -1,6 +1,7 @@
 // todo:
 // respect auth for editing / insertion. right now everything is assumed to be admin.
 
+import { useAuthenticatedSession } from '@blitzjs/auth';
 import {
     Add as AddIcon,
     Close as CancelIcon,
@@ -18,23 +19,20 @@ import {
     GridColDef,
     GridFilterModel,
     GridPaginationModel,
-    GridRowEditStopParams,
-    GridRowHeightParams,
     GridRowModel, GridRowModes, GridRowModesModel, GridSortModel, GridToolbarContainer, GridToolbarFilterButton,
-    GridToolbarQuickFilter,
-    MuiEvent
+    GridToolbarQuickFilter
 } from '@mui/x-data-grid';
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
+import { CoerceToBoolean } from 'shared/utils';
+import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
-import { DB3NewObjectDialog } from "./db3NewObjectDialog";
-import { CoerceToBoolean, CoerceToNumber, TAnyModel } from 'shared/utils';
-import * as db3 from '../db3';
-import { InspectObject } from 'src/core/components/CMCoreComponents';
-import { gIconMap } from './IconSelectDialog';
-import { useAuthenticatedSession } from '@blitzjs/auth';
 import { API } from '../clientAPI';
+import * as db3 from '../db3';
+import { gIconMap } from './IconSelectDialog';
+import { DB3NewObjectDialog } from "./db3NewObjectDialog";
+import { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -122,7 +120,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         filterModel: {
             items: filterModel.items.map(i => {
                 console.assert(i.operator === "equals");
-                const ret: db3.CMDBTableFilterItem = {
+                const ret: CMDBTableFilterItem = {
                     field: i.field,
                     value: i.value,
                     operator: "equals",

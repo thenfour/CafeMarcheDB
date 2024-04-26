@@ -1,7 +1,35 @@
 
 import { Prisma } from "db";
 
-// types used by mutations and other blitzy-things which can't export more than 1 thing.
+// types used by mutations and other blitzy-things which can't export more than 1 thing, or just as a "no dependency" base
+
+export type TAnyModel = { [key: string]: any };
+
+
+export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
+export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
+export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
+
+
+
+export interface CMDBTableFilterItem { // from MUI GridFilterItem
+    id?: number | string;
+    field: string;
+    value?: any;
+    operator: "equals";
+}
+
+// allow client users to specify cmdb-specific queries.
+// normal filtering & quick filtering is great but this allows for example custom filtering like tagIds.
+export interface CMDBTableFilterModel {
+    items: CMDBTableFilterItem[];
+    quickFilterValues?: any[];
+
+    tagIds?: number[];
+    tableParams?: TAnyModel;
+};
+
+
 
 export interface Size {
     width: number;

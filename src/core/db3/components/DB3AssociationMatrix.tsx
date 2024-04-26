@@ -9,21 +9,19 @@
 // but the grid only edits 1 single tags field, where columns are all tag options.
 // so internally it works similar to the other edit grid.
 
+import { Checkbox } from '@mui/material';
 import {
     DataGrid,
     GridColDef,
     GridFilterModel,
-    GridRenderCellParams,
     GridSortModel
 } from '@mui/x-data-grid';
 import React from "react";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import * as db3 from '../db3';
-import * as DB3Client from "../DB3Client";
-import { TAnyModel, gIDValue, gNameValue, gNullValue } from 'shared/utils';
-import { Checkbox } from '@mui/material';
-import { InspectObject } from 'src/core/components/CMCoreComponents';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import * as DB3Client from "../DB3Client";
+import * as db3 from '../db3';
+import { CMDBTableFilterItem, CMDBTableFilterModel, TAnyModel } from '../shared/apiTypes';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;
@@ -60,8 +58,8 @@ export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatr
         currentUser: currentUser!
     };
 
-    const convertedFilter: db3.CMDBTableFilterModel = {
-        items: filterModel.items.map((i): db3.CMDBTableFilterItem => ({
+    const convertedFilter: CMDBTableFilterModel = {
+        items: filterModel.items.map((i): CMDBTableFilterItem => ({
             field: i.field,
             operator: i.operator as any,
             id: i.id,

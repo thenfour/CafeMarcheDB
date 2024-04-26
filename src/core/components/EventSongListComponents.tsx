@@ -13,7 +13,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { TAnyModel, getExcelColumnName, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { getExcelColumnName, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -24,6 +24,7 @@ import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmooth
 import { CMDialogContentText } from './CMCoreComponents2';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
+import { TAnyModel } from '../db3/shared/apiTypes';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{

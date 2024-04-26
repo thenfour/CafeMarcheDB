@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
+import { Timing } from "shared/time";
 import { SplitQuickFilter, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -226,10 +227,12 @@ const EventListItem = (props: EventListItemProps) => {
         highlightTypeId={props.filterSpec.typeFilter}
         highlightTagIds={props.filterSpec.tagFilter}
     >
-        <EventAttendanceControl
-            eventData={eventData}
-            onRefetch={props.tableClient.refetch}
-        />
+        {eventData.eventTiming !== Timing.Past &&
+            <EventAttendanceControl
+                eventData={eventData}
+                onRefetch={props.tableClient.refetch}
+            />
+        }
     </EventDetailContainer>
     //</div>;
 

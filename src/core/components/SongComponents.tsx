@@ -5,25 +5,25 @@ import { Breadcrumbs, Link, Tab, Tabs, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { StandardVariationSpec } from 'shared/color';
-import { formatSongLength } from 'shared/time';
+import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
-import { CMChip, CMChipContainer, CMStandardDBChip, CustomTabPanel, EventChip, InspectObject, TabA11yProps, UserChip } from './CMCoreComponents';
+import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
+import { TAnyModel } from '../db3/shared/apiTypes';
+import { CMChip, CMChipContainer, CMStandardDBChip, CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
+import { NameValuePair } from './CMCoreComponents2';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
+import { MetronomeButton } from './Metronome';
+import { Markdown } from './RichTextEditor';
+import { SearchableNameColumnClient } from './SearchableNameColumnClient';
 import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
+import { CalculateSongMetadata, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
-import { CalculateSongMetadata, SongWithMetadata } from './SongComponentsBase';
-import { Markdown } from './RichTextEditor';
-import { IsNullOrWhitespace, TAnyModel } from 'shared/utils';
-import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
-import { NameValuePair } from './CMCoreComponents2';
-import { MetronomeButton, MetronomePlayer } from './Metronome';
-import { SearchableNameColumnClient } from './SearchableNameColumnClient';
 
 
 export const SongClientColumns = {

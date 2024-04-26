@@ -30,11 +30,11 @@ export const DebugCollapsibleText = ({ text, caption, obj }: { text?: string, ca
 export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {
     const adminShowing = useIsShowingAdminControls();
     const [open, setOpen] = React.useState<boolean>(false);
-    return adminShowing && <div>
+    return <>{adminShowing && <div>
         <Button onClick={() => setOpen(!open)}>{caption || "expand>"}</Button>
         {open && (text !== undefined) && <pre>{text}</pre>}
         {open && (obj !== undefined) && <pre>{JSON.stringify(obj, undefined, 2)}</pre>}
-    </div>;
+    </div>}</>;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

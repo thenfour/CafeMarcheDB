@@ -1,14 +1,34 @@
-import { BlitzCtx, EmptyPublicData, PublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth"
-import { SessionContext } from "@blitzjs/auth";
-import { AuthenticatedCtx, RequestMiddleware, assert } from "blitz";
-import db, { Prisma, User } from "db"
-import { Permission, gPublicPermissions } from "shared/permissions";
+import { EmptyPublicData, SimpleRolesIsAuthorized } from "@blitzjs/auth";
 import { Ctx } from "@blitzjs/next";
+import { AuthenticatedCtx, assert } from "blitz";
+import { Prisma } from "db";
+import { Permission, gPublicPermissions } from "shared/permissions";
+//import { UserWithRolesPayload } from "src/core/db3/db3"; // circular dep
+
+
+
+export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
+  include: {
+    role: {
+      include: {
+        permissions: {
+          include: {
+            permission: true,
+          }
+        },
+      }
+    }
+  }
+});
+
+export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
+
+
 
 
 export type PublicDataType = {
-  userId: User["id"],
-  impersonatingFromUserId?: User["id"],
+  userId: number,
+  impersonatingFromUserId?: number | null,
   isSysAdmin: boolean,
   permissions: string[],
   permissionsLastRefreshedAt: string, // iso utc string new Date().toISOString()
@@ -77,7 +97,7 @@ declare module "@blitzjs/auth" {
 }
 
 export interface CreatePublicDataArgs {
-  user?: Prisma.UserGetPayload<{ include: { role: { include: { permissions: { include: { permission: true } } } } } }>; // if no user, public profile.
+  user?: UserWithRolesPayload | null; //Prisma.UserGetPayload<{ include: { role: { include: { permissions: { include: { permission: true } } } } } }>; // if no user, public profile.
   impersonatingFromUserId?: number;
   showAdminControls?: boolean; // client-side option
 }

@@ -7,12 +7,13 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
-import { SettingKey, TAnyModel } from "shared/utils";
+import { SettingKey } from "shared/utils";
 import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconSelectDialog";
+import { TAnyModel } from "../shared/apiTypes";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {

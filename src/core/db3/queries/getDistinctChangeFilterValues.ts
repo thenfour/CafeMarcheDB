@@ -1,11 +1,7 @@
 import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
-import { Permission } from "shared/permissions";
-import * as db3 from "../db3";
 import { AuthenticatedCtx } from "blitz";
-import { CMDBAuthorizeOrThrow } from "types";
-import * as mutationCore from "../server/db3mutationCore"
-import { TAnyModel } from "shared/utils";
+import db from "db";
+import { Permission } from "shared/permissions";
 
 export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),

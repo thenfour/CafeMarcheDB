@@ -4,8 +4,9 @@ import Head from "next/head";
 import { Suspense } from "react";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "src/core/db3/clientAPI";
+import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
+import { CMDBTableFilterModel } from "src/core/db3/shared/apiTypes";
 
 const MainContent = () => {
     const eventsTableSpec = new DB3Client.xTableClientSpec({
@@ -17,7 +18,7 @@ const MainContent = () => {
 
     const clientIntention: db3.xTableClientUsageContext = { intention: "public", mode: "primary" };
 
-    const eventsFilterModel: db3.CMDBTableFilterModel = {
+    const eventsFilterModel: CMDBTableFilterModel = {
         items: [
             {
                 field: "frontpageVisible",

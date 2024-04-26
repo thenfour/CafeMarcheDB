@@ -1,11 +1,10 @@
-import { AuthenticatedCtx, paginate } from "blitz";
 import { resolver } from "@blitzjs/rpc";
-import db, { Prisma } from "db";
-import * as db3 from "../db3";
-import { CMDBAuthorizeOrThrow } from "types";
+import { AuthenticatedCtx, paginate } from "blitz";
+import db from "db";
 import { Permission } from "shared/permissions";
-import * as mutationCore from "../server/db3mutationCore"
-import { TAnyModel } from "shared/utils";
+import * as db3 from "../db3";
+import * as mutationCore from "../server/db3mutationCore";
+import { TAnyModel } from "../shared/apiTypes";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),

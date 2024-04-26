@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { TAnyModel } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -12,6 +11,7 @@ import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import { DashboardContext } from './DashboardContext';
+import { TAnyModel } from "../db3/shared/apiTypes";
 
 export const NewSongButton = () => {
     const router = useRouter();

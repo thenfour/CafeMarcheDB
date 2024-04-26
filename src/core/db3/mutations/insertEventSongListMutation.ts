@@ -1,14 +1,12 @@
 // insertEventSongListMutation
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
+import { Prisma } from "db";
 import { Permission } from "shared/permissions";
+import { CreateChangeContext } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListSong } from "../shared/apiTypes";
-import { CMDBAuthorizeOrThrow } from "types";
-import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel } from "shared/utils";
-import { ComputeChangePlan } from "shared/associationUtils";
+import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
 
 export default resolver.pipe(
     resolver.authorize(Permission.login),

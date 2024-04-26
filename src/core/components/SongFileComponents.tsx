@@ -1,8 +1,7 @@
 
-import { useAuthenticatedSession } from '@blitzjs/auth';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { Button, CircularProgress, Modal, Tooltip } from "@mui/material";
+import { Button, Modal, Tooltip } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
@@ -18,11 +17,11 @@ import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AudioPreviewBehindButton } from './AudioPreview';
 import { CMChip, CMChipContainer, CMDBUploadFile, CMStandardDBChip, CircularProgressWithLabel, EventChip, InstrumentChip, SongChip, UserChip } from "./CMCoreComponents";
+import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
+import { DashboardContext } from './DashboardContext';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
-import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
-import { DashboardContext } from './DashboardContext';
 
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
 //const gMaximumFilterTagsPerType = 10 as const;

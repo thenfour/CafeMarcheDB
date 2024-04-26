@@ -6,11 +6,11 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { TAnyModel } from "shared/utils";
 import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeSlugField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
 
 
 export const xSongAuthMap_R_EOwn_EManagers: db3.DB3AuthContextPermissionMap = {
@@ -247,7 +247,7 @@ const xSongArgs_Base: db3.TableDesc = {
             associationTableID: "SongTagAssociation",
             foreignTableID: "SongTag",
             authMap: xSongAuthMap_R_EOwn_EManagers,
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.SongWhereInput | boolean => {
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.SongWhereInput | boolean => {
                 if (!query.tagIds?.length) return false;
                 const tagIds = query!.tagIds;
 
@@ -281,7 +281,7 @@ const xSongArgs_Base: db3.TableDesc = {
             associationLocalIDMember: "songId",
             associationLocalObjectMember: "song",
             getQuickFilterWhereClause: (query: string): Prisma.SongWhereInput | boolean => false,
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.SongWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.SongWhereInput | boolean => false,
         }), // tags
 
         new GhostField({ memberName: "credits", authMap: xSongAuthMap_R_EOwn_EManagers }),

@@ -6,7 +6,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { CoalesceBool, TAnyModel, assertIsNumberArray, gIconOptions } from "shared/utils";
+import { CoalesceBool, assertIsNumberArray, gIconOptions } from "shared/utils";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSlugField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { getUserPrimaryInstrument } from "./instrument";
@@ -23,6 +23,7 @@ import {
     UserTagPayload, UserWithInstrumentsPayload
 } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
@@ -494,7 +495,7 @@ const xEventArgs_Base: db3.TableDesc = {
             //         }
             //     }
             // }),
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventWhereInput | boolean => {
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventWhereInput | boolean => {
                 if (!query.tagIds?.length) return false;
                 const tagIds = query!.tagIds;
 
@@ -520,14 +521,16 @@ const xEventArgs_Base: db3.TableDesc = {
             associationLocalIDMember: "eventId",
             associationLocalObjectMember: "event",
             getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput | boolean => false,
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventWhereInput | boolean => false,
         }), // tags
 
         new GhostField({ memberName: "segments", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "updatedAt", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "uid", authMap: xEventAuthMap_R_EOwn_EManagers }),
+
+        // because this is used for generating icals
+        new GhostField({ memberName: "uid", authMap: xEventAuthMap_Homepage }),
 
         new EventStartsAtField({
             allowNull: true,
@@ -845,7 +848,7 @@ export const xEventSongList = new db3.xTable({
             associationLocalObjectMember: "eventSongList",
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string): Prisma.EventSongListWhereInput | boolean => false,
-            getCustomFilterWhereClause: (query: db3.CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
+            getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
         }),
         new GhostField({ memberName: "userId", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]

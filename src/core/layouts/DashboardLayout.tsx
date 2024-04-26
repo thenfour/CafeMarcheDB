@@ -20,7 +20,7 @@ const LoginSignup = () => {
             <Link href="/api/auth/google" className="signInBlock google link googleSignInLink">
                 <div className="title">
                     <img src="/web_light_rd_na.svg" />
-                    Sign in using your Google identity
+                    Click here to sign in via Google
                 </div>
                 <div className="description">
                     <p>Using this option avoids creating a username & password just for this website.

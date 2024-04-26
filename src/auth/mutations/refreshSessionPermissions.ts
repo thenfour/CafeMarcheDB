@@ -1,3 +1,4 @@
+import { generateToken, hash256 } from "@blitzjs/auth";
 import { resolver } from "@blitzjs/rpc"
 import db from "db"
 import { arraysContainSameValues } from "shared/utils"
@@ -34,11 +35,29 @@ export default resolver.pipe(
                 }
             }
         });
-
         await ctx.session.$setPublicData({
             permissionsLastRefreshedAt: new Date().toISOString(),
         });
 
+        // ensure user has an access token.
+        if (u && !u.accessToken) {
+            // generateToken is secure but generates a string like 
+            // CcT0mEYj6_cck9Zf7yUmi_CmoyLv-fVB
+            // with underscores, mix of upper/lower, dashes...
+            // hash256 returns a cleaner string. 64 chars, all hexlike.
+            // combining them for the best of both worlds.
+            const tok = hash256(generateToken()).toLowerCase();
+            await db.user.update({
+                where: {
+                    id: publicData.userId
+                },
+                data: {
+                    accessToken: tok,
+                }
+            });
+        }
+
+        // refresh session publicdata permissions
         const newPerms = u?.role?.permissions.map(p => p.permission.name);
         if (newPerms && publicData.permissions && (newPerms.length !== publicData.permissions?.length)) {
             if (!arraysContainSameValues(publicData.permissions, newPerms)) {

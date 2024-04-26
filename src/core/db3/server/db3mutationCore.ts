@@ -1,20 +1,18 @@
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
-import { resolver } from "@blitzjs/rpc"
+import { AuthenticatedCtx, Ctx } from "blitz";
 import db, { Prisma } from "db";
+import * as mime from 'mime';
+import * as mm from 'music-metadata';
+import { nanoid } from 'nanoid';
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, TAnyModel, areAllEqual } from "shared/utils"
-import * as db3 from "../db3";
-import { CMDBAuthorizeOrThrow } from "types";
-import { AuthenticatedCtx, Ctx, assert } from "blitz";
-import { FileCustomData, ForkImageParams, ImageMetadata, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
-import { nanoid } from 'nanoid'
-import * as mime from 'mime';
-import sharp from "sharp";
-import * as mm from 'music-metadata';
-import { SharedAPI } from "../shared/sharedAPI";
 import { DateTimeRange } from "shared/time";
+import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/utils";
+import sharp from "sharp";
+import * as db3 from "../db3";
+import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
+import { SharedAPI } from "../shared/sharedAPI";
 
 var path = require('path');
 var fs = require('fs');
@@ -22,11 +20,24 @@ const util = require('util');
 //const rename = util.promisify(fs.rename);
 const stat = util.promisify(fs.stat);
 
+// returns null if not authorized.
+export const getAuthenticatedCtx = (unauthenticatedCtx: Ctx, perm: Permission): AuthenticatedCtx | null => {
+    try {
+        unauthenticatedCtx.session.$authorize(perm);
+        return unauthenticatedCtx as AuthenticatedCtx;
+    }
+    catch (e) {
+        return null;
+    }
+};
+
+
+// returns null if public
 export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
     try {
-        // attempt to get authenticated ctx. public access will have none.
-        unauthenticatedCtx.session.$authorize(Permission.visibility_public);
-        const ctx: AuthenticatedCtx = unauthenticatedCtx as any; // authorize ensures this.
+        const ctx = getAuthenticatedCtx(unauthenticatedCtx, Permission.visibility_public);
+        if (!ctx) throw new Error("unauthorized");
+        if (!ctx.session.userId) return null;
         const currentUser = await db.user.findFirst({
             ...db3.UserWithRolesArgs,
             where: {
@@ -525,7 +536,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
 export interface QueryImplArgs {
     schema: db3.xTable;
     clientIntention: db3.xTableClientUsageContext;
-    filterModel: db3.CMDBTableFilterModel;
+    filterModel: CMDBTableFilterModel;
     // when records are fetched internally it's important sometimes to bypass visibility check.
     // case: gallery items reference files. both gallery items and files have visibility checks.
     // if the gallery item passes, but file fails, what should be done? well that's too edgy of a case to care about.

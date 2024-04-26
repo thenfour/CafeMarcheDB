@@ -1,11 +1,11 @@
+import { EmptyPublicData } from "@blitzjs/auth";
+import { assert } from "blitz";
+import db, { Prisma } from "db";
 import { ColorPaletteEntry } from "shared/color";
 import { Permission, gPublicPermissions } from "shared/permissions";
-import { CalculateChanges, CalculateChangesResult, TAnyModel, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
-import db, { Prisma } from "db";
-import { assert } from "blitz";
+import { CalculateChanges, CalculateChangesResult, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
 import { PublicDataType } from "types";
-import { EmptyPublicData, PublicData } from "@blitzjs/auth";
-import { ComputeChangePlan } from "shared/associationUtils";
+import { CMDBTableFilterModel, TAnyModel } from "./apiTypes";
 
 
 // server-side code for db schema expression.
@@ -83,24 +83,6 @@ interface MutatorUpdate extends MutatorInputBase {
 };
 
 export type MutatorInput = MutatorDelete | MutatorInsert | MutatorUpdate;
-
-export interface CMDBTableFilterItem { // from MUI GridFilterItem
-    id?: number | string;
-    field: string;
-    value?: any;
-    operator: "equals";
-}
-
-// allow client users to specify cmdb-specific queries.
-// normal filtering & quick filtering is great but this allows for example custom filtering like tagIds.
-export interface CMDBTableFilterModel {
-    items: CMDBTableFilterItem[];
-    quickFilterValues?: any[];
-
-    tagIds?: number[];
-    tableParams?: TAnyModel;
-};
-
 
 ////////////////////////////////////////////////////////////////
 export interface PaginatedQueryInput {
@@ -203,7 +185,11 @@ export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
     include: {
         role: {
             include: {
-                permissions: true,
+                permissions: {
+                    include: {
+                        permission: true,
+                    }
+                },
             }
         }
     }

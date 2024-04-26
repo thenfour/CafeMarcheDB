@@ -6,11 +6,11 @@
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Button } from "@mui/material";
 import React from "react";
-import { TAnyModel } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
 import { DB3EditObjectDialog } from "../db3/components/db3NewObjectDialog";
 import * as DB3Client from "src/core/db3/DB3Client";
+import { TAnyModel } from "../db3/shared/apiTypes";
 
 
 ////////////////////////////////////////////////////////////////

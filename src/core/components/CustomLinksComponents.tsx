@@ -1,6 +1,8 @@
+import { Tooltip } from "@mui/material";
 import React from "react";
+import { gLightSwatchColors, gSwatchColors } from "shared/color";
 import { Permission } from 'shared/permissions';
-import { IsNullOrWhitespace, TAnyModel, gNullValue } from 'shared/utils';
+import { IsNullOrWhitespace } from 'shared/utils';
 import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -9,12 +11,11 @@ import * as db3 from "src/core/db3/db3";
 import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
+import { CMChip, CMChipContainer } from "./CMCoreComponents";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { MutationMarkdownControl } from './SettingMarkdown';
-import { CMChip, CMChipContainer } from "./CMCoreComponents";
-import { gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
-import { Button, Tooltip } from "@mui/material";
+import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {

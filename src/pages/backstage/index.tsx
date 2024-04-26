@@ -21,8 +21,8 @@ import { DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
 const DashboardInner = () => {
   const [currentUser] = useCurrentUser();
   const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
-  const eventMaxAge = API.settings.useNumberSetting("BackstageFrontpageEventMaxAgeDays", 30);
-  const currentSongMaxAge = API.settings.useNumberSetting("BackstageFrontpageCurrentSongMaxAgeDays", 30);
+  const eventMaxAge = API.settings.useNumberSetting("BackstageFrontpageEventMaxAgeDays", 6); // expire after 1 week ago (so you don't see multiple rehearsals)
+  const currentSongMaxAge = API.settings.useNumberSetting("BackstageFrontpageCurrentSongMaxAgeDays", 13); // expire after 2 weeks ago
   const queryMaxAge = Math.max(eventMaxAge, currentSongMaxAge);
   const today = floorToDay(new Date());
   const minDate = floorToDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.

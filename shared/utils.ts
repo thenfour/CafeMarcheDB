@@ -359,8 +359,6 @@ export type KeysOf<T extends Record<string, unknown>> = keyof T;
 // to make all fields nullable
 export type Nullable<T> = { [K in keyof T]: T[K] | null };
 
-export type TAnyModel = { [key: string]: any };
-
 // https://stackoverflow.com/questions/58278652/generic-enum-type-guard
 // export const isSomeEnum = <T>(e: T) => (token: any): token is T[keyof T] =>
 //     Object.values(e).includes(token as T[keyof T]);
@@ -368,12 +366,6 @@ export type TAnyModel = { [key: string]: any };
 export const HasFlag = <T extends number,>(myvar: T, flag: T): boolean => {
     return (myvar & flag) === flag;
 }
-
-
-export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
-export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
-export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
-
 
 export function lerp(a, b, alpha) {
     if (Math.abs(b - a) < 0.0001) return a;
@@ -450,6 +442,7 @@ export const gIconOptions = {
     Search: "Search",
     Security: "Security",
     Settings: "Settings",
+    Share: "Share",
     Stars: "Stars",
     Tag: "Tag",
     ThumbDown: "ThumbDown",

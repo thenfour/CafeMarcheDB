@@ -17,7 +17,7 @@ import {
     ListItemButton
 } from "@mui/material";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
-import { SettingKey, SplitQuickFilter, TAnyModel, gQueryOptions } from "shared/utils";
+import { SettingKey, SplitQuickFilter, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
@@ -32,6 +32,7 @@ import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from './DB3ClientCore';
 import { RenderMuiIcon } from './IconSelectDialog';
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
+import { TAnyModel } from '../shared/apiTypes';
 
 
 const gMaxVisibleTags = 6;

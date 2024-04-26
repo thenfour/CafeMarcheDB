@@ -1,12 +1,11 @@
 // insertEvent
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx, assert } from "blitz";
-import db, { Prisma } from "db";
+import { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertEventArgs } from "../shared/apiTypes";
-import { CMDBAuthorizeOrThrow } from "types";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(

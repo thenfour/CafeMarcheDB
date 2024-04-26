@@ -1,14 +1,12 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import React from "react";
-import { TAnyModel } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
-import { CMStandardDBChip, UserChip } from "./CMCoreComponents";
-import { Markdown } from "./RichTextEditor";
+import { TAnyModel } from '../db3/shared/apiTypes';
 
 
 

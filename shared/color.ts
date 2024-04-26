@@ -1,4 +1,4 @@
-import { TAnyModel, clamp01, getNextSequenceId, lerp } from "./utils";
+import { getNextSequenceId } from "./utils";
 
 // something to consider:
 // https://ageofempires.fandom.com/wiki/Player#Age_of_Empires_II

@@ -1,7 +1,6 @@
 import db, { Prisma } from "db";
-import { TAnyModel } from "shared/utils";
-import * as db3 from "../db3core";
-import { ImageEditParams, MakeDefaultImageEditParams, parsePayloadJSON } from "../apiTypes";
+//import * as db3 from "../db3core"; // circular
+import { CMDBTableFilterModel, ImageEditParams, MakeDefaultImageEditParams, TAnyModel, parsePayloadJSON } from "../apiTypes";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -357,7 +356,11 @@ export const UserArgs = Prisma.validator<Prisma.UserArgs>()({
     include: {
         role: {
             include: {
-                permissions: true,
+                permissions: {
+                    include: {
+                        permission: true,
+                    }
+                },
             }
         },
         instruments: UserInstrumentArgs,
@@ -1203,7 +1206,6 @@ export const getGalleryItemDisplayParams = (f: Prisma.FrontpageGalleryItemGetPay
 
 ////////////////////////////////////////////////////////////////
 
-// TODO:
 
 // generates 4 columns to link up this relationship:
 // local tags field
@@ -1214,7 +1216,7 @@ export interface DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPay
     localColumnName: string; // "tags"
 
     local_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
-    local_getCustomFilterWhereClause?: (query: db3.CMDBTableFilterModel) => TAnyModel;
+    local_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
     local_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
 
     // ASSOCIATION
@@ -1232,7 +1234,7 @@ export interface DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPay
     foreignColumnName: string; // "events"
 
     foreign_getQuickFilterWhereClause?: (query: string) => TAnyModel; // basically this prevents the need to subclass and implement.
-    foreign_getCustomFilterWhereClause?: (query: db3.CMDBTableFilterModel) => TAnyModel;
+    foreign_getCustomFilterWhereClause?: (query: CMDBTableFilterModel) => TAnyModel;
     foreign_doesItemExactlyMatchText?: (item: TAssociationPayload, filterText: string) => boolean;
 };
 

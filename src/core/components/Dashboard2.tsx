@@ -47,6 +47,7 @@ const AppBarUserIcon_MenuItems = () => {
     const sess = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
     const isShowingAdminControls = !!sess.showAdminControls;
+    const [currentUser] = useCurrentUser();
 
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
 
@@ -74,6 +75,11 @@ const AppBarUserIcon_MenuItems = () => {
 
             <Divider /></>
         }
+
+        {currentUser &&
+            <MenuItem component={Link} href={`/api/ical/user/${currentUser.accessToken}`}>{gIconMap.CalendarMonth()} Calendar feed</MenuItem>
+        }
+
         <MenuItem component={Link} href='/backstage/profile'>Your profile</MenuItem>
 
         <MenuItem onClick={async () => {
@@ -431,7 +437,7 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
     const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
 
     React.useEffect(() => {
-        refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
+        void refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
     }, []);
 
     const session = useSession();

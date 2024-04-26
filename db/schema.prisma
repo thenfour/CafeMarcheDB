@@ -135,6 +135,7 @@ model User {
   hashedPassword String?
   googleId       String?
   createdAt      DateTime @default(now())
+  accessToken    String?  @db.VarChar(768) // used like a github access token; a const string which is private and can be used to access resources on your behalf without a session.
 
   roleId Int? // nullable for new users a role should be assigned by an admin. null = public
   role   Role? @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
@@ -144,23 +145,24 @@ model User {
   sessions Session[]
   changes  Change[] // yea don't include this in queries
 
-  taggedFiles           FileUserTag[]
-  uploadedFiles         File[]
-  eventSegmentResponses EventSegmentUserResponse[]
-  eventResponses        EventUserResponse[]
-  activity              Activity[]
-  songCredits           SongCredit[]
-  eventComments         EventComment[]
-  songComments          SongComment[]
-  instruments           UserInstrument[]
-  createdCustomLinks    CustomLink[]
-  createdWikiPages      WikiPage[]
+  taggedFiles              FileUserTag[]
+  uploadedFiles            File[]
+  eventSegmentResponses    EventSegmentUserResponse[]
+  eventResponses           EventUserResponse[]
+  activity                 Activity[]
+  songCredits              SongCredit[]
+  eventComments            EventComment[]
+  songComments             SongComment[]
+  instruments              UserInstrument[]
+  createdCustomLinks       CustomLink[]
+  createdWikiPageRevisions WikiPageRevision[]
 
   creatorForSongs                Song[]
   creatorForEvents               Event[]
   creatorForEventSongLists       EventSongList[]
   creatorForFrontpageGalleryItem FrontpageGalleryItem[]
 
+  @@unique([accessToken])
   @@index([name])
   @@index([isDeleted])
   @@index([email])
@@ -515,6 +517,7 @@ model Event {
   songLists EventSongList[]
   responses EventUserResponse[]
 
+  @@unique([uid])
   @@index([name])
   @@index([slug])
   @@index([typeId])
@@ -895,20 +898,32 @@ model CustomLinkVisit {
 }
 
 model WikiPage {
-  id              Int      @id @default(autoincrement())
-  name            String   @db.VarChar(768)
-  slug            String   @db.VarChar(768)
-  content         String   @db.MediumText
-  updatedAt       DateTime @default(now()) @updatedAt
+  id   Int    @id @default(autoincrement())
+  slug String @db.VarChar(768)
+
+  latestRevisionId Int?
+
+  visiblePermissionId Int?
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+
+  revisions WikiPageRevision[]
+
+  @@index([slug])
+  @@index([visiblePermissionId])
+}
+
+model WikiPageRevision {
+  id Int @id @default(autoincrement())
+
+  wikiPageId Int
+  wikiPage   WikiPage @relation(fields: [wikiPageId], references: [id], onDelete: Cascade)
+
+  name    String @db.VarChar(768)
+  content String @db.MediumText
+
   createdByUserId Int?
   createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
 
-  // visible only to users with this permission. if this is null, then it's only visible to the creator (a sort of draft mode)
-  visiblePermissionId Int?
-  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
-
-  // TODO: revision support
-
-  @@index([visiblePermissionId])
+  @@index([name])
 }

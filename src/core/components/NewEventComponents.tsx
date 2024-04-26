@@ -1,7 +1,6 @@
 import { Button, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
-import { TAnyModel } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { EventTableClientColumns } from "src/core/components/EventComponents";
@@ -13,7 +12,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
-import { TinsertEventArgs } from "src/core/db3/shared/apiTypes";
+import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { DashboardContext } from "./DashboardContext";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
