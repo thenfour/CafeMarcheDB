@@ -340,16 +340,24 @@ export interface GetEventFilterInfoChipInfo {
     tooltip: string | null;
 };
 
+export type TimingFilter = "none" | "all" | "past" | "future";
+export const gEventFilterTimingIDConstants = {
+    past: 0,
+    future: 1,
+};
 export interface GetEventFilterInfoRet {
+    rowCount: number;
     types: GetEventFilterInfoChipInfo[];
     statuses: GetEventFilterInfoChipInfo[];
     tags: GetEventFilterInfoChipInfo[];
+    timings: GetEventFilterInfoChipInfo[];
+    eventIds: number[];
 
     typesQuery: string;
     statusesQuery: string;
     tagsQuery: string;
+    paginatedEventQuery: string;
 };
-
 
 export interface GetSongFilterInfoRet {
     tags: GetEventFilterInfoChipInfo[];

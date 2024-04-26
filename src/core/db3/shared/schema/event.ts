@@ -310,6 +310,7 @@ export const xEventTagAssignment = new db3.xTable({
 
 export interface EventTableParams {
     eventId?: number;
+    eventIds?: number[];
     eventSlug?: string;
     eventTypeIds?: number[];
     eventStatusIds?: number[];
@@ -336,6 +337,15 @@ const xEventArgs_Base: db3.TableDesc = {
         if (params.eventId !== undefined) {
             console.assert(params.eventSlug === undefined);
             ret.push({ id: params.eventId, });
+        }
+        if (params.eventIds !== undefined) {
+            assertIsNumberArray(params.eventIds);
+            if (params.eventIds.length > 0) {
+                const t: Prisma.EventWhereInput = {
+                    id: { in: params.eventIds }
+                };
+                ret.push(t);
+            }
         }
         if (params.eventSlug !== undefined) {
             console.assert(params.eventId === undefined);

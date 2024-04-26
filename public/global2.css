@@ -2147,3 +2147,17 @@ test cases:
 .shareCalendarButton {
     display: flex;
 }
+
+/* "expand" button on the event list filters control which is pushed to the right side.
+can't use flex-spacer here because that expanded area should also be clickable. */
+.headerExpandableButton {
+    display: flex;
+    justify-content: flex-end;
+    flex-grow: 1;
+}
+
+.topDivider {
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px solid #8885;
+}

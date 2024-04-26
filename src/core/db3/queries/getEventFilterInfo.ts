@@ -5,7 +5,7 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet } from "../shared/apiTypes";
+import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants } from "../shared/apiTypes";
 
 interface TArgs {
     filterSpec: {
@@ -13,6 +13,13 @@ interface TArgs {
         typeIds: number[];
         tagIds: number[];
         statusIds: number[];
+
+        // none, past, future, all
+        timingFilter: TimingFilter;
+
+        orderBy: "StartAsc" | "StartDesc";
+        pageSize: number;
+        page: number;
     }
 };
 
@@ -26,9 +33,13 @@ export default resolver.pipe(
                     statuses: [],
                     tags: [],
                     types: [],
+                    timings: [],
+                    eventIds: [],
+                    rowCount: 0,
                     typesQuery: "",
                     statusesQuery: "",
                     tagsQuery: "",
+                    paginatedEventQuery: "",
                 };
             }
 
@@ -58,6 +69,14 @@ export default resolver.pipe(
 
             if (args.filterSpec.statusIds.length > 0) {
                 eventFilterExpressions.push(`(Event.statusId IN (${args.filterSpec.statusIds}))`);
+            }
+
+            if (args.filterSpec.timingFilter === "none") {
+                eventFilterExpressions.push(`(FALSE)`);
+            } else if (args.filterSpec.timingFilter === "future") {
+                eventFilterExpressions.push(`((startsAt >= curdate()) or (startsAt is null))`);
+            } else if (args.filterSpec.timingFilter === "past") {
+                eventFilterExpressions.push(`(startsAt < curdate())`);
             }
 
             let havingClause = "";
@@ -91,7 +110,9 @@ export default resolver.pipe(
             SELECT 
                 Event.id AS EventId,
                 Event.statusId,
-                Event.typeId
+                Event.typeId,
+                Event.startsAt,
+                Event.name
             FROM 
                 Event
             left JOIN 
@@ -195,13 +216,69 @@ export default resolver.pipe(
                 rowCount: new Number(r.event_count).valueOf(),
             }));
 
+            // PAGINATED EVENT LIST
+            const sortOrder = args.filterSpec.orderBy === "StartAsc" ? "ASC" : "DESC";
+            const paginatedEventQuery = `
+        ${filteredEventsCTE}
+    select
+        FE.EventId
+    from
+        FilteredEvents as FE
+    order by
+        isnull(FE.startsAt) ${sortOrder},
+        FE.startsAt ${sortOrder},
+        FE.name ${sortOrder}
+    limit
+        ${args.filterSpec.pageSize * args.filterSpec.page},${args.filterSpec.pageSize}
+
+        `;
+
+            const eventIds: { EventId: number }[] = await db.$queryRaw(Prisma.raw(paginatedEventQuery));
+
+            // TOTAL filtered row count
+            const totalRowCountQuery = `
+        ${filteredEventsCTE}
+    select
+		count(*) as rowCount,
+        COUNT(CASE WHEN ((startsAt >= CURDATE()) or isnull(startsAt)) THEN 1 END) AS futureCount,
+        COUNT(CASE WHEN (startsAt < CURDATE()) THEN 1 END) AS pastCount
+    from
+        FilteredEvents
+
+        `;
+
+            const rowCountResult: { rowCount: bigint, futureCount: bigint, pastCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
+
+            const timings: GetEventFilterInfoChipInfo[] = [
+                {
+                    id: gEventFilterTimingIDConstants.past,
+                    label: "Past events",
+                    rowCount: new Number(rowCountResult[0]!.pastCount).valueOf(),
+                    color: null,
+                    iconName: null,
+                    tooltip: null,
+                },
+                {
+                    id: gEventFilterTimingIDConstants.future,
+                    label: "Future events",
+                    rowCount: new Number(rowCountResult[0]!.futureCount).valueOf(),
+                    color: null,
+                    iconName: null,
+                    tooltip: null,
+                }
+            ];
+
             return {
+                rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
                 types,
                 statuses,
                 tags,
-                typesQuery: "",
-                statusesQuery: "",
-                tagsQuery: "",
+                timings,
+                eventIds: eventIds.map(e => e.EventId),
+                typesQuery,
+                statusesQuery,
+                tagsQuery,
+                paginatedEventQuery,
             };
         } catch (e) {
             console.error(e);
