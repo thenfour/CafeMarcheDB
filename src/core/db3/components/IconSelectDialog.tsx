@@ -20,6 +20,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
 import ImageIcon from '@mui/icons-material/Image';
 import HelpIcon from '@mui/icons-material/Help';
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import LinkIcon from '@mui/icons-material/Link';
 import MicIcon from '@mui/icons-material/Mic';
@@ -96,6 +97,7 @@ export const gIconMap /*: IIconMap*/ = {
     Help: () => <HelpIcon />,
     HighlightOff: () => <HighlightOffIcon />,
     Home: () => <HomeIcon />,
+    HourglassBottom: () => <HourglassBottomIcon />,
     Image: () => <ImageIcon />,
     Info: () => <InfoIcon />,
     Launch: () => <LaunchIcon />,

@@ -210,7 +210,7 @@ const main = async () => {
         "iconName": "AutoAwesome"
       },
       {
-        "label": "Checking musician availability",
+        "label": "Checking Attendance",
         "description": "",
         "sortOrder": 30,
         "color": "red",
@@ -218,16 +218,24 @@ const main = async () => {
         "iconName": "Campaign"
       },
       {
+        "label": "Finalizing",
+        "description": "We have attendance, but need to finalize details before ",
+        "sortOrder": 50,
+        "color": "gold",
+        "significance": null,
+        "iconName": null
+      },
+      {
         "label": "Confirmed",
         "description": "The event requires no further confirmations; it's happening or has happened.",
-        "sortOrder": 50,
+        "sortOrder": 61,
         "color": "green",
         "significance": "FinalConfirmation",
         "iconName": "Done"
       },
       {
         "label": "Cancelled",
-        "description": "",
+        "description": "The event is abandoned / cancelled. It's not happening.",
         "sortOrder": 100,
         "color": "light_gray",
         "significance": "Cancelled",
@@ -524,45 +532,64 @@ const main = async () => {
   const adminRoleName = "Admin";
   const publicRoleName = "Public";
 
-  await SeedTable("role", prisma.role, [
-    {
-      "name": adminRoleName,
-      "description": "technical admin",
-      "isRoleForNewUsers": false,
-      "sortOrder": 100
-    },
-    {
-      "name": "Moderators",
-      "description": "just below site admin",
-      "isRoleForNewUsers": false,
-      "sortOrder": 80
-    },
-    {
-      "name": "Editors",
-      "description": "",
-      "isRoleForNewUsers": false,
-      "sortOrder": 60
-    },
-    {
-      "name": "Normal Users",
-      "description": "login with granted normal rights",
-      "isRoleForNewUsers": false,
-      "sortOrder": 40
-    },
-    {
-      "name": "Limited Users",
-      "description": "logged-in users with no rights",
-      "isRoleForNewUsers": true,
-      "sortOrder": 10
-    },
-    {
-      "name": publicRoleName,
-      "description": "not even logged in",
-      "isRoleForNewUsers": false,
-      "isPublicRole": true,
-      "sortOrder": 0
-    }
-  ]);
+  await SeedTable("role", prisma.role,
+    [
+      {
+        "name": "Public",
+        "description": "not even logged in",
+        "isRoleForNewUsers": false,
+        "isPublicRole": true,
+        "sortOrder": 0,
+        "color": "citron",
+        "significance": null
+      },
+      {
+        "name": "Limited Users",
+        "description": "logged-in users with no rights",
+        "isRoleForNewUsers": true,
+        "isPublicRole": false,
+        "sortOrder": 10,
+        "color": "green",
+        "significance": null
+      },
+      {
+        "name": "Normal Users",
+        "description": "login with granted normal rights",
+        "isRoleForNewUsers": false,
+        "isPublicRole": false,
+        "sortOrder": 40,
+        "color": "blue",
+        "significance": null
+      },
+      {
+        "name": "Editors",
+        "description": "",
+        "isRoleForNewUsers": false,
+        "isPublicRole": false,
+        "sortOrder": 60,
+        "color": "gold",
+        "significance": null
+      },
+      {
+        "name": "Moderators",
+        "description": "just below site admin",
+        "isRoleForNewUsers": false,
+        "isPublicRole": false,
+        "sortOrder": 80,
+        "color": "purple",
+        "significance": null
+      },
+      {
+        "name": "Admin",
+        "description": "technical admin",
+        "isRoleForNewUsers": false,
+        "isPublicRole": false,
+        "sortOrder": 100,
+        "color": "black",
+        "significance": null
+      }
+    ]
+  );
 
   //const codePermissions = PermissionOrdered;Object.values(Permission);
   for (let i = 0; i < gPermissionOrdered.length; ++i) {
@@ -612,101 +639,116 @@ const main = async () => {
     },
   ]);
 
-  const rolePermissionAssignments = [
-    ["Admin", "always_grant"],
-    ["Moderators", "always_grant"],
-    ["Editors", "always_grant"],
-    ["Normal Users", "always_grant"],
-    ["Limited Users", "always_grant"],
-    ["Public", "always_grant"],
-    ["Admin", "public"],
-    ["Moderators", "public"],
-    ["Editors", "public"],
-    ["Normal Users", "public"],
-    ["Limited Users", "public"],
-    ["Public", "public"],
-    ["Admin", "login"],
-    ["Moderators", "login"],
-    ["Editors", "login"],
-    ["Normal Users", "login"],
-    ["Limited Users", "login"],
-    ["Admin", "basic_trust"],
-    ["Moderators", "basic_trust"],
-    ["Editors", "basic_trust"],
-    ["Normal Users", "basic_trust"],
-    ["Limited Users", "basic_trust"],
-    ["Admin", "sysadmin"],
-    ["Admin", "never_grant"],
-    ["Admin", "content_admin"],
-    ["Moderators", "content_admin"],
-    ["Editors", "content_admin"],
-    ["Admin", "impersonate_user"],
-    ["Admin", "visibility_editors"],
-    ["Moderators", "visibility_editors"],
-    ["Editors", "visibility_editors"],
-    ["Admin", "visibility_members"],
-    ["Moderators", "visibility_members"],
-    ["Editors", "visibility_members"],
-    ["Normal Users", "visibility_members"],
-    ["Admin", "visibility_logged_in_users"],
-    ["Moderators", "visibility_logged_in_users"],
-    ["Editors", "visibility_logged_in_users"],
-    ["Normal Users", "visibility_logged_in_users"],
-    ["Limited Users", "visibility_logged_in_users"],
-    ["Admin", "visibility_public"],
-    ["Moderators", "visibility_public"],
-    ["Editors", "visibility_public"],
-    ["Normal Users", "visibility_public"],
-    ["Limited Users", "visibility_public"],
-    ["Public", "visibility_public"],
-    ["Admin", "edit_public_homepage"],
-    ["Moderators", "edit_public_homepage"],
-    ["Editors", "edit_public_homepage"],
-    ["Admin", "admin_events"],
-    ["Moderators", "admin_events"],
-    ["Admin", "manage_events"],
-    ["Moderators", "manage_events"],
-    ["Editors", "manage_events"],
-    ["Admin", "view_events"],
-    ["Moderators", "view_events"],
-    ["Editors", "view_events"],
-    ["Normal Users", "view_events"],
-    ["Limited Users", "view_events"],
-    ["Public", "view_events"],
-    ["Admin", "respond_to_events"],
-    ["Moderators", "respond_to_events"],
-    ["Editors", "respond_to_events"],
-    ["Normal Users", "respond_to_events"],
-    ["Admin", "admin_songs"],
-    ["Moderators", "admin_songs"],
-    ["Admin", "manage_songs"],
-    ["Moderators", "manage_songs"],
-    ["Editors", "manage_songs"],
-    ["Admin", "view_songs"],
-    ["Moderators", "view_songs"],
-    ["Editors", "view_songs"],
-    ["Normal Users", "view_songs"],
-    ["Admin", "admin_files"],
-    ["Moderators", "admin_files"],
-    ["Admin", "manage_files"],
-    ["Moderators", "manage_files"],
-    ["Editors", "manage_files"],
-    ["Admin", "upload_files"],
-    ["Moderators", "upload_files"],
-    ["Editors", "upload_files"],
-    ["Normal Users", "upload_files"],
-    ["Admin", "view_files"],
-    ["Moderators", "view_files"],
-    ["Editors", "view_files"],
-    ["Normal Users", "view_files"],
-    ["Limited Users", "view_files"],
-    ["Public", "view_files"],
-    ["Admin", "admin_instruments"],
-    ["Moderators", "admin_instruments"],
-    ["Admin", "manage_instruments"],
-    ["Moderators", "manage_instruments"],
-    ["Editors", "manage_instruments"]
-  ];
+  const rolePermissionAssignments =
+    [
+      ["Public", "always_grant"],
+      ["Limited Users", "always_grant"],
+      ["Normal Users", "always_grant"],
+      ["Editors", "always_grant"],
+      ["Moderators", "always_grant"],
+      ["Admin", "always_grant"],
+      ["Normal Users", "view_events_nonpublic"],
+      ["Editors", "view_events_nonpublic"],
+      ["Moderators", "view_events_nonpublic"],
+      ["Admin", "view_events_nonpublic"],
+      ["Public", "public"],
+      ["Limited Users", "public"],
+      ["Normal Users", "public"],
+      ["Editors", "public"],
+      ["Moderators", "public"],
+      ["Admin", "public"],
+      ["Limited Users", "login"],
+      ["Normal Users", "login"],
+      ["Editors", "login"],
+      ["Moderators", "login"],
+      ["Admin", "login"],
+      ["Limited Users", "basic_trust"],
+      ["Normal Users", "basic_trust"],
+      ["Editors", "basic_trust"],
+      ["Moderators", "basic_trust"],
+      ["Admin", "basic_trust"],
+      ["Admin", "sysadmin"],
+      ["Editors", "content_admin"],
+      ["Moderators", "content_admin"],
+      ["Admin", "content_admin"],
+      ["Admin", "impersonate_user"],
+      ["Editors", "visibility_editors"],
+      ["Moderators", "visibility_editors"],
+      ["Admin", "visibility_editors"],
+      ["Normal Users", "visibility_members"],
+      ["Editors", "visibility_members"],
+      ["Moderators", "visibility_members"],
+      ["Admin", "visibility_members"],
+      ["Limited Users", "visibility_logged_in_users"],
+      ["Normal Users", "visibility_logged_in_users"],
+      ["Editors", "visibility_logged_in_users"],
+      ["Moderators", "visibility_logged_in_users"],
+      ["Admin", "visibility_logged_in_users"],
+      ["Public", "visibility_public"],
+      ["Limited Users", "visibility_public"],
+      ["Normal Users", "visibility_public"],
+      ["Editors", "visibility_public"],
+      ["Moderators", "visibility_public"],
+      ["Admin", "visibility_public"],
+      ["Editors", "edit_public_homepage"],
+      ["Moderators", "edit_public_homepage"],
+      ["Admin", "edit_public_homepage"],
+      ["Moderators", "admin_events"],
+      ["Admin", "admin_events"],
+      ["Editors", "manage_events"],
+      ["Moderators", "manage_events"],
+      ["Admin", "manage_events"],
+      ["Public", "view_events"],
+      ["Limited Users", "view_events"],
+      ["Normal Users", "view_events"],
+      ["Editors", "view_events"],
+      ["Moderators", "view_events"],
+      ["Admin", "view_events"],
+      ["Normal Users", "respond_to_events"],
+      ["Editors", "respond_to_events"],
+      ["Moderators", "respond_to_events"],
+      ["Admin", "respond_to_events"],
+      ["Moderators", "admin_songs"],
+      ["Admin", "admin_songs"],
+      ["Editors", "manage_songs"],
+      ["Moderators", "manage_songs"],
+      ["Admin", "manage_songs"],
+      ["Normal Users", "view_songs"],
+      ["Editors", "view_songs"],
+      ["Moderators", "view_songs"],
+      ["Admin", "view_songs"],
+      ["Moderators", "admin_files"],
+      ["Admin", "admin_files"],
+      ["Editors", "manage_files"],
+      ["Moderators", "manage_files"],
+      ["Admin", "manage_files"],
+      ["Public", "view_files"],
+      ["Limited Users", "view_files"],
+      ["Normal Users", "view_files"],
+      ["Editors", "view_files"],
+      ["Moderators", "view_files"],
+      ["Admin", "view_files"],
+      ["Normal Users", "upload_files"],
+      ["Editors", "upload_files"],
+      ["Moderators", "upload_files"],
+      ["Admin", "upload_files"],
+      ["Moderators", "admin_instruments"],
+      ["Admin", "admin_instruments"],
+      ["Editors", "manage_instruments"],
+      ["Moderators", "manage_instruments"],
+      ["Admin", "manage_instruments"],
+      ["Admin", "admin_users"],
+      ["Moderators", "manage_users"],
+      ["Admin", "manage_users"],
+      ["Normal Users", "view_custom_links"],
+      ["Editors", "view_custom_links"],
+      ["Moderators", "view_custom_links"],
+      ["Admin", "view_custom_links"],
+      ["Editors", "manage_custom_links"],
+      ["Moderators", "manage_custom_links"],
+      ["Admin", "manage_custom_links"]
+    ]
+    ;
 
   console.log(`Seeding role-permission assignments`);
   for (let i = 0; i < rolePermissionAssignments.length; ++i) {
@@ -821,6 +863,33 @@ const main = async () => {
       {
         "name": "textPalette",
         "value": "#000\n#444\n#666\n#888\n#aaa\n#ccc\n#ddd\n#eee\n#fff\n\n-\n// near-black\n-- // {\"c\":[\"hsl(232deg 17% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":2,\"op\":\"column rev\"}\nx#000000\nx#262732\n#474a61\n#6a7095\n\n;-- // {\"c\":[\"hsl(232deg 17% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":7,\"op\":\"row\"}\nx#7c81a2\n#8e92af\nx#a0a3bc\n#b3b5c9\nx#c6c7d6\n#d8d9e4\nx#ececf1\n\n\n// lime green\n\n-- // {\"c\":[\"hsl(72deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#272d10\n#475614\n#6a8311\n#8fb300\n#afc657\n#ccd98f\n#e6ecc7\n\n// green\n-- // {\"c\":[\"hsl(120deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#152d0f\n#1b5613\n#198310\n#00b300\n#69c755\n#a0db8e\n#d0edc6\n\n// teal\n;-- // {\"c\":[\"hsl(173deg 100% 35%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#152d28\n#1b564d\n#198374\n#00b39e\n#68c7b5\n#9edacd\n#cfede6\n\n// blue\n-- // {\"c\":[\"hsl(212deg 100% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#19203c\n#213b77\n#1f58b9\n#0077ff\n#7696ff\n#abb8ff\n#d7dbff\n\n// purple\n;-- // {\"c\":[\"#92d\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#291435\n#4c1c69\n#7221a1\n#9922dd\n#b865e7\n#d399f0\n#eaccf8\n\n\n\n\n-- // {\"c\":[\"#e00000\",\"white\",\"black\"],\"m\":\"rgb\",\"z\":5,\"op\":\"TL\"}\n;#4b0000\n#600000\n;#950000\n#900\n#e00000\n#f77\n#faa\n#fdd\n;#ea5555\n;#f08080\n;#f5aaaa\n;#fad5d5\n\n\n\n// maroon\n;-- // {\"c\":[\"hsl(342deg 60% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#33161c\n#622131\n#962b49\n#cc3361\n#df6e86\n#ee9fac\n#f9cfd5\n\n\n// orange\n- // {\"c\":[\"#f70\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3e210e\n#793c11\n#ba590e\n#ff7700\n#ff9a51\n#ffbc8a\n#ffddc4\n\n\n// brown\n// interestingly generated by\n// taking diag from\n// {\"c\":[\"red\",\"white\",\"black\",\"green\"],\"m\":\"lab\",\"z\":3,\"op\":\"diagBL\"}\n\n;-- // {\"c\":[\"hsl(36deg 46% 50%)\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#2f2517\n#5a4426\n#886635\n#ba8b45\n#cea772\n#e1c3a0\n#f1e1cf\n\n\n// ochre yellow\n-- // {\"c\":[\"#fc0\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3d3112\n#786117\n#ba9415\n#ffcc00\n#ffd85f\n#ffe596\n#fff2cb\n\n// light yellow\n// {\"c\":[\"#ef0\",\"white\",\"black\"],\"m\":\"lab\",\"z\":3,\"op\":\"TL\"}\nx#3a3b15\n#71771b\n#adb918\n#eeff00\nx#f7ff67\n#fdff9d\nx#ffffcf\n"
+      }
+    ]
+  );
+
+
+  await SeedTable("userTag", prisma.userTag,
+    [
+      {
+        "text": "board",
+        "description": "",
+        "sortOrder": 0,
+        "color": "light_teal",
+        "significance": null
+      },
+      {
+        "text": "board",
+        "description": "",
+        "sortOrder": 0,
+        "color": "light_teal",
+        "significance": null
+      },
+      {
+        "text": "musician",
+        "description": "",
+        "sortOrder": 0,
+        "color": "light_teal",
+        "significance": null
       }
     ]
   );

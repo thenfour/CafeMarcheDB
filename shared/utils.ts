@@ -419,6 +419,7 @@ export const gIconOptions = {
     HighlightOff: "HighlightOff",
     Help: "Help",
     Home: "Home",
+    HourglassBottom: "HourglassBottom",
     Image: "Image",
     Info: "Info",
     Launch: "Launch",

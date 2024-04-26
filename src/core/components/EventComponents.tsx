@@ -798,7 +798,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
             />
 
             <Tooltip title="Add to your calendar (iCal)">
-                <a href={`/api/ical/event/${eventData.event.id}`} target='_blank' rel="noreferrer"><Button>{gIconMap.Share()}</Button></a>
+                <a href={`/api/ical/event/${eventData.event.id}`} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
             </Tooltip>
 
             {props.showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}

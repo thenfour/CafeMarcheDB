@@ -71,7 +71,7 @@ export enum Permission {
     manage_custom_links = "manage_custom_links",
 };
 
-export const gPermissionOrdered: Permission[] = [
+export const gPermissionOrdered: (keyof typeof Permission)[] = [
     Permission.always_grant,
     Permission.public,
     Permission.login,
@@ -88,6 +88,7 @@ export const gPermissionOrdered: Permission[] = [
     Permission.admin_events,
     Permission.manage_events,
     Permission.view_events,
+    Permission.view_events_nonpublic,
     Permission.respond_to_events,
     Permission.admin_songs,
     Permission.manage_songs,

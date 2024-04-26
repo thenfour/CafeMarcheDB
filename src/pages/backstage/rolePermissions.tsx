@@ -6,15 +6,12 @@ import { BlitzPage } from "@blitzjs/next";
 import { FormControlLabel, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { InspectObject } from "src/core/components/CMCoreComponents";
-//import { CMAssociationMatrix } from "src/core/cmdashboard/CMAssociationMatrix";
+import React from "react";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3AssociationMatrix } from "src/core/db3/components/DB3AssociationMatrix";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React from "react";
 
 
 const MainContent = () => {

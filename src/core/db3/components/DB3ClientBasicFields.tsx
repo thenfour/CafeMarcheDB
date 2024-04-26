@@ -523,6 +523,8 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
         isReadOnly={!this.editable}
     />;
 
+    // TODO: use defaultRenderer. the problem with a bool field is that the checkbox itself is very small, so the clickable label is really important.
+    // so, TODO: add click-to-focus support to <NameValuePair>
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
         return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.member} control={
             <Checkbox

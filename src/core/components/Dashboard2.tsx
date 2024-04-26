@@ -77,7 +77,9 @@ const AppBarUserIcon_MenuItems = () => {
         }
 
         {currentUser &&
-            <MenuItem component={Link} href={`/api/ical/user/${currentUser.accessToken}`}>{gIconMap.CalendarMonth()} Calendar feed</MenuItem>
+            <MenuItem component={Link} href={`/api/ical/user/${currentUser.accessToken}`}>
+                {gIconMap.CalendarMonth()} Calendar feed (iCal format)
+            </MenuItem>
         }
 
         <MenuItem component={Link} href='/backstage/profile'>Your profile</MenuItem>

@@ -2138,3 +2138,7 @@ test cases:
 .markdown.renderedContent {
     max-width: var(--content-max-width);
 }
+
+.shareCalendarButton {
+    display: flex;
+}

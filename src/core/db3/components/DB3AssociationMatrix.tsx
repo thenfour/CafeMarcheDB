@@ -24,7 +24,9 @@ import * as db3 from '../db3';
 import { CMDBTableFilterItem, CMDBTableFilterModel, TAnyModel } from '../shared/apiTypes';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
-const gPageSizeDefault = 25 as number;
+
+// we don't really get page support here so choose a bigger number.
+const gPageSizeDefault = 100 as number;
 
 export interface DB3AssMatrxiExtraActionsArgs {
     row: TAnyModel,
