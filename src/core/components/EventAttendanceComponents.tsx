@@ -1,4 +1,24 @@
 /*
+The logic that controls how this thing is displayed is actually somewhat complex because there are a lot of
+factors and it's very optimized ux. So it's not sufficient to have a bunch of floating logic everywhere; it needs to be organized.
+for example,
+- are you invited?
+- is it in the past?
+- did you already answer all segments? any segments? no segments?
+- are any answers affirmative? (to show instrument selection)
+- is it single-segment? 0 segments? multi-segment?
+
+VIEW FLAGS:
+- alert?
+
+EVENT MODES:
+- read-only
+- alert
+- compact/expanded view, instrument & all segments are on single-line. clicking elements enters expanded + edit mode.
+
+------------------------------------
+
+
 better terminology makes things clearer. ideally stick to:
 "answer" is just the yes/no/etc portion of your response
 "comment" is just the comment
@@ -109,6 +129,28 @@ import { EventWithMetadata } from "./EventComponentsBase";
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
 
 
+const gCaptionMap = {};
+gCaptionMap[Timing.Past] = [
+  "Did you go?",// any non-responses
+  "You were there!",// all affirmative
+  "We missed you 😢",// all negative
+  "You were (partially) there",// else (mixed)
+] as const;
+gCaptionMap[Timing.Present] = [
+  "Are you there?",// any non-responses
+  "You are there!",// all affirmative
+  "We're missing you 😢",// all negative
+  "You are (partially) going",// else (mixed)
+] as const;
+gCaptionMap[Timing.Future] = [
+  "Are you going?",// any non-responses
+  "You're going!",// all affirmative
+  "We'll miss you 😢",// all negative
+  "You're (partially) going",// else (mixed)
+] as const;
+
+
+
 ////////////////////////////////////////////////////////////////
 interface EventAttendanceInstrumentButtonProps {
   value: db3.InstrumentPayload | null;
@@ -147,7 +189,8 @@ const EventAttendanceInstrumentButton = ({ value, selected, onSelect }: EventAtt
 interface EventAttendanceInstrumentControlProps {
   eventUserResponse: db3.EventUserResponse;
   onRefetch: () => void,
-  readonly?: boolean,
+  onChanged: () => void,
+  //readonly?: boolean,
 };
 
 const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
@@ -180,14 +223,13 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
   if (instrumentList.length < 2) return null;
 
   return <NameValuePair
-    isReadOnly={props.readonly || false}
+    //isReadOnly={props.readonly || false}
     name="Instrument"
     value={<CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-      {!!props.readonly ? (
-        selectedInstrument !== null && <EventAttendanceInstrumentButton key={"__"} selected={true} value={selectedInstrument} />
-      ) : (instrumentList.map(option =>
-        <EventAttendanceInstrumentButton key={option.id} selected={option.id === selectedInstrument?.id} value={option} onSelect={() => handleChange(option)} />))}
-    </CMChipContainer>} />
+      {instrumentList.map(option =>
+        <EventAttendanceInstrumentButton key={option.id} selected={option.id === selectedInstrument?.id} value={option} onSelect={() => handleChange(option)} />)}
+    </CMChipContainer>
+    } />
     ;
 };
 
@@ -263,7 +305,8 @@ interface EventAttendanceAnswerControlProps {
   forceEditMode: boolean;
   //readonly: boolean;
   onRefetch: () => void,
-  onClick: () => void;
+  onReadonlyClick: () => void;
+  onSelectedItem: () => void;
 };
 
 const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) => {
@@ -287,8 +330,8 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     }),
   });
 
-  const handleClick = () => {
-    props.onClick();
+  const handleReadonlyClick = () => {
+    props.onReadonlyClick();
     setExplicitEdit(true);
   }
 
@@ -304,6 +347,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     }).then(() => {
       showSnackbar({ children: "Response updated", severity: 'success' });
       setExplicitEdit(false);
+      props.onSelectedItem();
       props.onRefetch();
     }).catch(err => {
       console.log(err);
@@ -326,7 +370,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
       </>) : (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedResponse.attendance} onSelect={handleClick} tooltip={tooltip} />
+          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedResponse.attendance} onSelect={handleReadonlyClick} tooltip={tooltip} />
           {/* <CMSmallButton onClick={handleClick}>change</CMSmallButton> */}
         </CMChipContainer>
       </>
@@ -339,10 +383,13 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
 // shows your answer & comment, small button to show edit controls.
 export interface EventAttendanceSegmentControlProps {
   eventData: EventWithMetadata;
+  initialEditMode: boolean;
   eventUserResponse: db3.EventUserResponse;
   segmentUserResponse: db3.EventSegmentUserResponse;
   isSingleSegment: boolean;
   onRefetch: () => void,
+  onReadonlyClick: () => void;
+  onSelectedItem: () => void;
 };
 
 export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }: EventAttendanceSegmentControlProps) => {
@@ -350,19 +397,25 @@ export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }:
   const name = props.isSingleSegment ? null : (<>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</>);
 
   const hasAnswer = !!segmentUserResponse.response.attendance;
-  const forceEditMode = props.eventUserResponse.isInvited && !hasAnswer; // no answer and invited = default edit  
+  const forceEditMode = props.initialEditMode || (props.eventUserResponse.isInvited && !hasAnswer); // no answer and invited = default edit  
 
   return <NameValuePair
     className={props.isSingleSegment ? "bare" : ""}
     isReadOnly={false}
     name={name}
-    value={<EventAttendanceAnswerControl
-      forceEditMode={forceEditMode}
-      eventUserResponse={props.eventUserResponse}
-      segmentUserResponse={segmentUserResponse}
-      onRefetch={props.onRefetch}
-      onClick={() => { }}
-    />
+    value={<>
+      <EventAttendanceAnswerControl
+        forceEditMode={forceEditMode}
+        eventUserResponse={props.eventUserResponse}
+        segmentUserResponse={segmentUserResponse}
+        onRefetch={props.onRefetch}
+        onReadonlyClick={props.onReadonlyClick}
+        onSelectedItem={props.onSelectedItem}
+      />
+      <div className="helpText">
+        {segmentUserResponse.response.attendance?.description}
+      </div>
+    </>
     }
   />;
 };
@@ -375,79 +428,67 @@ export interface EventAttendanceControlProps {
   onRefetch: () => void,
 };
 
+
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   if (!props.eventData.responseInfo) return null;
-  const [userExpanded, setUserExpanded] = React.useState<boolean>(false);
+
+  const [userSelectedEdit, setUserSelectedEdit] = React.useState<boolean>(false);
+  //const [refreshSerial, setRefreshSerial] = React.useState(0);
   const user = useCurrentUser()[0]!;
   const segmentResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));
   segmentResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
   const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user);
 
   const eventTiming = props.eventData.eventTiming;
-  const eventIsPast = eventTiming === Timing.Past;
+  if (eventTiming === Timing.Past) return null;
+
+  const isInvited = eventResponse.isInvited;
+  const isSingleSegment = segmentResponses.length === 1;
+
   const anyAnswered = segmentResponses.some(r => !!r.response.attendance);
   const allAnswered = segmentResponses.every(r => !!r.response.attendance);
   const allAffirmative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength > 50);
   const someAffirmative = segmentResponses.some(r => !!r.response.attendance && r.response.attendance!.strength > 50);
   const allNegative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength <= 50);
-  const isInvited = eventResponse.isInvited;
-  const isSingleSegment = segmentResponses.length === 1;
 
-  // does the control want to bring attention to demand user input (not the same as read-only!)
-  // - if in the PAST, never.
-  // - then the only time to alert is when the user is:
-  //   - invited
-  //   - and not all answered
-  const inputAlert = !eventIsPast && (isInvited && !allAnswered);
-  const isVerbose = inputAlert || userExpanded;
-  const canExpandUnexpand = !inputAlert && !isSingleSegment;
+  const alertFlag = isInvited && !allAnswered;
+  //const canExpandUnexpand = !inputAlert && !isSingleSegment;
   const visible = anyAnswered || isInvited;// hide the control entirely if you're not invited, but still show if you already responded.
-
   if (!visible) return null;
 
-  const inspectable = {
-    eventTiming,
-    eventIsPast,
-    anyAnswered,
-    allAnswered,
-    allAffirmative,
-    someAffirmative,
-    allNegative,
-    isInvited,
-    inputAlert,
-    isVerbose,
-    canExpandUnexpand,
-    visible,
-    //segmentResponses,
-  };
+  // there are really just 2 modes here for simplicity
+  // view (compact, instrument & segments on same line)
+  // edit (full, instrument & segments on separate lines with full text)
+  const allowViewMode = !alertFlag;
+  const editMode = userSelectedEdit || !allowViewMode;
 
-  const captionMap = {};
-  captionMap[Timing.Past] = [
-    "Did you go?",// any non-responses
-    "You were there!",// all affirmative
-    "We missed you 😢",// all negative
-    "You were (partially) there",// else (mixed)
-  ] as const;
-  captionMap[Timing.Present] = [
-    "Are you there?",// any non-responses
-    "You are there!",// all affirmative
-    "We're missing you 😢",// all negative
-    "You are (partially) going",// else (mixed)
-  ] as const;
-  captionMap[Timing.Future] = [
-    "Are you going?",// any non-responses
-    "You're going!",// all affirmative
-    "We'll miss you 😢",// all negative
-    "You're (partially) going",// else (mixed)
-  ] as const;
+  const inspectable = {
+    event: {
+      isSingleSegment,
+      isInvited,
+    },
+    yourResponses: {
+      anyAnswered,
+      allAnswered,
+      allAffirmative,
+      someAffirmative,
+      allNegative,
+    },
+    componentState: {
+      alertFlag,
+      allowViewMode,
+      userSelectedEdit,
+      editMode,
+    }
+  };
 
   const mapIndex = !allAnswered ? 0 : (allAffirmative ? 1 : (allNegative ? 2 : 3));
 
-  return <div className={`eventAttendanceControl ${inputAlert && "alert"}`}>
+  return <div className={`eventAttendanceControl ${alertFlag && "alert"}`}>
 
     <div className='header'>
-      <div>{captionMap[eventTiming][mapIndex]}</div>
-      {isVerbose && canExpandUnexpand && <CMSmallButton variant="framed" onClick={() => setUserExpanded(!userExpanded)}>{isVerbose ? "Close" : "More..."}</CMSmallButton>}
+      <div>{gCaptionMap[eventTiming][mapIndex]}</div>
+      {editMode && allowViewMode && <CMSmallButton variant="framed" onClick={() => { setUserSelectedEdit(false) }}>{"Close"}</CMSmallButton>}
     </div>
 
     <div className="attendanceResponseInput">
@@ -455,20 +496,24 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
         <EventAttendanceCommentControl onRefetch={props.onRefetch} userResponse={eventResponse} readonly={false} />
       </div>
 
-      {isVerbose ? (<>
-        {someAffirmative &&
-          <div className='instrument'>
-            <EventAttendanceInstrumentControl
-              eventUserResponse={eventResponse}
-              onRefetch={props.onRefetch}
-            />
-          </div>}
+      {editMode ? (<>
+        <div className='instrument'>
+          <EventAttendanceInstrumentControl
+            eventUserResponse={eventResponse}
+            onRefetch={props.onRefetch}
+            //onChanged={() => setUserSelectedEdit(false)} // when a user selects an item, allow the control to go back to view mode again.
+            onChanged={() => { }} // when a user selects an item, allow the control to go back to view mode again.
+          />
+        </div>
         <div className="segmentList">
           {segmentResponses.map(segment => {
             return <EventAttendanceSegmentControl
               isSingleSegment={isSingleSegment}
               key={segment.segment.id}
+              initialEditMode={true}
               onRefetch={props.onRefetch}
+              onReadonlyClick={() => setUserSelectedEdit(true)}
+              onSelectedItem={() => { }} // setUserSelectedEdit(false) would allow the control to go back to view mode. but it's a bit distracting, and anyway the user has already been interacting here so don't.
               eventUserResponse={eventResponse}
               segmentUserResponse={segment}
               eventData={props.eventData}
@@ -476,46 +521,36 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
           })}
         </div>
       </>
-      ) : // compact view when you've answered:
-        (
-          <CMChipContainer>
-            <EventAttendanceInstrumentButton key={"__"} selected={false} value={eventResponse.instrument} />
-            {segmentResponses.map(segment => {
+      ) : (
 
-              //const optionDesc = segment.response.attendance ? (`${segment.response.attendance.text} : ${segment.response.attendance.description}`) : `no answer`;
-              //const tooltip = `${segment.segment.name}: ${optionDesc}`;
-
-              //const tooltip = `${segment.segment.name}: ${segment.response.attendance?.text || "no answer"}`;
-
-              //const hasAnswer = !!segment.response.attendance;
-              //const defaultEdit = false; //isInvited && !hasAnswer; // no answer and invited = default edit
-
-              return <EventAttendanceAnswerControl
-                forceEditMode={false} // compact mode never has edit by default
-                key={segment.segment.id}
-                eventUserResponse={eventResponse}
-                onRefetch={props.onRefetch}
-                segmentUserResponse={segment}
-                onClick={() => setUserExpanded(true)} // if the user clicks to change a response while in compact view, get out of compact.
-              />
-
-              // return <EventAttendanceAnswerButton
-              //   key={segment.response.id}
-              //   noItemSelected={false}
-              //   selected={true}
-              //   value={segment.response.attendance}
-              //   onSelect={() => setUserExpanded(true)}
-              //   tooltip={tooltip}
-              // />;
-            })
-            }
-          </CMChipContainer>
-        )}
+        <CMChipContainer>
+          <DebugCollapsibleAdminText caption="compact" />
+          <EventAttendanceInstrumentButton key={"__"}
+            selected={false}
+            value={eventResponse.instrument}
+            onSelect={() => setUserSelectedEdit(true)}
+          />
+          {segmentResponses.map(segment => {
+            return <EventAttendanceAnswerControl
+              forceEditMode={false} // compact mode never has edit by default
+              key={segment.segment.id}
+              eventUserResponse={eventResponse}
+              onRefetch={props.onRefetch}
+              segmentUserResponse={segment}
+              onReadonlyClick={() => setUserSelectedEdit(true)} // when a user selects an item, allow the control to go back to view mode again.
+              onSelectedItem={() => { }} // setUserSelectedEdit(false) would allow the control to go back to view mode. but it's a bit distracting, and anyway the user has already been interacting here so don't.
+            />
+          })
+          }
+        </CMChipContainer>
+      )}
 
       <DebugCollapsibleAdminText obj={inspectable} />
     </div>
 
   </div>;
 };
+
+
 
 

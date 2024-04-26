@@ -373,9 +373,9 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         if (sortField === 'response' && !!sortSegment) {
             const ar = responseInfo.getResponseForUserAndSegment({ user: a, segment: sortSegment });
             const br = responseInfo.getResponseForUserAndSegment({ user: b, segment: sortSegment });
-            if (!ar.response.attendance) return -1;
-            if (!br.response.attendance) return 1;
-            return ar.response.attendance.sortOrder < br.response.attendance.sortOrder ? -1 : 1;
+            if (!ar.response.attendance) return 1;
+            if (!br.response.attendance) return -1;
+            return ar.response.attendance.sortOrder < br.response.attendance.sortOrder ? 1 : -1;
         }
         //        if (sortField === 'user') 
         return a.name < b.name ? -1 : 1;
@@ -397,10 +397,10 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     <th colSpan={2}>
                         <div className='interactable' onClick={() => setSortField('instrument')}>Instrument / function {sortField === 'instrument' && gCharMap.DownArrow()}</div>
                     </th>
-                    {isSingleSegment ? <th key="__">Response</th> : event.segments.map(seg => <React.Fragment key={seg.id}>
+                    {event.segments.map(seg => <React.Fragment key={seg.id}>
                         <th className='responseCell' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
                             <div className='interactable'>
-                                {seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
+                                {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
                             </div>
                         </th>
                     </React.Fragment>)}
@@ -416,7 +416,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             </tbody>
             <tfoot>
                 <tr>
-                    <td>
+                    <td colSpan={3}>
                         {!props.readonly && canAddUsers && <AddUserButton
                             onSelect={onAddUser}
                             filterPredicate={(u) => {
@@ -430,8 +430,6 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                             description={<SettingMarkdown setting='EventInviteUsersDialogDescriptionMarkdown' />}
                         />}
                     </td>
-                    <td>{/*Instrument*/}</td>
-                    <td>{/*Function*/}</td>
                     {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
                         <td className='responseCell'>{seg.attendeeCount}</td>
                     </React.Fragment>)}

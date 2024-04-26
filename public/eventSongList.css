@@ -165,7 +165,6 @@
 .songListSongTable .td.comment {
     font-style: italic;
     color: #0008;
-    font-style: italic;
     /* allow tag lists to wrap*/
     white-space: wrap;
     flex-wrap: wrap;

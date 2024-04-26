@@ -60,7 +60,7 @@ interface NameValuePairPropsBase {
     name: React.ReactNode;
     description?: React.ReactNode;
     value: React.ReactNode;
-    isReadOnly: boolean;
+    isReadOnly?: boolean;
     className?: string;
 };
 

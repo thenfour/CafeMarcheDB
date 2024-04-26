@@ -303,11 +303,6 @@ input.CMTextInputBase.titleText {
     border-radius: 2px;
 }
 
-.CMChip.AttendanceChip .chipMain {
-    width: 175px;
-    padding: 1px 8px;
-}
-
 .CMChipNoMargin {
     margin: 0;
 }
@@ -1453,6 +1448,11 @@ in particular the date range picker is wide.*/
     font-weight: bold;
 }
 
+.attendanceDetailTable {
+    width: 100%;
+    table-layout: fixed;
+}
+
 .attendanceDetailTable .responseCell {
     min-width: 100px;
     text-align: center;
@@ -1475,9 +1475,14 @@ in particular the date range picker is wide.*/
     justify-content: center;
 }
 
+.attendanceDetailTable td {
+    overflow: hidden;
+}
+
 
 .attendanceDetailTable .nameCellContainer {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     padding-left: 8px;
 }
