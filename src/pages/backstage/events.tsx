@@ -53,7 +53,7 @@ const gDefaultFilter: EventsFilterSpec = {
     typeFilter: [],
     timingFilter: "future",
     orderBy: "StartAsc",
-} as const;
+};// cannot be as const because the array is writable.
 
 const HasExtraFilters = (val: EventsFilterSpec) => {
     if (val.pageSize != gDefaultFilter.pageSize) return true;
@@ -80,7 +80,6 @@ interface EventsControlsProps {
 
 type EventsControlsValueProps = EventsControlsProps & {
     filterInfo: GetEventFilterInfoRet,
-    readonly: boolean;
 };
 
 type EventsControlsDynProps = EventsControlsProps & {
@@ -144,7 +143,7 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
         }
     };
 
-    return <div className={`EventsFilterControlsValue ${props.readonly && "HalfOpacity"}`}>
+    return <div className={`EventsFilterControlsValue`}>
 
         <div className="row">
             {/* <div className="caption cell">event type</div> */}
@@ -153,7 +152,7 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                     <CMChip
                         key={t.id}
                         variation={{ ...StandardVariationSpec.Strong, fillOption: "hollow", selected: isTimingSelected(t) }}
-                        onClick={props.readonly ? undefined : (() => toggleTiming(t))}
+                        onClick={() => toggleTiming(t)}
                         color={t.id === gEventFilterTimingIDConstants.past ? null : "purple"}
                         shape="rectangle"
                         size="small"
@@ -171,7 +170,7 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                     <CMChip
                         key={type.id}
                         variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.typeFilter.some(id => id === type.id) }}
-                        onClick={props.readonly ? undefined : (() => toggleType(type.id))}
+                        onClick={() => toggleType(type.id)}
                         color={type.color}
                     //tooltip={status.tooltip} // no. it gets in the way and is annoying.
                     >
@@ -188,7 +187,7 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                     filterInfo.statuses.map(status => (
                         <CMChip
                             key={status.id}
-                            onClick={props.readonly ? undefined : (() => toggleStatus(status.id))}
+                            onClick={() => toggleStatus(status.id)}
                             color={status.color}
                             shape="rectangle"
                             variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.statusFilter.some(id => id === status.id) }}
@@ -208,7 +207,7 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                         key={tag.id}
                         size="small"
                         variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.some(id => id === tag.id) }}
-                        onClick={props.readonly ? undefined : (() => toggleTag(tag.id))}
+                        onClick={() => toggleTag(tag.id)}
                         color={tag.color}
                     //tooltip={status.tooltip} // no. it gets in the way and is annoying.
                     >
@@ -223,14 +222,14 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                 <CMChip
                     size="small"
                     variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.orderBy === "StartAsc" }}
-                    onClick={props.readonly ? undefined : (() => props.onChange({ ...props.filterSpec, orderBy: "StartAsc" }))}
+                    onClick={() => props.onChange({ ...props.filterSpec, orderBy: "StartAsc" })}
                 >
                     Chronological
                 </CMChip>
                 <CMChip
                     size="small"
                     variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.orderBy === "StartDesc" }}
-                    onClick={props.readonly ? undefined : (() => props.onChange({ ...props.filterSpec, orderBy: "StartDesc" }))}
+                    onClick={() => props.onChange({ ...props.filterSpec, orderBy: "StartDesc" })}
                 >
                     Latest events first
                 </CMChip>
@@ -241,7 +240,7 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
 
 
 const EventsFilterControlsDyn = (props: EventsControlsDynProps) => {
-    return <EventsFilterControlsValue {...props} readonly={false} />;
+    return <EventsFilterControlsValue {...props} />;
 };
 
 

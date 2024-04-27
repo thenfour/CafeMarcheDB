@@ -38,7 +38,7 @@ const gDefaultFilter: SongsFilterSpec = {
 
     quickFilter: "",
     tagFilter: [],
-} as const;
+};// cannot be as const because the array is writable.
 
 const HasExtraFilters = (val: SongsFilterSpec) => {
     if (val.pageSize != gDefaultFilter.pageSize) return true;
