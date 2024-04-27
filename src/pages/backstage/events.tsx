@@ -21,7 +21,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
-import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants } from "src/core/db3/shared/apiTypes";
+import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -254,17 +254,18 @@ const EventsControls = (props: EventsControlsProps) => {
                             value={props.filterSpec.quickFilter}
                             autoFocus={true}
                         />
-                        <Button onClick={handleClearFilter}>Clear filter</Button>
+                        {expanded && <Button onClick={handleClearFilter}>Clear filter</Button>}
                         <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
+                            Filter
                             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                         </div>
                     </div>
 
                     {/* The way we store the filter results here allows the suspense to be less flickry, rendering the same content during fallback. */}
-                    {expanded &&
-                        <Suspense fallback={<EventsFilterControlsValue {...props} filterInfo={props.filterInfo} readonly={true} />}>
-                            <EventsFilterControlsDyn {...props} filterInfo={props.filterInfo} />
-                        </Suspense>
+                    {expanded && <EventsFilterControlsDyn {...props} filterInfo={props.filterInfo} />
+                        // <Suspense fallback={<EventsFilterControlsValue {...props} filterInfo={props.filterInfo} readonly={true} />}>
+                        // <EventsFilterControlsDyn {...props} filterInfo={props.filterInfo} />
+                        // </Suspense>
                     }
                 </div>
             </div>
@@ -274,7 +275,7 @@ const EventsControls = (props: EventsControlsProps) => {
 
 interface EventListItemProps {
     event: db3.EventClientPayload_Verbose;
-    tableClient: DB3Client.xTableRenderClient;
+    //tableClient: DB3Client.xTableRenderClient;
     filterSpec: EventsFilterSpec;
 };
 
@@ -288,7 +289,7 @@ const EventListItem = (props: EventListItemProps) => {
         eventData={eventData}
         fadePastEvents={true}
         readonly={true}
-        tableClient={props.tableClient}
+        tableClient={null/*props.tableClient*/}
         showVisibility={true}
         highlightStatusId={props.filterSpec.statusFilter}
         highlightTypeId={props.filterSpec.typeFilter}
@@ -297,7 +298,8 @@ const EventListItem = (props: EventListItemProps) => {
         {eventData.eventTiming !== Timing.Past &&
             <EventAttendanceControl
                 eventData={eventData}
-                onRefetch={props.tableClient.refetch}
+                onRefetch={() => { }}
+            // onRefetch={() => {}props.tableClient.refetch}
             />
         }
     </EventDetailContainer>
@@ -311,15 +313,15 @@ interface EventsListArgs {
     filterInfo: GetEventFilterInfoRet;
     setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
     events: db3.EventClientPayload_Verbose[],
-    eventsClient: DB3Client.xTableRenderClient;
+    //eventsClient: DB3Client.xTableRenderClient;
 };
 
-const EventsList = ({ filterSpec, filterInfo, events, eventsClient, ...props }: EventsListArgs) => {
+const EventsList = ({ filterSpec, filterInfo, events, ...props }: EventsListArgs) => {
 
     const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
 
     return <div className="eventList searchResults">
-        {events.map(event => <EventListItem key={event.id} event={event} tableClient={eventsClient} filterSpec={filterSpec} />)}
+        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} />)}
         <div className="searchRecordCount">
             Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {filterInfo.rowCount} total
         </div>
@@ -334,8 +336,91 @@ const EventsList = ({ filterSpec, filterInfo, events, eventsClient, ...props }: 
 };
 
 
-const MainContentDyn = () => {
+//////////////////////////////////////////////////////////////////////////////////////////////////
+interface EventListQuerierProps {
+    filterSpec: EventsFilterSpec;
+    setFilterInfo: (v: GetEventFilterInfoRet) => void;
+    setEventsQueryResult: (v: db3.EventClientPayload_Verbose[]) => void;
+};
 
+const EventListQuerier = (props: EventListQuerierProps) => {
+
+    // QUERY: filtered results & info
+    const [queriedFilterInfo, getFilterInfoExtra] = useQuery(getEventFilterInfo, {
+        filterSpec: {
+            quickFilter: props.filterSpec.quickFilter,
+            statusIds: props.filterSpec.statusFilter,
+            tagIds: props.filterSpec.tagFilter,
+            typeIds: props.filterSpec.typeFilter,
+            orderBy: props.filterSpec.orderBy,
+            pageSize: props.filterSpec.pageSize,
+            timingFilter: props.filterSpec.timingFilter,
+            page: props.filterSpec.page,
+        }
+    });
+
+    React.useEffect(() => {
+        if (getFilterInfoExtra.isSuccess) {
+            props.setFilterInfo({ ...queriedFilterInfo });
+        }
+    }, [getFilterInfoExtra.dataUpdatedAt]);
+
+    // QUERY: event details
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
+    const [currentUser] = useCurrentUser();
+    clientIntention.currentUser = currentUser!;
+
+    const tableParams: db3.EventTableParams = {
+        eventIds: queriedFilterInfo.eventIds.length === 0 ? [-1] : queriedFilterInfo.eventIds, // prevent fetching the entire table!
+    };
+
+    const eventsClient = DB3Client.useTableRenderContext({
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xEventVerbose,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+            ],
+        }),
+        filterModel: {
+            items: [],
+            tableParams,
+        },
+        paginationModel: {
+            page: 0,
+            pageSize: props.filterSpec.pageSize, // not usually needed because the eventid list is there. so for sanity.
+        },
+        requestedCaps: DB3Client.xTableClientCaps.Query,
+        clientIntention,
+        queryOptions: gQueryOptions.liveData,
+    });
+
+    React.useEffect(() => {
+        if (eventsClient.remainingQueryStatus.isSuccess) {
+            const items = eventsClient.items as db3.EventClientPayload_Verbose[];
+            // the db3 query doesn't retain the same order as the filter info ret, put in correct order.
+            const eventsWithPossibleNulls = queriedFilterInfo.eventIds.map(id => items.find(e => e.id === id));
+            const events = eventsWithPossibleNulls.filter(e => !!e) as db3.EventClientPayload_Verbose[]; // in case of any desync.
+
+            props.setEventsQueryResult(events);
+        }
+    }, [eventsClient.remainingQueryStatus.dataUpdatedAt]);
+
+    return <div className="queryProgressLine idle"></div>;
+};
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+interface EventListOuterProps {
+};
+
+const EventListOuter = (props: EventListOuterProps) => {
     const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({
         pageSize: 20,
         page: 0,
@@ -348,70 +433,24 @@ const MainContentDyn = () => {
         orderBy: "StartAsc",
     });
 
-    const [filterInfo, filterInfoExtra] = useQuery(getEventFilterInfo, {
-        filterSpec: {
-            quickFilter: filterSpec.quickFilter,
-            statusIds: filterSpec.statusFilter,
-            tagIds: filterSpec.tagFilter,
-            typeIds: filterSpec.typeFilter,
-            orderBy: filterSpec.orderBy,
-            pageSize: filterSpec.pageSize,
-            timingFilter: filterSpec.timingFilter,
-            page: filterSpec.page,
-        }
-    });
+    const [filterInfo, setFilterInfo] = React.useState<GetEventFilterInfoRet>(MakeGetEventFilterInfoRet());
+    const [eventsQueryResult, setEventsQueryResult] = React.useState<db3.EventClientPayload_Verbose[]>([]);
 
-    const handleSpecChange = (value: EventsFilterSpec) => {
-        setFilterSpec(value);
-    };
-
-    // when anything other than page changes, reset page. refetching on page change is automatic.
+    // # when filter spec (other than page change), reset page to 0.
     const { page, ...everythingButPage } = filterSpec;
 
     const specHash = JSON.stringify(everythingButPage);
-    //console.log(specHash);
     React.useEffect(() => {
         setFilterSpec({ ...filterSpec, page: 0 });
-        //console.log(`refetching...`);
-        //eventsClient.refetch();
     }, [specHash]);
-
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    const [currentUser] = useCurrentUser();
-    clientIntention.currentUser = currentUser!;
-
-    const tableParams: db3.EventTableParams = {
-        eventIds: filterInfo.eventIds
-    };
-
-    const eventsClient = DB3Client.useTableRenderContext({
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xEventVerbose,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
-        }),
-        filterModel: {
-            quickFilterValues: SplitQuickFilter(filterSpec.quickFilter),
-            items: [],
-            tagIds: filterSpec.tagFilter,
-            tableParams,
-        },
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
-        queryOptions: gQueryOptions.liveData,
-    });
-    const eventsInWrongOrder = eventsClient.items as db3.EventClientPayload_Verbose[];
-
-    // the db3 query doesn't retain the same order as the filter info ret, put in correct order.
-    const eventsWithPossibleNulls = filterInfo.eventIds.map(id => eventsInWrongOrder.find(e => e.id === id));
-    const events = eventsWithPossibleNulls.filter(e => !!e) as db3.EventClientPayload_Verbose[];
 
     return <>
         <NewEventButton onOK={() => {
             setFilterSpec({ ...filterSpec, refreshSerial: filterSpec.refreshSerial + 1 });
         }} />
 
+        <DebugCollapsibleAdminText obj={filterSpec} caption={"filterSpec"} />
+        <DebugCollapsibleAdminText obj={filterSpec} caption={"filterSpec"} />
         <DebugCollapsibleAdminText text={filterInfo.statusesQuery} caption={"statusesQuery"} />
         <DebugCollapsibleAdminText text={filterInfo.tagsQuery} caption={"tagsQuery"} />
         <DebugCollapsibleAdminText text={filterInfo.typesQuery} caption={"typesQuery"} />
@@ -419,17 +458,19 @@ const MainContentDyn = () => {
 
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
-                <div className="header">
-                    Search & filter events
-                </div>
-                <EventsControls onChange={handleSpecChange} filterSpec={filterSpec} filterInfo={filterInfo} />
+                <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} />
             </div>
+
+            <Suspense fallback={<div className="queryProgressLine loading"></div>}>
+                <EventListQuerier filterSpec={filterSpec} setEventsQueryResult={setEventsQueryResult} setFilterInfo={setFilterInfo} />
+            </Suspense>
         </CMSinglePageSurfaceCard>
-        <EventsList filterSpec={filterSpec} setFilterSpec={handleSpecChange} events={events} eventsClient={eventsClient} filterInfo={filterInfo} />
+        <EventsList filterSpec={filterSpec} setFilterSpec={setFilterSpec} events={eventsQueryResult} filterInfo={filterInfo} />
     </>;
 };
 
-const MainContent = () => {
+//////////////////////////////////////////////////////////////////////////////////////////////////
+const EventListPageContent = () => {
     if (!useAuthorization("events page", Permission.view_events_nonpublic)) {
         throw new Error(`unauthorized`);
     }
@@ -439,14 +480,14 @@ const MainContent = () => {
             <SettingMarkdown setting="events_markdown"></SettingMarkdown>
         </Suspense>
 
-        <MainContentDyn />
+        <EventListOuter />
     </div>;
 };
 
 const ViewEventsPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Events">
-            <MainContent />
+            <EventListPageContent />
         </DashboardLayout>
     )
 }

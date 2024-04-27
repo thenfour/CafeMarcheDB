@@ -687,7 +687,7 @@ export const gEventDetailTabSlugIndices = {
 
 export interface EventDetailContainerProps {
     eventData: EventWithMetadata;
-    tableClient: DB3Client.xTableRenderClient;
+    tableClient: DB3Client.xTableRenderClient | null;
     readonly: boolean;
     fadePastEvents: boolean;
     showVisibility?: boolean;
@@ -707,7 +707,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
     const highlightTypeIds = props.highlightTypeId || [];
 
     const refetch = () => {
-        tableClient.refetch();
+        tableClient?.refetch();
     };
 
     const visInfo = API.users.getVisibilityInfo(eventData.event);
@@ -763,37 +763,39 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                 </>
             }
 
-            <EditFieldsDialogButton
-                dialogTitle='Edit event'
-                readonly={props.readonly}
-                initialValue={eventData.event}
-                renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
-                tableSpec={tableClient.tableSpec}
-                dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
-                onCancel={() => { }}
-                onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
-                    tableClient.doUpdateMutation(obj).then(() => {
-                        showSnackbar({ children: "update successful", severity: 'success' });
-                        api.close();
-                        if (obj.slug !== eventData.event.slug) {
-                            const newUrl = API.events.getURIForEvent(obj.id, obj.slug);
-                            void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
-                        }
-                    }).catch(err => {
-                        console.log(err);
-                        showSnackbar({ children: "update error", severity: 'error' });
-                    }).finally(refetch);
-                }}
-                onDelete={(api: EditFieldsDialogButtonApi) => {
-                    tableClient.doDeleteMutation(eventData.event.id, 'softWhenPossible').then(() => {
-                        showSnackbar({ children: "delete successful", severity: 'success' });
-                        api.close();
-                    }).catch(err => {
-                        console.log(err);
-                        showSnackbar({ children: "delete error", severity: 'error' });
-                    }).finally(refetch);
-                }}
-            />
+            {tableClient &&
+                <EditFieldsDialogButton
+                    dialogTitle='Edit event'
+                    readonly={props.readonly}
+                    initialValue={eventData.event}
+                    renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
+                    tableSpec={tableClient.tableSpec}
+                    dialogDescription={<SettingMarkdown setting='EditEventDialogDescription' />}
+                    onCancel={() => { }}
+                    onOK={(obj: db3.EventClientPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                        tableClient.doUpdateMutation(obj).then(() => {
+                            showSnackbar({ children: "update successful", severity: 'success' });
+                            api.close();
+                            if (obj.slug !== eventData.event.slug) {
+                                const newUrl = API.events.getURIForEvent(obj.id, obj.slug);
+                                void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                            }
+                        }).catch(err => {
+                            console.log(err);
+                            showSnackbar({ children: "update error", severity: 'error' });
+                        }).finally(refetch);
+                    }}
+                    onDelete={(api: EditFieldsDialogButtonApi) => {
+                        tableClient.doDeleteMutation(eventData.event.id, 'softWhenPossible').then(() => {
+                            showSnackbar({ children: "delete successful", severity: 'success' });
+                            api.close();
+                        }).catch(err => {
+                            console.log(err);
+                            showSnackbar({ children: "delete error", severity: 'error' });
+                        }).finally(refetch);
+                    }}
+                />
+            }
 
             <Tooltip title="Add to your calendar (iCal)">
                 <a href={`/api/ical/event/${eventData.event.id}`} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>

@@ -11,7 +11,7 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
+import { RestPaginatedResult, RestQueryResult, useMutation, usePaginatedQuery, useQuery } from "@blitzjs/rpc";
 import React from "react";
 //import * as db3 from "../db3";
 import { GridColDef, GridPaginationModel, GridSortModel } from "@mui/x-data-grid";
@@ -214,7 +214,8 @@ export class xTableRenderClient {
     items: TAnyModel[];
     rowCount: number;
     remainingQueryResults: any;
-    remainingQueryStatus: any;
+    remainingQueryStatus: RestQueryResult<unknown, unknown>;
+    remainingPaginatedQueryStatus: RestPaginatedResult<unknown, unknown>;
     refetch: () => void;
 
     get schema() {
@@ -267,12 +268,13 @@ export class xTableRenderClient {
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
             };
 
-            const [{ items, count, ...remainingQueryResults }, { refetch, ...queryOutput }]: [{ items: unknown[], count: number }, { refetch: () => void }] = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
+            const queryResult = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
+            const { items, count } = queryResult[0];
             items_ = items as TAnyModel[];
             this.rowCount = count;
-            this.remainingQueryStatus = queryOutput;
-            this.remainingQueryResults = remainingQueryResults;
-            this.refetch = refetch;
+            this.remainingQueryResults = { ...queryResult[0] };
+            this.remainingQueryStatus = { ...queryResult[1] };
+            this.refetch = queryResult[1].refetch;
         }
 
         if (HasFlag(args.requestedCaps, xTableClientCaps.Query)) {
@@ -288,13 +290,14 @@ export class xTableRenderClient {
                 clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
                 cmdbQueryContext: `xTableRenderClient/query for ${args.tableSpec.args.table.tableName}`,
             };
-            const [{ items, ...remainingQueryResults }, { refetch, ...queryOutput }] = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
-            items_ = items;
 
-            this.remainingQueryStatus = queryOutput;
-            this.remainingQueryResults = remainingQueryResults;
-            this.rowCount = items.length;
-            this.refetch = refetch;
+            const queryResult = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
+
+            items_ = queryResult[0].items as TAnyModel[];
+            this.remainingQueryStatus = { ...queryResult[1] };
+            this.remainingQueryResults = { ...queryResult[0] };
+            this.rowCount = queryResult[0].items.length;
+            this.refetch = queryResult[1].refetch;
         }
 
         // convert items from a database result to a client-side object.

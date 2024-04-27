@@ -5,7 +5,7 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants } from "../shared/apiTypes";
+import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants } from "../shared/apiTypes";
 
 interface TArgs {
     filterSpec: {
@@ -29,18 +29,7 @@ export default resolver.pipe(
         try {
             const u = (await getCurrentUserCore(ctx))!;
             if (!u.role || u.role.permissions.length < 1) {
-                return {
-                    statuses: [],
-                    tags: [],
-                    types: [],
-                    timings: [],
-                    eventIds: [],
-                    rowCount: 0,
-                    typesQuery: "",
-                    statusesQuery: "",
-                    tagsQuery: "",
-                    paginatedEventQuery: "",
-                };
+                return MakeGetEventFilterInfoRet();
             }
 
             assertIsNumberArray(args.filterSpec.statusIds);

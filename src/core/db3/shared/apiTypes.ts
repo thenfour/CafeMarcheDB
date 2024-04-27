@@ -359,6 +359,19 @@ export interface GetEventFilterInfoRet {
     paginatedEventQuery: string;
 };
 
+export const MakeGetEventFilterInfoRet = () => ({
+    statuses: [],
+    tags: [],
+    types: [],
+    timings: [],
+    eventIds: [],
+    rowCount: 0,
+    typesQuery: "",
+    statusesQuery: "",
+    tagsQuery: "",
+    paginatedEventQuery: "",
+});
+
 export interface GetSongFilterInfoRet {
     tags: GetEventFilterInfoChipInfo[];
     tagsQuery: string;
