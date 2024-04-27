@@ -1,6 +1,7 @@
 //  https://codesandbox.io/s/material-ui-responsive-drawer-skqdw?resolutionWidth=1292&resolutionHeight=758&file=/src/App.js
 // https://mui.com/material-ui/react-app-bar/#app-bar-with-a-primary-search-field
 import { useSession } from "@blitzjs/auth";
+import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
     CalendarMonthOutlined as CalendarMonthOutlinedIcon,
@@ -27,15 +28,13 @@ import { useRouter } from "next/router";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import logout from "src/auth/mutations/logout";
+import refreshSessionPermissions from "src/auth/mutations/refreshSessionPermissions";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
+import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
-import { Routes } from "@blitzjs/next";
-import { DebugCollapsibleText } from "./CMCoreComponents2";
-import refreshSessionPermissions from "src/auth/mutations/refreshSessionPermissions";
 
 const drawerWidth = 260;
 
@@ -77,7 +76,7 @@ const AppBarUserIcon_MenuItems = () => {
         }
 
         {currentUser &&
-            <MenuItem component={Link} href={`/api/ical/user/${currentUser.accessToken}`}>
+            <MenuItem component={Link} href={GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken })} target="_blank" rel="noreferrer">
                 {gIconMap.CalendarMonth()} Calendar feed (iCal format)
             </MenuItem>
         }

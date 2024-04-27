@@ -1,11 +1,14 @@
-import { Prisma } from "db";
+import db, { Prisma } from "db";
+import { convert } from 'html-to-text';
 import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent, ICalEventStatus } from "ical-generator";
 import MarkdownIt from 'markdown-it';
-import { DateTimeRange } from "shared/time";
-import { EventStatusSignificance } from "../db3";
-
-import { convert } from 'html-to-text';
+import { DateTimeRange, floorToDay } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
+import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
+import * as mutationCore from 'src/core/db3/server/db3mutationCore';
+import { GetICalRelativeURIForUserAndEvent } from "src/core/db3/shared/apiTypes";
+import * as db3 from "../db3";
+
 
 // Function to convert Markdown to plain text
 const markdownToPlainText = (markdownText: string): string => {
@@ -127,8 +130,8 @@ export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.U
         return null;
     }
 
-    const calStatus = (event.status?.significance === EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
-        (event.status?.significance === EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
+    const calStatus = (event.status?.significance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
+        (event.status?.significance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
             ICalEventStatus.TENTATIVE;
 
     const cancelledText = (calStatus === ICalEventStatus.CANCELLED) ? "CANCELLED " : "";
@@ -165,4 +168,72 @@ export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.U
     }
 
     return calEvent;
+};
+
+
+export interface CalExportCoreArgs1 {
+    accessToken: string;
+    sourceURI: string;
+};
+
+export interface CalExportCoreArgsSingleEvent extends CalExportCoreArgs1 {
+    type: "event";
+    eventUid: string;
+};
+
+export interface CalExportCoreArgsUpcoming extends CalExportCoreArgs1 {
+    type: "upcoming";
+};
+
+type CalExportCoreArgs = CalExportCoreArgsUpcoming | CalExportCoreArgsSingleEvent;
+
+export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCoreArgs): Promise<ICalCalendar> => {
+    let currentUser: null | db3.UserWithRolesPayload = null;
+    if (accessToken.length > 10) {
+        currentUser = await db.user.findUnique({
+            where: {
+                accessToken,
+            },
+            include: db3.UserWithRolesArgs.include,
+        });
+    }
+
+    const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: currentUser ? "user" : "public", mode: 'primary' };
+
+    const table = db3.xEventVerbose;
+    const minDate = floorToDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
+    minDate.setDate(minDate.getDate() - 1);
+
+    const eventsTableParams: db3.EventTableParams = {
+        minDate: type === "upcoming" ? minDate : undefined,
+        eventUids: type === "event" ? [(args as CalExportCoreArgsSingleEvent).eventUid] : undefined,
+    };
+
+    const eventsRaw = await DB3QueryCore2({
+        clientIntention,
+        tableName: table.tableName,
+        tableID: table.tableID,
+        filter: {
+            items: [],
+            tableParams: eventsTableParams,
+        },
+        cmdbQueryContext: `CalExportCore`,
+        orderBy: undefined,
+    }, currentUser);
+
+    // don't error if 0 events. this is a calendar-of-events and 0 events is valid.
+
+    const events = eventsRaw.items as db3.EventClientPayload_Verbose[];
+
+    //const sourceURL = process.env.CMDB_BASE_URL + GetICalRelativeURIForUserAndEvent({ userAccessToken: currentUser?.accessToken || null, eventUid });
+    const cal = createCalendar({
+        sourceURL: args.sourceURI,
+    });
+
+    for (let i = 0; i < events.length; ++i) {
+        const event = events[i]!;
+        addEventToCalendar(cal, currentUser, event);
+    }
+
+    return cal;
 };

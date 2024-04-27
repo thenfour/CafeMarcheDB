@@ -22,6 +22,17 @@ export function getUniqueNegativeID() {
     return gUniqueNegativeID--;
 }
 
+
+
+export function concatenateUrlParts(...parts: string[]): string {
+    return parts
+        .map(part => part.trim())  // Trim whitespace from each part
+        .filter(part => part !== '')  // Remove empty parts to avoid extra slashes
+        .map(part => part.replace(/^\/+|\/+$/g, ''))  // Remove leading and trailing slashes
+        .join('/');  // Join parts with a single slash
+}
+
+
 // CHANGES /////////////////////////////////////////////////////////////////////////////////////////////////////////
 export enum ChangeAction {
     insert = "insert",
@@ -492,6 +503,12 @@ export const gQueryOptions = {
 export function assertIsNumberArray(value: any): asserts value is number[] {
     if (!Array.isArray(value) || !value.every((item) => typeof item === 'number')) {
         throw new Error('Value is not a number array');
+    }
+}
+
+export function assertIsStringArray(value: any): asserts value is string[] {
+    if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
+        throw new Error('Value is not a string array');
     }
 }
 

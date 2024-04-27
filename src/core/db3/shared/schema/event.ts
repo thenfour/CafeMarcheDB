@@ -6,7 +6,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { CoalesceBool, assertIsNumberArray, gIconOptions } from "shared/utils";
+import { CoalesceBool, assertIsNumberArray, assertIsStringArray, gIconOptions } from "shared/utils";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSlugField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { getUserPrimaryInstrument } from "./instrument";
@@ -311,6 +311,7 @@ export const xEventTagAssignment = new db3.xTable({
 export interface EventTableParams {
     eventId?: number;
     eventIds?: number[];
+    eventUids?: string[];
     eventSlug?: string;
     eventTypeIds?: number[];
     eventStatusIds?: number[];
@@ -343,6 +344,15 @@ const xEventArgs_Base: db3.TableDesc = {
             if (params.eventIds.length > 0) {
                 const t: Prisma.EventWhereInput = {
                     id: { in: params.eventIds }
+                };
+                ret.push(t);
+            }
+        }
+        if (params.eventUids !== undefined) {
+            assertIsStringArray(params.eventUids);
+            if (params.eventUids.length > 0) {
+                const t: Prisma.EventWhereInput = {
+                    uid: { in: params.eventUids }
                 };
                 ret.push(t);
             }

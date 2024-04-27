@@ -395,5 +395,12 @@ export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
 });
 
 
+export function GetICalRelativeURIForUserAndEvent(args: { userAccessToken: string | null, eventUid: string | null }) {
+    if (!args.eventUid) throw new Error("invalid event for ical");
+    return `/api/ical/user/${args.userAccessToken || "public"}/event/${args.eventUid}`;
+}
 
+export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken: string | null }) {
+    return `/api/ical/user/${args.userAccessToken || "public"}/upcoming`;
+}
 

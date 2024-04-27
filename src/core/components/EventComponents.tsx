@@ -36,6 +36,7 @@ import { GenerateDefaultDescriptionSettingName, MutationMarkdownControl, Setting
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
+import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -698,7 +699,7 @@ export interface EventDetailContainerProps {
 }
 
 export const EventDetailContainer = ({ eventData, tableClient, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
-    const [user] = useCurrentUser()!;
+    const [currentUser] = useCurrentUser()!;
     const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
@@ -798,7 +799,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
             }
 
             <Tooltip title="Add to your calendar (iCal)">
-                <a href={`/api/ical/event/${eventData.event.id}`} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
+                <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: currentUser?.accessToken || null, eventUid: eventData.event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
             </Tooltip>
 
             {props.showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
