@@ -291,7 +291,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongDetailContainerProps {
     songData: SongWithMetadata;
-    tableClient: DB3Client.xTableRenderClient;
+    tableClient: null | DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTabIndex?: number;
     showVisibility?: boolean;
@@ -307,7 +307,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
     const highlightedTagIds = props.highlightedTagIds || [];
 
     const refetch = () => {
-        tableClient.refetch();
+        tableClient?.refetch();
     };
 
     const visInfo = API.users.getVisibilityInfo(song);
@@ -346,7 +346,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     </>
                 }
 
-                <EditFieldsDialogButton
+                {tableClient && <EditFieldsDialogButton
                     dialogTitle='Edit song'
                     dialogDescription={<SettingMarkdown setting='EditSongDialogDescription' />}
                     readonly={props.readonly}
@@ -376,7 +376,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                             showSnackbar({ children: "delete error", severity: 'error' });
                         }).finally(refetch);
                     }}
-                />
+                />}
 
                 {props.showVisibility && <VisibilityValue permission={song.visiblePermission} variant='minimal' />}
 

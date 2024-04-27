@@ -1,16 +1,18 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Button, Pagination } from "@mui/material";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { Timing } from "shared/time";
-import { SplitQuickFilter, gQueryOptions, toggleValueInArray } from "shared/utils";
+import { arraysContainSameValues, gQueryOptions, toggleValueInArray } from "shared/utils";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, DebugCollapsibleAdminText } from "src/core/components/CMCoreComponents2";
+import { DebugCollapsibleAdminText } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { EventDetailContainer } from "src/core/components/EventComponents";
@@ -23,8 +25,6 @@ import * as db3 from "src/core/db3/db3";
 import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
 import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 
 /// there's a problem with showing calendars.
 // while it does show a cool overview, interactivity is a problem.
@@ -42,9 +42,35 @@ interface EventsFilterSpec {
     timingFilter: TimingFilter;
 
     orderBy: "StartAsc" | "StartDesc";
-
-    refreshSerial: number; // increment this in order to trigger a refetch
 };
+
+const gDefaultFilter: EventsFilterSpec = {
+    pageSize: 20,
+    page: 0,
+    quickFilter: "",
+    tagFilter: [],
+    statusFilter: [],
+    typeFilter: [],
+    timingFilter: "future",
+    orderBy: "StartAsc",
+} as const;
+
+const HasExtraFilters = (val: EventsFilterSpec) => {
+    if (val.pageSize != gDefaultFilter.pageSize) return true;
+    if (val.quickFilter != gDefaultFilter.quickFilter) return true;
+    if (!arraysContainSameValues(val.tagFilter, gDefaultFilter.tagFilter)) return true;
+    if (!arraysContainSameValues(val.statusFilter, gDefaultFilter.statusFilter)) return true;
+    if (!arraysContainSameValues(val.typeFilter, gDefaultFilter.typeFilter)) return true;
+    if (val.timingFilter != gDefaultFilter.timingFilter) return true;
+    if (val.orderBy != gDefaultFilter.orderBy) return true;
+    return false;
+};
+
+const HasAnyFilters = (val: EventsFilterSpec) => {
+    if (val.quickFilter != gDefaultFilter.quickFilter) return true;
+    return HasExtraFilters(val);
+};
+
 
 interface EventsControlsProps {
     filterSpec: EventsFilterSpec;
@@ -215,16 +241,14 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
 
 
 const EventsFilterControlsDyn = (props: EventsControlsDynProps) => {
-    // React.useEffect(() => {
-    //     props.onFilterInfoChanged(filterInfo);
-    // }, [filterInfo]);
-
     return <EventsFilterControlsValue {...props} readonly={false} />;
 };
 
 
 const EventsControls = (props: EventsControlsProps) => {
     const [expanded, setExpanded] = React.useState<boolean>(false);
+    const hasExtraFilters = HasExtraFilters(props.filterSpec);
+    const hasAnyFilters = HasAnyFilters(props.filterSpec);
 
     const setFilterText = (quickFilter: string) => {
         const newSpec: EventsFilterSpec = { ...props.filterSpec, quickFilter };
@@ -232,15 +256,7 @@ const EventsControls = (props: EventsControlsProps) => {
     };
 
     const handleClearFilter = () => {
-        props.onChange({
-            ...props.filterSpec,
-            quickFilter: "",
-            statusFilter: [],
-            tagFilter: [],
-            typeFilter: [],
-            timingFilter: "future",
-            orderBy: "StartAsc",
-        });
+        props.onChange({ ...gDefaultFilter });
     };
 
     return <div className="filterControlsContainer">
@@ -254,19 +270,14 @@ const EventsControls = (props: EventsControlsProps) => {
                             value={props.filterSpec.quickFilter}
                             autoFocus={true}
                         />
-                        {expanded && <Button onClick={handleClearFilter}>Clear filter</Button>}
+                        {(hasAnyFilters) && <Button onClick={handleClearFilter}>Clear filter</Button>}
                         <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
-                            Filter
+                            Filter {hasExtraFilters && "*"}
                             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                         </div>
                     </div>
 
-                    {/* The way we store the filter results here allows the suspense to be less flickry, rendering the same content during fallback. */}
-                    {expanded && <EventsFilterControlsDyn {...props} filterInfo={props.filterInfo} />
-                        // <Suspense fallback={<EventsFilterControlsValue {...props} filterInfo={props.filterInfo} readonly={true} />}>
-                        // <EventsFilterControlsDyn {...props} filterInfo={props.filterInfo} />
-                        // </Suspense>
-                    }
+                    {expanded && <EventsFilterControlsDyn {...props} filterInfo={props.filterInfo} />}
                 </div>
             </div>
         </div>{/* content */}
@@ -308,12 +319,10 @@ const EventListItem = (props: EventListItemProps) => {
 };
 
 interface EventsListArgs {
-    // in order for callers to be able to tell this to refetch, just increment a value in the filter
     filterSpec: EventsFilterSpec,
     filterInfo: GetEventFilterInfoRet;
     setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
     events: db3.EventClientPayload_Verbose[],
-    //eventsClient: DB3Client.xTableRenderClient;
 };
 
 const EventsList = ({ filterSpec, filterInfo, events, ...props }: EventsListArgs) => {
@@ -323,7 +332,7 @@ const EventsList = ({ filterSpec, filterInfo, events, ...props }: EventsListArgs
     return <div className="eventList searchResults">
         {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} />)}
         <div className="searchRecordCount">
-            Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {filterInfo.rowCount} total
+            {filterInfo.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {filterInfo.rowCount} total</>}
         </div>
         <Pagination
             count={Math.ceil(filterInfo.rowCount / filterSpec.pageSize)}
@@ -421,17 +430,7 @@ interface EventListOuterProps {
 };
 
 const EventListOuter = (props: EventListOuterProps) => {
-    const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({
-        pageSize: 20,
-        page: 0,
-        quickFilter: "",
-        tagFilter: [],
-        statusFilter: [],
-        typeFilter: [],
-        refreshSerial: 0,
-        timingFilter: "future",
-        orderBy: "StartAsc",
-    });
+    const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({ ...gDefaultFilter });
 
     const [filterInfo, setFilterInfo] = React.useState<GetEventFilterInfoRet>(MakeGetEventFilterInfoRet());
     const [eventsQueryResult, setEventsQueryResult] = React.useState<db3.EventClientPayload_Verbose[]>([]);
@@ -445,9 +444,7 @@ const EventListOuter = (props: EventListOuterProps) => {
     }, [specHash]);
 
     return <>
-        <NewEventButton onOK={() => {
-            setFilterSpec({ ...filterSpec, refreshSerial: filterSpec.refreshSerial + 1 });
-        }} />
+        <NewEventButton onOK={() => { }} />
 
         <DebugCollapsibleAdminText obj={filterSpec} caption={"filterSpec"} />
         <DebugCollapsibleAdminText obj={filterSpec} caption={"filterSpec"} />

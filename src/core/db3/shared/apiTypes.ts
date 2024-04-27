@@ -347,11 +347,12 @@ export const gEventFilterTimingIDConstants = {
 };
 export interface GetEventFilterInfoRet {
     rowCount: number;
+    eventIds: number[];
+
     types: GetEventFilterInfoChipInfo[];
     statuses: GetEventFilterInfoChipInfo[];
     tags: GetEventFilterInfoChipInfo[];
     timings: GetEventFilterInfoChipInfo[];
-    eventIds: number[];
 
     typesQuery: string;
     statusesQuery: string;
@@ -359,7 +360,7 @@ export interface GetEventFilterInfoRet {
     paginatedEventQuery: string;
 };
 
-export const MakeGetEventFilterInfoRet = () => ({
+export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
     statuses: [],
     tags: [],
     types: [],
@@ -373,9 +374,25 @@ export const MakeGetEventFilterInfoRet = () => ({
 });
 
 export interface GetSongFilterInfoRet {
+    rowCount: number;
+    songIds: number[];
+
     tags: GetEventFilterInfoChipInfo[];
     tagsQuery: string;
+    paginatedResultQuery: string;
+    totalRowCountQuery: string;
 };
+
+export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
+    rowCount: 0,
+    songIds: [],
+
+    tags: [],
+
+    tagsQuery: "",
+    paginatedResultQuery: "",
+    totalRowCountQuery: "",
+});
 
 
 

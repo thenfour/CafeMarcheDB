@@ -149,6 +149,12 @@ export const xSongTagAssociation = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
+export interface SongTableParams {
+    songId?: number;
+    songIds?: number[];
+};
+
+////////////////////////////////////////////////////////////////
 const xSongArgs_Base: db3.TableDesc = {
     tableName: "Song",
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongInclude => {
@@ -161,7 +167,7 @@ const xSongArgs_Base: db3.TableDesc = {
         description: row.description,
         ownerUserId: null,
     }),
-    getParameterizedWhereClause: (params: { songId?: number, songIds?: number[] }, clientIntention: db3.xTableClientUsageContext): (Prisma.SongWhereInput[]) => {
+    getParameterizedWhereClause: (params: SongTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.SongWhereInput[]) => {
         const ret: Prisma.SongWhereInput[] = [];
 
         if (params.songId !== undefined) {

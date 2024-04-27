@@ -6,10 +6,13 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet } from "../shared/apiTypes";
+import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet } from "../shared/apiTypes";
 
 interface TArgs {
     filterSpec: {
+        pageSize: number;
+        page: number;
+
         quickFilter: string,
         tagIds: number[];
     }
@@ -21,10 +24,7 @@ export default resolver.pipe(
         try {
             const u = (await getCurrentUserCore(ctx))!;
             if (!u.role || u.role.permissions.length < 1) {
-                return {
-                    tags: [],
-                    tagsQuery: "",
-                };
+                return MakeGetSongFilterInfoRet();
             }
 
             assertIsNumberArray(args.filterSpec.tagIds);
@@ -74,7 +74,8 @@ export default resolver.pipe(
             const filteredSongsCTE = `
         WITH FilteredSongs AS (
             SELECT 
-                Song.id AS SongId
+                Song.id AS SongId,
+                Song.name
             FROM 
                 Song
             left JOIN 
@@ -117,9 +118,46 @@ export default resolver.pipe(
                 rowCount: new Number(r.song_count).valueOf(),
             }));
 
+
+
+            // PAGINATED RESULTS LIST
+            const paginatedResultQuery = `
+        ${filteredSongsCTE}
+    select
+        FS.SongId
+    from
+        FilteredSongs as FS
+    order by
+        FS.name ASC
+    limit
+        ${args.filterSpec.pageSize * args.filterSpec.page},${args.filterSpec.pageSize}
+
+        `;
+
+            const eventIds: { SongId: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
+
+
+
+            // TOTAL filtered row count
+            const totalRowCountQuery = `
+        ${filteredSongsCTE}
+    select
+		count(*) as rowCount
+    from
+        FilteredSongs
+        `;
+
+            const rowCountResult: { rowCount: bigint, futureCount: bigint, pastCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
+
+
             return {
+                rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
+                songIds: eventIds.map(e => e.SongId),
+
                 tags,
                 tagsQuery,
+                paginatedResultQuery,
+                totalRowCountQuery,
             };
         } catch (e) {
             console.error(e);

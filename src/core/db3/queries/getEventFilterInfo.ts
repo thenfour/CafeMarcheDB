@@ -259,11 +259,13 @@ export default resolver.pipe(
 
             return {
                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
+                eventIds: eventIds.map(e => e.EventId),
+
                 types,
                 statuses,
                 tags,
                 timings,
-                eventIds: eventIds.map(e => e.EventId),
+
                 typesQuery,
                 statusesQuery,
                 tagsQuery,
