@@ -6,14 +6,14 @@
 
 */
 -- AlterTable
-ALTER TABLE `event` ADD COLUMN `uid` VARCHAR(191) NULL,
+ALTER TABLE `Event` ADD COLUMN `uid` VARCHAR(191) NULL,
     ADD COLUMN `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
 
 -- AlterTable
-ALTER TABLE `role` ADD COLUMN `color` VARCHAR(768) NULL;
+ALTER TABLE `Role` ADD COLUMN `color` VARCHAR(768) NULL;
 
 -- AlterTable
-ALTER TABLE `user` ADD COLUMN `accessToken` VARCHAR(768) NULL;
+ALTER TABLE `User` ADD COLUMN `accessToken` VARCHAR(768) NULL;
 
 -- CreateTable
 CREATE TABLE `WikiPage` (
@@ -48,12 +48,12 @@ CREATE UNIQUE INDEX `User_accessToken_key` ON `User`(`accessToken`);
 
 
 -- Update existing events with UUIDs
-UPDATE `event`
+UPDATE `Event`
 SET `uid` = (SELECT md5(uuid()))
 WHERE `uid` IS NULL;
 
 -- Update existing users with access tokens
-UPDATE `user`
+UPDATE `User`
 SET `accessToken` = (select concat(md5(uuid()), md5(uuid())))
 WHERE `accessToken` IS NULL;
 
