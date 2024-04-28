@@ -23,6 +23,14 @@ const MainContent = () => {
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <>
+        <CMCoreComponents.CMSinglePageSurfaceCard>
+
+            <h3>DateTimeRange</h3>
+            <div>
+                <DateTimeRangeControlExample />
+            </div>
+        </CMCoreComponents.CMSinglePageSurfaceCard>
+
         <NameValuePair
             isReadOnly={false}
             name="Leaf"
@@ -82,11 +90,6 @@ const MainContent = () => {
             <IconEditCell validationError={null} onOK={() => { }} value={null} readonly={false} />
         </div>
 
-
-        <h3>DateTimeRange</h3>
-        <div>
-            <DateTimeRangeControlExample />
-        </div>
 
     </>;
 };

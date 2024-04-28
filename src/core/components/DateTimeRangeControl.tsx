@@ -3,11 +3,11 @@ import * as React from 'react';
 import { FormControlLabel, NoSsr, Popover, Switch, Tooltip } from "@mui/material";
 import { DateCalendar, DateView, LocalizationProvider, PickersDay, PickersDayProps } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import dayjs, { Dayjs } from "dayjs";
-import { DateTimeRange, DateTimeRangeHitTestResult, DateToDebugString, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorToDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
-import { InspectObject } from "src/core/components/CMCoreComponents";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { assert } from 'blitz';
+import dayjs, { Dayjs } from "dayjs";
+import { DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
+import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { NameValuePair } from './CMCoreComponents2';
 
 export interface CalendarEventSpec {
     id: string;
@@ -282,7 +282,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
 
     const handleEndDateChange = (newEndDate: Date) => {
         assert(value.isAllDay(), "setting end date only makes sense for all-day events");
-        newEndDate = floorToDay(newEndDate); // ignore whatever time component the datepicker hands us; we know it should be midnight.
+        newEndDate = floorLocalToLocalDay(newEndDate); // ignore whatever time component the datepicker hands us; we know it should be midnight. maintain local tz.
 
         // swap start/end if needed.
         let newStartDateTime = coalescedStartDateTime;
@@ -292,7 +292,6 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
         }
 
         setCoalescedFallbackStartDay(newStartDateTime);
-
 
         // convert to duration. if you select the same as the start, you want that to actually represent a duration of 1 day.
         // assume these are aligned to day.
@@ -315,7 +314,7 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
         // when you switch between all-day and not, always reset the duration. theoretically we could preserve durations between them but meh. not even sure that would be better ux
         const newDuration = newAllDay ? gMillisecondsPerDay : gMillisecondsPerHour;
 
-        let newStartDateTime = coalescedStartDateTime;
+        let newStartDateTime = floorLocalToLocalDay(coalescedStartDateTime);
         if (!newAllDay) {
             // for all-day events, start time can get set to midnight; anyway it's not used so assume it's not valid.
             newStartDateTime = combineDateAndTime(newStartDateTime, new Date());
@@ -419,7 +418,31 @@ export const DateTimeRangeControl = ({ value, ...props }: DateTimeRangeControlPr
 
 
 
+const DateViewer = (props: { caption: string, value: Date | null | undefined }) => {
+    return <NameValuePair
+        name={props.caption}
+        value={<div>
+            <div>
+                {props.value?.toISOString() || "--"} &lt;-- ISO
+            </div>
+            <div>
+                {props.value?.toString() || "--"} &lt;-- local (tz offset: {props.value?.getTimezoneOffset()})
+            </div>
+        </div>}
+    />;
+}
 
+const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
+    return <div>
+        {/* <InspectObject src={value} /> */}
+        <DateViewer value={value.getStartDateTime()} caption='getStartDateTime'></DateViewer>
+        <DateViewer value={value.getLastDateTime()} caption='getLastDateTime'></DateViewer>
+        <DateViewer value={value.getEndDateTime()} caption='getEndDateTime'></DateViewer>
+        <div>duration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
+        <DateViewer value={value.getSpec().startsAtDateTime} caption='SPEC StartsAt'></DateViewer>
+        <div>spec duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
+    </div>;
+}
 
 export const DateTimeRangeControlExample = () => {
 
@@ -508,28 +531,58 @@ export const DateTimeRangeControlExample = () => {
         }),
     ];
 
-    const [value, setValue] = React.useState<DateTimeRange>(new DateTimeRange({
+    const [value1, setValue1] = React.useState<DateTimeRange>(new DateTimeRange({
         isAllDay: true,
         startsAtDateTime: new Date(),
         durationMillis: 0,
     }));
 
-    const handleChange = (newValue: DateTimeRange) => {
-        setValue(newValue);
+    const [value2, setValue2] = React.useState<DateTimeRange>(new DateTimeRange({
+        isAllDay: true,
+        startsAtDateTime: new Date(),
+        durationMillis: 0,
+    }));
+
+    const handleChange1 = (newValue: DateTimeRange) => {
+        setValue1(newValue);
     };
+
+    const handleChange2 = (newValue: DateTimeRange) => {
+        setValue2(newValue);
+    };
+
+    const x = new DateTimeRange({
+        isAllDay: true,
+        startsAtDateTime: new Date('2024-04-28T00:00:00.000Z'),
+        durationMillis: gMillisecondsPerDay,
+    });
+
+    const y = new DateTimeRange({
+        isAllDay: true,
+        startsAtDateTime: new Date('2024-04-28T00:00:00.000Z'),
+        durationMillis: gMillisecondsPerDay * 2,
+    });
+
+    console.log(`unioninng`);
+    //const unioned = x.unionWith(y);
+    const unioned = value1.unionWith(value2);
 
     return <LocalizationProvider dateAdapter={AdapterDayjs}>
         <NoSsr>
             <div style={{ border: "1px solid black", width: "min-content", margin: "40px" }}>
-                <DateTimeRangeControl value={value} onChange={handleChange} items={events} />
+                <DateTimeRangeControl value={value1} onChange={handleChange1} items={events} />
             </div>
-            <InspectObject src={value} />
-            <div>starts at: {DateToDebugString(value.getSpec().startsAtDateTime)} </div>
-            <div>raw duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
-            <div>getStartDateTime: {DateToDebugString(value.getStartDateTime())}</div>
-            <div>getEndDateTime: {DateToDebugString(value.getEndDateTime())}</div>
-            <div>getLastDateTime: {DateToDebugString(value.getLastDateTime())}</div>
-            <div>getDuration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
+
+            <DateRangeViewer value={value1} />
+            <div style={{ border: "1px solid black", width: "min-content", margin: "40px" }}>
+                <DateTimeRangeControl value={value2} onChange={handleChange2} items={events} />
+            </div>
+            <DateRangeViewer value={value2} />
+
+            <div>UNIONED:</div>
+
+            <DateRangeViewer value={unioned} />
+
         </NoSsr>
     </LocalizationProvider>;
 }

@@ -76,8 +76,21 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) 
             range = range.unionWith(r);
         }
 
+        // potential issue: an event goes from being on the calendar to being TBD.
+        //debugger;
+
         const calInp = GetEventCalendarInput(existingEvent);
-        const newRevisionSeq = (calInp.inputHash === (existingEvent?.calendarInputHash || "")) ? existingEvent.revision : (existingEvent.revision + 1);
+        const newHash = calInp?.inputHash || "-";
+        if (newHash === (existingEvent?.calendarInputHash || "")) {
+            console.log(`SAME HASH : ${newHash}`);
+        }
+        else {
+            console.log(`NEW REVISION; existinghash: ${existingEvent.calendarInputHash}`);
+            console.log(`new:                        ${newHash}`);
+            console.log(` -> revision ${existingEvent.revision + 1}`);
+        }
+        console.log(calInp);
+        const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingEvent.revision + 1);
 
         await db.event.update({
             where: { id: eventId },
@@ -87,7 +100,7 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) 
                 isAllDay: range.getSpec().isAllDay,
                 endDateTime: range.getEndDateTime(),
                 revision: newRevisionSeq,
-                calendarInputHash: calInp.inputHash,
+                calendarInputHash: newHash,
             }
         });
     } catch (e) {
@@ -342,16 +355,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             model: { id: obj[table.pkMember], ...obj },
         });
 
-
-        // // special hooks?
-        // if (table.tableName.toLowerCase() === "eventsegment") {
-        //     // if you make any changes to event segments, recalculate the event date range.
-        //     const eventIdToRecalc = (localFields as Prisma.EventSegmentGetPayload<{}>).eventId;
-        //     await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
-        // } else if (table.tableName.toLowerCase() === "event") {
-        //     await RecalcEventDateRangeAndIncrementRevision(obj[table.pkMember]);
-        // }
-
         return obj as any;
     } catch (e) {
         console.error(e);
@@ -437,17 +440,8 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
 
         await CallMutateEventHooks({
             tableName: table.tableName,
-            model: { id: pkid, ...oldValues },
+            model: { id: pkid, ...obj },
         });
-
-        // // special hooks?
-        // if (table.tableName.toLowerCase() === "eventsegment") {
-        //     // if you make any changes to event segments, recalculate the event date range.
-        //     const eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
-        //     await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
-        // } else if (table.tableName.toLowerCase() === "event") {
-        //     await RecalcEventDateRangeAndIncrementRevision(pkid);
-        // }
 
         return obj;
     } catch (e) {

@@ -1,6 +1,12 @@
 import dayjs, { Dayjs } from "dayjs";
 import { assert } from "blitz";
-import { isInRange } from "./utils";
+
+
+// tests >= start and < end. start and end can be swapped
+const isInRange = (number: number, a: number, b: number): boolean => {
+    return number >= Math.min(a, b) && number < Math.max(a, b);
+};
+
 
 export enum Timing {
     Past = 'Past',
@@ -50,17 +56,10 @@ export function formatTimeSpan(a: Date | null | undefined, b: Date | null | unde
     return formatMillisecondsToDHMS(Math.abs(b.valueOf() - a.valueOf()));
 }
 
-// for debugging
-export const DateToDebugString = (x: Date | null | undefined) => {
-    if (!x) return "<null>";
-    return `${x.toDateString()} ${x.toTimeString()}`;
-}
-
 export const DateToYYYYMMDDHHMMSS = (x: Date) => {
     // https://stackoverflow.com/questions/19448436/how-to-create-date-in-yyyymmddhhmmss-format-using-javascript    
     return x.toISOString().replace(/[^0-9]/gm, "").substr(0, 14);
 }
-
 
 export function formatSongLength(totalSeconds: number): string | null {
     if (isNaN(totalSeconds) || totalSeconds < 0) return null;
@@ -131,19 +130,25 @@ function roundToNearest15Minutes(date: Date) {
 
 
 
-export function floorToDay(x: Date) {
+export function floorLocalToLocalDay(x: Date) {
     return new Date(x.getFullYear(), x.getMonth(), x.getDate());
 }
 
-export function ceilToDay(x: Date): Date {
-    if (x.getHours() === 0 && x.getMinutes() === 0 && x.getSeconds() === 0 && x.getMilliseconds() === 0) {
-        return x;
-    }
-
-    const nextDay = new Date(x);
-    nextDay.setDate(x.getDate() + 1);
-    return floorToDay(nextDay);
+// the passed in date represents the correct date in local timezone. make a UTC date which represents that day.
+export function floorLocalTimeToDayUTC(date: Date) {
+    // Create a new Date object that represents midnight in UTC
+    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    return utcDate;
 }
+
+export function getLocalMidnightFromUTCMidnight(utcMidnight) {
+    const year = utcMidnight.getUTCFullYear();
+    const month = utcMidnight.getUTCMonth();
+    const day = utcMidnight.getUTCDate();
+    const localMidnight = new Date(year, month, day);
+    return localMidnight;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export function getTimeOfDayInMillis(date: Date) {
@@ -262,7 +267,9 @@ export class TimeOptionsGenerator {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeRangeSpec {
-    startsAtDateTime: Date | null; // date or null = TBD. if isAllDay, then the time part is ignored.
+    // date or null = TBD.
+    // if isAllDay, then the time part is to be ignored. in this case the date shall be a UTC date.
+    startsAtDateTime: Date | null;
     // the idea is that startDateTime + durationDays = END time (exclusive).
     // for isAllDay=false, that's obvious.
     // for isAllDay=true, this should be treated as (durationDays * gMillisecondsPerDay). it is NOT safe to just add startDateTime + durationMillis in this case, 
@@ -288,8 +295,8 @@ export class DateTimeRange {
                 if (days < 1) days = 1; // 0-length ranges are not useful and cause complexity
                 const durationMillis = days * gMillisecondsPerDay;
 
-                // all-day events also must start at midnight.
-                const startsAtDateTime = args.startsAtDateTime ? floorToDay(args.startsAtDateTime) : null;
+                // all-day events also must start at midnight. use UTC tz for all-day events to keep a consistent midnight
+                const startsAtDateTime = args.startsAtDateTime ? floorLocalTimeToDayUTC(args.startsAtDateTime) : null;
 
                 this.spec = {
                     durationMillis,
@@ -403,12 +410,14 @@ export class DateTimeRange {
     // returns a datetime representing the start date + time.
     // returns null if "TBD"
     // if all-day, date part is correct and time is midnight.
+    // NOTE that for all-day events there is no concept of timezone, but the time returned will have the local timezone, for consistency & simplicity with rest of codebase.
     getStartDateTime<T extends Date | undefined>(fallbackValue?: T): T extends Date ? Date : Date | null {
         if (!this.spec.startsAtDateTime) {
             return fallbackValue || null as any;
         }
         if (this.isAllDay()) {
-            return floorToDay(this.spec.startsAtDateTime) as T extends Date ? Date : Date | null;
+            //return floorToDayUTC(this.spec.startsAtDateTime) as T extends Date ? Date : Date | null;
+            return getLocalMidnightFromUTCMidnight(this.spec.startsAtDateTime);
         }
         return this.spec.startsAtDateTime as T extends Date ? Date : Date | null;
     }
@@ -536,10 +545,10 @@ export class DateTimeRange {
             const latestLast = Math.max(this.getLastDateTime(now).valueOf(), rhs.getLastDateTime(now).valueOf());
             // operate in all-day terms. how do we convert a range from !allday to all-day?
             // look at the days it touches. if it even covers 1 millisecond of a day, include that day.
-            let startdjs = dayjs(earliestStart);
-            let enddjs = dayjs(latestLast);
+            //let start = new Date(earliestStart);
+            //let end = new Date(latestLast);
             // count days in duration, ceil, convert to duration millis
-            let durationDays = Math.abs(startdjs.diff(enddjs, "day"));
+            let durationDays = (latestLast - earliestStart) / gMillisecondsPerDay; //Math.abs(startdjs.diff(enddjs, "day"));
             durationDays = Math.ceil(durationDays);
 
             return new DateTimeRange({

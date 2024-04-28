@@ -4,6 +4,8 @@ import { convert } from 'html-to-text';
 import MarkdownIt from 'markdown-it';
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
+import { DateTimeRange } from "shared/time";
+import { ICalEventStatus } from "ical-generator";
 
 
 // Function to convert Markdown to plain text
@@ -71,82 +73,6 @@ export const EventForCalArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
 export type EventSongListForCal = Prisma.EventSongListGetPayload<typeof EventSongListForCalArgs>;
 export type EventForCal = Prisma.EventGetPayload<typeof EventForCalArgs>;
 
-// export type EventSongListForCal = Prisma.EventSongListGetPayload<{
-//     select: {
-//         description,
-//         name,
-//         songs: {
-//             select: {
-//                 subtitle,
-//                 song: {
-//                     select: {
-//                         name: true,
-//                     }
-//                 }
-//             },
-//             orderBy: {
-//                 sortOrder: "asc",
-//             }
-//         },
-//         orderBy: {
-//             sortOrder: "asc",
-//         }
-//     },
-//     orderBy: {
-//         sortOrder: "asc",
-//     }
-// }>;
-
-
-
-// export type EventForCal = Prisma.EventGetPayload<{
-//     select: {
-//         id,
-//         name,
-//         description,
-//         revision,
-//         calendarInputHash,
-//         startsAt,
-//         isAllDay,
-//         durationMillis,
-//         endDateTime,
-//         locationDescription,
-//         locationURL,
-//         uid,
-//         slug,
-//         status: {
-//             select: {
-//                 significance,
-//             }
-//         }
-//         songLists: {
-//             select: {
-//                 description,
-//                 name,
-//                 songs: {
-//                     select: {
-//                         subtitle,
-//                         song: {
-//                             select: {
-//                                 name: true,
-//                             }
-//                         }
-//                     },
-//                     orderBy: {
-//                         sortOrder: "asc",
-//                     }
-//                 },
-//                 orderBy: {
-//                     sortOrder: "asc",
-//                 }
-//             },
-//             orderBy: {
-//                 sortOrder: "asc",
-//             }
-//         }
-//     },
-// }>;
-
 
 
 /*
@@ -183,27 +109,53 @@ ${songsFormatted.join("\r\n")}`;
 
 
 export type EventCalendarInput = Pick<EventForCal,
-    "startsAt"
-    | "durationMillis"
-    | "endDateTime"
+    "id"
     | "isAllDay"
-    | "id"
     | "slug"
     | "revision"
     | "uid"
     | "locationDescription"
-    | "name"
 > & {
     inputHash: string,
     description: string,
+    summary: string,
     statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance),
+    start: Date,
+    end: Date,
+    calStatus: ICalEventStatus,
 };
+
+
+function prepareAllDayDateForICal(date) {
+    const ret = new Date(date);
+    ret.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return ret;
+}
+
 
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
 // grab just the info needed to know if a revision # is necessary.
-export const GetEventCalendarInput = (event: EventForCal): EventCalendarInput => {
+// returns null if no event can be generated
+export const GetEventCalendarInput = (event: EventForCal): EventCalendarInput | null => {
     const setLists = event.songLists ? event.songLists.map(l => songListToString(l)) : [];
 
+    const dateRange = new DateTimeRange({
+        startsAtDateTime: event.startsAt,
+        durationMillis: Number(event.durationMillis),
+        isAllDay: event.isAllDay,
+    });
+
+    if (dateRange.isTBD()) {
+        return null;
+    }
+    const statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance) = event.status?.significance as any;
+
+    const calStatus = (statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
+        (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
+            ICalEventStatus.TENTATIVE;
+
+    const cancelledText = (calStatus === ICalEventStatus.CANCELLED) ? "CANCELLED " : "";
+    const summary = `CM: ${cancelledText}${event.name}`;
     // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
     // so just bake it, and keep the payload simple.
     let descriptionText = event.description ? markdownToPlainText(event.description) : "";
@@ -211,25 +163,45 @@ export const GetEventCalendarInput = (event: EventForCal): EventCalendarInput =>
         descriptionText += "\r\n\r\n" + setLists.join(`\r\n\r\n`);
     }
 
+    // for all-day events, the datetime range will return midnight of the start day.
+    // BUT this will lead to issues because of timezones. In order to output a UTC date,
+    // the time gets shifted and will likely be the previous day. For all-day events therefore,
+    // let's be precise and use an ISO string (20240517) because all-day events are not subject to
+    // time zone offsets.
+    let start: Date = dateRange.getStartDateTime()!;
+    let end: Date = dateRange.getLastDateTime()!; // this date must be IN the time range so don't use "end", use "last"
+    if (dateRange.isAllDay()) {
+        start = prepareAllDayDateForICal(start);
+        end = prepareAllDayDateForICal(end);
+        // end = new Date(start);
+        // end.setMilliseconds(start.getMilliseconds() + dateRange.getDurationMillis());
+        //end = prepareAllDayDateForICal(end);
+    }
+
+
+
     const ret: EventCalendarInput = {
         // note: when calculating changes, we must ignore revision
         revision: 0,
         inputHash: "",
 
         id: event.id,
-        name: event.name,
+        summary,
         slug: event.slug,
         uid: event.uid,
 
         locationDescription: event.locationDescription,
         description: descriptionText,
 
-        startsAt: event.startsAt,
-        durationMillis: event.durationMillis,
-        endDateTime: event.endDateTime,
+        //startsAt: event.startsAt,
+        //durationMillis: event.durationMillis,
+        //endDateTime: event.endDateTime,
+        start,
+        end,
         isAllDay: event.isAllDay,
+        calStatus,
 
-        statusSignificance: event.status?.significance as any,
+        statusSignificance,
     };
 
     ret.inputHash = hash256(JSON.stringify(ret));

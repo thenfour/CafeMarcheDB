@@ -1,12 +1,8 @@
 import db, { Prisma } from "db";
-import { convert } from 'html-to-text';
-import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent, ICalEventStatus } from "ical-generator";
-import MarkdownIt from 'markdown-it';
-import { DateTimeRange, floorToDay } from "shared/time";
-import { IsNullOrWhitespace } from "shared/utils";
+import ical, { ICalCalendar, ICalCalendarMethod, ICalEvent } from "ical-generator";
+import { floorLocalToLocalDay } from "shared/time";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
-import { hash256 } from "@blitzjs/auth";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
 
 interface CreateCalendarArgs {
@@ -38,62 +34,42 @@ export const createCalendar = (args: CreateCalendarArgs): ICalCalendar => {
 
 
 
-function prepareAllDayDateForICal(date) {
-    const ret = new Date(date);
-    ret.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return ret;
-}
-
-
-
 // if user is null, it's a public access.
-export const addEventToCalendar2 = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventCalendarInput): ICalEvent | null => {
+export const addEventToCalendar2 = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventCalendarInput | null): ICalEvent | null => {
+
+    if (!event) {
+        return null;
+    }
 
     // URI for event
     // URI for user calendar
     // URI for event calendar
     const eventURL = process.env.CMDB_BASE_URL + `event/${event.id}/${event.slug}`; // 
 
-    const dateRange = new DateTimeRange({
-        startsAtDateTime: event.startsAt,
-        durationMillis: Number(event.durationMillis),
-        isAllDay: event.isAllDay,
-    });
-
-    if (dateRange.isTBD()) {
-        return null;
-    }
-
-    const calStatus = (event.statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
-        (event.statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
-            ICalEventStatus.TENTATIVE;
-
-    const cancelledText = (calStatus === ICalEventStatus.CANCELLED) ? "CANCELLED " : "";
-
-    // for all-day events, the datetime range will return midnight of the start day.
-    // BUT this will lead to issues because of timezones. In order to output a UTC date,
-    // the time gets shifted and will likely be the previous day. For all-day events therefore,
-    // let's be precise and use an ISO string (20240517) because all-day events are not subject to
-    // time zone offsets.
-    let start: Date | string = dateRange.getStartDateTime()!;
-    let end: Date | string = dateRange.getLastDateTime()!; // this date must be IN the time range so don't use "end", use "last"
-    if (dateRange.isAllDay()) {
-        start = prepareAllDayDateForICal(start);
-        end = prepareAllDayDateForICal(end);
-        // end = new Date(start);
-        // end.setMilliseconds(start.getMilliseconds() + dateRange.getDurationMillis());
-        //end = prepareAllDayDateForICal(end);
-    }
+    // // for all-day events, the datetime range will return midnight of the start day.
+    // // BUT this will lead to issues because of timezones. In order to output a UTC date,
+    // // the time gets shifted and will likely be the previous day. For all-day events therefore,
+    // // let's be precise and use an ISO string (20240517) because all-day events are not subject to
+    // // time zone offsets.
+    // let start: Date | string = dateRange.getStartDateTime()!;
+    // let end: Date | string = dateRange.getLastDateTime()!; // this date must be IN the time range so don't use "end", use "last"
+    // if (dateRange.isAllDay()) {
+    //     start = prepareAllDayDateForICal(start);
+    //     end = prepareAllDayDateForICal(end);
+    //     // end = new Date(start);
+    //     // end.setMilliseconds(start.getMilliseconds() + dateRange.getDurationMillis());
+    //     //end = prepareAllDayDateForICal(end);
+    // }
 
     const calEvent = calendar.createEvent({
-        allDay: dateRange.isAllDay(),
-        start,
-        end,
-        summary: `CM: ${cancelledText}${event.name}`,
+        allDay: event.isAllDay,
+        start: event.start,
+        end: event.end,
+        summary: event.summary,
         description: event.description,
         location: event.locationDescription,
         url: eventURL,
-        status: calStatus,
+        status: event.calStatus,
         sequence: event.revision,
 
         //sequence: event.sequenceid, // not sure we really can do this well.
@@ -147,7 +123,7 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
     const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: currentUser ? "user" : "public", mode: 'primary' };
 
     const table = db3.xEventVerbose;
-    const minDate = floorToDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
+    const minDate = floorLocalToLocalDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
     minDate.setDate(minDate.getDate() - 1);
 
     const eventsTableParams: db3.EventTableParams = {

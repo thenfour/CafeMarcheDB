@@ -11,7 +11,7 @@ import { CurrentSongsDashboard, CurrentSongsDashboardItem } from "src/core/compo
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from "src/core/db3/clientAPI";
-import { DateSubtractInDays, Timing, floorToDay } from "shared/time";
+import { DateSubtractInDays, Timing, floorLocalToLocalDay } from "shared/time";
 import { Tab, Tabs } from "@mui/material";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { Permission } from "shared/permissions";
@@ -24,9 +24,9 @@ const DashboardInner = () => {
   const eventMaxAge = API.settings.useNumberSetting("BackstageFrontpageEventMaxAgeDays", 6); // expire after 1 week ago (so you don't see multiple rehearsals)
   const currentSongMaxAge = API.settings.useNumberSetting("BackstageFrontpageCurrentSongMaxAgeDays", 13); // expire after 2 weeks ago
   const queryMaxAge = Math.max(eventMaxAge, currentSongMaxAge);
-  const today = floorToDay(new Date());
-  const minDate = floorToDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
-  const futureDate = floorToDay(new Date());
+  const today = floorLocalToLocalDay(new Date());
+  const minDate = floorLocalToLocalDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
+  const futureDate = floorLocalToLocalDay(new Date());
 
   const [selectedTab, setSelectedTab] = React.useState<"songs" | "events">("events");
 
