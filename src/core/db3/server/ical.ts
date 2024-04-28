@@ -6,22 +6,8 @@ import { DateTimeRange, floorToDay } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
-
-
-// Function to convert Markdown to plain text
-const markdownToPlainText = (markdownText: string): string => {
-    const md = new MarkdownIt();
-    const htmlText = md.render(markdownText);
-
-    // Convert HTML to plain text
-    const plainText = convert(htmlText, {
-        wordwrap: null
-    });
-
-    return plainText;
-};
-
-
+import { hash256 } from "@blitzjs/auth";
+import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
 
 interface CreateCalendarArgs {
     sourceURL: string;
@@ -51,65 +37,6 @@ export const createCalendar = (args: CreateCalendarArgs): ICalCalendar => {
 };
 
 
-/*
--------------
-set 1
-
- 1. song
- 2. song
- 3. song
- 4. song
- 5. song
- 6. song
- 7. song
- 8. song
- 9. song
-10. song
- 
-*/
-const songListToString = (l: Prisma.EventSongListGetPayload<{ include: { songs: { include: { song: true } } } }>) => {
-    const songsFormatted = l.songs.map((song, index) => `${(index + 1).toString().padStart(2, ' ')}. ${song.song.name}${IsNullOrWhitespace(song.subtitle) ? "" : ` (${song.subtitle})`}`);
-    return `-------------
-${l.name}
-
-${songsFormatted.join("\r\n")}`;
-
-    //     const setLists = event.songLists.map(l => {
-    //         `-------------
-    // ${l.name}
-
-    // ${}`
-    //     });
-
-};
-
-
-type EventForCal = Prisma.EventGetPayload<{
-    // select: {
-    //     description,
-    //     startsAt,
-    //     isAllDay,
-    //     durationMillis,
-    //     endDateTime,
-    //     locationDescription,
-    //     locationURL,
-    //     uid,
-    //     slug,
-    // },
-    include: {
-        status: true,
-        songLists: {
-            include: {
-                songs: {
-                    include: {
-                        song: true,
-                    }
-                }
-            }
-        }
-    }
-}>;
-
 
 function prepareAllDayDateForICal(date) {
     const ret = new Date(date);
@@ -119,9 +46,8 @@ function prepareAllDayDateForICal(date) {
 
 
 
-
 // if user is null, it's a public access.
-export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventForCal): ICalEvent | null => {
+export const addEventToCalendar2 = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventCalendarInput): ICalEvent | null => {
 
     // URI for event
     // URI for user calendar
@@ -138,25 +64,17 @@ export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.U
         return null;
     }
 
-    const calStatus = (event.status?.significance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
-        (event.status?.significance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
+    const calStatus = (event.statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
+        (event.statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
             ICalEventStatus.TENTATIVE;
 
     const cancelledText = (calStatus === ICalEventStatus.CANCELLED) ? "CANCELLED " : "";
-
-    const setLists = event.songLists ? event.songLists.map(l => songListToString(l)) : [];
-
-    let descriptionText = event.description ? markdownToPlainText(event.description) : "";
-    if (setLists.length) {
-        descriptionText += "\r\n\r\n" + setLists.join(`\r\n\r\n`);
-    }
 
     // for all-day events, the datetime range will return midnight of the start day.
     // BUT this will lead to issues because of timezones. In order to output a UTC date,
     // the time gets shifted and will likely be the previous day. For all-day events therefore,
     // let's be precise and use an ISO string (20240517) because all-day events are not subject to
     // time zone offsets.
-    debugger;
     let start: Date | string = dateRange.getStartDateTime()!;
     let end: Date | string = dateRange.getLastDateTime()!; // this date must be IN the time range so don't use "end", use "last"
     if (dateRange.isAllDay()) {
@@ -172,7 +90,7 @@ export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.U
         start,
         end,
         summary: `CM: ${cancelledText}${event.name}`,
-        description: descriptionText || "",
+        description: event.description,
         location: event.locationDescription,
         url: eventURL,
         status: calStatus,
@@ -195,6 +113,9 @@ export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.U
     return calEvent;
 };
 
+export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventForCal): ICalEvent | null => {
+    return addEventToCalendar2(calendar, user, GetEventCalendarInput(event));
+};
 
 export interface CalExportCoreArgs1 {
     accessToken: string;

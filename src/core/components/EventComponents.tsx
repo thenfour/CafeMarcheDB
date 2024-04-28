@@ -770,6 +770,11 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                         name={"eventId"}
                         value={eventData.event.id}
                     />
+                    <NameValuePair
+                        isReadOnly={true}
+                        name={"revision"}
+                        value={eventData.event.revision}
+                    />
                     <InspectObject src={eventData} />
                 </>
             }

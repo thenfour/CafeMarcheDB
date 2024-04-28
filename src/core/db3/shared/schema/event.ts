@@ -553,6 +553,7 @@ const xEventArgs_Base: db3.TableDesc = {
 
         // because this is used for generating icals
         new GhostField({ memberName: "uid", authMap: xEventAuthMap_Homepage }),
+        new GhostField({ memberName: "calendarInputHash", authMap: xEventAuthMap_R_EAdmin }),
 
         new EventStartsAtField({
             allowNull: true,

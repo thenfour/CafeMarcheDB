@@ -13,6 +13,7 @@ import sharp from "sharp";
 import * as db3 from "../db3";
 import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
+import { EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 
 var path = require('path');
 var fs = require('fs');
@@ -53,6 +54,15 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
 
 export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) => {
     try {
+        let existingEvent = (await db.event.findFirst({
+            where: {
+                id: eventId,
+            },
+            ...EventForCalArgs,
+        }));
+
+        if (!existingEvent) return; // maybe the event was just deleted.
+
         // get list of all event segments
         const segments = await db.eventSegment.findMany({
             where: {
@@ -66,14 +76,8 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) 
             range = range.unionWith(r);
         }
 
-        let revision = await db.event.findFirst({
-            where: {
-                id: eventId,
-            },
-            select: {
-                revision: true,
-            }
-        });
+        const calInp = GetEventCalendarInput(existingEvent);
+        const newRevisionSeq = (calInp.inputHash === (existingEvent?.calendarInputHash || "")) ? existingEvent.revision : (existingEvent.revision + 1);
 
         await db.event.update({
             where: { id: eventId },
@@ -82,13 +86,52 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) 
                 durationMillis: range.getSpec().durationMillis,
                 isAllDay: range.getSpec().isAllDay,
                 endDateTime: range.getEndDateTime(),
-                revision: revision!.revision + 1,
+                revision: newRevisionSeq,
+                calendarInputHash: calInp.inputHash,
             }
         });
     } catch (e) {
         // well weird.
     }
 };
+
+
+export const CallMutateEventHooks = async (args: { tableName: string, model: TAnyModel & { id: number } }): Promise<void> => {
+    let eventIdToUpdate: null | number | undefined = null;
+    switch (args.tableName.toLowerCase()) {
+        case "event":
+            eventIdToUpdate = args.model.id;
+            break;
+        case "eventsegment":
+            eventIdToUpdate = (args.model as Prisma.EventSegmentGetPayload<{ select: { id: true, eventId: true } }>).eventId;
+            break;
+        case "eventsonglist":
+            eventIdToUpdate = (args.model as Prisma.EventSongListGetPayload<{ select: { id: true, eventId: true } }>).eventId;
+            break;
+        case "eventsonglistsong":
+            {
+                debugger;
+                const songListId = (args.model as Prisma.EventSongListSongGetPayload<{ select: { id: true, eventSongListId: true } }>).eventSongListId;
+                const eventIdRet = await db.eventSongList.findFirst({
+                    select: {
+                        eventId: true,
+                    },
+                    where: {
+                        id: songListId,
+                    }
+                });
+                eventIdToUpdate = eventIdRet?.eventId;
+            }
+            break;
+        default:
+            return;
+    }
+
+    if (eventIdToUpdate) {
+        await RecalcEventDateRangeAndIncrementRevision(eventIdToUpdate);
+    }
+};
+
 
 export interface UpdateAssociationsArgs {
     ctx: AuthenticatedCtx;
@@ -192,17 +235,24 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         }
 
         // special hooks?
-        let eventIdToRecalc: null | number = null;
-        if (table.tableName.toLowerCase() === "eventsegment") {
-            // if you make any changes to event segments, recalculate the event date range.
-            eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
-        }
+        // let eventIdToRecalc: null | number = null;
+        // if (table.tableName.toLowerCase() === "eventsegment") {
+        //     // if you make any changes to event segments, recalculate the event date range.
+        //     eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
+        // } else if (table.tableName.toLowerCase() === "event") {
+        //     eventIdToRecalc = id;
+        // }
 
         const choice = await dbTableClient.deleteMany({ where: { [table.pkMember]: id } });
 
-        if (eventIdToRecalc !== null) {
-            await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
-        }
+        await CallMutateEventHooks({
+            tableName: table.tableName,
+            model: oldValues,
+        });
+
+        // if (eventIdToRecalc !== null) {
+        //     await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
+        // }
 
         await RegisterChange({
             action: ChangeAction.delete,
@@ -286,12 +336,21 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
             });
         });
 
-        // special hooks?
-        if (table.tableName.toLowerCase() === "eventsegment") {
-            // if you make any changes to event segments, recalculate the event date range.
-            const eventIdToRecalc = (localFields as Prisma.EventSegmentGetPayload<{}>).eventId;
-            await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
-        }
+
+        await CallMutateEventHooks({
+            tableName: table.tableName,
+            model: { id: obj[table.pkMember], ...obj },
+        });
+
+
+        // // special hooks?
+        // if (table.tableName.toLowerCase() === "eventsegment") {
+        //     // if you make any changes to event segments, recalculate the event date range.
+        //     const eventIdToRecalc = (localFields as Prisma.EventSegmentGetPayload<{}>).eventId;
+        //     await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
+        // } else if (table.tableName.toLowerCase() === "event") {
+        //     await RecalcEventDateRangeAndIncrementRevision(obj[table.pkMember]);
+        // }
 
         return obj as any;
     } catch (e) {
@@ -376,12 +435,19 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             });
         });
 
-        // special hooks?
-        if (table.tableName.toLowerCase() === "eventsegment") {
-            // if you make any changes to event segments, recalculate the event date range.
-            const eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
-            await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
-        }
+        await CallMutateEventHooks({
+            tableName: table.tableName,
+            model: { id: pkid, ...oldValues },
+        });
+
+        // // special hooks?
+        // if (table.tableName.toLowerCase() === "eventsegment") {
+        //     // if you make any changes to event segments, recalculate the event date range.
+        //     const eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
+        //     await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
+        // } else if (table.tableName.toLowerCase() === "event") {
+        //     await RecalcEventDateRangeAndIncrementRevision(pkid);
+        // }
 
         return obj;
     } catch (e) {
@@ -539,6 +605,11 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
             ctx,
         });
     }
+
+    await CallMutateEventHooks({
+        tableName: "eventSongList",
+        model: { id: args.songListID }
+    });
 
 };
 
