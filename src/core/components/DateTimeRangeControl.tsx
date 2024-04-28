@@ -563,7 +563,7 @@ export const DateTimeRangeControlExample = () => {
         durationMillis: gMillisecondsPerDay * 2,
     });
 
-    console.log(`unioninng`);
+    //console.log(`unioninng`);
     //const unioned = x.unionWith(y);
     const unioned = value1.unionWith(value2);
 

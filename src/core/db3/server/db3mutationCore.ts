@@ -13,7 +13,8 @@ import sharp from "sharp";
 import * as db3 from "../db3";
 import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
-import { EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
+import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
+import { assert } from "blitz";
 
 var path = require('path');
 var fs = require('fs');
@@ -52,17 +53,9 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
     }
 };
 
-export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) => {
+export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number, updatingEventModel: Partial<EventForCal>) => {
     try {
-        let existingEvent = (await db.event.findFirst({
-            where: {
-                id: eventId,
-            },
-            ...EventForCalArgs,
-        }));
-
-        if (!existingEvent) return; // maybe the event was just deleted.
-
+        assert(!!eventId, "whoa there event id is not valid; bug.");
         // get list of all event segments
         const segments = await db.eventSegment.findMany({
             where: {
@@ -76,29 +69,43 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) 
             range = range.unionWith(r);
         }
 
-        // potential issue: an event goes from being on the calendar to being TBD.
-        //debugger;
+        // NOTE: this is going to be the wrong date! we need to calculate the date still.
+        let existingEvent = ((await db.event.findFirst({
+            where: {
+                id: eventId,
+            },
+            ...EventForCalArgs,
+        })) || {}) as Partial<EventForCal>;
+
+        Object.assign(existingEvent, updatingEventModel);
+        const dateUpdates = {
+            startsAt: range.getSpec().startsAtDateTime,
+            durationMillis: range.getSpec().durationMillis,
+            isAllDay: range.getSpec().isAllDay,
+            endDateTime: range.getEndDateTime(),
+        };
+        Object.assign(existingEvent, dateUpdates);
+
+        const existingRevision = existingEvent.revision;
+        if (existingRevision === undefined) return;
 
         const calInp = GetEventCalendarInput(existingEvent);
         const newHash = calInp?.inputHash || "-";
-        if (newHash === (existingEvent?.calendarInputHash || "")) {
-            console.log(`SAME HASH : ${newHash}`);
-        }
-        else {
-            console.log(`NEW REVISION; existinghash: ${existingEvent.calendarInputHash}`);
-            console.log(`new:                        ${newHash}`);
-            console.log(` -> revision ${existingEvent.revision + 1}`);
-        }
-        console.log(calInp);
-        const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingEvent.revision + 1);
+        // if (newHash === (existingEvent?.calendarInputHash || "")) {
+        //     console.log(`SAME HASH : ${newHash}`);
+        // }
+        // else {
+        //     console.log(`NEW REVISION; existinghash: ${existingEvent.calendarInputHash}`);
+        //     console.log(`new:                        ${newHash}`);
+        //     console.log(` -> revision ${existingRevision + 1}`);
+        // }
+        // console.log(calInp);
+        const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 
         await db.event.update({
             where: { id: eventId },
             data: {
-                startsAt: range.getSpec().startsAtDateTime,
-                durationMillis: range.getSpec().durationMillis,
-                isAllDay: range.getSpec().isAllDay,
-                endDateTime: range.getEndDateTime(),
+                ...dateUpdates,
                 revision: newRevisionSeq,
                 calendarInputHash: newHash,
             }
@@ -114,16 +121,43 @@ export const CallMutateEventHooks = async (args: { tableName: string, model: TAn
     switch (args.tableName.toLowerCase()) {
         case "event":
             eventIdToUpdate = args.model.id;
-            break;
+            await RecalcEventDateRangeAndIncrementRevision(eventIdToUpdate, args.model as any);
+            return;
         case "eventsegment":
             eventIdToUpdate = (args.model as Prisma.EventSegmentGetPayload<{ select: { id: true, eventId: true } }>).eventId;
             break;
         case "eventsonglist":
             eventIdToUpdate = (args.model as Prisma.EventSongListGetPayload<{ select: { id: true, eventId: true } }>).eventId;
+
+            if (!eventIdToUpdate) {
+                const sl = await db.eventSongList.findFirst({
+                    where: {
+                        id: args.model.id,
+                    },
+                    select: {
+                        eventId: true,
+                    }
+                });
+                eventIdToUpdate = sl?.eventId;
+            }
+
+            // console.log(`eventsonglist ${args.model.id} updated; it's pointing at event ${eventIdToUpdate}`);
+            // const sl = await db.eventSongList.findFirst({
+            //     where: {
+            //         id: args.model.id,
+            //     },
+            //     select: {
+            //         songs: {
+            //             select: {
+            //                 songId: true,
+            //             }
+            //         }
+            //     }
+            // });
+            // console.log(sl);
             break;
         case "eventsonglistsong":
             {
-                debugger;
                 const songListId = (args.model as Prisma.EventSongListSongGetPayload<{ select: { id: true, eventSongListId: true } }>).eventSongListId;
                 const eventIdRet = await db.eventSongList.findFirst({
                     select: {
@@ -141,7 +175,7 @@ export const CallMutateEventHooks = async (args: { tableName: string, model: TAn
     }
 
     if (eventIdToUpdate) {
-        await RecalcEventDateRangeAndIncrementRevision(eventIdToUpdate);
+        await RecalcEventDateRangeAndIncrementRevision(eventIdToUpdate, {});
     }
 };
 
@@ -348,7 +382,6 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 desiredTagIds: associationFields[column.member],
             });
         });
-
 
         await CallMutateEventHooks({
             tableName: table.tableName,

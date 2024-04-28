@@ -136,8 +136,18 @@ function prepareAllDayDateForICal(date) {
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
 // grab just the info needed to know if a revision # is necessary.
 // returns null if no event can be generated
-export const GetEventCalendarInput = (event: EventForCal): EventCalendarInput | null => {
+export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalendarInput | null => {
     const setLists = event.songLists ? event.songLists.map(l => songListToString(l)) : [];
+
+    // if you pass in something that is insufficient for using as an event.
+    // it's theoretical because it's always going to be an event object.
+    if (event.startsAt === undefined) return null; // tbd
+    if (event.isAllDay === undefined) return null;
+    if (event.revision === undefined) return null;
+    if (event.id === undefined) return null;
+    if (event.slug === undefined) return null;
+    if (event.uid === undefined) return null;
+    if (event.locationDescription === undefined) return null;
 
     const dateRange = new DateTimeRange({
         startsAtDateTime: event.startsAt,
@@ -204,6 +214,9 @@ export const GetEventCalendarInput = (event: EventForCal): EventCalendarInput | 
         statusSignificance,
     };
 
+    // console.log(`calculating hash of`);
+    // console.log(ret);
+    // console.log(` -> ${hash256(JSON.stringify(ret))}`);
     ret.inputHash = hash256(JSON.stringify(ret));
     ret.revision = event.revision;
 
