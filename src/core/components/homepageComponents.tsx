@@ -224,7 +224,7 @@ class Gallery {
 
     getSelectedPost(): db3.FrontpageGalleryItemPayload | null {
         if (!this.content) return null;
-        return this.content.gallery[this.bringIndexIntoRange(this.selectedIdx)]! as any; // it's hard to understand the typing here; no time to fix.
+        return this.content.gallery[this.getSelectedIndex()]! as any; // it's hard to understand the typing here; no time to fix.
     }
 
     getSelectedIndex(): number {
@@ -382,8 +382,8 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                     <polygon points="0,1136 541,1447 0,1398" className="galleryOrange" />{/* orange triangle for photo caption */}
                     <polygon points="541,187 628,176 1086,502" className="galleryPink" />
                     <polygon points="628,176 663,173 1086,502" className="galleryBlue" />
-                    <polygon points="0,499 541,187 1086,502 1086,1132 541,1447 0,1136" fill="none" className="galleryPhoto1" ref={galleryPhoto1Ref} />
-                    <polygon points="0,499 541,187 1086,502 1086,1132 541,1447 0,1136" fill="none" className="galleryPhoto2" ref={galleryPhoto2Ref} />
+                    <polygon points="0,499 541,187 1086,502 1086,1132 541,1447 0,1136" fill="none" className="galleryPhoto1" id="galleryPhoto1" ref={galleryPhoto1Ref} />
+                    <polygon points="0,499 541,187 1086,502 1086,1132 541,1447 0,1136" fill="none" className="galleryPhoto2" id="galleryPhoto2" ref={galleryPhoto2Ref} />
                     <image width="330" height="330" href="/homepage/CMlogo.png" preserveAspectRatio="xMinYMin slice"></image>
 
                     <text x="2050" y="74" className='subtitle1SVG subtitleSVG portrait' textAnchor='end'>
@@ -520,7 +520,8 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
 
     const [instanceKey, setInstanceKey] = React.useState<string>(() => nanoid());
 
-    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);// to induce re-render, increment
+    //const [refreshSerial, setRefreshSerial] = React.useState<number>(0);// to induce re-render, increment
+    const [refreshTrigger, setRefreshTrigger] = React.useState<{}>({});// to induce re-render, increment
     const [layoutUpdateTimer, setLayoutUpdateTimer] = React.useState<NodeJS.Timeout | null>(null);
 
     const svgRefs = React.useRef<MainSVGRefs>({
@@ -562,11 +563,6 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
             gallery.applyStateToDOM();
 
             if (root2) {
-                //const root2 = document.querySelector(".root2") as HTMLElement;
-                const horizOrientation = (window.innerHeight < window.innerWidth);
-                // because the overall page layout depends on orientation, the natural width changes depending on orient. so use different default widths.
-                const zoomFact = horizOrientation ? (root2.clientWidth / gSettings.landscapeNaturalWidth) : (root2.clientWidth / gSettings.portraitNaturalWidth);
-                root2.style.setProperty("--page-zoom", `${(zoomFact * 100).toFixed(2)}%`);
                 root2.style.opacity = "100%";
             }
             //setRefreshSerial(refreshSerial + 1);
@@ -586,17 +582,17 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
     const onSelectPhoto = (i) => {
         gallery.setSelectedIdx(i);
         resetGalleryTimer();
-        setRefreshSerial(refreshSerial + 1);
+        setRefreshTrigger({});
     }
 
     const onClickPhotoNext = () => {
         gallery.setSelectedIdx(gallery.getSelectedIndex() + 1);
-        setRefreshSerial(refreshSerial + 1);
+        setRefreshTrigger({});
     }
 
     const onClickPhotoBack = () => {
         gallery.setSelectedIdx(gallery.getSelectedIndex() - 1);
-        setRefreshSerial(refreshSerial + 1);
+        setRefreshTrigger({});
     }
 
     const galleryTimerProc = () => {
@@ -629,6 +625,8 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
         };
     }, [root2Ref]);
 
+    const captionMarkdown = gallery.getSelectedPost()?.caption || "";
+
     return (<div className={`root2 ${className} ${fullPage ? "fullPage" : "embedded"}`} ref={root2Ref}>
         {/* <div className="headerChrome">
             <TopRight2 />
@@ -655,7 +653,7 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
             }
             <div className="photoCaptionContainer" ref={photoCaptionContainerRef}>
                 <div className="photoCaptionContainerWrapShape"></div>
-                <Markdown className="photoCaption" markdown={gallery.getSelectedPost()?.caption || ""} />
+                <Markdown className="photoCaption" markdown={captionMarkdown} />
             </div>
 
             <div className="photoSelectContainer" ref={photoSelectContainerRef}>

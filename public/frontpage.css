@@ -60,8 +60,6 @@ children:
     transition: opacity .5s;
     /* because middle content is absolutely positioned (so it can live in harmony with headerchrome) */
     position: relative;
-    /* as layout changes,the SVG can become wildly different sizes and various page elements should be scaled to match.*/
-    /* --page-zoom: 100%; */
     --gallery-photo-transition: 1.0s;
 }
 
@@ -133,11 +131,6 @@ children:
     align-content: flex-end;
     opacity: 33%;
 
-    /* zoom: var(--page-zoom); */
-    /* space for cm logo*/
-    /* -webkit-text-stroke: 1px var(--cm-yellow);
-    text-stroke: 1px var(--cm-yellow); */
-    /* text-shadow: 0 0 2px var(--cm-yellow); */
 }
 
 .subtitle1 {
@@ -233,16 +226,6 @@ text.subtitle2SVG {
 
 }
 
-.agendaContentContainer {
-    /* zoom: var(--page-zoom); */
-}
-
-/* 
-#agendaFore {
-    fill: #edee7d;
-} */
-
-
 .photoCaptionContainer {
     position: absolute;
     overflow: hidden;
@@ -261,7 +244,6 @@ text.subtitle2SVG {
 .photoCaption {
     font-size: 24px;
     text-shadow: 0 0 2px #fff4;
-    /* zoom: var(--page-zoom); */
 }
 
 .photoCaption p {
