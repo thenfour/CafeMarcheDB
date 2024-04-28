@@ -51,7 +51,7 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
     }
 };
 
-export const RecalcEventDateRange = async (eventId: number) => {
+export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number) => {
     try {
         // get list of all event segments
         const segments = await db.eventSegment.findMany({
@@ -66,6 +66,15 @@ export const RecalcEventDateRange = async (eventId: number) => {
             range = range.unionWith(r);
         }
 
+        let revision = await db.event.findFirst({
+            where: {
+                id: eventId,
+            },
+            select: {
+                revision: true,
+            }
+        });
+
         await db.event.update({
             where: { id: eventId },
             data: {
@@ -73,6 +82,7 @@ export const RecalcEventDateRange = async (eventId: number) => {
                 durationMillis: range.getSpec().durationMillis,
                 isAllDay: range.getSpec().isAllDay,
                 endDateTime: range.getEndDateTime(),
+                revision: revision!.revision + 1,
             }
         });
     } catch (e) {
@@ -191,7 +201,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         const choice = await dbTableClient.deleteMany({ where: { [table.pkMember]: id } });
 
         if (eventIdToRecalc !== null) {
-            await RecalcEventDateRange(eventIdToRecalc);
+            await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
         }
 
         await RegisterChange({
@@ -280,7 +290,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         if (table.tableName.toLowerCase() === "eventsegment") {
             // if you make any changes to event segments, recalculate the event date range.
             const eventIdToRecalc = (localFields as Prisma.EventSegmentGetPayload<{}>).eventId;
-            await RecalcEventDateRange(eventIdToRecalc);
+            await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
         }
 
         return obj as any;
@@ -370,7 +380,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         if (table.tableName.toLowerCase() === "eventsegment") {
             // if you make any changes to event segments, recalculate the event date range.
             const eventIdToRecalc = (oldValues as Prisma.EventSegmentGetPayload<{}>).eventId;
-            await RecalcEventDateRange(eventIdToRecalc);
+            await RecalcEventDateRangeAndIncrementRevision(eventIdToRecalc);
         }
 
         return obj;

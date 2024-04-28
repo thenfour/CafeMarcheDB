@@ -455,6 +455,7 @@ model UserInstrument {
 // nothing here is specific to any type of event. should that be the case it can be attached somehow.
 model Event {
   id          Int        @id @default(autoincrement())
+  revision    Int
   name        String     @db.VarChar(768)
   slug        String     @db.VarChar(768)
   description String     @db.MediumText // what's the diff between a description & comment? description is the pinned general description in markdown.

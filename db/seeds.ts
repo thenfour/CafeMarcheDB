@@ -871,23 +871,23 @@ const main = async () => {
   await SeedTable("userTag", prisma.userTag,
     [
       {
-        "text": "board",
-        "description": "",
-        "sortOrder": 0,
-        "color": "light_teal",
-        "significance": null
-      },
-      {
-        "text": "board",
-        "description": "",
-        "sortOrder": 0,
-        "color": "light_teal",
-        "significance": null
-      },
-      {
         "text": "musician",
         "description": "",
         "sortOrder": 0,
+        "color": "light_teal",
+        "significance": null
+      },
+      {
+        "text": "board",
+        "description": "",
+        "sortOrder": 10,
+        "color": "light_teal",
+        "significance": null
+      },
+      {
+        "text": "director",
+        "description": "",
+        "sortOrder": 20,
         "color": "light_teal",
         "significance": null
       }

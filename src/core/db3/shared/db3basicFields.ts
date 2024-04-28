@@ -1197,6 +1197,68 @@ export class CreatedAtField extends FieldBase<Date> {
     }
 };
 
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export type RevisionFieldArgs = {
+    columnName: string;
+} & DB3AuthSpec;
+
+export class RevisionField extends FieldBase<number> {
+    constructor(args: RevisionFieldArgs) {
+        super({
+            member: args.columnName,
+            fieldTableAssociation: "tableColumn",
+            defaultValue: 0,
+            authMap: (args as any).authMap || null,
+            _customAuth: (args as any)._customAuth || null,
+        });
+    }
+
+    connectToTable = (table: xTable) => { };
+
+    getQuickFilterWhereClause = (query: string): TAnyModel | boolean => false;
+    getCustomFilterWhereClause = (query: CMDBTableFilterModel): TAnyModel | boolean => false;
+    getOverallWhereClause = (clientIntention: xTableClientUsageContext): TAnyModel | boolean => false;
+    ApplyIncludeFiltering = (include: TAnyModel, clientIntention: xTableClientUsageContext) => { };
+
+    // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
+    ValidateAndParse = (args: ValidateAndParseArgs<string | number>): ValidateAndParseResult<number | null> => {
+        let value = args.row[this.member];
+        let objValue = { [this.member]: value };
+        if (value === undefined) return UndefinedValidateAndParseResult();
+
+        // we don't care about the input; for creations just start with sequence 0.
+        if (args.mode === "new") {
+            return SuccessfulValidateAndParseResult({ [this.member]: this.defaultValue });
+        }
+        return SuccessfulValidateAndParseResult(objValue);
+    };
+
+    ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
+        args[this.member] = this.defaultValue;
+    };
+
+    isEqual = (a: number, b: number) => {
+        return a === b;
+    };
+
+    ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
+        if (mode === "new") {
+            mutationModel[this.member] = this.defaultValue;
+            return;
+        }
+        // for update etc it gets handled in the mutation itself via an ad-hoc hook.
+    };
+    ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
+        if (dbModel[this.member] === undefined) return; // don't clobber
+        clientModel[this.member] = dbModel[this.member];
+    }
+};
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // slug field is calculated from another field.
 // it is calculated live during creation, but afterwards it's user-editable.

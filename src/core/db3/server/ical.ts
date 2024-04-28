@@ -5,8 +5,6 @@ import MarkdownIt from 'markdown-it';
 import { DateTimeRange, floorToDay } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
-import * as mutationCore from 'src/core/db3/server/db3mutationCore';
-import { GetICalRelativeURIForUserAndEvent } from "src/core/db3/shared/apiTypes";
 import * as db3 from "../db3";
 
 
@@ -178,6 +176,7 @@ export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.U
         location: event.locationDescription,
         url: eventURL,
         status: calStatus,
+        sequence: event.revision,
 
         //sequence: event.sequenceid, // not sure we really can do this well.
         // don't include organizer; this is like, for a meeting request, who would you contact to propose time changes.

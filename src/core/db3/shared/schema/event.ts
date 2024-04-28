@@ -7,7 +7,7 @@ import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { CoalesceBool, assertIsNumberArray, assertIsStringArray, gIconOptions } from "shared/utils";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSlugField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSlugField, MakeSortOrderField, MakeTitleField, PKField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { getUserPrimaryInstrument } from "./instrument";
 import {
@@ -438,6 +438,8 @@ const xEventArgs_Base: db3.TableDesc = {
             allowQuickFilter: false,
             authMap: xEventAuthMap_Homepage,
         }),
+
+        new RevisionField({ columnName: "revision", authMap: xEventAuthMap_CreatedAt, }),
 
         //new CalculatedEventDateRangeField(),
         MakeCreatedAtField("createdAt", { authMap: xEventAuthMap_CreatedAt, }),

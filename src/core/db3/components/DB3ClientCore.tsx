@@ -370,24 +370,6 @@ export class xTableRenderClient {
 
     prepareInsertMutation = <T extends TAnyModel,>(row: TAnyModel): any => {
         const dbModel = this.prepareMutation(row, "new");
-
-        // const postClientModel: T = { } as T;
-        // const dbModel: T = { } as T;
-
-        // this.clientColumns.forEach(clientCol => {
-        //     if (clientCol.ApplyClientToPostClient) {
-        //         // 2-stage processing
-        //         clientCol.ApplyClientToPostClient(row, postClientModel, "new");
-        //         clientCol.schemaColumn.ApplyClientToDb(postClientModel, dbModel, "new");
-        //     } else {
-        //         // 1-stage processing
-        //         clientCol.schemaColumn.ApplyClientToDb(row, dbModel, "new");
-        //     }
-        // });
-
-        // this.schema.columns.forEach(col => {
-        //     col.ApplyClientToDb(row, dbModel, "new");
-        // });
         return dbModel;
     };
 
