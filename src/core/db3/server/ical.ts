@@ -112,6 +112,16 @@ type EventForCal = Prisma.EventGetPayload<{
     }
 }>;
 
+
+function prepareAllDayDateForICal(date) {
+    const ret = new Date(date);
+    ret.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return ret;
+}
+
+
+
+
 // if user is null, it's a public access.
 export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventForCal): ICalEvent | null => {
 
@@ -143,10 +153,26 @@ export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.U
         descriptionText += "\r\n\r\n" + setLists.join(`\r\n\r\n`);
     }
 
+    // for all-day events, the datetime range will return midnight of the start day.
+    // BUT this will lead to issues because of timezones. In order to output a UTC date,
+    // the time gets shifted and will likely be the previous day. For all-day events therefore,
+    // let's be precise and use an ISO string (20240517) because all-day events are not subject to
+    // time zone offsets.
+    debugger;
+    let start: Date | string = dateRange.getStartDateTime()!;
+    let end: Date | string = dateRange.getLastDateTime()!; // this date must be IN the time range so don't use "end", use "last"
+    if (dateRange.isAllDay()) {
+        start = prepareAllDayDateForICal(start);
+        end = prepareAllDayDateForICal(end);
+        // end = new Date(start);
+        // end.setMilliseconds(start.getMilliseconds() + dateRange.getDurationMillis());
+        //end = prepareAllDayDateForICal(end);
+    }
+
     const calEvent = calendar.createEvent({
-        start: dateRange.getStartDateTime()!,
         allDay: dateRange.isAllDay(),
-        end: dateRange.getEndDateTime(),
+        start,
+        end,
         summary: `CM: ${cancelledText}${event.name}`,
         description: descriptionText || "",
         location: event.locationDescription,
