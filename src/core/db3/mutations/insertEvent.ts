@@ -29,6 +29,7 @@ export default resolver.pipe(
             typeId: args.event.typeId,
             statusId: args.event.statusId,
             tags: args.event.tags,
+            revision: 0,
             expectedAttendanceUserTagId: args.event.expectedAttendanceUserTagId,
             visiblePermissionId: args.event.visiblePermissionId,
         };
