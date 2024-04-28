@@ -583,10 +583,11 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   font-weight: bold;
   color: var(--primary-color);
   text-transform: uppercase;
-  /* margin: 3px 0px; */
   margin-right: 20px;
-  /* we need to allow very long titles to wrap */
-  /* white-space: nowrap; */
+
+  letter-spacing: -1px;
+  line-height: 39px;
+
 }
 
 .CustomLink.contentSection .titleText {
@@ -624,6 +625,16 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 .contentSection.event.ApplyBorderLeftColor {
   --border-left-color: var(--color-foreground);
+}
+
+/* only for search results list; don't fade a cancelled event when you're looking into its details */
+.contentSection.event.status_Cancelled {
+  opacity: 50%;
+  /* filter: saturate(0); */
+}
+
+.contentSection.event.status_Cancelled .titleText {
+  text-decoration: line-through;
 }
 
 .contentSection.EventDetail.past {

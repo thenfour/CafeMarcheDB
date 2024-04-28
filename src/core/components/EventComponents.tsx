@@ -724,8 +724,18 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
         color: eventData.event.type?.color || null,
     });
 
+    const classes = [
+        `EventDetail`,
+        `contentSection`,
+        `event`,
+        `ApplyBorderLeftColor`,
+        eventData.event.type?.text,
+        visInfo.className,
+        (props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast",
+        `status_${eventData.event.status?.significance}`,
+    ];
 
-    return <div style={typeStyle.style} className={`EventDetail contentSection event ApplyBorderLeftColor ${eventData.event.type?.text} ${visInfo.className} ${(props.fadePastEvents && (eventData.eventTiming === Timing.Past)) ? "past" : "notPast"}`}>
+    return <div style={typeStyle.style} className={classes.join(" ")}>
         <div className='header'>
             <CMChipContainer>
                 {eventData.event.type && //<EventTypeValue type={event.type} />

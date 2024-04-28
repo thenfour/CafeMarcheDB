@@ -432,6 +432,9 @@ export interface EventAttendanceControlProps {
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   if (!props.eventData.responseInfo) return null;
 
+  // never show attendance alert control for cancelled events
+  if (props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled) return null;
+
   const [userSelectedEdit, setUserSelectedEdit] = React.useState<boolean>(false);
   //const [refreshSerial, setRefreshSerial] = React.useState(0);
   const user = useCurrentUser()[0]!;
