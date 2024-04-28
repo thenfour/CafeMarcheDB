@@ -836,10 +836,6 @@ export const xEventSongList = new db3.xTable({
         }
         return ret;
     },
-    // visibilitySpec: {
-    //     ownerUserIDColumnName: "createdByUserId",
-    //     visiblePermissionIDColumnName: "visiblePermissionId",
-    // },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
@@ -853,14 +849,6 @@ export const xEventSongList = new db3.xTable({
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
-        // new CreatedByUserField({
-        //     columnName: "createdByUser",
-        //     fkMember: "createdByUserId",
-        // }),
-        // new VisiblePermissionField({
-        //     columnName: "visiblePermission",
-        //     fkMember: "visiblePermissionId",
-        // }),
         new TagsField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "songs",
             foreignTableID: "Song",

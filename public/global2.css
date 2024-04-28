@@ -69,12 +69,12 @@ html,
     background-color: white;
     color: black;
     opacity: 50%;
-    padding: 6px;
+    padding: 6px 0 0 10px;
 }
 
 .BasicNameValuePairContainer>.value {
     background-color: #eee;
-    padding: 6px;
+    padding: 4px 0 4px 10px;
 }
 
 .BasicNameValuePairContainer>.description {
@@ -133,8 +133,6 @@ input.CMTextInputBase.titleText {
 .BasicNameValuePairContainer input.CMTextInputBase:focus {
     outline: none;
 }
-
-
 
 
 
@@ -2160,4 +2158,29 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     margin-top: 3px;
     padding-top: 3px;
     border-top: 1px solid #8885;
+}
+
+
+
+
+/* -  --------------------------------- */
+.wikiPage .wikiTitle {
+    color: var(--primary-color);
+    font-size: 40px;
+    font-weight: bold;
+    border-bottom: 1px solid #8888;
+}
+
+.wikiPage .BasicNameValuePairContainer input.CMTextInputBase.wikiTitle {
+    font-size: 40px;
+}
+
+.wikiPage .wikiContentContainer {
+    margin-bottom: 60px;
+}
+
+.wikiPage .wikiPageFooterStats {
+    border-top: 1px solid #8888;
+    font-style: italic;
+    color: #8888;
 }

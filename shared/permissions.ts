@@ -69,6 +69,10 @@ export enum Permission {
     // VISITING custom links is always permitted.
     view_custom_links = "view_custom_links",
     manage_custom_links = "manage_custom_links",
+
+    // ******************** custom links
+    view_wiki_pages = "view_wiki_pages",
+    edit_wiki_pages = "edit_wiki_pages",
 };
 
 export const gPermissionOrdered: (keyof typeof Permission)[] = [
@@ -103,6 +107,8 @@ export const gPermissionOrdered: (keyof typeof Permission)[] = [
     Permission.manage_users,
     Permission.view_custom_links,
     Permission.manage_custom_links,
+    Permission.view_wiki_pages,
+    Permission.edit_wiki_pages,
 ];
 
 // these are granted automatically to public.

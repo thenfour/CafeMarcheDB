@@ -437,7 +437,7 @@ export interface SoftDeleteSpec {
 };
 export interface VisibilitySpec {
     visiblePermissionIDColumnName: string;
-    ownerUserIDColumnName: string;
+    ownerUserIDColumnName: string | undefined;
 };
 
 export interface TableDesc {
@@ -806,21 +806,30 @@ export class xTable implements TableDesc {
                 and.push(spec);
             } else {
                 assert(!!clientIntention.currentUser, "current user is required in this line.");
-                const spec: Prisma.EventWhereInput = { // EventWhereInput for practical type checking.
-                    OR: [
-                        {
-                            // current user has access to the specified visibile permission
-                            [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) }
-                        },
-                        {
-                            // private visibility and you are the creator
-                            AND: [
-                                { [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: null },
-                                { [this.visibilitySpec.ownerUserIDColumnName || "createdByUserId"]: clientIntention.currentUser!.id }
-                            ]
-                        }
-                    ]
-                };
+                let spec: Prisma.EventWhereInput = {};
+
+                if (this.visibilitySpec.ownerUserIDColumnName !== undefined) {
+                    spec = { // EventWhereInput for practical type checking.
+                        OR: [
+                            {
+                                // current user has access to the specified visibile permission
+                                [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) }
+                            },
+                            {
+                                // private visibility and you are the creator
+                                AND: [
+                                    { [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: null },
+                                    { [this.visibilitySpec.ownerUserIDColumnName || "createdByUserId"]: clientIntention.currentUser!.id }
+                                ]
+                            }
+                        ]
+                    };
+
+                } else {
+                    // current user has access to the specified visibile permission
+                    spec = { [this.visibilitySpec.visiblePermissionIDColumnName || "visiblePermissionId"]: { in: clientIntention.currentUser!.role!.permissions.map(p => p.permissionId) } };
+                }
+
                 and.push(spec);
             }
         }

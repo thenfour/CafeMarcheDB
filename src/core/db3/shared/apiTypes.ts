@@ -1,5 +1,6 @@
 
 import { Prisma } from "db";
+import { z } from "zod";
 
 // types used by mutations and other blitzy-things which can't export more than 1 thing, or just as a "no dependency" base
 
@@ -404,3 +405,23 @@ export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken:
     return `/api/ical/user/${args.userAccessToken || "public"}/upcoming`;
 }
 
+const ZWikiSlug = z.string().min(1).transform((str) => str.toLowerCase().trim());
+const ZWikiName = z.string().min(1);
+
+export interface TGetWikiPageArgs {
+    slug: string;
+};
+
+export interface TUpdateWikiPageArgs {
+    slug: string;
+    content: string;
+    name: string;
+    visiblePermissionId: number | null;
+};
+
+export const ZTUpdateWikiPageArgs = z.object({
+    slug: ZWikiSlug,
+    name: ZWikiName,
+    content: z.string(),
+    visiblePermissionId: z.number().nullable(),
+});

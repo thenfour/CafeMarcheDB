@@ -901,16 +901,14 @@ model CustomLinkVisit {
 
 model WikiPage {
   id   Int    @id @default(autoincrement())
-  slug String @db.VarChar(768)
-
-  latestRevisionId Int?
+  slug String @db.VarChar(768) // slugified name. name can be changed in Revision
 
   visiblePermissionId Int?
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
 
   revisions WikiPageRevision[]
 
-  @@index([slug])
+  @@unique([slug])
   @@index([visiblePermissionId])
 }
 
@@ -929,3 +927,16 @@ model WikiPageRevision {
 
   @@index([name])
 }
+
+model MenuLinks {
+  id Int @id @default(autoincrement())
+  sortOrder         Int              @default(0)
+  caption    String @db.VarChar(768)
+  type String
+  externalLink String @db.MediumText
+  // link to external resource
+  // link to wiki
+  // link to application page
+  // groups?
+}
+

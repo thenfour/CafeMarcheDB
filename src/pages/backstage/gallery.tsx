@@ -3,7 +3,7 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import { Divider } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { parseMimeType } from "shared/utils";
+import { parseMimeType, slugify, unslugify } from "shared/utils";
 import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -16,6 +16,7 @@ import * as mime from 'mime';
 
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
+    const [slugOrNot, setSlugOrNot] = React.useState<string>("");
     const [mimeTypeStr, setMimeTypeStr] = React.useState<string>("");
     //parseMimeType
 
@@ -90,6 +91,17 @@ const MainContent = () => {
             <IconEditCell validationError={null} onOK={() => { }} value={null} readonly={false} />
         </div>
 
+
+        <NameValuePair
+            isReadOnly={false}
+            name="Slugify"
+            value={<div>
+                <CMTextInputBase value={slugOrNot} onChange={(e, v) => setSlugOrNot(v)} />
+                <pre>Slugify:          {slugify(slugOrNot)}</pre>
+                <pre>Double slugify:   {slugify(slugify(slugOrNot))}</pre>
+                <pre>Unslugify: {unslugify(slugOrNot)}</pre>
+            </div>}
+        />
 
     </>;
 };

@@ -19,7 +19,7 @@
 
 import { assert } from "blitz";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
-import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, isValidURL } from "shared/utils";
+import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, isValidURL, slugify } from "shared/utils";
 import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 import { CMDBTableFilterModel, TAnyModel } from "./apiTypes";
 
@@ -1258,23 +1258,6 @@ export class RevisionField extends FieldBase<number> {
 };
 
 
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// slug field is calculated from another field.
-// it is calculated live during creation, but afterwards it's user-editable.
-
-// https://gist.github.com/codeguy/6684588
-export const slugify = (...args: (string | number)[]): string => {
-    const value = args.join(' ')
-
-    return value
-        .normalize('NFD') // split an accented letter in the base letter and the acent
-        .replace(/[\u0300-\u036f]/g, '') // remove all previously split accents
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9 ]/g, '') // remove all chars not letters, numbers and spaces (to be replaced)
-        .replace(/\s+/g, '-') // separator
-}
 
 export type SlugFieldFieldArgs = {
     columnName: string;
