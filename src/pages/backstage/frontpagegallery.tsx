@@ -18,6 +18,7 @@ import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmo
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
 import { FileDropWrapper, UploadFileComponent } from "src/core/components/FileDrop";
+import { Markdown2Control } from "src/core/components/MarkdownControl2";
 import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
@@ -138,17 +139,37 @@ export interface GalleryItemDescriptionControlProps {
     client: DB3Client.xTableRenderClient;
 };
 export const GalleryItemDescriptionControl = (props: GalleryItemDescriptionControlProps) => {
-    return <MutationMarkdownControl
-        initialValue={props.value.caption}
-        editButtonText="Edit caption"
-        refetch={props.client.refetch}
-        onChange={(newValue) => {
-            const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, caption: newValue || "" };
-            return props.client.doUpdateMutation(newrow);
-        }}
-    />;
-};
+    // return <MutationMarkdownControl
+    //     initialValue={props.value.caption}
+    //     editButtonText="Edit caption"
+    //     refetch={props.client.refetch}
+    //     onChange={(newValue) => {
+    //         const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, caption: newValue || "" };
+    //         return props.client.doUpdateMutation(newrow);
+    //     }}
+    // />;
 
+    const onValueSaved = async (newValue: string): Promise<boolean> => {
+        try {
+            const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, caption: newValue || "" };
+            await props.client.doUpdateMutation(newrow);
+            //showSnackbar({ severity: "success", children: "Success" });
+            props.client.refetch();
+            return true;
+        } catch (e) {
+            console.log(e);
+            //showSnackbar({ severity: "error", children: "error updating event visibility" });
+            return false;
+        }
+    };
+    return <Markdown2Control
+        isExisting={true}
+        readonly={false}
+        value={props.value.caption}
+        onValueSaved={onValueSaved}
+    />;
+
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

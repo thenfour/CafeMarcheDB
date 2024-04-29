@@ -24,6 +24,7 @@ import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import { CalculateSongMetadata, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
+import { Markdown2Control } from './MarkdownControl2';
 
 
 export const SongClientColumns = {
@@ -93,29 +94,43 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
 };
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.SongPayloadMinimum, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.songs.updateSongBasicFields.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
-    const authorized = db3.xEvent.authorizeColumnForEdit({
+    const authorized = db3.xSong.authorizeColumnForEdit({
         model: null,
         columnName: "description",
         clientIntention,
         publicData,
     });
 
-    return <MutationMarkdownControl
-        initialValue={song.description}
-        refetch={refetch}
+    const onValueSaved = async (newValue: string): Promise<boolean> => {
+        try {
+            await mutationToken.invoke({
+                songId: song.id,
+                description: newValue || "",
+            });
+            showSnackbar({ severity: "success", children: "Success" });
+            refetch();
+            return true;
+        } catch (e) {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating event visibility" });
+            return false;
+        }
+    };
+    return <Markdown2Control
+        isExisting={true}
         readonly={readonly || !authorized}
-        onChange={(newValue) => mutationToken.invoke({
-            songId: song.id,
-            description: newValue || "",
-        })}
+        value={song.description}
+        onValueSaved={onValueSaved}
     />;
 };
 

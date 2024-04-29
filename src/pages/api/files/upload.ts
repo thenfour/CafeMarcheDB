@@ -44,7 +44,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                 };
 
                 try {
-                    const maxImageDimension: number | undefined = CoerceToNumberOrNull(fields.maxImageDimension[0]) || undefined;
+                    const maxImageDimension: number | undefined = (fields.maxImageDimension && CoerceToNumberOrNull(fields.maxImageDimension[0])) || undefined;
 
                     // fields comes across with keys corresponding to TClientUploadFileArgs
                     // except the values are arrays of string (length 1), rather than number.

@@ -37,6 +37,7 @@ import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
+import { Markdown2Control } from './MarkdownControl2';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -442,10 +443,9 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
 };
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const EventDescriptionControl = ({ event, refetch, readonly }: { event: db3.EventPayloadMinimum, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
@@ -458,14 +458,26 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
         publicData,
     });
 
-    return <MutationMarkdownControl
-        initialValue={event.description}
-        refetch={refetch}
+    const onValueSaved = async (newValue: string): Promise<boolean> => {
+        try {
+            await mutationToken.invoke({
+                eventId: event.id,
+                description: newValue || "",
+            });
+            showSnackbar({ severity: "success", children: "Success" });
+            refetch();
+            return true;
+        } catch (e) {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating event visibility" });
+            return false;
+        }
+    };
+    return <Markdown2Control
+        isExisting={true}
         readonly={readonly || !authorized}
-        onChange={(newValue) => mutationToken.invoke({
-            eventId: event.id,
-            description: newValue || "",
-        })}
+        value={event.description}
+        onValueSaved={onValueSaved}
     />;
 };
 
