@@ -130,8 +130,6 @@ input.CMTextInputBase.titleText {
     width: -moz-available;
     /* WebKit-based browsers will ignore this. */
     width: -webkit-fill-available;
-    /* Mozilla-based browsers will ignore this. */
-    width: fill-available;
 
     /* margin: 6px; */
     /* i don't like the bottom border exactly; but for empty fields it does a good job of directing the user to this cell*/

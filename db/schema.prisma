@@ -15,13 +15,6 @@
 // journals...
 // i think stuff like events should have a timeline with things like "arnold approved this on 4/8" or whatever. that can be derived i guess. but it means attaching dates to things.
 
-// note about soft delete. for the moment, just song, user, event
-// at least for the moment, FK relations with soft-delete objects should onDelete:Restrict.
-// rationale: soft delete is for objects with a lot of data attached so we don't lose much. so the onDelete
-// action should rarely be invoked. only by some kind of exceptional admin action. and in that case we should respect
-// the fact that it's a sort of emergency action and play it safe. if you can hard-delete objects via admin, then you can 
-// hard-delete the related objects first.
-
 // regarding "published" style visibility.
 // it's not exactly a user role to assign, because we need to support things like "private" to the author.
 // also because users are assigned a SINGLE role.
@@ -196,7 +189,7 @@ model Change {
   oldValues     String?  @db.MediumText // for create, empty. for update, JSON of fields. for delete, all column values.
   newValues     String?  @db.MediumText // for create & update, JSON of fields. for delete, empty.
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Restrict) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
 
   @@index([table])
   @@index([recordId])
@@ -217,7 +210,7 @@ model Activity {
 
   happenedAt DateTime @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Restrict) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade) // this is one reason not to allow hard deletion of users. any activity of that user should be retained.
 }
 
 model Session {
@@ -291,13 +284,13 @@ model Song {
 model SongComment {
   id     Int  @id @default(autoincrement())
   songId Int
-  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict) // song deleted = comments too. songs are soft-delete.
+  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade) // song deleted = comments too. songs are soft-delete.
 
   userId    Int
   createdAt DateTime
   updatedAt DateTime
   text      String   @db.MediumText
-  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict) // users are soft delete; if an admin wants to force delete, then they can go through this.
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade) // users are soft delete; if an admin wants to force delete, then they can go through this.
 
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
@@ -324,16 +317,16 @@ model SongCredit {
   id     Int   @id @default(autoincrement())
   // some authors may not be users; can specify in comments
   userId Int?
-  user   User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   songId Int
-  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict)
+  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade)
 
   year    String @default("") @db.VarChar(768)
   comment String @db.MediumText // markdown
 
   typeId Int
-  type   SongCreditType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  type   SongCreditType @relation(fields: [typeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([songId])
@@ -359,9 +352,9 @@ model SongTag {
 model SongTagAssociation {
   id     Int     @id @default(autoincrement())
   songId Int
-  song   Song    @relation(fields: [songId], references: [id], onDelete: Restrict)
+  song   Song    @relation(fields: [songId], references: [id], onDelete: Cascade)
   tagId  Int
-  tag    SongTag @relation(fields: [tagId], references: [id], onDelete: Restrict)
+  tag    SongTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([tagId, songId])
 }
@@ -394,7 +387,7 @@ model Instrument {
   description       String                     @db.MediumText
   sortOrder         Int
   functionalGroupId Int
-  functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Restrict) // if you want to delete a functional group, you need to manually reassign
+  functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Cascade) // if you want to delete a functional group, you need to manually reassign
   instrumentTags    InstrumentTagAssociation[]
 
   fileTags           FileInstrumentTag[]
@@ -438,7 +431,7 @@ model UserInstrument {
   instrument   Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade) // cascade delete association
   isPrimary    Boolean    @default(false)
   userId       Int
-  user         User       @relation(fields: [userId], references: [id], onDelete: Restrict) // cascade delete association
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade) // cascade delete association
 
   @@index([userId])
 }
@@ -537,7 +530,7 @@ model Event {
 model EventSegment {
   id      Int   @id @default(autoincrement())
   eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
 
   name        String @db.VarChar(768)
   description String @db.MediumText // short description, like 
@@ -608,7 +601,7 @@ model EventTag {
 model EventTagAssignment {
   id         Int      @id @default(autoincrement())
   eventId    Int
-  event      Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // events are soft-delete.
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
   eventTagId Int
   eventTag   EventTag @relation(fields: [eventTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
 
@@ -618,12 +611,12 @@ model EventTagAssignment {
 model EventComment {
   id        Int      @id @default(autoincrement())
   eventId   Int
-  event     Event    @relation(fields: [eventId], references: [id], onDelete: Restrict) // cascade delete association
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade) // cascade delete association
   userId    Int
   createdAt DateTime
   updatedAt DateTime
   text      String   @db.MediumText
-  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   visiblePermissionId Int? // which permission determines visibility, when NULL, only visible by admins + creator
   visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
@@ -639,7 +632,7 @@ model EventSongList {
   description String @db.MediumText
 
   eventId Int
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict) // when event is deleted, song lists go too.
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade) // when event is deleted, song lists go too.
 
   songs EventSongListSong[]
 
@@ -658,7 +651,7 @@ model EventSongListSong {
   sortOrder Int     @default(0)
 
   songId Int
-  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict) // when you delete a song, it will disappear from all lists
+  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade) // when you delete a song, it will disappear from all lists
 
   eventSongListId Int
   eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
@@ -738,7 +731,7 @@ model FileTag {
 model FileTagAssignment {
   id        Int     @id @default(autoincrement())
   fileId    Int
-  file      File    @relation(fields: [fileId], references: [id], onDelete: Restrict) // files are soft-delete.
+  file      File    @relation(fields: [fileId], references: [id], onDelete: Cascade) // files are soft-delete.
   fileTagId Int
   fileTag   FileTag @relation(fields: [fileTagId], references: [id], onDelete: Cascade) // delete tag = delete the associations.
 
@@ -803,7 +796,7 @@ model FileUserTag {
   id     Int  @id @default(autoincrement())
   fileId Int
   file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int
 
   @@unique([fileId, userId]) // 
@@ -815,7 +808,7 @@ model FileSongTag {
   id     Int  @id @default(autoincrement())
   fileId Int
   file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  song   Song @relation(fields: [songId], references: [id], onDelete: Restrict)
+  song   Song @relation(fields: [songId], references: [id], onDelete: Cascade)
   songId Int
 
   @@unique([fileId, songId]) // 
@@ -827,7 +820,7 @@ model FileEventTag {
   id      Int   @id @default(autoincrement())
   fileId  Int
   file    File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  event   Event @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId Int
 
   @@unique([fileId, eventId]) // 

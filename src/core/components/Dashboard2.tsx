@@ -186,19 +186,20 @@ interface PrimarySearchAppBarProps {
 
 const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     const theme = useTheme();
-    // const router = useRouter();
+    const router = useRouter();
     //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
     const session = useSession();
-    let backgroundColor: string | undefined = undefined;
-    if (session.impersonatingFromUserId != null) {
-        backgroundColor = "#844";
-    }
+    //let backgroundColor: string | undefined = undefined;
+    // if (session.impersonatingFromUserId != null) {
+    //     backgroundColor = "#844";
+    // }
 
     return (
         <>
-            <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1, backgroundColor: backgroundColor }}>
-                <Toolbar>
+            <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
+                <Toolbar style={{ position: "relative" }}>
+                    <div className={`headerIndicatorBar ${session.impersonatingFromUserId != null ? "impersonating" : "notImpersonating"}`}></div>
                     <IconButton
                         size="large"
                         edge="start"
@@ -215,7 +216,7 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
                         component="div"
                         sx={{ display: { xs: 'none', sm: 'block' } }}
                     >
-                        <a href={"/backstage"} className="logo">Café Marché Backstage</a>
+                        <a href={"/backstage"} className={`logo`}>Café Marché Backstage</a>
                     </Typography>
 
                     <MetronomeDialogButton />
@@ -646,7 +647,7 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"}`}>
+            <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
                     <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
                     <Drawer
