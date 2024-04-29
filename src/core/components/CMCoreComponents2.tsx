@@ -1,11 +1,11 @@
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
-import React, { Suspense } from "react";
+import { useSession } from "@blitzjs/auth";
+import { Box, Button, CircularProgress, CircularProgressProps, Typography } from "@mui/material";
+import React from "react";
+
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3/db3";
-import { useSession } from "@blitzjs/auth";
-import { Button } from "@mui/material";
-import { gNullValue } from "../db3/shared/apiTypes";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -124,3 +124,34 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data }) => {
         </pre>
     );
 };
+
+
+////////////////////////////////////////////////////////////////
+export function CircularProgressWithLabel(props: CircularProgressProps & { value: number, size?: number, textCssClass?: string }) {
+    //props.size = props.size || 70;
+    //props.thickness = props.thickness || 7;
+    return (
+        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+            <CircularProgress variant="determinate" {...props} style={{ color: "#0a0" }} size={props.size} thickness={7} />
+            <Box
+                sx={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Typography
+                    variant="caption"
+                    component="div"
+                    color="text.secondary"
+                    className={props.textCssClass}
+                >{`${Math.round(props.value)}%`}</Typography>
+            </Box>
+        </Box>
+    );
+}

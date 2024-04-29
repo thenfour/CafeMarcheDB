@@ -6,6 +6,13 @@ import { DateTimeRange, gMillisecondsPerDay, roundToNearest15Minutes } from '../
 
 const prisma = new PrismaClient()
 
+const fakerConfig = {
+  userCount: 100,
+  songCount: 200,
+  eventCount: 200,
+};
+
+
 const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
   console.log(`Seeding table ${tableName}`);
 
@@ -84,6 +91,36 @@ const RandomDateRange = (refDate: Date | null): DateTimeRange => {
     durationMillis: gIntervalMs * intervalCount,
     isAllDay: false,
     startsAtDateTime: startsAt,
+  });
+};
+
+const FakeFile = async (visiblePermissionId) => {
+  return await prisma.file.create({
+    data: {
+      storedLeafName: faker.git.commitSha(),
+      isDeleted: faker.datatype.boolean(0.8),
+      fileLeafName: faker.git.commitSha(),
+      description: faker.datatype.boolean(0.9) ? "" : faker.database.column(),
+      uploadedAt: faker.date.past(),
+      mimeType: faker.helpers.arrayElement([
+        null,
+        "application/vnd.google-apps.document",
+        "application/vnd.ms-excel",
+        "application/pdf",
+        "application/msword",
+        "text/plain",
+        "audio/wav",
+        "audio/mpeg",
+        "audio/ogg",
+        "image/png",
+        "image/svg+xml",
+        "video/x-m4v",
+        "video/x-msvideo",
+      ]),
+      sizeBytes: faker.number.int({ min: 0, max: 1000000000 }),
+      externalURI: faker.datatype.boolean(0.5) ? null : faker.internet.url(),
+      visiblePermissionId,
+    }
   });
 };
 
@@ -958,12 +995,6 @@ const main = async () => {
     return faker.number.float({ min: 0, max: 1 }) < probability01;
   };
 
-  const fakerConfig = {
-    userCount: 60,
-    songCount: 100,
-    eventCount: 100,
-  };
-
   // Creating random users
   console.log(`creating ${fakerConfig.userCount} users...`);
   const userCount = fakerConfig.userCount;
@@ -1050,6 +1081,17 @@ const main = async () => {
           typeId: faker.helpers.arrayElement(allSongCreditTypes).id,
           userId: faker.helpers.arrayElement(allUsers).id,
           year: probabool(0.5) ? randYear().toString() : undefined,
+        }
+      });
+    }
+
+    const fileCount = probabool(0.5) ? 0 : faker.number.int({ max: 12 });
+    for (let j = 0; j < fileCount; ++j) {
+      const file = await FakeFile(randomVisibilityPermissionId());
+      await prisma.fileSongTag.create({
+        data: {
+          fileId: file.id,
+          songId: song.id,
         }
       });
     }
@@ -1217,6 +1259,18 @@ const main = async () => {
         });
       });
     });
+
+    // files
+    const fileCount = probabool(0.5) ? 0 : faker.number.int({ max: 12 });
+    for (let j = 0; j < fileCount; ++j) {
+      const file = await FakeFile(randomVisibilityPermissionId());
+      await prisma.fileEventTag.create({
+        data: {
+          fileId: file.id,
+          eventId: event.id,
+        }
+      });
+    }
 
   } // for each create event
 

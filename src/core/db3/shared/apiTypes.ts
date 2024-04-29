@@ -210,6 +210,7 @@ export interface TClientFileUploadTags {
 // interface from upload.ts to mutation. files themselves contain much of the data; this is only for associations.
 export interface TClientUploadFileArgs extends TClientFileUploadTags {
     visiblePermissionId?: number;
+    visiblePermission?: string; // in case you don't have access to an ID.
     externalURI?: string | null;
 };
 

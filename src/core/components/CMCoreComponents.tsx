@@ -2,8 +2,8 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { getAntiCSRFToken, useSession } from "@blitzjs/auth";
-import { Box, Button, CircularProgress, CircularProgressProps, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, Typography, useMediaQuery } from "@mui/material";
+import { useSession } from "@blitzjs/auth";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 //import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
@@ -14,7 +14,7 @@ import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Timing } from "shared/time";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
-import { Coord2D, MakeErrorUploadResponsePayload, TAnyModel, TClientUploadFileArgs, UploadResponsePayload } from "../db3/shared/apiTypes";
+import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { GetStyleVariablesForColor } from './Color';
@@ -462,103 +462,6 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 //export type EventDetailVerbosity = "compact" | "default" | "verbose";
 
 
-
-////////////////////////////////////////////////////////////////
-export interface CMDBUploadFilesArgs {
-    files: FileList | null;
-    fields: TClientUploadFileArgs;
-
-    // set this to tell the file processor to generate a smaller version of the file if it's an image and too big.
-    // this is used by the markdown editor.
-    maxImageDimension?: number;
-    onProgress: (progress01: number, uploaded: number, total: number) => void;
-};
-
-export async function CMDBUploadFile(args: CMDBUploadFilesArgs): Promise<UploadResponsePayload> {
-    const formData = new FormData();
-    if (args.files) {
-        for (let i = 0; i < args.files.length; ++i) {
-            formData.append(`file_${i}`, args.files[i]!);
-        }
-    }
-    if (args.maxImageDimension !== undefined) {
-        formData.append("maxImageDimension", args.maxImageDimension.toString());
-    }
-    const xhr = new XMLHttpRequest();
-
-    return new Promise((resolve, reject) => {
-        xhr.upload.addEventListener("progress", (event) => {
-            if (event.lengthComputable) {
-                args.onProgress(event.loaded / event.total, event.loaded, event.total);
-            }
-        });
-        // for download progress which we don't want...
-        //   xhr.addEventListener("progress", (event) => {
-        xhr.addEventListener("loadend", () => {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                // success
-                const resp = JSON.parse(xhr.responseText) as UploadResponsePayload;
-                resolve(resp);
-            } else {
-                reject(MakeErrorUploadResponsePayload(`loadend state error ${xhr.responseText}`));
-            }
-        });
-        xhr.upload.addEventListener("error", (e) => {
-            //reject(`upload error`);
-            reject(MakeErrorUploadResponsePayload(`upload error event`));
-        });
-        xhr.addEventListener("error", (e) => {
-            reject(MakeErrorUploadResponsePayload(`read response error ${xhr.responseText}`));
-        });
-
-        // add form fields
-        Object.entries(args.fields).forEach(([key, value]) => {
-            formData.append(key, value);
-        });
-
-        xhr.open("POST", "/api/files/upload", true);
-
-        // see blitz docs for manually invoking APIs / https://blitzjs.com/docs/session-management#manual-api-requests
-        const antiCSRFToken = getAntiCSRFToken();
-        if (antiCSRFToken) {
-            xhr.setRequestHeader("anti-csrf", antiCSRFToken);
-        }
-
-        xhr.send(formData);
-    });
-}
-
-
-
-////////////////////////////////////////////////////////////////
-export function CircularProgressWithLabel(props: CircularProgressProps & { value: number, size?: number, textCssClass?: string }) {
-    //props.size = props.size || 70;
-    //props.thickness = props.thickness || 7;
-    return (
-        <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-            <CircularProgress variant="determinate" {...props} style={{ color: "#0a0" }} size={props.size} thickness={7} />
-            <Box
-                sx={{
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    right: 0,
-                    position: 'absolute',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <Typography
-                    variant="caption"
-                    component="div"
-                    color="text.secondary"
-                    className={props.textCssClass}
-                >{`${Math.round(props.value)}%`}</Typography>
-            </Box>
-        </Box>
-    );
-}
 
 
 

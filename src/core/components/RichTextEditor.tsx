@@ -13,21 +13,24 @@ import EditIcon from '@mui/icons-material/Edit';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import wikirefs_plugin from 'markdown-it-wikirefs';
-import { useDebounce } from "shared/useDebounce";
-import { CoerceToBoolean, IsNullOrWhitespace, parseMimeType } from "shared/utils";
-import { MatchingSlugItem } from "../db3/shared/apiTypes";
-import { CMSmallButton } from "./CMCoreComponents2";
-//import { gIconMap } from "../db3/components/IconSelectDialog";
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
+
+import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
+import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
+import { useDebounce } from "shared/useDebounce"; // 0 internal refs
+import { CoerceToBoolean, IsNullOrWhitespace, parseMimeType } from "shared/utils";
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { API } from "../db3/clientAPI";
-import { CMDBUploadFile } from "./CMCoreComponents";
-import { DashboardContext } from './DashboardContext';
-import { FileDropWrapper } from "./SongFileComponents";
+
+import { CMSmallButton } from "./CMCoreComponents2";
+import { CMDBUploadFile } from "./CMDBUploadFile";
+import { FileDropWrapper } from "./FileDrop";
+
+//import { gIconMap } from "../db3/components/IconSelectDialog";
+//import { API } from "../db3/clientAPI"; <-- circular dependency.
+//import { DashboardContext } from './DashboardContext';<-- circular dependency.
 
 function markdownItImageDimensions(md) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
@@ -228,11 +231,9 @@ interface MarkdownEditorProps {
 export function MarkdownEditor(props: MarkdownEditorProps) {
     const [progress, setProgress] = React.useState<number | null>(null);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const dashboardContext = React.useContext(DashboardContext);
-    const publicPermissionId = API.users.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
     const ta = React.useRef<any>({});
 
-    const maxImageDimension = API.settings.useNumberSetting("maxImageDimension", 700); // expire after 2 weeks ago
+    const maxImageDimension = 800;
 
     const setTa = (v) => {
         ta.current = v;
@@ -248,7 +249,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setProgress(0);
             CMDBUploadFile({
                 fields: {
-                    visiblePermissionId: publicPermissionId,
+                    visiblePermission: Permission.visibility_public,
                 },
                 files,
                 onProgress: (prog01, uploaded, total) => {
@@ -267,7 +268,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 const textAfter = textarea.value.substring(end, textarea.value.length);
 
                 const toInsert = resp.files.map(f => {
-                    const url = API.files.getURIForFile(f); // relative url is fine.
+                    const url = `/api/files/download/${f.storedLeafName}`; // relative url is fine.
                     const mimeInfo = parseMimeType(f.mimeType);
                     const isImage = mimeInfo?.type === 'image';
                     if (isImage) {

@@ -908,7 +908,7 @@ export interface ForkResizeImageParams {
     maxImageDimension: number;
 };
 
-export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }: ForkResizeImageParams): (Prisma.FileGetPayload<{}> | null) => {
+export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }: ForkResizeImageParams): Promise<Prisma.FileGetPayload<{}> | null> => {
     const outputType: ImageFileFormat = "jpg";
 
     if (!(parentFile.mimeType || "").toLowerCase().startsWith("image")) {

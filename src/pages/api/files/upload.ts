@@ -4,7 +4,7 @@ import formidable, { PersistentFile } from 'formidable';
 import { api } from "src/blitz-server"
 import { Ctx } from "@blitzjs/next";
 import { TClientUploadFileArgs, UploadResponsePayload } from 'src/core/db3/shared/apiTypes';
-import { CoerceToNumberOrNull, CoerceToString, isValidURL, sleep } from 'shared/utils';
+import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL, sleep } from 'shared/utils';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import * as mutationCore from 'src/core/db3/server/db3mutationCore';
@@ -43,9 +43,9 @@ export default api(async (req, res, origCtx: Ctx) => {
                     isSuccess: true,
                 };
 
-                const maxImageDimension: number | undefined = CoerceToNumberOrNull(fields.maxImageDimension[0]) || undefined;
-
                 try {
+                    const maxImageDimension: number | undefined = CoerceToNumberOrNull(fields.maxImageDimension[0]) || undefined;
+
                     // fields comes across with keys corresponding to TClientUploadFileArgs
                     // except the values are arrays of string (length 1), rather than number.
                     const args: TClientUploadFileArgs = {};
@@ -54,6 +54,12 @@ export default api(async (req, res, origCtx: Ctx) => {
                     args.taggedSongId = fields.taggedSongId && (CoerceToNumberOrNull(fields.taggedSongId[0]));
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
                     args.visiblePermissionId = fields.visiblePermissionId && (CoerceToNumberOrNull(fields.visiblePermissionId[0]));
+
+                    const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
+
+                    if (!args.visiblePermissionId && !IsNullOrWhitespace(visiblePermission)) {
+                        args.visiblePermissionId = (await db.permission.findFirst({ where: { name: visiblePermission } }))!.id;
+                    }
 
                     if (fields.externalURI) {
                         const sanitizedURI = CoerceToString(fields.externalURI[0]);
