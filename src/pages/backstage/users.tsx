@@ -6,7 +6,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, useMediaQuery } from "@mui/material";
 import impersonateUser from "src/auth/mutations/impersonateUser";
 import { useMutation } from "@blitzjs/rpc";
 import { useRouter } from "next/router";
@@ -14,12 +14,15 @@ import { Routes } from "@blitzjs/next"
 import * as React from 'react';
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { useTheme } from "@mui/material/styles";
 
 const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
     const [resetURL, setResetURL] = React.useState<string | null>(null);
     const [showCopied, setShowCopied] = React.useState<boolean>(false);
     const [forgotPasswordMutation, { isSuccess }] = useMutation(forgotPassword);
+    const theme = useTheme();
+    const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     const handleConfirmClick = () => {
         forgotPasswordMutation({ email: user.email }).then((r) => {
@@ -64,7 +67,7 @@ const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {
             <Dialog
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
                 open={true}
-                className="resetPasswordURLDialog"
+                className={`resetPasswordURLDialog ${isMdUp ? "bigScreen" : "smallScreen"}`}
                 onClose={() => { setShowCopied(false); setResetURL(null) }}
             >
                 <DialogTitle>Here's your link</DialogTitle>

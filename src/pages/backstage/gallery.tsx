@@ -6,7 +6,7 @@ import { Permission } from "shared/permissions";
 import { parseMimeType } from "shared/utils";
 import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import * as CMCoreComponents from "src/core/components/CMCoreComponents";
-import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
 import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
@@ -14,17 +14,44 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from "react";
 import * as mime from 'mime';
 import { slugify, unslugify } from "shared/rootroot";
+import { SongAutocomplete } from "src/core/components/EventSongListComponents";
+import * as db3 from "src/core/db3/db3";
 
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
     const [slugOrNot, setSlugOrNot] = React.useState<string>("");
     const [mimeTypeStr, setMimeTypeStr] = React.useState<string>("");
-    //parseMimeType
+    const [songValue, setSongValue] = React.useState<db3.SongPayload | null>(null);
 
     useAuthorizationOrThrow("gallyery", Permission.sysadmin);
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <>
+
+        <CMCoreComponents.CMSinglePageSurfaceCard>
+
+            <h3>SongAutocomplete</h3>
+            <div style={{ backgroundColor: "#c4c", padding: "10px" }}>
+                <div style={{ backgroundColor: "white", padding: "10px" }}>
+                    <SongAutocomplete
+                        index={0}
+                        value={songValue}
+                        onChange={(value) => setSongValue(value as any)}
+                    />
+                </div>
+            </div>
+
+            <KeyValueDisplay data={{
+                id: (songValue?.id) || "<null>",
+                name: (songValue?.name) || "<null>",
+            }} />
+
+        </CMCoreComponents.CMSinglePageSurfaceCard>
+
+
+
+
+
         <CMCoreComponents.CMSinglePageSurfaceCard>
 
             <h3>DateTimeRange</h3>

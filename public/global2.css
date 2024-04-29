@@ -8,7 +8,9 @@ html,
     display: flex;
 }
 
-.CMDashboard2.smallScreen .mainContentBackdrop {
+.CMDashboard2.smallScreen .mainContentBackdrop,
+/* no padding for full-screen dialogs because screen space is premium.*/
+.smallScreen .MuiDialogContent-root {
     padding-left: 4px;
     padding-right: 10px;
 }
@@ -123,6 +125,13 @@ input.CMTextInputBase.titleText {
     border: none;
     background: none;
     font-size: 23px;
+    /**/
+    width: 100%;
+    width: -moz-available;
+    /* WebKit-based browsers will ignore this. */
+    width: -webkit-fill-available;
+    /* Mozilla-based browsers will ignore this. */
+    width: fill-available;
 
     /* margin: 6px; */
     /* i don't like the bottom border exactly; but for empty fields it does a good job of directing the user to this cell*/
@@ -381,6 +390,8 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .fileDropWrapper {
     border: 4px solid transparent;
     position: relative;
+    /* width 100% is required for editing markdown in dialogs to consume full width. not exactly sure why though because display is still block.*/
+    width: 100%;
 }
 
 .UploadFileComponent.dragging,
@@ -558,7 +569,7 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .DateTimeRangeControl {
     display: flex;
     flex-direction: column;
-    padding: 5px;
+    padding: 4px;
 }
 
 .DateTimeRangeControl .interactable {
@@ -574,28 +585,30 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .DateTimeRangeControl .row>.field>.field {
     /* better vertical centering*/
     display: flex;
-    font-size: 17px;
+    font-size: 16px;
     white-space: nowrap;
-    font-weight: bold;
-    font-family: monospace;
-    margin: 0px 10px;
+    /* font-weight: bold; */
+    /* font-family: monospace; */
+    letter-spacing: -0.5px;
+    margin: 0px 8px;
 }
 
 
 .DateTimeRangeControl .row>.field.dateSelection {
     /* fixed-width in order for the "all-day" control to stay in place */
-    width: 520px;
+    width: 450px;
 }
 
 .DateTimeRangeControl .timePart select {
     /* width: 180px; */
-    font-size: 17px;
-    font-weight: bold;
-    font-family: monospace;
+    font-size: 16px;
+    /* font-weight: bold; */
+    /* font-family: monospace; */
     margin: 0px 2px;
     border: 0;
     /* padding: 5px; */
     /* text-align: center; */
+    letter-spacing: -0.5px;
     appearance: none;
 }
 

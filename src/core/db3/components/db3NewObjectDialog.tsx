@@ -75,7 +75,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                 open={true}
                 onClose={onCancel}
                 scroll="paper"
-                className={`ReactiveInputDialog`}
+                className={`ReactiveInputDialog ${fullScreen ? "smallScreen" : "bigScreen"}`}
                 fullScreen={fullScreen}
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >
@@ -190,7 +190,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                 open={true}
                 onClose={onCancel}
                 scroll="paper"
-                className={`ReactiveInputDialog`}
+                className={`ReactiveInputDialog ${fullScreen ? "smallScreen" : "bigScreen"}`}
                 fullScreen={fullScreen}
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >

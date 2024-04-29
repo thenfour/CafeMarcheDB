@@ -385,6 +385,32 @@ export interface GetSongFilterInfoRet {
     totalRowCountQuery: string;
 };
 
+
+
+export const GetFilteredSongsItemSongSelect = Prisma.validator<Prisma.SongSelect>()({
+    name: true,
+    id: true,
+    aliases: true,
+    startBPM: true,
+    endBPM: true,
+    tags: {
+        select: {
+            tag: true,
+        }
+    },
+    visiblePermission: true,
+    lengthSeconds: true,
+    introducedYear: true,
+});
+
+export type GetFilteredSongsItemSongPayload = Prisma.SongGetPayload<{
+    select: typeof GetFilteredSongsItemSongSelect,
+}>;
+
+export interface GetFilteredSongsRet {
+    matchingItems: GetFilteredSongsItemSongPayload[];
+};
+
 export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
     rowCount: 0,
     songIds: [],

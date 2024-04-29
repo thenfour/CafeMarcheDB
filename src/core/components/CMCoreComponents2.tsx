@@ -89,7 +89,7 @@ export const NameValuePair = (props: NameValuePairProps) => {
 }
 
 // Define TypeScript type for the props
-type KeyValueDisplayValueType = string | null | undefined;
+type KeyValueDisplayValueType = string | null | undefined | number;
 type KeyValueDisplayProps = {
     data: Record<string, KeyValueDisplayValueType>;
 };
@@ -109,8 +109,12 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data }) => {
             else if (value === undefined) {
                 return <React.Fragment key={index} />;
             }
-            else {
+            else if (typeof value === 'string') {
                 valueStr = value;
+            } else if (typeof value === 'number') {
+                valueStr = value.toString();
+            } else {
+                valueStr = "unknown datatype";
             }
             return <div key={index}>
                 {key.padEnd(maxKeyLength, ' ')} : {valueStr}
@@ -127,7 +131,7 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data }) => {
 
 
 ////////////////////////////////////////////////////////////////
-export function CircularProgressWithLabel(props: CircularProgressProps & { value: number, size?: number, textCssClass?: string }) {
+export function CircularProgressWithLabel(props: CircularProgressProps & { value: number, size?: number }) {
     //props.size = props.size || 70;
     //props.thickness = props.thickness || 7;
     return (
@@ -149,7 +153,6 @@ export function CircularProgressWithLabel(props: CircularProgressProps & { value
                     variant="caption"
                     component="div"
                     color="text.secondary"
-                    className={props.textCssClass}
                 >{`${Math.round(props.value)}%`}</Typography>
             </Box>
         </Box>

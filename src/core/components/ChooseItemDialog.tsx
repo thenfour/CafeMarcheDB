@@ -66,7 +66,7 @@ export function ChooseItemDialog<T>(props: ChooseItemDialogProps<T>) {
             onClose={props.onCancel}
             scroll="paper"
             fullScreen={fullScreen}
-            className={`ReactiveInputDialog`}
+            className={`ReactiveInputDialog ${fullScreen ? "smallScreen" : "bigScreen"}`}
             disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
         >
             <DialogTitle>

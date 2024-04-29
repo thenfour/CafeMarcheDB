@@ -269,10 +269,20 @@ export class xTableRenderClient {
             };
 
             const queryResult = usePaginatedQuery(db3paginatedQueries, paginatedQueryInput, args.queryOptions || gQueryOptions.default);
-            const { items, count } = queryResult[0];
-            items_ = items as TAnyModel[];
-            this.rowCount = count;
-            this.remainingQueryResults = { ...queryResult[0] };
+            //const { items, count } = queryResult[0];
+            //items_ = items as TAnyModel[];
+
+            if (!queryResult[0]) {
+                items_ = [];
+                this.rowCount = 0;
+            } else {
+                items_ = queryResult[0].items as TAnyModel[];
+                this.rowCount = queryResult[0].items.length;
+                this.remainingQueryResults = { ...queryResult[0] };
+            }
+
+            //this.rowCount = count;
+            //this.remainingQueryResults = { ...queryResult[0] };
             this.remainingQueryStatus = { ...queryResult[1] };
             this.refetch = queryResult[1].refetch;
         }
@@ -293,10 +303,16 @@ export class xTableRenderClient {
 
             const queryResult = useQuery(db3queries, queryInput, args.queryOptions || gQueryOptions.default);
 
-            items_ = queryResult[0].items as TAnyModel[];
+            // results may be undefined.
+            if (!queryResult[0]) {
+                items_ = [];
+                this.rowCount = 0;
+            } else {
+                items_ = queryResult[0].items as TAnyModel[];
+                this.rowCount = queryResult[0].items.length;
+                this.remainingQueryResults = { ...queryResult[0] };
+            }
             this.remainingQueryStatus = { ...queryResult[1] };
-            this.remainingQueryResults = { ...queryResult[0] };
-            this.rowCount = queryResult[0].items.length;
             this.refetch = queryResult[1].refetch;
         }
 

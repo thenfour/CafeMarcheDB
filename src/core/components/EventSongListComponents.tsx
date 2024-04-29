@@ -24,7 +24,9 @@ import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmooth
 import { CMDialogContentText } from './CMCoreComponents2';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
-import { TAnyModel } from '../db3/shared/apiTypes';
+import { GetFilteredSongsItemSongPayload, TAnyModel } from '../db3/shared/apiTypes';
+import { useQuery } from '@blitzjs/rpc';
+import getFilteredSongs from '../db3/queries/getFilteredSongs';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -165,90 +167,107 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 };
 
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SongAutocompleteProps {
-    // filters ? by tag for example, or sorting options?
     value: db3.SongPayload | null;
-    onChange: (value: db3.SongPayload | null) => void;
+    index: number;
+    onChange: (value: GetFilteredSongsItemSongPayload | null) => void;
 };
-export const SongAutocomplete = (props: SongAutocompleteProps) => {
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
 
-    const songTableSpec = new DB3Client.xTableClientSpec({
-        table: db3.xSong,
-        columns: [
-            new DB3Client.PKColumnClient({ columnName: "id" }),
-        ],
+export const SongAutocomplete = ({ value, onChange, index }: SongAutocompleteProps) => {
+    const [inputValue, setInputValue] = React.useState(''); // value of the input
+    const [debouncedValue, setDebouncedValue] = React.useState(''); // debounced input value
+    const [hasChanged, setHasChanged] = React.useState(false);
+
+    // Debouncing user input to avoid excessive fetches
+    React.useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedValue(inputValue);
+            setHasChanged(true);
+        }, 100);
+        return () => clearTimeout(timerId);
+    }, [inputValue]);
+
+    // Fetching songs based on debounced input value
+    const [songs__] = useQuery(getFilteredSongs, { autocompleteQuery: debouncedValue }, {
+        suspense: false,
+        enabled: hasChanged && Boolean(debouncedValue)
     });
+    const songs = (songs__?.matchingItems) || [];
 
-    const songTableClient = DB3Client.useTableRenderContext({
-        clientIntention,
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: songTableSpec,
-        // filter options, by tag e.g.
-    });
+    const filterOptions = (options: db3.SongPayload[], { inputValue }: { inputValue: string }) => {
+        return options.filter(option => option.name.toLowerCase().includes(inputValue.toLowerCase()));
+    };
 
-    const items: db3.SongPayload[] = songTableClient.items as any;
-
-    const filterOptions = createFilterOptions<db3.SongPayload>({
-        matchFrom: "any",
-        stringify: (option) => option.name,
-    });
+    const handleChange = (newValue: GetFilteredSongsItemSongPayload | null | string) => {
+        if (typeof newValue === "string") {
+            // never called anyway but in case it was we should ignore.
+            return;
+        }
+        setHasChanged(true);
+        onChange(newValue);
+    };
 
     return <Autocomplete
-        options={items}
-        value={props.value}
-        onChange={(event, value) => props.onChange(value)}
+        options={songs || []}
+        value={value}
+        onChange={(event, newValue) => handleChange(newValue)}
 
         fullWidth={true}
-        // open={open}
-        // onClose={() => setOpen(false)} // always close when user requests it.
-        // onOpen={(event) => {
-        //     // only open the popup indicator arrow clicking
-        //     setOpen(true);
-        // }}
-        // onInputChange={(_, value) => {
-        //     // don't show the popup when nothing is typed. too much visual clutter.
-        //     // https://stackoverflow.com/questions/69380819/hide-material-ui-autocomplete-popup-until-text-is-typed
-        //     if (value.length === 0) {
-        //         if (open) setOpen(false);
-        //     } else {
-        //         if (!open) setOpen(true);
-        //     }
-        // }}
-        openOnFocus={false} // covers focus event but not clicks; see below for workaround
+        openOnFocus={false}
+        inputValue={inputValue}
+        onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
 
-        getOptionLabel={(option) => option.name}
-        filterOptions={filterOptions} // needed in order to filter objects not simple string options
-
-        isOptionEqualToValue={(option, value) => option.id === value.id}
-        renderOption={(props, option, state) => {
-            return <li className="songDropdownOption" {...props}>{option.name}</li>;
+        // used to populate the input box
+        getOptionLabel={(option: GetFilteredSongsItemSongPayload | string) => {
+            if (typeof (option) === 'string') {
+                return option;
+            }
+            return option.name;
         }}
+        getOptionKey={(option) => {
+            if (typeof (option) === 'string') {
+                return `free:${option}`;
+            }
+            return `id:${option.id}`;
+        }}
+        filterOptions={filterOptions}
+        freeSolo={true} // required because options are fetched async and therefore may not match the selected item.
+
+        isOptionEqualToValue={(option, value) => {
+            if (typeof value === 'string') {
+                if (typeof option === 'string') {
+                    return option === value;
+                }
+                return option.name === value;
+            }
+            if (typeof option === 'string') {
+                return option === value.name;
+            }
+            return option.name === value.name;
+        }}
+        renderOption={(props, option) => (
+            <li {...props}>
+                {typeof option === 'string' ? option : option.name}
+            </li>
+        )}
         renderInput={(params: AutocompleteRenderInputParams) => {
-            // using autocomplete with InputBase: https://stackoverflow.com/questions/64609126/how-do-i-use-autocomplete-component-of-material-ui-with-inputbase
             const { InputLabelProps, InputProps, ...rest } = params;
             const inputProps = { ...params.InputProps, ...rest };
-            if (inputProps.className) {
-                inputProps.className = inputProps.className + " cmdbSimpleInput";
-            } else {
-                inputProps.className = "cmdbSimpleInput";
-            }
 
             return <div className="cmdbSimpleInputWrapper">
                 <InputBase
                     {...inputProps}
-
-                    // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                    // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
                     onMouseDownCapture={(e) => e.stopPropagation()}
                 />
             </div>;
         }}
     />;
 };
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueEditorRowProps {
@@ -283,7 +302,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             </div>
             <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div>
             <div className="td songName">
-                <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} />
+                <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} index={props.index} />
             </div>
             <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
             <div className="td tempo">{formattedBPM}</div>
@@ -297,7 +316,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                         // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
                         // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
                         onMouseDownCapture={(e) => e.stopPropagation()}
-                        value={props.value.subtitle}
+                        value={props.value.subtitle || ""}
                         onChange={(e) => handleCommentChange(e.target.value)}
                     />
                 </div>

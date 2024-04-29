@@ -65,7 +65,6 @@ export const FileDropWrapper = (props: React.PropsWithChildren<FileDropWrapperPr
                     value={100 * (props.progress || 0)}
                     className='progressIndicator'
                     size={200}
-                    textCssClass='progressLabel'
                 />
             </div>
         </Modal>
