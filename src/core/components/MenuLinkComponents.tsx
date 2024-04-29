@@ -88,7 +88,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "ExternalURL") &&
-                <a href={props.item.externalURI || ""} target="_blank" className="menuLinkTestLink externalCMLink">
+                <a href={props.item.externalURI || ""} target="_blank" rel="noreferrer" className="menuLinkTestLink externalCMLink">
                     <div>Test external link</div>
                     {gIconMap.Launch()}
                 </a>
@@ -96,7 +96,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "Wiki") &&
-                <a href={`/backstage/wiki/${slugify(props.item.wikiSlug || "")}`} target="_blank" className="menuLinkTestLink wikiCMLink">
+                <a href={`/backstage/wiki/${slugify(props.item.wikiSlug || "")}`} target="_blank" rel="noreferrer" className="menuLinkTestLink wikiCMLink">
                     <div>Test wiki link</div>
                     {gIconMap.Launch()}
                 </a>

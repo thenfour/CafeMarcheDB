@@ -1,18 +1,9 @@
-//'use client'
-
 // <Markdown> = rendered markdown text (simple read only html)
 // <MarkdownEditor> = just the text editor which outputs markdown
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
 
-// todo: autocomplete routes (events, songs) [[]]
-// todo: autocomplete mentions
 // todo: paste attachments
 // todo: drop attachments
-
-// import {
-//     DeleteOutlined as DeleteIcon,
-//     Edit as EditIcon
-// } from '@mui/icons-material';
 import { Button, CircularProgress, Tooltip } from "@mui/material";
 import MarkdownIt from 'markdown-it';
 import React from "react";
@@ -26,7 +17,11 @@ import { CMSmallButton } from "./CMCoreComponents2";
 import { CoerceToBoolean, IsNullOrWhitespace, slugify } from "shared/utils";
 import wikirefs_plugin, { WikiEmbedsOptions } from 'markdown-it-wikirefs';
 import { MatchingSlugItem } from "../db3/shared/apiTypes";
-import { gIconMap } from "../db3/components/IconSelectDialog";
+//import { gIconMap } from "../db3/components/IconSelectDialog";
+
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import PersonIcon from '@mui/icons-material/Person';
 
 
 
@@ -197,10 +192,10 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 "[[@": {
                     dataProvider: token => fetchEventOrSongTags(token),
                     component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
-                        {entity.itemType === "event" && gIconMap.CalendarMonth()}
-                        {entity.itemType === "song" && gIconMap.MusicNote()}
-                        {entity.itemType === "user" && gIconMap.Person()}
-                        {entity.itemType === "instrument" && gIconMap.MusicNote()}
+                        {entity.itemType === "event" && <CalendarMonthIcon />}
+                        {entity.itemType === "song" && <MusicNoteIcon />}
+                        {entity.itemType === "user" && <PersonIcon />}
+                        {entity.itemType === "instrument" && <MusicNoteIcon />}
                         {entity.name}
                     </div>,
                     output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
