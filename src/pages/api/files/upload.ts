@@ -43,6 +43,8 @@ export default api(async (req, res, origCtx: Ctx) => {
                     isSuccess: true,
                 };
 
+                const maxImageDimension: number | undefined = CoerceToNumberOrNull(fields.maxImageDimension[0]) || undefined;
+
                 try {
                     // fields comes across with keys corresponding to TClientUploadFileArgs
                     // except the values are arrays of string (length 1), rather than number.
@@ -144,9 +146,22 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                             await rename(oldpath, newpath);
 
-                            await mutationCore.PostProcessFile(newFile);
+                            await mutationCore.PostProcessFile({ file: newFile });
 
-                            responsePayload.files.push(newFile);
+                            if (maxImageDimension !== undefined) {
+                                const resizedFile = await mutationCore.ForkResizeImageImpl({
+                                    ctx,
+                                    parentFile: newFile,
+                                    maxImageDimension,
+                                });
+                                if (resizedFile !== null) {
+                                    responsePayload.files.push(resizedFile);
+                                } else {
+                                    responsePayload.files.push(newFile);
+                                }
+                            } else {
+                                responsePayload.files.push(newFile);
+                            }
                         }
                     });
 

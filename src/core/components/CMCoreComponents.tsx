@@ -467,6 +467,10 @@ export function TabA11yProps(tabPanelID: string, index: number) {
 export interface CMDBUploadFilesArgs {
     files: FileList | null;
     fields: TClientUploadFileArgs;
+
+    // set this to tell the file processor to generate a smaller version of the file if it's an image and too big.
+    // this is used by the markdown editor.
+    maxImageDimension?: number;
     onProgress: (progress01: number, uploaded: number, total: number) => void;
 };
 
@@ -476,6 +480,9 @@ export async function CMDBUploadFile(args: CMDBUploadFilesArgs): Promise<UploadR
         for (let i = 0; i < args.files.length; ++i) {
             formData.append(`file_${i}`, args.files[i]!);
         }
+    }
+    if (args.maxImageDimension !== undefined) {
+        formData.append("maxImageDimension", args.maxImageDimension.toString());
     }
     const xhr = new XMLHttpRequest();
 

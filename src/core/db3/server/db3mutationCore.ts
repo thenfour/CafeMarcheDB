@@ -11,7 +11,7 @@ import { DateTimeRange } from "shared/time";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/utils";
 import sharp from "sharp";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
+import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { assert } from "blitz";
@@ -896,15 +896,95 @@ export const ForkImageImpl = async (params: ForkImageParams, ctx: AuthenticatedC
 
     const ret = await insertImpl(db3.xFile, newFile, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
 
-    await PostProcessFile(ret);
+    await PostProcessFile({ file: ret });
 
     return ret;
 };
 
+
+export interface ForkResizeImageParams {
+    parentFile: Prisma.FileGetPayload<{}>;
+    ctx: AuthenticatedCtx;
+    maxImageDimension: number;
+};
+
+export const ForkResizeImageImpl = async ({ parentFile, ctx, maxImageDimension }: ForkResizeImageParams): (Prisma.FileGetPayload<{}> | null) => {
+    const outputType: ImageFileFormat = "jpg";
+
+    if (!(parentFile.mimeType || "").toLowerCase().startsWith("image")) {
+        return null;
+    }
+
+    const currentUser = await getCurrentUserCore(ctx);
+    if (!currentUser) {
+        throw new Error(`public cannot create files`);
+    }
+    const clientIntention: db3.xTableClientUsageContext = { currentUser, intention: 'user', mode: 'primary' };
+
+    // new filename will be same as old, with new extension and add a tag.
+    const parsedPath = path.parse(parentFile.fileLeafName); // user-friendly name
+    const newLeaf = `${parsedPath.name}_.${outputType}`;
+
+    const newFile = PrepareNewFileRecord({
+        humanReadableLeafName: newLeaf,
+        sizeBytes: 0, // fill in later when it's known!
+        uploadedByUserId: currentUser.id,
+        visiblePermissionId: parentFile.visiblePermissionId, // theoretically this can result in issues if original uploader is not the same as the new uploader and this is NULL. however NULL implies it's not meant to be seen by others so i don't think it's something that needs to be fixed.
+        parentFileId: parentFile.id,
+        lastModifiedDate: new Date(),
+    });// as Record<string, any>; // because we're adding custom fields and i'm too lazy to create more types
+
+    // perform the adjustments on parent image + save on disk
+    const parentFullPath = GetFileServerStoragePath(parentFile.storedLeafName);
+    const outputPath = GetFileServerStoragePath(newFile.storedLeafName);
+    const customData: FileCustomData = {
+        relationToParent: "forkedImage",
+        // image metadata will be populated later in post-processing.
+    };
+
+    // we must add ".rotate()" here to tell sharp to bake the metadata orientation into the image, so we're working with the same dimensions as the user expects.
+    // https://stackoverflow.com/questions/48716266/sharp-image-library-rotates-image-when-resizing
+    let newImage = sharp(parentFullPath).rotate();
+    const metadata = await newImage.metadata();
+    if (!metadata) return null;
+    if (!metadata.width) return null;
+    if (!metadata.height) return null;
+    if (metadata.width <= maxImageDimension || metadata.height <= maxImageDimension) {
+        return null;
+    }
+
+    // resize required
+    newImage = await newImage.resize({
+        width: maxImageDimension,
+        height: maxImageDimension,
+        fit: 'inside'  // Keeps the aspect ratio and ensures the image fits within the dimensions
+    });
+
+    // save
+    await newImage.toFile(outputPath);
+
+    // update size now that it can be known
+    const stats = await stat(outputPath);
+    newFile.sizeBytes = stats.size;
+
+    // seems natural to gather the metadata right now, however it gets done in post-processing so it's not necessary.
+    newFile.customData = JSON.stringify(customData);
+
+    const ret = await insertImpl(db3.xFile, newFile, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
+
+    await PostProcessFile({ file: ret });
+
+    return ret;
+};
+
+
+
+
+
 // WHY have such a function?
 // 1. it's for all files not just images
 // 2. it will take action depending on the format. there are various ways of uploading images, this is a singular place to take care of sorting out details like thumbnail creation.
-export const PostProcessFile = async (file: Prisma.FileGetPayload<{}>) => {
+export const PostProcessFile = async ({ file }: { file: Prisma.FileGetPayload<{}> }) => {
     const path = GetFileServerStoragePath(file.storedLeafName);
     const fileCustomData = getFileCustomData(file);
     if ((file.mimeType || "").toLowerCase().startsWith("image")) {

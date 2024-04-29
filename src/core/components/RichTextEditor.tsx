@@ -14,7 +14,7 @@ import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import wikirefs_plugin from 'markdown-it-wikirefs';
 import { useDebounce } from "shared/useDebounce";
-import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
+import { CoerceToBoolean, IsNullOrWhitespace, parseMimeType } from "shared/utils";
 import { MatchingSlugItem } from "../db3/shared/apiTypes";
 import { CMSmallButton } from "./CMCoreComponents2";
 //import { gIconMap } from "../db3/components/IconSelectDialog";
@@ -23,7 +23,43 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import { slugify } from "shared/rootroot";
+import { FileDropWrapper } from "./SongFileComponents";
+import { CMDBUploadFile } from "./CMCoreComponents";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { Permission } from "shared/permissions";
+import { useAuthorization } from "src/auth/hooks/useAuthorization";
+import { DashboardContext } from './DashboardContext';
+import { API } from "../db3/clientAPI";
+import { getAbsoluteUrl } from "../db3/clientAPILL";
 
+function markdownItImageDimensions(md) {
+    const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
+        return self.renderToken(tokens, idx, options);
+    };
+
+    md.renderer.rules.image = function (tokens, idx, options, env, self) {
+        const token = tokens[idx];
+        const srcIndex = token.attrIndex('src');
+
+        if (srcIndex >= 0) {
+            const srcAttr = token.attrs[srcIndex][1];
+            const dimensionMatch = srcAttr.match(/^(.*?)(\?\d+)$/);
+
+            if (dimensionMatch && dimensionMatch.length > 2) {
+                const url = dimensionMatch[1]; // The actual URL without the dimension part
+                const dimension = dimensionMatch[2].substring(1); // Remove the '?' to get the dimension
+
+                // Update the src attribute to the clean URL without the dimension query
+                token.attrs[srcIndex][1] = url;
+
+                // Apply the dimension as a style for both max-width and max-height
+                token.attrPush(['style', `max-width: ${dimension}px; max-height: ${dimension}px;`]);
+            }
+        }
+
+        return defaultRender(tokens, idx, options, env, self);
+    };
+};
 
 
 function cmLinkPlugin(md) {
@@ -98,8 +134,33 @@ export const Markdown = (props: MarkdownProps) => {
             resolveHtmlText: (env: any, fname: string) => fname.replace(/-/g, ' '),
             resolveEmbedContent: (env: any, fname: string) => fname + ' content',
         };
+
+
+        // https://github.com/markdown-it/markdown-it/blob/master/docs/architecture.md#renderer
+        // this adds attribute target=_blank so links open in new tab.
+        // Remember old renderer, if overridden, or proxy to default renderer
+        var defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+        md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+            // If you are sure other plugins can't add `target` - drop check below
+            var aIndex = tokens[idx].attrIndex('target');
+
+            if (aIndex < 0) {
+                tokens[idx].attrPush(['target', '_blank']); // add new attribute
+            } else {
+                tokens[idx].attrs[aIndex][1] = '_blank';    // replace value of existing attr
+            }
+
+            // pass token to default renderer.
+            return defaultRender(tokens, idx, options, env, self);
+        };
+
+
         md.use(wikirefs_plugin, options);
         md.use(cmLinkPlugin);
+        md.use(markdownItImageDimensions);
 
         setHtml(md.render(props.markdown));
     }, [props.markdown]);
@@ -169,64 +230,131 @@ interface MarkdownEditorProps {
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
-    //const Item = ({ entity: { name, char } }) => <div>{`${name}: ${char}`}</div>;
-    //const Loading = ({ data }) => <div>Loading</div>;
+    const [progress, setProgress] = React.useState<number | null>(null);
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = React.useContext(DashboardContext);
+    const publicPermissionId = API.users.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
+    const ta = React.useRef<any>({});
+
+    const maxImageDimension = API.settings.useNumberSetting("maxImageDimension", 700); // expire after 2 weeks ago
+
+    const setTa = (v) => {
+        ta.current = v;
+    };
 
     const style: React.CSSProperties = {
         minHeight: props.height || 400,
     };
 
-    return (
-        <ReactTextareaAutocomplete
-            containerClassName="editorContainer"
-            loadingComponent={() => <div>Loading...</div>}
-            autoFocus={!!props.autoFocus}
-            //ref={rta => setRta(rta)}
-            //innerRef={textarea => setTa(textarea)}
-            containerStyle={{
-                //marginTop: 20,
-            }}
-            //movePopupAsYouType={true}
-            value={props.value || ""}
-            height={props.height || 400}
-            style={style}
-            onChange={(e) => {
-                props.onValueChanged(e.target.value);
-            }}
-            minChar={3} // how many chars AFTER the trigger char you need to type before the popup arrives
+    // ok when you upload, the gallery item component is created.
+    const handleFileSelect = (files: FileList) => {
+        if (files.length > 0) {
+            setProgress(0);
+            CMDBUploadFile({
+                fields: {
+                    visiblePermissionId: publicPermissionId,
+                },
+                files,
+                onProgress: (prog01, uploaded, total) => {
+                    setProgress(prog01);
+                },
+                maxImageDimension,
+            }).then((resp) => {
+                setProgress(null);
 
-            trigger={{
-                "[[": { // it's hard to understand how these triggers work; are these chars or strings??
-                    dataProvider: token => fetchWikiSlugs(token),
-                    // renders the item in the suggestion list.
-                    component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem wiki ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
-                    output: (item: string) => `[[${item}]]`
-                },
-                "[[@": {
-                    dataProvider: token => fetchEventOrSongTagsBracketAt(token),
-                    component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
-                        {entity.itemType === "event" && <CalendarMonthIcon />}
-                        {entity.itemType === "song" && <MusicNoteIcon />}
-                        {entity.itemType === "user" && <PersonIcon />}
-                        {entity.itemType === "instrument" && <MusicNoteIcon />}
-                        {entity.name}
-                    </div>,
-                    output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
-                },
-                // basically replicate this just for "@" prefix; it's more intuitive & easy.
-                "@": {
-                    dataProvider: token => fetchEventOrSongTagsAt(token),
-                    component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
-                        {entity.itemType === "event" && <CalendarMonthIcon />}
-                        {entity.itemType === "song" && <MusicNoteIcon />}
-                        {entity.itemType === "user" && <PersonIcon />}
-                        {entity.itemType === "instrument" && <MusicNoteIcon />}
-                        {entity.name}
-                    </div>,
-                    output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
-                },
-            }}
-        />
+                const textarea = ta.current;
+                if (!textarea) return;
+
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const textBefore = textarea.value.substring(0, start);
+                const textAfter = textarea.value.substring(end, textarea.value.length);
+
+                const toInsert = resp.files.map(f => {
+                    const url = API.files.getURIForFile(f); // relative url is fine.
+                    const mimeInfo = parseMimeType(f.mimeType);
+                    const isImage = mimeInfo?.type === 'image';
+                    if (isImage) {
+                        return `![${f.fileLeafName}](${url})`;
+                    }
+                    return `[${f.fileLeafName}](${url})`;
+                }).join(" ");
+
+                const newText = textBefore + toInsert + textAfter;
+                props.onValueChanged(newText);
+
+                if (!resp.isSuccess) {
+                    throw new Error(`Server returned unsuccessful result while uploading files`);
+                }
+                showSnackbar({ severity: "success", children: `Uploaded file(s)` });
+            }).catch((e: string) => {
+                console.log(e);
+                showSnackbar({ severity: "error", children: `error uploading file(s) : ${e}` });
+            });
+        }
+    };
+
+    // const canUpload = useAuthorization("FrontpageGalleryUpload", Permission.upload_files);
+
+    return (
+        <FileDropWrapper
+            className="frontpageGalleryFileUploadWrapper"
+            onFileSelect={handleFileSelect}
+            onURLUpload={() => { }}
+            progress={progress}
+        >
+
+            <ReactTextareaAutocomplete
+                containerClassName="editorContainer"
+                loadingComponent={() => <div>Loading...</div>}
+                autoFocus={!!props.autoFocus}
+                //ref={rta => setRta(rta)}
+                innerRef={textarea => setTa(textarea)}
+                containerStyle={{
+                    //marginTop: 20,
+                }}
+                //movePopupAsYouType={true}
+                value={props.value || ""}
+                height={props.height || 400}
+                style={style}
+                onChange={(e) => {
+                    props.onValueChanged(e.target.value);
+                }}
+                minChar={3} // how many chars AFTER the trigger char you need to type before the popup arrives
+
+                trigger={{
+                    "[[": { // it's hard to understand how these triggers work; are these chars or strings??
+                        dataProvider: token => fetchWikiSlugs(token),
+                        // renders the item in the suggestion list.
+                        component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem wiki ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
+                        output: (item: string) => `[[${item}]]`
+                    },
+                    "[[@": {
+                        dataProvider: token => fetchEventOrSongTagsBracketAt(token),
+                        component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
+                            {entity.itemType === "event" && <CalendarMonthIcon />}
+                            {entity.itemType === "song" && <MusicNoteIcon />}
+                            {entity.itemType === "user" && <PersonIcon />}
+                            {entity.itemType === "instrument" && <MusicNoteIcon />}
+                            {entity.name}
+                        </div>,
+                        output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
+                    },
+                    // basically replicate this just for "@" prefix; it's more intuitive & easy.
+                    "@": {
+                        dataProvider: token => fetchEventOrSongTagsAt(token),
+                        component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
+                            {entity.itemType === "event" && <CalendarMonthIcon />}
+                            {entity.itemType === "song" && <MusicNoteIcon />}
+                            {entity.itemType === "user" && <PersonIcon />}
+                            {entity.itemType === "instrument" && <MusicNoteIcon />}
+                            {entity.name}
+                        </div>,
+                        output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
+                    },
+                }}
+            />
+        </FileDropWrapper>
     );
 }
 

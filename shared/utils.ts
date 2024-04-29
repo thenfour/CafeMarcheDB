@@ -222,6 +222,9 @@ export enum Setting {
     textPalette = "textPalette",
     //EnableOldPublicHomepageBackstageLink = "EnableOldPublicHomepageBackstageLink",
     //EnableNewPublicHomepageBackstageLink = "EnableNewPublicHomepageBackstageLink",
+
+    // for markdown editor drop images
+    maxImageDimension = "maxImageDimension",
 };
 
 export type SettingKey = keyof typeof Setting;
