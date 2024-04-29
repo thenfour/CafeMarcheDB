@@ -31,7 +31,7 @@ import { CalculateEventMetadata, EventWithMetadata } from './EventComponentsBase
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
-import { Markdown, MarkdownEditor2 } from './RichTextEditor';
+import { Markdown } from './RichTextEditor';
 import { GenerateDefaultDescriptionSettingName, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';

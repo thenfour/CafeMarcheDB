@@ -24,8 +24,6 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import { slugify } from "shared/rootroot";
 
-import { Tab, Tabs } from "@mui/material";
-import { CustomTabPanel, TabA11yProps } from "./CMCoreComponents";
 
 
 function cmLinkPlugin(md) {
