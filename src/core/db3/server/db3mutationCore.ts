@@ -1,7 +1,7 @@
 //'use server' - https://stackoverflow.com/questions/76957592/error-only-async-functions-are-allowed-to-be-exported-in-a-use-server-file
 
 import { AuthenticatedCtx, Ctx } from "blitz";
-import db, { Prisma } from "db";
+import db, { Prisma, PrismaClient } from "db";
 import * as mime from 'mime';
 import * as mm from 'music-metadata';
 import { nanoid } from 'nanoid';
@@ -91,15 +91,6 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number, 
 
         const calInp = GetEventCalendarInput(existingEvent);
         const newHash = calInp?.inputHash || "-";
-        // if (newHash === (existingEvent?.calendarInputHash || "")) {
-        //     console.log(`SAME HASH : ${newHash}`);
-        // }
-        // else {
-        //     console.log(`NEW REVISION; existinghash: ${existingEvent.calendarInputHash}`);
-        //     console.log(`new:                        ${newHash}`);
-        //     console.log(` -> revision ${existingRevision + 1}`);
-        // }
-        // console.log(calInp);
         const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 
         await db.event.update({

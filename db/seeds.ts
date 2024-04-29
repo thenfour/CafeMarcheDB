@@ -1,20 +1,10 @@
 import { PrismaClient, Prisma } from '@prisma/client'
-import { Permission, gPermissionOrdered } from '../shared/permissions'
+import { gPermissionOrdered } from '../shared/permissions'
+import { faker } from '@faker-js/faker';
+import { slugify } from '../shared/rootroot';
+import { DateTimeRange, gMillisecondsPerDay, roundToNearest15Minutes } from '../shared/time';
+
 const prisma = new PrismaClient()
-
-
-// https://gist.github.com/codeguy/6684588
-export const slugify = (...args: (string | number)[]): string => {
-  const value = args.join(' ')
-
-  return value
-    .normalize('NFD') // split an accented letter in the base letter and the acent
-    .replace(/[\u0300-\u036f]/g, '') // remove all previously split accents
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9 ]/g, '') // remove all chars not letters, numbers and spaces (to be replaced)
-    .replace(/\s+/g, '-') // separator
-}
 
 const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
   console.log(`Seeding table ${tableName}`);
@@ -51,6 +41,51 @@ const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreate
   return updatedItems;
 };
 
+
+// if no base range specified, it will be random.
+const RandomDateRange = (refDate: Date | null): DateTimeRange => {
+  if (refDate === null) {
+    refDate = faker.date.anytime();
+  }
+  const typeOptions = [0, 1, 2];
+  const type = faker.helpers.arrayElement(typeOptions);
+  if (type === 0) {
+    // TBD
+    return new DateTimeRange();
+  }
+
+  const mindate = new Date(refDate);
+  mindate.setDate(mindate.getDate() - 3);
+  const maxdate = new Date(refDate);
+  maxdate.setDate(mindate.getDate() + 3);
+  let startsAt = faker.date.between({
+    from: mindate,
+    to: maxdate,
+  });
+
+  if (type === 1) {
+    // all-day
+    const durationDays = faker.number.int({ min: 1, max: 4 });
+    //startsAt = floorLocalTimeToDayUTC(startsAt); <-- should not be necessary.
+    return new DateTimeRange({
+      durationMillis: durationDays * gMillisecondsPerDay,
+      isAllDay: true,
+      startsAtDateTime: startsAt,
+    });
+  }
+
+  startsAt = roundToNearest15Minutes(startsAt);
+
+  // 15-minute increments.
+  const gIntervalMs = 15 * 60 * 1000; // 15 minutes = 900000 ms
+  const gMaxHours = 12;
+  const intervalCount = faker.number.int({ min: 1, max: gMaxHours * 4 });
+  return new DateTimeRange({
+    durationMillis: gIntervalMs * intervalCount,
+    isAllDay: false,
+    startsAtDateTime: startsAt,
+  });
+};
 
 // const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
 //   console.log(`Seeding table ${tableName}`);
@@ -529,9 +564,6 @@ const main = async () => {
     }))
   );
 
-  const adminRoleName = "Admin";
-  const publicRoleName = "Public";
-
   await SeedTable("role", prisma.role,
     [
       {
@@ -647,10 +679,6 @@ const main = async () => {
       ["Editors", "always_grant"],
       ["Moderators", "always_grant"],
       ["Admin", "always_grant"],
-      ["Normal Users", "view_events_nonpublic"],
-      ["Editors", "view_events_nonpublic"],
-      ["Moderators", "view_events_nonpublic"],
-      ["Admin", "view_events_nonpublic"],
       ["Public", "public"],
       ["Limited Users", "public"],
       ["Normal Users", "public"],
@@ -693,7 +721,6 @@ const main = async () => {
       ["Editors", "edit_public_homepage"],
       ["Moderators", "edit_public_homepage"],
       ["Admin", "edit_public_homepage"],
-      ["Moderators", "admin_events"],
       ["Admin", "admin_events"],
       ["Editors", "manage_events"],
       ["Moderators", "manage_events"],
@@ -704,11 +731,14 @@ const main = async () => {
       ["Editors", "view_events"],
       ["Moderators", "view_events"],
       ["Admin", "view_events"],
+      ["Normal Users", "view_events_nonpublic"],
+      ["Editors", "view_events_nonpublic"],
+      ["Moderators", "view_events_nonpublic"],
+      ["Admin", "view_events_nonpublic"],
       ["Normal Users", "respond_to_events"],
       ["Editors", "respond_to_events"],
       ["Moderators", "respond_to_events"],
       ["Admin", "respond_to_events"],
-      ["Moderators", "admin_songs"],
       ["Admin", "admin_songs"],
       ["Editors", "manage_songs"],
       ["Moderators", "manage_songs"],
@@ -717,7 +747,6 @@ const main = async () => {
       ["Editors", "view_songs"],
       ["Moderators", "view_songs"],
       ["Admin", "view_songs"],
-      ["Moderators", "admin_files"],
       ["Admin", "admin_files"],
       ["Editors", "manage_files"],
       ["Moderators", "manage_files"],
@@ -732,7 +761,6 @@ const main = async () => {
       ["Editors", "upload_files"],
       ["Moderators", "upload_files"],
       ["Admin", "upload_files"],
-      ["Moderators", "admin_instruments"],
       ["Admin", "admin_instruments"],
       ["Editors", "manage_instruments"],
       ["Moderators", "manage_instruments"],
@@ -746,7 +774,19 @@ const main = async () => {
       ["Admin", "view_custom_links"],
       ["Editors", "manage_custom_links"],
       ["Moderators", "manage_custom_links"],
-      ["Admin", "manage_custom_links"]
+      ["Admin", "manage_custom_links"],
+      ["Limited Users", "view_wiki_pages"],
+      ["Normal Users", "view_wiki_pages"],
+      ["Editors", "view_wiki_pages"],
+      ["Moderators", "view_wiki_pages"],
+      ["Admin", "view_wiki_pages"],
+      ["Normal Users", "edit_wiki_pages"],
+      ["Editors", "edit_wiki_pages"],
+      ["Moderators", "edit_wiki_pages"],
+      ["Admin", "edit_wiki_pages"],
+      ["Editors", "customize_menu"],
+      ["Moderators", "customize_menu"],
+      ["Admin", "customize_menu"]
     ]
     ;
 
@@ -894,8 +934,293 @@ const main = async () => {
     ]
   );
 
+  faker.seed(104);
 
-}
+  const adminRole = (await prisma.role.findFirst({
+    where: { name: "Admin" }
+  }))!;
+  const allVisibilityPermissions = await prisma.permission.findMany({
+    where: {
+      isVisibility: true,
+    }
+  });
+
+  const allRoles = await prisma.role.findMany();
+  const allInstruments = await prisma.instrument.findMany();
+  const allUserTags = await prisma.userTag.findMany();
+
+  const randomVisibilityPermissionId = () => {
+    return faker.helpers.arrayElement([null, ...allVisibilityPermissions])?.id || null;
+  };
+
+  // returns a boolean with `probability`% probability of being true.
+  const probabool = (probability01: number): boolean => {
+    return faker.number.float({ min: 0, max: 1 }) < probability01;
+  };
+
+  const fakerConfig = {
+    userCount: 60,
+    songCount: 100,
+    eventCount: 100,
+  };
+
+  // Creating random users
+  console.log(`creating ${fakerConfig.userCount} users...`);
+  const userCount = fakerConfig.userCount;
+  const carlsIndex = faker.number.int({ max: userCount });
+  for (let i = 0; i < userCount; i++) {
+    const isCarl = i === carlsIndex;
+    const user = await prisma.user.create({
+      data: {
+        name: (isCarl) ? "carl" : faker.person.fullName(),
+        email: (isCarl) ? "carlco@gmail.com" : faker.internet.email(),
+        phone: faker.phone.number(),
+        accessToken: faker.git.commitSha(),
+        isSysAdmin: (isCarl),
+        roleId: (isCarl) ? adminRole.id : faker.helpers.arrayElement(allRoles).id,
+      },
+    });
+
+    // assign this user instruments
+    const instrumentCount = probabool(0.08) ? 0 : faker.number.int({ min: 1, max: 3 });
+    const instruments = faker.helpers.arrayElements(allInstruments, isCarl ? 3 : instrumentCount);
+    const primaryIndex = faker.number.int({ min: 0, max: Math.max(0, instruments.length - 1) });
+    await instruments.forEach(async (instrument, index) => {
+      await prisma.userInstrument.create({
+        data: {
+          instrumentId: instrument.id,
+          userId: user.id,
+          isPrimary: primaryIndex === index,
+        }
+      });
+    });
+
+    const tags = faker.helpers.arrayElements(allUserTags);
+    await tags.forEach(async (tag) => {
+      await prisma.userTagAssignment.create({
+        data: {
+          userId: user.id,
+          userTagId: tag.id,
+        }
+      });
+    });
+
+  } // for each create user
+
+  // create random songs
+  const allUsers = await prisma.user.findMany();
+  const allSongTags = await prisma.songTag.findMany();
+  const allSongCreditTypes = await prisma.songCreditType.findMany();
+  const randYear = () => faker.number.int({ min: 2003, max: 2024 });
+
+  console.log(`creating ${fakerConfig.songCount} songs...`);
+  for (let i = 0; i < fakerConfig.songCount; i++) {
+    const songName = faker.music.songName();
+    const song = await prisma.song.create({
+      data: {
+        name: songName,
+        slug: slugify(songName),
+        description: probabool(0.5) ? faker.lorem.paragraphs(faker.number.int({ max: 3 })) : "",
+        aliases: probabool(0.2) ? faker.music.songName() : undefined,
+        startBPM: probabool(0.3) ? faker.number.int({ min: 70, max: 160 }) : undefined,
+        endBPM: probabool(0.3) ? faker.number.int({ min: 70, max: 160 }) : undefined,
+        introducedYear: probabool(0.3) ? randYear() : undefined,
+        lengthSeconds: probabool(0.3) ? faker.number.int({ min: 30, max: 500 }) : undefined,
+        visiblePermissionId: randomVisibilityPermissionId(),
+      },
+    });
+
+    const tags = faker.helpers.arrayElements(allSongTags, { min: 0, max: 4 });
+    await tags.forEach(async (tag) => {
+      await prisma.songTagAssociation.create({
+        data: {
+          songId: song.id,
+          tagId: tag.id,
+        }
+      });
+    });
+
+    // credits.
+    const creditCount = faker.number.int({ min: 0, max: 3 });
+    for (let ic = 0; ic < creditCount; ++ic) {
+      await prisma.songCredit.create({
+        data: {
+          comment: probabool(0.2) ? faker.lorem.sentence({ min: 1, max: 10 }) : "",
+          songId: song.id,
+          typeId: faker.helpers.arrayElement(allSongCreditTypes).id,
+          userId: faker.helpers.arrayElement(allUsers).id,
+          year: probabool(0.5) ? randYear().toString() : undefined,
+        }
+      });
+    }
+
+  }// } create random songs
+
+  // create random events
+  const allEventTypes = await prisma.eventType.findMany();
+  const allEventStatuses = await prisma.eventStatus.findMany();
+  const allEventTags = await prisma.eventTag.findMany();
+  const allSongs = await prisma.song.findMany();
+  const allAttendanceOptions = await prisma.eventAttendance.findMany();
+  const nullableAttendanceOptions = [...allAttendanceOptions, null];
+
+  console.log(`creating ${fakerConfig.eventCount} events...`);
+  for (let i = 0; i < fakerConfig.eventCount; i++) {
+    const eventName = faker.commerce.productName();
+    console.log(`creating event #${i} ${eventName}`);
+
+    const segmentCount = probabool(0.6) ? 1 : faker.number.int({ min: 0, max: 2 });
+    const segmentDateRanges: DateTimeRange[] = [];
+    let eventRange = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
+    for (let ii = 0; ii < segmentCount; ++ii) {
+      const segrange = RandomDateRange(ii === 0 ? null : eventRange.getStartDateTime());
+      segmentDateRanges[ii] = segrange;
+      eventRange = eventRange.unionWith(segrange);
+    }
+
+    const event = await prisma.event.create({
+      data: {
+        name: eventName,
+        revision: 0,
+        slug: slugify(eventName),
+        expectedAttendanceUserTagId: probabool(0.8) ? faker.helpers.arrayElement(allUserTags).id : null,
+        calendarInputHash: faker.string.uuid(),
+        uid: faker.string.uuid(),
+        description: probabool(0.4) ? "" : faker.lorem.paragraphs({ min: 1, max: 5 }),
+        createdAt: new Date(),
+        visiblePermissionId: randomVisibilityPermissionId(),
+        typeId: probabool(0.3) ? null : faker.helpers.arrayElement(allEventTypes).id,
+        statusId: probabool(0.3) ? null : faker.helpers.arrayElement(allEventStatuses).id,
+
+        startsAt: eventRange.getSpec().startsAtDateTime,
+        durationMillis: eventRange.getSpec().durationMillis,
+        isAllDay: eventRange.getSpec().isAllDay,
+        endDateTime: eventRange.getEndDateTime(),
+
+        frontpageVisible: probabool(0.5),
+      }
+    });
+
+    const tags = faker.helpers.arrayElements(allEventTags, { min: 0, max: 4 });
+    await tags.forEach(async (tag) => {
+      await prisma.eventTagAssignment.create({
+        data: {
+          eventTagId: tag.id,
+          eventId: event.id,
+        }
+      });
+    });
+
+    // segments
+    const segments: Prisma.EventSegmentGetPayload<{}>[] = [];
+    for (let ii = 0; ii < segmentCount; ++ii) {
+
+      // generate a random datetime span. whew.
+      const range = segmentDateRanges[ii]!;
+
+      const seg = await prisma.eventSegment.create({
+        data: {
+          description: probabool(0.15) ? faker.lorem.paragraph() : "",
+          startsAt: range.getSpec().startsAtDateTime,
+          durationMillis: range.getSpec().durationMillis,
+          isAllDay: range.getSpec().isAllDay,
+          name: `Set ${faker.lorem.word()}`,
+          eventId: event.id,
+        }
+      });
+
+      segments.push(seg);
+    }
+
+    // song lists
+    const songListCount = faker.number.int({ max: 2 });
+    for (let ii = 0; ii < songListCount; ++ii) {
+
+      const songList = await prisma.eventSongList.create({
+        data: {
+          name: `Setlist ${faker.lorem.word()}`,
+          description: probabool(0.15) ? faker.lorem.paragraph() : "",
+          eventId: event.id,
+          sortOrder: ii,
+        }
+      });
+
+      const songCount = probabool(0.1) ? 0 : faker.number.int(40);
+      for (let iii = 0; iii < songCount; ++iii) {
+        await prisma.eventSongListSong.create({
+          data: {
+            eventSongListId: songList.id,
+            songId: faker.helpers.arrayElement(allSongs).id,
+            sortOrder: iii,
+            subtitle: probabool(0.1) ? faker.lorem.sentence() : undefined,
+          }
+        });
+      }
+
+    } // create song lists
+
+    // generate event & segment user responses.
+    let userList: Prisma.UserGetPayload<{}>[] = [];
+    const userListStyle = faker.number.int({ max: 3 }); // 0 1 2 3
+    switch (userListStyle) {
+      case 0:
+        // no users.
+        break;
+      case 1:
+        // few users
+        userList = faker.helpers.arrayElements(allUsers, { min: 1, max: fakerConfig.userCount * 0.1 });
+      case 2:
+        // many users
+        userList = faker.helpers.arrayElements(allUsers, { min: fakerConfig.userCount * .8, max: fakerConfig.userCount });
+      case 3:
+        // all users
+        userList = [...allUsers];
+        break;
+    }
+
+    const users = faker.helpers.arrayElements(allUsers);
+    users.forEach(async (u, ui) => {
+      await prisma.eventUserResponse.create({
+        data: {
+          eventId: event.id,
+          userId: u.id,
+          instrumentId: probabool(0.15) ? faker.helpers.arrayElement(allInstruments).id : null,
+          isInvited: probabool(0.5),
+          userComment: probabool(0.05) ? faker.lorem.sentence() : undefined,
+        }
+      });
+
+      // segment responses.
+      const segmentsToRespondToStyle = faker.number.int({ max: 3 }); // 0 1 2 3
+      let segmentsToRespondTo: Prisma.EventSegmentGetPayload<{}>[] = [];// = faker.helpers.arrayElements(segments);
+      switch (segmentsToRespondToStyle) {
+        case 0:
+          // no segments.
+          break;
+        case 1:
+          // some
+          segmentsToRespondTo = faker.helpers.arrayElements(segments);
+        case 2:
+          // all
+          segmentsToRespondTo = [...segments];
+          break;
+      }
+
+      segmentsToRespondTo.forEach(async (seg, si) => {
+        await prisma.eventSegmentUserResponse.create({
+          data: {
+            userId: u.id,
+            eventSegmentId: seg.id,
+            attendanceId: faker.helpers.arrayElement(nullableAttendanceOptions)?.id || null,
+          }
+        });
+      });
+    });
+
+  } // for each create event
+
+
+};
 
 main()
   .then(async () => {

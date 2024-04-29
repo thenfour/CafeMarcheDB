@@ -12,11 +12,9 @@ import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
-
-
 import { CustomTabPanel, TabA11yProps } from "./CMCoreComponents";
-import { unslugify } from "shared/utils";
 import { gIconMap } from "../db3/components/IconSelectDialog";
+import { unslugify } from "shared/rootroot";
 
 //////////////////////////////////////////////////
 interface WikiPageContentEditorValues {

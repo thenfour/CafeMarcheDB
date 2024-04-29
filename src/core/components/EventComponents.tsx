@@ -644,12 +644,12 @@ export const EventCompletenessTabContent = ({ eventData }: EventCompletenessTabC
                                 // no response is weakest.
                                 if (a.response.attendance === null) {
                                     if (b.response.attendance === null) return 0;
-                                    return -1; // null always lowest, and b is not null.
+                                    return 1; // null always lowest, and b is not null.
                                 }
                                 if (b.response.attendance === null) {
-                                    return 1; // b is null & a is not.
+                                    return -1; // b is null & a is not.
                                 }
-                                return (a.response.attendance.strength < b.response.attendance.strength) ? -1 : 1;
+                                return (a.response.attendance.strength < b.response.attendance.strength) ? 1 : -1;
                             });
                             return <td key={seg.id}>
                                 <div className='attendanceResponseColorBarCell'>

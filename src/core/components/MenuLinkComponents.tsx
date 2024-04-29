@@ -15,7 +15,7 @@ import { TAnyModel } from "../db3/shared/apiTypes";
 import { KeyValueDisplay, NameValuePair } from './CMCoreComponents2';
 import { VisibilityValue } from "./VisibilityControl";
 import { assert } from "blitz";
-import { slugify } from "shared/utils";
+import { slugify } from "shared/rootroot";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

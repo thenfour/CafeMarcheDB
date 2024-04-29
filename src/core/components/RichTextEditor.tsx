@@ -14,7 +14,7 @@ import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
 import { CMSmallButton } from "./CMCoreComponents2";
-import { CoerceToBoolean, IsNullOrWhitespace, slugify } from "shared/utils";
+import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
 import wikirefs_plugin, { WikiEmbedsOptions } from 'markdown-it-wikirefs';
 import { MatchingSlugItem } from "../db3/shared/apiTypes";
 //import { gIconMap } from "../db3/components/IconSelectDialog";
@@ -22,6 +22,7 @@ import { MatchingSlugItem } from "../db3/shared/apiTypes";
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
+import { slugify } from "shared/rootroot";
 
 
 

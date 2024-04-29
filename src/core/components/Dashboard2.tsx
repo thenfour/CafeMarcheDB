@@ -37,8 +37,9 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
-import { IsNullOrWhitespace, slugify } from "shared/utils";
+import { IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
+import { slugify } from "shared/rootroot";
 
 const drawerWidth = 260;
 

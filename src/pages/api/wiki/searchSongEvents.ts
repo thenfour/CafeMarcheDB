@@ -1,10 +1,8 @@
 import { Ctx } from "@blitzjs/next";
-import { ICalCalendar } from "ical-generator";
-import { CoerceToString, concatenateUrlParts, slugify } from "shared/utils";
+import db from "db";
+import { slugify } from "shared/rootroot";
 import { api } from "src/blitz-server";
-import { CalExportCore } from "src/core/db3/server/ical";
-import { GetICalRelativeURIForUserAndEvent, MakeMatchingSlugItem, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
-import db, { Prisma } from "db";
+import { MakeMatchingSlugItem, MatchingSlugItem } from "src/core/db3/shared/apiTypes";
 
 async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
     keyword = keyword.toLowerCase();

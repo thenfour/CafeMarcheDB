@@ -120,7 +120,7 @@ export function floorToMinuteIntervalOfDay(minuteOfDay: number, intervalInMinute
     return alignedMinuteOfDay;
 }
 
-function roundToNearest15Minutes(date: Date) {
+export function roundToNearest15Minutes(date: Date) {
     const roundedMinutes = Math.ceil(date.getMinutes() / 15) * 15;
     const roundedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), roundedMinutes);
     return roundedDate;

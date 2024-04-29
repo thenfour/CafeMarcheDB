@@ -3,7 +3,7 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import { Divider } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { parseMimeType, slugify, unslugify } from "shared/utils";
+import { parseMimeType } from "shared/utils";
 import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -13,6 +13,7 @@ import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from "react";
 import * as mime from 'mime';
+import { slugify, unslugify } from "shared/rootroot";
 
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
