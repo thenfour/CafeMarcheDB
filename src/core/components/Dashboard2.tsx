@@ -302,7 +302,7 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
     }
     if (props.item.item.type === "link") {
         let selected = false;
-        if (router.pathname == props.item.item.path) selected = true;
+        if (router.asPath == props.item.item.path) selected = true;
         if ((props.item.item.realm !== undefined) && (props.realm !== undefined) && (props.item.item.realm === props.realm)) selected = true;
 
         return (<ListItemButton

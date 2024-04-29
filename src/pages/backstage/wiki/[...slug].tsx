@@ -49,7 +49,7 @@ export const getServerSideProps = async ({ params }) => {
 
 const WikiPage: BlitzPage = (x: PageProps) => {
     return (
-        <DashboardLayout title={x.title} navRealm={NavRealm.songs}>
+        <DashboardLayout title={x.title}>
             <Suspense>
                 <WikiPageComponent></WikiPageComponent>
             </Suspense>
