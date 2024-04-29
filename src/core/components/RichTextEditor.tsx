@@ -18,19 +18,16 @@ import { CoerceToBoolean, IsNullOrWhitespace, parseMimeType } from "shared/utils
 import { MatchingSlugItem } from "../db3/shared/apiTypes";
 import { CMSmallButton } from "./CMCoreComponents2";
 //import { gIconMap } from "../db3/components/IconSelectDialog";
-
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
-import { slugify } from "shared/rootroot";
-import { FileDropWrapper } from "./SongFileComponents";
-import { CMDBUploadFile } from "./CMCoreComponents";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { DashboardContext } from './DashboardContext';
+import { slugify } from "shared/rootroot";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { API } from "../db3/clientAPI";
-import { getAbsoluteUrl } from "../db3/clientAPILL";
+import { CMDBUploadFile } from "./CMCoreComponents";
+import { DashboardContext } from './DashboardContext';
+import { FileDropWrapper } from "./SongFileComponents";
 
 function markdownItImageDimensions(md) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
@@ -156,7 +153,6 @@ export const Markdown = (props: MarkdownProps) => {
             // pass token to default renderer.
             return defaultRender(tokens, idx, options, env, self);
         };
-
 
         md.use(wikirefs_plugin, options);
         md.use(cmLinkPlugin);
