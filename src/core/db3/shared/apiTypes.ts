@@ -342,7 +342,9 @@ export interface GetEventFilterInfoChipInfo {
     tooltip: string | null;
 };
 
-export type TimingFilter = "none" | "all" | "past" | "future";
+// exclusive
+export type TimingFilter = "past" | "relevant" | "future" | "all";
+
 export const gEventFilterTimingIDConstants = {
     past: 0,
     future: 1,
@@ -354,25 +356,37 @@ export interface GetEventFilterInfoRet {
     types: GetEventFilterInfoChipInfo[];
     statuses: GetEventFilterInfoChipInfo[];
     tags: GetEventFilterInfoChipInfo[];
-    timings: GetEventFilterInfoChipInfo[];
+    //timings: GetEventFilterInfoChipInfo[];
 
     typesQuery: string;
     statusesQuery: string;
     tagsQuery: string;
     paginatedEventQuery: string;
+
+    totalExecutionTimeMS,
+    typesQueryMS,
+    statusesQueryMS,
+    tagsQueryMS,
+    paginatedQueryMS,
 };
 
 export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
     statuses: [],
     tags: [],
     types: [],
-    timings: [],
+    //timings: [],
     eventIds: [],
     rowCount: 0,
     typesQuery: "",
     statusesQuery: "",
     tagsQuery: "",
     paginatedEventQuery: "",
+
+    totalExecutionTimeMS: 0,
+    typesQueryMS: 0,
+    statusesQueryMS: 0,
+    tagsQueryMS: 0,
+    paginatedQueryMS: 0,
 });
 
 export interface GetSongFilterInfoRet {

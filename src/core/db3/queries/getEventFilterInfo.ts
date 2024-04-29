@@ -32,6 +32,8 @@ export default resolver.pipe(
                 return MakeGetEventFilterInfoRet();
             }
 
+            const startTimestamp = Date.now();
+
             assertIsNumberArray(args.filterSpec.statusIds);
             assertIsNumberArray(args.filterSpec.tagIds);
             assertIsNumberArray(args.filterSpec.typeIds);
@@ -60,12 +62,15 @@ export default resolver.pipe(
                 eventFilterExpressions.push(`(Event.statusId IN (${args.filterSpec.statusIds}))`);
             }
 
-            if (args.filterSpec.timingFilter === "none") {
-                eventFilterExpressions.push(`(FALSE)`);
-            } else if (args.filterSpec.timingFilter === "future") {
-                eventFilterExpressions.push(`((startsAt >= curdate()) or (startsAt is null))`);
-            } else if (args.filterSpec.timingFilter === "past") {
-                eventFilterExpressions.push(`(startsAt < curdate())`);
+            const timingFilterExpressions: Record<TimingFilter, string | null> = {
+                "past": `(endDateTime <= curdate())`,
+                "relevant": `((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`,
+                "future": `((startsAt >= curdate()) or (startsAt is null))`,
+                "all": null,
+            };
+
+            if (timingFilterExpressions[args.filterSpec.timingFilter]) {
+                eventFilterExpressions.push(timingFilterExpressions[args.filterSpec.timingFilter] || "<never>");
             }
 
             let havingClause = "";
@@ -133,7 +138,9 @@ export default resolver.pipe(
             EventStatus.sortOrder asc
         `;
 
+            const statusesStartTimestamp = Date.now();
             const statusesResult: ({ event_count: bigint } & Prisma.EventStatusGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(statusesQuery));
+            const statusesQueryMS = Date.now() - statusesStartTimestamp;
 
             const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({
                 color: r.color,
@@ -163,7 +170,9 @@ export default resolver.pipe(
             EventType.sortOrder asc
             `;
 
+            const typesStartTimestamp = Date.now();
             const typesResult: ({ event_count: bigint } & Prisma.EventTypeGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(typesQuery));
+            const typesQueryMS = Date.now() - typesStartTimestamp;
 
             const types: GetEventFilterInfoChipInfo[] = typesResult.map(r => ({
                 color: r.color,
@@ -194,7 +203,9 @@ export default resolver.pipe(
 
         `;
 
+            const tagsStartTimestamp = Date.now();
             const tagsResult: ({ event_count: bigint } & Prisma.EventTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
+            const tagsQueryMS = Date.now() - tagsStartTimestamp;
 
             const tags: GetEventFilterInfoChipInfo[] = tagsResult.map(r => ({
                 color: r.color,
@@ -222,40 +233,23 @@ export default resolver.pipe(
 
         `;
 
+            const paginatedStartTimestamp = Date.now();
             const eventIds: { EventId: number }[] = await db.$queryRaw(Prisma.raw(paginatedEventQuery));
+            const paginatedQueryMS = Date.now() - paginatedStartTimestamp;
 
             // TOTAL filtered row count
             const totalRowCountQuery = `
         ${filteredEventsCTE}
     select
-		count(*) as rowCount,
-        COUNT(CASE WHEN ((startsAt >= CURDATE()) or isnull(startsAt)) THEN 1 END) AS futureCount,
-        COUNT(CASE WHEN (startsAt < CURDATE()) THEN 1 END) AS pastCount
+		count(*) as rowCount
     from
         FilteredEvents
 
         `;
 
-            const rowCountResult: { rowCount: bigint, futureCount: bigint, pastCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
+            const rowCountResult: { rowCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
 
-            const timings: GetEventFilterInfoChipInfo[] = [
-                {
-                    id: gEventFilterTimingIDConstants.past,
-                    label: "Past events",
-                    rowCount: new Number(rowCountResult[0]!.pastCount).valueOf(),
-                    color: null,
-                    iconName: null,
-                    tooltip: null,
-                },
-                {
-                    id: gEventFilterTimingIDConstants.future,
-                    label: "Future events",
-                    rowCount: new Number(rowCountResult[0]!.futureCount).valueOf(),
-                    color: null,
-                    iconName: null,
-                    tooltip: null,
-                }
-            ];
+            const totalExecutionTimeMS = Date.now() - startTimestamp;
 
             return {
                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
@@ -264,12 +258,17 @@ export default resolver.pipe(
                 types,
                 statuses,
                 tags,
-                timings,
 
                 typesQuery,
                 statusesQuery,
                 tagsQuery,
                 paginatedEventQuery,
+
+                totalExecutionTimeMS,
+                typesQueryMS,
+                statusesQueryMS,
+                tagsQueryMS,
+                paginatedQueryMS,
             };
         } catch (e) {
             console.error(e);

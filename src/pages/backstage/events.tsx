@@ -12,7 +12,7 @@ import { arraysContainSameValues, gQueryOptions, toggleValueInArray } from "shar
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { DebugCollapsibleAdminText } from "src/core/components/CMCoreComponents2";
+import { DebugCollapsibleAdminText, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { EventDetailContainer } from "src/core/components/EventComponents";
@@ -51,7 +51,7 @@ const gDefaultFilter: EventsFilterSpec = {
     tagFilter: [],
     statusFilter: [],
     typeFilter: [],
-    timingFilter: "future",
+    timingFilter: "relevant",
     orderBy: "StartAsc",
 };// cannot be as const because the array is writable.
 
@@ -106,62 +106,36 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
         props.onChange(newSpec);
     };
 
-    const toggleTiming = (t: GetEventFilterInfoChipInfo) => {
-        const togglingFuture = t.id === gEventFilterTimingIDConstants.future;
-        let newVal: TimingFilter = "all";
-        switch (props.filterSpec.timingFilter) {
-            case "all":
-                newVal = togglingFuture ? "past" : "future";
-                break;
-            case "future":
-                newVal = togglingFuture ? "none" : "all";
-                break;
-            case "past":
-                newVal = togglingFuture ? "all" : "none";
-                break;
-            default:
-            case "none":
-                newVal = togglingFuture ? "future" : "past";
-                break;
-        }
+    const selectTiming = (t: TimingFilter) => {
         const newSpec: EventsFilterSpec = { ...props.filterSpec };
-        newSpec.timingFilter = newVal;
+        newSpec.timingFilter = t;
         props.onChange(newSpec);
     };
 
-    const isTimingSelected = (t: GetEventFilterInfoChipInfo): boolean => {
-        switch (props.filterSpec.timingFilter) {
-            case "all":
-                return true;
-            case "future":
-                return t.id === gEventFilterTimingIDConstants.future;
-            case "past":
-                return t.id === gEventFilterTimingIDConstants.past;
-            default:
-            case "none":
-                return false;
-        }
+    const timingChips: Record<TimingFilter, string> = {
+        "past": "Events that already ended",
+        "relevant": "Upcoming and recent events",
+        "future": "Upcoming events",
+        "all": "All events",
     };
 
     return <div className={`EventsFilterControlsValue`}>
 
-        <div className="row">
+        <div className="row" style={{ display: "flex", alignItems: "center" }}>
             {/* <div className="caption cell">event type</div> */}
             <CMChipContainer className="cell">
-                {(filterInfo.timings).map(t => (
-                    <CMChip
-                        key={t.id}
-                        variation={{ ...StandardVariationSpec.Strong, fillOption: "hollow", selected: isTimingSelected(t) }}
-                        onClick={() => toggleTiming(t)}
-                        color={t.id === gEventFilterTimingIDConstants.past ? null : "purple"}
-                        shape="rectangle"
-                        size="small"
-                    >
-                        {gIconMap.CalendarMonth()}{t.label} ({t.rowCount})
-                    </CMChip>
-                ))}
-
+                {Object.keys(timingChips).map(k => <CMChip
+                    key={k}
+                    variation={{ ...StandardVariationSpec.Strong, fillOption: "hollow", selected: (k === props.filterSpec.timingFilter) }}
+                    onClick={() => selectTiming(k as any)}
+                    shape="rectangle"
+                    size="small"
+                >
+                    {k}
+                </CMChip>)
+                }
             </CMChipContainer>
+            <div className="tinyCaption">{timingChips[props.filterSpec.timingFilter]}</div>
         </div>
         <div className="row">
             {/* <div className="caption cell">event type</div> */}
@@ -224,14 +198,14 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                     variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.orderBy === "StartAsc" }}
                     onClick={() => props.onChange({ ...props.filterSpec, orderBy: "StartAsc" })}
                 >
-                    Chronological
+                    old to new (chronological)
                 </CMChip>
                 <CMChip
                     size="small"
                     variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.orderBy === "StartDesc" }}
                     onClick={() => props.onChange({ ...props.filterSpec, orderBy: "StartDesc" })}
                 >
-                    Latest events first
+                    new to old
                 </CMChip>
             </CMChipContainer>
         </div>

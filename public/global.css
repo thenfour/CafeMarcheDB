@@ -649,12 +649,12 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 }
 
 /* only for search results list; don't fade a cancelled event when you're looking into its details */
-.contentSection.event.status_Cancelled {
+.searchResults .contentSection.event.status_Cancelled {
   opacity: 50%;
   /* filter: saturate(0); */
 }
 
-.contentSection.event.status_Cancelled .titleText {
+.searchResults .contentSection.event.status_Cancelled .titleText {
   text-decoration: line-through;
 }
 
