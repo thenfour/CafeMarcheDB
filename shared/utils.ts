@@ -209,6 +209,7 @@ export enum Setting {
     DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
     CustomLinksPageMarkdown = "CustomLinksPageMarkdown",
     MenuLinksPageMarkdown = "MenuLinksPageMarkdown",
+    GlobalWikiPage_Markdown = "GlobalWikiPage_Markdown",
 
     // not markdown....
 

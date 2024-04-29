@@ -15,6 +15,12 @@ import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./Vi
 import { CustomTabPanel, TabA11yProps } from "./CMCoreComponents";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { unslugify } from "shared/rootroot";
+import * as DB3Client from "src/core/db3/DB3Client";
+
+
+
+
+
 
 //////////////////////////////////////////////////
 interface WikiPageContentEditorValues {

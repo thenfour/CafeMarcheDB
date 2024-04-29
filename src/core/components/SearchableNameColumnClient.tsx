@@ -6,12 +6,12 @@ import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface TextInputWithSearchProps extends CMTextInputBaseProps {
+export interface TextInputWithSearchProps extends CMTextInputBaseProps {
     columnName: string;
     schema: db3.xTable;
     allowSearch: boolean;
 };
-const TextInputWithSearch = (props: TextInputWithSearchProps) => {
+export const TextInputWithSearch = (props: TextInputWithSearchProps) => {
     const searchQuery = props.value || "";
 
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };

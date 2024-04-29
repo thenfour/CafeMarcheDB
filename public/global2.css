@@ -2128,6 +2128,7 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     color: #8088;
 }
 
+/* links to objects like song, instrument, event, user */
 .wikiCMLink,
 .wiki.link,
 .externalCMLink {
@@ -2135,6 +2136,12 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     color: #a0a;
     background-color: #a0a1;
     font-weight: bold;
+}
+
+/* links to wiki pages */
+.wiki.link {
+    color: #4a4;
+    background-color: #4a41;
 }
 
 .externalCMLink {

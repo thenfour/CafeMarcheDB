@@ -16,6 +16,8 @@ import { KeyValueDisplay, NameValuePair } from './CMCoreComponents2';
 import { VisibilityValue } from "./VisibilityControl";
 import { assert } from "blitz";
 import { slugify } from "shared/rootroot";
+import { TextInputWithSearch } from "./SearchableNameColumnClient";
+import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -105,6 +107,90 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
     </div>;
 }
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// this is basically TextInputWithSearchProps but with different formatting.
+export interface WikiSlugInputWithSearchProps extends CMTextInputBaseProps {
+    columnName: string;
+    schema: db3.xTable;
+    allowSearch: boolean;
+};
+export const WikiSlugInputWithSearch = (props: WikiSlugInputWithSearchProps) => {
+    const searchQuery = props.value || "";
+
+    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
+    const [currentUser] = useCurrentUser();
+    clientIntention.currentUser = currentUser!;
+
+    const songsClient = DB3Client.useTableRenderContext({
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: props.schema,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+                new DB3Client.GenericStringColumnClient({ columnName: props.columnName, cellWidth: 120 }),
+            ],
+        }),
+        filterModel: {
+            quickFilterValues: [searchQuery],
+            items: [],
+        },
+        paginationModel: {
+            page: 0,
+            pageSize: 1,
+        },
+        requestedCaps: DB3Client.xTableClientCaps.PaginatedQuery,
+        clientIntention,
+    });
+
+    const items = songsClient.items as db3.SongPayload_Verbose[];
+    const hasMatch = items.length > 0;
+    const item = items[0];
+    const matchValue = item && item[props.columnName];
+
+    return <div className="searchableValueContainer">
+        <CMTextInputBase {...props} />
+        <div className="searchableValueResult">
+            {matchValue === props.value ? (<div>✅</div>) :
+                (<><div className="existingMatchLabel">No matching existing page found; best match: </div>
+                    <div className="existingMatchValue">{matchValue}</div></>)}
+        </div>
+    </div>;
+};
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// here we just want to have a column which allows checking if an object of similar name already exists
+export interface SearchableWikiSlugColumnArgs extends DB3Client.GenericStringColumnArgs {
+};
+
+export class SearchableWikiSlugColumnClient extends DB3Client.GenericStringColumnClient {
+    constructor(args: SearchableWikiSlugColumnArgs) {
+        super(args);
+    }
+    renderForNewDialog = (params: DB3Client.RenderForNewItemDialogArgs) => this.defaultRenderer({
+        validationResult: params.validationResult,
+        isReadOnly: false,
+        value: <WikiSlugInputWithSearch
+            onChange={(e, val) => params.api.setFieldValues({ [this.columnName]: val })}
+            autoFocus={params.autoFocus}
+            value={params.value as string}
+            className={this.className}
+
+            allowSearch={!params.validationResult || !!params.validationResult.success}
+            columnName={"slug"}
+            schema={db3.xWikiPage}
+        />
+    });
+};
+
+
+
+
+
+
 export const MenuLinkList = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
@@ -129,7 +215,7 @@ export const MenuLinkList = () => {
                 new DB3Client.ConstEnumStringFieldClient({ columnName: "linkType", cellWidth: 120, fieldCaption: "Type" }),
                 //new DB3Client.ConstEnumStringFieldClient({ columnName: "applicationPage", cellWidth: 120 }),
                 new DB3Client.GenericStringColumnClient({ columnName: "externalURI", cellWidth: 250, fieldCaption: "External URL" }),
-                new DB3Client.GenericStringColumnClient({ columnName: "wikiSlug", cellWidth: 250 }),
+                new SearchableWikiSlugColumnClient({ columnName: "wikiSlug", cellWidth: 250 }),
 
                 //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, }),
                 new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, }),

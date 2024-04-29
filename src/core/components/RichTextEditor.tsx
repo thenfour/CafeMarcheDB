@@ -4,7 +4,7 @@
 
 // todo: paste attachments
 // todo: drop attachments
-import { Button, CircularProgress, Tooltip } from "@mui/material";
+import { Button, CircularProgress } from "@mui/material";
 import MarkdownIt from 'markdown-it';
 import React from "react";
 //import useDebounce from "shared/useDebounce";
@@ -12,11 +12,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
+import wikirefs_plugin from 'markdown-it-wikirefs';
 import { useDebounce } from "shared/useDebounce";
-import { CMSmallButton } from "./CMCoreComponents2";
 import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
-import wikirefs_plugin, { WikiEmbedsOptions } from 'markdown-it-wikirefs';
 import { MatchingSlugItem } from "../db3/shared/apiTypes";
+import { CMSmallButton } from "./CMCoreComponents2";
 //import { gIconMap } from "../db3/components/IconSelectDialog";
 
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -24,6 +24,8 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import { slugify } from "shared/rootroot";
 
+import { Tab, Tabs } from "@mui/material";
+import { CustomTabPanel, TabA11yProps } from "./CMCoreComponents";
 
 
 function cmLinkPlugin(md) {
@@ -128,13 +130,13 @@ async function fetchWikiSlugs(keyword: string): Promise<string[]> {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-async function fetchEventOrSongTags(keyword: string): Promise<string[]> {
-
-    if (!keyword.startsWith("[@")) {
+async function fetchEventOrSongTagsBracketAt(keyword: string): Promise<string[]> {
+    if (keyword.startsWith("[@")) {
+        keyword = keyword.substring(2);
+    }
+    else {
         return [];
     }
-
-    keyword = keyword.substring(2);
 
     const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
 
@@ -145,6 +147,18 @@ async function fetchEventOrSongTags(keyword: string): Promise<string[]> {
     return ret;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+async function fetchEventOrSongTagsAt(keyword: string): Promise<string[]> {
+    // no prefix here.
+    const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    const ret = await response.json();
+    return ret;
+}
 
 
 
@@ -191,7 +205,19 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     output: (item: string) => `[[${item}]]`
                 },
                 "[[@": {
-                    dataProvider: token => fetchEventOrSongTags(token),
+                    dataProvider: token => fetchEventOrSongTagsBracketAt(token),
+                    component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
+                        {entity.itemType === "event" && <CalendarMonthIcon />}
+                        {entity.itemType === "song" && <MusicNoteIcon />}
+                        {entity.itemType === "user" && <PersonIcon />}
+                        {entity.itemType === "instrument" && <MusicNoteIcon />}
+                        {entity.name}
+                    </div>,
+                    output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
+                },
+                // basically replicate this just for "@" prefix; it's more intuitive & easy.
+                "@": {
+                    dataProvider: token => fetchEventOrSongTagsAt(token),
                     component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
                         {entity.itemType === "event" && <CalendarMonthIcon />}
                         {entity.itemType === "song" && <MusicNoteIcon />}
@@ -409,3 +435,4 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
         {!props.readonly && IsNullOrWhitespace(value) && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
     </div >;
 };
+

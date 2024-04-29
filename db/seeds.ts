@@ -1091,6 +1091,7 @@ const main = async () => {
         visiblePermissionId: randomVisibilityPermissionId(),
         typeId: probabool(0.3) ? null : faker.helpers.arrayElement(allEventTypes).id,
         statusId: probabool(0.3) ? null : faker.helpers.arrayElement(allEventStatuses).id,
+        locationDescription: probabool(0.5) ? undefined : faker.location.streetAddress(),
 
         startsAt: eventRange.getSpec().startsAtDateTime,
         durationMillis: eventRange.getSpec().durationMillis,
