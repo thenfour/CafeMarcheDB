@@ -425,3 +425,13 @@ export const ZTUpdateWikiPageArgs = z.object({
     content: z.string(),
     visiblePermissionId: z.number().nullable(),
 });
+
+
+
+export interface MatchingSlugItem {
+    id: number,
+    name: string,
+    slug: string,
+    itemType: "event" | "song" | "user" | "instrument";
+};
+export const MakeMatchingSlugItem = (value: MatchingSlugItem) => ({ ...value });

@@ -23,58 +23,54 @@ import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import { useDebounce } from "shared/useDebounce";
 import { CMSmallButton } from "./CMCoreComponents2";
-import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
-import Token from 'markdown-it/lib/token';
+import { CoerceToBoolean, IsNullOrWhitespace, slugify } from "shared/utils";
+import wikirefs_plugin, { WikiEmbedsOptions } from 'markdown-it-wikirefs';
+import { MatchingSlugItem } from "../db3/shared/apiTypes";
+import { gIconMap } from "../db3/components/IconSelectDialog";
 
-// experimental plugin...
-const checkboxPlugin = (md) => {
-    md.core.ruler.push('checkboxes', (state) => {
-        state.tokens.forEach((token) => {
-            if (token.type === 'inline' && token.children) {
-                token.children.forEach((child, index) => {
-                    if (child.type === 'text') {
-                        const checkboxRegex = /\[([ x])\](?!\S)/g;  // Adjusted regex pattern
-                        let match;
-                        const newTokens: Token[] = [];
-                        let lastIndex = 0;
 
-                        while ((match = checkboxRegex.exec(child.content)) !== null) {
-                            const checked = match[1].trim() === 'x' ? 'checked' : '';
 
-                            // Add text before checkbox
-                            if (match.index > lastIndex) {
-                                const textToken = new Token('text', '', 0);
-                                textToken.content = child.content.slice(lastIndex, match.index);
-                                newTokens.push(textToken);
-                            }
+function cmLinkPlugin(md) {
+    const defaultRender = md.renderer.rules.html_inline || function (tokens, idx, options, env, self) {
+        return self.renderToken(tokens, idx, options);
+    };
 
-                            // Create the checkbox
-                            const labelOpen = new Token('html_inline', '', 0);
-                            labelOpen.content = `<label class="markdown-checkbox"><input type="checkbox" ${checked} disabled>`;
-                            newTokens.push(labelOpen);
+    md.renderer.rules.text = function (tokens, idx, options, env, self) {
+        const token = tokens[idx];
+        const linkRegex = /\[\[@(event|song):(\d+)\|?(.*?)\]\]/g;
 
-                            const labelClose = new Token('html_inline', '', 0);
-                            labelClose.content = `</label>`;
-                            newTokens.push(labelClose);
+        if (token.content.match(linkRegex)) {
+            token.content = token.content.replace(linkRegex, (match, type, id, caption) => {
+                let url = "";
+                let icon = "";
+                switch (type) {
+                    // case 'user':
+                    //     url = `/backstage/user/${id}`;
+                    //     break;
+                    case 'event':
+                        url = `/backstage/events/${id}`;
+                        icon = `📅`;
+                        break;
+                    case 'song':
+                        url = `/backstage/song/${id}`;
+                        icon = `🎵`;
+                        break;
+                    // case 'instrument':
+                    //     url = `/instruments/${id}`;
+                    //     break;
+                }
+                caption = caption || `${type} ${id}`; // Default caption if none provided
 
-                            lastIndex = match.index + match[0].length;
-                        }
+                return `<a href="${url}" class="wikiCMLink">${icon} ${caption}</a>`;
+            });
+        }
 
-                        // Add remaining text after last checkbox
-                        if (lastIndex < child.content.length) {
-                            const textToken = new Token('text', '', 0);
-                            textToken.content = child.content.slice(lastIndex);
-                            newTokens.push(textToken);
-                        }
+        return defaultRender(tokens, idx, options, env, self);
+    };
+}
 
-                        // Replace the current child with the new tokens
-                        token.children = token.children.slice(0, index).concat(newTokens).concat(token.children.slice(index + 1));
-                    }
-                });
-            }
-        });
-    });
-};
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownProps {
@@ -93,7 +89,22 @@ export const Markdown = (props: MarkdownProps) => {
             return;
         }
         const md = new MarkdownIt();
-        md.use(checkboxPlugin); // Use your custom checkbox plugin
+        const options = {
+            // baseUrl: ,
+            // cssNames: ,
+            // embeds:,
+            resolveHtmlHref: (env: any, fname: string) => {
+                //const extname: string = wikirefs.isMedia(fname) ? path.extname(fname) : '';
+                //fname = fname.replace(extname, '');
+                //return '/' + fname.trim().toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + extname;
+                return `/backstage/wiki/${slugify(fname)}`;
+            },
+            resolveHtmlText: (env: any, fname: string) => fname.replace(/-/g, ' '),
+            resolveEmbedContent: (env: any, fname: string) => fname + ' content',
+        };
+        md.use(wikirefs_plugin, options);
+        md.use(cmLinkPlugin);
+
         setHtml(md.render(props.markdown));
     }, [props.markdown]);
 
@@ -101,6 +112,43 @@ export const Markdown = (props: MarkdownProps) => {
         <div id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
     </div >;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+async function fetchWikiSlugs(keyword: string): Promise<string[]> {
+    const slugified = slugify(keyword);
+    if (!keyword.startsWith("[")) {
+        return []; // ensure this is a wiki link. you typed "[" to trigger the autocomplete. this is the 2nd '['
+    }
+    if (keyword.startsWith("[@")) { // don't handle this.
+        return [];
+    }
+
+    const response = await fetch(`/api/wiki/searchWikiSlugs?keyword=${slugified}`);
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    return response.json();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+async function fetchEventOrSongTags(keyword: string): Promise<string[]> {
+
+    if (!keyword.startsWith("[@")) {
+        return [];
+    }
+
+    keyword = keyword.substring(2);
+
+    const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    const ret = await response.json();
+    return ret;
+}
+
 
 
 
@@ -113,8 +161,8 @@ interface MarkdownEditorProps {
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
-    const Item = ({ entity: { name, char } }) => <div>{`${name}: ${char}`}</div>;
-    const Loading = ({ data }) => <div>Loading</div>;
+    //const Item = ({ entity: { name, char } }) => <div>{`${name}: ${char}`}</div>;
+    //const Loading = ({ data }) => <div>Loading</div>;
 
     const style: React.CSSProperties = {
         minHeight: props.height || 400,
@@ -123,7 +171,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     return (
         <ReactTextareaAutocomplete
             containerClassName="editorContainer"
-            loadingComponent={Loading}
+            loadingComponent={() => <div>Loading...</div>}
             autoFocus={!!props.autoFocus}
             //ref={rta => setRta(rta)}
             //innerRef={textarea => setTa(textarea)}
@@ -137,18 +185,26 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             onChange={(e) => {
                 props.onValueChanged(e.target.value);
             }}
-            minChar={0} // how many chars AFTER the trigger char you need to type before the popup arrives
+            minChar={3} // how many chars AFTER the trigger char you need to type before the popup arrives
+
             trigger={{
-                "@": {
-                    dataProvider: token => {
-                        return [
-                            { name: "smile", char: "🙂" },
-                            { name: "heart", char: "❤️" }
-                        ];
-                    },
-                    component: Item,
-                    output: (item, trigger) => item.char
-                }
+                "[[": { // it's hard to understand how these triggers work; are these chars or strings??
+                    dataProvider: token => fetchWikiSlugs(token),
+                    // renders the item in the suggestion list.
+                    component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem wiki ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
+                    output: (item: string) => `[[${item}]]`
+                },
+                "[[@": {
+                    dataProvider: token => fetchEventOrSongTags(token),
+                    component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
+                        {entity.itemType === "event" && gIconMap.CalendarMonth()}
+                        {entity.itemType === "song" && gIconMap.MusicNote()}
+                        {entity.itemType === "user" && gIconMap.Person()}
+                        {entity.itemType === "instrument" && gIconMap.MusicNote()}
+                        {entity.name}
+                    </div>,
+                    output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
+                },
             }}
         />
     );

@@ -1116,7 +1116,9 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .ReactiveInputDialog .MuiDialog-container>.MuiPaper-root {
     /* for some reason default dialogs like to be max-width:600px. this overrides that to let edit dialogs to be wide enough for contents.
 in particular the date range picker is wide.*/
-    max-width: 95vw;
+    /* max-width: 95vw; */
+    /* for mobile compat though, don't do very wide things. */
+    max-width: var(--content-max-width);
 
     /* setting a min-height is a prettier xp when list has few items, and when user is typing in the filter box changing the list height constantly.*/
     min-height: 50vh;
@@ -2183,4 +2185,46 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     border-top: 1px solid #8888;
     font-style: italic;
     color: #8888;
+}
+
+.wikiPage .unknownPage {
+    font-style: italic;
+    color: #8088;
+}
+
+.wikiCMLink,
+.wiki.link {
+    text-decoration: underline;
+    color: #a0a;
+    background-color: #a0a1;
+    font-weight: bold;
+}
+
+.autoCompleteCMLinkItem {
+    padding: 5px;
+}
+
+.autoCompleteCMLinkItem.event {
+    color: #808;
+
+}
+
+.autoCompleteCMLinkItem.song {
+    color: green;
+
+}
+
+.autoCompleteCMLinkItem.instrument {
+    color: #c80;
+
+}
+
+.autoCompleteCMLinkItem.wiki {
+    color: #c80;
+
+}
+
+.autoCompleteCMLinkItem.selected {
+    background-color: #ddf;
+    outline: 2px solid black;
 }

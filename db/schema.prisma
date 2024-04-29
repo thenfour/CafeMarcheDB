@@ -929,14 +929,13 @@ model WikiPageRevision {
 }
 
 model MenuLinks {
-  id Int @id @default(autoincrement())
-  sortOrder         Int              @default(0)
-  caption    String @db.VarChar(768)
-  type String
+  id           Int    @id @default(autoincrement())
+  sortOrder    Int    @default(0)
+  caption      String @db.VarChar(768)
+  type         String
   externalLink String @db.MediumText
   // link to external resource
   // link to wiki
   // link to application page
   // groups?
 }
-

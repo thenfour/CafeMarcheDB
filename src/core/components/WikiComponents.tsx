@@ -120,11 +120,13 @@ interface WikiPageViewModeProps {
 };
 export const WikiPageViewMode = ({ value, ...props }: WikiPageViewModeProps) => {
     const authorizedForEdit = useAuthorization("WikiPageControl", Permission.edit_wiki_pages);
+    const isExisting = value.id > 0;
 
     return <>
         <div className="header">
             <div className="flex-spacer"></div>
-            {authorizedForEdit && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</Button>}
+            {isExisting && authorizedForEdit && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.Edit()} Edit</Button>}
+            {!isExisting && authorizedForEdit && <Button onClick={() => props.onEnterEditMode()}>{gIconMap.AutoAwesome()} Create</Button>}
             <VisibilityValue permission={value.wikiPage.visiblePermission as any} variant="minimal" />
         </div>
         <div className="content">
@@ -133,7 +135,7 @@ export const WikiPageViewMode = ({ value, ...props }: WikiPageViewModeProps) => 
             </div>
 
             <div className="wikiContentContainer">
-                <Markdown markdown={value.content} />
+                {value.content ? <Markdown markdown={value.content} /> : <div className="unknownPage">This page dosen't exist (yet!)</div>}
             </div>
 
             <div className="wikiPageFooterStats">

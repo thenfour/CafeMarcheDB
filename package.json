@@ -47,6 +47,7 @@
     "html-to-text": "9.0.5",
     "ical-generator": "7.1.0",
     "markdown-it": "13.0.1",
+    "markdown-it-wikirefs": "0.0.3",
     "mime": "3.0.0",
     "music-metadata": "8.1.4",
     "next": "14.1.4",
