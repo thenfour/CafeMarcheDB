@@ -2129,9 +2129,10 @@ can't use flex-spacer here because that expanded area should also be clickable. 
 }
 
 /* links to objects like song, instrument, event, user */
-.wikiCMLink,
-.wiki.link,
-.externalCMLink {
+.markdown.renderedContent .wikiCMLink,
+.markdown.renderedContent .wiki.link,
+.markdown.renderedContent .externalCMLink,
+.markdown.renderedContent a {
     text-decoration: underline;
     color: #a0a;
     background-color: #a0a1;
@@ -2139,12 +2140,17 @@ can't use flex-spacer here because that expanded area should also be clickable. 
 }
 
 /* links to wiki pages */
-.wiki.link {
+.markdown.renderedContent .wiki.link {
     color: #4a4;
     background-color: #4a41;
 }
 
-.externalCMLink {
+.markdown.renderedContent a {
+    color: #66f;
+    background-color: #66f1;
+}
+
+.markdown.renderedContent .externalCMLink {
     color: #44a;
     background-color: #44a1;
 }
