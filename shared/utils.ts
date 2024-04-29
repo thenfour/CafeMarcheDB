@@ -208,6 +208,7 @@ export enum Setting {
     DashboardStats_SongsMarkdown = "DashboardStats_SongsMarkdown",
     DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
     CustomLinksPageMarkdown = "CustomLinksPageMarkdown",
+    MenuLinksPageMarkdown = "MenuLinksPageMarkdown",
 
     // not markdown....
 
@@ -853,3 +854,4 @@ export const unslugify = (slug: string): string => {
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 }
+

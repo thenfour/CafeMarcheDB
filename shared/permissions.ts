@@ -70,9 +70,12 @@ export enum Permission {
     view_custom_links = "view_custom_links",
     manage_custom_links = "manage_custom_links",
 
-    // ******************** custom links
+    // ******************** wiki
     view_wiki_pages = "view_wiki_pages",
     edit_wiki_pages = "edit_wiki_pages",
+
+    // ******************** menu customization
+    customize_menu = "customize_menu",
 };
 
 export const gPermissionOrdered: (keyof typeof Permission)[] = [
@@ -109,6 +112,7 @@ export const gPermissionOrdered: (keyof typeof Permission)[] = [
     Permission.manage_custom_links,
     Permission.view_wiki_pages,
     Permission.edit_wiki_pages,
+    Permission.customize_menu,
 ];
 
 // these are granted automatically to public.

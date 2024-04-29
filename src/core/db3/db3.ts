@@ -12,5 +12,6 @@ export * from "./shared/schema/file"
 export * from "./shared/schema/customLinks"
 export * from "./shared/schema/admin"
 export * from "./shared/schema/wiki"
+export * from "./shared/schema/menuLink"
 
 

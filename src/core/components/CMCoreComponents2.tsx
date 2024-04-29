@@ -5,6 +5,7 @@ import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3/db3";
 import { useSession } from "@blitzjs/auth";
 import { Button } from "@mui/material";
+import { gNullValue } from "../db3/shared/apiTypes";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -86,3 +87,40 @@ export const NameValuePair = (props: NameValuePairProps) => {
         {(props.validationResult && !!validationError) && <div className="validationResult">{validationError}</div>}
     </div>;
 }
+
+// Define TypeScript type for the props
+type KeyValueDisplayValueType = string | null | undefined;
+type KeyValueDisplayProps = {
+    data: Record<string, KeyValueDisplayValueType>;
+};
+
+export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data }) => {
+    // Function to calculate the maximum key length for alignment
+    const getMaxKeyLength = (data: Record<string, KeyValueDisplayValueType>): number => {
+        return Math.max(...Object.keys(data).map(key => key.length));
+    };
+
+    // Render the key-value pairs with alignment
+    const renderKeyValuePairs = (data: Record<string, KeyValueDisplayValueType>): JSX.Element[] => {
+        const maxKeyLength = getMaxKeyLength(data);
+        return Object.entries(data).map(([key, value], index) => {
+            let valueStr = "";
+            if (value === null) valueStr = "<null>";
+            else if (value === undefined) {
+                return <React.Fragment key={index} />;
+            }
+            else {
+                valueStr = value;
+            }
+            return <div key={index}>
+                {key.padEnd(maxKeyLength, ' ')} : {valueStr}
+            </div>
+        });
+    };
+
+    return (
+        <pre>
+            {renderKeyValuePairs(data)}
+        </pre>
+    );
+};

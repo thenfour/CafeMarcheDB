@@ -1,6 +1,6 @@
 //  https://codesandbox.io/s/material-ui-responsive-drawer-skqdw?resolutionWidth=1292&resolutionHeight=758&file=/src/App.js
 // https://mui.com/material-ui/react-app-bar/#app-bar-with-a-primary-search-field
-import { useSession } from "@blitzjs/auth";
+import { ClientSession, useSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
@@ -26,15 +26,19 @@ import { assert } from "blitz";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import * as React from 'react';
+import * as DynMenu from "shared/dynMenuTypes";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import refreshSessionPermissions from "src/auth/mutations/refreshSessionPermissions";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
+import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
+import { IsNullOrWhitespace, slugify } from "shared/utils";
+import * as DB3Client from "src/core/db3/DB3Client";
 
 const drawerWidth = 260;
 
@@ -240,6 +244,15 @@ const PrimarySearchAppBar = (props: PrimarySearchAppBarProps) => {
     );
 }; // PrimarySearchAppBar
 
+export enum NavRealm {
+    backstageHome = "",
+    events = "events",
+    songs = "songs",
+    YourProfile = "YourProfile",
+    CustomLinks = "CustomLinks",
+    MenuLinks = "MenuLinks",
+};
+
 interface MenuItemDivider {
     type: "divider";
 };
@@ -248,21 +261,13 @@ interface MenuItemSectionHeader {
     sectionName: string;
 };
 
-
-
-export enum NavRealm {
-    events = "events",
-    songs = "songs",
-};
-
-
-
 interface MenuItemLink {
     type: "link";
     permission: Permission;
     className?: string;
     linkCaption: string;
     path: string;
+    openInNewTab?: boolean;
     realm?: NavRealm;
     renderIcon: () => React.ReactElement;
 };
@@ -274,6 +279,8 @@ interface MenuItemGroup {
     className?: string;
     items: MenuItemSpec[];
 };
+
+
 
 type MenuItemAndGroup = { group: MenuItemGroup, item: MenuItemSpec };
 
@@ -293,12 +300,17 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
         </ListSubheader>);
     }
     if (props.item.item.type === "link") {
-
         let selected = false;
         if (router.pathname == props.item.item.path) selected = true;
         if ((props.item.item.realm !== undefined) && (props.realm !== undefined) && (props.item.item.realm === props.realm)) selected = true;
 
-        return (<ListItemButton component={Link} href={props.item.item.path!} selected={selected} className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}>
+        return (<ListItemButton
+            component={Link}
+            href={props.item.item.path}
+            selected={selected}
+            className={`linkMenuItem ${props.item.group.className} ${props.item.item.className}`}
+            target={props.item.item.openInNewTab ? "_blank" : undefined}
+        >
             {props.item.item.renderIcon && <ListItemIcon>{props.item.item.renderIcon()}</ListItemIcon>}
             <ListItemText primary={props.item.item.linkCaption} />
         </ListItemButton>);
@@ -306,7 +318,7 @@ const MenuItemComponent = (props: MenuItemComponentProps) => {
     return <>??</>;
 };
 
-const gMenuItemGroups: MenuItemGroup[] = [
+const gMenuItemGroup1: MenuItemGroup[] = [
     {
         name: "Backstage",
         className: "backstage",
@@ -316,9 +328,19 @@ const gMenuItemGroups: MenuItemGroup[] = [
             { type: "link", path: "/backstage/songs", realm: NavRealm.songs, linkCaption: "Songs", renderIcon: () => <MusicNoteOutlinedIcon />, permission: Permission.view_songs },
             { type: "link", path: "/backstage/info", linkCaption: "Info", renderIcon: () => <InfoIcon />, permission: Permission.visibility_members },
             { type: "link", path: "/backstage/profile", linkCaption: "Your Profile", renderIcon: () => <PersonIcon />, permission: Permission.login },
+        ],
+    },
+];
+const gMenuItemGroup2: MenuItemGroup[] = [
+    {
+        name: "Configuration",
+        className: "backstage",
+        items: [
+            { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
             { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
         ],
     },
+
     {
         name: "Public",
         className: "public",
@@ -432,6 +454,122 @@ const gMenuItemGroups: MenuItemGroup[] = [
     },
 ];
 
+const FlattenMenuGroups = (session: ClientSession, groups: MenuItemGroup[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
+    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
+
+    for (let iGroup = 0; iGroup < groups.length; ++iGroup) {
+        const g = groups[iGroup]!;
+        let firstItemInGroup: boolean = true;
+        for (let iItem = 0; iItem < g.items.length; ++iItem) {
+            const item = g.items[iItem] as MenuItemLink;
+            assert(g.items[iItem]?.type === "link", "only link menu items should be added here; other types are created dynamically");
+            if (API.users.isAuthorizedFor(session, item.permission)) {
+                // add it to the flat list.
+                if (firstItemInGroup) {
+                    if (menuItems.length) {
+                        // add a divider because we know other items are already there.
+                        menuItems.push({
+                            group: g,
+                            item: {
+                                type: "divider",
+                            }
+                        });
+                    }
+                    // add the group heading
+                    if (g.name) {
+                        menuItems.push({
+                            group: g,
+                            item: {
+                                type: "sectionHeader",
+                                sectionName: g.name,
+                            }
+                        });
+                    }
+                    firstItemInGroup = false;
+                }
+                menuItems.push({
+                    group: g,
+                    item,
+                });
+            }
+        }
+    }
+
+    return menuItems;
+};
+
+const DynMenuToMenuItem = (item: db3.MenuLinkPayload): MenuItemLink | null => {
+    let path = "";
+    let openInNewTab = false;
+    switch (item.linkType as keyof typeof DynMenu.DynamicMenuLinkType) {
+        case "ExternalURL":
+            openInNewTab = true;
+            path = item.externalURI || "";
+            break;
+        case "Wiki":
+            path = item.wikiSlug ? `/backstage/wiki/${slugify(item.wikiSlug)}` : "";
+            break;
+    }
+
+    return {
+        type: "link",
+        permission: (item.visiblePermission?.name || Permission.never_grant) as Permission,
+        className: item.itemCssClass,
+        linkCaption: item.caption,
+        renderIcon: item.iconName ? gIconMap[item.iconName] : undefined,
+        path,
+        openInNewTab,
+    };
+};
+
+const FlattenDynMenuItems = (session: ClientSession, items: db3.MenuLinkPayload[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
+    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
+    let currentGroupName = "<never>";
+
+    for (let iItem = 0; iItem < items.length; ++iItem) {
+        const item = items[iItem]!;
+        if (!API.users.isAuthorizedFor(session, (item.visiblePermission?.name || Permission.never_grant) as Permission)) continue;
+        const menuItem = DynMenuToMenuItem(item);
+        if (!menuItem) continue;
+
+        const firstItemInGroup = (item.groupName !== currentGroupName);
+        currentGroupName = item.groupName;
+        const fakeGroup: MenuItemGroup = {
+            name: currentGroupName,
+            className: item.groupCssClass,
+            items: [],
+        };
+
+        if (firstItemInGroup) {
+            if (menuItems.length) {
+                // add a divider because we know other items are already there.
+                menuItems.push({
+                    group: fakeGroup,
+                    item: {
+                        type: "divider",
+                    }
+                });
+            }
+            // add the group heading
+            if (!IsNullOrWhitespace(currentGroupName)) {
+                menuItems.push({
+                    group: fakeGroup,
+                    item: {
+                        type: "sectionHeader",
+                        sectionName: currentGroupName,
+                    }
+                });
+            }
+        }
+        menuItems.push({
+            group: fakeGroup,
+            item: menuItem,
+        });
+    }
+
+    return menuItems;
+}
+
 const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
     const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
     const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
@@ -469,6 +607,24 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
     const [open, setOpen] = React.useState(false);
 
+
+    const [currentUser] = useCurrentUser();
+    const clientIntention: db3.xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
+
+    const dynMenuClient = DB3Client.useTableRenderContext({
+        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+        clientIntention,
+        tableSpec: new DB3Client.xTableClientSpec({
+            table: db3.xMenuLink,
+            columns: [
+                new DB3Client.PKColumnClient({ columnName: "id" }),
+            ],
+        }),
+    });
+
+    const dynMenuItems = dynMenuClient.items as db3.MenuLinkPayload[];
+    //const dynMenuItems = [] as db3.MenuLinkPayload[];
+
     const toggleDrawer = event => {
         if (
             event.type === "keydown" &&
@@ -480,47 +636,12 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
         setOpen(!open);
     };
 
-    //
-
     // flatten our list of menu groups & items based on permissions.
-    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
-    for (let iGroup = 0; iGroup < gMenuItemGroups.length; ++iGroup) {
-        const g = gMenuItemGroups[iGroup]!;
-        let firstItemInGroup: boolean = true;
-        for (let iItem = 0; iItem < g.items.length; ++iItem) {
-            const item = g.items[iItem] as MenuItemLink;
-            assert(g.items[iItem]?.type === "link", "only link menu items should be added here; other types are created dynamically");
-            if (API.users.isAuthorizedFor(session, item.permission)) {
-                // add it to the flat list.
-                if (firstItemInGroup) {
-                    if (menuItems.length) {
-                        // add a divider because we know other items are already there.
-                        menuItems.push({
-                            group: g,
-                            item: {
-                                type: "divider",
-                            }
-                        });
-                    }
-                    // add the group heading
-                    if (g.name) {
-                        menuItems.push({
-                            group: g,
-                            item: {
-                                type: "sectionHeader",
-                                sectionName: g.name,
-                            }
-                        });
-                    }
-                    firstItemInGroup = false;
-                }
-                menuItems.push({
-                    group: g,
-                    item,
-                });
-            }
-        }
-    }
+    const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [
+        ...FlattenMenuGroups(session, gMenuItemGroup1),
+        ...FlattenDynMenuItems(session, dynMenuItems),
+        ...FlattenMenuGroups(session, gMenuItemGroup2),
+    ];
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>

@@ -203,32 +203,6 @@ export const CMStatusIndicator = <T extends CMStandardDBChipModel,>(props: CMSta
 
 
 
-// export const CMStatusIndicator = (props: React.PropsWithChildren<CMStatusIndicatorProps>) => {
-//     const style = GetStyleVariablesForColor(props.type?.color);
-//     return <div className='eventTypeValue' style={style}>
-//         {RenderMuiIcon(props.type?.iconName)}
-//         {props.type == null ? "--" :
-//             props.type.text}
-//     </div>;
-// };
-
-
-
-
-// big chip is for the "you are coming!" big status badges which are meant to be a response to user input / interactive or at least suggesting interactivity / actionability.
-export interface CMBigChipProps {
-    color: ColorPaletteEntry | string | null | undefined;
-    variation: ColorVariationSpec;
-    // put icons & text in children
-};
-
-export const CMBigChip = (props: React.PropsWithChildren<CMBigChipProps>) => {
-    const style = GetStyleVariablesForColor({ color: props.color, ...props.variation });
-    return <div className={`cmbigchip ${style.cssClass}`} style={style.style}><div className='content'>
-        {props.children}
-    </div></div>;
-};
-
 ////////////////////////////////////////////////////////////////
 // wraps <Dialog> except with mobile responsiveness
 export interface ReactiveInputDialogProps {

@@ -137,74 +137,6 @@ input.CMTextInputBase.titleText {
 
 
 
-/* - CM Big Chip --------------------------------- */
-.cmbigchip {
-    font-size: 14px;
-    padding-bottom: 15px;
-    text-transform: uppercase;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    letter-spacing: 2px;
-    font-weight: bold;
-
-}
-
-.cmbigchip>.content {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2px 10px;
-    border-radius: 10px;
-}
-
-.cmbigchip.strong>.content {
-    background-color: var(--strong-color);
-    color: var(--strong-contrast-color);
-}
-
-.cmbigchip.weak>.content {
-    background-color: var(--weak-color);
-    color: var(--weak-contrast-color);
-}
-
-.bigChipContainer {
-    flex-direction: column;
-}
-
-/* - CM Big Status --------------------------------- */
-.bigstatus {
-    font-size: 14px;
-    text-transform: uppercase;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    letter-spacing: 2px;
-    font-weight: bold;
-}
-
-
-
-/* -  --------------------------------- */
-.eventPublishedControl {
-    display: flex;
-}
-
-/* .eventPublishedControl.published {
-    background-color: #0802;
-}
-
-.eventPublishedControl.unpublished {
-    background-color: #f802;
-} */
-
-.eventPublishedValue {
-    display: flex;
-    text-transform: uppercase;
-    align-items: center;
-}
-
-
 /* ---------------------------------- */
 .CMChipContainer {
     display: flex;
@@ -381,6 +313,10 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .draggable {
     cursor: move;
     cursor: grab;
+}
+
+.header.draggable:hover {
+    background-color: #44f8;
 }
 
 .draggable:active {
@@ -2193,11 +2129,17 @@ can't use flex-spacer here because that expanded area should also be clickable. 
 }
 
 .wikiCMLink,
-.wiki.link {
+.wiki.link,
+.externalCMLink {
     text-decoration: underline;
     color: #a0a;
     background-color: #a0a1;
     font-weight: bold;
+}
+
+.externalCMLink {
+    color: #44a;
+    background-color: #44a1;
 }
 
 .autoCompleteCMLinkItem {
@@ -2227,4 +2169,9 @@ can't use flex-spacer here because that expanded area should also be clickable. 
 .autoCompleteCMLinkItem.selected {
     background-color: #ddf;
     outline: 2px solid black;
+}
+
+.menuLinkTestLink {
+    display: inline-flex;
+    padding: 2px 10px;
 }

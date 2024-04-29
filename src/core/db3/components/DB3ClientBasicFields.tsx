@@ -7,7 +7,7 @@
 // this is for rendering in various places on the site front-end. a datagrid will require pretty much
 // a mirroring of the schema for example, but with client rendering descriptions instead of db schema.
 
-import { Checkbox, FormControlLabel, FormHelperText, InputLabel, MenuItem, Select, Stack } from "@mui/material";
+import { Checkbox, FormControlLabel, MenuItem, Select, Stack } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { assert } from "blitz";
@@ -17,17 +17,14 @@ import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
-import { CMTextField, CMTextInputBase, CMTextInputBaseProps, SongLengthInput } from "src/core/components/CMTextField";
+import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
-import * as ClientAPILL from "../clientAPILL";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
-import { xTableClientUsageContext } from "../db3";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { TAnyModel, gNullValue } from "../shared/apiTypes";
 
@@ -761,10 +758,11 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
     };
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        const value = params.value === null ? gNullValue : params.value;
-        return <React.Fragment key={params.key}>
-            <InputLabel>{this.schemaColumn.member}</InputLabel>
-            <Select
+        const value = (params.value === null ? gNullValue : params.value as string);
+        return this.defaultRenderer({
+            isReadOnly: !this.editable,
+            validationResult: params.validationResult,
+            value: <Select
                 value={value}
                 error={params.validationResult && !!params.validationResult.hasErrorForField(this.schemaColumn.member)}
                 onChange={e => {
@@ -781,10 +779,12 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
                     })
                 }
             </Select>
-            <FormHelperText>Heres my helper text</FormHelperText>
-        </React.Fragment>;
+
+        });
 
     };
+    ;
+
 };
 
 

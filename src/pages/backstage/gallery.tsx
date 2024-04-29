@@ -62,13 +62,6 @@ const MainContent = () => {
             <div className="content">CMSinglePageSurfaceCard.content</div>
         </CMCoreComponents.CMSinglePageSurfaceCard>
 
-        <h3>CMBigChip</h3>
-        <div>colored chip that can contain a lot of stuff (not like a small chip like a single TAG), used by attendance options</div>
-        <CMCoreComponents.CMBigChip color={"yes"} variation={StandardVariationSpec.Strong} >
-            <ThumbUpIcon />
-            <div>CMCoreComponents.CMBigChip</div>
-        </CMCoreComponents.CMBigChip>
-
         <Divider />
 
         <h3>CMChip</h3>

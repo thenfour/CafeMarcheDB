@@ -3,7 +3,6 @@
 
 // some common patterns:
 // todo: languages / strings
-// TODO: website integration (fields for events, image editing, whether it's published etc)
 
 // tags have both significance and classification
 // they look similar, and in a way they are. but more like,
@@ -79,6 +78,7 @@ model Permission {
   visibilityForFiles                 File[]
   visibilityForFrontpageGalleryItems FrontpageGalleryItem[]
   visibilityForWikiPages             WikiPage[]
+  visibilityForMenuLinks             MenuLink[]
 
   @@index([name])
   @@index([significance])
@@ -155,6 +155,7 @@ model User {
   songComments             SongComment[]
   instruments              UserInstrument[]
   createdCustomLinks       CustomLink[]
+  createdMenuLinks         MenuLink[]
   createdWikiPageRevisions WikiPageRevision[]
 
   creatorForSongs                Song[]
@@ -928,14 +929,32 @@ model WikiPageRevision {
   @@index([name])
 }
 
-model MenuLinks {
-  id           Int    @id @default(autoincrement())
-  sortOrder    Int    @default(0)
-  caption      String @db.VarChar(768)
-  type         String
-  externalLink String @db.MediumText
-  // link to external resource
-  // link to wiki
-  // link to application page
-  // groups?
+model MenuLink {
+  id        Int @id @default(autoincrement())
+  sortOrder Int @default(0)
+
+  realm String? @db.VarChar(768)
+
+  groupName     String @db.VarChar(768)
+  groupCssClass String @db.VarChar(768)
+
+  itemCssClass String @db.VarChar(768)
+  linkType     String @db.VarChar(768) // external, application, wiki
+
+  // for external, this is a URL
+  // for application, this is empty.
+  // for wiki, this is the slug
+  externalURI     String? @db.MediumText
+  applicationPage String? @db.VarChar(768) // an enum.
+  wikiSlug        String? @db.VarChar(768)
+
+  iconName String? @db.VarChar(768)
+  caption  String  @db.VarChar(768)
+
+  visiblePermissionId Int?
+  visiblePermission   Permission? @relation(fields: [visiblePermissionId], references: [id], onDelete: SetNull)
+
+  createdByUserId Int?
+  createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
 }

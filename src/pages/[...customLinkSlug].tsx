@@ -4,14 +4,15 @@ import db from "db";
 import { useRouter } from "next/router";
 import { CoerceToBoolean, IsNullOrWhitespace } from "shared/utils";
 import { Markdown } from "src/core/components/RichTextEditor";
-import { CustomLinkRedirectType } from "src/core/db3/db3";
+//import { CustomLinkRedirectType } from "src/core/db3/db3";
+import * as db3 from "src/core/db3/db3";
 
 export const getServerSideProps = async ({ params, req, query }) => {
     const slug = params.customLinkSlug?.join('/') || '';
 
     const link = await db.customLink.findUnique({ where: { slug } });
 
-    if (!link || link.redirectType === CustomLinkRedirectType.Disabled) {
+    if (!link || link.redirectType === db3.CustomLinkRedirectType.Disabled) {
         return { notFound: true };
     }
 
@@ -38,20 +39,20 @@ export const getServerSideProps = async ({ params, req, query }) => {
     }
 
     // Handle redirection
-    switch (link.redirectType as keyof typeof CustomLinkRedirectType) {
-        case CustomLinkRedirectType.Permanent:
-        case CustomLinkRedirectType.Temporary:
+    switch (link.redirectType as keyof typeof db3.CustomLinkRedirectType) {
+        case db3.CustomLinkRedirectType.Permanent:
+        case db3.CustomLinkRedirectType.Temporary:
             return {
                 redirect: {
                     destination: destinationURL,
-                    permanent: link.redirectType === CustomLinkRedirectType.Permanent,
+                    permanent: link.redirectType === db3.CustomLinkRedirectType.Permanent,
                 },
             };
-        case CustomLinkRedirectType.Client:
+        case db3.CustomLinkRedirectType.Client:
             return {
                 props: { destinationURL, hash, intermediate: false }, // Client-side redirection
             };
-        case CustomLinkRedirectType.IntermediatePage:
+        case db3.CustomLinkRedirectType.IntermediatePage:
             return {
                 props: { intermediate: true, destinationURL, hash, intermediateMessage: link.intermediateMessage },
             };
