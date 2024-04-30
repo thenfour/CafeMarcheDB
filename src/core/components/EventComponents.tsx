@@ -292,7 +292,6 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
             </div>
         </td>
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
-        <td>{!!eventResponse.instrument?.functionalGroup ? <InstrumentFunctionalGroupChip value={eventResponse.instrument.functionalGroup} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
         {event.segments.map((segment, iseg) => {
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             return <React.Fragment key={segment.id}>
@@ -396,8 +395,8 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     <th>
                         <div className='interactable' onClick={() => setSortField('user')}>Who {sortField === 'user' && gCharMap.DownArrow()}</div>
                     </th>
-                    <th colSpan={2}>
-                        <div className='interactable' onClick={() => setSortField('instrument')}>Instrument / function {sortField === 'instrument' && gCharMap.DownArrow()}</div>
+                    <th>
+                        <div className='interactable' onClick={() => setSortField('instrument')}>Instrument {sortField === 'instrument' && gCharMap.DownArrow()}</div>
                     </th>
                     {event.segments.map(seg => <React.Fragment key={seg.id}>
                         <th className='responseCell' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
@@ -418,7 +417,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             </tbody>
             <tfoot>
                 <tr>
-                    <td colSpan={3}>
+                    <td colSpan={2}>
                         {!props.readonly && canAddUsers && <AddUserButton
                             onSelect={onAddUser}
                             filterPredicate={(u) => {
@@ -899,7 +898,7 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
     };
 
     const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => acc + ((((resp.response.attendance?.strength || 0) > 50) ? 1 : 0)), 0));
-    const segmentResponseCountStr = `(${segmentResponseCounts.join(",")})`;
+    const segmentResponseCountStr = `(${Math.min(...segmentResponseCounts)})`;
 
     return <>
 
@@ -910,8 +909,8 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
             scrollButtons="auto"
         >
             <Tab label="Info" {...TabA11yProps('event', 0)} />
-            <Tab label={`Set Lists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
-            <Tab label={`Attendance ${segmentResponseCountStr}`} {...TabA11yProps('event', 2)} />
+            <Tab label={`Setlists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
+            <Tab label={`Responses ${segmentResponseCountStr}`} {...TabA11yProps('event', 2)} />
             <Tab label={`By Instrument`} {...TabA11yProps('event', 3)} />
             <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
             <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />
