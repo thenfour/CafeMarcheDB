@@ -1,10 +1,23 @@
 // @ts-check
 const { withBlitz } = require("@blitzjs/next")
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 /**
  * @type {import('@blitzjs/next').BlitzConfig}
  **/
 const config = {
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      config.plugins.push(
+        new BundleAnalyzerPlugin({
+          analyzerMode: 'static',
+          reportFilename: 'bundle-report.html',
+          openAnalyzer: false
+        })
+      );
+    }
+    return config;
+  },
   reactStrictMode: true,
   swcMinify: true,
   experimental: { instrumentationHook: true },

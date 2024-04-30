@@ -256,13 +256,21 @@ will show clearly on the command line.
 
   * `yarn install`
   * `blitz build` - builds for prod [docs](https://blitzjs.com/docs/cli-build)
-
   * `blitz start` - starts prod server [docs](https://blitzjs.com/docs/cli-start)
 
   * things i need to work out:
     * debugging prod? - will i be able to breakpoint? inspect much at all?
       * we can enable inspection directly on the GUI via `<InspectObject src={eventInfo} />`
-    * updating prod database (how do migrations work)
-    * logging: viewing
-    * certainly more admin tools would be needed
+    * logging: viewing, pruning, etc
+
+
+# Size-analyzing bundles
+
+At the moment, some pages are huge (500+kb initial download). Using `bundle-analyzer` works. Configuration for this is put entirely in the `next.config.js` folder, and runs after `blitz build`. The resulting treemap is at `/.next/bundle-report.html`.
+
+notes:
+
+* At the moment, `db3` is huge. This is kind of a consequence of the design of db3, that you unexpectedly get
+huge payloads because of all the features involved at the same time. Consider more customized handling of prisma objects.
+* I should also break components up into smaller files. Everything is monolithic so probably a lot of inefficiency.
 
