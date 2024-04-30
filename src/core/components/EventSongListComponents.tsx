@@ -6,7 +6,6 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, FormControlLabel, InputBase } from "@mui/material";
-import Autocomplete, { AutocompleteRenderInputParams, createFilterOptions } from '@mui/material/Autocomplete';
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from "react";
@@ -20,13 +19,12 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
+import { TAnyModel } from '../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText } from './CMCoreComponents2';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
-import { GetFilteredSongsItemSongPayload, TAnyModel } from '../db3/shared/apiTypes';
-import { useQuery } from '@blitzjs/rpc';
-import getFilteredSongs from '../db3/queries/getFilteredSongs';
+import { SongAutocomplete } from './SongAutocomplete';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -165,106 +163,6 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         </div>
     </div>;
 };
-
-
-export interface SongAutocompleteProps {
-    value: db3.SongPayload | null;
-    index: number;
-    onChange: (value: GetFilteredSongsItemSongPayload | null) => void;
-};
-
-export const SongAutocomplete = ({ value, onChange, index }: SongAutocompleteProps) => {
-    const [inputValue, setInputValue] = React.useState(''); // value of the input
-    const [debouncedValue, setDebouncedValue] = React.useState(''); // debounced input value
-    const [hasChanged, setHasChanged] = React.useState(false);
-
-    // Debouncing user input to avoid excessive fetches
-    React.useEffect(() => {
-        const timerId = setTimeout(() => {
-            setDebouncedValue(inputValue);
-            setHasChanged(true);
-        }, 100);
-        return () => clearTimeout(timerId);
-    }, [inputValue]);
-
-    // Fetching songs based on debounced input value
-    const [songs__] = useQuery(getFilteredSongs, { autocompleteQuery: debouncedValue }, {
-        suspense: false,
-        enabled: hasChanged && Boolean(debouncedValue)
-    });
-    const songs = (songs__?.matchingItems) || [];
-
-    const filterOptions = (options: db3.SongPayload[], { inputValue }: { inputValue: string }) => {
-        return options.filter(option => option.name.toLowerCase().includes(inputValue.toLowerCase()));
-    };
-
-    const handleChange = (newValue: GetFilteredSongsItemSongPayload | null | string) => {
-        if (typeof newValue === "string") {
-            // never called anyway but in case it was we should ignore.
-            return;
-        }
-        setHasChanged(true);
-        onChange(newValue);
-    };
-
-    return <Autocomplete
-        options={songs || []}
-        value={value}
-        onChange={(event, newValue) => handleChange(newValue)}
-
-        fullWidth={true}
-        openOnFocus={false}
-        inputValue={inputValue}
-        onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
-
-        // used to populate the input box
-        getOptionLabel={(option: GetFilteredSongsItemSongPayload | string) => {
-            if (typeof (option) === 'string') {
-                return option;
-            }
-            return option.name;
-        }}
-        getOptionKey={(option) => {
-            if (typeof (option) === 'string') {
-                return `free:${option}`;
-            }
-            return `id:${option.id}`;
-        }}
-        filterOptions={filterOptions}
-        freeSolo={true} // required because options are fetched async and therefore may not match the selected item.
-
-        isOptionEqualToValue={(option, value) => {
-            if (typeof value === 'string') {
-                if (typeof option === 'string') {
-                    return option === value;
-                }
-                return option.name === value;
-            }
-            if (typeof option === 'string') {
-                return option === value.name;
-            }
-            return option.name === value.name;
-        }}
-        renderOption={(props, option) => (
-            <li {...props}>
-                {typeof option === 'string' ? option : option.name}
-            </li>
-        )}
-        renderInput={(params: AutocompleteRenderInputParams) => {
-            const { InputLabelProps, InputProps, ...rest } = params;
-            const inputProps = { ...params.InputProps, ...rest };
-
-            return <div className="cmdbSimpleInputWrapper">
-                <InputBase
-                    {...inputProps}
-                    onMouseDownCapture={(e) => e.stopPropagation()}
-                />
-            </div>;
-        }}
-    />;
-};
-
-
 
 
 
@@ -413,7 +311,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         const n = { ...value };
         const index = n.songs.findIndex(s => s.id === row.id);
         if (index === -1) throw new Error(`id should alread be populated`);
-        n.songs.splice(index);
+        n.songs.splice(index, 1);
         ensureHasNewRow(n.songs);
         setValue(n);
     };

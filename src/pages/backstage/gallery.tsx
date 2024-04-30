@@ -14,8 +14,8 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from "react";
 import * as mime from 'mime';
 import { slugify, unslugify } from "shared/rootroot";
-import { SongAutocomplete } from "src/core/components/EventSongListComponents";
 import * as db3 from "src/core/db3/db3";
+import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
