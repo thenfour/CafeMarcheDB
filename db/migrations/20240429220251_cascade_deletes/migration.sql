@@ -14,7 +14,7 @@ ALTER TABLE `EventComment` DROP FOREIGN KEY `EventComment_userId_fkey`;
 ALTER TABLE `EventSegment` DROP FOREIGN KEY `EventSegment_eventId_fkey`;
 
 -- DropForeignKey
-ALTER TABLE `EventSonglist` DROP FOREIGN KEY `EventSongList_eventId_fkey`;
+ALTER TABLE `EventSongList` DROP FOREIGN KEY `EventSongList_eventId_fkey`;
 
 -- DropForeignKey
 ALTER TABLE `EventSongListSong` DROP FOREIGN KEY `EventSongListSong_songId_fkey`;
