@@ -72,7 +72,6 @@ const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValuePr
         props.onChange(newSpec);
     };
 
-
     const selectionChips: Record<SongSelectionFilter, string> = {
         "relevant": "Search songs from upcoming and recent events",
         "all": "Search all songs",
@@ -85,7 +84,7 @@ const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValuePr
     };
 
     return <div className={`SongsFilterControlsValue`}>
-        <div className="row" style={{ display: "flex", alignItems: "center" }}>
+        {/* <div className="row" style={{ display: "flex", alignItems: "center" }}>
             <CMChipContainer className="cell">
                 {Object.keys(selectionChips).map(k => (
                     <CMChip
@@ -99,7 +98,9 @@ const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValuePr
                 ))}
             </CMChipContainer>
             <div className="tinyCaption">{selectionChips[props.filterSpec.selection]}</div>
-        </div>
+        </div> */}
+
+        <div className="divider"></div>
 
         <div className="row">
             <CMChipContainer className="cell">
@@ -141,6 +142,17 @@ const SongsControls = (props: SongsControlsProps) => {
         props.onChange({ ...gDefaultFilter });
     };
 
+    const selectionChips: Record<SongSelectionFilter, string> = {
+        "relevant": "Search songs from upcoming and recent events",
+        "all": "Search all songs",
+    };
+
+    const selectSelection = (t: SongSelectionFilter) => {
+        const newSpec: SongsFilterSpec = { ...props.filterSpec };
+        newSpec.selection = t;
+        props.onChange(newSpec);
+    };
+
     return <div className="filterControlsContainer">
         <div className="content">
             <div className="row">
@@ -152,10 +164,31 @@ const SongsControls = (props: SongsControlsProps) => {
                             value={props.filterSpec.quickFilter}
                             autoFocus={true}
                         />
-                        {(hasAnyFilters) && <Button onClick={handleClearFilter}>Clear filter</Button>}
+                        {(hasAnyFilters) && <Button onClick={handleClearFilter}>Reset filter</Button>}
                         <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
                             Filter {hasExtraFilters && "*"}
                             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </div>
+                    </div>
+
+
+                    <div className={`SongsFilterControlsValue`}>
+                        <div className="row" style={{ display: "flex", alignItems: "center" }}>
+                            <CMChipContainer className="cell">
+                                {Object.keys(selectionChips).map(k => (
+                                    <CMChip
+                                        key={k}
+                                        variation={{ fillOption: "hollow", selected: (k === props.filterSpec.selection), enabled: true, variation: "weak" }}
+                                        //variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.selection === k }}
+                                        shape="rectangle"
+                                        size="small"
+                                        onClick={() => selectSelection(k as any)}
+                                    >
+                                        {k}
+                                    </CMChip>
+                                ))}
+                            </CMChipContainer>
+                            <div className="tinyCaption">{selectionChips[props.filterSpec.selection]}</div>
                         </div>
                     </div>
 

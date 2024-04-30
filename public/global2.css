@@ -218,13 +218,8 @@ input.CMTextInputBase.titleText {
 }
 
 .CMChip.selected {
-    /* border: 2px solid black; */
     outline: 3px solid #000;
     z-index: 999;
-}
-
-.CMChip.notselected {
-    /* border: 2px solid transparent; */
 }
 
 

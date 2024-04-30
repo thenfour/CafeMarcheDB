@@ -723,8 +723,20 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   letter-spacing: 1px;
 }
 
+.contentSection.filterControls .row {
+  /* add spacing for all filter control rows otherwise it's too stuffy */
+  margin-top: 5px;
+}
+
 .contentSection.filterControls .row.quickFilter {
   display: flex;
+}
+
+.contentSection.filterControls .filterControlsContainer div.divider {
+  height: 1px;
+  background-color: #8888;
+  margin-top: 8px;
+  margin-bottom: 8px;
 }
 
 .contentSection .smallInfoBox {

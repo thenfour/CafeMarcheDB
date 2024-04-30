@@ -108,37 +108,11 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
         props.onChange(newSpec);
     };
 
-    const selectTiming = (t: TimingFilter) => {
-        const newSpec: EventsFilterSpec = { ...props.filterSpec };
-        newSpec.timingFilter = t;
-        props.onChange(newSpec);
-    };
-
-    const timingChips: Record<TimingFilter, string> = {
-        "past": "Search events that already ended",
-        "relevant": "Search upcoming and recent events",
-        "future": "Search upcoming events",
-        "all": "Search all events",
-    };
 
     return <div className={`EventsFilterControlsValue`}>
+        <div className="divider"></div>
 
-        <div className="row" style={{ display: "flex", alignItems: "center" }}>
-            {/* <div className="caption cell">event type</div> */}
-            <CMChipContainer className="cell">
-                {Object.keys(timingChips).map(k => <CMChip
-                    key={k}
-                    variation={{ ...StandardVariationSpec.Strong, fillOption: "hollow", selected: (k === props.filterSpec.timingFilter) }}
-                    onClick={() => selectTiming(k as any)}
-                    shape="rectangle"
-                    size="small"
-                >
-                    {k}
-                </CMChip>)
-                }
-            </CMChipContainer>
-            <div className="tinyCaption">{timingChips[props.filterSpec.timingFilter]}</div>
-        </div>
+
         <div className="row">
             {/* <div className="caption cell">event type</div> */}
             <CMChipContainer className="cell">
@@ -193,7 +167,9 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
             </CMChipContainer>
         </div>
 
-        <div className="row topDivider">
+        <div className="divider"></div>
+
+        <div className="row">
             <CMChipContainer className="cell">
                 <CMChip
                     size="small"
@@ -234,6 +210,19 @@ const EventsControls = (props: EventsControlsProps) => {
         props.onChange({ ...gDefaultFilter });
     };
 
+    const selectTiming = (t: TimingFilter) => {
+        const newSpec: EventsFilterSpec = { ...props.filterSpec };
+        newSpec.timingFilter = t;
+        props.onChange(newSpec);
+    };
+
+    const timingChips: Record<TimingFilter, string> = {
+        "past": "Search events that already ended",
+        "relevant": "Search upcoming and recent events",
+        "future": "Search upcoming events",
+        "all": "Search all events",
+    };
+
     return <div className="filterControlsContainer">
         <div className="content">
             <div className="row">
@@ -245,10 +234,29 @@ const EventsControls = (props: EventsControlsProps) => {
                             value={props.filterSpec.quickFilter}
                             autoFocus={true}
                         />
-                        {(hasAnyFilters) && <Button onClick={handleClearFilter}>Clear filter</Button>}
+                        {(hasAnyFilters) && <Button onClick={handleClearFilter}>Reset filter</Button>}
                         <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
                             Filter {hasExtraFilters && "*"}
                             {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </div>
+                    </div>
+
+                    <div className={`EventsFilterControlsValue`}>
+                        <div className="row" style={{ display: "flex", alignItems: "center" }}>
+                            {/* <div className="caption cell">event type</div> */}
+                            <CMChipContainer className="cell">
+                                {Object.keys(timingChips).map(k => <CMChip
+                                    key={k}
+                                    variation={{ fillOption: "hollow", selected: (k === props.filterSpec.timingFilter), enabled: true, variation: "weak" }}
+                                    onClick={() => selectTiming(k as any)}
+                                    shape="rectangle"
+                                    size="small"
+                                >
+                                    {k}
+                                </CMChip>)
+                                }
+                            </CMChipContainer>
+                            <div className="tinyCaption">{timingChips[props.filterSpec.timingFilter]}</div>
                         </div>
                     </div>
 

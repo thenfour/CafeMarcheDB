@@ -242,6 +242,7 @@ interface EventSongListValueEditorProps {
 export const EventSongListValueEditor = (props: EventSongListValueEditorProps) => {
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
 
     const ensureHasNewRow = (list: EventSongListNullableSong[]) => {
         // make sure there is at least 1 "new" item.
@@ -340,7 +341,15 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
                 <div className="EventSongListValue">
 
-                    {props.onDelete && <Button onClick={props.onDelete}>{gIconMap.Delete()}Delete</Button>}
+                    {props.onDelete && <Button onClick={() => setShowingDeleteConfirmation(true)}>{gIconMap.Delete()}Delete</Button>}
+                    {props.onDelete && showingDeleteConfirmation && (<div className="deleteConfirmationControl">Are you sure you want to delete this item?
+                        <Button onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</Button>
+                        <Button onClick={() => {
+                            if (!props.onDelete) return;
+                            setShowingDeleteConfirmation(false);
+                            props.onDelete();
+                        }}>yes</Button>
+                    </div>)}
 
                     {nameField}
                     {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}

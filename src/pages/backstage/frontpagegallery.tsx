@@ -422,6 +422,7 @@ interface GalleryItemProps {
 
 const GalleryItem = (props: GalleryItemProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
 
     const handleSoftDeleteClick = () => {
         const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, isDeleted: true };
@@ -454,7 +455,14 @@ const GalleryItem = (props: GalleryItemProps) => {
         <div className="header">
             <div className="dragHandle draggable">☰ Order: {props.value.sortOrder}</div>
             <VisibilityControl value={props.value.visiblePermission} onChange={handleVisibilityChange} />
-            <Button onClick={handleSoftDeleteClick} startIcon={gIconMap.Delete()}>Delete</Button>
+            <Button onClick={() => setShowingDeleteConfirmation(true)} startIcon={gIconMap.Delete()}>Delete</Button>
+
+
+            {showingDeleteConfirmation && (<div className="deleteConfirmationControl">Are you sure you want to delete this item?
+                <Button onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</Button>
+                <Button onClick={() => { setShowingDeleteConfirmation(false); handleSoftDeleteClick(); }}>yes</Button>
+            </div>)}
+
         </div>
         <div className="content">
             {props.value.file.sizeBytes && <div className={`filesize ${largeFile && "largeFileWarn"}`}>

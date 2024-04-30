@@ -151,7 +151,6 @@ const DynamicContent = () => {
   let limitedAccountWarning = !!(currentUser?.role?.isRoleForNewUsers);
 
   return (<Suspense>
-    <SettingMarkdown setting="BackstageFrontpageMarkdown" />
 
     {limitedAccountWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
       <div>{gIconMap.ErrorOutline()}</div>
@@ -167,6 +166,7 @@ const DynamicContent = () => {
       </div>
     </CMSinglePageSurfaceCard>}
 
+    <SettingMarkdown setting="BackstageFrontpageMarkdown" />
 
     {/* <DashboardInner /> */}
   </Suspense>
