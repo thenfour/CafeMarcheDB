@@ -41,10 +41,12 @@ export enum Permission {
 
     // ******************** event permissions.
     admin_events = "admin_events",// require this for managing event attributes like type, status, tags
+
     manage_events = "manage_events",// require this for editing events: descriptions, creating / editing / deleting events
     view_events = "view_events", // careful: events get public visibility but not everything in events is public.
     view_events_nonpublic = "view_events_nonpublic", // for things like description or attendance which is not public despite the event being public vis
     respond_to_events = "respond_to_events",
+    change_others_event_responses = "change_others_event_responses",
 
     // ******************** song permissions.
     admin_songs = "admin_songs",
@@ -97,6 +99,7 @@ export const gPermissionOrdered: (keyof typeof Permission)[] = [
     Permission.view_events,
     Permission.view_events_nonpublic,
     Permission.respond_to_events,
+    Permission.change_others_event_responses,
     Permission.admin_songs,
     Permission.manage_songs,
     Permission.view_songs,

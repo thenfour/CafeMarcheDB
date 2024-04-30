@@ -275,13 +275,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
     const attendanceVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "filled", variation: 'strong' };
     if (!eventResponse.isRelevantForDisplay) return null;
 
-    const authorizedForEdit = db3.xEventUserResponse.authorizeRowForEdit({
-        clientIntention,
-        publicData,
-        model: eventResponse,
-    });
-
-    //const canRespondToEvents = useAuthorization("xy", Permission.respond_to_events);
+    const authorizedForEdit = useAuthorization("EventAttendanceDetailRow", Permission.change_others_event_responses);
     const isYou = eventResponse.user.id === currentUser.id;
 
     return <tr>
