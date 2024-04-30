@@ -1,15 +1,9 @@
 import { BlitzPage } from "@blitzjs/next";
 import { NoSsr } from "@mui/material";
 import Head from "next/head";
-import { Suspense } from "react";
+import * as React from 'react';
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { Markdown } from "src/core/components/RichTextEditor";
-import { HomepageMain } from "src/core/components/homepageComponents";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
-import * as db3 from "src/core/db3/db3";
-import { CMDBTableFilterModel } from "src/core/db3/shared/apiTypes";
-import * as React from 'react';
 
 const MainContent = () => {
     const [text, setText] = React.useState("# here i am");
@@ -25,7 +19,7 @@ const MainContent = () => {
     </div>;
 };
 
-const Test1Index: BlitzPage = () => {
+const Test1PublicIndex: BlitzPage = () => {
     return <>
         <Head>
             <title>test</title>
@@ -50,5 +44,5 @@ const Test1Index: BlitzPage = () => {
     </>;
 }
 
-export default Test1Index;
+export default Test1PublicIndex;
 

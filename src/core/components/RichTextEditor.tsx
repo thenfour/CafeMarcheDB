@@ -3,7 +3,6 @@
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
 
 // todo: paste attachments
-// todo: drop attachments
 import { Button, CircularProgress } from "@mui/material";
 import MarkdownIt from 'markdown-it';
 import React from "react";
@@ -12,7 +11,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
-import wikirefs_plugin from 'markdown-it-wikirefs';
+//import wikirefs_plugin from 'markdown-it-wikirefs';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
@@ -122,13 +121,13 @@ export const Markdown = (props: MarkdownProps) => {
             return;
         }
         const md = new MarkdownIt();
-        const options = {
-            resolveHtmlHref: (env: any, fname: string) => {
-                return `/backstage/wiki/${slugify(fname)}`;
-            },
-            resolveHtmlText: (env: any, fname: string) => fname.replace(/-/g, ' '),
-            resolveEmbedContent: (env: any, fname: string) => fname + ' content',
-        };
+        // const options = {
+        //     resolveHtmlHref: (env: any, fname: string) => {
+        //         return `/backstage/wiki/${slugify(fname)}`;
+        //     },
+        //     resolveHtmlText: (env: any, fname: string) => fname.replace(/-/g, ' '),
+        //     resolveEmbedContent: (env: any, fname: string) => fname + ' content',
+        // };
 
         const pluginEnable = (props.pluginEnable === undefined) ? 15 : props.pluginEnable;
 
@@ -155,7 +154,7 @@ export const Markdown = (props: MarkdownProps) => {
             };
         }
         if (pluginEnable & 2) {
-            md.use(wikirefs_plugin, options);
+            //md.use(wikirefs_plugin, options);
         }
         if (pluginEnable & 4) {
             md.use(cmLinkPlugin);
