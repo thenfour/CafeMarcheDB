@@ -482,3 +482,40 @@ export interface MatchingSlugItem {
 };
 export const MakeMatchingSlugItem = (value: MatchingSlugItem) => ({ ...value });
 
+
+
+interface AutoAssignInstrumentPartitionArgs {
+    allInstruments: Prisma.InstrumentGetPayload<{}>[];
+    fileLeafWithoutExtension: string;
+};
+
+interface AutoAssignInstrumentPartitionRet {
+    matchingInstrumentIds: number[];
+};
+
+export const AutoAssignInstrumentPartition = ({ allInstruments, fileLeafWithoutExtension }: AutoAssignInstrumentPartitionArgs): AutoAssignInstrumentPartitionRet => {
+    const matchingInstrumentIds: number[] = [];
+    if (!fileLeafWithoutExtension) return {
+        matchingInstrumentIds,
+    };
+
+    const localIsNullOrWhitespace = (s) => {
+        if (s == null) return true;
+        if (typeof (s) !== 'string') return false;
+        return (s.trim() === "");
+    };
+
+    // Iterate over all instruments and check if the file leaf matches the regex
+    allInstruments.forEach(instrument => {
+        if (localIsNullOrWhitespace(instrument.autoAssignFileLeafRegex)) return;
+        const regex = new RegExp(instrument.autoAssignFileLeafRegex!, 'i'); // case insensitive
+        if (regex.test(fileLeafWithoutExtension)) {
+            matchingInstrumentIds.push(instrument.id);
+        }
+    });
+
+    return {
+        matchingInstrumentIds
+    };
+};
+

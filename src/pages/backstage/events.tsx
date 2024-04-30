@@ -463,6 +463,7 @@ const EventListPageContent = () => {
     if (!useAuthorization("events page", Permission.view_events_nonpublic)) {
         throw new Error(`unauthorized`);
     }
+
     return <div className="eventsMainContent searchPage">
 
         <Suspense>

@@ -28,6 +28,7 @@ const InstrumentListContent = () => {
                 }
             }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "autoAssignFileLeafRegex", cellWidth: 200, fieldCaption: "Regex" }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.ForeignSingleFieldClient<db3.InstrumentFunctionalGroupPayload>({ columnName: "functionalGroup", cellWidth: 200, }),
             new DB3Client.TagsFieldClient<db3.InstrumentTagAssociationPayload>({ columnName: "instrumentTags", cellWidth: 220, allowDeleteFromCell: false }),

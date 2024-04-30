@@ -1,12 +1,11 @@
-import { Prisma } from "db";
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
+import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
-import * as DB3Client from "src/core/db3/DB3Client";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const InstrumentFunctionalGroupListContent = () => {
@@ -33,7 +32,7 @@ const InstrumentFunctionalGroupListContent = () => {
 
 const InstrumentFunctionalGroupListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument Tags">
+        <DashboardLayout title="InstrumentGroups">
             <InstrumentFunctionalGroupListContent />
         </DashboardLayout>
     );

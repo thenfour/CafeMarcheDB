@@ -439,161 +439,148 @@ const main = async () => {
 
   let instrumentOrder: number = 0;
 
-  // const GenerateInstrumentAndFunctionalGroupSeed = (instrumentName: string, functionalGroupName?: string): Prisma.InstrumentCreateInput => {
-  //   functionalGroupName = functionalGroupName || instrumentName;
-  //   console.log(`Generating seed for instrument ${instrumentName} and group ${functionalGroupName}, order ${instrumentOrder}`);
-  //   instrumentOrder += 10;
-  //   return {
-  //     name: instrumentName,
-  //     sortOrder: instrumentOrder,
-  //     functionalGroup: {
-  //       connectOrCreate: {
-  //         where: {
-  //           name: functionalGroupName,
-  //         },
-  //         create: {
-  //           name: functionalGroupName,
-  //           description: "",
-  //           color: "olive",
-  //           sortOrder: instrumentOrder,
-  //         },
-  //       }
-  //     }
-  //   };
-  // };
 
-  // const instrumentSeed: Prisma.InstrumentCreateInput[] = [
-  //   GenerateInstrumentAndFunctionalGroupSeed("Flute"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Clarinet"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Bass Clarinet"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Soprano sax"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Alto sax"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Tenor sax"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Bari sax"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Trumpet"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Tenor Trombone"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Bass Tuba"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Violin"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Accordion"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Guitar"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Snare drum"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Bass drum"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Percussion"),
-
-  //   GenerateInstrumentAndFunctionalGroupSeed("Oboe", "Flute"),
-  //   GenerateInstrumentAndFunctionalGroupSeed("Djembe", "Percussion"),
-  // ];
-
-  const functionalGroupSeed = [
-    {
-      "name": "Bass guitar",
-      "description": "",
-      "color": "dark_gray",
-      "sortOrder": 135
-    },
-    {
-      "name": "Oboe",
-      "description": "",
-      "color": "light_gold",
-      "sortOrder": 15
-    },
-    {
-      "name": "Flute",
-      "description": "",
-      "color": "gold",
-      "sortOrder": 10
-    },
-    {
-      "name": "Clarinet",
-      "description": "",
-      "color": "brown",
-      "sortOrder": 20
-    },
-    {
-      "name": "Bass Clarinet",
-      "description": "",
-      "color": "light_brown",
-      "sortOrder": 30
-    },
-    {
-      "name": "Soprano sax",
-      "description": "",
-      "color": "light_orange",
-      "sortOrder": 40
-    },
-    {
-      "name": "Alto sax",
-      "description": "",
-      "color": "orange",
-      "sortOrder": 50
-    },
-    {
-      "name": "Tenor sax",
-      "description": "",
-      "color": "orange",
-      "sortOrder": 60
-    },
-    {
-      "name": "Bari sax",
-      "description": "",
-      "color": "purple",
-      "sortOrder": 70
-    },
-    {
-      "name": "Trumpet",
-      "description": "",
-      "color": "maroon",
-      "sortOrder": 80
-    },
-    {
-      "name": "Trombone",
-      "description": "",
-      "color": "maroon",
-      "sortOrder": 90
-    },
-    {
-      "name": "Bass Tuba",
-      "description": "",
-      "color": "dark_gray",
-      "sortOrder": 100
-    },
-    {
-      "name": "Violin",
-      "description": "",
-      "color": "light_gold",
-      "sortOrder": 110
-    },
-    {
-      "name": "Accordion",
-      "description": "",
-      "color": "light_green",
-      "sortOrder": 120
-    },
-    {
-      "name": "Guitar",
-      "description": "",
-      "color": "green",
-      "sortOrder": 130
-    },
-    {
-      "name": "Snare drum",
-      "description": "",
-      "color": "blue",
-      "sortOrder": 140
-    },
-    {
-      "name": "Bass drum",
-      "description": "",
-      "color": "blue",
-      "sortOrder": 150
-    },
-    {
-      "name": "Percussion",
-      "description": "",
-      "color": "light_blue",
-      "sortOrder": 160
-    }
-  ];
+  const functionalGroupSeed =
+    [
+      {
+        "name": "Voice",
+        "description": "",
+        "color": "citron",
+        "sortOrder": 8
+      },
+      {
+        "name": "Flute",
+        "description": "",
+        "color": "gold",
+        "sortOrder": 10
+      },
+      {
+        "name": "Oboe",
+        "description": "",
+        "color": "light_gold",
+        "sortOrder": 15
+      },
+      {
+        "name": "Clarinet",
+        "description": "",
+        "color": "brown",
+        "sortOrder": 20
+      },
+      {
+        "name": "Bass Clarinet",
+        "description": "",
+        "color": "light_brown",
+        "sortOrder": 30
+      },
+      {
+        "name": "Soprano sax",
+        "description": "",
+        "color": "light_orange",
+        "sortOrder": 40
+      },
+      {
+        "name": "Alto sax",
+        "description": "",
+        "color": "orange",
+        "sortOrder": 50
+      },
+      {
+        "name": "Tenor sax",
+        "description": "",
+        "color": "orange",
+        "sortOrder": 60
+      },
+      {
+        "name": "Bari sax",
+        "description": "",
+        "color": "purple",
+        "sortOrder": 70
+      },
+      {
+        "name": "Trumpet",
+        "description": "",
+        "color": "maroon",
+        "sortOrder": 80
+      },
+      {
+        "name": "Tenor brass",
+        "description": "",
+        "color": "maroon",
+        "sortOrder": 90
+      },
+      {
+        "name": "Bass Tuba",
+        "description": "",
+        "color": "dark_gray",
+        "sortOrder": 100
+      },
+      {
+        "name": "Violin",
+        "description": "",
+        "color": "light_gold",
+        "sortOrder": 110
+      },
+      {
+        "name": "Viola",
+        "description": "",
+        "color": "light_gold",
+        "sortOrder": 112
+      },
+      {
+        "name": "Cello",
+        "description": "",
+        "color": "light_gold",
+        "sortOrder": 114
+      },
+      {
+        "name": "Accordion",
+        "description": "",
+        "color": "light_green",
+        "sortOrder": 120
+      },
+      {
+        "name": "Piano",
+        "description": "",
+        "color": "light_teal",
+        "sortOrder": 128
+      },
+      {
+        "name": "Guitar",
+        "description": "",
+        "color": "green",
+        "sortOrder": 130
+      },
+      {
+        "name": "Bass guitar",
+        "description": "",
+        "color": "dark_gray",
+        "sortOrder": 135
+      },
+      {
+        "name": "Snare drum",
+        "description": "",
+        "color": "blue",
+        "sortOrder": 140
+      },
+      {
+        "name": "Bass drum",
+        "description": "",
+        "color": "blue",
+        "sortOrder": 150
+      },
+      {
+        "name": "Percussion",
+        "description": "",
+        "color": "light_blue",
+        "sortOrder": 160
+      },
+      {
+        "name": "Special/other",
+        "description": "For things like one-off instruments like hangdrum, synthesizer, etc.",
+        "color": null,
+        "sortOrder": 500
+      }
+    ]
 
   const functionalGroupsResult = await SeedTable("instrumentFunctionalGroup", prisma.instrumentFunctionalGroup, functionalGroupSeed);
 
@@ -602,10 +589,34 @@ const main = async () => {
       name: g.name,
       slug: slugify(g.name),
       description: "",
+      autoAssignFileLeafRegex: g.name,
       sortOrder: g.sortOrder,
       functionalGroupId: functionalGroupsResult.find(x => x.name === g.name)!.id
     }))
   );
+
+
+  // FYI here are some auto assign regexs i have used:
+
+  // Bass guitar	bass\bguit
+  // Oboe	oboe|hobo
+  // Flute	flute|fluit
+  // Clarinet	clarinet|klarinet
+  // Bass Clarinet	bass\bclarinet
+  // Soprano sax	sop.*?sax
+  // Alto sax	alto.*?sax
+  // Tenor sax	ten.*?sax
+  // Bari sax	bari.*?sax
+  // Trumpet	tpt|trompet|trumpet
+  // Trombone	tbn|trombone
+  // Bass Tuba	sousa|bombard|helicon|tuba
+  // Violin	violin
+  // Accordion	accordio
+  // Guitar	gtr|guit
+  // Snare drum	drums
+  // Bass drum	
+  // Percussion	percus
+
 
   await SeedTable("role", prisma.role,
     [
@@ -1114,7 +1125,7 @@ const main = async () => {
 
   console.log(`creating ${fakerConfig.eventCount} events...`);
   for (let i = 0; i < fakerConfig.eventCount; i++) {
-    const eventName = faker.commerce.productName();
+    const eventName = faker.word.words({ count: { min: 1, max: 7 }, });
     console.log(`creating event #${i} ${eventName}`);
 
     const segmentCount = probabool(0.6) ? 1 : faker.number.int({ min: 0, max: 2 });

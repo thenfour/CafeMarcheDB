@@ -831,3 +831,4 @@ export function SplitQuickFilter(quickFilter: string): string[] {
     return quickFilter.toLowerCase().split(/\s+/).filter(token => token.length > 0);
 }
 
+

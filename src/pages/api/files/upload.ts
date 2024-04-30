@@ -3,7 +3,7 @@
 import formidable, { PersistentFile } from 'formidable';
 import { api } from "src/blitz-server"
 import { Ctx } from "@blitzjs/next";
-import { TClientUploadFileArgs, UploadResponsePayload } from 'src/core/db3/shared/apiTypes';
+import { AutoAssignInstrumentPartition, TClientUploadFileArgs, UploadResponsePayload } from 'src/core/db3/shared/apiTypes';
 import { CoerceToNumberOrNull, CoerceToString, IsNullOrWhitespace, isValidURL, sleep } from 'shared/utils';
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -18,6 +18,13 @@ var fs = require('fs');
 const util = require('util');
 const rename = util.promisify(fs.rename);
 
+function stripExtension(filename: string): string {
+    const lastDotIndex = filename.lastIndexOf('.');
+    if (lastDotIndex <= 0) return filename;
+    return filename.substring(0, lastDotIndex);
+}
+
+
 // todo: fields for database integration
 // todo: error handling, cancelling for example.
 
@@ -26,6 +33,7 @@ export const config = {
         bodyParser: false,
     },
 };
+
 
 // on making blitz-integrated "raw" server API routes: https://blitzjs.com/docs/auth-server#api-routes
 export default api(async (req, res, origCtx: Ctx) => {
@@ -128,8 +136,8 @@ export default api(async (req, res, origCtx: Ctx) => {
                             // relative to current working dir.
                             const newpath = mutationCore.GetFileServerStoragePath(fields.storedLeafName);
 
-                            // workaround broken
-                            //const mimeType = (mime as any).getType(file.originalFilename); // requires a leaf only, for some reason explicitly fails on a full path.
+                            // workaround broken typing
+                            const mimeType = (mime as any).getType(file.originalFilename) as string | null; // requires a leaf only, for some reason explicitly fails on a full path.
 
                             // const fields: Record<string, any> = { // similar to: Prisma.FileUncheckedCreateInput = {
                             //     fileLeafName: file.originalFilename,
@@ -142,9 +150,36 @@ export default api(async (req, res, origCtx: Ctx) => {
                             //     sizeBytes: size,
                             //     mimeType,
                             // }
+                            const allTags = await db.fileTag.findMany();
+                            const partitionTag = allTags.find(t => t.significance === db3.FileTagSignificance.Partition);
+                            const recordingTag = allTags.find(t => t.significance === db3.FileTagSignificance.Recording);
+
+                            // automatically tag some things.
+                            fields.tags = [];
+
+                            if (mimeType?.startsWith("audio/") && recordingTag) {
+                                fields.tags.push(recordingTag.id);
+                            }
+
+                            // if there's a song tag, and you're uploading files, VERY likely it's a partition or recording.
+                            // if the mime type is audio, mark it as recording.
+                            if (args.taggedSongId && (file.originalFilename as string).toLowerCase().endsWith(".pdf")) {
+                                if (partitionTag) {
+                                    fields.tags.push(partitionTag.id);
+
+                                    const allInstruments = await db.instrument.findMany();
+                                    const aaret = AutoAssignInstrumentPartition({
+                                        allInstruments,
+                                        fileLeafWithoutExtension: stripExtension(file.originalFilename),
+                                    });
+                                    fields.taggedInstruments = aaret.matchingInstrumentIds;
+                                }
+
+                            } else {
+                                if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
+                            }
 
                             if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
-                            if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
                             if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
 

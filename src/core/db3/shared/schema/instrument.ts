@@ -197,6 +197,13 @@ export const xInstrument = new db3.xTable({
             format: "markdown",
             authMap: xInstrumentAuthMap_R_EManagers,
         }),
+        new GenericStringField({
+            columnName: "autoAssignFileLeafRegex",
+            allowNull: false,
+            format: "raw",
+            authMap: xInstrumentAuthMap_R_EManagers,
+        }),
+
         new GenericIntegerField({
             columnName: "sortOrder",
             allowSearchingThisField: false,

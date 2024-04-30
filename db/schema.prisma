@@ -381,11 +381,15 @@ model InstrumentFunctionalGroup {
 }
 
 model Instrument {
-  id                Int                        @id @default(autoincrement())
-  name              String                     @unique @db.VarChar(768)
-  slug              String                     @default("") @db.VarChar(768)
-  description       String                     @db.MediumText
-  sortOrder         Int
+  id          Int    @id @default(autoincrement())
+  name        String @unique @db.VarChar(768)
+  slug        String @default("") @db.VarChar(768)
+  description String @db.MediumText
+  sortOrder   Int
+
+  // when uploading files to songs, this regex will test if a filename matches this instrument. the directory & extension have been stripped already.
+  autoAssignFileLeafRegex String? @db.VarChar(768)
+
   functionalGroupId Int
   functionalGroup   InstrumentFunctionalGroup  @relation(fields: [functionalGroupId], references: [id], onDelete: Cascade) // if you want to delete a functional group, you need to manually reassign
   instrumentTags    InstrumentTagAssociation[]
