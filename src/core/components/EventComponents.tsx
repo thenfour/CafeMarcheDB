@@ -983,39 +983,39 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
 
 
-export interface EventDashboardItemProps {
-    event: db3.EventClientPayload_Verbose,
-    tableClient: DB3Client.xTableRenderClient;
-}
-export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps) => {
+// export interface EventDashboardItemProps {
+//     event: db3.EventClientPayload_Verbose,
+//     tableClient: DB3Client.xTableRenderClient;
+// }
+// export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps) => {
 
-    const eventData = CalculateEventMetadata(event);
+//     const eventData = CalculateEventMetadata(event);
 
-    return <EventDetailContainer eventData={eventData} readonly={true} tableClient={props.tableClient} fadePastEvents={true} showVisibility={false}>
-        <EventAttendanceControl
-            eventData={eventData}
-            onRefetch={props.tableClient.refetch}
-        />
-    </EventDetailContainer>;
-};
+//     return <EventDetailContainer eventData={eventData} readonly={true} tableClient={props.tableClient} fadePastEvents={true} showVisibility={false}>
+//         <EventAttendanceControl
+//             eventData={eventData}
+//             onRefetch={props.tableClient.refetch}
+//         />
+//     </EventDetailContainer>;
+// };
 
-export interface EventDashboardProps {
-    items: db3.EventClientPayload_Verbose[];
-    tableClient: DB3Client.xTableRenderClient;
-};
+// export interface EventDashboardProps {
+//     items: db3.EventClientPayload_Verbose[];
+//     tableClient: DB3Client.xTableRenderClient;
+// };
 
-export const EventDashboard = (props: EventDashboardProps) => {
+// export const EventDashboard = (props: EventDashboardProps) => {
 
-    return <div className='EventDashboard'>
-        {props.items.length < 1 ? (<div>
-            Nothing here!
-        </div>) : <div className='searchResults'>{props.items.map(event => <EventDashboardItem key={event.id}
-            event={event as db3.EventClientPayload_Verbose}
-            tableClient={props.tableClient}
-        />)}</div>
-        }
-    </div>;
-};
+//     return <div className='EventDashboard'>
+//         {props.items.length < 1 ? (<div>
+//             Nothing here!
+//         </div>) : <div className='searchResults'>{props.items.map(event => <EventDashboardItem key={event.id}
+//             event={event as db3.EventClientPayload_Verbose}
+//             tableClient={props.tableClient}
+//         />)}</div>
+//         }
+//     </div>;
+// };
 
 export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),

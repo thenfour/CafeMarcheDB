@@ -35,6 +35,7 @@ interface EventsFilterSpec {
     pageSize: number;
     page: number;
     quickFilter: string;
+    refreshSerial: number;
 
     tagFilter: number[];
     statusFilter: number[];
@@ -47,6 +48,7 @@ interface EventsFilterSpec {
 const gDefaultFilter: EventsFilterSpec = {
     pageSize: 20,
     page: 0,
+    refreshSerial: 0,
     quickFilter: "",
     tagFilter: [],
     statusFilter: [],
@@ -113,10 +115,10 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
     };
 
     const timingChips: Record<TimingFilter, string> = {
-        "past": "Events that already ended",
-        "relevant": "Upcoming and recent events",
-        "future": "Upcoming events",
-        "all": "All events",
+        "past": "Search events that already ended",
+        "relevant": "Search upcoming and recent events",
+        "future": "Search upcoming events",
+        "all": "Search all events",
     };
 
     return <div className={`EventsFilterControlsValue`}>
@@ -259,7 +261,7 @@ const EventsControls = (props: EventsControlsProps) => {
 
 interface EventListItemProps {
     event: db3.EventClientPayload_Verbose;
-    //tableClient: DB3Client.xTableRenderClient;
+    refetch: () => void;
     filterSpec: EventsFilterSpec;
 };
 
@@ -282,7 +284,7 @@ const EventListItem = (props: EventListItemProps) => {
         {eventData.eventTiming !== Timing.Past &&
             <EventAttendanceControl
                 eventData={eventData}
-                onRefetch={() => { }}
+                onRefetch={props.refetch}
             // onRefetch={() => {}props.tableClient.refetch}
             />
         }
@@ -296,14 +298,15 @@ interface EventsListArgs {
     filterInfo: GetEventFilterInfoRet;
     setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
     events: db3.EventClientPayload_Verbose[],
+    refetch: () => void;
 };
 
-const EventsList = ({ filterSpec, filterInfo, events, ...props }: EventsListArgs) => {
+const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: EventsListArgs) => {
 
     const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
 
     return <div className="eventList searchResults">
-        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} />)}
+        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} refetch={refetch} />)}
         <div className="searchRecordCount">
             {filterInfo.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {filterInfo.rowCount} total</>}
         </div>
@@ -338,6 +341,7 @@ const EventListQuerier = (props: EventListQuerierProps) => {
             pageSize: props.filterSpec.pageSize,
             timingFilter: props.filterSpec.timingFilter,
             page: props.filterSpec.page,
+            refreshSerial: props.filterSpec.refreshSerial,
         }
     });
 
@@ -354,6 +358,7 @@ const EventListQuerier = (props: EventListQuerierProps) => {
 
     const tableParams: db3.EventTableParams = {
         eventIds: queriedFilterInfo.eventIds.length === 0 ? [-1] : queriedFilterInfo.eventIds, // prevent fetching the entire table!
+        refreshSerial: props.filterSpec.refreshSerial,
     };
 
     const eventsClient = DB3Client.useTableRenderContext({
@@ -404,9 +409,9 @@ interface EventListOuterProps {
 
 const EventListOuter = (props: EventListOuterProps) => {
     const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({ ...gDefaultFilter });
-
     const [filterInfo, setFilterInfo] = React.useState<GetEventFilterInfoRet>(MakeGetEventFilterInfoRet());
     const [eventsQueryResult, setEventsQueryResult] = React.useState<db3.EventClientPayload_Verbose[]>([]);
+
 
     // # when filter spec (other than page change), reset page to 0.
     const { page, ...everythingButPage } = filterSpec;
@@ -435,7 +440,13 @@ const EventListOuter = (props: EventListOuterProps) => {
                 <EventListQuerier filterSpec={filterSpec} setEventsQueryResult={setEventsQueryResult} setFilterInfo={setFilterInfo} />
             </Suspense>
         </CMSinglePageSurfaceCard>
-        <EventsList filterSpec={filterSpec} setFilterSpec={setFilterSpec} events={eventsQueryResult} filterInfo={filterInfo} />
+        <EventsList
+            filterSpec={filterSpec}
+            setFilterSpec={setFilterSpec}
+            events={eventsQueryResult}
+            filterInfo={filterInfo}
+            refetch={() => setFilterSpec({ ...filterSpec, refreshSerial: filterSpec.refreshSerial + 1 })}
+        />
     </>;
 };
 

@@ -1584,8 +1584,6 @@ in particular the date range picker is wide.*/
 }
 
 
-/* for events that show on the backstage frontpage, it looks like the EventDetail, but we could apply formatting here to make it more beautiful and less obnoxiously huge.*/
-.EventDashboard .EventDetail {}
 
 /* ad-hoc class for selecting foreign single values in a list, showing selected & delete icons next to a chip in a line.*/
 .listItemRow {

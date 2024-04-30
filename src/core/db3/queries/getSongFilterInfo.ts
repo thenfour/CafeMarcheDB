@@ -6,12 +6,13 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet } from "../shared/apiTypes";
+import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
 
 interface TArgs {
     filterSpec: {
         pageSize: number;
         page: number;
+        selection: SongSelectionFilter;
 
         quickFilter: string,
         tagIds: number[];
@@ -72,12 +73,29 @@ export default resolver.pipe(
 
             // this CTE should return a list of songs which match the filter.
             const filteredSongsCTE = `
-        WITH FilteredSongs AS (
+        WITH RelevantSongs as (
+            select
+                ESLS.songID
+            from 
+                event E
+            join
+                eventsonglist ESL on E.id = ESL.eventId
+            join
+                eventsonglistsong ESLS on ESL.id = ESLS.eventSongListId
+            where 
+                ${gEventRelevantFilterExpression}
+            group by
+                ESLS.songID
+            order by
+                songID
+            ),
+        FilteredSongs AS (
             SELECT 
                 Song.id AS SongId,
                 Song.name
             FROM 
                 Song
+            ${args.filterSpec.selection === "relevant" ? "inner join RelevantSongs RS on RS.songId = Song.id" : ""}
             left JOIN 
                 SongTagAssociation ON Song.id = SongTagAssociation.songId
             WHERE
@@ -136,8 +154,6 @@ export default resolver.pipe(
 
             const eventIds: { SongId: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
 
-
-
             // TOTAL filtered row count
             const totalRowCountQuery = `
         ${filteredSongsCTE}
@@ -148,7 +164,6 @@ export default resolver.pipe(
         `;
 
             const rowCountResult: { rowCount: bigint, futureCount: bigint, pastCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
-
 
             return {
                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),

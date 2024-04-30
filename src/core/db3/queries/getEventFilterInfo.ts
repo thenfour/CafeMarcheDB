@@ -5,7 +5,7 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants } from "../shared/apiTypes";
+import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants, gEventRelevantFilterExpression } from "../shared/apiTypes";
 
 interface TArgs {
     filterSpec: {
@@ -20,6 +20,7 @@ interface TArgs {
         orderBy: "StartAsc" | "StartDesc";
         pageSize: number;
         page: number;
+        refreshSerial: number;
     }
 };
 
@@ -64,7 +65,7 @@ export default resolver.pipe(
 
             const timingFilterExpressions: Record<TimingFilter, string | null> = {
                 "past": `(endDateTime <= curdate())`,
-                "relevant": `((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`,
+                "relevant": gEventRelevantFilterExpression,//`((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`,
                 "future": `((startsAt >= curdate()) or (startsAt is null))`,
                 "all": null,
             };

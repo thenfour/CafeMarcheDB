@@ -317,6 +317,7 @@ export interface EventTableParams {
     eventStatusIds?: number[];
     minDate?: Date;
     forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
+    refreshSerial?: number; // ignored but useful to force a refresh
 };
 
 const xEventArgs_Base: db3.TableDesc = {

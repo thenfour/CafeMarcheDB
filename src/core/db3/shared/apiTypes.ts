@@ -389,6 +389,11 @@ export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
     paginatedQueryMS: 0,
 });
 
+export const gEventRelevantFilterExpression = `((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`;
+
+
+export type SongSelectionFilter = "relevant" | "all";
+
 export interface GetSongFilterInfoRet {
     rowCount: number;
     songIds: number[];

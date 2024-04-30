@@ -10,7 +10,7 @@ import { arraysContainSameValues, gQueryOptions, toggleValueInArray } from "shar
 import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
+import { DebugCollapsibleAdminText, DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -21,12 +21,13 @@ import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getSongFilterInfo from "src/core/db3/queries/getSongFilterInfo";
-import { GetSongFilterInfoRet, MakeGetSongFilterInfoRet } from "src/core/db3/shared/apiTypes";
+import { GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 interface SongsFilterSpec {
     pageSize: number;
     page: number;
+    selection: SongSelectionFilter;
 
     quickFilter: string;
     tagFilter: number[];
@@ -35,6 +36,7 @@ interface SongsFilterSpec {
 const gDefaultFilter: SongsFilterSpec = {
     pageSize: 20,
     page: 0,
+    selection: "relevant",
 
     quickFilter: "",
     tagFilter: [],
@@ -43,6 +45,7 @@ const gDefaultFilter: SongsFilterSpec = {
 const HasExtraFilters = (val: SongsFilterSpec) => {
     if (val.pageSize != gDefaultFilter.pageSize) return true;
     if (val.quickFilter != gDefaultFilter.quickFilter) return true;
+    if (val.selection != gDefaultFilter.selection) return true;
     if (!arraysContainSameValues(val.tagFilter, gDefaultFilter.tagFilter)) return true;
     return false;
 };
@@ -69,9 +72,36 @@ const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValuePr
         props.onChange(newSpec);
     };
 
+
+    const selectionChips: Record<SongSelectionFilter, string> = {
+        "relevant": "Search songs from upcoming and recent events",
+        "all": "Search all songs",
+    };
+
+    const selectSelection = (t: SongSelectionFilter) => {
+        const newSpec: SongsFilterSpec = { ...props.filterSpec };
+        newSpec.selection = t;
+        props.onChange(newSpec);
+    };
+
     return <div className={`SongsFilterControlsValue`}>
+        <div className="row" style={{ display: "flex", alignItems: "center" }}>
+            <CMChipContainer className="cell">
+                {Object.keys(selectionChips).map(k => (
+                    <CMChip
+                        key={k}
+                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.selection === k }}
+                        size="small"
+                        onClick={() => selectSelection(k as any)}
+                    >
+                        {k}
+                    </CMChip>
+                ))}
+            </CMChipContainer>
+            <div className="tinyCaption">{selectionChips[props.filterSpec.selection]}</div>
+        </div>
+
         <div className="row">
-            {/* <div className="caption cell">tags</div> */}
             <CMChipContainer className="cell">
                 {filterInfo.tags.map(tag => (
                     <CMChip
@@ -204,6 +234,7 @@ const SongListQuerier = (props: SongListQuerierProps) => {
             tagIds: props.filterSpec.tagFilter,
             pageSize: props.filterSpec.pageSize,
             page: props.filterSpec.page,
+            selection: props.filterSpec.selection,
         }
     });
 
@@ -275,6 +306,10 @@ const SongListOuter = () => {
 
     return <>
         <NewSongButton />
+
+        <DebugCollapsibleAdminText text={filterInfo.tagsQuery} caption={"tagsQuery"} />
+        <DebugCollapsibleAdminText text={filterInfo.paginatedResultQuery} caption={"paginatedResultQuery"} />
+        <DebugCollapsibleAdminText text={filterInfo.totalRowCountQuery} caption={"totalRowCountQuery"} />
 
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">

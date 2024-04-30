@@ -52,9 +52,15 @@ const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreate
 // if no base range specified, it will be random.
 const RandomDateRange = (refDate: Date | null): DateTimeRange => {
   if (refDate === null) {
-    refDate = faker.date.anytime();
+    // heavily favor past.
+    const mindate = new Date();
+    mindate.setDate(mindate.getDate() - 365 * 10);
+    const maxdate = new Date();
+    maxdate.setDate(mindate.getDate() + 90);
+
+    refDate = faker.date.between({ from: mindate, to: maxdate });
   }
-  const typeOptions = [0, 1, 2];
+  const typeOptions = [0, 1, 1, 1, 2, 2, 2];
   const type = faker.helpers.arrayElement(typeOptions);
   if (type === 0) {
     // TBD
@@ -1115,7 +1121,7 @@ const main = async () => {
     const segmentDateRanges: DateTimeRange[] = [];
     let eventRange = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
     for (let ii = 0; ii < segmentCount; ++ii) {
-      const segrange = RandomDateRange(ii === 0 ? null : eventRange.getStartDateTime());
+      const segrange = RandomDateRange(eventRange.getStartDateTime());
       segmentDateRanges[ii] = segrange;
       eventRange = eventRange.unionWith(segrange);
     }

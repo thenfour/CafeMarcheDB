@@ -483,64 +483,64 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export interface CurrentSongsDashboardItem {
-    songId: number;
-    mostRecentAppearance: Date;
-    appearsInPresentOrFutureEvents: boolean;
-    appearsInEvents: db3.EventClientPayload_Verbose[];
-};
+// export interface CurrentSongsDashboardItem {
+//     songId: number;
+//     mostRecentAppearance: Date;
+//     appearsInPresentOrFutureEvents: boolean;
+//     appearsInEvents: db3.EventClientPayload_Verbose[];
+// };
 
-export interface CurrentSongsDashboardProps {
-    songs: CurrentSongsDashboardItem[];
-};
+// export interface CurrentSongsDashboardProps {
+//     songs: CurrentSongsDashboardItem[];
+// };
 
-export const CurrentSongsDashboard = (props: CurrentSongsDashboardProps) => {
-    const currentUser = useCurrentUser()[0]!;
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+// export const CurrentSongsDashboard = (props: CurrentSongsDashboardProps) => {
+//     const currentUser = useCurrentUser()[0]!;
+//     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
 
-    // song table bindings
-    const songTableSpec = new DB3Client.xTableClientSpec({
-        table: db3.xSong,
-        columns: [
-            SongClientColumns.id,
-        ],
-    });
+//     // song table bindings
+//     const songTableSpec = new DB3Client.xTableClientSpec({
+//         table: db3.xSong,
+//         columns: [
+//             SongClientColumns.id,
+//         ],
+//     });
 
-    // necessary to connect all the columns in the spec.
-    const tableClient = DB3Client.useTableRenderContext({
-        clientIntention,
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        tableSpec: songTableSpec,
-        filterModel: {
-            items: [],
-            tableParams: {
-                songIds: props.songs.map(s => s.songId),
-            }
-        }
-    });
+//     // necessary to connect all the columns in the spec.
+//     const tableClient = DB3Client.useTableRenderContext({
+//         clientIntention,
+//         requestedCaps: DB3Client.xTableClientCaps.Query,
+//         tableSpec: songTableSpec,
+//         filterModel: {
+//             items: [],
+//             tableParams: {
+//                 songIds: props.songs.map(s => s.songId),
+//             }
+//         }
+//     });
 
-    const songs = tableClient.items as db3.SongPayload_Verbose[];
+//     const songs = tableClient.items as db3.SongPayload_Verbose[];
 
-    return <div className=''>
-        {songs.length < 1 ? (<div>
-            Nothing here!
-        </div>) : <div className='searchResults'>
-            {songs.map(s => {
-                const songData = CalculateSongMetadata(s);
-                const dashEntry = props.songs.find(s2 => s2.songId === s.id)!;
-                return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} showVisibility={false}>
-                    <CMChipContainer orientation='vertical'>
-                        {dashEntry.appearsInEvents.map(e => <CMChip
-                            key={e.id}
-                            shape={'rectangle'}
-                        >
-                            {e.name}
-                        </CMChip>)}
-                    </CMChipContainer>
-                </SongDetailContainer>;
-            })}
-        </div>}
-    </div>
-        ;
-};
+//     return <div className=''>
+//         {songs.length < 1 ? (<div>
+//             Nothing here!
+//         </div>) : <div className='searchResults'>
+//             {songs.map(s => {
+//                 const songData = CalculateSongMetadata(s);
+//                 const dashEntry = props.songs.find(s2 => s2.songId === s.id)!;
+//                 return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} showVisibility={false}>
+//                     <CMChipContainer orientation='vertical'>
+//                         {dashEntry.appearsInEvents.map(e => <CMChip
+//                             key={e.id}
+//                             shape={'rectangle'}
+//                         >
+//                             {e.name}
+//                         </CMChip>)}
+//                     </CMChipContainer>
+//                 </SongDetailContainer>;
+//             })}
+//         </div>}
+//     </div>
+//         ;
+// };
 

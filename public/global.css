@@ -14,7 +14,7 @@
   --color-background: #eee;
   --color-border-style: "dotted";
 
-  --content-max-width: 700px;
+  --content-max-width: 750px;
 }
 
 a,
@@ -734,9 +734,10 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   text-transform: uppercase;
   font-weight: bold;
   white-space: nowrap;
-  color: #aaa;
+  color: #888;
   margin: 4px 0px 6px 6px;
-  /* letter-spacing: 0.7px; */
+  letter-spacing: -.3px;
+  line-height: 25px;
 }
 
 .contentSection .smallInfoBox.date {
