@@ -111,6 +111,7 @@ interface MarkdownProps {
     className?: string,
     compact?: boolean,
     onClick?: () => void,
+    pluginEnable?: number,
 }
 export const Markdown = (props: MarkdownProps) => {
     const [html, setHtml] = React.useState('');
@@ -122,44 +123,46 @@ export const Markdown = (props: MarkdownProps) => {
         }
         const md = new MarkdownIt();
         const options = {
-            // baseUrl: ,
-            // cssNames: ,
-            // embeds:,
             resolveHtmlHref: (env: any, fname: string) => {
-                //const extname: string = wikirefs.isMedia(fname) ? path.extname(fname) : '';
-                //fname = fname.replace(extname, '');
-                //return '/' + fname.trim().toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') + extname;
                 return `/backstage/wiki/${slugify(fname)}`;
             },
             resolveHtmlText: (env: any, fname: string) => fname.replace(/-/g, ' '),
             resolveEmbedContent: (env: any, fname: string) => fname + ' content',
         };
 
+        const pluginEnable = (props.pluginEnable === undefined) ? 15 : props.pluginEnable;
 
         // https://github.com/markdown-it/markdown-it/blob/master/docs/architecture.md#renderer
         // this adds attribute target=_blank so links open in new tab.
         // Remember old renderer, if overridden, or proxy to default renderer
-        var defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
-            return self.renderToken(tokens, idx, options);
-        };
+        if (pluginEnable & 1) {
+            var defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
+                return self.renderToken(tokens, idx, options);
+            };
 
-        md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
-            // If you are sure other plugins can't add `target` - drop check below
-            var aIndex = tokens[idx].attrIndex('target');
+            md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+                // If you are sure other plugins can't add `target` - drop check below
+                var aIndex = tokens[idx].attrIndex('target');
 
-            if (aIndex < 0) {
-                tokens[idx].attrPush(['target', '_blank']); // add new attribute
-            } else {
-                tokens[idx].attrs[aIndex][1] = '_blank';    // replace value of existing attr
-            }
+                if (aIndex < 0) {
+                    tokens[idx].attrPush(['target', '_blank']); // add new attribute
+                } else {
+                    tokens[idx].attrs[aIndex][1] = '_blank';    // replace value of existing attr
+                }
 
-            // pass token to default renderer.
-            return defaultRender(tokens, idx, options, env, self);
-        };
-
-        md.use(wikirefs_plugin, options);
-        md.use(cmLinkPlugin);
-        md.use(markdownItImageDimensions);
+                // pass token to default renderer.
+                return defaultRender(tokens, idx, options, env, self);
+            };
+        }
+        if (pluginEnable & 2) {
+            md.use(wikirefs_plugin, options);
+        }
+        if (pluginEnable & 4) {
+            md.use(cmLinkPlugin);
+        }
+        if (pluginEnable & 8) {
+            md.use(markdownItImageDimensions);
+        }
 
         setHtml(md.render(props.markdown));
     }, [props.markdown]);
