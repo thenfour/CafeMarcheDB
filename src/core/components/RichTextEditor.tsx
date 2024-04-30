@@ -17,7 +17,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
 import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
 import { useDebounce } from "shared/useDebounce"; // 0 internal refs
-import { CoerceToBoolean, IsNullOrWhitespace, parseMimeType } from "shared/utils";
+import { CoerceToBoolean, IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 
@@ -254,6 +254,19 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         minHeight: props.height || 400,
     };
 
+    const insertTextAtCursor = (textToInsert) => {
+        const textarea = ta.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const textBefore = textarea.value.substring(0, start);
+        const textAfter = textarea.value.substring(end, textarea.value.length);
+
+        const newText = textBefore + textToInsert + textAfter;
+        props.onValueChanged(newText);
+    };
+
     // ok when you upload, the gallery item component is created.
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {
@@ -270,14 +283,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             }).then((resp) => {
                 setProgress(null);
 
-                const textarea = ta.current;
-                if (!textarea) return;
-
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const textBefore = textarea.value.substring(0, start);
-                const textAfter = textarea.value.substring(end, textarea.value.length);
-
                 const toInsert = resp.files.map(f => {
                     const url = `/api/files/download/${f.storedLeafName}`; // relative url is fine.
                     const mimeInfo = parseMimeType(f.mimeType);
@@ -288,8 +293,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     return `[${f.fileLeafName}](${url})`;
                 }).join(" ");
 
-                const newText = textBefore + toInsert + textAfter;
-                props.onValueChanged(newText);
+                insertTextAtCursor(toInsert);
 
                 if (!resp.isSuccess) {
                     throw new Error(`Server returned unsuccessful result while uploading files`);
@@ -302,7 +306,12 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         }
     };
 
-    // const canUpload = useAuthorization("FrontpageGalleryUpload", Permission.upload_files);
+    const handlePaste = (e) => {
+        if ((e.clipboardData?.files?.length || 0) > 0) {
+            handleFileSelect(e.clipboardData!.files);
+            e.preventDefault();
+        }
+    };
 
     return (
         <FileDropWrapper
@@ -318,9 +327,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 autoFocus={!!props.autoFocus}
                 //ref={rta => setRta(rta)}
                 innerRef={textarea => setTa(textarea)}
-                containerStyle={{
-                    //marginTop: 20,
-                }}
                 //movePopupAsYouType={true}
                 value={props.value || ""}
                 height={props.height || 400}
@@ -328,6 +334,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 onChange={(e) => {
                     props.onValueChanged(e.target.value);
                 }}
+                onPaste={handlePaste}
                 minChar={3} // how many chars AFTER the trigger char you need to type before the popup arrives
 
                 trigger={{
@@ -337,18 +344,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                         component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem wiki ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
                         output: (item: string) => `[[${item}]]`
                     },
-                    // "[[@": {
-                    //     dataProvider: token => fetchEventOrSongTagsBracketAt(token),
-                    //     component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
-                    //         {entity.itemType === "event" && <CalendarMonthIcon />}
-                    //         {entity.itemType === "song" && <MusicNoteIcon />}
-                    //         {entity.itemType === "user" && <PersonIcon />}
-                    //         {entity.itemType === "instrument" && <MusicNoteIcon />}
-                    //         {entity.name}
-                    //     </div>,
-                    //     output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
-                    // },
-                    // basically replicate this just for "@" prefix; it's more intuitive & easy.
                     "@": {
                         dataProvider: token => fetchEventOrSongTagsAt(token),
                         component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>

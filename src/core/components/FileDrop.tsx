@@ -115,15 +115,15 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
             if ((e.clipboardData?.files?.length || 0) > 0) {
                 props.onFileSelect(e.clipboardData!.files);
             }
-            if ((e.clipboardData?.items?.length || 0) > 0) {
-                for (let i = 0; i < e.clipboardData!.items.length; ++i) {
-                    const item = e.clipboardData!.items[i]!;
-                    console.log(`item ${i} : ${item.type} ${item.kind}`);
-                    item.getAsString((data) => {
-                        console.log(`  -> ${data}`);
-                    })
-                }
-            }
+            // if ((e.clipboardData?.items?.length || 0) > 0) {
+            //     for (let i = 0; i < e.clipboardData!.items.length; ++i) {
+            //         const item = e.clipboardData!.items[i]!;
+            //         console.log(`item ${i} : ${item.type} ${item.kind}`);
+            //         item.getAsString((data) => {
+            //             console.log(`  -> ${data}`);
+            //         })
+            //     }
+            // }
         };
 
         // Attach the onPaste event listener to the entire document
