@@ -77,11 +77,11 @@ export default resolver.pipe(
             select
                 ESLS.songID
             from 
-                event E
+                Event E
             join
-                eventsonglist ESL on E.id = ESL.eventId
+                EventSongList ESL on E.id = ESL.eventId
             join
-                eventsonglistsong ESLS on ESL.id = ESLS.eventSongListId
+                EventSongListSong ESLS on ESL.id = ESLS.eventSongListId
             where 
                 ${gEventRelevantFilterExpression}
             group by
