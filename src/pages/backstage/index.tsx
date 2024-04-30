@@ -1,21 +1,10 @@
 import { BlitzPage } from "@blitzjs/next";
-import { EventDashboard } from "src/core/components/EventComponents";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
-import { useRouter } from "next/router";
-import { CurrentSongsDashboard, CurrentSongsDashboardItem } from "src/core/components/SongComponents";
-import * as DB3Client from "src/core/db3/DB3Client";
-import * as db3 from "src/core/db3/db3";
-import { API } from "src/core/db3/clientAPI";
-import { DateSubtractInDays, Timing, floorLocalToLocalDay } from "shared/time";
-import { Tab, Tabs } from "@mui/material";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { Permission } from "shared/permissions";
-import { DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 // const DashboardInner = () => {
