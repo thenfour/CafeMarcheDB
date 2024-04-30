@@ -18,6 +18,7 @@ interface Markdown2EditorProps {
     onCancel: () => void;
     onClose: () => void;
     initialValue: string;
+    displayUploadFileComponent?: boolean;
 };
 
 export const Markdown2Editor = (props: Markdown2EditorProps) => {
@@ -63,7 +64,12 @@ export const Markdown2Editor = (props: Markdown2EditorProps) => {
 
                 <CustomTabPanel tabPanelID='wikiEdit' value={tab} index={0}>
                     <div className='tabContent editTab'>
-                        <MarkdownEditor onValueChanged={(v) => setContent(v)} value={content} autoFocus={true} />
+                        <MarkdownEditor
+                            onValueChanged={(v) => setContent(v)}
+                            value={content}
+                            autoFocus={true}
+                            displayUploadFileComponent={props.displayUploadFileComponent}
+                        />
                     </div>
                 </CustomTabPanel>
 
@@ -111,6 +117,7 @@ interface Markdown2ControlProps {
     onValueSaved: (v: string) => Promise<boolean>;
     isExisting: boolean;
     readonly: boolean;
+    displayUploadFileComponent?: boolean;
 };
 export const Markdown2Control = (props: Markdown2ControlProps) => {
     const [editing, setEditing] = React.useState<boolean>(false);
@@ -131,6 +138,7 @@ export const Markdown2Control = (props: Markdown2ControlProps) => {
             onSave={handleSave}
             onCancel={() => setEditing(false)}
             onClose={() => setEditing(false)}
+            displayUploadFileComponent={props.displayUploadFileComponent}
         /> :
             <Markdown2ViewMode onEnterEditMode={() => setEditing(true)} value={props.value} isExisting={props.isExisting} readonly={props.readonly} />}
     </div>;

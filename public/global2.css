@@ -380,9 +380,17 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     /* margin: 10px 20%; */
     /* padding: 9px 2px; */
     border-radius: 5px;
-    width: 520px;
+    width: 450px;
+    height: 140px;
     /* fixed height needed so transition to progress bar is smooth.*/
-    height: 170px;
+}
+
+.FileUploadWrapperContainer {
+    display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+    align-items: flex-end;
+    width: 100%;
 }
 
 .fileDropWrapper {
@@ -452,11 +460,6 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     font-size: 60px;
     width: 33%;
 }
-
-.UploadFileComponent .instructions {
-    width: 50%;
-}
-
 
 .UploadFileComponent ul {
     padding: 0px 0px 0px 20px;

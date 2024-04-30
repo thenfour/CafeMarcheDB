@@ -131,6 +131,7 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.
         readonly={readonly || !authorized}
         value={song.description}
         onValueSaved={onValueSaved}
+        displayUploadFileComponent={true} // #133 for mobile,this gives an opportunity to upload/embed.
     />;
 };
 

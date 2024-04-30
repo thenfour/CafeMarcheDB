@@ -23,7 +23,7 @@ import { slugify } from "shared/rootroot";
 
 import { CMSmallButton } from "./CMCoreComponents2";
 import { CMDBUploadFile } from "./CMDBUploadFile";
-import { FileDropWrapper } from "./FileDrop";
+import { CollapsableUploadFileComponent, FileDropWrapper, UploadFileComponent } from "./FileDrop";
 import { getURLClass } from "../db3/clientAPILL";
 
 function markdownItImageDimensions(md) {
@@ -237,6 +237,7 @@ interface MarkdownEditorProps {
     onValueChanged: (val: string) => void, // caller can save the changed value to a db here.
     height?: number,
     autoFocus?: boolean;
+    displayUploadFileComponent?: boolean;
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
@@ -313,14 +314,13 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         }
     };
 
-    return (
+    return (<div className="FileUploadWrapperContainer">
         <FileDropWrapper
             className="frontpageGalleryFileUploadWrapper"
             onFileSelect={handleFileSelect}
             onURLUpload={() => { }}
             progress={progress}
         >
-
             <ReactTextareaAutocomplete
                 containerClassName="editorContainer"
                 loadingComponent={() => <div>Loading...</div>}
@@ -357,7 +357,13 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     },
                 }}
             />
+            {(props.displayUploadFileComponent) && <CollapsableUploadFileComponent
+                onFileSelect={handleFileSelect}
+                enablePaste={false} // because paste is handled inline in the textarea.
+                progress={progress}
+            />}
         </FileDropWrapper>
+    </div>
     );
 }
 

@@ -476,6 +476,7 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
         isExisting={true}
         readonly={readonly || !authorized}
         value={event.description}
+        displayUploadFileComponent={true} // #133 for mobile,this gives an opportunity to upload/embed.
         onValueSaved={onValueSaved}
     />;
 };

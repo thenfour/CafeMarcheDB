@@ -32,6 +32,18 @@ a.logo:visited {
   color: #ede331;
 }
 
+
+header .headerIndicatorBar {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 8px;
+  opacity: 50%;
+}
+
+
 header .headerIndicatorBar.impersonating {
   background: none;
   background-color: #c44;
@@ -42,15 +54,8 @@ header .headerIndicatorBar.impersonating {
 }
 
 .NODE_ENV_development .headerIndicatorBar {
-  pointer-events: none;
   background-color: #ffcc00;
   background-image: repeating-linear-gradient(-25deg, #ffcc00, #ffcc00 10px, #000000 10px, #000000 20px);
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: 8px;
-  opacity: 50%;
 }
 
 /* typically h1 at the top of a section doesn't need any padding or it looks awkwardly pushed down */

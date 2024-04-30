@@ -17,7 +17,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
-import { FileDropWrapper, UploadFileComponent } from "src/core/components/FileDrop";
+import { CollapsableUploadFileComponent, FileDropWrapper, UploadFileComponent } from "src/core/components/FileDrop";
 import { Markdown2Control } from "src/core/components/MarkdownControl2";
 import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -42,7 +42,7 @@ export interface NewGalleryItemComponentProps {
 
 const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     const [progress, setProgress] = React.useState<number | null>(null);
-    const [showUpload, setShowUpload] = React.useState<boolean>(false);
+    //const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const permissionId = API.users.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
     const currentUser = useCurrentUser()[0]!;
@@ -110,17 +110,8 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
                     <div className="CMSidenote">
                         Images may be a big / heavy download, so they're hidden by default. This also can facilitate re-ordering.
                     </div>
-                    {
-                        showUpload ? (
-                            <div className="uploadControlContainer">
-                                <UploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
-                                <Button onClick={() => setShowUpload(false)}>Cancel</Button>
-                            </div>
-                        ) : (
-                            <div className="content uploadControlContainer">
-                                <Button onClick={() => setShowUpload(true)}>Upload</Button>
-                            </div>
-                        )}
+
+                    <CollapsableUploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
                 </div>
             </CMSinglePageSurfaceCard>
 

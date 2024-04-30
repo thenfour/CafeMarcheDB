@@ -1,9 +1,9 @@
 
-import { Modal } from "@mui/material";
+import { Button, Modal } from "@mui/material";
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import React from "react";
 
-import { isValidURL } from "shared/utils";
+import { CoerceToBoolean, isValidURL } from "shared/utils";
 import { CircularProgressWithLabel } from "./CMCoreComponents2";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -76,12 +76,14 @@ export const FileDropWrapper = (props: React.PropsWithChildren<FileDropWrapperPr
 ////////////////////////////////////////////////////////////////
 interface UploadFileComponentProps {
     onFileSelect: (files: FileList) => void;
-    onURLUpload: (url: string) => void;
+    onURLUpload?: (url: string) => void;
     progress: number | null; // 0-1 progress, or null if no upload in progress.
+    enablePaste?: boolean;
 }
 
 export const UploadFileComponent = (props: UploadFileComponentProps) => {
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+    const enablePaste = CoerceToBoolean(props.enablePaste, true);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -106,10 +108,12 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
             e.preventDefault();
 
             // pasting a URL- comes in as text/plain
-            const txt = e.clipboardData.getData("text");
-            if (isValidURL(txt)) {
-                props.onURLUpload(txt);
-                return;
+            if (props.onURLUpload) {
+                const txt = e.clipboardData.getData("text");
+                if (isValidURL(txt)) {
+                    props.onURLUpload(txt);
+                    return;
+                }
             }
 
             if ((e.clipboardData?.files?.length || 0) > 0) {
@@ -127,13 +131,15 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
         };
 
         // Attach the onPaste event listener to the entire document
-        document.addEventListener('paste', handlePaste);
+        if (enablePaste) {
+            document.addEventListener('paste', handlePaste);
+            return () => {
+                // Remove the event listener when the component is unmounted
+                document.removeEventListener('paste', handlePaste);
+            };
+        }
 
-        return () => {
-            // Remove the event listener when the component is unmounted
-            document.removeEventListener('paste', handlePaste);
-        };
-    }, []);
+    }, [enablePaste]);
 
     // drag & drop support
     //const [isDragging, setIsDragging] = React.useState(false);
@@ -196,3 +202,16 @@ export const UploadFileComponent = (props: UploadFileComponentProps) => {
         </div>
     </div>
 };
+
+// does NOT have the file upload wrapper.
+export const CollapsableUploadFileComponent = (props: UploadFileComponentProps) => {
+    const [showUpload, setShowUpload] = React.useState<boolean>(false);
+
+    return (showUpload ? <div className="uploadControlContainer">
+        <UploadFileComponent {...props} />
+        <Button onClick={() => setShowUpload(false)}>Cancel</Button>
+    </div> :
+        <Button onClick={() => setShowUpload(true)}>Upload</Button>)
+
+};
+

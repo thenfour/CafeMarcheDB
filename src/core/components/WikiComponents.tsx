@@ -97,7 +97,12 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
 
                 <CustomTabPanel tabPanelID='wikiEdit' value={tab} index={0}>
                     <div className='tabContent editTab'>
-                        <MarkdownEditor onValueChanged={(v) => setContent(v)} value={content} autoFocus={true} />
+                        <MarkdownEditor
+                            onValueChanged={(v) => setContent(v)}
+                            value={content}
+                            autoFocus={true}
+                            displayUploadFileComponent={true} // #133 for mobile,this gives an opportunity to upload/embed.
+                        />
                     </div>
                 </CustomTabPanel>
 
