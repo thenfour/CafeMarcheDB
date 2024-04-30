@@ -6,12 +6,10 @@
 import { Button, CircularProgress } from "@mui/material";
 import MarkdownIt from 'markdown-it';
 import React from "react";
-//import useDebounce from "shared/useDebounce";
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
-//import wikirefs_plugin from 'markdown-it-wikirefs';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
@@ -26,10 +24,7 @@ import { slugify } from "shared/rootroot";
 import { CMSmallButton } from "./CMCoreComponents2";
 import { CMDBUploadFile } from "./CMDBUploadFile";
 import { FileDropWrapper } from "./FileDrop";
-
-//import { gIconMap } from "../db3/components/IconSelectDialog";
-//import { API } from "../db3/clientAPI"; <-- circular dependency.
-//import { DashboardContext } from './DashboardContext';<-- circular dependency.
+import { getURLClass } from "../db3/clientAPILL";
 
 function markdownItImageDimensions(md) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
@@ -68,40 +63,36 @@ function cmLinkPlugin(md) {
 
     md.renderer.rules.text = function (tokens, idx, options, env, self) {
         const token = tokens[idx];
-        const linkRegex = /\[\[@(event|song):(\d+)\|?(.*?)\]\]/g;
+        // Updated regex to capture both old and new link types
+        const linkRegex = /\[\[(event|song):(\d+)\|?(.*?)\]\]/g;
 
         if (token.content.match(linkRegex)) {
             token.content = token.content.replace(linkRegex, (match, type, id, caption) => {
-                let url = "";
-                let icon = "";
-                switch (type) {
-                    // case 'user':
-                    //     url = `/backstage/user/${id}`;
-                    //     break;
-                    case 'event':
-                        url = `/backstage/events/${id}`;
-                        icon = `📅`;
-                        break;
-                    case 'song':
-                        url = `/backstage/song/${id}`;
-                        icon = `🎵`;
-                        break;
-                    // case 'instrument':
-                    //     url = `/instruments/${id}`;
-                    //     break;
+                if (id && type === 'event') {
+                    caption = caption || `Event ${id}`; // Default caption if none provided
+                    return `<a href="/backstage/event/${id}" class="wikiCMLink wikiEventLink">📅 ${caption}</a>`;
                 }
-                caption = caption || `${type} ${id}`; // Default caption if none provided
+                if (id && type === 'song') {
+                    caption = caption || `Song ${id}`; // Default caption if none provided
+                    return `<a href="/backstage/song/${id}" class="wikiCMLink wikiSongLink">🎵 ${caption}</a>`;
+                }
+            });
+        }
 
-                return `<a href="${url}" class="wikiCMLink">${icon} ${caption}</a>`;
+        const wikiRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
+        if (token.content.match(wikiRegex)) {
+            token.content = token.content.replace(wikiRegex, (match, slug, caption) => {
+                if (slug) {
+                    caption = caption || slug;
+                    return `<a href="/backstage/wiki/${slugify(slug)}" class="wikiCMLink wikiWikiLink">${caption}</a>`;
+                }
             });
         }
 
         return defaultRender(tokens, idx, options, env, self);
     };
 }
-
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownProps {
@@ -110,7 +101,6 @@ interface MarkdownProps {
     className?: string,
     compact?: boolean,
     onClick?: () => void,
-    pluginEnable?: number,
 }
 export const Markdown = (props: MarkdownProps) => {
     const [html, setHtml] = React.useState('');
@@ -121,47 +111,66 @@ export const Markdown = (props: MarkdownProps) => {
             return;
         }
         const md = new MarkdownIt();
-        // const options = {
-        //     resolveHtmlHref: (env: any, fname: string) => {
-        //         return `/backstage/wiki/${slugify(fname)}`;
-        //     },
-        //     resolveHtmlText: (env: any, fname: string) => fname.replace(/-/g, ' '),
-        //     resolveEmbedContent: (env: any, fname: string) => fname + ' content',
-        // };
-
-        const pluginEnable = (props.pluginEnable === undefined) ? 15 : props.pluginEnable;
 
         // https://github.com/markdown-it/markdown-it/blob/master/docs/architecture.md#renderer
         // this adds attribute target=_blank so links open in new tab.
         // Remember old renderer, if overridden, or proxy to default renderer
-        if (pluginEnable & 1) {
-            var defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
-                return self.renderToken(tokens, idx, options);
-            };
+        var defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
 
-            md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
-                // If you are sure other plugins can't add `target` - drop check below
-                var aIndex = tokens[idx].attrIndex('target');
+        md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+            // If you are sure other plugins can't add `target` - drop check below
+            var ihref = tokens[idx].attrIndex('href');
+            //console.log(tokens[idx]);
+            let className = " externalLink";
+            let addTargetBlank = true;
 
-                if (aIndex < 0) {
+            if (ihref >= 0) {
+                // distinguish internal vs. external.
+                const href = tokens[idx].attrs[ihref][1];
+                console.log(href);
+                if (href) {
+                    const hrefClass = getURLClass(href);
+                    switch (hrefClass) {
+                        case "external":
+                            className = " externalLink opensInNewTab";
+                            addTargetBlank = true;
+                            break;
+                        case "internalAPI":
+                            className = " internalAPILink opensInNewTab";
+                            addTargetBlank = true;
+                            break;
+                        case "internalPage":
+                            className = " internalPageLink";
+                            addTargetBlank = false;
+                            break;
+                    }
+                }
+            }
+
+            var itarget = tokens[idx].attrIndex('target');
+            if (addTargetBlank) {
+                if (itarget < 0) {
                     tokens[idx].attrPush(['target', '_blank']); // add new attribute
                 } else {
-                    tokens[idx].attrs[aIndex][1] = '_blank';    // replace value of existing attr
+                    tokens[idx].attrs[itarget][1] = '_blank';    // replace value of existing attr
                 }
+            }
 
-                // pass token to default renderer.
-                return defaultRender(tokens, idx, options, env, self);
-            };
-        }
-        if (pluginEnable & 2) {
-            //md.use(wikirefs_plugin, options);
-        }
-        if (pluginEnable & 4) {
-            md.use(cmLinkPlugin);
-        }
-        if (pluginEnable & 8) {
-            md.use(markdownItImageDimensions);
-        }
+            // add class
+            var iclass = tokens[idx].attrIndex('class');
+            if (iclass < 0) {
+                tokens[idx].attrPush(['class', className]);
+            } else {
+                tokens[idx].attrs[iclass][1] += className;
+            }
+
+            // pass token to default renderer.
+            return defaultRender(tokens, idx, options, env, self);
+        };
+        md.use(cmLinkPlugin);
+        md.use(markdownItImageDimensions);
 
         setHtml(md.render(props.markdown));
     }, [props.markdown]);
@@ -328,17 +337,17 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                         component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem wiki ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
                         output: (item: string) => `[[${item}]]`
                     },
-                    "[[@": {
-                        dataProvider: token => fetchEventOrSongTagsBracketAt(token),
-                        component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
-                            {entity.itemType === "event" && <CalendarMonthIcon />}
-                            {entity.itemType === "song" && <MusicNoteIcon />}
-                            {entity.itemType === "user" && <PersonIcon />}
-                            {entity.itemType === "instrument" && <MusicNoteIcon />}
-                            {entity.name}
-                        </div>,
-                        output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
-                    },
+                    // "[[@": {
+                    //     dataProvider: token => fetchEventOrSongTagsBracketAt(token),
+                    //     component: ({ entity, selected }: { entity: MatchingSlugItem, selected: boolean }) => <div className={`autoCompleteCMLinkItem ${entity.itemType} ${selected ? "selected" : "notSelected"}`}>
+                    //         {entity.itemType === "event" && <CalendarMonthIcon />}
+                    //         {entity.itemType === "song" && <MusicNoteIcon />}
+                    //         {entity.itemType === "user" && <PersonIcon />}
+                    //         {entity.itemType === "instrument" && <MusicNoteIcon />}
+                    //         {entity.name}
+                    //     </div>,
+                    //     output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
+                    // },
                     // basically replicate this just for "@" prefix; it's more intuitive & easy.
                     "@": {
                         dataProvider: token => fetchEventOrSongTagsAt(token),
@@ -349,7 +358,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                             {entity.itemType === "instrument" && <MusicNoteIcon />}
                             {entity.name}
                         </div>,
-                        output: (item: MatchingSlugItem) => `[[@${item.itemType}:${item.id}|${item.name}]]`
+                        output: (item: MatchingSlugItem) => `[[${item.itemType}:${item.id}|${item.name}]]`
                     },
                 }}
             />
@@ -555,7 +564,7 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
     }
 
     // not editor just viewer.
-    return <div className={`richTextContainer compactMarkdownControl notEditing ${props.readonly ? "readonly" : "editable interactable"} sameLineButton compactMarkdownControlRoot ${props.className}`} onClick={() => setShowingEditor(true)} >
+    return <div className={`richTextContainer compactMarkdownControl notEditing ${props.readonly ? "readonly" : "editable interactable"} compactMarkdownControlRoot ${props.className}`} onClick={() => setShowingEditor(true)} >
         <Markdown markdown={value} className={props.className} />
         {!props.readonly && IsNullOrWhitespace(value) && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
     </div >;

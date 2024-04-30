@@ -60,6 +60,7 @@ const MainContent = () => {
         const selected = (tableNames.indexOf(otherTableName) !== -1);
         return <CMChip
             key={otherTableName}
+            size="small"
             variation={{ ...StandardVariationSpec.Strong, selected }}
             onClick={() => {
                 setTableNames(toggleValueInArray(tableNames, otherTableName));
@@ -76,6 +77,7 @@ const MainContent = () => {
         return <CMChip
             key={user.id}
             variation={{ ...StandardVariationSpec.Strong, selected }}
+            size="small"
             onClick={() => {
                 setUsers(toggleValueInArray(users, user, AdHocUsersEqual));
             }}

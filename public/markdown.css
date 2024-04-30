@@ -1,0 +1,105 @@
+/*
+test cases:
+- long paragraph text in dialog descriptions
+*/
+.markdown.renderedContent {
+    max-width: var(--content-max-width);
+}
+
+/* -  --------------------------------- */
+.wikiPage .wikiTitle {
+    color: var(--primary-color);
+    font-size: 40px;
+    font-weight: bold;
+    border-bottom: 1px solid #8888;
+}
+
+.wikiPage .BasicNameValuePairContainer input.CMTextInputBase.wikiTitle {
+    font-size: 40px;
+}
+
+.wikiPage .wikiContentContainer {
+    margin-bottom: 60px;
+}
+
+.wikiPage .wikiPageFooterStats {
+    border-top: 1px solid #8888;
+    font-style: italic;
+    color: #8888;
+}
+
+.wikiPage .unknownPage {
+    font-style: italic;
+    color: #8088;
+}
+
+/*
+    LINK types
+    - externalLink (external website)              - class "externalLink"
+    - API link (attachment from the local website) - class "internalAPILink"
+    - internal page                                - class "internalPageLink"
+    - cm object link
+        - event                                    - class "wikiCMLink wikiEventLink"
+        - song                                     - class "wikiCMLink wikiSongLink"
+    - wiki page                                    - class "wikiCMLink wikiWikiLink"
+*/
+
+
+.markdown.renderedContent a.wikiWikiLink,
+.markdown.renderedContent a.wikiEventLink,
+.markdown.renderedContent a.wikiEventLink,
+.markdown.renderedContent a {
+    text-decoration: underline;
+    color: #a0a;
+    background-color: #a0a1;
+    font-weight: bold;
+}
+
+.markdown.renderedContent a.externalLink {
+    color: #4a4;
+    background-color: #4a41;
+}
+
+.markdown.renderedContent a.internalAPILink,
+.markdown.renderedContent a.internalPageLink {
+    color: #55f;
+    background-color: #55f1;
+}
+
+
+
+
+.markdown.renderedContent a.opensInNewTab::after {
+    content: " \2197";
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+.autoCompleteCMLinkItem {
+    padding: 5px;
+}
+
+.autoCompleteCMLinkItem.event {
+    color: #808;
+
+}
+
+.autoCompleteCMLinkItem.song {
+    color: green;
+
+}
+
+.autoCompleteCMLinkItem.instrument {
+    color: #c80;
+
+}
+
+.autoCompleteCMLinkItem.wiki {
+    color: #c80;
+
+}
+
+.autoCompleteCMLinkItem.selected {
+    background-color: #ddf;
+    outline: 2px solid black;
+}

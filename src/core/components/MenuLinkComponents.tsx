@@ -90,7 +90,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
 
             {
                 ((props.item.linkType as keyof typeof DynamicMenuLinkType) === "ExternalURL") &&
-                <a href={props.item.externalURI || ""} target="_blank" rel="noreferrer" className="menuLinkTestLink externalCMLink">
+                <a href={props.item.externalURI || ""} target="_blank" rel="noreferrer" className="menuLinkTestLink">
                     <div>Test external link</div>
                     {gIconMap.Launch()}
                 </a>
