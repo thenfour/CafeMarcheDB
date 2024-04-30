@@ -25,7 +25,7 @@ const MainContent = () => {
     </div>;
 };
 
-const PublicIndex: BlitzPage = () => {
+const Test1Index: BlitzPage = () => {
     return <>
         <Head>
             <title>test</title>
@@ -50,5 +50,5 @@ const PublicIndex: BlitzPage = () => {
     </>;
 }
 
-export default PublicIndex;
+export default Test1Index;
 
