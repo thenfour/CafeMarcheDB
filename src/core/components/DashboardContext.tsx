@@ -14,30 +14,12 @@ import refreshSessionPermissions from 'src/auth/mutations/refreshSessionPermissi
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
-    //visiblePermission: db3.PermissionPayloadMinimum | null;
 };
 
-
-export class DashboardContextData {
+export class DashboardContextData extends db3.DashboardContextDataBase {
     metronomeSilencers: (() => void)[];
     userClientIntention: db3.xTableClientUsageContext;
 
-    userTag: TableAccessor<Prisma.UserTagGetPayload<{}>>;
-    permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
-    role: TableAccessor<Prisma.RoleGetPayload<{}>>;
-    rolePermission: TableAccessor<Prisma.RolePermissionGetPayload<{}>>;
-    eventType: TableAccessor<Prisma.EventTypeGetPayload<{}>>;
-    eventStatus: TableAccessor<Prisma.EventStatusGetPayload<{}>>;
-    eventTag: TableAccessor<Prisma.EventTagGetPayload<{}>>;
-    eventAttendance: TableAccessor<Prisma.EventAttendanceGetPayload<{}>>;
-    fileTag: TableAccessor<Prisma.FileTagGetPayload<{}>>;
-    instrument: TableAccessor<Prisma.InstrumentGetPayload<{}>>;
-    instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
-    instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;
-    songTag: TableAccessor<Prisma.SongTagGetPayload<{}>>;
-    songCreditType: TableAccessor<Prisma.SongCreditTypeGetPayload<{}>>;
-
-    currentUser: db3.UserPayload | null;
     session: ClientSession | null;
 
     isAuthorized(p: Permission | string) {
@@ -109,45 +91,8 @@ export class DashboardContextData {
         return this.rolePermission.filter(rp => rp.permissionId === permissionId).map(rp => this.role.getById(rp.roleId));
     }
 
-    // takes a bare event and applies eventstatus, type, visiblePermission, et al
-    enrichEvent<T extends Partial<Prisma.EventGetPayload<{ include: { tags: true } }>>>(event: T) {
-        // original payload type,
-        // removing items we're replacing,
-        // + stuff we're adding/changing.
-        const ret: Omit<T, 'tags'> & Prisma.EventGetPayload<{
-            select: {
-                status: true,// add the fields we are treating
-                type: true,
-                visiblePermission: true,
-                tags: {
-                    include: {
-                        eventTag: true,
-                    }
-                }
-            },
-        }> = {
-            ...event,
-            status: this.eventStatus.getById(event.statusId),
-            type: this.eventType.getById(event.typeId),
-            visiblePermission: this.permission.getById(event.visiblePermissionId),
-            tags: (event.tags || []).map((t) => {
-                const ret = {
-                    ...t,
-                    eventTag: this.eventTag.getById(t.eventTagId)! // enrich!
-                };
-                return ret;
-            }).sort((a, b) => a.eventTag.sortOrder - b.eventTag.sortOrder), // respect ordering
-        };
-
-        return ret;
-    }
 };
 
-type Orig = {
-    tags: {
-
-    }[];
-};
 
 export const DashboardContext = React.createContext(new DashboardContextData());
 
@@ -195,11 +140,12 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.eventTag = new TableAccessor(dashboardData.eventTag);
     valueRef.current.eventAttendance = new TableAccessor(dashboardData.eventAttendance);
     valueRef.current.fileTag = new TableAccessor(dashboardData.fileTag);
-    valueRef.current.instrument = new TableAccessor(dashboardData.instrument);
     valueRef.current.instrumentTag = new TableAccessor(dashboardData.instrumentTag);
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(dashboardData.instrumentFunctionalGroup);
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
+
+    valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => db3.enrichInstrument(i, valueRef.current)));
 
     return <DashboardContext.Provider value={valueRef.current}>
         {children}

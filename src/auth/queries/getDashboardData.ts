@@ -19,7 +19,7 @@ export default resolver.pipe(
                 db.eventTag.findMany(),
                 db.eventAttendance.findMany(),
                 db.fileTag.findMany(),
-                db.instrument.findMany(),
+                db.instrument.findMany({ include: { instrumentTags: true } }),
                 db.instrumentTag.findMany(),
                 db.instrumentFunctionalGroup.findMany(),
                 db.songTag.findMany(),

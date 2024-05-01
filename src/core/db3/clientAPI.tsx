@@ -268,7 +268,7 @@ class EventsAPI {
         return ret;
     }
 
-    getEventSegmentFormattedDateRange(segment: db3.EventSegmentPayload) {
+    getEventSegmentFormattedDateRange(segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) {
         return db3.getEventSegmentDateTimeRange(segment).toString();
         //return "daterangehere";
     }
@@ -283,10 +283,15 @@ class EventsAPI {
         return ret;
     }
 
-    getEventTiming(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
-        const r = this.getEventDateRange(event);
-        return r.hitTestDateTime();
-    }
+    // getEventTiming(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
+    //     const r = this.getEventDateRange(event);
+    //     return r.hitTestDateTime();
+    // }
+
+    // getEventTiming(event: Prisma.EventGetPayload<{ select:  { startsAt: true, durationMillis: true, isAllDay } }>) {
+    //     //const r = this.getEventDateRange(event);
+    //     return r.hitTestDateTime();
+    // }
 
     getURIForEvent(eventId: number | string, eventSlug?: string, tabSlug?: string) {
         return ClientAPILL.getURIForEvent(eventId, eventSlug, tabSlug);
@@ -343,9 +348,9 @@ class EventsAPI {
     //     return useQuery(getPopularEventTags, {}, gQueryOptions.default);
     // };
 
-    getInstrumentForUserResponse = (response: db3.EventUserResponsePayload, user: db3.UserWithInstrumentsPayload): (db3.InstrumentPayload | null) => {
-        return db3.getInstrumentForEventUserResponse(response, user);
-    }
+    // getInstrumentForUserResponse = (response: db3.EventUserResponsePayload, user: db3.UserWithInstrumentsPayload): (db3.InstrumentPayload | null) => {
+    //     return db3.getInstrumentForEventUserResponse(response, user);
+    // }
 
     getSongListStats = (songList: db3.EventSongListPayload): SongListStats => {
         console.assert(songList.songs);

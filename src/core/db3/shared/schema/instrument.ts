@@ -12,6 +12,7 @@ import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerFie
 import * as db3 from "../db3core";
 import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance, UserPayload, UserWithInstrumentsPayload } from "./prismArgs";
 import { CMDBTableFilterModel } from "../apiTypes";
+import { TableAccessor } from "shared/rootroot";
 
 // editable by anyone
 export const xInstrumentAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
@@ -255,12 +256,3 @@ export const xInstrument = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
-
-export const getUserPrimaryInstrument = (user: UserWithInstrumentsPayload): (InstrumentPayload | null) => {
-    if (user.instruments.length < 1) return null;
-    const p = user.instruments.find(i => i.isPrimary);
-    if (p) {
-        return p.instrument;
-    }
-    return user.instruments[0]!.instrument;
-}

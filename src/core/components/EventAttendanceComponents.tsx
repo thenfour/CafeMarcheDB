@@ -127,6 +127,8 @@ import { AdminInspectObject, CMChip, CMChipContainer } from './CMCoreComponents'
 import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, NameValuePair } from "./CMCoreComponents2";
 import { EventWithMetadata } from "./EventComponentsBase";
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
+import { DashboardContext } from "./DashboardContext";
+import { ArrayElement } from "shared/utils";
 
 
 const gCaptionMap = {};
@@ -187,22 +189,25 @@ const EventAttendanceInstrumentButton = ({ value, selected, onSelect }: EventAtt
 //
 // therefore also make sure the shown list includes instruments you play
 interface EventAttendanceInstrumentControlProps {
-  eventUserResponse: db3.EventUserResponse;
+  eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
   onRefetch: () => void,
   onChanged: () => void,
+  eventId: number,
   //readonly?: boolean,
+  //userMap: db3.UserInstrumentList,
 };
 
 const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
   const token = API.events.updateUserEventAttendance.useToken();
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+  const dashboardContext = React.useContext(DashboardContext);
 
-  const selectedInstrument = props.eventUserResponse.instrument;
+  const selectedInstrument = dashboardContext.instrument.getById(props.eventUserResponse.response.instrumentId);
 
   const handleChange = async (value: null | db3.InstrumentPayloadMinimum) => {
     token.invoke({
-      userId: props.eventUserResponse.user.id,
-      eventId: props.eventUserResponse.event.id,
+      userId: props.eventUserResponse.response.userId,
+      eventId: props.eventId,
       instrumentId: value === null ? null : value.id,
     }).then(() => {
       showSnackbar({ children: "Response updated", severity: 'success' });
@@ -215,7 +220,7 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
     });
   };
 
-  const instrumentList = props.eventUserResponse.user.instruments.map(ui => ui.instrument);
+  const instrumentList = props.eventUserResponse.user.instruments.map(ui => dashboardContext.instrument.getById(ui.instrumentId)!);
   // you'll naturally see weird behavior if your user instrument list doesn't include the one selected.
   // but that's an edge case i don't care about. workaround: add it to your user list if you want to be able to select it here.
   // TODO: allow adding it to your user list FROM here. (like an "other..." button, pop up dialog to select, then "would you like to add it to your list?")
@@ -239,7 +244,7 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // a view/edit control for the comment only (including mutation)
 interface EventAttendanceCommentControlProps {
-  userResponse: db3.EventUserResponse,
+  userResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>,
   onRefetch: () => void,
   readonly: boolean,
 };
@@ -300,8 +305,8 @@ const EventAttendanceAnswerButton = ({ value, selected, noItemSelected, onSelect
 // event segment attendance standalone field (read-only possible, buttons array for input).
 // basically a button array of responses, not tied to DB but just a value.
 interface EventAttendanceAnswerControlProps {
-  eventUserResponse: db3.EventUserResponse;
-  segmentUserResponse: db3.EventSegmentUserResponse;
+  eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
+  segmentUserResponse: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>;
   forceEditMode: boolean;
   //readonly: boolean;
   onRefetch: () => void,
@@ -318,6 +323,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
 
   const selectedResponse = props.segmentUserResponse.response;
   const selectedAttendanceId: number | null = props.segmentUserResponse.response.attendanceId;
+  const dashboardContext = React.useContext(DashboardContext);
 
   const optionsClient = DB3Client.useTableRenderContext({
     requestedCaps: DB3Client.xTableClientCaps.Query,
@@ -356,7 +362,9 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     });
   };
 
-  const optionDesc = selectedResponse.attendance ? (`${selectedResponse.attendance.text} : ${selectedResponse.attendance.description}`) : `no answer`;
+  const attendance = dashboardContext.eventAttendance.getById(selectedResponse.attendanceId);
+
+  const optionDesc = attendance ? (`${attendance.text} : ${attendance.description}`) : `no answer`;
   const tooltip = `${props.segmentUserResponse.segment.name}: ${optionDesc}`;
 
   return <>
@@ -370,7 +378,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
       </>) : (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedResponse.attendance} onSelect={handleReadonlyClick} tooltip={tooltip} />
+          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={attendance} onSelect={handleReadonlyClick} tooltip={tooltip} />
           {/* <CMSmallButton onClick={handleClick}>change</CMSmallButton> */}
         </CMChipContainer>
       </>
@@ -384,8 +392,8 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
 export interface EventAttendanceSegmentControlProps {
   //eventData: EventWithMetadata;
   initialEditMode: boolean;
-  eventUserResponse: db3.EventUserResponse;
-  segmentUserResponse: db3.EventSegmentUserResponse;
+  eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
+  segmentUserResponse: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>;
   isSingleSegment: boolean;
   onRefetch: () => void,
   onReadonlyClick: () => void;
@@ -393,10 +401,12 @@ export interface EventAttendanceSegmentControlProps {
 };
 
 export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }: EventAttendanceSegmentControlProps) => {
+  const dashboardContext = React.useContext(DashboardContext);
 
   const name = props.isSingleSegment ? null : (<>{segmentUserResponse.segment.name} ({API.events.getEventSegmentFormattedDateRange(segmentUserResponse.segment)})</>);
 
-  const hasAnswer = !!segmentUserResponse.response.attendance;
+  const attendance = dashboardContext.eventAttendance.getById(segmentUserResponse.response.attendanceId);
+  const hasAnswer = !!attendance;
   const forceEditMode = props.initialEditMode || (props.eventUserResponse.isInvited && !hasAnswer); // no answer and invited = default edit  
 
   return <NameValuePair
@@ -413,7 +423,7 @@ export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }:
         onSelectedItem={props.onSelectedItem}
       />
       <div className="helpText">
-        {segmentUserResponse.response.attendance?.description}
+        {attendance?.description}
       </div>
     </>
     }
@@ -424,12 +434,20 @@ export const EventAttendanceSegmentControl = ({ segmentUserResponse, ...props }:
 // frame for event:
 // big attendance alert (per event, multiple segments)
 export interface EventAttendanceControlProps {
-  eventData: EventWithMetadata;
+  eventData: EventWithMetadata<
+    db3.EnrichedSearchEventPayload,
+    db3.EventResponses_MinimalEventUserResponse,
+    db3.EventResponses_MinimalEventSegment,
+    db3.EventResponses_MinimalEventSegmentUserResponse
+  >;
   onRefetch: () => void,
+  userMap: db3.UserInstrumentList,
 };
 
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
+  const dashboardContext = React.useContext(DashboardContext);
+
   if (!props.eventData.responseInfo) return null;
 
   // never show attendance alert control for cancelled events
@@ -440,7 +458,11 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const user = useCurrentUser()[0]!;
   const segmentResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));
   segmentResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
-  const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user);
+  const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
+  if (!eventResponse) {
+    // this should always return a value; if not it means it can't be done.
+    return null;
+  }
 
   const eventTiming = props.eventData.eventTiming;
   if (eventTiming === Timing.Past) return null;
@@ -448,11 +470,19 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const isInvited = eventResponse.isInvited;
   const isSingleSegment = segmentResponses.length === 1;
 
-  const anyAnswered = segmentResponses.some(r => !!r.response.attendance);
-  const allAnswered = segmentResponses.every(r => !!r.response.attendance);
-  const allAffirmative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength > 50);
-  const someAffirmative = segmentResponses.some(r => !!r.response.attendance && r.response.attendance!.strength > 50);
-  const allNegative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength <= 50);
+  const allAttendances = segmentResponses.map(sr => dashboardContext.eventAttendance.getById(sr.response.attendanceId));
+
+  // const anyAnswered = segmentResponses.some(r => !!r.response.attendance);
+  // const allAnswered = segmentResponses.every(r => !!r.response.attendance);
+  // const allAffirmative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength > 50);
+  // const someAffirmative = segmentResponses.some(r => !!r.response.attendance && r.response.attendance!.strength > 50);
+  // const allNegative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength <= 50);
+
+  const anyAnswered = allAttendances.some(r => !!r);
+  const allAnswered = allAttendances.every(r => !!r);
+  const allAffirmative = allAttendances.every(r => !!r && r.strength > 50);
+  const someAffirmative = allAttendances.some(r => !!r && r.strength > 50);
+  const allNegative = allAttendances.every(r => !!r && r.strength <= 50);
 
   const alertFlag = isInvited && !allAnswered;
   //const canExpandUnexpand = !inputAlert && !isSingleSegment;
@@ -506,6 +536,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             onRefetch={props.onRefetch}
             //onChanged={() => setUserSelectedEdit(false)} // when a user selects an item, allow the control to go back to view mode again.
             onChanged={() => { }} // when a user selects an item, allow the control to go back to view mode again.
+            eventId={props.eventData.event.id}
           />
         </div>
         <div className="segmentList">

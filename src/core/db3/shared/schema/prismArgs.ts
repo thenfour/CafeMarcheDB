@@ -1,6 +1,7 @@
 import db, { Prisma } from "db";
 //import * as db3 from "../db3core"; // circular
 import { CMDBTableFilterModel, ImageEditParams, MakeDefaultImageEditParams, TAnyModel, parsePayloadJSON } from "../apiTypes";
+import { TableAccessor } from "shared/rootroot";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -381,10 +382,18 @@ export type UserPayload = Prisma.UserGetPayload<typeof UserArgs>;
 export type UserPayloadMinimum = Prisma.UserGetPayload<{}>;
 
 
-export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserArgs>()({
+export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     include: {
-        instruments: UserInstrumentArgs,
+        instruments: true,
     }
+    // include: {
+    //     //instruments: UserInstrumentArgs,
+    //     instruments: {
+    //         include: {
+    //             instrument
+    //         }
+    //     }
+    // }
 });
 
 export type UserWithInstrumentsPayload = Prisma.UserGetPayload<typeof UserWithInstrumentsArgs>;
@@ -727,7 +736,7 @@ export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationI
     { id: "asc" },
 ];
 
-export const compareEventSegments = (a: Prisma.EventSegmentGetPayload<{}>, b: Prisma.EventSegmentGetPayload<{}>) => {
+export const compareEventSegments = (a: Prisma.EventSegmentGetPayload<{ select: { startsAt: true } }>, b: Prisma.EventSegmentGetPayload<{ select: { startsAt: true } }>) => {
     if (a.startsAt === null) {
         if (b.startsAt === null) return 0; // both null.
         return 1;// a is null (future, after)
@@ -1241,3 +1250,79 @@ export interface DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPay
 export const DefineManyToManyRelationship = <TLocalPayload, TAssociationPayload, TForeignPayload>(args: DefineManyToManyRelationshipArgs<TLocalPayload, TAssociationPayload, TForeignPayload>) => {
 
 };
+
+
+
+export interface ObjectWithVisiblePermission {
+    visiblePermissionId: number | null;
+};
+
+export class DashboardContextDataBase {
+    userTag: TableAccessor<Prisma.UserTagGetPayload<{}>>;
+    eventType: TableAccessor<Prisma.EventTypeGetPayload<{}>>;
+    eventStatus: TableAccessor<Prisma.EventStatusGetPayload<{}>>;
+    eventTag: TableAccessor<Prisma.EventTagGetPayload<{}>>;
+    eventAttendance: TableAccessor<Prisma.EventAttendanceGetPayload<{}>>;
+    fileTag: TableAccessor<Prisma.FileTagGetPayload<{}>>;
+    songTag: TableAccessor<Prisma.SongTagGetPayload<{}>>;
+    songCreditType: TableAccessor<Prisma.SongCreditTypeGetPayload<{}>>;
+    instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
+
+    permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
+    role: TableAccessor<Prisma.RoleGetPayload<{}>>;
+    rolePermission: TableAccessor<Prisma.RolePermissionGetPayload<{}>>;
+
+    instrument: TableAccessor<EnrichedInstrument<Prisma.InstrumentGetPayload<{ include: { instrumentTags: true } }>>>;
+    instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;
+
+    currentUser: UserPayload | null;
+}
+
+
+
+
+
+
+
+
+
+export type EnrichInstrumentInput = Partial<Prisma.InstrumentGetPayload<{ include: { instrumentTags: true } }>>;
+export type EnrichedInstrument<T extends EnrichInstrumentInput> = Omit<T,
+    // omit fields that may appear on input that we'll replace.
+    "functionalGroup"
+    | "instrumentTags"
+> & Prisma.InstrumentGetPayload<{
+    select: { // must be select so we don't accidentally require all fields.
+        functionalGroup: true,
+        instrumentTags: {
+            include: {
+                tag: true,
+            }
+        },
+    }
+}>;
+
+// takes a bare event and applies eventstatus, type, visiblePermission, et al
+export function enrichInstrument<T extends EnrichInstrumentInput>(
+    item: T,
+    data: DashboardContextDataBase,
+): EnrichedInstrument<T> {
+    // original payload type,
+    // removing items we're replacing,
+    // + stuff we're adding/changing.
+    return {
+        ...item,
+        functionalGroup: data.instrumentFunctionalGroup.getById(item.functionalGroupId)!,
+        instrumentTags: (item.instrumentTags || []).map((t) => {
+            const ret: Prisma.InstrumentTagAssociationGetPayload<{ include: { tag: true } }> = {
+                ...t,
+                tag: data.instrumentTag.getById(t.tagId)! // enrich!
+            };
+            return ret;
+        }).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder), // respect ordering
+    };
+}
+
+
+
+

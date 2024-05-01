@@ -126,3 +126,5 @@ export class TableAccessor<TRow extends { id: number }> {
     }
 
 };
+
+

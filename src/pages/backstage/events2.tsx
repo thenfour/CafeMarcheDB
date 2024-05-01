@@ -38,7 +38,7 @@ export interface EventSearchItemContainerProps {
 
 export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = React.useContext(DashboardContext);
-    const event = dashboardContext.enrichEvent(props.event);
+    const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
 
     //const [currentUser] = useCurrentUser()!;
     const router = useRouter();
@@ -52,8 +52,8 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     //     tableClient?.refetch();
     // };
     const eventURI = API.events.getURIForEvent(event.id, event.slug);
-    const eventTiming = API.events.getEventTiming(event);
     const dateRange = API.events.getEventDateRange(event);
+    const eventTiming = dateRange.hitTestDateTime();
 
     const visInfo = dashboardContext.getVisibilityInfo(event);
 
@@ -422,16 +422,44 @@ interface EventListItemProps {
 };
 
 const EventListItem = ({ event, ...props }: EventListItemProps) => {
-    const eventTiming = API.events.getEventTiming(event);
-    //const eventData = CalculateEventMetadata(event);
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const userMap: db3.UserInstrumentList = [dashboardContext.currentUser!];
+
+    const eventData = CalculateEventMetadata<
+        any, any, any, any
+    >(event, undefined, dashboardContext,
+        userMap,
+        (segment, user) => {
+            if (!user?.id) return null;
+            return {
+                attendanceId: null,
+                eventSegmentId: segment.id,
+                id: -1,
+                userId: user.id,
+            }
+        },
+        (event, user, isInvited) => {
+            if (!user?.id) return null;
+            return {
+                userComment: "",
+                eventId: event.id,
+                id: -1,
+                userId: user.id,
+                instrumentId: null,
+                isInvited,
+            }
+        },
+    );
 
     return <EventSearchItemContainer event={event}>
-        {/* {eventTiming !== Timing.Past &&
+        {eventData.eventTiming !== Timing.Past &&
             <EventAttendanceControl
                 eventData={eventData}
                 onRefetch={props.refetch}
+                userMap={userMap}
             />
-        } */}
+        }
 
     </EventSearchItemContainer>;
 };
