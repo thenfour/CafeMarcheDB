@@ -25,6 +25,7 @@ import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
 import { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
+import { formatFileSize } from "shared/rootroot";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -216,6 +217,14 @@ export class xTableRenderClient {
     remainingQueryResults: any;
     remainingQueryStatus: RestQueryResult<unknown, unknown>;
     remainingPaginatedQueryStatus: RestPaginatedResult<unknown, unknown>;
+
+    // after a query, this gets populated.
+    queryResultInfo: {
+        executionTimeMillis: number,
+        resultId: string,
+        resultPayloadSize: number,
+    };
+
     refetch: () => void;
 
     get schema() {
@@ -232,6 +241,11 @@ export class xTableRenderClient {
     constructor(args: xTableClientArgs) {
         this.tableSpec = args.tableSpec;
         this.args = args;
+        this.queryResultInfo = {
+            executionTimeMillis: 0,
+            resultId: "",
+            resultPayloadSize: 0,
+        };
 
         const [currentUser] = useCurrentUser();
         if (currentUser != null) {
@@ -277,8 +291,13 @@ export class xTableRenderClient {
                 this.rowCount = 0;
             } else {
                 items_ = queryResult[0].items as TAnyModel[];
-                this.rowCount = queryResult[0].items.length;
+                this.rowCount = queryResult[0].count;//queryResult[0].items.length;
                 this.remainingQueryResults = { ...queryResult[0] };
+                this.queryResultInfo = {
+                    executionTimeMillis: queryResult[0].executionTimeMillis,
+                    resultId: queryResult[0].resultId,
+                    resultPayloadSize: JSON.stringify(items_).length,
+                };
             }
 
             //this.rowCount = count;
@@ -313,6 +332,11 @@ export class xTableRenderClient {
                 this.remainingQueryResults = { ...queryResult[0] };
             }
             this.remainingQueryStatus = { ...queryResult[1] };
+            this.queryResultInfo = {
+                executionTimeMillis: queryResult[0].executionTimeMillis,
+                resultId: queryResult[0].resultId,
+                resultPayloadSize: JSON.stringify(items_).length,
+            }
             this.refetch = queryResult[1].refetch;
         }
 
@@ -323,6 +347,12 @@ export class xTableRenderClient {
 
         this.refetch = this.refetch || (() => { });
 
+        if (process.env.NODE_ENV === "development") {
+            React.useEffect(() => {
+                console.log(`db3 query executed on '${this.tableSpec.args.table.tableID}': ${this.queryResultInfo.executionTimeMillis} ms; resultpayload=${formatFileSize(this.queryResultInfo.resultPayloadSize)}`);
+                console.log(this.items);
+            }, [this.queryResultInfo.resultId]);
+        }
     }; // ctor
 
     prepareMutation = <T extends TAnyModel,>(row: T, mode: db3.DB3RowMode): any => {

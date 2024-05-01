@@ -3,7 +3,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { Button } from "@mui/material";
 import { useRouter } from "next/router";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SongClientColumns } from "src/core/components/SongComponents";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
@@ -26,10 +25,6 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 
 const MainContent = () => {
-    if (!useAuthorization("admin songs page", Permission.admin_songs)) {
-        throw new Error(`unauthorized`);
-    }
-
     const songTableSpec = new DB3Client.xTableClientSpec({
         table: db3.xSong,
         columns: [
@@ -62,7 +57,7 @@ const MainContent = () => {
 
 const EditSongsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Songs">
+        <DashboardLayout title="Songs" basePermission={Permission.admin_songs}>
             <MainContent />
         </DashboardLayout>
     )

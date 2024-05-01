@@ -5,11 +5,11 @@ import { useMutation, useQuery } from "@blitzjs/rpc";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { SettingKey, gQueryOptions } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { CompactMarkdownControl, MarkdownControl } from "./RichTextEditor";
+import { DashboardContext } from "./DashboardContext";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;
@@ -119,11 +119,10 @@ interface SettingMarkdownProps {
 
 export const SettingMarkdown = (props: SettingMarkdownProps) => {
     const [updateSetting] = useMutation(updateSettingMutation);
-    //const showAdminControls = API.other.useIsShowingAdminControls();
-    const sess = useAuthenticatedSession();
-    const showAdminControls = sess.isSysAdmin && sess.showAdminControls;
+    const dashboardContext = React.useContext(DashboardContext);
+    const showAdminControls = dashboardContext.isShowingAdminControls;
 
-    const editable = useAuthorization(`SettingMarkdown:${props.setting}`, Permission.sysadmin) && showAdminControls;
+    const editable = dashboardContext.isAuthorized(Permission.sysadmin) && showAdminControls;
 
     let [initialValue, { refetch }] = useQuery(getSetting, { name: props.setting }, gQueryOptions.default);
     return <MutationMarkdownControl

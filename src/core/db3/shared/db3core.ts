@@ -448,7 +448,7 @@ export interface TableDesc {
     softDeleteSpec?: SoftDeleteSpec;
     visibilitySpec?: VisibilitySpec; // visibility
 
-    getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel,
+    getInclude: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
     naturalOrderBy?: TAnyModel;
@@ -463,7 +463,7 @@ export class xTable implements TableDesc {
     tableID: string; // unique name for the instance
     columns: FieldBase<unknown>[];
 
-    getInclude: (clientIntention: xTableClientUsageContext) => TAnyModel;
+    getInclude: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel;
 
     softDeleteSpec?: SoftDeleteSpec;
     visibilitySpec?: VisibilitySpec; // visibility
@@ -722,9 +722,9 @@ export class xTable implements TableDesc {
         return ret;
     };
 
-    CalculateInclude = (clientIntention: xTableClientUsageContext): TAnyModel | undefined => {
+    CalculateInclude = (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel): TAnyModel | undefined => {
         // create a deep copy so our modifications don't spill into other stuff.
-        const include = JSON.parse(JSON.stringify(this.getInclude(clientIntention)));
+        const include = JSON.parse(JSON.stringify(this.getInclude(clientIntention, filterModel)));
         this.ApplyIncludeFiltering(include, clientIntention);
 
         // tables with no relations do not support `include` at all. even if it's empty.

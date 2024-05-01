@@ -3,7 +3,6 @@ import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsEntirelyIntegral } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { EventBreadcrumbs, EventDetailFull, EventTableClientColumns, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
@@ -18,10 +17,6 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     //if (!idOrSlug) return <div>no event specified</div>;
     if (!eventId) throw new Error(`song not found`);
-
-    if (!useAuthorization(`event page: ${eventId}`, Permission.view_events_nonpublic)) {
-        throw new Error(`unauthorized`);
-    }
 
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = {
@@ -119,7 +114,7 @@ export const getServerSideProps = async ({ params }) => {
 
 const EventDetailPage: BlitzPage = (props: PageProps) => {
     return (
-        <DashboardLayout title={props.title} navRealm={NavRealm.events}>
+        <DashboardLayout title={props.title} navRealm={NavRealm.events} basePermission={Permission.view_events_nonpublic}>
             <Suspense>
                 <MyComponent eventId={props.eventId}></MyComponent>
             </Suspense>

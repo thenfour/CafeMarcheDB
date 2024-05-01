@@ -10,6 +10,7 @@ import { AgendaItem } from './homepageComponents';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { SettingMarkdown } from "./SettingMarkdown";
+import { DashboardContext } from "./DashboardContext";
 
 
 interface FrontpageControlSpec {
@@ -118,6 +119,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    const dashboardContext = React.useContext(DashboardContext);
 
     const handleVisibilityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         mutationToken.invoke({
@@ -159,7 +161,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
                     label="Show this event on the front page?"
                 />
 
-                {!API.users.isPublic(props.event) && <div className="warning CMSidenote">This event still won't be visible, because it has restricted visibility</div>}
+                {!dashboardContext.isPublic(props.event) && <div className="warning CMSidenote">This event still won't be visible, because it has restricted visibility</div>}
 
             </div>
             <div className='editButtonContainer'>

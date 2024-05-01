@@ -2,7 +2,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { gQueryOptions } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { EventDetailContainer } from "src/core/components/EventComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
@@ -59,10 +58,6 @@ const EventsList = () => {
 };
 
 const MainContent = () => {
-    if (!useAuthorization("FrontpageAgendaPage", Permission.edit_public_homepage)) {
-        throw new Error(`unauthorized`);
-    }
-
     return <div>
         <Suspense>
             <SettingMarkdown setting="FrontpageAgendaPage_markdown"></SettingMarkdown>
@@ -76,7 +71,7 @@ const MainContent = () => {
 
 const FrontpageAgendaPage: BlitzPage = (props) => {
     return (
-        <DashboardLayout title="Homepage Agenda">
+        <DashboardLayout title="Homepage Agenda" basePermission={Permission.edit_public_homepage}>
             <MainContent />
         </DashboardLayout>
     )

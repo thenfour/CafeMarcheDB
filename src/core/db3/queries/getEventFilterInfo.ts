@@ -4,8 +4,10 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
+import * as db3 from "../db3";
+import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventFilterTimingIDConstants, gEventRelevantFilterExpression } from "../shared/apiTypes";
+import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
 
 interface TArgs {
     filterSpec: {
@@ -32,6 +34,8 @@ export default resolver.pipe(
             if (!u.role || u.role.permissions.length < 1) {
                 return MakeGetEventFilterInfoRet();
             }
+
+            const pageSize = Math.min(args.filterSpec.pageSize, 100); // sanity.
 
             const startTimestamp = Date.now();
 
@@ -91,8 +95,10 @@ export default resolver.pipe(
                 `Event.isDeleted = FALSE`,
             ];
             if (!u.isSysAdmin) {
-                AND.push(`Event.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)})`);
-                // TODO: handle private visibility (Event.visiblePermissionId is null && creator = self)
+                AND.push(`(
+                    (Event.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
+                    OR (Event.visiblePermissionId is NULL AND Event.createdByUserId = ${u.id})
+                    )`);
             }
             if (!IsNullOrWhitespace(eventFilterExpression)) {
                 AND.push(eventFilterExpression);
@@ -139,19 +145,6 @@ export default resolver.pipe(
             EventStatus.sortOrder asc
         `;
 
-            const statusesStartTimestamp = Date.now();
-            const statusesResult: ({ event_count: bigint } & Prisma.EventStatusGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(statusesQuery));
-            const statusesQueryMS = Date.now() - statusesStartTimestamp;
-
-            const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({
-                color: r.color,
-                iconName: r.iconName,
-                id: r.id,
-                label: r.label,
-                tooltip: r.description,
-                rowCount: new Number(r.event_count).valueOf(),
-            }));
-
             // TYPES
             const typesQuery = `
         ${filteredEventsCTE}
@@ -170,19 +163,6 @@ export default resolver.pipe(
             -- count(distinct(FilteredEvents.EventId)) desc, -- seems natural to do this but it causes things to constantly reorder
             EventType.sortOrder asc
             `;
-
-            const typesStartTimestamp = Date.now();
-            const typesResult: ({ event_count: bigint } & Prisma.EventTypeGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(typesQuery));
-            const typesQueryMS = Date.now() - typesStartTimestamp;
-
-            const types: GetEventFilterInfoChipInfo[] = typesResult.map(r => ({
-                color: r.color,
-                iconName: r.iconName,
-                id: r.id,
-                label: r.text,
-                tooltip: r.description,
-                rowCount: new Number(r.event_count).valueOf(),
-            }));
 
             // TAGS
             const tagsQuery = `
@@ -204,19 +184,6 @@ export default resolver.pipe(
 
         `;
 
-            const tagsStartTimestamp = Date.now();
-            const tagsResult: ({ event_count: bigint } & Prisma.EventTagGetPayload<{}>)[] = await db.$queryRaw(Prisma.raw(tagsQuery));
-            const tagsQueryMS = Date.now() - tagsStartTimestamp;
-
-            const tags: GetEventFilterInfoChipInfo[] = tagsResult.map(r => ({
-                color: r.color,
-                iconName: null,
-                id: r.id,
-                label: r.text,
-                tooltip: r.description,
-                rowCount: new Number(r.event_count).valueOf(),
-            }));
-
             // PAGINATED EVENT LIST
             const sortOrder = args.filterSpec.orderBy === "StartAsc" ? "ASC" : "DESC";
             const paginatedEventQuery = `
@@ -230,13 +197,9 @@ export default resolver.pipe(
         FE.startsAt ${sortOrder},
         FE.name ${sortOrder}
     limit
-        ${args.filterSpec.pageSize * args.filterSpec.page},${args.filterSpec.pageSize}
+        ${pageSize * args.filterSpec.page}, ${pageSize}
 
         `;
-
-            const paginatedStartTimestamp = Date.now();
-            const eventIds: { EventId: number }[] = await db.$queryRaw(Prisma.raw(paginatedEventQuery));
-            const paginatedQueryMS = Date.now() - paginatedStartTimestamp;
 
             // TOTAL filtered row count
             const totalRowCountQuery = `
@@ -248,7 +211,71 @@ export default resolver.pipe(
 
         `;
 
-            const rowCountResult: { rowCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
+            // actually parallelizing these calls doesn't seem to improve anything. wish there was a way to leverage the CTE across multiple queries.
+            const pq = await Promise.all([
+                db.$queryRaw(Prisma.raw(statusesQuery)),
+                db.$queryRaw(Prisma.raw(typesQuery)),
+                db.$queryRaw(Prisma.raw(tagsQuery)),
+                db.$queryRaw(Prisma.raw(paginatedEventQuery)),
+                db.$queryRaw(Prisma.raw(totalRowCountQuery)),
+            ]);
+
+            const statusesResult: ({ event_count: bigint } & Prisma.EventStatusGetPayload<{}>)[] = pq[0] as any;
+            const typesResult: ({ event_count: bigint } & Prisma.EventTypeGetPayload<{}>)[] = pq[1] as any;
+            const tagsResult: ({ event_count: bigint } & Prisma.EventTagGetPayload<{}>)[] = pq[2] as any;
+            const eventIds: { EventId: number }[] = pq[3] as any;
+            const rowCountResult: { rowCount: bigint }[] = pq[4] as any;
+
+            // FULL EVENT DETAILS USING DB3.
+            let fullEvents: db3.EventSearchPayload[] = [];
+            if (eventIds.length) {
+                const tableParams: db3.EventTableParams = {
+                    eventIds: eventIds.map(e => e.EventId), // prevent fetching the entire table!
+                    userIdForResponses: u.id, // fetch user responses for this user id.
+                };
+
+                const queryResult = await DB3QueryCore2({
+                    clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+                    cmdbQueryContext: "getEventFilterInfo",
+                    tableID: db3.xEventSearch.tableID,
+                    tableName: db3.xEventSearch.tableName,
+                    filter: {
+                        items: [],
+                        tableParams,
+                    },
+                    orderBy: undefined,
+                }, u);
+
+                fullEvents = queryResult.items as any;
+            }
+
+            const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({
+                color: r.color,
+                iconName: r.iconName,
+                id: r.id,
+                label: r.label,
+                tooltip: r.description,
+                rowCount: new Number(r.event_count).valueOf(),
+            }));
+
+            const types: GetEventFilterInfoChipInfo[] = typesResult.map(r => ({
+                color: r.color,
+                iconName: r.iconName,
+                id: r.id,
+                label: r.text,
+                tooltip: r.description,
+                rowCount: new Number(r.event_count).valueOf(),
+            }));
+
+            const tags: GetEventFilterInfoChipInfo[] = tagsResult.map(r => ({
+                color: r.color,
+                iconName: null,
+                id: r.id,
+                label: r.text,
+                tooltip: r.description,
+                rowCount: new Number(r.event_count).valueOf(),
+            }));
+
 
             const totalExecutionTimeMS = Date.now() - startTimestamp;
 
@@ -266,10 +293,8 @@ export default resolver.pipe(
                 paginatedEventQuery,
 
                 totalExecutionTimeMS,
-                typesQueryMS,
-                statusesQueryMS,
-                tagsQueryMS,
-                paginatedQueryMS,
+
+                fullEvents,
             };
         } catch (e) {
             console.error(e);

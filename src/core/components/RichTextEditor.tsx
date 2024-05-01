@@ -546,7 +546,7 @@ export function CompactMarkdownControl({ initialValue, onValueChanged, ...props 
                 {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>}
                 {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>}
                 <span className="helpText">
-                    Markdown syntax is supported. <a href="/backstage/markdownhelp" target="_blank">Click here</a> for details.
+                    Markdown syntax is supported. <a href="/backstage/wiki/markdown-help" target="_blank">Click here</a> for details.
                 </span>
             </div>
             <div className="richTextContainer compactMarkdownControl">

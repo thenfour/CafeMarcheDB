@@ -3,7 +3,6 @@ import { useMutation, usePaginatedQuery } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import updateBulkSettings from "src/auth/mutations/updateBulkSettings";
 import getPaginatedSettings from "src/auth/queries/getPaginatedSettings";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
@@ -16,10 +15,6 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const SettingsControls = (props) => {
-    if (!useAuthorization("settings page", Permission.sysadmin)) {
-        throw new Error(`unauthorized`);
-    }
-
     const [{ items, count }, { refetch }] = usePaginatedQuery(getPaginatedSettings, {
         orderBy: {},
         where: {},
@@ -95,7 +90,7 @@ const SettingsContent = () => {
 
 const SettingsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Settings">
+        <DashboardLayout title="Settings" basePermission={Permission.sysadmin}>
             <SettingsContent />
         </DashboardLayout>
     )

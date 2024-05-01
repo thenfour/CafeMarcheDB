@@ -35,7 +35,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
-import { DashboardContextProvider } from "./DashboardContext";
+import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
 import { IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -456,7 +456,7 @@ const gMenuItemGroup2: MenuItemGroup[] = [
     },
 ];
 
-const FlattenMenuGroups = (session: ClientSession, groups: MenuItemGroup[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
+const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups: MenuItemGroup[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
 
     for (let iGroup = 0; iGroup < groups.length; ++iGroup) {
@@ -465,7 +465,7 @@ const FlattenMenuGroups = (session: ClientSession, groups: MenuItemGroup[]): { g
         for (let iItem = 0; iItem < g.items.length; ++iItem) {
             const item = g.items[iItem] as MenuItemLink;
             assert(g.items[iItem]?.type === "link", "only link menu items should be added here; other types are created dynamically");
-            if (API.users.isAuthorizedFor(session, item.permission)) {
+            if (dashboardContext.isAuthorized(item.permission)) {
                 // add it to the flat list.
                 if (firstItemInGroup) {
                     if (menuItems.length) {
@@ -524,13 +524,13 @@ const DynMenuToMenuItem = (item: db3.MenuLinkPayload): MenuItemLink | null => {
     };
 };
 
-const FlattenDynMenuItems = (session: ClientSession, items: db3.MenuLinkPayload[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
+const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.MenuLinkPayload[]): { group: MenuItemGroup, item: MenuItemSpec }[] => {
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [];
     let currentGroupName = "<never>";
 
     for (let iItem = 0; iItem < items.length; ++iItem) {
         const item = items[iItem]!;
-        if (!API.users.isAuthorizedFor(session, (item.visiblePermission?.name || Permission.never_grant) as Permission)) continue;
+        if (!dashboardContext.isAuthorized((item.visiblePermission?.name || Permission.never_grant) as Permission)) continue;
         const menuItem = DynMenuToMenuItem(item);
         if (!menuItem) continue;
 
@@ -572,37 +572,43 @@ const FlattenDynMenuItems = (session: ClientSession, items: db3.MenuLinkPayload[
     return menuItems;
 }
 
-const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?: NavRealm; }>) => {
-    const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
-    const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
+const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission; }>) => {
+    const dashboardContext = React.useContext(DashboardContext);
 
-    React.useEffect(() => {
-        void refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
-    }, []);
+    if (basePermission && !dashboardContext.isAuthorized(basePermission)) {
+        throw new Error(`unauthorized`);
+    }
 
-    const session = useSession();
+    //const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
+    //const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
 
-    const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
+    // React.useEffect(() => {
+    //     void refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
+    // }, []);
 
-    React.useEffect(() => {
-        document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
-    }, []);
+    //const session = useSession();
 
-    React.useEffect(() => {
-        async function handleKeyPress(event) {
-            if (event.altKey && event.key === '9') {
-                await showAdminControlsMutation.invoke({ toggle: true });
-            }
-        }
+    //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
 
-        // Add event listener
-        window.addEventListener('keydown', handleKeyPress);
+    // React.useEffect(() => {
+    //     document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
+    // }, []);
 
-        // Remove event listener on cleanup
-        return () => {
-            window.removeEventListener('keydown', handleKeyPress);
-        };
-    }, []);
+    // React.useEffect(() => {
+    //     async function handleKeyPress(event) {
+    //         if (event.altKey && event.key === '9') {
+    //             await showAdminControlsMutation.invoke({ toggle: true });
+    //         }
+    //     }
+
+    //     // Add event listener
+    //     window.addEventListener('keydown', handleKeyPress);
+
+    //     // Remove event listener on cleanup
+    //     return () => {
+    //         window.removeEventListener('keydown', handleKeyPress);
+    //     };
+    // }, []);
 
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
@@ -640,50 +646,116 @@ const Dashboard2 = ({ navRealm, children }: React.PropsWithChildren<{ navRealm?:
 
     // flatten our list of menu groups & items based on permissions.
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [
-        ...FlattenMenuGroups(session, gMenuItemGroup1),
-        ...FlattenDynMenuItems(session, dynMenuItems),
-        ...FlattenMenuGroups(session, gMenuItemGroup2),
+        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup1),
+        ...FlattenDynMenuItems(dashboardContext, dynMenuItems),
+        ...FlattenMenuGroups(dashboardContext, gMenuItemGroup2),
     ];
+
+    return (<>
+        <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
+        <Drawer
+            sx={{
+                flexShrink: 0,
+                width: drawerWidth
+            }}
+            variant={isMdUp ? "permanent" : "temporary"}
+            anchor="left"
+            open={open}
+            onClose={toggleDrawer}
+        >
+            <Box sx={{ ...theme.mixins.toolbar }} />
+            <List component="nav" className="CMMenu">
+                {
+                    menuItems.map((item, index) => <MenuItemComponent key={index} item={item} realm={navRealm} />)
+                }
+                <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
+            </List>
+        </Drawer>
+        <Box sx={{
+            flexGrow: 1,
+            backgroundColor: theme.palette.background.default,
+            padding: theme.spacing(3)
+        }}
+            className="mainContentBackdrop"
+        >
+            <Toolbar />
+            <React.Suspense>
+                {children}
+            </React.Suspense>
+        </Box>
+    </>
+    );
+}
+
+
+
+const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission }>) => {
+    // const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
+    // const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
+
+    // React.useEffect(() => {
+    //     void refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
+    // }, []);
+
+    // const session = useSession();
+
+    React.useEffect(() => {
+        document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
+    }, []);
+
+    const theme = useTheme();
+    const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
+
+    // const [open, setOpen] = React.useState(false);
+
+
+    // const [currentUser] = useCurrentUser();
+    // const clientIntention: db3.xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
+
+    // const dynMenuClient = DB3Client.useTableRenderContext({
+    //     requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
+    //     clientIntention,
+    //     tableSpec: new DB3Client.xTableClientSpec({
+    //         table: db3.xMenuLink,
+    //         columns: [
+    //             new DB3Client.PKColumnClient({ columnName: "id" }),
+    //         ],
+    //     }),
+    // });
+
+    //const dynMenuItems = dynMenuClient.items as db3.MenuLinkPayload[];
+    //const dynMenuItems = [] as db3.MenuLinkPayload[];
+
+    // const toggleDrawer = event => {
+    //     if (
+    //         event.type === "keydown" &&
+    //         (event.key === "Tab" || event.key === "Shift")
+    //     ) {
+    //         return;
+    //     }
+
+    //     setOpen(!open);
+    // };
+
+    // // flatten our list of menu groups & items based on permissions.
+    // const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [
+    //     ...FlattenMenuGroups(session, gMenuItemGroup1),
+    //     ...FlattenDynMenuItems(session, dynMenuItems),
+    //     ...FlattenMenuGroups(session, gMenuItemGroup2),
+    // ];
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
-                    <PrimarySearchAppBar onClickToggleDrawer={toggleDrawer}></PrimarySearchAppBar>
-                    <Drawer
-                        sx={{
-                            flexShrink: 0,
-                            width: drawerWidth
-                        }}
-                        variant={isMdUp ? "permanent" : "temporary"}
-                        anchor="left"
-                        open={open}
-                        onClose={toggleDrawer}
-                    >
-                        <Box sx={{ ...theme.mixins.toolbar }} />
-                        <List component="nav" className="CMMenu">
-                            {
-                                menuItems.map((item, index) => <MenuItemComponent key={index} item={item} realm={navRealm} />)
-                            }
-                            <li style={{ height: 100 }}></li>{/* gives space at the bottom of the nav, which helps make things accessible if the bottom of the window is covered (e.g. snackbar message or error message is visible) */}
-                        </List>
-                    </Drawer>
-                    <Box sx={{
-                        flexGrow: 1,
-                        backgroundColor: theme.palette.background.default,
-                        padding: theme.spacing(3)
-                    }}
-                        className="mainContentBackdrop"
-                    >
-                        <Toolbar />
-                        <React.Suspense>
-                            {children}
-                        </React.Suspense>
-                    </Box>
+                    <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
+                        {children}
+                    </Dashboard3>
                 </DashboardContextProvider>
             </Box>
         </LocalizationProvider>
     );
 }
+
 
 export default Dashboard2;

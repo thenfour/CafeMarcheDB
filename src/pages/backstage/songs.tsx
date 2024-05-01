@@ -7,7 +7,6 @@ import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { arraysContainSameValues, gQueryOptions, toggleValueInArray } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { DebugCollapsibleAdminText, DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
@@ -360,9 +359,6 @@ const SongListOuter = () => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SongListPageContent = () => {
-    if (!useAuthorization("ViewSongsPage", Permission.view_songs)) {
-        throw new Error(`unauthorized`);
-    }
     return <div className="eventsMainContent searchPage">
 
         <Suspense>
@@ -379,7 +375,7 @@ const SongListPageContent = () => {
 
 const ViewSongsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Songs">
+        <DashboardLayout title="Songs" basePermission={Permission.view_songs}>
             <SongListPageContent />
         </DashboardLayout>
     )

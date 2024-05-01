@@ -7,8 +7,11 @@ import { API } from "src/core/db3/clientAPI";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import React from 'react';
+import { DashboardContext } from "src/core/components/DashboardContext";
 
 const Inner = () => {
+    const dashboardContext = React.useContext(DashboardContext);
 
     const codePermissions = Object.keys(Permission);
 
@@ -26,10 +29,10 @@ const Inner = () => {
         ],
     });
 
-    const dbps = API.users.getAllPermissions();
+    const dbps = dashboardContext.permission.items;
 
     // make a list of code permissions which aren't in the db.
-    const missingInDb = codePermissions.filter(cp => !dbps.items.some(dbp => dbp.name === cp));
+    const missingInDb = codePermissions.filter(cp => !dbps.some(dbp => dbp.name === cp));
 
     return <>
         {missingInDb.map(x => <div key={x} style={{ fontSize: "48px" }}>❗🟥 "{x}" is missing in the db; restarting the server will sync it up</div>)}

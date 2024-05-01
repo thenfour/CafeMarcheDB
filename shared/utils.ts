@@ -192,7 +192,6 @@ export enum Setting {
     InstrumentFunctionalGroupList_markdown = "InstrumentFunctionalGroupList_markdown",
     instrumentList_markdown = "instrumentList_markdown",
     instrumentTagList_markdown = "instrumentTagList_markdown",
-    MarkdownHelpPage = "MarkdownHelpPage",
     profile_markdown = "profile_markdown",
     rolePermissionsMatrixPage_markdown = "rolePermissionsMatrixPage_markdown",
     RolesAdminPage_markdown = "RolesAdminPage_markdown",
@@ -715,20 +714,6 @@ export function CoalesceBool<T>(value: null | undefined | T, defaultValue: T) {
     if (value === undefined) return defaultValue;
     return value;
 }
-
-export function formatFileSize(bytes: number): string {
-    if (bytes < 1024) {
-        return bytes + ' Bytes';
-    }
-    if (bytes < 1024 * 1024) {
-        return (bytes / 1024).toFixed(2) + ' KB';
-    }
-    if (bytes < 1024 * 1024 * 1024) {
-        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
-    }
-    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-}
-
 
 ////////////////////////////////////////////////////////////////
 // const getImageDimensions = (url: string): Promise<Size> => {

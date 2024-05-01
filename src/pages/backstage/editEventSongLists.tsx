@@ -1,7 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { parseIntOrNull } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -9,6 +8,8 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { useRouter } from "next/router";
 import { Button } from "@mui/material";
+import { DashboardContext } from "src/core/components/DashboardContext";
+import React from 'react';
 
 
 const tableSpec = new DB3Client.xTableClientSpec({
@@ -37,9 +38,12 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditEventSongListsPage", Permission.admin_events)) {
+
+    const dashboardContext = React.useContext(DashboardContext);
+    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
         throw new Error(`unauthorized`);
     }
+
     const urlParams = new URLSearchParams(window.location.search);
     const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
     return <>

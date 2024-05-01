@@ -11,12 +11,13 @@ import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
-import { calculateNewDimensions, formatFileSize, gDefaultImageArea } from "shared/utils";
-import { useAuthorization, useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
+import { formatFileSize } from "shared/rootroot";
+import { calculateNewDimensions, gDefaultImageArea } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
+import { DashboardContext } from "src/core/components/DashboardContext";
 import { CollapsableUploadFileComponent, FileDropWrapper, UploadFileComponent } from "src/core/components/FileDrop";
 import { Markdown2Control } from "src/core/components/MarkdownControl2";
 import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -44,7 +45,9 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
     const [progress, setProgress] = React.useState<number | null>(null);
     //const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const permissionId = API.users.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const permissionId = dashboardContext.getPermission(Permission.visibility_public)!.id;// API.users.getDefaultVisibilityPermission().id;
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
 
@@ -89,34 +92,30 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
         }
     };
 
-    const canUpload = useAuthorization("FrontpageGalleryUpload", Permission.upload_files);
+    return <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }} progress={progress}>
 
-    return !canUpload ? null :
-
-        <FileDropWrapper className="frontpageGalleryFileUploadWrapper" onFileSelect={handleFileSelect} onURLUpload={() => { }} progress={progress}>
-
-            <CMSinglePageSurfaceCard className="filterControls">
-                <div className="content">
-                    <div className="header">
-                        Manage gallery items on the public homepage
-                    </div>
-
-                    <FormControlLabel label="Show images" control={
-                        <div>
-                            <div><Checkbox size="small" checked={props.showImages} onClick={() => props.onChangeShowImages(!props.showImages)} /></div>
-                        </div>
-                    } />
-
-                    <div className="CMSidenote">
-                        Images may be a big / heavy download, so they're hidden by default. This also can facilitate re-ordering.
-                    </div>
-
-                    <CollapsableUploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
+        <CMSinglePageSurfaceCard className="filterControls">
+            <div className="content">
+                <div className="header">
+                    Manage gallery items on the public homepage
                 </div>
-            </CMSinglePageSurfaceCard>
+
+                <FormControlLabel label="Show images" control={
+                    <div>
+                        <div><Checkbox size="small" checked={props.showImages} onClick={() => props.onChangeShowImages(!props.showImages)} /></div>
+                    </div>
+                } />
+
+                <div className="CMSidenote">
+                    Images may be a big / heavy download, so they're hidden by default. This also can facilitate re-ordering.
+                </div>
+
+                <CollapsableUploadFileComponent onFileSelect={handleFileSelect} progress={progress} onURLUpload={() => { }} />
+            </div>
+        </CMSinglePageSurfaceCard>
 
 
-        </FileDropWrapper>
+    </FileDropWrapper>
 
 
 };
@@ -484,8 +483,6 @@ const GalleryItem = (props: GalleryItemProps) => {
 ////////////////////////////////////////////////////////////////
 const MainContent = () => {
 
-    useAuthorizationOrThrow("front page gallery", Permission.edit_public_homepage);
-
     const [showImages, setShowImages] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
@@ -559,7 +556,7 @@ const MainContent = () => {
 
 const EditFrontpageGalleryPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Frontpage gallery">
+        <DashboardLayout title="Frontpage gallery" basePermission={Permission.edit_public_homepage}>
             <MainContent />
         </DashboardLayout>
     )

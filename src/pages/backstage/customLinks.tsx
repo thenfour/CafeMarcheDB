@@ -1,16 +1,21 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
-import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { CustomLinkList } from "src/core/components/CustomLinksComponents";
+import { DashboardContext } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import React from 'react';
 
 
 
 
 const MyContent = () => {
-    useAuthorizationOrThrow("CustomLinksPage", Permission.view_custom_links);
+    const dashboardContext = React.useContext(DashboardContext);
+
+    if (!dashboardContext.isAuthorized(Permission.view_custom_links)) {
+        throw new Error(`Unauthorized`);
+    }
 
     return <div>
         <SettingMarkdown setting="CustomLinksPageMarkdown" />

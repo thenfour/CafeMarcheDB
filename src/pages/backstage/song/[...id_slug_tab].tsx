@@ -3,7 +3,6 @@ import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsEntirelyIntegral } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { NewSongButton } from "src/core/components/NewSongComponents";
@@ -22,10 +21,6 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
     //const [_, tabIdOrSlug] = params.idOrSlug_tab as string[];
 
     if (!songId) throw new Error(`song not found`);
-
-    if (!useAuthorization(`song page: ${songId}`, Permission.view_songs)) {
-        throw new Error(`unauthorized`);
-    }
 
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: currentUser, };
@@ -126,7 +121,7 @@ export const getServerSideProps = async ({ params }) => {
 
 const SongDetailPage: BlitzPage = (x: PageProps) => {
     return (
-        <DashboardLayout title={x.title} navRealm={NavRealm.songs}>
+        <DashboardLayout title={x.title} navRealm={NavRealm.songs} basePermission={Permission.view_songs}>
             <Suspense>
                 <MyComponent songId={x.songId}></MyComponent>
             </Suspense>

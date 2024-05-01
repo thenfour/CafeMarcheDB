@@ -7,19 +7,22 @@ import { API } from '../db3/clientAPI';
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { SettingMarkdown } from "./SettingMarkdown";
+import React from 'react';
+import { DashboardContext } from "./DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export type VisibilityControlValue = (db3.PermissionPayload | null);
 
 export interface VisibilityValueProps {
-    permission: db3.PermissionPayload | null;
+    permission: db3.PermissionPayloadMinimum | null;
     variant: "minimal" | "verbose";
     onClick?: () => void;
 };
 
 export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValueProps) => {
-    const visInfo = API.users.getVisibilityInfo({ visiblePermission: permission, visiblePermissionId: permission?.id || null });
+    const dashboardContext = React.useContext(DashboardContext);
+    const visInfo = dashboardContext.getVisibilityInfo({ visiblePermission: permission, visiblePermissionId: permission?.id || null });
     const style = visInfo.getStyleVariablesForColor(StandardVariationSpec.Strong);
     const classes: string[] = [
         "visibilityValue applyColor",
@@ -55,11 +58,12 @@ interface VisibilityControlProps {
     selectDialogTitle?: React.ReactNode;
 };
 export const VisibilityControl = (props: VisibilityControlProps) => {
-    const permissions = API.users.getAllPermissions();
+    const dashboardContext = React.useContext(DashboardContext);
+    //const permissions = API.users.getAllPermissions();
     const variant = props.variant || "verbose";
     const [currentUser] = useCurrentUser();
-    const visibilityChoices = [null, ...(permissions.items as db3.PermissionPayload[]).filter(p => {
-        return p.isVisibility && p.roles.some(r => r.roleId === currentUser?.roleId);
+    const visibilityChoices = [null, ...(dashboardContext.permission.items).filter(p => {
+        return p.isVisibility && dashboardContext.isAuthorized(p.name);
     })];
 
     // value type is PermissionPayload

@@ -4,7 +4,6 @@ import { Typography } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
@@ -168,8 +167,6 @@ const MainContent = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const publicData = useAuthenticatedSession();
 
-    useAuthorizationOrThrow(`user profile page`, Permission.basic_trust);
-
     const spec = new DB3Client.xTableClientSpec({
         table: db3.xUser,
         columns: [
@@ -241,7 +238,7 @@ const MainContent = () => {
 
 const ProfilePage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Your profile">
+        <DashboardLayout title="Your profile" basePermission={Permission.basic_trust}>
             <MainContent />
         </DashboardLayout>
     )

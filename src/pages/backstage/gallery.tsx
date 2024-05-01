@@ -4,7 +4,6 @@ import { Divider } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, parseMimeType } from "shared/utils";
-import { useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
@@ -126,7 +125,6 @@ const MainContent = () => {
     const [mimeTypeStr, setMimeTypeStr] = React.useState<string>("");
     const [songValue, setSongValue] = React.useState<db3.SongPayload | null>(null);
 
-    useAuthorizationOrThrow("gallyery", Permission.sysadmin);
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <>
@@ -234,7 +232,7 @@ const MainContent = () => {
 
 const ComponentGalleryPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Component Gallery">
+        <DashboardLayout title="Component Gallery" basePermission={Permission.sysadmin}>
             <MainContent />
         </DashboardLayout>
     )

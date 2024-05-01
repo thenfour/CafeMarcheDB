@@ -1,6 +1,5 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -9,10 +8,6 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const InstrumentFunctionalGroupListContent = () => {
-    if (!useAuthorization("admin instrument functional groups page", Permission.admin_instruments)) {
-        throw new Error(`unauthorized`);
-    }
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xInstrumentFunctionalGroup,
         columns: [
@@ -32,7 +27,7 @@ const InstrumentFunctionalGroupListContent = () => {
 
 const InstrumentFunctionalGroupListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="InstrumentGroups">
+        <DashboardLayout title="InstrumentGroups" basePermission={Permission.admin_instruments}>
             <InstrumentFunctionalGroupListContent />
         </DashboardLayout>
     );

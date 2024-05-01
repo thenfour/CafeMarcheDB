@@ -4,10 +4,10 @@ import * as React from 'react';
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsNullOrWhitespace, existsInArray, toggleValueInArray } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
+import { DashboardContext } from "src/core/components/DashboardContext";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -31,10 +31,11 @@ const MainContent = () => {
     const [userNameFilter, setUserNameFilter] = React.useState<string>("");
     const [tableNames, setTableNames] = React.useState<string[]>([]);
     const [users, setUsers] = React.useState<AdHocUser[]>([]);
+    const dashboardContext = React.useContext(DashboardContext);
 
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
 
-    if (!useAuthorization("AdminLogsPage", Permission.sysadmin)) {
+    if (!dashboardContext.isAuthorized(Permission.sysadmin)) {
         throw new Error(`unauthorized`);
     }
 

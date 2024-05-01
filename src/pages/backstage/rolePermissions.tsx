@@ -5,7 +5,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { FormControlLabel, Tooltip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import React from "react";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -15,10 +14,6 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    if (!useAuthorization("admin role-permissions matrix page", Permission.sysadmin)) {
-        throw new Error(`unauthorized`);
-    }
-
     const [showUnknown, setShowUnknown] = React.useState<boolean>(false);
 
     const RoleClientSchema = new DB3Client.xTableClientSpec({
@@ -74,7 +69,7 @@ const MainContent = () => {
 
 const RolePermissionsMatrixPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="RolePerm Matrix">
+        <DashboardLayout title="RolePerm Matrix" basePermission={Permission.sysadmin}>
             <MainContent />
         </DashboardLayout>
     );

@@ -5,14 +5,8 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 
 const MainContent = () => {
-    if (!useAuthorization("admin roles page", Permission.sysadmin)) {
-        throw new Error(`unauthorized`);
-    }
-
-
     const RoleClientSchema = new DB3Client.xTableClientSpec({
         table: db3.xRole,
         columns: [
@@ -36,7 +30,7 @@ const MainContent = () => {
 
 const RolesListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="User Roles">
+        <DashboardLayout title="User Roles" basePermission={Permission.sysadmin}>
             <MainContent />
         </DashboardLayout>
     );

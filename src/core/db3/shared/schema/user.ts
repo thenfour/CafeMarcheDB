@@ -537,7 +537,7 @@ export const xUser = new db3.xTable({
             getQuickFilterWhereClause: (query: string): Prisma.RoleWhereInput => ({
                 OR: [
                     { name: { contains: query } },
-                    { description: { contains: query } },
+                    //{ description: { contains: query } },
                 ]
             }),
         }),

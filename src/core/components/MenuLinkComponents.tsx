@@ -2,7 +2,6 @@ import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { DynamicMenuLinkType } from "shared/dynMenuTypes";
 import { Permission } from 'shared/permissions';
-import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -18,6 +17,7 @@ import { assert } from "blitz";
 import { slugify } from "shared/rootroot";
 import { TextInputWithSearch } from "./SearchableNameColumnClient";
 import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
+import { DashboardContext } from "./DashboardContext";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,6 +194,7 @@ export class SearchableWikiSlugColumnClient extends DB3Client.GenericStringColum
 export const MenuLinkList = () => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const updateSortOrderMutation = API.other.updateGenericSortOrderMutation.useToken();
+    const dashboardContext = React.useContext(DashboardContext);
 
     const [user] = useCurrentUser()!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
@@ -228,12 +229,12 @@ export const MenuLinkList = () => {
         }),
     });
 
-    const canEdit = useAuthorization("MenuLink management page", Permission.customize_menu);
+    const canEdit = dashboardContext.isAuthorized(Permission.customize_menu);
 
     const newObj = db3.xMenuLink.createNew(clientIntention) as db3.MenuLinkPayload;
     newObj.iconName = "Link" as keyof typeof gIconMap;
     newObj.linkType = DynamicMenuLinkType.Wiki;
-    newObj.visiblePermission = API.users.getDefaultVisibilityPermission();
+    newObj.visiblePermission = dashboardContext.getDefaultVisibilityPermission();
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         client.doInsertMutation(obj).then(async (ret) => {

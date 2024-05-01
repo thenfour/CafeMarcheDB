@@ -1,7 +1,6 @@
 import { Prisma } from "db";
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
-import { useAuthorization, useAuthorizationOrThrow } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -10,8 +9,6 @@ import * as DB3Client from "src/core/db3/DB3Client";
 
 
 const MainContent = () => {
-    useAuthorizationOrThrow("UserInstrumentsPage", Permission.admin_instruments);
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xUserInstrument,
         columns: [
@@ -30,7 +27,7 @@ const MainContent = () => {
 
 const UserInstrumentsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument Tags">
+        <DashboardLayout title="Instrument Tags" basePermission={Permission.admin_instruments}>
             <MainContent />
         </DashboardLayout>
     );

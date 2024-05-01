@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import React from "react";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { SongClientColumns } from "src/core/components/SongComponents";
@@ -17,7 +16,7 @@ export const NewSongButton = () => {
     const router = useRouter();
     const dashboardContext = React.useContext(DashboardContext);
 
-    if (!useAuthorization("NewSongButton", Permission.manage_songs)) {
+    if (!dashboardContext.isAuthorized(Permission.manage_songs)) {
         return null;
     }
 
@@ -29,7 +28,7 @@ export const NewSongButton = () => {
         const ret = db3.xSong.createNew(clientIntention);
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
-        ret.visiblePermission = dashboardContext.permissions.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null;
+        ret.visiblePermission = dashboardContext.permission.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null;
         return ret;
     })();
 

@@ -659,7 +659,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
         skipVisibilityCheck: args.skipVisibilityCheck,
     });
 
-    const include = args.schema.CalculateInclude(clientIntention);
+    const include = args.schema.CalculateInclude(clientIntention, filterModel);
 
     const items = await db[args.schema.tableName].findMany({
         where,
@@ -707,7 +707,7 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
         skipVisibilityCheck,
     });
 
-    const include = args.schema.CalculateInclude(clientIntention);
+    const include = args.schema.CalculateInclude(clientIntention, filterModel);
 
     let item = await db[args.schema.tableName].findFirst({
         where,

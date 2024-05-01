@@ -25,6 +25,7 @@ import { CalculateSongMetadata, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown2Control } from './MarkdownControl2';
+import { DashboardContext } from './DashboardContext';
 
 
 export const SongClientColumns = {
@@ -321,12 +322,13 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
     const highlightedTagIds = props.highlightedTagIds || [];
+    const dashboardContext = React.useContext(DashboardContext);
 
     const refetch = () => {
         tableClient?.refetch();
     };
 
-    const visInfo = API.users.getVisibilityInfo(song);
+    const visInfo = dashboardContext.getVisibilityInfo(song);
 
     return React.createElement(props.renderAsLinkTo ? "a" : "div", {
         href: props.renderAsLinkTo,

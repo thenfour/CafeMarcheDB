@@ -907,10 +907,6 @@ const main = async () => {
         "value": "inline"
       },
       {
-        "name": "MarkdownHelpPage",
-        "value": "\n\"Markdown\" is a way of adding basic formatting and rich content to text.\n\n[Click here for markdown syntax guide](https://www.markdownguide.org/basic-syntax/)"
-      },
-      {
         "name": "NewEventSegmentDialogDescription",
         "value": "\"Segments\" are subdivisions of events, so people can specify they're coming only to a part of the show. For example the Weekend this could be one \"segment\" per day. Or for a concert with multiple sets. For simplicity, only create more segments when it's important to know if people can only attend for part of the event."
       },

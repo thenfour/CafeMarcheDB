@@ -6,18 +6,23 @@ const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
  * @type {import('@blitzjs/next').BlitzConfig}
  **/
 const config = {
-  webpack(config, { isServer }) {
-    if (!isServer) {
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          reportFilename: 'bundle-report.html',
-          openAnalyzer: false
-        })
-      );
-    }
-    return config;
-  },
+
+  // uncomment this to analyze bundle:
+
+  // webpack(config, { isServer }) {
+  //   if (!isServer) {
+  //     config.plugins.push(
+  //       new BundleAnalyzerPlugin({
+  //         analyzerMode: 'static',
+  //         reportFilename: 'bundle-report.html',
+  //         openAnalyzer: true
+  //       })
+  //     );
+  //   }
+  //   return config;
+  // },
+
+
   reactStrictMode: true,
   swcMinify: true,
   experimental: { instrumentationHook: true },

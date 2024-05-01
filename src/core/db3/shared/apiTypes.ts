@@ -363,11 +363,9 @@ export interface GetEventFilterInfoRet {
     tagsQuery: string;
     paginatedEventQuery: string;
 
-    totalExecutionTimeMS,
-    typesQueryMS,
-    statusesQueryMS,
-    tagsQueryMS,
-    paginatedQueryMS,
+    totalExecutionTimeMS: number;
+
+    fullEvents: unknown[],
 };
 
 export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
@@ -383,10 +381,7 @@ export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
     paginatedEventQuery: "",
 
     totalExecutionTimeMS: 0,
-    typesQueryMS: 0,
-    statusesQueryMS: 0,
-    tagsQueryMS: 0,
-    paginatedQueryMS: 0,
+    fullEvents: [],
 });
 
 export const gEventRelevantFilterExpression = `((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`;

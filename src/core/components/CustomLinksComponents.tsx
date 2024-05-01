@@ -3,7 +3,6 @@ import React from "react";
 import { gLightSwatchColors, gSwatchColors } from "shared/color";
 import { Permission } from 'shared/permissions';
 import { IsNullOrWhitespace } from 'shared/utils';
-import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -16,6 +15,7 @@ import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { MutationMarkdownControl } from './SettingMarkdown';
 import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
+import { DashboardContext } from "./DashboardContext";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {
@@ -191,6 +191,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
 }
 
 export const CustomLinkList = () => {
+    const dashboardContext = React.useContext(DashboardContext);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [user] = useCurrentUser()!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
@@ -221,7 +222,7 @@ export const CustomLinkList = () => {
         }),
     });
 
-    const canEdit = useAuthorization("CustomLink management page", Permission.manage_custom_links);
+    const canEdit = dashboardContext.isAuthorized(Permission.manage_custom_links);
 
     const newObj = db3.xCustomLink.createNew(clientIntention);
 

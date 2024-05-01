@@ -24,6 +24,7 @@ import {
 } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
+import { assert } from "blitz";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
@@ -138,7 +139,7 @@ leave all that for later.
 
 
 
-export const getEventSegmentDateTimeRange = (segment: EventSegmentPayloadMinimum) => {
+export const getEventSegmentDateTimeRange = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) => {
     return new DateTimeRange({
         startsAtDateTime: segment.startsAt,
         durationMillis: Number(segment.durationMillis),
@@ -147,7 +148,7 @@ export const getEventSegmentDateTimeRange = (segment: EventSegmentPayloadMinimum
 }
 
 
-export const getEventSegmentTiming = (segment: EventSegmentPayloadMinimum) => {
+export const getEventSegmentTiming = (segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) => {
     const r = getEventSegmentDateTimeRange(segment);
     return r.hitTestDateTime(null);
 }
@@ -318,11 +319,12 @@ export interface EventTableParams {
     minDate?: Date;
     forFrontPageAgenda?: boolean; // returns future + recent events + any event that's showing on front page
     refreshSerial?: number; // ignored but useful to force a refresh
+    userIdForResponses?: number; // when searching for multiple events, include this to limit returned responses to this user. prevents huge bloat.
 };
 
-const xEventArgs_Base: db3.TableDesc = {
+export const xEventArgs_Base: db3.TableDesc = {
     tableName: "event",
-    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventInclude => {
+    getInclude: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventInclude => {
         return EventArgs.include;
     },
     tableAuthMap: xEventTableAuthMap_R_EManagers,
@@ -589,6 +591,86 @@ const xEventArgs_Verbose: db3.TableDesc = {
 };
 
 export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
+
+
+
+
+
+
+
+export const EventSearchArgs = (userId: number) => Prisma.validator<Prisma.EventDefaultArgs>()({
+    include: {
+        tags: true,
+        // NOTE: responses will be limited to only the current user! for efficiency.
+        responses: {
+            where: {
+                userId,
+            }
+        }, // instrument and isinvited are the only things we care about.
+        segments: {
+            include: {
+                responses: {
+                    where: {
+                        userId,
+                    }
+                },
+            }
+        },
+    },
+});
+
+export type EventSearchPayload = Prisma.EventGetPayload<{
+    include: {
+        tags: true,
+        // NOTE: responses will be limited to only the current user! for efficiency.
+        responses: true, // instrument and isinvited are the only things we care about.
+        segments: {
+            include: {
+                responses: true,
+            }
+        },
+    },
+}>;
+
+const xEventArgs_Search: db3.TableDesc = {
+    ...xEventArgs_Base,
+    tableUniqueName: "xEventArgs_Search",
+    getInclude: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventInclude => {
+        const tableParams = filterModel.tableParams as EventTableParams;
+        assert(tableParams.userIdForResponses, "when searching for events you must provide a userid to limit responses");
+        return EventSearchArgs(tableParams.userIdForResponses).include;
+    },
+};
+
+export const xEventSearch = new db3.xTable(xEventArgs_Search);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 export const xEventSegment = new db3.xTable({
     tableName: "EventSegment",

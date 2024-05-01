@@ -2,7 +2,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { GridFilterItem } from "@mui/x-data-grid";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -25,9 +24,6 @@ const songTagsTableSpec = new DB3Client.xTableClientSpec({
 
 
 const MainContent = () => {
-    if (!useAuthorization("admin song tags page", Permission.admin_songs)) {
-        throw new Error(`unauthorized`);
-    }
     return <>
         <SettingMarkdown setting="editSongTags_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={songTagsTableSpec} />
@@ -38,7 +34,7 @@ const MainContent = () => {
 const EditSongTagsPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Song Tags">
+        <DashboardLayout title="Song Tags" basePermission={Permission.admin_songs}>
             <MainContent />
         </DashboardLayout>
     )

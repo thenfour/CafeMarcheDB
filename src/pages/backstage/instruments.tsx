@@ -1,7 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Chip } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -12,9 +11,6 @@ import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
 
 const InstrumentListContent = () => {
-    if (!useAuthorization("admin instruments page", Permission.admin_instruments)) {
-        throw new Error(`unauthorized`);
-    }
     const router = useRouter();
 
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -55,7 +51,7 @@ const InstrumentListContent = () => {
 
 const InstrumentListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Instrument admin">
+        <DashboardLayout title="Instrument admin" basePermission={Permission.admin_instruments}>
             <InstrumentListContent />
         </DashboardLayout>
     );

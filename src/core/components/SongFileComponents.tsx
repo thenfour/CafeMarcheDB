@@ -1,12 +1,10 @@
 
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import FileUploadIcon from '@mui/icons-material/FileUpload';
-import { Button, Modal, Tooltip } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import React from "react";
 import { StandardVariationSpec, gGeneralPaletteList } from 'shared/color';
 import { Permission } from 'shared/permissions';
-import { IsNullOrWhitespace, SplitQuickFilter, existsInArray, formatFileSize, isValidURL, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
-import { useAuthorization } from 'src/auth/hooks/useAuthorization';
+import { IsNullOrWhitespace, SplitQuickFilter, existsInArray, parseMimeType, smartTruncate, toggleValueInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -18,12 +16,13 @@ import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AudioPreviewBehindButton } from './AudioPreview';
 import { CMChip, CMChipContainer, CMStandardDBChip, EventChip, InstrumentChip, SongChip, UserChip } from "./CMCoreComponents";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
+import { CMDBUploadFile } from './CMDBUploadFile';
 import { CMTextInputBase } from './CMTextField';
 import { DashboardContext } from './DashboardContext';
+import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
-import { CMDBUploadFile } from './CMDBUploadFile';
-import { FileDropWrapper, UploadFileComponent } from './FileDrop';
+import { formatFileSize } from 'shared/rootroot';
 
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
 //const gMaximumFilterTagsPerType = 10 as const;
@@ -52,9 +51,10 @@ interface FileViewerProps {
 };
 
 export const FileValueViewer = (props: FileViewerProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
     //const [currentUser] = useCurrentUser();
     const file = props.value;
-    const visInfo = API.users.getVisibilityInfo(file);
+    const visInfo = dashboardContext.getVisibilityInfo(file);
 
     const classes: string[] = [
         `EventFileValue EventFileValueViewer ${visInfo.className}`
@@ -181,7 +181,7 @@ export const FileEditor = (props: FileEditorProps) => {
                 columnName: "taggedInstruments", cellWidth: 150, allowDeleteFromCell: false, selectStyle: 'inline',
                 overrideRowInfo: (association: db3.FileInstrumentTagPayload, rowInfo: db3.RowInfo) => {
                     // because the query doesn't include instrument functional group, get it from global dashboard context
-                    const fg = dashboardContext.instrumentFunctionalGroups.find(fg => fg.id === association.instrument.functionalGroupId);
+                    const fg = dashboardContext.instrumentFunctionalGroup.getById(association.instrument.functionalGroupId);
                     if (!fg) return rowInfo;
                     return { ...rowInfo, color: gGeneralPaletteList.findEntry(fg.color) };
                 }
@@ -381,7 +381,7 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
     const dashboardContext = React.useContext(DashboardContext);
 
     const getInstrumentColor = (instrument: db3.InstrumentPayloadMinimum) => {
-        const fg = dashboardContext.instrumentFunctionalGroups.find(fg => fg.id === instrument.functionalGroupId);
+        const fg = dashboardContext.instrumentFunctionalGroup.getById(instrument.functionalGroupId);
         if (!fg) return null;
         return fg.color;
     };
@@ -545,11 +545,11 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const [progress, setProgress] = React.useState<number | null>(null);
     const [showUpload, setShowUpload] = React.useState<boolean>(false);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const permissionId = API.users.getDefaultVisibilityPermission().id;
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const permissionId = dashboardContext.getDefaultVisibilityPermission().id;
 
     const user = useCurrentUser()[0]!;
-    //const publicData = useAuthenticatedSession();
-    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const [filterSpec, setFilterSpec] = React.useState<FileFilterAndSortSpec>({
         quickFilter: "",
@@ -563,7 +563,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
         sortDirection: "desc",
     });
 
-    const canUploadFiles = useAuthorization("FilesTabContent", Permission.upload_files);
+    const canUploadFiles = dashboardContext.isAuthorized(Permission.upload_files);
 
     const handleFileSelect = (files: FileList) => {
         if (files.length > 0) {

@@ -1,7 +1,6 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
@@ -87,9 +86,6 @@ const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {
 };
 
 const UserListContent = () => {
-    if (!useAuthorization("users admin page", Permission.admin_users)) {
-        throw new Error(`unauthorized`);
-    }
     const router = useRouter()
 
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -134,7 +130,7 @@ const UserListContent = () => {
 
 const UserListPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Users">
+        <DashboardLayout title="Users" basePermission={Permission.admin_users}>
             <UserListContent />
         </DashboardLayout>
     );

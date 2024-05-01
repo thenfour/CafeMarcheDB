@@ -4,7 +4,6 @@ import { Button, Tab, Tabs } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { unslugify } from "shared/rootroot";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
@@ -15,6 +14,7 @@ import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
+import { DashboardContext } from "./DashboardContext";
 
 
 
@@ -127,7 +127,8 @@ interface WikiPageViewModeProps {
     onEnterEditMode: () => void;
 };
 export const WikiPageViewMode = ({ value, ...props }: WikiPageViewModeProps) => {
-    const authorizedForEdit = useAuthorization("WikiPageControl", Permission.edit_wiki_pages);
+    const dashboardContext = React.useContext(DashboardContext);
+    const authorizedForEdit = dashboardContext.isAuthorized(Permission.edit_wiki_pages);
     const isExisting = value.id > 0;
 
     return <>
@@ -162,12 +163,12 @@ interface WikiPageControlProps {
     onUpdated: () => void;
 };
 export const WikiPageControl = (props: WikiPageControlProps) => {
-
+    const dashboardContext = React.useContext(DashboardContext);
     const [editing, setEditing] = React.useState<boolean>(false);
     const [updateWikiPageMutation, updateWikiPageMutationExtra] = useMutation(updateWikiPage);
     //const dashboardContext = React.useContext(DashboardContext);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const defaultVisibilityPerm = API.users.getDefaultVisibilityPermission();
+    const defaultVisibilityPerm = dashboardContext.getDefaultVisibilityPermission();
 
     let valueN: null | db3.WikiPageRevisionPayload = props.value;
     if (!props.value) {

@@ -14,7 +14,6 @@ import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
 import { IsNullOrWhitespace } from 'shared/utils';
-import { useAuthorization } from 'src/auth/hooks/useAuthorization';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -38,6 +37,7 @@ import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
 import { Markdown2Control } from './MarkdownControl2';
+import { DashboardContext } from './DashboardContext';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -269,13 +269,14 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
     const currentUser = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
+    const dashboardContext = React.useContext(DashboardContext);
 
     const eventResponse = responseInfo.getEventResponseForUser(user);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const attendanceVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "filled", variation: 'strong' };
     if (!eventResponse.isRelevantForDisplay) return null;
 
-    const authorizedForEdit = useAuthorization("EventAttendanceDetailRow", Permission.change_others_event_responses);
+    const authorizedForEdit = dashboardContext.isAuthorized(Permission.change_others_event_responses);
     const isYou = eventResponse.user.id === currentUser.id;
 
     return <tr>
@@ -327,6 +328,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
     const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
     const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentPayload | null>(null);
+    const dashboardContext = React.useContext(DashboardContext);
     const user = useCurrentUser()[0]!;
     // const publicData = useAuthenticatedSession();
     // const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
@@ -351,8 +353,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         });
     };
 
-
-    const canAddUsers = useAuthorization("EventAttendanceDetail:canAddUsers", Permission.manage_events);
+    const canAddUsers = dashboardContext.isAuthorized(Permission.manage_events);
     const isSingleSegment = eventData.event.segments.length === 1;
 
     // sort rows
@@ -530,6 +531,7 @@ export const EventAttendanceUserTagValue = (props: EventAttendanceUserTagValuePr
 export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { event: db3.EventWithAttendanceUserTagPayload, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = React.useContext(DashboardContext);
 
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
@@ -556,8 +558,8 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         });
     };
 
-    const itemsClient = API.users.getUserTagsClient();
-    const items = [null, ...(itemsClient.items as db3.UserTagPayload[])];
+    //const itemsClient = API.users.getUserTagsClient();
+    //const items = [null, ...(itemsClient.items as db3.UserTagPayload[])];
 
     readonly = readonly || !authorizedForEdit;
 
@@ -565,7 +567,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
     return <div className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`}>
         <ChoiceEditCell
             isEqual={(a: db3.UserTagPayload, b: db3.UserTagPayload) => a.id === b.id}
-            items={items}
+            items={dashboardContext.userTag.items}
             readonly={readonly}
             selectDialogTitle="Select who should be expected to respond to this event"
             value={event.expectedAttendanceUserTag}
@@ -706,6 +708,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
     const [currentUser] = useCurrentUser()!;
     const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const dashboardContext = React.useContext(DashboardContext);
     const isShowingAdminControls = API.other.useIsShowingAdminControls();
     const highlightTagIds = props.highlightTagIds || [];
     const highlightStatusIds = props.highlightStatusId || [];
@@ -715,7 +718,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
         tableClient?.refetch();
     };
 
-    const visInfo = API.users.getVisibilityInfo(eventData.event);
+    const visInfo = dashboardContext.getVisibilityInfo(eventData.event);
 
     const timingLabel: { [key in Timing]: string } = {
         [Timing.Past]: "Past event",
@@ -893,7 +896,7 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
     };
 
     const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => acc + ((((resp.response.attendance?.strength || 0) > 50) ? 1 : 0)), 0));
-    const segmentResponseCountStr = `(${Math.min(...segmentResponseCounts)})`;
+    const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${Math.min(...segmentResponseCounts)})` : "";
 
     return <>
 
@@ -974,42 +977,6 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         </Suspense>
     </EventDetailContainer>;
 };
-
-
-
-// export interface EventDashboardItemProps {
-//     event: db3.EventClientPayload_Verbose,
-//     tableClient: DB3Client.xTableRenderClient;
-// }
-// export const EventDashboardItem = ({ event, ...props }: EventDashboardItemProps) => {
-
-//     const eventData = CalculateEventMetadata(event);
-
-//     return <EventDetailContainer eventData={eventData} readonly={true} tableClient={props.tableClient} fadePastEvents={true} showVisibility={false}>
-//         <EventAttendanceControl
-//             eventData={eventData}
-//             onRefetch={props.tableClient.refetch}
-//         />
-//     </EventDetailContainer>;
-// };
-
-// export interface EventDashboardProps {
-//     items: db3.EventClientPayload_Verbose[];
-//     tableClient: DB3Client.xTableRenderClient;
-// };
-
-// export const EventDashboard = (props: EventDashboardProps) => {
-
-//     return <div className='EventDashboard'>
-//         {props.items.length < 1 ? (<div>
-//             Nothing here!
-//         </div>) : <div className='searchResults'>{props.items.map(event => <EventDashboardItem key={event.id}
-//             event={event as db3.EventClientPayload_Verbose}
-//             tableClient={props.tableClient}
-//         />)}</div>
-//         }
-//     </div>;
-// };
 
 export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),

@@ -1,7 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { parseIntOrNull } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -30,9 +29,6 @@ const tableSpec = new DB3Client.xTableClientSpec({
 });
 
 const MainContent = () => {
-    if (!useAuthorization("EditFileTagsPage", Permission.admin_files)) {
-        throw new Error(`unauthorized`);
-    }
     return <>
         <SettingMarkdown setting="EditFileTagsPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
@@ -42,7 +38,7 @@ const MainContent = () => {
 
 const EditFileTagsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="File Tags">
+        <DashboardLayout title="File Tags" basePermission={Permission.admin_files}>
             <MainContent />
         </DashboardLayout>
     )

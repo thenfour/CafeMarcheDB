@@ -15,7 +15,6 @@ import * as db3 from "src/core/db3/db3";
 import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { DashboardContext } from "./DashboardContext";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -58,7 +57,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//
-        ret.visiblePermission = dashboardContext.permissions.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null;
+        ret.visiblePermission = dashboardContext.permission.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null;
         return ret;
     });
 
@@ -155,8 +154,9 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
 export const NewEventButton = (props: { onOK: () => void }) => {
     const [open, setOpen] = React.useState<boolean>(false);
+    const dashboardContext = React.useContext(DashboardContext);
 
-    if (!useAuthorization("NewEventButton", Permission.manage_events)) {
+    if (!dashboardContext.isAuthorized(Permission.manage_events)) {
         return null;
     }
 

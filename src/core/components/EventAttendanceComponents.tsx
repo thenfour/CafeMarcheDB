@@ -382,7 +382,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
 // frame for event segment:
 // shows your answer & comment, small button to show edit controls.
 export interface EventAttendanceSegmentControlProps {
-  eventData: EventWithMetadata;
+  //eventData: EventWithMetadata;
   initialEditMode: boolean;
   eventUserResponse: db3.EventUserResponse;
   segmentUserResponse: db3.EventSegmentUserResponse;
@@ -519,7 +519,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
               onSelectedItem={() => { }} // setUserSelectedEdit(false) would allow the control to go back to view mode. but it's a bit distracting, and anyway the user has already been interacting here so don't.
               eventUserResponse={eventResponse}
               segmentUserResponse={segment}
-              eventData={props.eventData}
+            //eventData={props.eventData}
             />;
           })}
         </div>

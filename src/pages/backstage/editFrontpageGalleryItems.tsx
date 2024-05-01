@@ -1,7 +1,6 @@
 import { BlitzPage, useParam, useParams } from "@blitzjs/next";
 import { Permission } from "shared/permissions";
 import { parseIntOrNull } from "shared/utils";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
@@ -10,10 +9,6 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    if (!useAuthorization("EditFrontpageGalleryItemsPage", Permission.edit_public_homepage)) {
-        throw new Error(`unauthorized`);
-    }
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xFrontpageGalleryItem,
         columns: [
@@ -37,7 +32,7 @@ const MainContent = () => {
 
 const EditFrontpageGalleryItemsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Gallery">
+        <DashboardLayout title="Gallery" basePermission={Permission.edit_public_homepage}>
             <MainContent />
         </DashboardLayout>
     )

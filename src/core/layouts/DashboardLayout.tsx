@@ -1,17 +1,14 @@
-import Head from "next/head"
-import React, { FC, Suspense } from "react"
-import { BlitzLayout } from "@blitzjs/next"
-import Dashboard2, { NavRealm } from "../components/Dashboard2";
+import { BlitzLayout } from "@blitzjs/next";
 import { Backdrop, CircularProgress } from "@mui/material";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { useRouter } from "next/router";
-import { BlitzPage, Routes } from "@blitzjs/next";
+import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import React, { Suspense } from "react";
+import { CoerceToBoolean } from "shared/utils";
 import { LoginForm } from "src/auth/components/LoginForm";
-import { useTheme } from "@mui/material/styles";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import Dashboard2, { NavRealm } from "../components/Dashboard2";
 import { Permission } from "shared/permissions";
-import { useAuthorization } from "src/auth/hooks/useAuthorization";
-import { CoalesceBool, CoerceToBoolean } from "shared/utils";
 
 const LoginSignup = () => {
     const router = useRouter();
@@ -53,12 +50,13 @@ const LoginSignup = () => {
 interface DashboaldLayout2Props {
     disableLoginRedirect?: boolean;
     navRealm?: NavRealm;
+    basePermission?: Permission;
 }
 
-const DashboardLayout2 = ({ disableLoginRedirect, navRealm, children }: React.PropsWithChildren<DashboaldLayout2Props>) => {
+const DashboardLayout2 = ({ disableLoginRedirect, navRealm, basePermission, children }: React.PropsWithChildren<DashboaldLayout2Props>) => {
     const [currentUser] = useCurrentUser();
 
-    return <Dashboard2 navRealm={navRealm}>
+    return <Dashboard2 navRealm={navRealm} basePermission={basePermission}>
         {
             (!!currentUser || disableLoginRedirect) ? children : (<LoginSignup></LoginSignup>)
         }
@@ -66,11 +64,12 @@ const DashboardLayout2 = ({ disableLoginRedirect, navRealm, children }: React.Pr
         ;
 };
 
-const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode, disableLoginRedirect?: boolean, navRealm?: NavRealm }> = ({
+const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode, disableLoginRedirect?: boolean, navRealm?: NavRealm, basePermission?: Permission }> = ({
     title,
     children,
     disableLoginRedirect,
     navRealm,
+    basePermission,
 }) => {
 
     const fallback =
@@ -88,7 +87,7 @@ const DashboardLayout: BlitzLayout<{ title?: string; children?: React.ReactNode,
             </Head>
 
             <Suspense fallback={fallback}>
-                <DashboardLayout2 disableLoginRedirect={CoerceToBoolean(disableLoginRedirect, false)} navRealm={navRealm}>{children}</DashboardLayout2>
+                <DashboardLayout2 disableLoginRedirect={CoerceToBoolean(disableLoginRedirect, false)} navRealm={navRealm} basePermission={basePermission}>{children}</DashboardLayout2>
             </Suspense>
 
         </>

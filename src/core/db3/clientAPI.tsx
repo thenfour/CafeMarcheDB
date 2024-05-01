@@ -17,7 +17,6 @@ import getSetting from "src/auth/queries/getSetting";
 import * as db3 from "src/core/db3/db3";
 import { GetStyleVariablesForColor } from "../components/Color";
 import * as ClientAPILL from "./clientAPILL";
-import * as DB3ClientFields from './components/DB3ClientBasicFields';
 import * as DB3ClientCore from './components/DB3ClientCore';
 import deleteEventSongList from "./mutations/deleteEventSongList";
 import insertEvent from "./mutations/insertEvent";
@@ -177,11 +176,6 @@ class FilesAPI {
 
 const gFilesAPI = new FilesAPI();
 
-interface ObjectWithVisiblePermission {
-    visiblePermissionId: number | null;
-    visiblePermission: db3.PermissionPayloadMinimum | null;
-};
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class UsersAPI {
     // returns an instrument payload, or null if the user has no instruments.
@@ -195,116 +189,34 @@ class UsersAPI {
         return user.instruments[0]!.instrument;
     };
 
-    getAllPermissions = () => {
-        return DB3ClientCore.useTableRenderContext({
-            tableSpec: new DB3ClientCore.xTableClientSpec({
-                table: db3.xPermission,
-                columns: [
-                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
-                ],
-            }),
-            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-            clientIntention: { intention: 'user', mode: 'primary' },
-        });
+    // getAllPermissions = () => {
+    //     return DB3ClientCore.useTableRenderContext({
+    //         tableSpec: new DB3ClientCore.xTableClientSpec({
+    //             table: db3.xPermission,
+    //             columns: [
+    //             ],
+    //         }),
+    //         requestedCaps: DB3ClientCore.xTableClientCaps.Query,
+    //         clientIntention: { intention: 'user', mode: 'primary' },
+    //     });
 
-    };
+    // };
 
-    getPermission = (q: Permission) => {
-        return (this.getAllPermissions().items as Prisma.PermissionGetPayload<{}>[]).find(p => p.name === q);
-    };
+    // getPermission = (q: Permission) => {
+    //     return (this.getAllPermissions().items as Prisma.PermissionGetPayload<{}>[]).find(p => p.name === q);
+    // };
 
-    getDefaultVisibilityPermission = () => {
-        return this.getPermission(Permission.visibility_members)!;
-    };
+    // getDefaultVisibilityPermission = () => {
+    //     return this.getPermission(Permission.visibility_members)!;
+    // };
 
-    // useSession -> this
-    isAuthorizedFor = (session: ClientSession | null | undefined, q: Permission) => {
-        // public
-        if (!session || !session.permissions) return q === Permission.visibility_public;
-        if (session.isSysAdmin) return true;
-        return session.permissions.some(v => v === q);
-    };
-
-    getVisibilityInfo = <T extends ObjectWithVisiblePermission,>(item: T) => {
-        const visPerm = item.visiblePermission;
-        const publicPerms = [
-            Permission.visibility_public,
-        ];
-        const userPerms = [
-            Permission.visibility_members,
-            Permission.visibility_logged_in_users
-        ];
-        const editorPerms = [
-            Permission.visibility_editors,
-        ];
-        const isPrivate = visPerm === null; //
-        const isForEditors = editorPerms.find(p => visPerm?.name === p);
-        const isForUsers = userPerms.find(p => visPerm?.name === p);
-        const isPublic = publicPerms.find(p => visPerm?.name === p);
-        const cssClasses: string[] = [];
-        if (isPrivate) cssClasses.push(`visibility-private`);
-        if (isPublic) cssClasses.push(`visibility-public visiblePermission-${visPerm!.name}`);
-        if (isForEditors) cssClasses.push(`visibility-editors visiblePermission-${visPerm!.name}`);
-        if (isForUsers) cssClasses.push(`visibility-users visiblePermission-${visPerm!.name}`);
-
-        let colorId = visPerm?.color;
-        if (colorId == null) {
-            colorId = gAppColors.private_visibility;
-        }
-
-        //const style = GetStyleVariablesForColor(colorId);
-
-        return {
-            isPrivate,
-            isPublic,
-            isForEditors,
-            isForUsers,
-            //style,
-            colorId,
-            getStyleVariablesForColor: (variation: ColorVariationSpec) => GetStyleVariablesForColor({ color: colorId, ...variation }),
-            className: cssClasses.join(" "),
-        }
-    }
-
-    isPublic = <T extends ObjectWithVisiblePermission,>(item: T) => {
-        return this.getVisibilityInfo(item).isPublic;
-    };
-
-    getUserTagsClient() {
-        return DB3ClientCore.useTableRenderContext({
-            tableSpec: new DB3ClientCore.xTableClientSpec({
-                table: db3.xUserTag,
-                columns: [
-                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
-                ],
-            }),
-            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-            clientIntention: { intention: 'user', mode: 'primary' },
-        });
-    }
-
-    getUserTag(userTagId: number | null): null | db3.UserTagPayload {
-        const ctx = DB3ClientCore.useTableRenderContext({
-            requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-            clientIntention: { intention: 'user', mode: 'primary' },
-            tableSpec: new DB3ClientCore.xTableClientSpec({
-                table: db3.xUserTag,
-                columns: [
-                    new DB3ClientFields.PKColumnClient({ columnName: "id" }),
-                ],
-            }),
-            filterModel: {
-                items: [],
-                tableParams: {
-                    userTagId,
-                }
-            },
-        });
-        // do not put this above the useTableRenderContext call; hooks must be consistent between renders.
-        if (!userTagId) return null;
-        return (ctx.items?.length === 1 ? ctx.items[0] : null) as any;
-    }
-
+    // // useSession -> this
+    // isAuthorizedFor = (session: ClientSession | null | undefined, q: Permission) => {
+    //     // public
+    //     if (!session || !session.permissions) return q === Permission.visibility_public;
+    //     if (session.isSysAdmin) return true;
+    //     return session.permissions.some(v => v === q);
+    // };
 
     updateUserPrimaryInstrument = CreateAPIMutationFunction(updateUserPrimaryInstrumentMutation);
 };
@@ -361,7 +273,7 @@ class EventsAPI {
         //return "daterangehere";
     }
 
-    getEventDateRange(event: db3.EventClientPayload_Verbose) {
+    getEventDateRange(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
         let ret = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
         for (const segment of event.segments) {
             const r = db3.getEventSegmentDateTimeRange(segment);
@@ -371,7 +283,7 @@ class EventsAPI {
         return ret;
     }
 
-    getEventTiming(event: db3.EventClientPayload_Verbose) {
+    getEventTiming(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
         const r = this.getEventDateRange(event);
         return r.hitTestDateTime();
     }
