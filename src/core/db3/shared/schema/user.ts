@@ -2,13 +2,12 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { gIconOptions } from "shared/utils";
+import { TableAccessor } from "shared/rootroot";
+import { assertIsNumberArray, gIconOptions } from "shared/utils";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
 import { BoolField, DB3AuthSpec, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeMarkdownTextField, MakeSignificanceField, MakeSortOrderField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, PermissionSignificance, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance } from "./prismArgs";
-import { TableAccessor } from "shared/rootroot";
-import { EnrichedInstrument } from "./instrument";
+import { EnrichedInstrument, PermissionArgs, PermissionNaturalOrderBy, PermissionPayload, PermissionSignificance, RoleArgs, RoleNaturalOrderBy, RolePayload, RolePermissionArgs, RolePermissionAssociationPayload, RolePermissionNaturalOrderBy, RoleSignificance, UserArgs, UserInstrumentArgs, UserInstrumentNaturalOrderBy, UserInstrumentPayload, UserMinimumPayload, UserNaturalOrderBy, UserPayload, UserTagArgs, UserTagAssignmentArgs, UserTagAssignmentNaturalOrderBy, UserTagAssignmentPayload, UserTagNaturalOrderBy, UserTagPayload, UserTagSignificance, UserWithInstrumentsArgs } from "./prismArgs";
 
 // for basic user fields.
 // everyone can view
@@ -402,20 +401,37 @@ export const xUserInstrument = new db3.xTable({
 
 ////////////////////////////////////////////////////////////////
 
-export const xUserTag = new db3.xTable({
+
+export interface UserTagTableParams {
+    userTagId?: number;
+    ids?: number[];
+};
+
+
+const userTagBaseArgs: db3.TableDesc =
+{
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagInclude => {
         return UserTagArgs.include;
     },
     tableName: "UserTag",
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserTagNaturalOrderBy,
-    getParameterizedWhereClause: (params: { userTagId?: number }, clientIntention: db3.xTableClientUsageContext): (Prisma.UserWhereInput[] | false) => {
+    getParameterizedWhereClause: (params: UserTagTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.UserTagWhereInput[] | false) => {
+        const ret: Prisma.UserTagWhereInput[] = [];
+
         if (params.userTagId != null) {
-            return [{
-                id: { equals: params.userTagId }
-            }];
+            ret.push({ id: params.userTagId, });
         }
-        return false;
+        if (params.ids !== undefined) {
+            assertIsNumberArray(params.ids);
+            if (params.ids.length > 0) {
+                const t: Prisma.UserTagWhereInput = {
+                    id: { in: params.ids }
+                };
+                ret.push(t);
+            }
+        }
+        return ret;
     },
     createInsertModelFromString: (input: string): Prisma.UserTagCreateInput => {
         return {
@@ -441,7 +457,55 @@ export const xUserTag = new db3.xTable({
         MakeSignificanceField("significance", UserTagSignificance, { authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "userAssignments", authMap: xUserAuthMap_R_EOwn_EManagers }),
     ]
+};
+
+export const xUserTag = new db3.xTable(userTagBaseArgs);
+
+
+
+
+
+
+export const UserTagForEventSearchArgs = Prisma.validator<Prisma.UserTagDefaultArgs>()({
+    include: {
+        userAssignments: true,
+    }
 });
+
+export type EventResponses_ExpectedUserTag = Prisma.UserTagGetPayload<{
+    select: {
+        id: true,
+        userAssignments: {
+            select: {
+                userId,
+            }
+        }
+    }
+}>;
+
+export const xUserTagForEventSearch = new db3.xTable({
+    ...userTagBaseArgs,
+    tableUniqueName: "xUserTagForEventSearch",
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserTagInclude => {
+        return UserTagForEventSearchArgs.include;
+    },
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 export const xUserTagAssignment = new db3.xTable({
@@ -478,8 +542,12 @@ export const xUserTagAssignment = new db3.xTable({
 
 
 ////////////////////////////////////////////////////////////////
+export interface UserTablParams {
+    userId?: number;
+    userIds?: number[];
+};
 
-export const xUser = new db3.xTable({
+const userBaseArgs: db3.TableDesc = {
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
         return UserArgs.include;
     },
@@ -490,10 +558,19 @@ export const xUser = new db3.xTable({
         name: row.name,
         ownerUserId: row.id,
     }),
-    getParameterizedWhereClause: (params: { userId?: number }, clientIntention: db3.xTableClientUsageContext): Prisma.UserWhereInput[] => {
+    getParameterizedWhereClause: (params: UserTablParams, clientIntention: db3.xTableClientUsageContext): Prisma.UserWhereInput[] => {
         const ret: Prisma.UserWhereInput[] = [];
         if (params.userId != null) {
             ret.push({ id: { equals: params.userId } });
+        }
+        if (params.userIds !== undefined) {
+            assertIsNumberArray(params.userIds);
+            if (params.userIds.length > 0) {
+                const t: Prisma.UserWhereInput = {
+                    id: { in: params.userIds }
+                };
+                ret.push(t);
+            }
         }
         return ret;
     },
@@ -597,8 +674,18 @@ export const xUser = new db3.xTable({
         new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
     ]
-});
+};
 
+export const xUser = new db3.xTable(userBaseArgs);
+
+
+export const xUserWithInstrument = new db3.xTable({
+    ...userBaseArgs,
+    tableUniqueName: "xUserWithInstrument",
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
+        return UserWithInstrumentsArgs.include;
+    },
+});
 
 
 

@@ -4,17 +4,19 @@ import { Permission } from "shared/permissions";
 import { gQueryOptions } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { EventDetailContainer } from "src/core/components/EventComponents";
-import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
+import { CalculateEventMetadata, CalculateEventMetadata_Verbose } from "src/core/components/EventComponentsBase";
 import { EventFrontpageTabContent } from "src/core/components/EventFrontpageComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-
+import React from 'react';
+import { DashboardContext } from "src/core/components/DashboardContext";
 
 const EventsList = () => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
+    const dashboardContext = React.useContext(DashboardContext);
     const [currentUser] = useCurrentUser();
     clientIntention.currentUser = currentUser!;
 
@@ -46,7 +48,7 @@ const EventsList = () => {
 
     return <>{events.length < 1 ? "Nothing here!" : <>
         {events.map(event => {
-            const eventData = CalculateEventMetadata(event);
+            const { eventData, userMap } = CalculateEventMetadata_Verbose({ event, tabSlug: undefined, dashboardContext });
 
             return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData} showVisibility={true}>
                 <EventFrontpageTabContent readonly={false} refetch={eventsClient.refetch} event={event} />

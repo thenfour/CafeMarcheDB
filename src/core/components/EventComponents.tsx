@@ -26,7 +26,7 @@ import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata, EventWithMetadata } from './EventComponentsBase';
+import { CalculateEventMetadata, CalculateEventMetadata_Verbose, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -38,6 +38,7 @@ import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
 import { Markdown2Control } from './MarkdownControl2';
 import { DashboardContext } from './DashboardContext';
+import { assert } from 'blitz';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -52,10 +53,23 @@ type EventWithTypePayload = Prisma.EventGetPayload<{
 }>;
 
 
+type VerboseEventResponseInfo = db3.EventResponseInfo<
+    db3.EventVerbose_Event,
+    db3.EventVerbose_EventSegment,
+    db3.EventVerbose_EventUserResponse,
+    db3.EventVerbose_EventSegmentUserResponse
+>;
+
+type VerboseEventWithMetadata = EventWithMetadata<
+    db3.EventVerbose_Event,
+    db3.EventVerbose_EventUserResponse,
+    db3.EventVerbose_EventSegment,
+    db3.EventVerbose_EventSegmentUserResponse
+>;
 
 ////////////////////////////////////////////////////////////////
 export interface EventBreadcrumbProps {
-    event: db3.EventPayloadClient,
+    event: db3.EventVerbose_Event,
 };
 export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
     return <Breadcrumbs aria-label="breadcrumb">
@@ -96,9 +110,10 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceEditDialogProps {
-    responseInfo: db3.EventResponseInfo;
+    responseInfo: VerboseEventResponseInfo;
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
+    userMap: db3.UserInstrumentList;
     refetch: () => void;
 
     onCancel: () => void;
@@ -115,9 +130,12 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const mutationToken = API.events.updateUserEventAttendance.useToken();
+    const dashboardContext = React.useContext(DashboardContext);
 
-    const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventUserResponsePayload>(props.responseInfo.getEventResponseForUser(props.user).response);
-    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<number, db3.EventSegmentUserResponsePayload>>(() => {
+    const [eventResponseValue, setEventResponseValue] = React.useState<db3.EventVerbose_EventUserResponse | null>(() => {
+        return (props.responseInfo.getEventResponseForUser(props.user, dashboardContext, props.userMap)?.response) || null;
+    });
+    const [eventSegmentResponseValues, setEventSegmentResponseValues] = React.useState<Record<number, db3.EventVerbose_EventSegmentUserResponse>>(() => {
         return Object.fromEntries(Object.entries(props.responseInfo.getResponsesBySegmentForUser(props.user)).map(x => [x[0], x[1].response]));
     });
 
@@ -158,6 +176,9 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         tableSpec: eventSegmentResponseTableSpec,
     });
 
+    // if this is null it 
+    if (!eventResponseValue) throw new Error("eventResponseValue is null; i'm guessing usermap did not include a relevant user.");
+
     const eventValidationResult = eventResponseTableSpec.args.table.ValidateAndComputeDiff(eventResponseValue, eventResponseValue, "update", clientIntention);
     const eventSegmentValidationResults: Record<number, db3.ValidateAndComputeDiffResult> = Object.fromEntries(
         props.event.segments.map(segment => [segment.id, eventSegmentResponseTableSpec.args.table.ValidateAndComputeDiff(eventSegmentResponseValues[segment.id]!, eventSegmentResponseValues[segment.id]!, "update", clientIntention)])
@@ -170,9 +191,12 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             isInvited: eventResponseValue.isInvited,
             comment: eventResponseValue.userComment,
             instrumentId: eventResponseValue.instrumentId,
-            segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => [x[0], {
-                attendanceId: x[1].attendance?.id || null
-            }])),
+            segmentResponses: Object.fromEntries(Object.entries(eventSegmentResponseValues).map(x => {
+                const att = dashboardContext.eventAttendance.getById(x[1].attendanceId);
+                return [x[0], {
+                    attendanceId: att?.id || null
+                }];
+            })),
         }).then(() => {
             showSnackbar({ children: "update successful", severity: 'success' });
             props.onOK();
@@ -186,7 +210,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         setEventResponseValue(n);
     };
 
-    const handleChangedEventSegmentResponse = (segment: db3.EventSegmentPayloadMinimum, n: db3.EventSegmentUserResponsePayload) => {
+    const handleChangedEventSegmentResponse = (segment: db3.EventSegmentPayloadMinimum, n: db3.EventVerbose_EventSegmentUserResponse) => {
         const newval = {
             ...eventSegmentResponseValues,
             [segment.id]: n
@@ -235,9 +259,10 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceEditButtonProps {
-    responseInfo: db3.EventResponseInfo;
+    responseInfo: VerboseEventResponseInfo;
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
+    userMap: db3.UserInstrumentList;
     refetch: () => void;
 };
 export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps) => {
@@ -258,23 +283,24 @@ export const EventAttendanceEditButton = (props: EventAttendanceEditButtonProps)
 
 ////////////////////////////////////////////////////////////////
 export interface EventAttendanceDetailRowProps {
-    responseInfo: db3.EventResponseInfo;
+    responseInfo: VerboseEventResponseInfo;
     event: db3.EventClientPayload_Verbose;
     user: db3.UserWithInstrumentsPayload;
+    userMap: db3.UserInstrumentList;
     refetch: () => void;
     readonly: boolean;
 };
 
-export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly }: EventAttendanceDetailRowProps) => {
+export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly, userMap }: EventAttendanceDetailRowProps) => {
     const currentUser = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
     const dashboardContext = React.useContext(DashboardContext);
 
-    const eventResponse = responseInfo.getEventResponseForUser(user);
+    const eventResponse = responseInfo.getEventResponseForUser(user, dashboardContext, userMap);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const attendanceVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "filled", variation: 'strong' };
-    if (!eventResponse.isRelevantForDisplay) return null;
+    if (!eventResponse?.isRelevantForDisplay) return null;
 
     const authorizedForEdit = dashboardContext.isAuthorized(Permission.change_others_event_responses);
     const isYou = eventResponse.user.id === currentUser.id;
@@ -289,11 +315,13 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
         <td>{!!eventResponse.instrument ? <InstrumentChip value={eventResponse.instrument} variation={instVariant} shape="rectangle" border={'noBorder'} /> : "--"}</td>
         {event.segments.map((segment, iseg) => {
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
+            assert(!!segmentResponse, "segmentResponse shouldn't be null.");
+            const attendance = dashboardContext.eventAttendance.getById(segmentResponse.response.attendanceId);
             return <React.Fragment key={segment.id}>
                 <td className='responseCell'>
                     <div className='responseCellContents'>
-                        {iseg === 0 && <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch }} />}</div>}
-                        {!!segmentResponse.response.attendance ? <AttendanceChip value={segmentResponse.response.attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
+                        {iseg === 0 && <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch, userMap }} />}</div>}
+                        {!!attendance ? <AttendanceChip value={attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
                     </div>
                 </td>
             </React.Fragment>;
@@ -308,12 +336,13 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
 export interface EventAttendanceDetailProps {
     //event: db3.EventClientPayload_Verbose;
     //responseInfo: db3.EventResponseInfo;
-    eventData: EventWithMetadata;
+    eventData: VerboseEventWithMetadata;
     tableClient: DB3Client.xTableRenderClient;
     //expectedAttendanceTag: db3.UserTagPayload | null;
     //functionalGroups: db3.InstrumentFunctionalGroupPayload[];
     refetch: () => void;
     readonly: boolean;
+    userMap: db3.UserInstrumentList;
 };
 
 type EventAttendanceDetailSortField = "user" | "instrument" | "response";
@@ -322,13 +351,12 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     if (!eventData.responseInfo) return null;
     const event = eventData.event;
     const responseInfo = eventData.responseInfo;
-    const segAttendees = API.events.getAttendeeCountPerSegment({ event: eventData.event });
+    const dashboardContext = React.useContext(DashboardContext);
     const token = API.events.updateUserEventAttendance.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [sortField, setSortField] = React.useState<EventAttendanceDetailSortField>("instrument");
     const [sortSegmentId, setSortSegmentId] = React.useState<number>(0); // support invalid IDs
-    const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegmentPayload | null>(null);
-    const dashboardContext = React.useContext(DashboardContext);
+    const [sortSegment, setSortSegment] = React.useState<db3.EventVerbose_EventSegment | null>(null);
     const user = useCurrentUser()[0]!;
     // const publicData = useAuthenticatedSession();
     // const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
@@ -360,22 +388,37 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
     const sortedUsers = [...responseInfo.distinctUsers];
     sortedUsers.sort((a, b) => {
         if (sortField === 'instrument') {
-            const ar = responseInfo.getEventResponseForUser(a);
-            const br = responseInfo.getEventResponseForUser(b);
+            const ar = responseInfo.getEventResponseForUser(a, dashboardContext, props.userMap);
+            assert(ar, "ar - usermap incomplete")
+            const br = responseInfo.getEventResponseForUser(b, dashboardContext, props.userMap);
+            assert(br, "br - usermap incomplete")
             if (!ar.instrument) return -1;
             if (!br.instrument) return 1;
             return ar.instrument.functionalGroup.sortOrder < br.instrument.functionalGroup.sortOrder ? -1 : 1;
         }
         if (sortField === 'response' && !!sortSegment) {
             const ar = responseInfo.getResponseForUserAndSegment({ user: a, segment: sortSegment });
+            assert(ar, "ar2 - usermap incomplete");
             const br = responseInfo.getResponseForUserAndSegment({ user: b, segment: sortSegment });
-            if (!ar.response.attendance) return 1;
-            if (!br.response.attendance) return -1;
-            return ar.response.attendance.sortOrder < br.response.attendance.sortOrder ? 1 : -1;
+            assert(br, "br2 - usermap incomplete");
+            const aatt = dashboardContext.eventAttendance.getById(ar.response.attendanceId);
+            const batt = dashboardContext.eventAttendance.getById(br.response.attendanceId);
+            if (!aatt) return 1;
+            if (!batt) return -1;
+            return aatt.sortOrder < batt.sortOrder ? 1 : -1;
         }
         //        if (sortField === 'user') 
         return a.name < b.name ? -1 : 1;
     });
+
+
+    const segAttendees = event.segments.map(seg => ({
+        segment: seg,
+        attendeeCount: seg.responses.filter(resp => {
+            const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
+            return att && (att.strength > 50)
+        }).length
+    }));
 
     return <>
         <NameValuePair
@@ -406,7 +449,7 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             <tbody>
                 {
                     sortedUsers.map(user => {
-                        return <EventAttendanceDetailRow key={user.id} responseInfo={responseInfo} event={event} user={user} refetch={refetch} readonly={props.readonly} />
+                        return <EventAttendanceDetailRow key={user.id} responseInfo={responseInfo} event={event} user={user} refetch={refetch} readonly={props.readonly} userMap={props.userMap} />
                     })
                 }
             </tbody>
@@ -590,12 +633,14 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
 export interface EventCompletenessTabContentProps {
     //event: db3.EventClientPayload_Verbose;
     //responseInfo: db3.EventResponseInfo;
-    eventData: EventWithMetadata;
+    eventData: VerboseEventWithMetadata;
+    userMap: db3.UserInstrumentList;
     //functionalGroupsClient: DB3Client.xTableRenderClient;
 }
 
-export const EventCompletenessTabContent = ({ eventData }: EventCompletenessTabContentProps) => {
-    if (!eventData.responseInfo) return null;
+export const EventCompletenessTabContent = ({ eventData, userMap }: EventCompletenessTabContentProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+
     const [minStrength, setMinStrength] = React.useState<number>(50);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const event = eventData.event;
@@ -614,6 +659,8 @@ export const EventCompletenessTabContent = ({ eventData }: EventCompletenessTabC
             ],
         }),
     });
+
+    if (!responseInfo) return null;
 
     const isSingleSegment = eventData.event.segments.length === 1;
 
@@ -639,30 +686,35 @@ export const EventCompletenessTabContent = ({ eventData }: EventCompletenessTabC
                             const sortedResponses = responseInfo.getResponsesForSegment(seg.id).filter(resp => {
                                 // only take responses where we 1. expect the user, OR they have responded.
                                 // AND it matches the current instrument function.
-                                if (!resp.response.attendance) return false; // no answer = don't show.
-                                if (resp.response.attendance.strength < (100 - minStrength)) return false;
-                                const eventResponse = responseInfo.getEventResponseForUser(resp.user);
+                                if (!resp.response.attendanceId) return false; // no answer = don't show.
+                                const attendance = dashboardContext.eventAttendance.getById(resp.response.attendanceId)!;
+                                if (attendance.strength < (100 - minStrength)) return false;
+                                const eventResponse = responseInfo.getEventResponseForUser(resp.user, dashboardContext, userMap);
+                                assert(eventResponse, "eventResponse null; usermap must not be complete");
                                 const responseInstrument = eventResponse.instrument;
                                 if (responseInstrument?.functionalGroupId !== functionalGroup.id) return false;
                                 return eventResponse.isRelevantForDisplay;
                             });
                             sortedResponses.sort((a, b) => {
                                 // no response is weakest.
-                                if (a.response.attendance === null) {
-                                    if (b.response.attendance === null) return 0;
+                                const aatt = dashboardContext.eventAttendance.getById(a.response.attendanceId);
+                                const batt = dashboardContext.eventAttendance.getById(b.response.attendanceId);
+                                if (aatt === null) {
+                                    if (batt === null) return 0;
                                     return 1; // null always lowest, and b is not null.
                                 }
-                                if (b.response.attendance === null) {
+                                if (batt === null) {
                                     return -1; // b is null & a is not.
                                 }
-                                return (a.response.attendance.strength < b.response.attendance.strength) ? 1 : -1;
+                                return (aatt.strength < batt.strength) ? 1 : -1;
                             });
                             return <td key={seg.id}>
                                 <div className='attendanceResponseColorBarCell'>
                                     <div className='attendanceResponseColorBarSegmentContainer'>
                                         {sortedResponses.map(resp => {
-                                            const style = GetStyleVariablesForColor({ color: resp.response.attendance?.color, ...StandardVariationSpec.Strong });
-                                            return <Tooltip key={resp.response.id} title={`${resp.user.name}: ${resp.response.attendance?.text || "no response"}`}>
+                                            const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
+                                            const style = GetStyleVariablesForColor({ color: att?.color, ...StandardVariationSpec.Strong });
+                                            return <Tooltip key={resp.response.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
                                                 <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass}`} style={style.style}>
                                                     {resp.user.name.substring(0, 1).toLocaleUpperCase()}
                                                 </div>
@@ -693,7 +745,7 @@ export const gEventDetailTabSlugIndices = {
 } as const;
 
 export interface EventDetailContainerProps {
-    eventData: EventWithMetadata;
+    eventData: VerboseEventWithMetadata;
     tableClient: DB3Client.xTableRenderClient | null;
     readonly: boolean;
     fadePastEvents: boolean;
@@ -884,18 +936,23 @@ type EventDetailFullTabAreaProps = EventDetailFullProps & {
     selectedTab: number;
     setSelectedTab: (v: number) => void;
     refetch: () => void;
-    eventData: EventWithMetadata;
+    eventData: VerboseEventWithMetadata;
+    userMap: db3.UserInstrumentList;
 };
 
-
-
-export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event, tableClient, ...props }: EventDetailFullTabAreaProps) => {
+export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
 
     const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
         props.setSelectedTab(newValue);
     };
 
-    const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => acc + ((((resp.response.attendance?.strength || 0) > 50) ? 1 : 0)), 0));
+    const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => {
+        return eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => {
+            const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
+            return acc + ((((att?.strength || 0) > 50) ? 1 : 0))
+        }, 0);
+    });
     const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${Math.min(...segmentResponseCounts)})` : "";
 
     return <>
@@ -926,12 +983,12 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
             <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
-            <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} />
+            <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
         </CustomTabPanel>
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
             <SettingMarkdown setting='EventCompletenessTabMarkdown' />
-            <EventCompletenessTabContent eventData={eventData} />
+            <EventCompletenessTabContent eventData={eventData} userMap={userMap} />
         </CustomTabPanel>
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
@@ -951,8 +1008,9 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
     const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices['set-lists'] : gEventDetailTabSlugIndices.info));
     const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
     const router = useRouter();
+    const dashboardContext = React.useContext(DashboardContext);
 
-    const eventData = CalculateEventMetadata(event, tabSlug);
+    const { eventData, userMap } = CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContext });
 
     React.useEffect(() => {
         void router.replace(eventData.eventURI);
@@ -964,6 +1022,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         <EventAttendanceControl
             eventData={eventData}
             onRefetch={tableClient.refetch}
+            userMap={userMap}
         />
 
         <SegmentList
@@ -973,7 +1032,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         />
 
         <Suspense>
-            <EventDetailFullTabArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} />
+            <EventDetailFullTabArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} />
         </Suspense>
     </EventDetailContainer>;
 };

@@ -29,7 +29,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 export interface EventSearchItemContainerProps {
-    event: db3.EventSearchPayload;
+    event: db3.EventSearch_Event;
 
     highlightTagIds?: number[];
     highlightStatusId?: number[];
@@ -416,7 +416,8 @@ const EventsControls = (props: EventsControlsProps) => {
 };
 
 interface EventListItemProps {
-    event: db3.EventSearchPayload;
+    event: db3.EnrichedSearchEventPayload;
+    filterInfo: GetEventFilterInfoRet;
     refetch: () => void;
     filterSpec: EventsFilterSpec;
 };
@@ -425,11 +426,17 @@ const EventListItem = ({ event, ...props }: EventListItemProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
     const userMap: db3.UserInstrumentList = [dashboardContext.currentUser!];
+    const userTags = props.filterInfo.userTags as db3.EventResponses_ExpectedUserTag[];
+    const expectedAttendanceUserTag = userTags.find(t => t.id === event.expectedAttendanceUserTagId) || null;
 
     const eventData = CalculateEventMetadata<
-        any, any, any, any
+        db3.EnrichedSearchEventPayload,
+        db3.EventSearch_EventUserResponse,
+        db3.EventSearch_EventSegment,
+        db3.EventSearch_EventSegmentUserResponse
     >(event, undefined, dashboardContext,
         userMap,
+        expectedAttendanceUserTag,
         (segment, user) => {
             if (!user?.id) return null;
             return {
@@ -469,7 +476,7 @@ interface EventsListArgs {
     filterSpec: EventsFilterSpec,
     filterInfo: GetEventFilterInfoRet;
     setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
-    events: db3.EventSearchPayload[],
+    events: db3.EnrichedSearchEventPayload[],
     refetch: () => void;
 };
 
@@ -481,7 +488,7 @@ const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: Event
         <div className="searchRecordCount">
             {filterInfo.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {filterInfo.rowCount} total</>}
         </div>
-        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} refetch={refetch} />)}
+        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} refetch={refetch} filterInfo={filterInfo} />)}
         <Pagination
             count={Math.ceil(filterInfo.rowCount / filterSpec.pageSize)}
             page={filterSpec.page + 1}
@@ -536,6 +543,7 @@ const EventListOuter = (props: EventListOuterProps) => {
     const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({ ...gDefaultFilter });
     const [filterInfo, setFilterInfo] = React.useState<GetEventFilterInfoRet>(MakeGetEventFilterInfoRet());
     //const [eventsQueryResult, setEventsQueryResult] = React.useState<db3.EventClientPayload_Verbose[]>([]);
+    const dashboardContext = React.useContext(DashboardContext);
 
 
     // # when filter spec (other than page change), reset page to 0.
@@ -545,6 +553,8 @@ const EventListOuter = (props: EventListOuterProps) => {
     React.useEffect(() => {
         setFilterSpec({ ...filterSpec, page: 0 });
     }, [specHash]);
+
+    const enrichedEvents = filterInfo.fullEvents.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
 
     return <>
         <NewEventButton onOK={() => { }} />
@@ -568,7 +578,7 @@ const EventListOuter = (props: EventListOuterProps) => {
         <EventsList
             filterSpec={filterSpec}
             setFilterSpec={setFilterSpec}
-            events={filterInfo.fullEvents as db3.EventSearchPayload[]}
+            events={enrichedEvents}
             filterInfo={filterInfo}
             refetch={() => setFilterSpec({ ...filterSpec, refreshSerial: filterSpec.refreshSerial + 1 })}
         />

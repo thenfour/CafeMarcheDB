@@ -754,7 +754,11 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         visiblePermission: VisiblePermissionInclude,
         createdByUser: true,
         songLists: { ...EventSongListArgs, orderBy: EventSongListNaturalOrderBy },
-        expectedAttendanceUserTag: true,
+        expectedAttendanceUserTag: {
+            include: {
+                userAssignments: true
+            }
+        },
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
             include: {
@@ -771,17 +775,28 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         },
         segments: {
             orderBy: EventSegmentNaturalOrderBy,
-            include: EventSegmentArgs.include,
+            //include: EventSegmentArgs.include,
+            include: {
+                //event: true,
+                responses: true,
+            }
+
         },
-        responses: {
-            include: EventUserResponseArgs.include,
-        }
+        // responses: {
+        //     include: EventUserResponseArgs.include,
+        // }
+        responses: true,
     }
 });
 
 export type EventVerbose_EventSegmentPayload = Prisma.EventSegmentGetPayload<typeof EventSegmentArgs>;
 
 export type EventClientPayload_Verbose = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
+
+export type EventVerbose_Event = Prisma.EventGetPayload<typeof EventArgs_Verbose>;
+export type EventVerbose_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventArgs_Verbose.include.responses>;
+export type EventVerbose_EventSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
+export type EventVerbose_EventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof EventArgs_Verbose.include.segments.include.responses>;
 
 export type EventTaggedFilesPayload = Prisma.FileEventTagGetPayload<{
     include: {

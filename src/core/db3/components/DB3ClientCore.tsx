@@ -222,7 +222,7 @@ export class xTableRenderClient {
     queryResultInfo: {
         executionTimeMillis: number,
         resultId: string,
-        resultPayloadSize: number,
+        //resultPayloadSize: number,
     };
 
     refetch: () => void;
@@ -244,7 +244,7 @@ export class xTableRenderClient {
         this.queryResultInfo = {
             executionTimeMillis: 0,
             resultId: "",
-            resultPayloadSize: 0,
+            //resultPayloadSize: 0,
         };
 
         const [currentUser] = useCurrentUser();
@@ -296,7 +296,7 @@ export class xTableRenderClient {
                 this.queryResultInfo = {
                     executionTimeMillis: queryResult[0].executionTimeMillis,
                     resultId: queryResult[0].resultId,
-                    resultPayloadSize: JSON.stringify(items_).length,
+                    //resultPayloadSize: JSON.stringify(items_).length,
                 };
             }
 
@@ -335,7 +335,7 @@ export class xTableRenderClient {
             this.queryResultInfo = {
                 executionTimeMillis: queryResult[0].executionTimeMillis,
                 resultId: queryResult[0].resultId,
-                resultPayloadSize: JSON.stringify(items_).length,
+                //resultPayloadSize: JSON.stringify(items_).length,
             }
             this.refetch = queryResult[1].refetch;
         }
@@ -347,12 +347,12 @@ export class xTableRenderClient {
 
         this.refetch = this.refetch || (() => { });
 
-        if (process.env.NODE_ENV === "development") {
-            React.useEffect(() => {
-                console.log(`db3 query executed on '${this.tableSpec.args.table.tableID}': ${this.queryResultInfo.executionTimeMillis} ms; resultpayload=${formatFileSize(this.queryResultInfo.resultPayloadSize)}`);
-                console.log(this.items);
-            }, [this.queryResultInfo.resultId]);
-        }
+        // if (process.env.NODE_ENV === "development") {
+        //     React.useEffect(() => {
+        //         console.log(`db3 query executed on '${this.tableSpec.args.table.tableID}': ${this.queryResultInfo.executionTimeMillis} ms; resultpayload=${formatFileSize(this.queryResultInfo.resultPayloadSize)}`);
+        //         console.log(this.items);
+        //     }, [this.queryResultInfo.resultId]);
+        // }
     }; // ctor
 
     prepareMutation = <T extends TAnyModel,>(row: T, mode: db3.DB3RowMode): any => {

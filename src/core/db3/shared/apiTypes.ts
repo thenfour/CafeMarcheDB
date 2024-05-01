@@ -366,6 +366,7 @@ export interface GetEventFilterInfoRet {
     totalExecutionTimeMS: number;
 
     fullEvents: unknown[],
+    userTags: unknown[],
 };
 
 export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
@@ -382,6 +383,7 @@ export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
 
     totalExecutionTimeMS: 0,
     fullEvents: [],
+    userTags: [],
 });
 
 export const gEventRelevantFilterExpression = `((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`;

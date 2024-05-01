@@ -43,10 +43,10 @@ export const EventSegmentClientColumns = {
 
 ////////////////////////////////////////////////////////////////
 interface EventSegmentEditDialogProps {
-    initialValue: db3.EventVerbose_EventSegmentPayload;
+    initialValue: db3.EventVerbose_EventSegment;
     //isNewObject: boolean,
     markdownSettingPrefix: string,
-    onSave: (newValue: db3.EventVerbose_EventSegmentPayload, tableRenderClient: DB3Client.xTableRenderClient) => void;
+    onSave: (newValue: db3.EventVerbose_EventSegment, tableRenderClient: DB3Client.xTableRenderClient) => void;
     onCancel: () => void;
     onDelete?: (tableRenderClient: DB3Client.xTableRenderClient) => void;
 };
@@ -131,8 +131,8 @@ const NewEventSegmentButton = ({ event, refetch, ...props }: NewEventSegmentButt
 
 ////////////////////////////////////////////////////////////////
 export interface EventSegmentPanelProps {
-    event: db3.EventPayloadClient,
-    segment: db3.EventVerbose_EventSegmentPayload,
+    event: db3.EventVerbose_Event,
+    segment: db3.EventVerbose_EventSegment,
     readonly: boolean;
     refetch: () => void;
 };
@@ -201,7 +201,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
 
 ////////////////////////////////////////////////////////////////
 interface SegmentListProps {
-    event: db3.EventClientPayload_Verbose;
+    event: db3.EventVerbose_Event;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
 };
@@ -234,8 +234,8 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
 
 
 export interface EditSingleSegmentDateButtonProps {
-    event: db3.EventPayloadClient,
-    segment: db3.EventVerbose_EventSegmentPayload,
+    event: db3.EventVerbose_Event,
+    segment: db3.EventVerbose_EventSegment,
     readonly: boolean;
     refetch: () => void;
 };

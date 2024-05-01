@@ -23,7 +23,7 @@ import {
     InstrumentPayload,
     UserTagPayload, UserWithInstrumentsArgs, UserWithInstrumentsPayload
 } from "./prismArgs";
-import { CreatedByUserField, VisiblePermissionField } from "./user";
+import { CreatedByUserField, EventResponses_ExpectedUserTag, VisiblePermissionField } from "./user";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
 import { assert } from "blitz";
 import { TableAccessor } from "shared/rootroot";
@@ -600,6 +600,7 @@ export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
 
 
 
+// parameterized
 export const EventSearchArgs = (userId: number) => Prisma.validator<Prisma.EventDefaultArgs>()({
     include: {
         tags: true,
@@ -621,7 +622,8 @@ export const EventSearchArgs = (userId: number) => Prisma.validator<Prisma.Event
     },
 });
 
-export type EventSearchPayload = Prisma.EventGetPayload<{
+// not parameterized so easier to use in types
+export const EventSearchArgsNP = Prisma.validator<Prisma.EventDefaultArgs>()({
     include: {
         tags: true,
         // NOTE: responses will be limited to only the current user! for efficiency.
@@ -632,7 +634,17 @@ export type EventSearchPayload = Prisma.EventGetPayload<{
             }
         },
     },
-}>;
+});
+
+export type EventSearch_Event = Prisma.EventGetPayload<typeof EventSearchArgsNP>;
+export type EventSearch_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventSearchArgsNP.include.responses>;
+export type EventSearch_EventSegment = Prisma.EventSegmentGetPayload<typeof EventSearchArgsNP.include.segments>;
+export type EventSearch_EventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof EventSearchArgsNP.include.segments.include.responses>;
+
+
+
+
+
 
 const xEventArgs_Search: db3.TableDesc = {
     ...xEventArgs_Base,
@@ -645,25 +657,6 @@ const xEventArgs_Search: db3.TableDesc = {
 };
 
 export const xEventSearch = new db3.xTable(xEventArgs_Search);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1012,7 +1005,7 @@ export type EnrichedEvent<T extends EnrichEventInput> = Omit<T, 'tags'> & Prisma
     },
 }>;
 
-export type EnrichedSearchEventPayload = EnrichedEvent<EventSearchPayload>;
+export type EnrichedSearchEventPayload = EnrichedEvent<EventSearch_Event>;
 
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichSearchResultEvent<T extends EnrichEventInput>(
@@ -1144,7 +1137,7 @@ export interface GetEventResponseForSegmentAndUserArgs<
 > {
     user: UserWithInstrumentsPayload;
     segment: TEventSegment;
-    expectedAttendanceTag: UserTagPayload | null;
+    expectedAttendanceTag: EventResponses_ExpectedUserTag | null;
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
 };
 
@@ -1316,7 +1309,7 @@ export interface EventResponseInfoBase<
     allEventResponses: EventUserResponse<TEvent, TEventResponse>[];
     allSegmentResponses: EventSegmentUserResponse<TEventSegment, TSegmentResponse>[];
     distinctUsers: UserWithInstrumentsPayload[];
-    expectedAttendanceTag: UserTagPayload | null;
+    expectedAttendanceTag: EventResponses_ExpectedUserTag | null;
     defaultInvitationUserIds: Set<number>;
 
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
@@ -1335,7 +1328,7 @@ export class EventResponseInfo<
     allEventResponses: EventUserResponse<TEvent, TEventResponse>[];
     allSegmentResponses: EventSegmentUserResponse<TEventSegment, TSegmentResponse>[];
     distinctUsers: UserWithInstrumentsPayload[];
-    expectedAttendanceTag: UserTagPayload | null;
+    expectedAttendanceTag: EventResponses_ExpectedUserTag | null;
     defaultInvitationUserIds: Set<number>;
 
     makeMockEventSegmentResponse: fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>;
@@ -1401,7 +1394,7 @@ interface EventResponsesPerUserArgs<
     TSegmentResponse extends EventResponses_MinimalEventSegmentUserResponse,
 > {
     event: TEvent;
-    expectedAttendanceTag: UserTagPayload | null;
+    expectedAttendanceTag: EventResponses_ExpectedUserTag | null;
     data: DashboardContextDataBase;
     userMap: UserInstrumentList;
 
@@ -1428,7 +1421,10 @@ export function GetEventResponseInfo<
     const users: UserWithInstrumentsPayload[] = [];
     if (expectedAttendanceTag) {
         defaultInvitationUserIds = new Set<number>(expectedAttendanceTag.userAssignments.map(ua => ua.userId));
-        users.push(...expectedAttendanceTag.userAssignments.map(ua => ua.user));
+        expectedAttendanceTag.userAssignments.forEach(ua => {
+            const user = userMap.find(u => u.id === ua.userId);
+            if (user) users.push(user);
+        });
     }
     event.segments.forEach((seg) => {
         // get user ids for this segment

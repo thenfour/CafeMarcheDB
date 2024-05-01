@@ -227,7 +227,7 @@ export default resolver.pipe(
             const rowCountResult: { rowCount: bigint }[] = pq[4] as any;
 
             // FULL EVENT DETAILS USING DB3.
-            let fullEvents: db3.EventSearchPayload[] = [];
+            let fullEvents: db3.EventSearch_Event[] = [];
             if (eventIds.length) {
                 const tableParams: db3.EventTableParams = {
                     eventIds: eventIds.map(e => e.EventId), // prevent fetching the entire table!
@@ -247,6 +247,34 @@ export default resolver.pipe(
                 }, u);
 
                 fullEvents = queryResult.items as any;
+            }
+
+            const expectedAttendanceUserTagIds = new Set<number>();
+            fullEvents.forEach(e => {
+                if (!e.expectedAttendanceUserTagId) return;
+                expectedAttendanceUserTagIds.add(e.expectedAttendanceUserTagId);
+            });
+
+            let userTags: db3.EventResponses_ExpectedUserTag[] = [];
+
+            if (expectedAttendanceUserTagIds.size) {
+                const tableParams: db3.UserTagTableParams = {
+                    ids: [...expectedAttendanceUserTagIds],
+                };
+
+                const queryResult = await DB3QueryCore2({
+                    clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+                    cmdbQueryContext: "getEventFilterInfo-userTags",
+                    tableID: db3.xUserTagForEventSearch.tableID,
+                    tableName: db3.xUserTagForEventSearch.tableName,
+                    filter: {
+                        items: [],
+                        tableParams,
+                    },
+                    orderBy: undefined,
+                }, u);
+
+                userTags = queryResult.items as db3.EventResponses_ExpectedUserTag[];
             }
 
             const statuses: GetEventFilterInfoChipInfo[] = statusesResult.map(r => ({
@@ -276,10 +304,9 @@ export default resolver.pipe(
                 rowCount: new Number(r.event_count).valueOf(),
             }));
 
-
             const totalExecutionTimeMS = Date.now() - startTimestamp;
 
-            return {
+            const ret: GetEventFilterInfoRet = {
                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
                 eventIds: eventIds.map(e => e.EventId),
 
@@ -295,7 +322,12 @@ export default resolver.pipe(
                 totalExecutionTimeMS,
 
                 fullEvents,
+                userTags,
             };
+
+            //console.log(`getEventFilterInfo executed in ${totalExecutionTimeMS} ms; payloadsize=${JSON.stringify(ret).length}`);
+
+            return ret;
         } catch (e) {
             console.error(e);
             throw (e);

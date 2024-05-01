@@ -296,27 +296,21 @@ class EventsAPI {
     getURIForEvent(eventId: number | string, eventSlug?: string, tabSlug?: string) {
         return ClientAPILL.getURIForEvent(eventId, eventSlug, tabSlug);
     }
-    getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {
-        const ret: EventMinMaxAttendeesResult = {
-            minAttendees: null,
-            maxAttendees: null,
-        };
-        event.segments.forEach(seg => {
-            // count attendees for this segment who are going
-            const att = seg.responses.filter(resp => resp.attendance && (resp.attendance.strength > 50)).length;
-            if (ret.minAttendees === null || att < ret.minAttendees) ret.minAttendees = att;
-            if (ret.maxAttendees === null || att > ret.maxAttendees) ret.maxAttendees = att;
-        });
-        return ret;
-    }
+    // getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {
+    //     const ret: EventMinMaxAttendeesResult = {
+    //         minAttendees: null,
+    //         maxAttendees: null,
+    //     };
+    //     event.segments.forEach(seg => {
+    //         // count attendees for this segment who are going
+    //         const att = seg.responses.filter(resp => resp.attendance && (resp.attendance.strength > 50)).length;
+    //         if (ret.minAttendees === null || att < ret.minAttendees) ret.minAttendees = att;
+    //         if (ret.maxAttendees === null || att > ret.maxAttendees) ret.maxAttendees = att;
+    //     });
+    //     return ret;
+    // }
 
     // returns an array, one element per segment, containing # of people attending.
-    getAttendeeCountPerSegment({ event }: { event: db3.EventClientPayload_Verbose }) {
-        return event.segments.map(seg => ({
-            segment: seg,
-            attendeeCount: seg.responses.filter(resp => resp.attendance && (resp.attendance.strength > 50)).length
-        }));
-    }
 
     // getEventTypesClient() {
     //     return DB3ClientCore.useTableRenderContext({

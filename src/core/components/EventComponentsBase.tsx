@@ -5,6 +5,7 @@ import { API } from '../db3/clientAPI';
 import React from 'react';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../db3/components/DB3ClientCore';
 import { Prisma } from "db";
+import { DashboardContextData } from './DashboardContext';
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {
@@ -27,7 +28,7 @@ export interface EventWithMetadata<
     eventURI: string;
     responseInfo: db3.EventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse> | null;
     eventTiming: Timing;
-    expectedAttendanceTag: null | db3.UserTagPayload;
+    expectedAttendanceTag: null | db3.EventResponses_ExpectedUserTag;
     dateRange: DateTimeRange,
 };
 
@@ -41,33 +42,14 @@ export function CalculateEventMetadata<
     event: TEvent,
     tabSlug: string | undefined,
     data: db3.DashboardContextDataBase,
-    userMap: db3.UserInstrumentList,
+    userMap: db3.UserInstrumentList, // unique list of all relevant users.
+    expectedAttendanceTag: db3.EventResponses_ExpectedUserTag | null, // unique list of all invited user tags.
     makeMockEventSegmentResponse: db3.fn_makeMockEventSegmentResponse<TEventSegment, TSegmentResponse>,
     makeMockEventUserResponse: db3.fn_makeMockEventUserResponse<TEvent, TEventResponse>,
 ): EventWithMetadata<TEvent,
     TEventResponse,
     TEventSegment,
     TSegmentResponse> {
-    //const dashboardContext = React.useContext(DashboardContext);
-    //const expectedAttendanceTag = API.users.getUserTag(event.expectedAttendanceUserTagId);
-
-    // REQUIRED because we need the user-tag mappings as well.
-    const ctx = useTableRenderContext({
-        requestedCaps: xTableClientCaps.Query,
-        clientIntention: { intention: 'user', mode: 'primary' },
-        tableSpec: new xTableClientSpec({
-            table: db3.xUserTag,
-            columns: [
-            ],
-        }),
-        filterModel: {
-            items: [],
-            tableParams: {
-                userTagId: event.expectedAttendanceUserTagId,
-            }
-        },
-    });
-    const expectedAttendanceTag = ctx.items.length === 1 ? ctx.items[0] as db3.UserTagPayload : null;
 
     const responseInfo = db3.GetEventResponseInfo<TEvent, TEventSegment, TEventResponse, TSegmentResponse>({
         event,
@@ -78,7 +60,6 @@ export function CalculateEventMetadata<
         makeMockEventUserResponse,
     });
     const eventURI = API.events.getURIForEvent(event.id, event.slug, tabSlug);
-    //const eventTiming = API.events.getEventTiming(event);
 
     let dateRange = new DateTimeRange({
         startsAtDateTime: event.startsAt,
@@ -94,5 +75,87 @@ export function CalculateEventMetadata<
         responseInfo,
         eventTiming: dateRange.hitTestDateTime(),
         dateRange,
+    };
+};
+
+
+
+interface CalculateEventMetadata_VerboseArgs {
+    event: db3.EventVerbose_Event,
+    tabSlug: string | undefined;
+    dashboardContext: DashboardContextData;
+};
+
+export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContext }: CalculateEventMetadata_VerboseArgs) {
+
+    // - current user
+    // - users that appear in event responses
+    // - users that appear in segment responses
+    // - and finally, any users that are invited by default.
+    // because of the last point, a fetch is absolutely required.
+    const invitees = event.expectedAttendanceUserTag?.userAssignments.map(a => a.userId) || [];
+
+    const userIdMap = new Set<number>([
+        ...event.responses.map(r => r.userId),
+        ...event.segments.map(seg => seg.responses.map(r => r.userId)).flat(),
+        ...invitees,
+    ]);
+
+    const tableParams: db3.UserTablParams = {
+        userIds: [...userIdMap]
+    };
+
+    // fetch users with instruments.
+    const dynMenuClient = useTableRenderContext({
+        requestedCaps: xTableClientCaps.Query,
+        clientIntention: dashboardContext.userClientIntention,
+        tableSpec: new xTableClientSpec({
+            table: db3.xUserWithInstrument,
+            columns: [],
+        }),
+        filterModel: {
+            items: [],
+            tableParams,
+        }
+    });
+
+    const userMap = dynMenuClient.items as db3.UserInstrumentList;
+
+    const eventData = CalculateEventMetadata<
+        db3.EventVerbose_Event,
+        db3.EventVerbose_EventUserResponse,
+        db3.EventVerbose_EventSegment,
+        db3.EventVerbose_EventSegmentUserResponse
+    >(event, tabSlug, dashboardContext, userMap, event.expectedAttendanceUserTag,
+        (segment, user) => {
+            if (!user?.id) return null;
+            return {
+                attendanceId: null,
+                attendance: null,
+                eventSegmentId: segment.id,
+                id: -1,
+                userId: user.id,
+                user: user,
+                eventSegment: null as any,
+            }
+        },
+        (event, user, isInvited) => {
+            if (!user?.id) return null;
+            return {
+                userComment: "",
+                user: user,
+                eventId: event.id,
+                id: -1,
+                userId: user.id,
+                instrumentId: null,
+                isInvited,
+                instrument: null,
+            }
+        },
+    );
+
+    return {
+        userMap,
+        eventData,
     };
 };

@@ -449,6 +449,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const dashboardContext = React.useContext(DashboardContext);
 
   if (!props.eventData.responseInfo) return null;
+  if (props.eventData.event.segments.length < 1) return null;
 
   // never show attendance alert control for cancelled events
   if (props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled) return null;
