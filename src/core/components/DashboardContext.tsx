@@ -111,11 +111,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.currentUser = currentUser;
 
     const [setShowingAdminControlsMutation] = useMutation(setShowingAdminControls);
-    //const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
-
-    // React.useEffect(() => {
-    //     void refreshSessionPermissionsMutation({});
-    // }, []);
 
     const sess = useSession();
     valueRef.current.session = sess;

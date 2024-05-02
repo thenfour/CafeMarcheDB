@@ -425,19 +425,20 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
 export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
     include: {
         createdByUser: true,
-        visiblePermission: {
-            include: {
-                roles: true
-            }
-        },
-        tags: {
-            include: {
-                tag: true, // include foreign object
-            },
-            orderBy: {
-                tag: { sortOrder: 'asc' }
-            }
-        },
+        visiblePermission: true,
+        //     visiblePermission: {
+        //         include: {
+        //         roles: true
+        //     }
+        // },
+        tags: true,
+        //     include: {
+        //         tag: true, // include foreign object
+        //     },
+        //     orderBy: {
+        //         tag: { sortOrder: 'asc' }
+        //     }
+        // },
     }
 });
 
@@ -477,39 +478,28 @@ export const UserMinimalSelect = Prisma.validator<Prisma.UserSelect>()({
 export const FileWithTagsArgs = Prisma.validator<Prisma.FileArgs>()({
     //export const FileWithTagsArgs: Prisma.FileArgs = {
     include: {
-        visiblePermission: VisiblePermissionInclude,
-        uploadedByUser: true,
-        tags: {
-            include: {
-                fileTag: true,
-            },
-            orderBy: {
-                fileTag: {
-                    sortOrder: 'asc'
-                }
-            }
-        },
+        //visiblePermission: VisiblePermissionInclude,
+        uploadedByUser: { select: UserMinimalSelect },
+        tags: true,
+        // {
+        //     include: {
+        //         fileTag: true,
+        //     },
+        //     orderBy: {
+        //         fileTag: {
+        //             sortOrder: 'asc'
+        //         }
+        //     }
+        // },
         taggedEvents: {
             include: {
-                event: {
-                    include: {
-                        visiblePermission: VisiblePermissionInclude,
-                    }
-                }
+                event: true,
             }
         },
-        taggedInstruments: {
-            include: {
-                instrument: InstrumentArgs,
-            }
-        },
+        taggedInstruments: true,
         taggedSongs: {
             include: {
-                song: {
-                    include: {
-                        visiblePermission: VisiblePermissionInclude,
-                    }
-                }
+                song: true,
             }
         },
         taggedUsers: {
@@ -533,21 +523,21 @@ export type FileWithTagsPayload = Prisma.FileGetPayload<typeof FileWithTagsArgs>
 
 export const SongCreditArgsFromSong = Prisma.validator<Prisma.SongCreditDefaultArgs>()({
     include: {
-        user: true,
-        type: true,
+        user: true
     }
 });
 
 export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
     include: {
-        visiblePermission: VisiblePermissionInclude,
+        //visiblePermission: VisiblePermissionInclude,
         createdByUser: true,
-        tags: {
-            include: {
-                tag: true, // include foreign object
-            },
-            orderBy: SongTagAssociationNaturalOrderBy,
-        },
+        tags: true,
+        // {
+        //     include: {
+        //         tag: true, // include foreign object
+        //     },
+        //     orderBy: SongTagAssociationNaturalOrderBy,
+        // },
         taggedFiles: {
             include: {
                 file: FileWithTagsArgs,
@@ -751,7 +741,7 @@ export const compareEventSegments = (a: Prisma.EventSegmentGetPayload<{ select: 
 export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
     include: {
         status: true,
-        visiblePermission: VisiblePermissionInclude,
+        //visiblePermission: VisiblePermissionInclude,
         createdByUser: true,
         songLists: { ...EventSongListArgs, orderBy: EventSongListNaturalOrderBy },
         expectedAttendanceUserTag: {
@@ -759,13 +749,14 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
                 userAssignments: true
             }
         },
-        tags: {
-            orderBy: EventTagAssignmentNaturalOrderBy,
-            include: {
-                eventTag: true,
-            }
-        },
-        type: true,
+        tags: true,
+        // {
+        //     orderBy: EventTagAssignmentNaturalOrderBy,
+        //     include: {
+        //         eventTag: true,
+        //     }
+        // },
+        //type: true,
         //comments: EventCommentArgs,
         fileTags: {
             include: {
@@ -797,6 +788,8 @@ export type EventVerbose_Event = Prisma.EventGetPayload<typeof EventArgs_Verbose
 export type EventVerbose_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof EventArgs_Verbose.include.responses>;
 export type EventVerbose_EventSegment = Prisma.EventSegmentGetPayload<typeof EventArgs_Verbose.include.segments>;
 export type EventVerbose_EventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof EventArgs_Verbose.include.segments.include.responses>;
+
+
 
 export type EventTaggedFilesPayload = Prisma.FileEventTagGetPayload<{
     include: {
@@ -1339,6 +1332,160 @@ export function enrichInstrument<T extends EnrichInstrumentInput>(
         }).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder), // respect ordering
     };
 }
+
+
+
+
+
+
+
+
+export type EnrichSongInput = Partial<Prisma.SongGetPayload<{
+    include: {
+        tags: true,
+    }
+}>>;
+export type EnrichedSong<T extends EnrichSongInput> = Omit<T,
+    // omit fields that may appear on input that we'll replace.
+    "tags"
+    | "visiblePermission"
+> & Prisma.SongGetPayload<{ // add the stuff we're enriching with.
+    select: { // must be select so we don't accidentally require all fields.
+        visiblePermission: true,
+        tags: {
+            include: { tag: true }
+        },
+    }
+}>;
+
+// takes a bare event and applies eventstatus, type, visiblePermission, et al
+export function enrichSong<T extends EnrichSongInput>(
+    item: T,
+    data: DashboardContextDataBase,
+): EnrichedSong<T> {
+    // original payload type,
+    // removing items we're replacing,
+    // + stuff we're adding/changing.
+
+    // here we could also drill in and enrich things like
+    // - song credits
+    // - files
+    // and whatever else is there.
+
+    return {
+        ...item,
+        visiblePermission: data.permission.getById(item.visiblePermissionId),
+        tags: (item.tags || []).map((t) => {
+            const ret: Prisma.SongTagAssociationGetPayload<{ include: { tag: true } }> = {
+                ...t,
+                tag: data.songTag.getById(t.tagId)!, // enrich!
+            };
+            return ret;
+        }).sort((a, b) => a.tag.sortOrder - b.tag.sortOrder), // respect ordering
+    };
+}
+
+
+
+
+
+
+
+
+
+export type EnrichMenuLinkInput = Partial<Prisma.MenuLinkGetPayload<{
+}>>;
+export type EnrichedMenuLink<T extends EnrichMenuLinkInput> = Omit<T,
+    // omit fields that may appear on input that we'll replace.
+    "visiblePermission"
+> & Prisma.MenuLinkGetPayload<{ // add the stuff we're enriching with.
+    select: { // must be select so we don't accidentally require all fields.
+        visiblePermission: true,
+    }
+}>;
+
+// takes a bare event and applies eventstatus, type, visiblePermission, et al
+export function enrichMenuLink<T extends EnrichMenuLinkInput>(
+    item: T,
+    data: DashboardContextDataBase,
+): EnrichedMenuLink<T> {
+    // original payload type,
+    // removing items we're replacing,
+    // + stuff we're adding/changing.
+    return {
+        ...item,
+        visiblePermission: data.permission.getById(item.visiblePermissionId),
+    };
+}
+
+
+
+
+
+
+
+export type EnrichFileInput = Partial<Prisma.FileGetPayload<{
+    include: {
+        tags: true,
+        taggedInstruments: true,
+    },
+}>>;
+export type EnrichedFile<T extends EnrichFileInput> = Omit<T,
+    // omit fields that may appear on input that we'll replace.
+    "visiblePermission"
+    | "tags"
+    | "taggedInstruments"
+> & Prisma.FileGetPayload<{ // add the stuff we're enriching with.
+    select: { // must be select so we don't accidentally require all fields.
+        visiblePermission: true,
+        tags: {
+            include: {
+                fileTag: true,
+            }
+        },
+        taggedInstruments: {
+            include: {
+                instrument: true,
+            }
+        },
+    }
+}>;
+
+// takes a bare event and applies eventstatus, type, visiblePermission, et al
+export function enrichFile<T extends EnrichFileInput>(
+    item: T,
+    data: DashboardContextDataBase,
+): EnrichedFile<T> {
+    // original payload type,
+    // removing items we're replacing,
+    // + stuff we're adding/changing.
+    return {
+        ...item,
+        visiblePermission: data.permission.getById(item.visiblePermissionId),
+        taggedInstruments: (item.taggedInstruments || []).map((t) => {
+            const ret: Prisma.FileInstrumentTagGetPayload<{ include: { instrument: true } }> = {
+                ...t,
+                instrument: data.instrument.getById(t.instrumentId)!, // enrich!
+            };
+            return ret;
+        }),
+        tags: (item.tags || []).map((t) => {
+            const ret: Prisma.FileTagAssignmentGetPayload<{ include: { fileTag: true } }> = {
+                ...t,
+                fileTag: data.fileTag.getById(t.fileTagId)!, // enrich!
+            };
+            return ret;
+        }),
+    };
+}
+
+
+
+
+
+
+
+
 
 
 

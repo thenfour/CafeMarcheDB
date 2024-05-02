@@ -25,6 +25,7 @@ import { CMDialogContentText } from './CMCoreComponents2';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
+import { DashboardContext } from './DashboardContext';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -66,7 +67,8 @@ interface EventSongListValueViewerRowProps {
     showTags: boolean;
 };
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
-
+    const dashboardContext = React.useContext(DashboardContext);
+    const enrichedSong = db3.enrichSong(props.value.song, dashboardContext);
     const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
     return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
@@ -83,7 +85,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             {/* <div className="CMChipContainer comment2"></div> */}
             {props.showTags && (props.value.song.tags.length > 0) && (
                 <CMChipContainer>
-                    {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variation={StandardVariationSpec.Weak} />)}
+                    {enrichedSong.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variation={StandardVariationSpec.Weak} />)}
                 </CMChipContainer>
             )}
         </div>
@@ -176,9 +178,12 @@ interface EventSongListValueEditorRowProps {
     onDelete: () => void;
 };
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+    const enrichedSong = (props.value.song === null) ? null : db3.enrichSong(props.value.song, dashboardContext);
 
     const handleAutocompleteChange = (song: db3.SongPayload | null) => {
         props.value.songId = song?.id || null;
+        // if we were passing around enriched songs, this is where it would need to be enriched.
         props.value.song = song;
         props.onChange(props.value);
     }
@@ -188,7 +193,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         props.onChange(props.value);
     };
 
-    const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
+    const formattedBPM = enrichedSong ? API.songs.getFormattedBPM(enrichedSong) : "";
 
     return <>
         <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
@@ -218,9 +223,9 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                         onChange={(e) => handleCommentChange(e.target.value)}
                     />
                 </div>
-                {props.showTags && props.value.song && props.value.song.tags.length > 0 && (
+                {props.showTags && enrichedSong && enrichedSong.tags.length > 0 && (
                     <CMChipContainer>
-                        {props.value.song.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variation={StandardVariationSpec.Weak} size="small" />)}
+                        {enrichedSong.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variation={StandardVariationSpec.Weak} size="small" />)}
                     </CMChipContainer>
                 )}
             </div>

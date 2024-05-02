@@ -15,13 +15,20 @@ import { DashboardContext } from "./DashboardContext";
 export type VisibilityControlValue = (db3.PermissionPayload | null);
 
 export interface VisibilityValueProps {
-    permission: db3.PermissionPayloadMinimum | null;
+    permission?: db3.PermissionPayloadMinimum | null;
+    permissionId?: number | null;
     variant: "minimal" | "verbose";
     onClick?: () => void;
 };
 
-export const VisibilityValue = ({ permission, variant, onClick }: VisibilityValueProps) => {
+export const VisibilityValue = ({ variant, onClick, ...props }: VisibilityValueProps) => {
     const dashboardContext = React.useContext(DashboardContext);
+
+    let permission = props.permission || null;
+    if (!permission && props.permissionId) {
+        permission = dashboardContext.permission.getById(props.permissionId);
+    }
+
     const visInfo = dashboardContext.getVisibilityInfo({ visiblePermission: permission, visiblePermissionId: permission?.id || null });
     const style = visInfo.getStyleVariablesForColor(StandardVariationSpec.Strong);
     const classes: string[] = [

@@ -399,6 +399,8 @@ export interface GetSongFilterInfoRet {
     tagsQuery: string;
     paginatedResultQuery: string;
     totalRowCountQuery: string;
+
+    fullSongs: any[];
 };
 
 
@@ -409,12 +411,8 @@ export const GetFilteredSongsItemSongSelect = Prisma.validator<Prisma.SongSelect
     aliases: true,
     startBPM: true,
     endBPM: true,
-    tags: {
-        select: {
-            tag: true,
-        }
-    },
-    visiblePermission: true,
+    tags: true,
+    //visiblePermission: true,
     lengthSeconds: true,
     introducedYear: true,
 });
@@ -436,6 +434,7 @@ export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
     tagsQuery: "",
     paginatedResultQuery: "",
     totalRowCountQuery: "",
+    fullSongs: [],
 });
 
 

@@ -75,7 +75,7 @@ export const MenuLinkItem = (props: MenuLinkItemProps) => {
                 </div>
                 <div className='flex-spacer'></div>
 
-                <VisibilityValue permission={props.item.visiblePermission as any} variant="minimal" />
+                <VisibilityValue permissionId={props.item.visiblePermissionId} variant="minimal" />
 
                 {!props.readonly && <DB3EditRowButton
                     onSave={handleSave}
@@ -234,7 +234,8 @@ export const MenuLinkList = () => {
     const newObj = db3.xMenuLink.createNew(clientIntention) as db3.MenuLinkPayload;
     newObj.iconName = "Link" as keyof typeof gIconMap;
     newObj.linkType = DynamicMenuLinkType.Wiki;
-    newObj.visiblePermission = dashboardContext.getDefaultVisibilityPermission();
+    //    newObj.visiblePermission = dashboardContext.getDefaultVisibilityPermission();
+    newObj.visiblePermissionId = dashboardContext.getDefaultVisibilityPermission().id;
 
     const handleSaveNew = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         client.doInsertMutation(obj).then(async (ret) => {
@@ -248,7 +249,8 @@ export const MenuLinkList = () => {
 
     };
 
-    const items = client.items as db3.MenuLinkPayload[];
+    const itemsRaw = client.items as db3.MenuLinkPayload[];
+    const items = itemsRaw.map(i => db3.enrichMenuLink(i, dashboardContext));
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved

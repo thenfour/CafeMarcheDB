@@ -11,10 +11,11 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { DebugCollapsibleAdminText, DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
+import { DashboardContext } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SongDetailContainer } from "src/core/components/SongComponents";
-import { CalculateSongMetadata } from "src/core/components/SongComponentsBase";
+import { CalculateSongMetadata, EnrichedVerboseSong } from "src/core/components/SongComponentsBase";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import { RenderMuiIcon } from "src/core/db3/components/IconSelectDialog";
@@ -202,7 +203,7 @@ const SongsControls = (props: SongsControlsProps) => {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 interface SongListItemProps {
-    song: db3.SongPayload_Verbose;
+    song: EnrichedVerboseSong;
     filterSpec: SongsFilterSpec;
 };
 const SongListItem = (props: SongListItemProps) => {
@@ -227,12 +228,15 @@ interface SongsListArgs {
     filterSpec: SongsFilterSpec,
     filterInfo: GetSongFilterInfoRet;
     setFilterSpec: (value: SongsFilterSpec) => void, // for pagination
-    items: db3.SongPayload_Verbose[],
+    //items: EnrichedVerboseSong[],
 };
 
-const SongsList = ({ filterSpec, filterInfo, items, ...props }: SongsListArgs) => {
+const SongsList = ({ filterSpec, filterInfo, ...props }: SongsListArgs) => {
+    const dashboardContext = React.useContext(DashboardContext);
 
     const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
+
+    const items = (filterInfo.fullSongs as db3.SongPayload_Verbose[]).map(s => db3.enrichSong(s, dashboardContext));
 
     return <div className="songsList searchResults">
         {items.map(song => <SongListItem key={song.id} song={song} filterSpec={filterSpec} />)}
@@ -254,10 +258,11 @@ const SongsList = ({ filterSpec, filterInfo, items, ...props }: SongsListArgs) =
 interface SongListQuerierProps {
     filterSpec: SongsFilterSpec;
     setFilterInfo: (v: GetSongFilterInfoRet) => void;
-    setSongsQueryResult: (v: db3.SongPayload_Verbose[]) => void;
+    //setSongsQueryResult: (v: EnrichedVerboseSong[]) => void;
 };
 
 const SongListQuerier = (props: SongListQuerierProps) => {
+    //const dashboardContext = React.useContext(DashboardContext);
 
     // QUERY: filtered results & info
     const [queriedFilterInfo, getFilterInfoExtra] = useQuery(getSongFilterInfo, {
@@ -277,43 +282,45 @@ const SongListQuerier = (props: SongListQuerierProps) => {
     }, [getFilterInfoExtra.dataUpdatedAt]);
 
     // QUERY: details
-    const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    const [currentUser] = useCurrentUser();
-    clientIntention.currentUser = currentUser!;
+    // const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
+    // const [currentUser] = useCurrentUser();
+    // clientIntention.currentUser = currentUser!;
 
-    const tableParams: db3.SongTableParams = {
-        songIds: queriedFilterInfo.songIds.length === 0 ? [-1] : queriedFilterInfo.songIds, // prevent fetching the entire table!
-    };
+    // const tableParams: db3.SongTableParams = {
+    //     songIds: queriedFilterInfo.songIds.length === 0 ? [-1] : queriedFilterInfo.songIds, // prevent fetching the entire table!
+    // };
 
-    const songsClient = DB3Client.useTableRenderContext({
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xSong_Verbose,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
-        }),
-        filterModel: {
-            items: [],
-            tableParams,
-        },
-        paginationModel: {
-            page: 0,
-            pageSize: props.filterSpec.pageSize, // not usually needed because the eventid list is there. so for sanity.
-        },
-        requestedCaps: DB3Client.xTableClientCaps.Query,
-        clientIntention,
-        queryOptions: gQueryOptions.liveData,
-    });
+    // const songsClient = DB3Client.useTableRenderContext({
+    //     tableSpec: new DB3Client.xTableClientSpec({
+    //         table: db3.xSong_Verbose,
+    //         columns: [
+    //             new DB3Client.PKColumnClient({ columnName: "id" }),
+    //         ],
+    //     }),
+    //     filterModel: {
+    //         items: [],
+    //         tableParams,
+    //     },
+    //     paginationModel: {
+    //         page: 0,
+    //         pageSize: props.filterSpec.pageSize, // not usually needed because the eventid list is there. so for sanity.
+    //     },
+    //     requestedCaps: DB3Client.xTableClientCaps.Query,
+    //     clientIntention,
+    //     queryOptions: gQueryOptions.liveData,
+    // });
 
-    React.useEffect(() => {
-        if (songsClient.remainingQueryStatus.isSuccess) {
-            const items = songsClient.items as db3.SongPayload_Verbose[];
-            // the db3 query doesn't retain the same order as the filter info ret, put in correct order.
-            const songsWithPossibleNulls = queriedFilterInfo.songIds.map(id => items.find(e => e.id === id));
-            const songs = songsWithPossibleNulls.filter(e => !!e) as db3.SongPayload_Verbose[]; // in case of any desync.
-            props.setSongsQueryResult(songs);
-        }
-    }, [songsClient.remainingQueryStatus.dataUpdatedAt]);
+    // React.useEffect(() => {
+    //     if (songsClient.remainingQueryStatus.isSuccess) {
+    //         const items = songsClient.items as db3.SongPayload_Verbose[];
+    //         // the db3 query doesn't retain the same order as the filter info ret, put in correct order.
+    //         const songsWithPossibleNulls = queriedFilterInfo.songIds.map(id => items.find(e => e.id === id));
+    //         const songsRaw = songsWithPossibleNulls.filter(e => !!e) as db3.SongPayload_Verbose[]; // in case of any desync.
+    //         const songs = songsRaw.map(s => db3.enrichSong(s, dashboardContext));
+
+    //         props.setSongsQueryResult(songs);
+    //     }
+    // }, [songsClient.remainingQueryStatus.dataUpdatedAt]);
 
     return <div className="queryProgressLine idle"></div>;
 };
@@ -326,7 +333,7 @@ const SongListOuter = () => {
     const [filterSpec, setFilterSpec] = React.useState<SongsFilterSpec>({ ...gDefaultFilter });
 
     const [filterInfo, setFilterInfo] = React.useState<GetSongFilterInfoRet>(MakeGetSongFilterInfoRet());
-    const [songsQueryResult, setSongsQueryResult] = React.useState<db3.SongPayload_Verbose[]>([]);
+    //const [songsQueryResult, setSongsQueryResult] = React.useState<EnrichedVerboseSong[]>([]);
 
     // # when filter spec (other than page change), reset page to 0.
     const { page, ...everythingButPage } = filterSpec;
@@ -349,10 +356,10 @@ const SongListOuter = () => {
             </div>
 
             <Suspense fallback={<div className="queryProgressLine loading"></div>}>
-                <SongListQuerier filterSpec={filterSpec} setSongsQueryResult={setSongsQueryResult} setFilterInfo={setFilterInfo} />
+                <SongListQuerier filterSpec={filterSpec} setFilterInfo={setFilterInfo} />
             </Suspense>
         </CMSinglePageSurfaceCard>
-        <SongsList filterSpec={filterSpec} setFilterSpec={setFilterSpec} items={songsQueryResult} filterInfo={filterInfo} />
+        <SongsList filterSpec={filterSpec} setFilterSpec={setFilterSpec} filterInfo={filterInfo} />
     </>;
 };
 

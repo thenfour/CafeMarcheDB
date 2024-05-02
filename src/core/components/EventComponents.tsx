@@ -26,7 +26,7 @@ import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata, CalculateEventMetadata_Verbose, EventWithMetadata } from './EventComponentsBase';
+import { CalculateEventMetadata, CalculateEventMetadata_Verbose, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -53,15 +53,16 @@ type EventWithTypePayload = Prisma.EventGetPayload<{
 }>;
 
 
+
 type VerboseEventResponseInfo = db3.EventResponseInfo<
-    db3.EventVerbose_Event,
+    EventEnrichedVerbose_Event,
     db3.EventVerbose_EventSegment,
     db3.EventVerbose_EventUserResponse,
     db3.EventVerbose_EventSegmentUserResponse
 >;
 
 type VerboseEventWithMetadata = EventWithMetadata<
-    db3.EventVerbose_Event,
+    EventEnrichedVerbose_Event,
     db3.EventVerbose_EventUserResponse,
     db3.EventVerbose_EventSegment,
     db3.EventVerbose_EventSegmentUserResponse
@@ -924,7 +925,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
 
 export interface EventDetailFullProps {
-    event: db3.EventClientPayload_Verbose,
+    event: EventEnrichedVerbose_Event,
     tableClient: DB3Client.xTableRenderClient;
     initialTabIndex?: number;
     readonly: boolean;
@@ -952,6 +953,13 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
         }, 0);
     });
     const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${Math.min(...segmentResponseCounts)})` : "";
+
+    const enrichedFiles = eventData.event.fileTags.map(ft => {
+        return {
+            ...ft,
+            file: db3.enrichFile(ft.file, dashboardContext),
+        };
+    });
 
     return <>
 
@@ -991,7 +999,7 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
             {/* <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} /> */}
-            <FilesTabContent fileTags={event.fileTags} uploadTags={{
+            <FilesTabContent fileTags={enrichedFiles} uploadTags={{
                 taggedEventId: event.id,
             }} refetch={refetch} readonly={props.readonly} />
         </CustomTabPanel>

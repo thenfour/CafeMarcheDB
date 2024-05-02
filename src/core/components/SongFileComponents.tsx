@@ -24,6 +24,9 @@ import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
 import { formatFileSize } from 'shared/rootroot';
 
+
+type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;
+
 // don't take maximum because it can hide your own instruments. so either handle that specifically or just don't bother hiding tags.
 //const gMaximumFilterTagsPerType = 10 as const;
 
@@ -34,7 +37,7 @@ type TagKey = "tags" | "taggedUsers" | "taggedSongs" | "taggedEvents" | "taggedI
 
 export interface FileTagBase {
     id: number;
-    file: db3.FileWithTagsPayload;
+    file: EnrichedFile;
     fileId: number;
     // plus a songId, eventId, whatever...
 };
@@ -44,7 +47,7 @@ export interface FileTagBase {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileViewerProps {
-    value: db3.FileWithTagsPayload;
+    value: EnrichedFile;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
     readonly: boolean;
     statHighlight: SortByKey;
@@ -93,7 +96,7 @@ export const FileValueViewer = (props: FileViewerProps) => {
             }
 
             <div className="flex-spacer"></div>
-            <VisibilityValue permission={file.visiblePermission} variant="minimal" />
+            <VisibilityValue permissionId={file.visiblePermissionId} variant="minimal" />
             {!props.readonly && <Button onClick={props.onEnterEditMode} startIcon={gIconMap.Edit()}>Edit</Button>}
         </div>
         <div className="content">
@@ -515,13 +518,14 @@ export const FileFilterAndSortControls = (props: FileFilterAndSortControlsProps)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface FileControlProps {
-    value: db3.FileWithTagsPayload;
+    value: EnrichedFile;
     readonly: boolean;
     refetch: () => void;
     statHighlight: SortByKey;
 };
 
 export const FileControl = (props: FileControlProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
 
     const [editMode, setEditMode] = React.useState<boolean>(false);
 
@@ -550,6 +554,7 @@ export const FilesTabContent = (props: FilesTabContentProps) => {
     const permissionId = dashboardContext.getDefaultVisibilityPermission().id;
 
     const user = useCurrentUser()[0]!;
+
 
     const [filterSpec, setFilterSpec] = React.useState<FileFilterAndSortSpec>({
         quickFilter: "",

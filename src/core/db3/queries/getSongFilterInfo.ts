@@ -7,6 +7,8 @@ import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
+import { SongPayload_Verbose, SongTableParams, xSong_Verbose } from "../db3";
+import { DB3QueryCore2 } from "../server/db3QueryCore";
 
 interface TArgs {
     filterSpec: {
@@ -152,7 +154,7 @@ export default resolver.pipe(
 
         `;
 
-            const eventIds: { SongId: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
+            const songIds: { SongId: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
 
             // TOTAL filtered row count
             const totalRowCountQuery = `
@@ -165,14 +167,44 @@ export default resolver.pipe(
 
             const rowCountResult: { rowCount: bigint, futureCount: bigint, pastCount: bigint }[] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
 
+
+
+
+
+            // FULL EVENT DETAILS USING DB3.
+            let fullSongs: SongPayload_Verbose[] = [];
+            if (songIds.length) {
+                const tableParams: SongTableParams = {
+                    songIds: songIds.map(e => e.SongId), // prevent fetching the entire table!
+                };
+
+                const queryResult = await DB3QueryCore2({
+                    clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+                    cmdbQueryContext: "getSongFilterInfo",
+                    tableID: xSong_Verbose.tableID,
+                    tableName: xSong_Verbose.tableName,
+                    filter: {
+                        items: [],
+                        tableParams,
+                    },
+                    orderBy: undefined,
+                }, u);
+
+                fullSongs = queryResult.items as SongPayload_Verbose[];
+            }
+
+
+
             return {
                 rowCount: new Number(rowCountResult[0]!.rowCount).valueOf(),
-                songIds: eventIds.map(e => e.SongId),
+                songIds: songIds.map(e => e.SongId),
 
                 tags,
                 tagsQuery,
                 paginatedResultQuery,
                 totalRowCountQuery,
+
+                fullSongs,
             };
         } catch (e) {
             console.error(e);

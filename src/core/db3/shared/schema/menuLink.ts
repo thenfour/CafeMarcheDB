@@ -6,6 +6,7 @@ import { ConstEnumStringField, GenericIntegerField, GenericStringField, MakeCrea
 import * as db3 from "../db3core";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 import { DynamicMenuLinkApplicationPage, DynamicMenuLinkRealm, DynamicMenuLinkType } from "../../../../../shared/dynMenuTypes";
+import { UserMinimalSelect } from "./prismArgs";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.public,
@@ -27,7 +28,7 @@ const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
 const MenuLinkArgs = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
     include: {
         //visiblePermission: true,
-        createdByUser: true,
+        createdByUser: { select: UserMinimalSelect },
     }
 });
 

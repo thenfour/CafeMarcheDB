@@ -10,10 +10,14 @@ import { SongBreadcrumbs, SongClientColumns, SongDetail, gSongDetailTabSlugIndic
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import React from 'react';
+import { DashboardContext } from "src/core/components/DashboardContext";
 
 const MyComponent = ({ songId }: { songId: number | null }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
+
+    const dashboardContext = React.useContext(DashboardContext);
     //const id = CoerceToNumberOrNull(id__);
     //if (!id) throw new Error(`no id`);
 
@@ -60,7 +64,8 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     if (tableClient.items.length > 1) throw new Error(`db returned too many songs; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
-    const song = tableClient.items[0]! as db3.SongPayload_Verbose;
+    const songRaw = tableClient.items[0]! as db3.SongPayload_Verbose;
+    const song = db3.enrichSong(songRaw, dashboardContext);
 
     return <div className="songsDetailComponent">
         <NewSongButton />

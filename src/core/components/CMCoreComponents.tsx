@@ -18,6 +18,7 @@ import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { GetStyleVariablesForColor } from './Color';
+import { DashboardContext } from "./DashboardContext";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -486,7 +487,7 @@ export const UserChip = (props: UserChipProps) => {
 
 
 export interface InstrumentChipProps {
-    value: db3.InstrumentPayload;
+    value: db3.InstrumentPayloadMinimum;
     variation?: ColorVariationSpec;
     size?: CMChipSizeOptions;
     onClick?: () => void;
@@ -496,12 +497,13 @@ export interface InstrumentChipProps {
 };
 
 export const InstrumentChip = (props: InstrumentChipProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
     return <CMChip
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
-        color={props.value.functionalGroup.color}
+        color={dashboardContext.instrumentFunctionalGroup.getById(props.value.functionalGroupId)?.color}
         shape={props.shape}
         border={props.border}
     >

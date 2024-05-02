@@ -11,6 +11,7 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { DashboardContext } from "./DashboardContext";
+import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 
 
 interface FrontpageControlSpec {
@@ -108,7 +109,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
 
 ////////////////////////////////////////////////////////////////
 export interface EventFrontpageTabContentProps {
-    event: db3.EventClientPayload_Verbose;
+    event: EventEnrichedVerbose_Event;
     refetch: () => void;
     readonly: boolean;
 };

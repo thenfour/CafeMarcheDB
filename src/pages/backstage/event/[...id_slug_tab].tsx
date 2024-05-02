@@ -10,10 +10,13 @@ import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import React from 'react';
+import { DashboardContext } from "src/core/components/DashboardContext";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
+    const dashboardContext = React.useContext(DashboardContext);
 
     //if (!idOrSlug) return <div>no event specified</div>;
     if (!eventId) throw new Error(`song not found`);
@@ -58,7 +61,8 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     }
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
-    const event = tableClient.items[0]! as db3.EventClientPayload_Verbose;
+    const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
+    const event = db3.enrichSearchResultEvent(eventRaw, dashboardContext);
 
     return <div className="eventDetailComponent">
         <NewEventButton onOK={() => { }} />

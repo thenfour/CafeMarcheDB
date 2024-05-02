@@ -80,8 +80,13 @@ export function CalculateEventMetadata<
 
 
 
+export type EventEnrichedVerbose_Event = db3.EnrichedEvent<Prisma.EventGetPayload<typeof db3.EventArgs_Verbose>>;
+// export type EventEnrichedVerbose_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof db3.EventArgs_Verbose.include.responses>;
+// export type EventEnrichedVerbose_EventSegment = Prisma.EventSegmentGetPayload<typeof db3.EventArgs_Verbose.include.segments>;
+// export type EventEnrichedVerbose_EventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof db3.EventArgs_Verbose.include.segments.include.responses>;
+
 interface CalculateEventMetadata_VerboseArgs {
-    event: db3.EventVerbose_Event,
+    event: EventEnrichedVerbose_Event,
     tabSlug: string | undefined;
     dashboardContext: DashboardContextData;
 };
@@ -122,7 +127,7 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
     const userMap = dynMenuClient.items as db3.UserInstrumentList;
 
     const eventData = CalculateEventMetadata<
-        db3.EventVerbose_Event,
+        EventEnrichedVerbose_Event,
         db3.EventVerbose_EventUserResponse,
         db3.EventVerbose_EventSegment,
         db3.EventVerbose_EventSegmentUserResponse

@@ -44,7 +44,10 @@ const EventsList = () => {
         queryOptions: gQueryOptions.liveData,
     });
 
-    const events = API.events.sortEvents(eventsClient.items as db3.EventClientPayload_Verbose[]);
+    const eventsRaw = eventsClient.items as db3.EventClientPayload_Verbose[];
+    const eventsRich = eventsRaw.map(e => db3.enrichSearchResultEvent(e, dashboardContext));
+
+    const events = API.events.sortEvents(eventsRich);
 
     return <>{events.length < 1 ? "Nothing here!" : <>
         {events.map(event => {

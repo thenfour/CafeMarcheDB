@@ -21,7 +21,7 @@ import { MetronomeButton } from './Metronome';
 import { Markdown } from './RichTextEditor';
 import { SearchableNameColumnClient } from './SearchableNameColumnClient';
 import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
-import { CalculateSongMetadata, SongWithMetadata } from './SongComponentsBase';
+import { CalculateSongMetadata, EnrichedVerboseSong, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
 import { Markdown2Control } from './MarkdownControl2';
@@ -200,6 +200,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
     const user = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const publicData = useAuthenticatedSession();
+    const dashboardContext = React.useContext(DashboardContext);
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xSongCredit,
@@ -269,10 +270,11 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
 
     if (props.showCredits) {
         songData.song.credits.forEach(credit => {
+            const type = dashboardContext.songCreditType.getById(credit.typeId)!;
             rows.push({
                 rowClassName: `credit `,
                 cells: [
-                    <th key={0} className={`creditType ${credit.type.text}`}>{credit.type.text}</th>,
+                    <th key={0} className={`creditType ${type.text}`}>{type.text}</th>,
                     <td key={1} className={`user`}><div className='flexRow'>
                         <SongCreditEditButton readonly={props.readonly} refetch={refetch} creditsTableClient={creditsTableClient} value={credit} />{credit.user && credit.user.name}
                     </div>
@@ -372,7 +374,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     renderButtonChildren={() => <>{gIconMap.Edit()} Edit</>}
                     tableSpec={tableClient.tableSpec}
                     onCancel={() => { }}
-                    onOK={(obj: db3.SongPayload_Verbose, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
+                    onOK={(obj: EnrichedVerboseSong, tableClient: DB3Client.xTableRenderClient, api: EditFieldsDialogButtonApi) => {
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
@@ -396,7 +398,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     }}
                 />}
 
-                {props.showVisibility && <VisibilityValue permission={song.visiblePermission} variant='minimal' />}
+                {props.showVisibility && <VisibilityValue permissionId={song.visiblePermissionId} variant='minimal' />}
 
             </div>{/* title line */}
 
@@ -428,21 +430,29 @@ export const gSongDetailTabSlugIndices = {
 } as const;
 
 export interface SongDetailArgs {
-    song: db3.SongPayload_Verbose;
+    song: EnrichedVerboseSong;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
     initialTabIndex?: number;
 }
 
 export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
+    const dashboardContext = React.useContext(DashboardContext);
     const router = useRouter();
 
     const refetch = () => {
         tableClient.refetch();
     };
 
+    const enrichedFiles = song.taggedFiles.map(ft => {
+        return {
+            ...ft,
+            file: db3.enrichFile(ft.file, dashboardContext),
+        };
+    });
+
     //const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(song.description) && (song.taggedFiles.length > 0)) ? gSongDetailTabSlugIndices.files : gSongDetailTabSlugIndices.info));
+    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(song.description) && (enrichedFiles.length > 0)) ? gSongDetailTabSlugIndices.files : gSongDetailTabSlugIndices.info));
 
     const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
@@ -475,75 +485,11 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         </CustomTabPanel>
 
         <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.files}>
-            <FilesTabContent fileTags={song.taggedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
+            <FilesTabContent fileTags={enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
                 taggedSongId: song.id,
             }} />
         </CustomTabPanel>
     </SongDetailContainer>;
 
 };
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// export interface CurrentSongsDashboardItem {
-//     songId: number;
-//     mostRecentAppearance: Date;
-//     appearsInPresentOrFutureEvents: boolean;
-//     appearsInEvents: db3.EventClientPayload_Verbose[];
-// };
-
-// export interface CurrentSongsDashboardProps {
-//     songs: CurrentSongsDashboardItem[];
-// };
-
-// export const CurrentSongsDashboard = (props: CurrentSongsDashboardProps) => {
-//     const currentUser = useCurrentUser()[0]!;
-//     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-
-//     // song table bindings
-//     const songTableSpec = new DB3Client.xTableClientSpec({
-//         table: db3.xSong,
-//         columns: [
-//             SongClientColumns.id,
-//         ],
-//     });
-
-//     // necessary to connect all the columns in the spec.
-//     const tableClient = DB3Client.useTableRenderContext({
-//         clientIntention,
-//         requestedCaps: DB3Client.xTableClientCaps.Query,
-//         tableSpec: songTableSpec,
-//         filterModel: {
-//             items: [],
-//             tableParams: {
-//                 songIds: props.songs.map(s => s.songId),
-//             }
-//         }
-//     });
-
-//     const songs = tableClient.items as db3.SongPayload_Verbose[];
-
-//     return <div className=''>
-//         {songs.length < 1 ? (<div>
-//             Nothing here!
-//         </div>) : <div className='searchResults'>
-//             {songs.map(s => {
-//                 const songData = CalculateSongMetadata(s);
-//                 const dashEntry = props.songs.find(s2 => s2.songId === s.id)!;
-//                 return <SongDetailContainer key={s.id} readonly={true} songData={songData} tableClient={tableClient} showVisibility={false}>
-//                     <CMChipContainer orientation='vertical'>
-//                         {dashEntry.appearsInEvents.map(e => <CMChip
-//                             key={e.id}
-//                             shape={'rectangle'}
-//                         >
-//                             {e.name}
-//                         </CMChip>)}
-//                     </CMChipContainer>
-//                 </SongDetailContainer>;
-//             })}
-//         </div>}
-//     </div>
-//         ;
-// };
 
