@@ -129,6 +129,7 @@ import { EventWithMetadata } from "./EventComponentsBase";
 import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { DashboardContext } from "./DashboardContext";
 import { ArrayElement } from "shared/utils";
+import { Prisma } from "db";
 
 
 const gCaptionMap = {};
@@ -325,23 +326,23 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
   const selectedAttendanceId: number | null = props.segmentUserResponse.response.attendanceId;
   const dashboardContext = React.useContext(DashboardContext);
 
-  const optionsClient = DB3Client.useTableRenderContext({
-    requestedCaps: DB3Client.xTableClientCaps.Query,
-    clientIntention: { intention: 'user', mode: 'primary' },
-    tableSpec: new DB3Client.xTableClientSpec({
-      table: db3.xEventAttendance,
-      columns: [
-        new DB3Client.PKColumnClient({ columnName: "id" }),
-      ],
-    }),
-  });
+  // const optionsClient = DB3Client.useTableRenderContext({
+  //   requestedCaps: DB3Client.xTableClientCaps.Query,
+  //   clientIntention: { intention: 'user', mode: 'primary' },
+  //   tableSpec: new DB3Client.xTableClientSpec({
+  //     table: db3.xEventAttendance,
+  //     columns: [
+  //       new DB3Client.PKColumnClient({ columnName: "id" }),
+  //     ],
+  //   }),
+  // });
 
   const handleReadonlyClick = () => {
     props.onReadonlyClick();
     setExplicitEdit(true);
   }
 
-  const handleChange = async (value: null | db3.EventAttendancePayload) => {
+  const handleChange = async (value: null | Prisma.EventAttendanceGetPayload<{}>) => {
     const segmentResponses: Record<number, { attendanceId: number | null }> = {};
     segmentResponses[props.segmentUserResponse.segment.id] = {
       attendanceId: (value === null ? null : value.id),
@@ -371,7 +372,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     {editMode ? (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-          {(optionsClient.items as db3.EventAttendancePayload[]).map(option =>
+          {(dashboardContext.eventAttendance).map(option =>
             <EventAttendanceAnswerButton key={option.id} noItemSelected={selectedAttendanceId === null} selected={option.id === selectedAttendanceId} value={option} onSelect={() => handleChange(option)} tooltip={tooltip} />)}
           <EventAttendanceAnswerButton noItemSelected={selectedAttendanceId === null} selected={null === selectedAttendanceId} value={null} onSelect={() => handleChange(null)} tooltip={tooltip} />
         </CMChipContainer>
