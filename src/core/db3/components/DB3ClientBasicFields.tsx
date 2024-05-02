@@ -299,18 +299,20 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
         isReadOnly={false}
     />
 
-    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => this.defaultRenderer({
-        isReadOnly: false,
-        validationResult: params.validationResult,
-        value: <CompactMarkdownControl
-            alwaysEditMode={true} // don't put an inline edit mode in the middle of an edit dialog. either always edit, OR use a new modal.
-            initialValue={params.value as string}
-            height={120}
-            onValueChanged={async (val) => {
-                params.api.setFieldValues({ [this.columnName]: val });
-            }}
-        />,
-    });
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
+        return this.defaultRenderer({
+            isReadOnly: false,
+            validationResult: params.validationResult,
+            value: <CompactMarkdownControl
+                alwaysEditMode={true} // don't put an inline edit mode in the middle of an edit dialog. either always edit, OR use a new modal.
+                initialValue={params.value as string}
+                height={120}
+                onValueChanged={async (val) => {
+                    params.api.setFieldValues({ [this.columnName]: val });
+                }}
+            />,
+        });
+    }
 };
 
 
@@ -523,7 +525,7 @@ export class BoolColumnClient extends DB3ClientCore.IColumnClient {
     // TODO: use defaultRenderer. the problem with a bool field is that the checkbox itself is very small, so the clickable label is really important.
     // so, TODO: add click-to-focus support to <NameValuePair>
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => {
-        return <FormControlLabel className='CMFormControlLabel' label={this.schemaColumn.member} control={
+        return <FormControlLabel className='CMFormControlLabel' label={this.fieldCaption || this.schemaColumn.member} control={
             <Checkbox
                 checked={!!params.value}
                 onChange={(e, val) => {

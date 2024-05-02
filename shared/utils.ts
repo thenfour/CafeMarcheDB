@@ -162,8 +162,8 @@ export enum Setting {
     IconEditCellDialogDescription = "IconEditCellDialogDescription",
     VisibilityControlSelectDialogDescription = "VisibilityControlSelectDialogDescription",
     EventInviteUsersDialogDescriptionMarkdown = "EventInviteUsersDialogDescriptionMarkdown",
-
-    // field text
+    EventAttendanceEditDialog_TitleMarkdown = "EventAttendanceEditDialog_TitleMarkdown",
+    EventAttendanceEditDialog_DescriptionMarkdown = "EventAttendanceEditDialog_DescriptionMarkdown",
 
     // mostly pages or sections of pages...
     HomeDescription = "HomeDescription",

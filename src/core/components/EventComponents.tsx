@@ -145,7 +145,7 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "userComment", cellWidth: 200 }),
-            new DB3Client.BoolColumnClient({ columnName: "isInvited" }),
+            new DB3Client.BoolColumnClient({ columnName: "isInvited", fieldCaption: "Is invited?" }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "instrument", cellWidth: 120 }),
         ],
     });
@@ -157,7 +157,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
             new DB3Client.ForeignSingleFieldClient({
                 columnName: "attendance",
                 cellWidth: 120,
-                renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} variation={args.colorVariant} />,
+                fieldCaption: "Going?"
+                //renderAsChip: (args: DB3Client.RenderAsChipParams<db3.EventAttendanceBasePayload>) => <CMStandardDBChip model={args.value} variation={args.colorVariant} />,
             }),
         ],
     });
@@ -221,11 +222,11 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
     return <ReactiveInputDialog onCancel={props.onCancel}>
 
         <DialogTitle>
-            edit event response for user / event
+            <SettingMarkdown setting="EventAttendanceEditDialog_TitleMarkdown" />
         </DialogTitle>
         <DialogContent dividers>
             <CMDialogContentText>
-                description of events and segments?
+                <SettingMarkdown setting="EventAttendanceEditDialog_DescriptionMarkdown" />
             </CMDialogContentText>
 
             <div className="EventSongListValue">
@@ -236,8 +237,9 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
                     props.event.segments.map(segment => {
                         const validationResult = eventSegmentValidationResults[segment.id]!;
                         const response = eventSegmentResponseValues[segment.id]!;
-                        return <div key={segment.id}>
-                            <div>{segment.name}
+                        return <div key={segment.id} className='editSegmentResponse segment'>
+                            <div>
+                                <div className='segmentName'>{segment.name}</div>
                                 {eventSegmentResponseTableSpec.renderEditor("attendance", response, validationResult, (n) => handleChangedEventSegmentResponse(segment, n), clientIntention, false)}
                             </div>
                         </div>;
@@ -601,22 +603,18 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         });
     };
 
-    //const itemsClient = API.users.getUserTagsClient();
-    //const items = [null, ...(itemsClient.items as db3.UserTagPayload[])];
-
     readonly = readonly || !authorizedForEdit;
+    const choices = [null, ...dashboardContext.userTag.items];
 
     // value type is UserTagPayload
     return <div className={`eventStatusControl ${event.expectedAttendanceUserTag?.significance}`}>
         <ChoiceEditCell
             isEqual={(a: db3.UserTagPayload, b: db3.UserTagPayload) => a.id === b.id}
-            items={dashboardContext.userTag.items}
+            items={choices}
             readonly={readonly}
             selectDialogTitle="Select who should be expected to respond to this event"
             value={event.expectedAttendanceUserTag}
-            //event.expectedAttendanceUserTag.DescriptionMarkdown
             dialogDescription={<SettingMarkdown setting={GenerateDefaultDescriptionSettingName("event", "expectedAttendanceUserTag")} />}
-            //dialogDescription={"asoeunth"}
             renderAsListItem={(chprops, value: db3.UserTagPayload | null, selected: boolean) => {
                 return <li {...chprops}>
                     <EventAttendanceUserTagValue value={value} /></li>;

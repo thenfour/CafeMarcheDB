@@ -849,7 +849,13 @@ export const xEventUserResponse = new db3.xTable({
     },
     columns: [
         new PKField({ columnName: "id" }),
-        MakeMarkdownTextField("userComment", { authMap: xEventAuthMap_UserResponse, }),
+        new GenericStringField({
+            columnName: "userComment",
+            allowNull: true,
+            allowQuickFilter: false,
+            format: "markdown",
+            authMap: xEventAuthMap_UserResponse,
+        }),
         new BoolField({ columnName: "isInvited", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: true }),
         MakeIntegerField("eventId", { authMap: xEventAuthMap_UserResponse, }),
         // new ForeignSingleField<Prisma.EventSegmentGetPayload<{}>>({
