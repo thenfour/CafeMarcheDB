@@ -1810,49 +1810,61 @@ table.songMetadata tr:hover td .CMSmallButton {
 }
 
 
+.metronomeIndicator {
+    --color1: #fff;
+    --color2: #0f0;
+    --color3: #040;
+    --duration: .15s;
+    --timingfunction: linear;
+    border-radius: 50%;
+    margin: 0 10px;
+    width: 32px;
+    height: 32px;
+    border: 2px solid #0004;
+    box-shadow: 0 0 25px var(--color3);
+}
+
+
 @keyframes MetronomeFlash1 {
     0% {
         background-color: var(--color1);
-        box-shadow: 0 0 15px var(--color1);
+        box-shadow: 0 0 25px var(--color1);
+    }
+
+    30% {
+        background-color: var(--color2);
+        box-shadow: 0 0 25px var(--color2);
     }
 
     100% {
-        background-color: var(--color2);
-        box-shadow: 0 0 15px var(--color25);
+        background-color: var(--color3);
+        box-shadow: 0 0 25px var(--color3);
     }
 }
 
 @keyframes MetronomeFlash2 {
     0% {
         background-color: var(--color1);
-        box-shadow: 0 0 15px var(--color1);
+        box-shadow: 0 0 25px var(--color1);
+    }
+
+    30% {
+        background-color: var(--color2);
+        box-shadow: 0 0 25px var(--color2);
     }
 
     100% {
-        background-color: var(--color2);
-        box-shadow: 0 0 15px var(--color25);
+        background-color: var(--color3);
+        box-shadow: 0 0 25px var(--color3);
     }
 }
 
-
-.metronomeIndicator {
-    --color1: #0f0f;
-    --color2: #0f00;
-    --color25: #0f03;
-    box-shadow: 0 0 15px var(--color1);
-    border-radius: 50%;
-    margin: 0 10px;
-    width: 32px;
-    height: 32px;
-    border: 2px solid #0004;
-}
-
 .metronomeIndicator.tick {
-    animation: MetronomeFlash1 .2s forwards;
+    animation: MetronomeFlash1 var(--duration) var(--timingfunction) forwards;
 }
 
 .metronomeIndicator.tock {
-    animation: MetronomeFlash2 .2s forwards;
+    animation: MetronomeFlash2 var(--duration) var(--timingfunction) forwards;
 }
 
 

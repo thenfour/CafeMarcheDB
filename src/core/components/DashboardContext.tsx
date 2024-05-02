@@ -22,6 +22,11 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
 
     session: ClientSession | null;
 
+    constructor() {
+        super();
+        this.metronomeSilencers = [];
+    }
+
     isAuthorized(p: Permission | string) {
         if (!this.currentUser || !this.session) return gPublicPermissions.some(pp => pp === p);
         if (this.session.isSysAdmin) return true;
