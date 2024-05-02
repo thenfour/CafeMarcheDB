@@ -10,7 +10,7 @@ import * as db3 from "src/core/db3/db3";
 import { ColorVariationSpec, gAppColors } from "shared/color";
 import { GetStyleVariablesForColor } from "../components/Color";
 import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls';
-import refreshSessionPermissions from 'src/auth/mutations/refreshSessionPermissions';
+//import refreshSessionPermissions from 'src/auth/mutations/refreshSessionPermissions';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;
@@ -26,6 +26,14 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
         if (!this.currentUser || !this.session) return gPublicPermissions.some(pp => pp === p);
         if (this.session.isSysAdmin) return true;
         return !!(this.session.permissions?.some(pp => pp === p));
+    }
+
+    isAuthorizedPermissionId(pid: number | null) {
+        const pobj = this.permission.getById(pid);
+        if (!pobj) {
+            return false;
+        }
+        return this.isAuthorized(pobj.name);
     }
 
     getPermission = (q: Permission) => {
@@ -103,11 +111,11 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.currentUser = currentUser;
 
     const [setShowingAdminControlsMutation] = useMutation(setShowingAdminControls);
-    const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
+    //const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
 
-    React.useEffect(() => {
-        void refreshSessionPermissionsMutation({});
-    }, []);
+    // React.useEffect(() => {
+    //     void refreshSessionPermissionsMutation({});
+    // }, []);
 
     const sess = useSession();
     valueRef.current.session = sess;
@@ -144,6 +152,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.instrumentFunctionalGroup = new TableAccessor(dashboardData.instrumentFunctionalGroup);
     valueRef.current.songTag = new TableAccessor(dashboardData.songTag);
     valueRef.current.songCreditType = new TableAccessor(dashboardData.songCreditType);
+    valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks);
 
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => db3.enrichInstrument(i, valueRef.current)));
 

@@ -26,7 +26,7 @@ const xTableAuthMap: db3.DB3AuthTablePermissionMap = {
 
 const MenuLinkArgs = Prisma.validator<Prisma.MenuLinkDefaultArgs>()({
     include: {
-        visiblePermission: true,
+        //visiblePermission: true,
         createdByUser: true,
     }
 });

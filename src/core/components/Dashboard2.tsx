@@ -1,11 +1,10 @@
 //  https://codesandbox.io/s/material-ui-responsive-drawer-skqdw?resolutionWidth=1292&resolutionHeight=758&file=/src/App.js
 // https://mui.com/material-ui/react-app-bar/#app-bar-with-a-primary-search-field
-import { ClientSession, useSession } from "@blitzjs/auth";
+import { useSession } from "@blitzjs/auth";
 import { Routes } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import {
     CalendarMonthOutlined as CalendarMonthOutlinedIcon,
-    Info as InfoIcon,
     MusicNote as MusicNoteIcon,
     MusicNoteOutlined as MusicNoteOutlinedIcon,
     Settings as SettingsIcon
@@ -28,8 +27,9 @@ import { useRouter } from "next/router";
 import * as React from 'react';
 import * as DynMenu from "shared/dynMenuTypes";
 import { Permission } from "shared/permissions";
+import { slugify } from "shared/rootroot";
+import { IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import refreshSessionPermissions from "src/auth/mutations/refreshSessionPermissions";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
@@ -37,9 +37,6 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
-import { IsNullOrWhitespace } from "shared/utils";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { slugify } from "shared/rootroot";
 
 const drawerWidth = 260;
 
@@ -500,7 +497,7 @@ const FlattenMenuGroups = (dashboardContext: DashboardContextData, groups: MenuI
     return menuItems;
 };
 
-const DynMenuToMenuItem = (item: db3.MenuLinkPayload): MenuItemLink | null => {
+const DynMenuToMenuItem = (item: db3.MenuLinkPayload, dashboardContext: DashboardContextData): MenuItemLink | null => {
     let path = "";
     let openInNewTab = false;
     switch (item.linkType as keyof typeof DynMenu.DynamicMenuLinkType) {
@@ -513,9 +510,11 @@ const DynMenuToMenuItem = (item: db3.MenuLinkPayload): MenuItemLink | null => {
             break;
     }
 
+    const pobj = dashboardContext.permission.getById(item.visiblePermissionId);
+
     return {
         type: "link",
-        permission: (item.visiblePermission?.name || Permission.never_grant) as Permission,
+        permission: (pobj?.name || Permission.never_grant) as Permission,
         className: item.itemCssClass,
         linkCaption: item.caption,
         renderIcon: item.iconName ? gIconMap[item.iconName] : undefined,
@@ -530,8 +529,8 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
 
     for (let iItem = 0; iItem < items.length; ++iItem) {
         const item = items[iItem]!;
-        if (!dashboardContext.isAuthorized((item.visiblePermission?.name || Permission.never_grant) as Permission)) continue;
-        const menuItem = DynMenuToMenuItem(item);
+        if (!dashboardContext.isAuthorizedPermissionId(item.visiblePermissionId)) continue;
+        const menuItem = DynMenuToMenuItem(item, dashboardContext);
         if (!menuItem) continue;
 
         const firstItemInGroup = (item.groupName !== currentGroupName);
@@ -579,59 +578,11 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
         throw new Error(`unauthorized`);
     }
 
-    //const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
-    //const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
-
-    // React.useEffect(() => {
-    //     void refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
-    // }, []);
-
-    //const session = useSession();
-
-    //const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
-
-    // React.useEffect(() => {
-    //     document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
-    // }, []);
-
-    // React.useEffect(() => {
-    //     async function handleKeyPress(event) {
-    //         if (event.altKey && event.key === '9') {
-    //             await showAdminControlsMutation.invoke({ toggle: true });
-    //         }
-    //     }
-
-    //     // Add event listener
-    //     window.addEventListener('keydown', handleKeyPress);
-
-    //     // Remove event listener on cleanup
-    //     return () => {
-    //         window.removeEventListener('keydown', handleKeyPress);
-    //     };
-    // }, []);
-
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
 
     const [open, setOpen] = React.useState(false);
 
-
-    const [currentUser] = useCurrentUser();
-    const clientIntention: db3.xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
-
-    const dynMenuClient = DB3Client.useTableRenderContext({
-        requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-        clientIntention,
-        tableSpec: new DB3Client.xTableClientSpec({
-            table: db3.xMenuLink,
-            columns: [
-                new DB3Client.PKColumnClient({ columnName: "id" }),
-            ],
-        }),
-    });
-
-    const dynMenuItems = dynMenuClient.items as db3.MenuLinkPayload[];
-    //const dynMenuItems = [] as db3.MenuLinkPayload[];
 
     const toggleDrawer = event => {
         if (
@@ -647,7 +598,7 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
     // flatten our list of menu groups & items based on permissions.
     const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [
         ...FlattenMenuGroups(dashboardContext, gMenuItemGroup1),
-        ...FlattenDynMenuItems(dashboardContext, dynMenuItems),
+        ...FlattenDynMenuItems(dashboardContext, dashboardContext.dynMenuLinks.items),
         ...FlattenMenuGroups(dashboardContext, gMenuItemGroup2),
     ];
 
@@ -690,59 +641,12 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
 
 
 const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission }>) => {
-    // const [refreshSessionPermissionsMutation] = useMutation(refreshSessionPermissions);
-    // const [requireRefresh, setRequireRefresh] = React.useState<boolean>(false);
-
-    // React.useEffect(() => {
-    //     void refreshSessionPermissionsMutation({}).then(r => setRequireRefresh(r));
-    // }, []);
-
-    // const session = useSession();
-
     React.useEffect(() => {
         document.documentElement.style.setProperty('--drawer-paper-width', drawerWidth + "px");
     }, []);
 
     const theme = useTheme();
     const isMdUp = useMediaQuery(theme.breakpoints.up("md"));
-
-    // const [open, setOpen] = React.useState(false);
-
-
-    // const [currentUser] = useCurrentUser();
-    // const clientIntention: db3.xTableClientUsageContext = { intention: !!currentUser ? 'user' : "public", mode: 'primary', currentUser };
-
-    // const dynMenuClient = DB3Client.useTableRenderContext({
-    //     requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
-    //     clientIntention,
-    //     tableSpec: new DB3Client.xTableClientSpec({
-    //         table: db3.xMenuLink,
-    //         columns: [
-    //             new DB3Client.PKColumnClient({ columnName: "id" }),
-    //         ],
-    //     }),
-    // });
-
-    //const dynMenuItems = dynMenuClient.items as db3.MenuLinkPayload[];
-    //const dynMenuItems = [] as db3.MenuLinkPayload[];
-
-    // const toggleDrawer = event => {
-    //     if (
-    //         event.type === "keydown" &&
-    //         (event.key === "Tab" || event.key === "Shift")
-    //     ) {
-    //         return;
-    //     }
-
-    //     setOpen(!open);
-    // };
-
-    // // flatten our list of menu groups & items based on permissions.
-    // const menuItems: { group: MenuItemGroup, item: MenuItemSpec }[] = [
-    //     ...FlattenMenuGroups(session, gMenuItemGroup1),
-    //     ...FlattenDynMenuItems(session, dynMenuItems),
-    //     ...FlattenMenuGroups(session, gMenuItemGroup2),
-    // ];
 
     return (
         <LocalizationProvider dateAdapter={AdapterDayjs}>

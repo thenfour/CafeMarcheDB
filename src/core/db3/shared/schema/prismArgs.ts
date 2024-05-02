@@ -1283,6 +1283,8 @@ export class DashboardContextDataBase {
     songCreditType: TableAccessor<Prisma.SongCreditTypeGetPayload<{}>>;
     instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
 
+    dynMenuLinks: TableAccessor<Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>>;
+
     permission: TableAccessor<Prisma.PermissionGetPayload<{}>>;
     role: TableAccessor<Prisma.RoleGetPayload<{}>>;
     rolePermission: TableAccessor<Prisma.RolePermissionGetPayload<{}>>;
