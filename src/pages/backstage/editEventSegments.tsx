@@ -37,8 +37,8 @@ const MainContent = () => {
         columns: [
             EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
-            EventSegmentClientColumns.description,
             EventSegmentClientColumns.dateRange,
+            EventSegmentClientColumns.description,
             EventSegmentClientColumns.event,
         ],
     });

@@ -60,8 +60,8 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         columns: [
             EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
-            EventSegmentClientColumns.description,
             EventSegmentClientColumns.dateRange,
+            EventSegmentClientColumns.description,
             EventSegmentClientColumns.event,
         ],
     });

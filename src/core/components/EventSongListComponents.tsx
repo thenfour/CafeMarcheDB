@@ -280,7 +280,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 200 }),
+            //new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 200 }),
         ],
     });
 
@@ -361,8 +361,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     </div>)}
 
                     {nameField}
-                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}
-                    {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })}
+                    {/* {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })} */}
 
                     {/*
           TITLE                  DURATION    BPM      Comment
@@ -414,6 +413,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                         {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
                         {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
                     </div>
+
+                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}
                 </div>
             </DialogContent>
             <DialogActions>

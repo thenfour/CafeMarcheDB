@@ -211,6 +211,11 @@
     border-left: 8px solid #88f;
 }
 
+/* in song list editor dialog, don't display the left border.*/
+.MuiDialogContent-root .EventSongListValue {
+    border-left: unset;
+}
+
 .EventSongListValue>.header {
     background-color: #eee;
     display: flex;
