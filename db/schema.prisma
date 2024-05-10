@@ -695,6 +695,7 @@ model EventUserResponse {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
+  // NB: #162 your user tag overrides this. this flag is only used to invite people who don't have the tag.
   isInvited    Boolean?
   userComment  String?     @db.MediumText
   instrumentId Int? // specify the specific instrument

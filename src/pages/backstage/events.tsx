@@ -11,7 +11,7 @@ import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange, Timing } from "shared/time";
 import { IsNullOrWhitespace, arraysContainSameValues, toggleValueInArray } from "shared/utils";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject, TimingChip } from "src/core/components/CMCoreComponents";
-import { DebugCollapsibleAdminText, EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { DebugCollapsibleAdminText, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -538,14 +538,52 @@ interface EventListOuterProps {
 };
 
 const EventListOuter = (props: EventListOuterProps) => {
-    const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({ ...gDefaultFilter });
+    //const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({ ...gDefaultFilter });
+
+    //const [pageSize, setPageSize] = useURLState<number>("pageSize", 20);
+    const [page, setPage] = useURLState<number>("p", 0);
+    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
+    const [refreshSerial, setRefreshSerial] = useURLState<number>("rs", 0);
+    const [tagFilter, setTagFilter] = useURLState<number[]>("tags", []);
+    const [statusFilter, setStatusFilter] = useURLState<number[]>("statuses", []);
+    const [typeFilter, setTypeFilter] = useURLState<number[]>("types", []);
+    const [timingFilter, setTimingFilter] = useURLState<TimingFilter>("timing", "relevant");
+    const [orderBy, setOrderBy] = useURLState<"StartAsc" | "StartDesc">("sort", "StartDesc");
+
+    const filterSpec: EventsFilterSpec = {
+        pageSize: 20,
+        page,
+        quickFilter,
+        refreshSerial,
+        tagFilter,
+        statusFilter,
+        typeFilter,
+        timingFilter,
+        orderBy,
+    };
+
+    const setFilterSpec = (x: EventsFilterSpec) => {
+        //setPageSize(x.pageSize);
+        setPage(x.page);
+        setQuickFilter(x.quickFilter);
+        setRefreshSerial(x.refreshSerial);
+        setTagFilter(x.tagFilter);
+        setStatusFilter(x.statusFilter);
+        setTypeFilter(x.typeFilter);
+        setTimingFilter(x.timingFilter);
+        setOrderBy(x.orderBy);
+    };
+
     const [filterInfo, setFilterInfo] = React.useState<GetEventFilterInfoRet>(MakeGetEventFilterInfoRet());
     //const [eventsQueryResult, setEventsQueryResult] = React.useState<db3.EventClientPayload_Verbose[]>([]);
     const dashboardContext = React.useContext(DashboardContext);
 
-
     // # when filter spec (other than page change), reset page to 0.
-    const { page, ...everythingButPage } = filterSpec;
+    let everythingButPage: any = {};
+    { // avoid collision with `page`
+        const { page, ...everythingButPage__ } = filterSpec;
+        everythingButPage = everythingButPage__;
+    }
 
     const specHash = JSON.stringify(everythingButPage);
     React.useEffect(() => {
@@ -557,7 +595,6 @@ const EventListOuter = (props: EventListOuterProps) => {
     return <>
         <NewEventButton onOK={() => { }} />
 
-        <DebugCollapsibleAdminText obj={filterSpec} caption={"filterSpec"} />
         <DebugCollapsibleAdminText obj={filterSpec} caption={"filterSpec"} />
         <DebugCollapsibleAdminText text={filterInfo.statusesQuery} caption={"statusesQuery"} />
         <DebugCollapsibleAdminText text={filterInfo.tagsQuery} caption={"tagsQuery"} />

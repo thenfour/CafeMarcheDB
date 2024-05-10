@@ -305,7 +305,9 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
     const eventResponse = responseInfo.getEventResponseForUser(user, dashboardContext, userMap);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const attendanceVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "filled", variation: 'strong' };
-    if (!eventResponse?.isRelevantForDisplay) return null;
+    if (!eventResponse?.isRelevantForDisplay) {
+        return null;
+    }
 
     const authorizedForEdit = dashboardContext.isAuthorized(Permission.change_others_event_responses);
     const isYou = eventResponse.user.id === currentUser.id;
@@ -415,7 +417,6 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
         //        if (sortField === 'user') 
         return a.name < b.name ? -1 : 1;
     });
-
 
     const segAttendees = event.segments.map(seg => ({
         segment: seg,

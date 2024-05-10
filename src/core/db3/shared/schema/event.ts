@@ -1101,9 +1101,11 @@ export interface EventUserResponse<TEvent extends EventResponses_MinimalEvent, T
     response: TResponse;
 
     isInvited: boolean; // NB: invites & comments are per-event, not segment.
+
+    // if the user is invited, they are relevant for display; show them.
+    // if the user is not invited but has responded, show them.
     isRelevantForDisplay: boolean;
-    //isAlert: boolean;
-    //comment: string;
+
     instrument: InstrumentPayload | null;
 };
 
@@ -1294,7 +1296,7 @@ export function getEventResponseForUser<TEvent extends EventResponses_MinimalEve
 >({ event, user, defaultInvitationUserIds, data, userMap, makeMockEventUserResponse }: GetEventResponseForUserArgs<TEvent, TEventResponse>): EventUserResponse<TEvent, TEventResponse> | null {
     const response = event.responses.find(r => r.userId === user.id);
     if (response) {
-        const isInvited = CoalesceBool(response.isInvited, defaultInvitationUserIds.has(user.id));
+        const isInvited = response.isInvited || defaultInvitationUserIds.has(user.id); // #162 default invitation overrides "uninvite"
         const instrument = getInstrumentForEventUserResponse(response, user.id, data, userMap);
         return {
             isInvited,

@@ -6,6 +6,7 @@ import { Clamp, CoerceToNumberOrNull } from "shared/utils";
 import { Button } from "@mui/base";
 import { DialogActions, DialogContent, DialogTitle, Tooltip } from "@mui/material";
 import { DashboardContext } from './DashboardContext';
+import { useURLState } from "./CMCoreComponents2";
 
 const gTickSampleFilePath = "/Metronome.mp3";
 const gMinBPM = 30;
@@ -394,7 +395,7 @@ export interface MetronomeDialogProps {
 }
 
 export const MetronomeDialog = (props: MetronomeDialogProps) => {
-    const [bpm, setBPM] = React.useState<number>(120);
+    const [bpm, setBPM] = useURLState<number>("bpm", 120);
     const [textBpm, setTextBpm] = React.useState<string>("120");
     const [beatSyncToggle, setBeatSyncToggle] = React.useState<number>(0);
     const [isTapping, setIsTapping] = React.useState<boolean>(false);
@@ -453,7 +454,8 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
 };
 
 export const MetronomeDialogButton = () => {
-    const [open, setOpen] = React.useState<boolean>(false);
+    const [open, setOpen] = useURLState<boolean>("metronome", false);
+    //const [open, setOpen] = React.useState<boolean>(false);
     return <>
         <Tooltip title="Open metronome app"><div className="freeButton globalMetronomeButton" onClick={() => setOpen(!open)}>{gIconMap.VolumeDown()}</div></Tooltip>
         {open && <MetronomeDialog onClose={() => setOpen(false)} />}

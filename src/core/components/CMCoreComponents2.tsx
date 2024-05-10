@@ -4,9 +4,11 @@ import { useSession } from "@blitzjs/auth";
 import { Box, Button, CircularProgress, CircularProgressProps, Typography } from "@mui/material";
 import React from "react";
 
-import { IsNullOrWhitespace } from "shared/utils";
+import { IsNullOrWhitespace, arraysContainSameValues } from "shared/utils";
 import * as db3 from "../db3/db3";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
+import { useRouter } from "next/router";
+import { useParams } from "next/navigation";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -181,4 +183,69 @@ export const EventDateField = (props: React.PropsWithChildren<EventDateFieldProp
         {props.children}
     </div>;
 };
+
+
+
+////////////////////////////////////////////////////////////////
+// export function useURLState(key, initialValue) {
+//     const [state, setState] = React.useState(() => {
+//         const params = new URLSearchParams(window.location.search);
+//         const value = params.get(key);
+//         return value !== null ? JSON.parse(value) : initialValue;
+//     });
+
+//     React.useEffect(() => {
+//         const params = new URLSearchParams(window.location.search);
+//         if (state === initialValue) {
+//             params.delete(key);
+//         } else {
+//             params.set(key, JSON.stringify(state));
+//         }
+//         window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
+//     }, [key, state, initialValue]);
+
+//     return [state, setState];
+// }
+
+
+type Serializable = string | number | boolean | null | undefined | Serializable[] | { [key: string]: Serializable };
+
+export function useURLState<T extends Serializable>(
+    key: string,
+    initialValue: T
+): [T, React.Dispatch<React.SetStateAction<T>>] {
+    const router = useRouter();
+    const [state, setState] = React.useState<T>(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const value = params.get(key);
+            return value !== null ? JSON.parse(value) as T : initialValue;
+        }
+        return initialValue;
+    });
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+
+            let isEqual = (state === initialValue);
+            if (Array.isArray(state) && Array.isArray(initialValue)) {
+                isEqual = arraysContainSameValues(state, initialValue);
+            }
+
+            if (isEqual) {
+                params.delete(key);
+            } else {
+                params.set(key, JSON.stringify(state));
+            }
+            const href = `${window.location.pathname}?${params}`;
+            if (href !== router.asPath) {
+                router.replace(href, undefined, { shallow: true });
+            }
+        }
+    }, [router, key, state, initialValue]);
+
+    return [state, setState];
+}
+
 
