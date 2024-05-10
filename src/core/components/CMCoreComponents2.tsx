@@ -9,6 +9,7 @@ import * as db3 from "../db3/db3";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { useRouter } from "next/router";
 import { useParams } from "next/navigation";
+import { gIconMap } from "../db3/components/IconSelectDialog";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -43,12 +44,13 @@ export const DebugCollapsibleAdminText = ({ text, caption, obj }: { text?: strin
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSmallButtonProps {
-    onClick?: () => void;
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void;
     variant?: "framed" | "default";
+    className?: string;
 };
 
 export const CMSmallButton = (props: React.PropsWithChildren<CMSmallButtonProps>) => {
-    return <div className={`variant_${props.variant || "default"} interactable freeButton CMSmallButton`} onClick={() => { props.onClick && props.onClick() }}>
+    return <div className={`variant_${props.variant || "default"} interactable freeButton CMSmallButton ${props.className}`} onClick={(e) => { props.onClick && props.onClick(e) }}>
         {props.children}
     </div>;
 };
@@ -247,5 +249,3 @@ export function useURLState<T extends Serializable>(
 
     return [state, setState];
 }
-
-

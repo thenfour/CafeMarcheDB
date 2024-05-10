@@ -819,3 +819,28 @@ export function SplitQuickFilter(quickFilter: string): string[] {
 }
 
 
+
+export function arrayToTSV(data: Record<string, string>[]): string {
+    if (data.length === 0) {
+        return "";
+    }
+
+    // Extract headers
+    const headers = Object.keys(data[0]!);
+
+    // Map each object to a CSV string
+    const rows = data.map(obj => {
+        return headers.map(fieldName => {
+            // Handle potential commas in data
+            let field = obj[fieldName] || ""; // default to empty string if undefined
+            if (field.includes('\t') || field.includes('"')) {
+                // Escape double quotes and wrap field in double quotes
+                field = `"${field.replace(/"/g, '""')}"`;
+            }
+            return field;
+        }).join('\t');
+    });
+
+    // Combine headers and rows
+    return [headers.join('\t'), ...rows].join('\n');
+}

@@ -5,23 +5,23 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, FormControlLabel, InputBase } from "@mui/material";
+import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { getExcelColumnName, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { IsNullOrWhitespace, arrayToTSV, getExcelColumnName, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gIconMap } from "../db3/components/IconSelectDialog";
+import { gCharMap, gIconMap } from "../db3/components/IconSelectDialog";
 import { TAnyModel } from '../db3/shared/apiTypes';
 import { AdminInspectObject, CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
-import { CMDialogContentText } from './CMCoreComponents2';
+import { CMDialogContentText, CMSmallButton } from './CMCoreComponents2';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
@@ -65,13 +65,14 @@ interface EventSongListValueViewerRowProps {
     index: number;
     value: db3.EventSongListSongPayload;
     showTags: boolean;
+    songList: db3.EventSongListPayload;
 };
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = db3.enrichSong(props.value.song, dashboardContext);
     const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
-    return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
+    return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
         <div className="td songIndex">{props.index + 1}
             {/* id:{props.value.id} so:{props.value.sortOrder} */}
         </div>
@@ -95,6 +96,145 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+async function CopySongListNames(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
+    const txt = value.songs.filter(s => !!s.song).map(s => s.song.name).join("\r\n");
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+}
+
+async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
+    const txt = value.songs.filter(s => !!s.song).map((s, i) => `${i + 1}. ${s.song.name}`).join("\r\n");
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+}
+
+type PortableSongListSong = {
+    sortOrder: number;
+    comment: string;
+    song: db3.SongPayload;
+};
+
+type PortableSongList = PortableSongListSong[];
+
+async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
+    const obj: PortableSongList = value.songs.filter(s => !!s.song).map((s, i): PortableSongListSong => ({
+        sortOrder: s.sortOrder,
+        song: s.song,
+        comment: s.subtitle || "",
+    }));
+    const txt = JSON.stringify(obj, null, 2);
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+}
+
+async function CopySongListCSV(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
+    const obj = value.songs.filter(s => !!s.song).map((s, i) => ({
+        Index: (i + 1).toString(),
+        Song: s.song.name,
+        Length: (s.song.lengthSeconds ? formatSongLength(s.song.lengthSeconds) : "") || "",
+        Tempo: API.songs.getFormattedBPM(s.song),
+        Comment: s.subtitle || "",
+    }));
+    const txt = arrayToTSV(obj);
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+}
+
+async function CopySongListMarkdown(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
+    const txt = value.songs.filter(s => !!s.song).map((s, i) => {
+        // so uh i'm technically putting markdown in markdown so this is not correct but let's go for it anyway.
+        const commentTxt = IsNullOrWhitespace(s.subtitle) ? "" : ` *${s.subtitle}*`;
+        return `${i + 1}. **${s.song.name}**${commentTxt}`;
+    }).join("\r\n");
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface EventSongListDotMenuProps {
+    readonly: boolean;
+    showTags: boolean;
+    setShowTags: (v: boolean) => void;
+    handleCopySongNames: () => Promise<void>;
+    handleCopyIndexSongNames: () => Promise<void>;
+    handleCopyMarkdown: () => Promise<void>;
+    handleCopyCSV: () => Promise<void>;
+    handleCopyJSON: () => Promise<void>;
+    handlePasteReplace: () => Promise<void>;
+    handlePasteAppend: () => Promise<void>;
+};
+
+export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
+    return <>
+        <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
+        <Menu
+            id="menu-songlist"
+            anchorEl={anchorEl}
+            keepMounted
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+        >
+            <MenuItem onClick={() => { props.setShowTags(!props.showTags); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {props.showTags && gIconMap.CheckCircleOutline()}
+                </ListItemIcon>
+                Show song tags
+            </MenuItem>
+            <Divider />
+
+            <MenuItem onClick={async () => { await props.handleCopySongNames(); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {gIconMap.ContentCopy()}
+                </ListItemIcon>
+                Copy song names
+            </MenuItem>
+            <MenuItem onClick={async () => { await props.handleCopyIndexSongNames(); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {gIconMap.ContentCopy()}
+                </ListItemIcon>
+                Copy # + song names
+            </MenuItem>
+            <MenuItem onClick={async () => { await props.handleCopyMarkdown(); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {gIconMap.ContentCopy()}
+                </ListItemIcon>
+                Copy as Markdown
+            </MenuItem>
+            <MenuItem onClick={async () => { await props.handleCopyCSV(); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {gIconMap.ContentCopy()}
+                </ListItemIcon>
+                Copy as CSV
+            </MenuItem>
+            <MenuItem onClick={async () => { await props.handleCopyJSON(); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {gIconMap.ContentCopy()}
+                </ListItemIcon>
+                Copy as JSON (pasteable)
+            </MenuItem>
+
+            {!props.readonly && <Divider />}
+
+            {!props.readonly && <MenuItem onClick={async () => { await props.handlePasteReplace(); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {gIconMap.ContentPaste()}
+                </ListItemIcon>
+                Replace with clipboard contents
+            </MenuItem>}
+            {!props.readonly && <MenuItem onClick={async () => { await props.handlePasteAppend(); setAnchorEl(null); }}>
+                <ListItemIcon>
+                    {gIconMap.ContentPaste()}
+                </ListItemIcon>
+                Append clipboard contents
+            </MenuItem>}
+        </Menu >
+    </>;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
     value: db3.EventSongListPayload;
     readonly: boolean;
@@ -105,6 +245,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
     //const [currentUser] = useCurrentUser();
     const [showTags, setShowTags] = React.useState<boolean>(false);
     //const visInfo = API.users.getVisibilityInfo(props.value);
+    const snackbarContext = React.useContext(SnackbarContext);
 
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
@@ -115,8 +256,6 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         publicData,
         model: props.value,
     });
-
-
 
     const stats = API.events.getSongListStats(props.value);
     return <div className={`EventSongListValue EventSongListValueViewer`}>
@@ -143,15 +282,25 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                         <div className="th tempo">Tempo</div>
                         <div className="th comment">
                             Comment
-                            <FormControlLabel className='CMFormControlLabel'
-                                control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+                            <EventSongListDotMenu
+                                readonly={true}
+                                showTags={showTags}
+                                setShowTags={setShowTags}
+                                handleCopySongNames={async () => await CopySongListNames(snackbarContext, props.value)}
+                                handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value)}
+                                handleCopyCSV={async () => await CopySongListCSV(snackbarContext, props.value)}
+                                handleCopyJSON={async () => await CopySongListJSON(snackbarContext, props.value)}
+                                handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value)}
+                                handlePasteAppend={async () => { }}
+                                handlePasteReplace={async () => { }}
+                            />
                         </div>
                     </div>
                 </div>
 
                 <div className="tbody">
                     {
-                        props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} showTags={showTags} />)
+                        props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} songList={props.value} showTags={showTags} />)
                     }
 
                 </div>
@@ -173,6 +322,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 interface EventSongListValueEditorRowProps {
     index: number;
     value: EventSongListNullableSong;
+    songList: db3.EventSongListPayload;
     showTags: boolean;
     onChange: (newValue: EventSongListNullableSong) => void;
     onDelete: () => void;
@@ -193,10 +343,26 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         props.onChange(props.value);
     };
 
+    const occurrences = props.songList.songs.reduce((acc, val) => acc + (val.songId === props.value.songId ? 1 : 0), 0);
+    const isDupeWarning = occurrences > 1;
+
     const formattedBPM = enrichedSong ? API.songs.getFormattedBPM(enrichedSong) : "";
 
+    const getColor = (text: string): string => {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const color = `hsl(${hash % 360}, 100%, 35%)`;
+        return color;
+    };
+
+    const style = {
+        "--song-hash-color": getColor(props.value.song?.name || ""),
+    };
+
     return <>
-        <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
+        <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.songId === null ? 'invalidItem' : 'validItem'}`} style={style as any}>
             <div className="td dragHandle draggable">☰
                 {/* <InspectObject src={props.value} tooltip="snth" /> */}
             </div>
@@ -213,6 +379,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         <div className="tr"> */}
             <div className="td comment">
                 <div className="comment">
+                    {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>⚠</div></Tooltip>}
                     <InputBase
                         className="cmdbSimpleInput"
                         placeholder="Comment"
@@ -245,6 +412,7 @@ interface EventSongListValueEditorProps {
 
 // state managed internally.
 export const EventSongListValueEditor = (props: EventSongListValueEditorProps) => {
+    const snackbarContext = React.useContext(SnackbarContext);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
@@ -330,6 +498,61 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         setValue({ ...value });
     };
 
+    const getClipboardSongList = async (): Promise<PortableSongList | null> => {
+        let obj: undefined | PortableSongList = undefined;
+        try {
+            const txt = await navigator.clipboard.readText();
+            obj = JSON.parse(txt) as PortableSongList;
+            // sanity check.
+            if (!Array.isArray(obj)) throw "not an array";
+            if (obj.length < 1) {
+                snackbarContext.showMessage({ severity: 'error', children: "Empty setlist; ignoring." });
+                return null;
+            }
+            if (!Number.isInteger(obj[0]!.song.id)) throw "no songId";
+            if (typeof (obj[0]!.song.name) !== 'string') throw "no song name";
+            return obj;
+        } catch (e) {
+            console.log(e);
+            console.log(obj);
+        }
+        return null;
+    };
+
+    const appendPortableSongList = (list: db3.EventSongListPayload, obj: PortableSongList) => {
+        console.log(obj);
+        const items = obj.map((s): db3.EventSongListSongPayload => ({
+            eventSongListId: list.id,
+            id: getUniqueNegativeID(),
+            songId: s.song.id,
+            song: s.song,
+            subtitle: s.comment,
+            sortOrder: s.sortOrder,
+        }));
+        // remove the dummy row, merge the lists
+        list.songs = [...list.songs.filter(s => !!s.song), ...items];
+        // and set sort orders
+        list.songs.forEach((item, index) => item.sortOrder = index);
+        // and ensure it has a dummy row.
+        ensureHasNewRow(list.songs);
+    };
+
+    const handlePasteAppend = async () => {
+        const obj = await getClipboardSongList();
+        if (!obj) return;
+        const newList = { ...value };
+        appendPortableSongList(newList, obj);
+        setValue(newList);
+    };
+
+    const handlePasteReplace = async () => {
+        const obj = await getClipboardSongList();
+        if (!obj) return;
+        const newList = { ...value };
+        appendPortableSongList(newList, obj);
+        setValue(newList);
+    };
+
     const nameColumn = tableSpec.getColumn("name");
     const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention, autoFocus: true });
 
@@ -390,8 +613,20 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                 <div className="th tempo">Tempo</div>
                                 <div className="th comment">
                                     Comment
-                                    <FormControlLabel className='CMFormControlLabel'
-                                        control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" />
+                                    <EventSongListDotMenu
+                                        readonly={false}
+                                        showTags={showTags}
+                                        setShowTags={setShowTags}
+                                        handleCopySongNames={async () => await CopySongListNames(snackbarContext, value)}
+                                        handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
+                                        handleCopyCSV={async () => await CopySongListCSV(snackbarContext, value)}
+                                        handleCopyJSON={async () => await CopySongListJSON(snackbarContext, value)}
+                                        handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, value)}
+                                        handlePasteAppend={handlePasteAppend}
+                                        handlePasteReplace={handlePasteReplace}
+                                    />
+                                    {/* <FormControlLabel className='CMFormControlLabel'
+                                        control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" /> */}
                                 </div>
                             </div>
                         </div>
@@ -402,7 +637,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                         >
                             {
                                 value.songs.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
-                                    <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} onDelete={() => handleRowDelete(s)} showTags={showTags} />
+                                    <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} showTags={showTags} />
                                 </ReactSmoothDndDraggable>
                                 )
                             }

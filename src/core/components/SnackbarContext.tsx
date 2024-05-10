@@ -4,8 +4,7 @@ import Alert, { AlertProps } from '@mui/material/Alert';
 
 type SnackbarProps = Pick<AlertProps, 'children' | 'severity'> | null;
 
-type SnackbarContextType = {
-    //showMessage: (message: string, severity: string) => void;
+export type SnackbarContextType = {
     showMessage: (snackbarProps: SnackbarProps) => void;
 };
 

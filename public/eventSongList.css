@@ -49,6 +49,8 @@
 .songListSongTable .tbody .tr {
     /* makes icons and things center vertically within cells; looks cleaner */
     align-items: center;
+    /* songs get a unique color to search dupes */
+    --song-hash-color: black;
 }
 
 
@@ -105,7 +107,7 @@
     color: #0002;
 }
 
-.songListSongTable .tr.existingItem {
+.songListSongTable .tr.item {
     border-bottom: 1px dotted #0002;
 }
 
@@ -123,6 +125,12 @@
     display: flex;
     justify-content: flex-start;
     font-weight: bold;
+    color: var(--song-hash-color);
+}
+
+.songListSongTable .td.songName input {
+    color: var(--song-hash-color);
+
 }
 
 .songListSongTable .td.songName .cmdbSimpleInput {
@@ -159,8 +167,24 @@
 
 .songListSongTable .th.comment {
     /* left-justify */
-    justify-content: flex-start;
+    justify-content: space-between;
 }
+
+.freeButton.CMSmallButton.DotMenu {
+    color: black;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 20px;
+    /* background-color: #ccc; */
+    border-radius: 4px;
+    margin: 2px;
+    padding: 0 15px;
+}
+
+.freeButton.CMSmallButton.DotMenu:hover {
+    background-color: #bbb;
+}
+
 
 .songListSongTable .td.comment {
     font-style: italic;
@@ -175,6 +199,20 @@
 .songListSongTable .td.comment div.comment {
     /* when no tags, the comment container will fill the cell.*/
     flex-grow: 1;
+
+    /* allow dupe warning indicator to be on same line*/
+    display: flex;
+}
+
+.songListSongTable .warnIndicator {
+    font-style: normal;
+    background-color: #fd0;
+    color: black;
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
+    border-radius: 2px;
+    margin: 0 3px;
 }
 
 .songListSongTable .td.comment .CMChipContainer {
