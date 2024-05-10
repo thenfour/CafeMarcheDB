@@ -2216,3 +2216,12 @@ pre.serverStartInfo {
     font-size: 18px;
     font-weight: bold;
 }
+
+
+.songAutocompleteLI {
+    /* background-color: red; */
+}
+
+.songAutocompleteLI.faded {
+    color: #ccc;
+}

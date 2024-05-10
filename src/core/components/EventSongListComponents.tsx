@@ -371,7 +371,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             </div>
             <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div>
             <div className="td songName">
-                <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} index={props.index} />
+                <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} index={props.index} fadedSongIds={props.songList.songs.map(s => s.songId)} />
             </div>
             <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
             <div className="td tempo">{formattedBPM}</div>

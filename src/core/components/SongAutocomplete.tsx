@@ -17,12 +17,15 @@ export interface SongAutocompleteProps {
     value: db3.SongPayload | null;
     index: number;
     onChange: (value: GetFilteredSongsItemSongPayload | null) => void;
+    fadedSongIds?: number[];
 };
 
-export const SongAutocomplete = ({ value, onChange, index }: SongAutocompleteProps) => {
+export const SongAutocomplete = ({ value, onChange, index, fadedSongIds }: SongAutocompleteProps) => {
     const [inputValue, setInputValue] = React.useState(''); // value of the input
     const [debouncedValue, setDebouncedValue] = React.useState(''); // debounced input value
     const [hasChanged, setHasChanged] = React.useState(false);
+
+    if (!fadedSongIds) fadedSongIds = [];
 
     // Debouncing user input to avoid excessive fetches
     React.useEffect(() => {
@@ -41,7 +44,7 @@ export const SongAutocomplete = ({ value, onChange, index }: SongAutocompletePro
     const songs = (songs__?.matchingItems) || [];
 
     const filterOptions = (options: db3.SongPayload[], { inputValue }: { inputValue: string }) => {
-        return options.filter(option => option.name.toLowerCase().includes(inputValue.toLowerCase()));
+        return options;
     };
 
     const handleChange = (newValue: GetFilteredSongsItemSongPayload | null | string) => {
@@ -57,6 +60,7 @@ export const SongAutocomplete = ({ value, onChange, index }: SongAutocompletePro
         options={songs || []}
         value={value}
         onChange={(event, newValue) => handleChange(newValue)}
+        className='songAutocomplete'
 
         fullWidth={true}
         openOnFocus={false}
@@ -91,11 +95,12 @@ export const SongAutocomplete = ({ value, onChange, index }: SongAutocompletePro
             }
             return option.name === value.name;
         }}
-        renderOption={(props, option) => (
-            <li {...props}>
+        renderOption={(props, option) => {
+            const songId = typeof option === 'string' ? null : option.id as number;
+            return <li {...props} className={`${props.className} songAutocompleteLI ${(songId && fadedSongIds.includes(songId)) ? "faded" : "notfaded"}`}>
                 {typeof option === 'string' ? option : option.name}
             </li>
-        )}
+        }}
         renderInput={(params: AutocompleteRenderInputParams) => {
             const { InputLabelProps, InputProps, ...rest } = params;
             const inputProps = { ...params.InputProps, ...rest };
