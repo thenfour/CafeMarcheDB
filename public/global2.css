@@ -1350,7 +1350,7 @@ in particular the date range picker is wide.*/
 
 .attendanceResponseColorBarSegment {
     height: 24px;
-    width: 16px;
+    width: 18px;
     margin: 0 2px;
     font-family: monospace;
     font-size: 14px;
@@ -1361,6 +1361,12 @@ in particular the date range picker is wide.*/
 
     user-select: none;
     cursor: pointer;
+    overflow: hidden;
+}
+
+
+.attendanceResponseColorBarSegment.notgoing {
+    opacity: 50%;
 }
 
 .attendanceResponseColorBarSegmentContainer {

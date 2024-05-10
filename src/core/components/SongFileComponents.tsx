@@ -290,11 +290,14 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
         let aValue = a.file[spec.sortBy];
         let bValue = b.file[spec.sortBy];
 
-        if (aValue === null || bValue === null) {
-            if (spec.sortDirection === 'asc') {
-                return aValue === null ? 1 : -1;
-            }
-            return aValue === null ? -1 : 1;
+        if (aValue === bValue) {
+            return a.file.id - b.file.id;
+        }
+        if (aValue === null) {
+            return 1;
+        }
+        if (bValue === null) {
+            return -1;
         }
 
         if (typeof aValue === 'string') {
@@ -302,11 +305,16 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
             bValue = (bValue as string).toLowerCase();
         }
 
-        if (spec.sortDirection === 'asc') {
-            return aValue > bValue ? 1 : (aValue < bValue ? -1 : 0);
+        if (aValue === bValue) {
+            return a.file.id - b.file.id;
         }
-        return aValue < bValue ? 1 : (aValue > bValue ? -1 : 0);
+
+        return aValue > bValue ? 1 : -1;
     });
+
+    if (spec.sortDirection === 'desc') {
+        filteredItems = filteredItems.toReversed();
+    }
 
     return filteredItems;
 }

@@ -643,7 +643,7 @@ export interface EventCompletenessTabContentProps {
 export const EventCompletenessTabContent = ({ eventData, userMap }: EventCompletenessTabContentProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
-    const [minStrength, setMinStrength] = React.useState<number>(50);
+    //const [minStrength, setMinStrength] = React.useState<number>(50);
     const instVariant: ColorVariationSpec = { enabled: true, selected: false, fillOption: "hollow", variation: 'weak' };
     const event = eventData.event;
     const responseInfo = eventData.responseInfo;
@@ -667,7 +667,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
     const isSingleSegment = eventData.event.segments.length === 1;
 
     return <div>
-        <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" />
+        {/* <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" /> */}
         <table className='EventCompletenessTabContent'>
             <tbody>
                 <tr>
@@ -690,7 +690,7 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
                                 // AND it matches the current instrument function.
                                 if (!resp.response.attendanceId) return false; // no answer = don't show.
                                 const attendance = dashboardContext.eventAttendance.getById(resp.response.attendanceId)!;
-                                if (attendance.strength < (100 - minStrength)) return false;
+                                //if (attendance.strength < (100 - minStrength)) return false;
                                 const eventResponse = responseInfo.getEventResponseForUser(resp.user, dashboardContext, userMap);
                                 assert(eventResponse, "eventResponse null; usermap must not be complete");
                                 const responseInstrument = eventResponse.instrument;
@@ -715,9 +715,11 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
                                     <div className='attendanceResponseColorBarSegmentContainer'>
                                         {sortedResponses.map(resp => {
                                             const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
-                                            const style = GetStyleVariablesForColor({ color: att?.color, ...StandardVariationSpec.Strong });
+                                            const going = (((att?.strength) || 0) > 50);
+                                            const color = going ? att?.color : null;
+                                            const style = GetStyleVariablesForColor({ color, ...StandardVariationSpec.Strong });
                                             return <Tooltip key={resp.response.id} title={`${resp.user.name}: ${att?.text || "no response"}`}>
-                                                <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass}`} style={style.style}>
+                                                <div className={`attendanceResponseColorBarSegment applyColor ${style.cssClass} ${((att?.strength) || 0) > 50 ? "going" : "notgoing"}`} style={style.style}>
                                                     {resp.user.name.substring(0, 1).toLocaleUpperCase()}
                                                 </div>
                                             </Tooltip>
