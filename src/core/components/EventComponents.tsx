@@ -776,11 +776,11 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
     const visInfo = dashboardContext.getVisibilityInfo(eventData.event);
 
-    const timingLabel: { [key in Timing]: string } = {
-        [Timing.Past]: "Past event",
-        [Timing.Present]: "Ongoing event",
-        [Timing.Future]: "Future event",
-    } as const;
+    // const timingLabel: { [key in Timing]: string } = {
+    //     [Timing.Past]: "Past event",
+    //     [Timing.Present]: "Ongoing event",
+    //     [Timing.Future]: "Future event",
+    // } as const;
 
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Strong,
@@ -817,10 +817,10 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
                 />}
 
-                <TimingChip value={eventData.eventTiming} tooltip={eventData.dateRange.toString()}>
+                {/* <TimingChip value={eventData.eventTiming} tooltip={eventData.dateRange.toString()}>
                     <CalendarMonthIcon className="icon" />
                     {timingLabel[eventData.eventTiming]}
-                </TimingChip>
+                </TimingChip> */}
 
             </CMChipContainer>
 

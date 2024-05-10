@@ -57,11 +57,11 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
 
     const visInfo = dashboardContext.getVisibilityInfo(event);
 
-    const timingLabel: { [key in Timing]: string } = {
-        [Timing.Past]: "Past event",
-        [Timing.Present]: "Ongoing event",
-        [Timing.Future]: "Future event",
-    } as const;
+    // const timingLabel: { [key in Timing]: string } = {
+    //     [Timing.Past]: "Past event",
+    //     [Timing.Present]: "Ongoing event",
+    //     [Timing.Future]: "Future event",
+    // } as const;
 
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Strong,
@@ -97,11 +97,11 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                     model={event.status}
                     getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
                 />}
-
+                {/* 
                 <TimingChip value={eventTiming} tooltip={dateRange.toString()}>
                     {gIconMap.CalendarMonth()}
                     {timingLabel[eventTiming]}
-                </TimingChip>
+                </TimingChip> */}
 
             </CMChipContainer>
 
@@ -359,14 +359,28 @@ const EventsControls = (props: EventsControlsProps) => {
     const selectTiming = (t: TimingFilter) => {
         const newSpec: EventsFilterSpec = { ...props.filterSpec };
         newSpec.timingFilter = t;
+
+        switch (t) {
+            case "all":
+            case "past":
+                newSpec.orderBy = "StartDesc";
+                break;
+            case "future":
+            case "relevant":
+            case "since 60 days":
+                newSpec.orderBy = "StartAsc";
+                break;
+        }
+
         props.onChange(newSpec);
     };
 
     const timingChips: Record<TimingFilter, string> = {
-        "past": "Search events that already ended",
-        "relevant": "Search upcoming and recent events",
-        "future": "Search upcoming events",
-        "all": "Search all events",
+        "past": "Showing events that already ended",
+        "since 60 days": "Showing events no more than 60 days ago",
+        "relevant": "Showing upcoming and recent events",
+        "future": "Showing upcoming events",
+        "all": "Showing all events",
     };
 
     return <div className="filterControlsContainer">

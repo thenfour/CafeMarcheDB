@@ -69,6 +69,7 @@ export default resolver.pipe(
 
             const timingFilterExpressions: Record<TimingFilter, string | null> = {
                 "past": `(endDateTime <= curdate())`,
+                "since 60 days": `((startsAt >= DATE_SUB(curdate(), INTERVAL 60 day)) OR (startsAt IS NULL))`,
                 "relevant": gEventRelevantFilterExpression,//`((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`,
                 "future": `((startsAt >= curdate()) or (startsAt is null))`,
                 "all": null,

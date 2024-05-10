@@ -343,7 +343,7 @@ export interface GetEventFilterInfoChipInfo {
 };
 
 // exclusive
-export type TimingFilter = "past" | "relevant" | "future" | "all";
+export type TimingFilter = "past" | "since 60 days" | "relevant" | "future" | "all";
 
 export const gEventFilterTimingIDConstants = {
     past: 0,
