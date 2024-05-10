@@ -343,7 +343,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         props.onChange(props.value);
     };
 
-    const occurrences = props.songList.songs.reduce((acc, val) => acc + (val.songId === props.value.songId ? 1 : 0), 0);
+    const occurrences = !props.value.songId ? 0 : props.songList.songs.reduce((acc, val) => acc + (val.songId === props.value.songId ? 1 : 0), 0);
     const isDupeWarning = occurrences > 1;
 
     const formattedBPM = enrichedSong ? API.songs.getFormattedBPM(enrichedSong) : "";
@@ -363,13 +363,14 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
 
     return <>
         <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.songId === null ? 'invalidItem' : 'validItem'}`} style={style as any}>
-            <div className="td dragHandle draggable">☰
-                {/* <InspectObject src={props.value} tooltip="snth" /> */}
-            </div>
+            <div className="td icon"><div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div></div>
+            {/* <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div> */}
             <div className="td songIndex">{props.index + 1}
                 {/* id:{props.value.id} so:{props.value.sortOrder} */}
             </div>
-            <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div>
+            <div className="td dragHandle draggable">☰
+                {/* <InspectObject src={props.value} tooltip="snth" /> */}
+            </div>
             <div className="td songName">
                 <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} index={props.index} fadedSongIds={props.songList.songs.map(s => s.songId)} />
             </div>
