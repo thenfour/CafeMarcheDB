@@ -369,42 +369,17 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-// export const InspectObject = (props: { src: any, tooltip?: string }) => {
-//     const [open, setOpen] = React.useState<boolean>(false);
-//     return <>
-//         <Tooltip title={props.tooltip || "Open object inspector"}>
-//             <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
-//         </Tooltip>
-//         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-//             todo{/* <DynamicReactJson src={props.src} /> */}
-//         </ReactiveInputDialog>}
-//     </>;
-// };
-
-
-// export const AdminInspectObject = (props: { src: any, tooltip?: string }) => {
-//     const [open, setOpen] = React.useState<boolean>(false);
-//     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
-//     const show = sess.isSysAdmin && sess.showAdminControls;
-//     if (!show) return null;
-
-//     return <>
-//         <Tooltip title={props.tooltip || "Open object inspector"}>
-//             <div className='debugInspectorOpen' onClick={() => setOpen(true)}>{gIconMap.Visibility()}</div>
-//         </Tooltip>
-//         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-//             todo{/* <DynamicReactJson src={props.src} /> */}
-//         </ReactiveInputDialog>}
-//     </>;
-// };
-
 export const InspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
-    return <div className='debugInspectorOpen' onClick={() => console.log(props.src)}>{gIconMap.Visibility()} {props.label}</div>
+    return <div className='debugInspectorOpen' onClick={() => {
+        if (props.label || props.tooltip) {
+            console.log(`Dumping object: ${props.label || props.tooltip}`);
+        }
+        console.log(props.src);
+    }}>{gIconMap.Visibility()} {props.label}</div>
 };
 
 
-export const AdminInspectObject = (props: { src: any, tooltip?: string }) => {
+export const AdminInspectObject = (props: { src: any, tooltip?: string, label?: string }) => {
     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
     const show = sess.isSysAdmin && sess.showAdminControls;
     if (!show) return null;

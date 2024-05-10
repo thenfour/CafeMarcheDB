@@ -20,7 +20,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconSelectDialog';
-import { AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, TimingChip } from './CMCoreComponents';
+import { AdminInspectObject, AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, TimingChip } from './CMCoreComponents';
 import { CMDialogContentText, NameValuePair } from './CMCoreComponents2';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -224,6 +224,8 @@ export const EventAttendanceEditDialog = (props: EventAttendanceEditDialogProps)
 
         <DialogTitle>
             <SettingMarkdown setting="EventAttendanceEditDialog_TitleMarkdown" />
+            <AdminInspectObject src={eventResponseValue} label="event response" />
+            <AdminInspectObject src={eventSegmentResponseValues} label="segment responses" />
         </DialogTitle>
         <DialogContent dividers>
             <CMDialogContentText>

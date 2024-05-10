@@ -37,6 +37,7 @@ import { gIconMap } from "../db3/components/IconSelectDialog";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
+import { AdminInspectObject } from "./CMCoreComponents";
 
 const drawerWidth = 260;
 
@@ -71,8 +72,6 @@ const AppBarUserIcon_MenuItems = () => {
                 <MenuItem onClick={() => onClickShowAdminControls(false)}>Hide admin config {gIconMap.Settings()}</MenuItem>
                 : <MenuItem onClick={() => onClickShowAdminControls(true)}>Show admin config {gIconMap.Settings()}</MenuItem>
             }
-
-            {/* <BackstageLinkEnableMenuItem /> */}
 
             <Divider /></>
         }

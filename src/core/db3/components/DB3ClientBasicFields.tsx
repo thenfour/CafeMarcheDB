@@ -16,7 +16,7 @@ import React, { Suspense } from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
-import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
+import { AdminInspectObject, CMChip, CMChipContainer, InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
@@ -142,6 +142,70 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
         />
     });
 };
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface JSONStringColumnClientArgs {
+    columnName: string;
+};
+
+export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
+    typedSchemaColumn: db3fields.GenericStringField;
+
+    constructor(args: JSONStringColumnClientArgs) {
+        super({
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            width: 200,
+            visible: true,
+            className: undefined,
+            isAutoFocusable: true,
+            fieldCaption: undefined,
+            fieldDescriptionSettingName: undefined,
+        });
+    }
+
+    ApplyClientToPostClient = undefined;
+
+    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
+        this.typedSchemaColumn = this.schemaColumn as db3fields.GenericStringField;
+
+        assert(this.typedSchemaColumn.format === "raw", `JSONStringColumnClient[${tableClient.tableSpec.args.table.tableID}.${this.schemaColumn.member}] has an unsupported type.`);
+
+        this.GridColProps = {
+            type: "string",
+            editable: false,
+            renderCell: (params: GridRenderCellParams) => {
+                let asObj: any = undefined;
+                try {
+                    asObj = JSON.parse(params.value);
+                } catch (e) {
+                    asObj = "<parse error>";
+                }
+                return <div className="JSONStringColumnClient viewer">
+                    <InspectObject src={asObj} />
+                    <pre>{JSON.stringify(asObj, null, 2)}</pre>
+                </div>;
+            },
+        };
+    };
+
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
+        className={params.className}
+        name={this.columnName}
+        value={params.value}
+        fieldName={this.columnName}
+        isReadOnly={false}
+    />;
+
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => <div>(unsupported render style)</div>;
+};
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface SlugColumnClientArgs extends GenericStringColumnArgs {

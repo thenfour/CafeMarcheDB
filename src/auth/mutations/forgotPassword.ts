@@ -41,7 +41,7 @@ export default resolver.pipe(
     }
 
     // 8. Return the same result whether a password reset email was sent or not
-    const origin = process.env.APP_ORIGIN || process.env.BLITZ_DEV_SERVER_ORIGIN
+    const origin = process.env.CMDB_BASE_URL || process.env.APP_ORIGIN || process.env.BLITZ_DEV_SERVER_ORIGIN;
     const resetUrl = `${origin}/auth/reset-password?token=${token}`
     return resetUrl;
   })

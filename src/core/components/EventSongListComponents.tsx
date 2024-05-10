@@ -20,7 +20,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconSelectDialog";
 import { TAnyModel } from '../db3/shared/apiTypes';
-import { CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
+import { AdminInspectObject, CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText } from './CMCoreComponents2';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
@@ -337,11 +337,15 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
 
             <DialogTitle>
-                edit song list
+                <SettingMarkdown setting='EditEventSongListDialogTitle' />
             </DialogTitle>
             <DialogContent dividers>
                 <CMDialogContentText>
-                    description of song lists.
+
+                    <SettingMarkdown setting='EditEventSongListDialogDescription' />
+                    <AdminInspectObject src={props.initialValue} label="initial value" />
+                    <AdminInspectObject src={value} label="value" />
+                    <AdminInspectObject src={stats} label="stats" />
                 </CMDialogContentText>
 
                 <div className="EventSongListValue">

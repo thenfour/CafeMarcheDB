@@ -43,16 +43,16 @@ const MainContent = () => {
         table: db3.xChange,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 80, }),
 
-            new DB3Client.GenericStringColumnClient({ columnName: "action", cellWidth: 150 }),
+            new DB3Client.GenericStringColumnClient({ columnName: "action", cellWidth: 80 }),
             new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "table", cellWidth: 150 }),
+            new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 70 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "oldValues", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "newValues", cellWidth: 150 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 150 }),
+            new DB3Client.JSONStringColumnClient({ columnName: "newValues" }),
+            new DB3Client.JSONStringColumnClient({ columnName: "oldValues" }),
             new DB3Client.DateTimeColumn({ columnName: "changedAt" }),
         ],
     });

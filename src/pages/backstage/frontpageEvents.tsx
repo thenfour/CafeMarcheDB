@@ -37,7 +37,7 @@ const EventsList = () => {
         },
         paginationModel: {
             page: 0,
-            pageSize: 100,
+            pageSize: 20,
         },
         requestedCaps: DB3Client.xTableClientCaps.Query,// | DB3Client.xTableClientCaps.Mutation,
         clientIntention,

@@ -402,20 +402,27 @@ export const xEventArgs_Base: db3.TableDesc = {
             const minDate = new Date();
             minDate.setDate(minDate.getDate() - 10);
 
-            const t: Prisma.EventWhereInput = {
+            // SHOW:
+            // - frontpage visible: ALWAYS
+            // - OR, concerts matching date range
+
+            const t2: Prisma.EventWhereInput = {
                 OR: [
+                    { frontpageVisible: true },
                     {
-                        endDateTime: { gte: minDate }
-                    },
-                    {
-                        endDateTime: null,
-                    },
-                    {
-                        frontpageVisible: true,
+                        AND: [
+                            { type: { significance: EventTypeSignificance.Concert } },
+                            {
+                                OR: [
+                                    { endDateTime: { gte: minDate } },
+                                    { endDateTime: null, },
+                                ]
+                            },
+                        ]
                     }
-                ]
+                ],
             };
-            ret.push(t);
+            ret.push(t2);
         }
 
         return ret;

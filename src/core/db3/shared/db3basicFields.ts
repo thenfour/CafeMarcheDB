@@ -1173,8 +1173,12 @@ export class CreatedAtField extends FieldBase<Date> {
         if (args.mode === "new") {
             return SuccessfulValidateAndParseResult({ [this.member]: new Date() });
         }
-        assert(value instanceof Date, "what's up with this");
-        return SuccessfulValidateAndParseResult(objValue);
+
+        // for updates, exclude the field.
+        return {
+            result: "success",
+            values: {},
+        };
     };
 
     ApplyToNewRow = (args: TAnyModel, clientIntention: xTableClientUsageContext) => {
@@ -1187,8 +1191,8 @@ export class CreatedAtField extends FieldBase<Date> {
 
     ApplyClientToDb = (clientModel: TAnyModel, mutationModel: TAnyModel, mode: DB3RowMode, clientIntention: xTableClientUsageContext) => {
         if (clientModel[this.member] === undefined) return;
+        if (mode !== "new") return; // exclude this field from updates
         const vr = this.ValidateAndParse({ row: clientModel, mode, clientIntention });
-        //mutationModel[this.member] = vr.parsedValue;
         Object.assign(mutationModel, vr.values);
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {

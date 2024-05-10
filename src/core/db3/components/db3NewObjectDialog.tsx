@@ -14,6 +14,7 @@ import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconSelectDialog";
 import { TAnyModel } from "../shared/apiTypes";
+import { AdminInspectObject } from "src/core/components/CMCoreComponents";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {
@@ -194,7 +195,10 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                 fullScreen={fullScreen}
                 disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
             >
-                <DialogTitle>{props.title || <>Edit {tableRenderClient.tableSpec.args.table.tableName}</>}</DialogTitle>
+                <DialogTitle>
+                    {props.title || <>Edit {tableRenderClient.tableSpec.args.table.tableName}</>}
+                    <AdminInspectObject src={initialValue} label="initial value" />
+                </DialogTitle>
                 <DialogContent dividers>
                     {
                         props.description && <CMDialogContentText>{props.description}</CMDialogContentText>

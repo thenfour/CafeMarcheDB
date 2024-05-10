@@ -17,7 +17,7 @@ import { assert } from "blitz";
 import React from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { Coalesce, SettingKey, gQueryOptions, parseIntOrNull } from "shared/utils";
-import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { AdminInspectObject, CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -585,6 +585,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
                     }
                 })}
             </Box>
+            <AdminInspectObject src={props.value} label="value" />
         </DialogTitle>
         <DialogContent dividers>
 

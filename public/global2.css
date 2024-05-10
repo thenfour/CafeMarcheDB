@@ -301,14 +301,19 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 
 
 .debugInspectorOpen {
+    -webkit-user-select: none;
+    -moz-user-select: none;
     user-select: none;
     cursor: pointer;
     border: 2px solid #aa08;
     background-color: #8ff8;
     padding: 2px;
     margin: 2px;
-    width: min-content;
+    /* width: min-content; */
     display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    white-space: nowrap;
 }
 
 /* https://stackoverflow.com/questions/5697067/css-for-grabbing-cursors-drag-drop */
@@ -2102,4 +2107,22 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     font-size: 22px;
     font-weight: bold;
     color: var(--primary-color);
+}
+
+
+.JSONStringColumnClient.viewer {
+    /* border: 1px solid black; */
+    /* width: 150px; */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.JSONStringColumnClient .debugInspectorOpen {
+    position: absolute;
+    top: 0;
+    right: 0;
 }
