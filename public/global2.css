@@ -2126,3 +2126,7 @@ can't use flex-spacer here because that expanded area should also be clickable. 
     top: 0;
     right: 0;
 }
+
+pre.serverStartInfo {
+    color: #aaa;
+}

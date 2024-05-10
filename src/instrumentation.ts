@@ -2,6 +2,7 @@
 // Run code once per node server startup
 import { Permission } from "../shared/permissions";
 import db from "db"
+import { execSync } from "child_process";
 
 async function SyncPermissionsTable() {
     console.log(`Synchronizing permissions table...`);
@@ -21,11 +22,17 @@ async function SyncPermissionsTable() {
             console.log(` -> INSERTED Permission ${codePermission}. Be sure to associate it with roles.`);
         }
     }
-
-    // TODO: other startup assertions.
 }
 
 export async function register() {
     console.log(`INSTRUMENTATION RUNNING`);
     await SyncPermissionsTable();
+
+    //const startupState = getServerStartStateRef();
+    process.env.CMDB_START_TIME = `${new Date().valueOf()}`;
+    process.env.CMDB_GIT_REVISION = execSync('git rev-parse HEAD').toString().trim();
+    process.env.CMDB_GIT_COMMIT_DATE = execSync('git log -1 --format=%cd').toString().trim();
+    console.log(`process.env.CMDB_START_TIME = ${process.env.CMDB_START_TIME}`);
+    console.log(`process.env.CMDB_GIT_REVISION = ${process.env.CMDB_GIT_REVISION}`);
+    console.log(`process.env.CMDB_GIT_COMMIT_DATE = ${process.env.CMDB_GIT_COMMIT_DATE}`);
 }

@@ -38,6 +38,9 @@ import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes"
 import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
 import { AdminInspectObject } from "./CMCoreComponents";
+import { getServerStartState } from "shared/serverStateBase";
+import { formatMillisecondsToDHMS, formatTimeSpan } from "shared/time";
+import { KeyValueDisplay } from "./CMCoreComponents2";
 
 const drawerWidth = 260;
 
@@ -632,11 +635,14 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
             <React.Suspense>
                 {children}
             </React.Suspense>
+            {
+                dashboardContext.isShowingAdminControls &&
+                <KeyValueDisplay className="serverStartInfo" data={{ ...dashboardContext.serverStartupState, uptime: formatMillisecondsToDHMS(dashboardContext.serverStartupState.uptimeMS), uptimeMS: undefined }} />
+            }
         </Box>
     </>
     );
 }
-
 
 
 const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission }>) => {

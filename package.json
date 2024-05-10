@@ -1,5 +1,8 @@
 {
   "name": "cmdb",
+  "browser": {
+    "child_process": false
+  },
   "version": "1.0.0",
   "scripts": {
     "dev": "blitz dev --port 10455",

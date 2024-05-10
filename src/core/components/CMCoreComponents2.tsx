@@ -89,12 +89,13 @@ export const NameValuePair = (props: NameValuePairProps) => {
 }
 
 // Define TypeScript type for the props
-type KeyValueDisplayValueType = string | null | undefined | number;
+type KeyValueDisplayValueType = string | null | undefined | number | Date;
 type KeyValueDisplayProps = {
     data: Record<string, KeyValueDisplayValueType>;
+    className?: string;
 };
 
-export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data }) => {
+export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data, className }) => {
     // Function to calculate the maximum key length for alignment
     const getMaxKeyLength = (data: Record<string, KeyValueDisplayValueType>): number => {
         return Math.max(...Object.keys(data).map(key => key.length));
@@ -113,6 +114,8 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data }) => {
                 valueStr = value;
             } else if (typeof value === 'number') {
                 valueStr = value.toString();
+            } else if (value.toISOString) {
+                valueStr = value.toISOString();
             } else {
                 valueStr = "unknown datatype";
             }
@@ -123,7 +126,7 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data }) => {
     };
 
     return (
-        <pre>
+        <pre className={className}>
             {renderKeyValuePairs(data)}
         </pre>
     );

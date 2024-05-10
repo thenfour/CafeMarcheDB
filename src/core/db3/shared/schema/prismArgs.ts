@@ -2,6 +2,7 @@ import db, { Prisma } from "db";
 //import * as db3 from "../db3core"; // circular
 import { CMDBTableFilterModel, ImageEditParams, MakeDefaultImageEditParams, TAnyModel, parsePayloadJSON } from "../apiTypes";
 import { TableAccessor } from "shared/rootroot";
+import { ServerStartInfo } from "shared/serverStateBase";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -1286,6 +1287,7 @@ export class DashboardContextDataBase {
     instrumentFunctionalGroup: TableAccessor<Prisma.InstrumentFunctionalGroupGetPayload<{}>>;
 
     currentUser: UserPayload | null;
+    serverStartupState: ServerStartInfo;
 }
 
 

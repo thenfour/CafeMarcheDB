@@ -4,6 +4,7 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { Stopwatch } from "shared/rootroot";
+import { getServerStartState } from "shared/serverStateBase";
 import { arraysContainSameValues } from "shared/utils";
 import { xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
@@ -141,7 +142,6 @@ export default resolver.pipe(
                 songCreditType,
                 dynMenuLinks,
             ] = results;
-
             const ret = {
                 userTag,
                 permission,
@@ -159,8 +159,8 @@ export default resolver.pipe(
                 songCreditType,
                 dynMenuLinks: dynMenuLinks.items as Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>[],
                 sessionPermissionsChanged: rsp,
+                serverStartupState: getServerStartState(),
             };
-
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);
             }
