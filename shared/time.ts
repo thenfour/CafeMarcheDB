@@ -1,5 +1,14 @@
 import dayjs, { Dayjs } from "dayjs";
+import weekOfYear from 'dayjs/plugin/weekOfYear';
+
 import { assert } from "blitz";
+
+dayjs.extend(weekOfYear);
+
+
+export const gMillisecondsPerMinute = 60 * 1000;
+export const gMillisecondsPerHour = 60 * gMillisecondsPerMinute;
+export const gMillisecondsPerDay = 24 * gMillisecondsPerHour;
 
 
 // tests >= start and < end. start and end can be swapped
@@ -14,9 +23,6 @@ export enum Timing {
     Future = 'Future',
 }
 
-export const gMillisecondsPerMinute = 60 * 1000;
-export const gMillisecondsPerHour = 60 * gMillisecondsPerMinute;
-export const gMillisecondsPerDay = 24 * gMillisecondsPerHour;
 
 export function formatMillisecondsToDHMS(milliseconds: number): string {
     if (milliseconds === 0) {
@@ -575,4 +581,121 @@ export const DateTimeRangeLessThan = (lhs: DateTimeRange | null, rhs: DateTimeRa
     }
     return lhs.isLessThan(rhs);
 };
+
+
+
+export function calculateCalendarWeeksDistance(date1: dayjs.Dayjs, date2: dayjs.Dayjs): number {
+    // Calculate the start of the week for each date
+    const startOfWeek1 = date1.startOf('week');
+    const startOfWeek2 = date2.startOf('week');
+
+    // Calculate the difference in days between the start of the weeks
+    const diffInDays = startOfWeek2.diff(startOfWeek1, 'day');
+
+    // Calculate the difference in calendar weeks
+    const diffInWeeks = Math.floor(diffInDays / 7);
+
+    return diffInWeeks;
+}
+
+export function calculateCalendarMonthsDistance(date1: dayjs.Dayjs, date2: dayjs.Dayjs): number {
+    // Calculate the year and month components of each date
+    const year1 = date1.year();
+    const month1 = date1.month();
+    const year2 = date2.year();
+    const month2 = date2.month();
+
+    // Calculate the difference in months
+    const diffInMonths = (year2 - year1) * 12 + (month2 - month1);
+
+    return diffInMonths;
+}
+
+
+
+export enum RelativeTimingBucket {
+    YearsAgo = "YearsAgo",
+    MonthsAgo = "MonthsAgo",
+    WeeksAgo = "WeeksAgo",
+    LastWeek = "LastWeek",
+    DaysAgo = "DaysAgo",
+    Yesterday = "Yesterday",
+    HappeningNow = "HappeningNow",
+    Today = 'Today',
+    Tomorrow = 'Tomorrow',
+    InDays = 'InDays', // after tomorrow but no more than 4 days
+    NextWeek = 'NextWeek',
+    InWeeks = 'InWeeks', // after this week, but up to 7 weeks
+    NextMonth = "NextMonth",
+    InMonths = 'InMonths', // 8+ weeks expressed in months
+    InYears = "InYears",
+    TBD = "TBD", // indeterminate time is assumed to be in the future.
+};
+
+export interface RelativeTimingInfo {
+    bucket: RelativeTimingBucket,
+    label: string, // e.g. "in 4 months", "today", "last week", "2 weeks ago"
+};
+
+// DateTimeRange is a class which includes the following useful functions:
+// isAllDay() - returns true if the event is an all-day event. It means time info should be ignored (which implies time zone independent)
+// isTBD()
+// getStartDateTime() - returns a Date representing the moment the range begins (inclusive, similar to C++ .begin() iterator semantics); or null if the range is TBD.
+// getEndDateTime() - returns a Date representing the first moment after the range (similar to C++ .end() iterator semantics); or null if the range is TBD.
+export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): RelativeTimingInfo {
+    // Check if the range is TBD
+    if (range.isTBD()) {
+        return { bucket: RelativeTimingBucket.TBD, label: "TBD" };
+    }
+
+    const timing = range.hitTestDateTime(refTime);
+    if (timing === Timing.Present) {
+        return { bucket: RelativeTimingBucket.HappeningNow, label: "Happening now" };
+    }
+
+    // today can be in the past or present so do that first
+    const startDate = dayjs(range.getStartDateTime());
+    if (startDate.isSame(refTime, "day")) {
+        return { bucket: RelativeTimingBucket.Today, label: "Today" };
+    }
+
+    const refTimeN = dayjs(floorLocalToLocalDay(refTime));
+    const startDateN = dayjs(floorLocalToLocalDay(startDate.toDate()));
+    const diffDays = Math.abs(startDateN.diff(refTimeN, "day"));
+
+    if (timing === Timing.Past) {
+        const yesterday = dayjs(refTimeN).add(-1, "d");
+
+        if (yesterday.isSame(startDate, "d")) return { bucket: RelativeTimingBucket.Yesterday, label: "Yesterday" };
+        if (diffDays <= 5) return { bucket: RelativeTimingBucket.DaysAgo, label: `${diffDays} days ago` };
+
+        const diffWeeks = Math.abs(calculateCalendarWeeksDistance(startDate, dayjs(refTime)));
+        if (diffWeeks <= 1) return { bucket: RelativeTimingBucket.LastWeek, label: `Last week` };
+
+        if (diffWeeks < 7) return { bucket: RelativeTimingBucket.WeeksAgo, label: `${diffWeeks} weeks ago` };
+
+        const diffMonths = Math.abs(calculateCalendarMonthsDistance(startDate, dayjs(refTime)));
+        if (diffMonths <= 18) return { bucket: RelativeTimingBucket.MonthsAgo, label: `${diffMonths} months ago` };
+
+        const diffYears = Math.round(Math.max(1, diffMonths / 12));
+        return { bucket: RelativeTimingBucket.YearsAgo, label: `${diffYears} years ago` };
+    }
+
+    const tomorrow = dayjs(refTimeN).add(1, "d");
+
+    const diffWeeks = Math.abs(calculateCalendarWeeksDistance(startDateN, refTimeN));
+
+    if (tomorrow.isSame(startDate, "d")) return { bucket: RelativeTimingBucket.Tomorrow, label: "Tomorrow" };
+    if (diffWeeks < 1 || diffDays < 5) return { bucket: RelativeTimingBucket.InDays, label: `In ${diffDays} days` };
+    if (diffWeeks === 1) return { bucket: RelativeTimingBucket.NextWeek, label: `Next week` };
+
+    if (diffWeeks < 7) return { bucket: RelativeTimingBucket.InWeeks, label: `In ${diffWeeks} weeks` };
+
+    const diffMonths = Math.abs(calculateCalendarMonthsDistance(startDate, dayjs(refTime)));//  Math.round(Math.max(1, diffDays / 30));
+    if (diffMonths <= 1) return { bucket: RelativeTimingBucket.NextMonth, label: `Next month` };
+    if (diffMonths <= 18) return { bucket: RelativeTimingBucket.InMonths, label: `In ${diffMonths} months` };
+
+    const diffYears = Math.round(Math.max(1, diffMonths / 12));
+    return { bucket: RelativeTimingBucket.InYears, label: `In ${diffYears} years` };
+}
 

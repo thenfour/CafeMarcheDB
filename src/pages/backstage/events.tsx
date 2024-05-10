@@ -8,10 +8,10 @@ import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { Timing } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, Timing } from "shared/time";
 import { IsNullOrWhitespace, arraysContainSameValues, toggleValueInArray } from "shared/utils";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject, TimingChip } from "src/core/components/CMCoreComponents";
-import { DebugCollapsibleAdminText, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { DebugCollapsibleAdminText, EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -26,7 +26,6 @@ import * as db3 from "src/core/db3/db3";
 import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
 import { GetEventFilterInfoRet, GetICalRelativeURIForUserAndEvent, MakeGetEventFilterInfoRet, TimingFilter } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-
 
 export interface EventSearchItemContainerProps {
     event: db3.EventSearch_Event;
@@ -54,6 +53,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     const eventURI = API.events.getURIForEvent(event.id, event.slug);
     const dateRange = API.events.getEventDateRange(event);
     const eventTiming = dateRange.hitTestDateTime();
+    const relativeTiming = CalcRelativeTiming(new Date(), dateRange);
 
     const visInfo = dashboardContext.getVisibilityInfo(event);
 
@@ -143,9 +143,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
             </Link>
 
             <div className='titleLine'>
-                <div className="date smallInfoBox">
-                    <span className="text">{dateRange.toString()}</span>
-                </div>
+                <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
             </div>
 
             <div className='titleLine'>

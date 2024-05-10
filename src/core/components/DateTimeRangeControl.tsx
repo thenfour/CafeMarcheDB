@@ -5,7 +5,7 @@ import { DateCalendar, DateView, LocalizationProvider, PickersDay, PickersDayPro
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { assert } from 'blitz';
 import dayjs, { Dayjs } from "dayjs";
-import { DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { NameValuePair } from './CMCoreComponents2';
 
@@ -433,6 +433,8 @@ const DateViewer = (props: { caption: string, value: Date | null | undefined }) 
 }
 
 const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
+    const t = CalcRelativeTiming(new Date(), value);
+
     return <div>
         {/* <InspectObject src={value} /> */}
         <DateViewer value={value.getStartDateTime()} caption='getStartDateTime'></DateViewer>
@@ -441,6 +443,10 @@ const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
         <div>duration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
         <DateViewer value={value.getSpec().startsAtDateTime} caption='SPEC StartsAt'></DateViewer>
         <div>spec duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
+
+        <span className="text">{t.label}</span>
+        <span className="text">{t.bucket}</span>
+
     </div>;
 }
 

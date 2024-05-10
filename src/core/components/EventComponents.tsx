@@ -21,7 +21,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconSelectDialog';
 import { AdminInspectObject, AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, TimingChip } from './CMCoreComponents';
-import { CMDialogContentText, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
@@ -894,10 +894,9 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 
             <div className='titleLine'>
                 <div className="date smallInfoBox">
-                    <span className="text">{eventData.dateRange.toString()}</span>
-
-                    {(eventData.event.segments.length === 1) && <EditSingleSegmentDateButton readonly={props.readonly} refetch={refetch} event={eventData.event} segment={eventData.event.segments[0]!} />}
-
+                    <EventDateField className="date smallInfoBox text" dateRange={eventData.dateRange}>
+                        {(eventData.event.segments.length === 1) && <EditSingleSegmentDateButton readonly={props.readonly} refetch={refetch} event={eventData.event} segment={eventData.event.segments[0]!} />}
+                    </EventDateField>
                 </div>
             </div>
 

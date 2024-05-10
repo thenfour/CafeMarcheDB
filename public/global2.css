@@ -118,7 +118,8 @@ input.CMTextInputBase.titleText {
     font-size: 28px;
     font-weight: bold;
     color: var(--primary-color);
-    text-transform: uppercase;
+    /* uppercase would obscure case  which is not desirable for input fields*/
+    /* text-transform: uppercase; */
 }
 
 .BasicNameValuePairContainer input.CMTextInputBase {
@@ -2129,4 +2130,83 @@ can't use flex-spacer here because that expanded area should also be clickable. 
 
 pre.serverStartInfo {
     color: #aaa;
+}
+
+.testResult.pass {
+    color: green;
+}
+
+
+.testResult.fail {
+    color: red;
+}
+
+
+.EventDateField.container {}
+
+
+.EventDateField.container .RelativeIndicator {
+    --chip-color: #ddd;
+    background-color: var(--chip-color);
+    color: #777;
+    margin: 0 10px;
+    padding: 0px 6px;
+    font-style: italic;
+    font-size: 15px;
+    font-weight: normal;
+    letter-spacing: 0;
+    box-shadow: 0 0 15px var(--chip-color);
+}
+
+
+.EventDateField.container.TBD .RelativeIndicator {
+    display: none;
+}
+
+
+/* Animation for the glow effect */
+@keyframes glow {
+    0% {
+        box-shadow: 0 0 5px var(--chip-color);
+    }
+
+    50% {
+        box-shadow: 0 0 20px var(--chip-color);
+    }
+
+    100% {
+        box-shadow: 0 0 5px var(--chip-color);
+    }
+}
+
+/* critical */
+.EventDateField.container.Today .RelativeIndicator,
+.EventDateField.container.HappeningNow .RelativeIndicator,
+.EventDateField.container.Tomorrow .RelativeIndicator {
+    --chip-color: #3c3;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    animation: glow 1s infinite;
+}
+
+/* "soon!" */
+.EventDateField.container.InDays .RelativeIndicator,
+.EventDateField.container.NextWeek .RelativeIndicator {
+    --chip-color: #f80;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    animation: glow 1s infinite;
+}
+
+/* "future!" */
+.EventDateField.container.InWeeks .RelativeIndicator,
+.EventDateField.container.NextMonth .RelativeIndicator,
+.EventDateField.container.InMonths .RelativeIndicator,
+.EventDateField.container.InYears .RelativeIndicator {
+    --chip-color: #88f;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
 }

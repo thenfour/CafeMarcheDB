@@ -6,6 +6,7 @@ import React from "react";
 
 import { IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3/db3";
+import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -161,3 +162,23 @@ export function CircularProgressWithLabel(props: CircularProgressProps & { value
         </Box>
     );
 }
+
+
+
+
+////////////////////////////////////////////////////////////////
+interface EventDateFieldProps {
+    dateRange: DateTimeRange;
+    className?: string;
+};
+
+export const EventDateField = (props: React.PropsWithChildren<EventDateFieldProps>) => {
+    const relativeTiming = CalcRelativeTiming(new Date(), props.dateRange);
+
+    return <div className={`${props.className} ${relativeTiming.bucket} EventDateField container`}>
+        <span className={`DatePart`}>{props.dateRange.toString()}</span>
+        <span className={`RelativeIndicator`}>{relativeTiming.label}</span>
+        {props.children}
+    </div>;
+};
+
