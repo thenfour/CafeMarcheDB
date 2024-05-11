@@ -95,12 +95,12 @@ export default resolver.pipe(
             const AND: string[] = [
                 `Event.isDeleted = FALSE`,
             ];
-            if (!u.isSysAdmin) {
-                AND.push(`(
+
+            AND.push(`(
                     (Event.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
                     OR (Event.visiblePermissionId is NULL AND Event.createdByUserId = ${u.id})
                     )`);
-            }
+
             if (!IsNullOrWhitespace(eventFilterExpression)) {
                 AND.push(eventFilterExpression);
             }

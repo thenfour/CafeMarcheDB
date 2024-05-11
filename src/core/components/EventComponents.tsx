@@ -314,8 +314,8 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
 
     return <tr>
         <td>
-            <div className={`nameCellContainer ${isYou && "you"}`}>
-                <div className='name'>{user.name}</div>
+            <div className={`nameCellContainer ${isYou && "you"}  userCssClass_${user.cssClass}`}>
+                <div className={`name`}>{user.name}</div>
                 {isYou && <div className='you'>(you)</div>}
             </div>
         </td>

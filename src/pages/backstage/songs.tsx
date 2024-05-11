@@ -2,23 +2,23 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Button, Pagination } from "@mui/material";
+import { Button, ListItemIcon, Menu, MenuItem, Pagination } from "@mui/material";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { arraysContainSameValues, gQueryOptions, toggleValueInArray } from "shared/utils";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
+import { arrayToTSV, arraysContainSameValues, toggleValueInArray } from "shared/utils";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { DebugCollapsibleAdminText, DebugCollapsibleText } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, DebugCollapsibleAdminText } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { SongDetailContainer } from "src/core/components/SongComponents";
 import { CalculateSongMetadata, EnrichedVerboseSong } from "src/core/components/SongComponentsBase";
-import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
-import { RenderMuiIcon } from "src/core/db3/components/IconSelectDialog";
+import { getURIForSong } from "src/core/db3/clientAPILL";
+import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getSongFilterInfo from "src/core/db3/queries/getSongFilterInfo";
 import { GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "src/core/db3/shared/apiTypes";
@@ -222,6 +222,24 @@ const SongListItem = (props: SongListItemProps) => {
 
 
 
+async function CopySongListCSV(snackbarContext: SnackbarContextType, value: db3.SongPayload_Verbose[]) {
+    const obj = value.map((e, i) => ({
+        Order: (i + 1).toString(),
+        ID: e.id.toString(),
+        Name: e.name,
+        StartBPM: e.startBPM?.toString() || "",
+        EndBPM: e.endBPM?.toString() || "",
+        LengthSeconds: e.lengthSeconds?.toString() || "",
+        URL: getURIForSong(e.id),
+    }));
+    const txt = arrayToTSV(obj);
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+}
+
+
+
+
 
 
 interface SongsListArgs {
@@ -233,16 +251,37 @@ interface SongsListArgs {
 
 const SongsList = ({ filterSpec, filterInfo, ...props }: SongsListArgs) => {
     const dashboardContext = React.useContext(DashboardContext);
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const snackbarContext = React.useContext(SnackbarContext);
 
     const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
 
     const items = (filterInfo.fullSongs as db3.SongPayload_Verbose[]).map(s => db3.enrichSong(s, dashboardContext));
 
+    const handleCopy = async () => {
+        CopySongListCSV(snackbarContext, items);
+    };
+
     return <div className="songsList searchResults">
-        {items.map(song => <SongListItem key={song.id} song={song} filterSpec={filterSpec} />)}
         <div className="searchRecordCount">
             {filterInfo.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + items.length} of {filterInfo.rowCount} total</>}
+            <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
+            <Menu
+                id="menu-searchResults"
+                anchorEl={anchorEl}
+                keepMounted
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
+            >
+                <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
+                    <ListItemIcon>
+                        {gIconMap.ContentCopy()}
+                    </ListItemIcon>
+                    Copy CSV
+                </MenuItem>
+            </Menu>
         </div>
+        {items.map(song => <SongListItem key={song.id} song={song} filterSpec={filterSpec} />)}
         <Pagination
             count={Math.ceil(filterInfo.rowCount / filterSpec.pageSize)}
             page={filterSpec.page + 1}
@@ -280,47 +319,6 @@ const SongListQuerier = (props: SongListQuerierProps) => {
             props.setFilterInfo({ ...queriedFilterInfo });
         }
     }, [getFilterInfoExtra.dataUpdatedAt]);
-
-    // QUERY: details
-    // const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary' };
-    // const [currentUser] = useCurrentUser();
-    // clientIntention.currentUser = currentUser!;
-
-    // const tableParams: db3.SongTableParams = {
-    //     songIds: queriedFilterInfo.songIds.length === 0 ? [-1] : queriedFilterInfo.songIds, // prevent fetching the entire table!
-    // };
-
-    // const songsClient = DB3Client.useTableRenderContext({
-    //     tableSpec: new DB3Client.xTableClientSpec({
-    //         table: db3.xSong_Verbose,
-    //         columns: [
-    //             new DB3Client.PKColumnClient({ columnName: "id" }),
-    //         ],
-    //     }),
-    //     filterModel: {
-    //         items: [],
-    //         tableParams,
-    //     },
-    //     paginationModel: {
-    //         page: 0,
-    //         pageSize: props.filterSpec.pageSize, // not usually needed because the eventid list is there. so for sanity.
-    //     },
-    //     requestedCaps: DB3Client.xTableClientCaps.Query,
-    //     clientIntention,
-    //     queryOptions: gQueryOptions.liveData,
-    // });
-
-    // React.useEffect(() => {
-    //     if (songsClient.remainingQueryStatus.isSuccess) {
-    //         const items = songsClient.items as db3.SongPayload_Verbose[];
-    //         // the db3 query doesn't retain the same order as the filter info ret, put in correct order.
-    //         const songsWithPossibleNulls = queriedFilterInfo.songIds.map(id => items.find(e => e.id === id));
-    //         const songsRaw = songsWithPossibleNulls.filter(e => !!e) as db3.SongPayload_Verbose[]; // in case of any desync.
-    //         const songs = songsRaw.map(s => db3.enrichSong(s, dashboardContext));
-
-    //         props.setSongsQueryResult(songs);
-    //     }
-    // }, [songsClient.remainingQueryStatus.dataUpdatedAt]);
 
     return <div className="queryProgressLine idle"></div>;
 };

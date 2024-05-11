@@ -65,10 +65,12 @@ export default resolver.pipe(
             const AND: string[] = [
                 `Song.isDeleted = FALSE`,
             ];
-            if (!u.isSysAdmin) {
-                AND.push(`Song.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)})`);
-                // TODO: handle private visibility (visiblePermissionId is null && creator = self)
-            }
+
+            AND.push(`(
+                    (Song.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
+                    OR (Song.visiblePermissionId is NULL AND Song.createdByUserId = ${u.id})
+                    )`);
+
             if (!IsNullOrWhitespace(songFilterExpression)) {
                 AND.push(songFilterExpression);
             }

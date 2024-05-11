@@ -138,6 +138,8 @@ model User {
   sessions Session[]
   changes  Change[] // yea don't include this in queries
 
+  cssClass String?
+
   taggedFiles              FileUserTag[]
   uploadedFiles            File[]
   eventSegmentResponses    EventSegmentUserResponse[]

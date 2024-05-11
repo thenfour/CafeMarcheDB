@@ -48,18 +48,28 @@ const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreate
   return updatedItems;
 };
 
+const RandomEventDate = () => {
+  const now = new Date();
+  // so it's not very simple... we want dates which are very spread, but also cluster around "now".
+  // so first determine past or future
+  // then generate a 0-1 which we can curve, and use it to lerp between the dates.
+  const gMaxDaysInPast = 365 * 2.2;
+  const gMaxDaysInFuture = 400;
+  const isPast = faker.datatype.boolean(gMaxDaysInPast / (gMaxDaysInPast + gMaxDaysInFuture));
+  let t01 = faker.number.float();
+  t01 = Math.pow(t01, 0.7); // curve downward favoring smaller values
+  if (isPast) {
+    const mindate = now;
+    mindate.setDate(mindate.getDate() - gMaxDaysInPast * (1.0 - t01));
+    return faker.date.between({ from: mindate, to: now });
+  }
+  const maxdate = now;
+  maxdate.setDate(maxdate.getDate() + gMaxDaysInFuture * t01);
+  return faker.date.between({ from: now, to: maxdate });
+};
 
 // if no base range specified, it will be random.
-const RandomDateRange = (refDate: Date | null): DateTimeRange => {
-  if (refDate === null) {
-    // heavily favor past.
-    const mindate = new Date();
-    mindate.setDate(mindate.getDate() - 365 * 10);
-    const maxdate = new Date();
-    maxdate.setDate(mindate.getDate() + 90);
-
-    refDate = faker.date.between({ from: mindate, to: maxdate });
-  }
+const RandomDateRange = (refRange: DateTimeRange): DateTimeRange => {
   const typeOptions = [0, 1, 1, 1, 2, 2, 2];
   const type = faker.helpers.arrayElement(typeOptions);
   if (type === 0) {
@@ -67,36 +77,59 @@ const RandomDateRange = (refDate: Date | null): DateTimeRange => {
     return new DateTimeRange();
   }
 
-  const mindate = new Date(refDate);
-  mindate.setDate(mindate.getDate() - 3);
-  const maxdate = new Date(refDate);
-  maxdate.setDate(mindate.getDate() + 3);
-  let startsAt = faker.date.between({
-    from: mindate,
-    to: maxdate,
-  });
+  let refDate: Date = new Date();
+  let isPast = faker.datatype.boolean();
+
+  const durationDays = faker.number.int({ min: 1, max: 4 }); // if all day
+
+  if (refRange.isTBD()) {
+    refDate = RandomEventDate();
+  } else if (isPast) {
+    refDate = refRange.getStartDateTime()!;
+  } else {
+    refDate = refRange.getEndDateTime()!;
+  }
 
   if (type === 1) {
     // all-day
-    const durationDays = faker.number.int({ min: 1, max: 4 });
-    //startsAt = floorLocalTimeToDayUTC(startsAt); <-- should not be necessary.
+
+    // figure out the start time.
+    const paddingDays = faker.number.int({ min: 0, max: 2 });
+    const startsAtDateTime = refDate;
+    if (isPast) {
+      startsAtDateTime.setDate(startsAtDateTime.getDate() - durationDays - paddingDays);
+    } else {
+      startsAtDateTime.setDate(startsAtDateTime.getDate() + paddingDays);
+    }
+
     return new DateTimeRange({
       durationMillis: durationDays * gMillisecondsPerDay,
       isAllDay: true,
-      startsAtDateTime: startsAt,
+      startsAtDateTime,
     });
   }
 
-  startsAt = roundToNearest15Minutes(startsAt);
-
-  // 15-minute increments.
+  // NOT all-day.
   const gIntervalMs = 15 * 60 * 1000; // 15 minutes = 900000 ms
   const gMaxHours = 12;
   const intervalCount = faker.number.int({ min: 1, max: gMaxHours * 4 });
+  const durationMillis = gIntervalMs * intervalCount; // if not all day
+
+  const paddingIntervals = faker.number.int({ min: 0, max: 8 });
+  const paddingMS = gIntervalMs * paddingIntervals;
+
+  let startsAtDateTime = roundToNearest15Minutes(refDate);
+  if (isPast) {
+    startsAtDateTime = new Date(startsAtDateTime.valueOf() - durationMillis - paddingMS);
+  } else {
+    startsAtDateTime = new Date(startsAtDateTime.valueOf() + paddingMS);
+  }
+
+  // 15-minute increments.
   return new DateTimeRange({
-    durationMillis: gIntervalMs * intervalCount,
+    durationMillis,
     isAllDay: false,
-    startsAtDateTime: startsAt,
+    startsAtDateTime,
   });
 };
 
@@ -1124,11 +1157,11 @@ const main = async () => {
     const eventName = faker.word.words({ count: { min: 1, max: 7 }, });
     console.log(`creating event #${i} ${eventName}`);
 
-    const segmentCount = probabool(0.6) ? 1 : faker.number.int({ min: 0, max: 2 });
+    const segmentCount = probabool(0.66) ? 1 : faker.helpers.arrayElement([0, 2, 3]); // most of the time 1 segment. otherwise 0, 2, 3.
     const segmentDateRanges: DateTimeRange[] = [];
     let eventRange = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
     for (let ii = 0; ii < segmentCount; ++ii) {
-      const segrange = RandomDateRange(eventRange.getStartDateTime());
+      const segrange = RandomDateRange(eventRange);
       segmentDateRanges[ii] = segrange;
       eventRange = eventRange.unionWith(segrange);
     }

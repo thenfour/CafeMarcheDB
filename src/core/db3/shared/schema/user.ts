@@ -597,6 +597,12 @@ const userBaseArgs: db3.TableDesc = {
             format: "plain",
             authMap: xUserAuthMap_R_EOwn_EManagers,
         }),
+        new GenericStringField({
+            columnName: "cssClass",
+            allowNull: true,
+            format: "raw",
+            authMap: xUserAuthMap_R_EAdmins,
+        }),
         // new BoolField({
         //     columnName: "isActive",
         //     defaultValue: false,

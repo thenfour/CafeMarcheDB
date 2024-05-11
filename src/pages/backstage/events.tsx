@@ -2,16 +2,16 @@ import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Button, Pagination, Tooltip } from "@mui/material";
+import { Button, ListItemIcon, Menu, MenuItem, Pagination, Tooltip } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange, Timing } from "shared/time";
-import { IsNullOrWhitespace, arraysContainSameValues, toggleValueInArray } from "shared/utils";
+import { IsNullOrWhitespace, arrayToTSV, arraysContainSameValues, toggleValueInArray } from "shared/utils";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject, TimingChip } from "src/core/components/CMCoreComponents";
-import { DebugCollapsibleAdminText, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, DebugCollapsibleAdminText, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -21,11 +21,13 @@ import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { VisibilityValue } from "src/core/components/VisibilityControl";
 import { API } from "src/core/db3/clientAPI";
-import { RenderMuiIcon, gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
 import { GetEventFilterInfoRet, GetICalRelativeURIForUserAndEvent, MakeGetEventFilterInfoRet, TimingFilter } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
+import { getURIForEvent } from "src/core/db3/clientAPILL";
 
 export interface EventSearchItemContainerProps {
     event: db3.EventSearch_Event;
@@ -268,6 +270,8 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                         variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.typeFilter.some(id => id === type.id) }}
                         onClick={() => toggleType(type.id)}
                         color={type.color}
+                        size="small"
+
                     //tooltip={status.tooltip} // no. it gets in the way and is annoying.
                     >
                         {RenderMuiIcon(type.iconName)}{type.label} ({type.rowCount})
@@ -283,6 +287,8 @@ const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValue
                     filterInfo.statuses.map(status => (
                         <CMChip
                             key={status.id}
+                            size="small"
+
                             onClick={() => toggleStatus(status.id)}
                             color={status.color}
                             shape="rectangle"
@@ -484,6 +490,30 @@ const EventListItem = ({ event, ...props }: EventListItemProps) => {
 };
 
 
+
+
+async function CopyEventListCSV(snackbarContext: SnackbarContextType, value: db3.EnrichedSearchEventPayload[]) {
+    const obj = value.map((e, i) => ({
+        Order: (i + 1).toString(),
+        ID: e.id.toString(),
+        Name: e.name,
+        Type: e.type?.text || "",
+        Status: e.status?.label || "",
+        StartsAt: e.startsAt?.toISOString() || "TBD",
+        IsAllDay: e.isAllDay ? "yes" : "no",
+        DurationMinutes: (new Number(e.durationMillis).valueOf() / 60000).toString(),
+        Location: e.locationDescription,
+        LocationURL: e.locationURL,
+        URL: getURIForEvent(e.id),
+    }));
+    const txt = arrayToTSV(obj);
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+}
+
+
+
+
 interface EventsListArgs {
     filterSpec: EventsFilterSpec,
     filterInfo: GetEventFilterInfoRet;
@@ -493,12 +523,33 @@ interface EventsListArgs {
 };
 
 const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: EventsListArgs) => {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const snackbarContext = React.useContext(SnackbarContext);
 
     const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
+
+    const handleCopy = async () => {
+        CopyEventListCSV(snackbarContext, events);
+    };
 
     return <div className="eventList searchResults">
         <div className="searchRecordCount">
             {filterInfo.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {filterInfo.rowCount} total</>}
+            <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
+            <Menu
+                id="menu-searchResults"
+                anchorEl={anchorEl}
+                keepMounted
+                open={Boolean(anchorEl)}
+                onClose={() => setAnchorEl(null)}
+            >
+                <MenuItem onClick={async () => { await handleCopy(); setAnchorEl(null); }}>
+                    <ListItemIcon>
+                        {gIconMap.ContentCopy()}
+                    </ListItemIcon>
+                    Copy CSV
+                </MenuItem>
+            </Menu>
         </div>
         {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} refetch={refetch} filterInfo={filterInfo} />)}
         <Pagination
@@ -562,7 +613,7 @@ const EventListOuter = (props: EventListOuterProps) => {
     const [statusFilter, setStatusFilter] = useURLState<number[]>("statuses", []);
     const [typeFilter, setTypeFilter] = useURLState<number[]>("types", []);
     const [timingFilter, setTimingFilter] = useURLState<TimingFilter>("timing", "relevant");
-    const [orderBy, setOrderBy] = useURLState<"StartAsc" | "StartDesc">("sort", "StartDesc");
+    const [orderBy, setOrderBy] = useURLState<"StartAsc" | "StartDesc">("sort", "StartAsc");
 
     const filterSpec: EventsFilterSpec = {
         pageSize: 20,
