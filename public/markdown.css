@@ -103,3 +103,88 @@ test cases:
     background-color: #ddf;
     outline: 2px solid black;
 }
+
+
+
+/* -  --------------------------------- */
+
+.MD3Container.editor {
+    --radius: 8px;
+    margin: 20px;
+    border: 1px solid #ddd;
+    border-radius: var(--radius);
+}
+
+.MD3Container.editor .header {
+    background-color: #eee;
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    display: flex;
+    padding-left: 4px;
+    padding-right: 10px;
+    justify-content: space-between;
+}
+
+.MD3Container.editor .tabs {
+    display: flex;
+}
+
+.MD3Container.editor .tabs .tab {
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+    padding: 3px 13px;
+}
+
+.MD3Container.editor .tabs .tab.selected {
+    background-color: white;
+}
+
+.MD3Container.editor .toolbar {
+    display: flex;
+    align-items: center;
+}
+
+.MD3Container.editor .toolbar .toolItem {
+    padding: 4px 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.MD3Container.editor .toolbar .toolItem svg {
+    fill: #888;
+    width: 18px;
+    height: 18px;
+}
+
+.MD3Container.editor .toolbar .toolItem:hover {
+    background-color: #ddd;
+}
+
+.MD3Container.editor .toolbar .toolItem:hover svg {
+    fill: #00f;
+}
+
+.MD3Container.editor .toolbar .divider {
+    margin-left: 5px;
+    margin-right: 5px;
+    border-left: 1px solid #c7c7c7;
+    height: 50%;
+}
+
+
+.MD3Container.editor textarea {
+    border-radius: var(--radius);
+    padding: 10px;
+}
+
+.MD3Container.editor .previewContainer {
+    padding: 10px;
+}
+
+blockquote {
+    padding: 0 1em;
+    color: #636c76;
+    border-left: .25em solid #d0d7de;
+}

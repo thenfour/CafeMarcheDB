@@ -20,6 +20,9 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { Prisma } from "db";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { DateTimeRange, RelativeTimingBucket, RelativeTimingInfo } from "shared/time";
+import { MarkdownEditor } from "src/core/components/RichTextEditor";
+import { Markdown2Editor } from "src/core/components/MarkdownControl2";
+import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 
 
 const AutoAssignInstrumentTester = () => {
@@ -101,8 +104,10 @@ const AutoAssignInstrumentTester = () => {
         <div>
             <table>
                 <thead>
-                    <th>leaf</th>
-                    <th>instruments</th>
+                    <tr>
+                        <th>leaf</th>
+                        <th>instruments</th>
+                    </tr>
                 </thead>
                 <tbody>
                     {results.map((r, i) => (
@@ -119,6 +124,13 @@ const AutoAssignInstrumentTester = () => {
     </div>;
 };
 
+const MarkdownTester = () => {
+    const [text, setText] = React.useState<string>("write here");
+    return <div>
+        <Markdown3Editor value={text} onChange={(v) => setText(v)} />
+    </div>
+};
+
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
     const [slugOrNot, setSlugOrNot] = React.useState<string>("");
@@ -128,6 +140,13 @@ const MainContent = () => {
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <>
+
+        <CMCoreComponents.CMSinglePageSurfaceCard>
+            <div className="content">
+                <MarkdownTester />
+            </div>
+        </CMCoreComponents.CMSinglePageSurfaceCard>
+
 
         <AutoAssignInstrumentTester />
 
