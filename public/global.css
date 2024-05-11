@@ -523,6 +523,10 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   margin-bottom: 8px;
 }
 
+.EventDetail .contentSection.filterControls {
+  width: 100%;
+}
+
 .contentSection .smallInfoBox {
   display: flex;
   align-items: center;

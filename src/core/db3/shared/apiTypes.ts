@@ -205,6 +205,7 @@ export interface TClientFileUploadTags {
     taggedSongId?: number;
     taggedEventId?: number;
     taggedInstrumentId?: number;
+    fileTagId?: number;
 };
 
 // interface from upload.ts to mutation. files themselves contain much of the data; this is only for associations.

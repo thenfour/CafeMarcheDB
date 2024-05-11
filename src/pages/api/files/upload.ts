@@ -62,6 +62,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                     args.taggedSongId = fields.taggedSongId && (CoerceToNumberOrNull(fields.taggedSongId[0]));
                     args.taggedUserId = fields.taggedUserId && (CoerceToNumberOrNull(fields.taggedUserId[0]));
                     args.visiblePermissionId = fields.visiblePermissionId && (CoerceToNumberOrNull(fields.visiblePermissionId[0]));
+                    args.fileTagId = fields.fileTagId && (CoerceToNumberOrNull(fields.fileTagId[0]));
 
                     const visiblePermission = fields.visiblePermission && (CoerceToString(fields.visiblePermission[0]));
 
@@ -97,6 +98,7 @@ export default api(async (req, res, origCtx: Ctx) => {
 
                             if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
                             if (args.taggedInstrumentId) fields.taggedInstruments = [args.taggedInstrumentId];
+                            if (args.fileTagId) fields.tags = [args.fileTagId];
                             if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
                             if (args.externalURI) (fields as db3.FilePayloadMinimum).externalURI = args.externalURI;
@@ -155,17 +157,18 @@ export default api(async (req, res, origCtx: Ctx) => {
                             const recordingTag = allTags.find(t => t.significance === db3.FileTagSignificance.Recording);
 
                             // automatically tag some things.
-                            fields.tags = [];
+                            const tags = new Set();
+                            if (args.fileTagId) tags.add(args.fileTagId);
 
                             if (mimeType?.startsWith("audio/") && recordingTag) {
-                                fields.tags.push(recordingTag.id);
+                                tags.add(recordingTag.id);
                             }
 
                             // if there's a song tag, and you're uploading files, VERY likely it's a partition or recording.
                             // if the mime type is audio, mark it as recording.
                             if (args.taggedSongId && (file.originalFilename as string).toLowerCase().endsWith(".pdf")) {
                                 if (partitionTag) {
-                                    fields.tags.push(partitionTag.id);
+                                    tags.add(partitionTag.id);
 
                                     const allInstruments = await db.instrument.findMany();
                                     const aaret = AutoAssignInstrumentPartition({
@@ -182,6 +185,7 @@ export default api(async (req, res, origCtx: Ctx) => {
                             if (args.taggedEventId) fields.taggedEvents = [args.taggedEventId];
                             if (args.taggedSongId) fields.taggedSongs = [args.taggedSongId];
                             if (args.taggedUserId) fields.taggedUsers = [args.taggedUserId];
+                            fields.tags = [...tags];
 
                             const newFile = await mutationCore.insertImpl(db3.xFile, fields, ctx, clientIntention) as Prisma.FileGetPayload<{}>;
 
