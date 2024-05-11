@@ -259,6 +259,7 @@ interface MarkdownEditorProps {
     outdentTrig?: undefined | number;
     underlineTrig?: undefined | number;
     strikethroughTrig?: undefined | number;
+    refocusTrig?: undefined | number;
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
@@ -687,6 +688,12 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             ToolbarActions.attachFiles();
         }
     }, [props.attachFilesTrig]);
+
+    React.useEffect(() => {
+        if ((props.refocusTrig || 0) > 0) {
+            ta.current.focus();
+        }
+    }, [props.refocusTrig]);
 
     const handleNativeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {

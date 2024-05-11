@@ -3,14 +3,13 @@
 // "view" vs. "edit" modes, "save / close" etc should not be there yet.
 // file wrapper included.
 // think github's issue description editor.
-import React from "react";
-import { gIconMap } from "../db3/components/IconSelectDialog";
-import { Markdown, MarkdownEditor } from "./RichTextEditor";
-import { Tooltip } from "@mui/material";
 import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
 import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
+import { Tooltip } from "@mui/material";
+import React from "react";
+import { Markdown, MarkdownEditor } from "./RichTextEditor";
 
 //////////////////////////////////////////////////
 interface Markdown3EditorProps {
@@ -40,6 +39,9 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
     const [underlineTrig, setUnderlineTrig] = React.useState<number>(0);
     const [strikethroughTrig, setStrikethroughTrig] = React.useState<number>(0);
 
+    // when coming back from preview mode to 
+    const [refocusTrig, setRefocusTrig] = React.useState<number>(0);
+
     const changeTab = (newTab: M3Tab) => {
         // avoid retriggering on remount
         setHeadingTrig(0);
@@ -60,6 +62,14 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
 
         setTab(newTab);
     };
+
+    React.useEffect(() => {
+
+        if (tab === 'write') {
+            setRefocusTrig(refocusTrig + 1); // tell the textarea to focus again.
+        }
+
+    }, [tab]);
 
     React.useEffect(() => {
         const handleKeyDown = (event) => {
@@ -177,6 +187,11 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
         </Tooltip>,
     };
 
+    const editorContainerStyle: React.CSSProperties = tab === 'write' ? {} : {
+        visibility: "hidden",
+        position: "absolute",
+    }
+
     return <div className="MD3 editor MD3Container">
         <div className="header">
             <div className="tabs">
@@ -215,7 +230,7 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
             }
         </div>
         <div className="content">
-            {tab === "write" &&
+            <div style={editorContainerStyle}>
                 <MarkdownEditor
                     onValueChanged={props.onChange}
                     value={props.value}
@@ -235,8 +250,9 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                     outdentTrig={outdentTrig}
                     underlineTrig={underlineTrig}
                     strikethroughTrig={strikethroughTrig}
+                    refocusTrig={refocusTrig}
                 />
-            }
+            </div>
             {tab === "preview" &&
                 <div className="previewContainer">
                     <Markdown markdown={props.value} />

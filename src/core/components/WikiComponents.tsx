@@ -15,6 +15,7 @@ import { CMTextInputBase } from "./CMTextField";
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
 import { DashboardContext } from "./DashboardContext";
+import { Markdown3Editor } from "./MarkdownControl3";
 
 
 
@@ -39,11 +40,11 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
     const [name, setName] = React.useState<string>(props.initialValue.name);
     const [content, setContent] = React.useState<string>(props.initialValue.content);
     const [visibility, setVisibility] = React.useState<VisibilityControlValue>(props.initialValue.visibilityPermission);
-    const [tab, setTab] = React.useState(0);
+    //const [tab, setTab] = React.useState(0);
 
-    const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
-        setTab(newValue);
-    };
+    // const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
+    //     setTab(newValue);
+    // };
 
     const handleSave = async () => {
         const success = await props.onSave({
@@ -68,9 +69,6 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
 
     return <>
         <div className="header">
-            <Button onClick={props.onCancel}>{gIconMap.Cancel()}{hasEdits ? "Cancel" : "Close editor"}</Button>
-            {hasEdits && <Button onClick={async () => { await handleSave() }} >{gIconMap.Save()} Save</Button>}
-            {hasEdits && <Button onClick={async () => { await handleSaveAndClose() }}>{gIconMap.Done()} save & close</Button>}
         </div>
         <div className="content">
 
@@ -85,33 +83,20 @@ export const WikiPageContentEditor = (props: WikiPageContentEditorProps) => {
 
             <div className="wikiMarkdownEditorContainer">
 
-                <Tabs
-                    value={tab}
-                    onChange={handleChangeTab}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                >
-                    <Tab label="Edit" {...TabA11yProps("wikiEdit", 0)} />
-                    <Tab label="Preview" {...TabA11yProps("wikiEdit", 1)} />
-                </Tabs>
+                <div className='tabContent editTab'>
+                    <Markdown3Editor
+                        onChange={(v) => setContent(v)}
+                        value={content}
+                        autoFocus={true}
+                    />
+                </div>
 
-                <CustomTabPanel tabPanelID='wikiEdit' value={tab} index={0}>
-                    <div className='tabContent editTab'>
-                        <MarkdownEditor
-                            onValueChanged={(v) => setContent(v)}
-                            value={content}
-                            autoFocus={true}
-                            displayUploadFileComponent={true} // #133 for mobile,this gives an opportunity to upload/embed.
-                        />
-                    </div>
-                </CustomTabPanel>
+            </div>
 
-                <CustomTabPanel tabPanelID='wikiEdit' value={tab} index={1}>
-                    <div className='tabContent previewTab'>
-                        <Markdown markdown={content} />
-                    </div>
-                </CustomTabPanel>
-
+            <div className="actionButtonsRow">
+                <div className={`freeButton cancelButton`} onClick={props.onCancel}>{hasEdits ? "Cancel" : "Close"}</div>
+                <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? async () => { await handleSave() } : undefined}>Save progress</div>
+                <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? async () => { await handleSaveAndClose() } : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
             </div>
         </div>
 

@@ -1,10 +1,8 @@
 import { BlitzPage, useParams } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import db from "db";
 import { Suspense } from "react";
 import { slugify } from "shared/rootroot";
 import { IsNullOrWhitespace, SettingKey } from "shared/utils";
-import { NavRealm } from "src/core/components/Dashboard2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { WikiPageControl } from "src/core/components/WikiComponents";
 import getWikiPage from "src/core/db3/queries/getWikiPage";

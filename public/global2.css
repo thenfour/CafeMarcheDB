@@ -2272,3 +2272,50 @@ table.activityVis .cell.medActivity {
 table.activityVis .cell.highActivity {
     background-color: #216e39;
 }
+
+.actionButtonsRow {
+    display: flex;
+    justify-content: right;
+}
+
+
+.actionButtonsRow>* {
+    padding: 3px 13px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    margin-left: 10px;
+    background-color: #eee;
+
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.actionButtonsRow>*.cancelButton {
+    color: #a00;
+    background-color: #a002;
+    border: 1px solid #a00;
+}
+
+.actionButtonsRow>*.saveProgressButton {
+    color: #008;
+    background-color: #0082;
+    border: 1px solid #008;
+}
+
+.actionButtonsRow>*.saveProgressButton.unchanged {
+    opacity: 30%;
+    filter: saturate(0);
+}
+
+.actionButtonsRow>*.saveAndCloseButton {
+    color: #080;
+    background-color: #0801;
+    border: 1px solid #080;
+}
+
+.actionButtonsRow>*.saveAndCloseButton.unchanged {
+    opacity: 30%;
+    filter: saturate(0);
+}

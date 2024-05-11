@@ -110,7 +110,6 @@ test cases:
 
 .MD3Container.editor {
     --radius: 8px;
-    margin: 20px;
     border: 1px solid #ddd;
     border-radius: var(--radius);
 }
