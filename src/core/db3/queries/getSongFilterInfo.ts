@@ -7,7 +7,7 @@ import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
-import { SongPayload_Verbose, SongTableParams, xSong_Verbose } from "../db3";
+import { GetBasicVisFilterExpressionForSong, SongPayload_Verbose, SongTableParams, xSong_Verbose } from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 
 interface TArgs {
@@ -62,14 +62,8 @@ export default resolver.pipe(
 
             const songFilterExpression = songFilterExpressions.length > 0 ? `(${songFilterExpressions.join(" and ")})` : "";
 
-            const AND: string[] = [
-                `Song.isDeleted = FALSE`,
-            ];
-
-            AND.push(`(
-                    (Song.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
-                    OR (Song.visiblePermissionId is NULL AND Song.createdByUserId = ${u.id})
-                    )`);
+            const AND: string[] = [];
+            AND.push(GetBasicVisFilterExpressionForSong(u, "Song"));
 
             if (!IsNullOrWhitespace(songFilterExpression)) {
                 AND.push(songFilterExpression);

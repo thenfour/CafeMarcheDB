@@ -117,7 +117,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
     if (IsNullOrWhitespace(props.tooltip)) return chipNode;
 
-    return <Tooltip title={props.tooltip}>{chipNode}</Tooltip>;
+    return <Tooltip title={props.tooltip} disableInteractive>{chipNode}</Tooltip>;
 }
 
 

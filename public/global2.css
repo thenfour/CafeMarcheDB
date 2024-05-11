@@ -2232,3 +2232,43 @@ pre.serverStartInfo {
     border-radius: 3px;
     padding: 0 10px;
 }
+
+/* -  --------------------------------- */
+
+table.activityVis {
+    font-family: monospace;
+}
+
+table.activityVis th,
+table.activityVis td {
+    /* padding equal on both axes makes a better graph*/
+    padding: 4px;
+}
+
+table.activityVis .cell.hasActivity {
+    background-color: #080;
+    cursor: pointer;
+}
+
+table.activityVis .cell .cellInner {
+    --dim: 30px;
+    width: var(--dim);
+    height: var(--dim);
+}
+
+table.activityVis .cell.hasActivity:hover,
+table.activityVis .cell.hasActivity.selected {
+    outline: 2px solid blue;
+}
+
+table.activityVis .cell.lowActivity {
+    background-color: #9be9a8;
+}
+
+table.activityVis .cell.medActivity {
+    background-color: #40c463;
+}
+
+table.activityVis .cell.highActivity {
+    background-color: #216e39;
+}

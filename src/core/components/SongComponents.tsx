@@ -14,18 +14,19 @@ import { API } from '../db3/clientAPI';
 import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { TAnyModel } from '../db3/shared/apiTypes';
-import { CMChip, CMChipContainer, CMStandardDBChip, CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
+import { CMChipContainer, CMStandardDBChip, CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
 import { NameValuePair } from './CMCoreComponents2';
+import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
+import { Markdown2Control } from './MarkdownControl2';
 import { MetronomeButton } from './Metronome';
 import { Markdown } from './RichTextEditor';
 import { SearchableNameColumnClient } from './SearchableNameColumnClient';
-import { MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
+import { SettingMarkdown } from './SettingMarkdown';
 import { CalculateSongMetadata, EnrichedVerboseSong, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
-import { Markdown2Control } from './MarkdownControl2';
-import { DashboardContext } from './DashboardContext';
+import { SongHistory } from './SongHistory';
 
 
 export const SongClientColumns = {
@@ -429,6 +430,7 @@ export const gSongDetailTabSlugIndices = {
     parts: 1,
     recordings: 2,
     files: 3,
+    history: 4,
 } as const;
 
 export interface SongDetailArgs {
@@ -485,6 +487,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
             <Tab label={`Parts (${partitions.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.parts)} />
             <Tab label={`Recordings (${recordings.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.recordings)} />
             <Tab label={`All files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.files)} />
+            <Tab label={`History`} {...TabA11yProps('song', gSongDetailTabSlugIndices.history)} />
         </Tabs>
 
         <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.info}>
@@ -521,6 +524,10 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
             }} />
         </CustomTabPanel>
 
+
+        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.history}>
+            <SongHistory song={song} />
+        </CustomTabPanel>
 
 
     </SongDetailContainer>;

@@ -516,3 +516,27 @@ export const AutoAssignInstrumentPartition = ({ allInstruments, fileLeafWithoutE
     };
 };
 
+
+
+export interface GetSongActivityReportArgs {
+    songId: number;
+    // event type
+    // event date range
+};
+
+export interface GetSongActivityReportRetEvent {
+    id: number,
+    name: string,
+    startsAt: null | Date,
+    durationMillis: bigint,
+    isAllDay: boolean,
+    endDateTime: null | Date,
+};
+
+export interface GetSongActivityReportRet {
+    events: GetSongActivityReportRetEvent[];
+    query: string;
+};
+
+
+

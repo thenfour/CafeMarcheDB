@@ -211,6 +211,7 @@ export enum Setting {
     CustomLinksPageMarkdown = "CustomLinksPageMarkdown",
     MenuLinksPageMarkdown = "MenuLinksPageMarkdown",
     GlobalWikiPage_Markdown = "GlobalWikiPage_Markdown",
+    SongHistoryTabDescription = "SongHistoryTabDescription",
 
     // not markdown....
 

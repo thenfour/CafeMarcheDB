@@ -92,14 +92,9 @@ export default resolver.pipe(
 
             const eventFilterExpression = eventFilterExpressions.length > 0 ? `(${eventFilterExpressions.join(" and ")})` : "";
 
-            const AND: string[] = [
-                `Event.isDeleted = FALSE`,
-            ];
+            const AND: string[] = [];
 
-            AND.push(`(
-                    (Event.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
-                    OR (Event.visiblePermissionId is NULL AND Event.createdByUserId = ${u.id})
-                    )`);
+            AND.push(db3.GetBasicVisFilterExpressionForEvent(u, "Event"));
 
             if (!IsNullOrWhitespace(eventFilterExpression)) {
                 AND.push(eventFilterExpression);

@@ -198,6 +198,31 @@ export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({
 export type UserWithRolesPayload = Prisma.UserGetPayload<typeof UserWithRolesArgs>;
 
 
+// AND this into your query to apply visibility & soft delete logic.
+export const GetBasicVisFilterExpressionForSong = (u: UserWithRolesPayload, songTableName: string) => {
+    return `(
+        (${songTableName}.isDeleted = false)
+        AND
+        (
+            (${songTableName}.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
+            OR (${songTableName}.visiblePermissionId is NULL AND ${songTableName}.createdByUserId = ${u.id})
+        )
+    )`;
+}
+
+// AND this into your query to apply visibility & soft delete logic.
+export const GetBasicVisFilterExpressionForEvent = (u: UserWithRolesPayload, eventTableName: string) => {
+    return `(
+        (${eventTableName}.isDeleted = false)
+        AND
+        (
+            (${eventTableName}.visiblePermissionId IN (${u.role?.permissions.map(p => p.permissionId)}))
+            OR (${eventTableName}.visiblePermissionId is NULL AND ${eventTableName}.createdByUserId = ${u.id})
+        )
+    )`;
+}
+
+
 
 ////////////////////////////////////////////////////////////////
 export type DB3RowMode = "new" | "view" | "update";
