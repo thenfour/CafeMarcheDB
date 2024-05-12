@@ -13,7 +13,7 @@ import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeCo
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { IconEditCell, RenderMuiIcon } from "src/core/db3/components/IconSelectDialog";
+import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import { AutoAssignInstrumentPartition, TAnyModel } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -22,6 +22,7 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { StandardVariationSpec } from "shared/color";
 import { Timing } from "shared/time";
+import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 
 interface FilterSpec {
     qfText: string;

@@ -7,11 +7,11 @@ import { SettingKey, gQueryOptions } from "shared/utils";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import { CMSmallButton } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 import { Markdown } from "./RichTextEditor";
+import { gIconMap } from "../db3/components/IconMap";
 //import { API } from "../db3/clientAPI";
 
 export const GenerateDefaultDescriptionSettingName = (tableName: string, columnName: string) => `${tableName}.${columnName}.DescriptionMarkdown` as SettingKey;

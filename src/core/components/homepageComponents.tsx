@@ -2,10 +2,10 @@ import { nanoid } from 'nanoid';
 import React from "react";
 import { Clamp, IsNullOrWhitespace, getNextSequenceId, modulo } from "shared/utils";
 import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import * as db3 from "../db3/db3";
 import { AddCoord2DSize, Coord2D, Size } from "../db3/shared/apiTypes";
 import { Markdown } from "./RichTextEditor";
+import { gIconMap } from '../db3/components/IconMap';
 
 const gSettings = {
     backstageURL: `/backstage`,

@@ -1,23 +1,22 @@
+import { assert } from "blitz";
 import React from "react";
 import * as ReactSmoothDnd from "react-smooth-dnd";
 import { DynamicMenuLinkType } from "shared/dynMenuTypes";
 import { Permission } from 'shared/permissions';
+import { slugify } from "shared/rootroot";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from "src/core/components/CMCoreComponents";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
-import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { TAnyModel } from "../db3/shared/apiTypes";
-import { KeyValueDisplay, NameValuePair } from './CMCoreComponents2';
-import { VisibilityValue } from "./VisibilityControl";
-import { assert } from "blitz";
-import { slugify } from "shared/rootroot";
-import { TextInputWithSearch } from "./SearchableNameColumnClient";
+import { KeyValueDisplay } from './CMCoreComponents2';
 import { CMTextInputBase, CMTextInputBaseProps } from "./CMTextField";
 import { DashboardContext } from "./DashboardContext";
+import { VisibilityValue } from "./VisibilityControl";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

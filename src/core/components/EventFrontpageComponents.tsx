@@ -4,7 +4,6 @@ import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import { EditTextDialogButton } from "./CMCoreComponents";
 import { AgendaItem } from './homepageComponents';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -12,6 +11,7 @@ import { useAuthenticatedSession } from "@blitzjs/auth";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { DashboardContext } from "./DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
+import { gIconMap } from "../db3/components/IconMap";
 
 
 interface FrontpageControlSpec {

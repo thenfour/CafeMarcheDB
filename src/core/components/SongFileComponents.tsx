@@ -10,7 +10,6 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gCharMap, gIconMap } from "../db3/components/IconSelectDialog";
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AudioPreviewBehindButton } from './AudioPreview';
@@ -23,6 +22,7 @@ import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
 import { formatFileSize } from 'shared/rootroot';
+import { gCharMap, gIconMap } from '../db3/components/IconMap';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

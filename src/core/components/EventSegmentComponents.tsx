@@ -9,13 +9,13 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 //import { EventDetailVerbosity } from './CMCoreComponents';
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { IsNullOrWhitespace } from "shared/utils";
+import { gIconMap } from "../db3/components/IconMap";
 
 
 

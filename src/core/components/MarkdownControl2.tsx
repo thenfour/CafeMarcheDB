@@ -1,7 +1,6 @@
 
 import { Button, Tab, Tabs } from "@mui/material";
 import React from "react";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import { CustomTabPanel, TabA11yProps } from "./CMCoreComponents";
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
 

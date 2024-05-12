@@ -11,7 +11,6 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip, CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
@@ -27,6 +26,7 @@ import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
 import { SongHistory } from './SongHistory';
 import { Markdown3Editor } from './MarkdownControl3';
+import { gIconMap } from '../db3/components/IconMap';
 
 
 export const SongClientColumns = {

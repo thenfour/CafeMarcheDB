@@ -30,9 +30,9 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { API } from '../clientAPI';
 import * as db3 from '../db3';
-import { gIconMap } from './IconSelectDialog';
 import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 import { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
+import { gIconMap } from './IconMap';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 25 as number;

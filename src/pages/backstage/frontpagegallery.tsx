@@ -26,7 +26,7 @@ import { VisibilityControl, VisibilityControlValue } from "src/core/components/V
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";

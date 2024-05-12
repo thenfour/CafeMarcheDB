@@ -12,7 +12,6 @@ import { useRouter } from "next/router";
 import { Routes } from "@blitzjs/next"
 import * as React from 'react';
 import forgotPassword from "src/auth/mutations/forgotPassword";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { useTheme } from "@mui/material/styles";
 
 const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {

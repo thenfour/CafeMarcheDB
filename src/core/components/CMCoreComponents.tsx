@@ -13,12 +13,12 @@ import { Coalesce, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
 import { Timing } from "shared/time";
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from "./DashboardContext";
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 

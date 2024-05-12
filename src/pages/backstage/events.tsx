@@ -8,9 +8,9 @@ import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CalcRelativeTiming, DateTimeRange, Timing } from "shared/time";
+import { CalcRelativeTiming, Timing } from "shared/time";
 import { IsNullOrWhitespace, arrayToTSV, arraysContainSameValues, toggleValueInArray } from "shared/utils";
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject, TimingChip } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, DebugCollapsibleAdminText, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
 import { SearchInput } from "src/core/components/CMTextField";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
@@ -19,15 +19,15 @@ import { EventAttendanceControl } from "src/core/components/EventAttendanceCompo
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { VisibilityValue } from "src/core/components/VisibilityControl";
 import { API } from "src/core/db3/clientAPI";
-import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { getURIForEvent } from "src/core/db3/clientAPILL";
+import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
 import { GetEventFilterInfoRet, GetICalRelativeURIForUserAndEvent, MakeGetEventFilterInfoRet, TimingFilter } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
-import { getURIForEvent } from "src/core/db3/clientAPILL";
 
 export interface EventSearchItemContainerProps {
     event: db3.EventSearch_Event;

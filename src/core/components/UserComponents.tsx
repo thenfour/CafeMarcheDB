@@ -2,9 +2,9 @@ import { Button } from "@mui/material";
 import React from "react";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import { UserChip } from "./CMCoreComponents";
 import { ChooseItemDialog } from "./ChooseItemDialog";
+import { gIconMap } from "../db3/components/IconMap";
 
 
 //////////////////////////////////////////////////////////////////////////////////////

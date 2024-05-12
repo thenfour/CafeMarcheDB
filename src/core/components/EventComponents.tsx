@@ -19,7 +19,6 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gCharMap, gIconMap } from '../db3/components/IconSelectDialog';
 import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
 import { AdminInspectObject, AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps } from './CMCoreComponents';
 import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
@@ -38,6 +37,7 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
+import { gCharMap, gIconMap } from '../db3/components/IconMap';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{

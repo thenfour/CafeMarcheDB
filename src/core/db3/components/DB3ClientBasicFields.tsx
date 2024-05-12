@@ -22,12 +22,13 @@ import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { Markdown } from "src/core/components/RichTextEditor";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
-import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
+import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { TAnyModel, gNullValue } from "../shared/apiTypes";
+import { RenderMuiIcon } from "./IconMap";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {

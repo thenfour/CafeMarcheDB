@@ -33,7 +33,6 @@ import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
 import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
 import { MetronomeDialogButton } from "./Metronome";
@@ -41,6 +40,7 @@ import { AdminInspectObject } from "./CMCoreComponents";
 import { getServerStartState } from "shared/serverStateBase";
 import { formatMillisecondsToDHMS, formatTimeSpan } from "shared/time";
 import { KeyValueDisplay } from "./CMCoreComponents2";
+import { gIconMap } from "../db3/components/IconMap";
 
 const drawerWidth = 260;
 

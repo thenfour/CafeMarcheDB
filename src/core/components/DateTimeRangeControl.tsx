@@ -6,8 +6,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { assert } from 'blitz';
 import dayjs, { Dayjs } from "dayjs";
 import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { NameValuePair } from './CMCoreComponents2';
+import { gIconMap } from '../db3/components/IconMap';
 
 export interface CalendarEventSpec {
     id: string;

@@ -1,14 +1,13 @@
 
 import { Tooltip } from "@mui/material";
+import React from 'react';
 import { StandardVariationSpec } from 'shared/color';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as db3 from "src/core/db3/db3";
-import { API } from '../db3/clientAPI';
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconSelectDialog";
 import { ChoiceEditCell } from "./ChooseItemDialog";
-import { SettingMarkdown } from "./SettingMarkdown";
-import React from 'react';
 import { DashboardContext } from "./DashboardContext";
+import { SettingMarkdown } from "./SettingMarkdown";
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

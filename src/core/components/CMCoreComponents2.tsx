@@ -8,7 +8,7 @@ import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace, arraysContainSameValues } from "shared/utils";
 import * as db3 from "../db3/db3";
-import { gIconMap } from "../db3/components/IconSelectDialog";
+import { gIconMap } from "../db3/components/IconMap";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns

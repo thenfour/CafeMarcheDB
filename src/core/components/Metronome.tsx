@@ -1,5 +1,4 @@
 import React from "react";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import { ReactiveInputDialog } from "./CMCoreComponents";
 import { CMTextInputBase } from "./CMTextField";
 import { Clamp, CoerceToNumberOrNull } from "shared/utils";
@@ -7,6 +6,7 @@ import { Button } from "@mui/base";
 import { DialogActions, DialogContent, DialogTitle, Tooltip } from "@mui/material";
 import { DashboardContext } from './DashboardContext';
 import { useURLState } from "./CMCoreComponents2";
+import { gIconMap } from "../db3/components/IconMap";
 
 const gTickSampleFilePath = "/Metronome.mp3";
 const gMinBPM = 30;

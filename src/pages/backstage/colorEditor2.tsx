@@ -153,18 +153,18 @@ x#ffffcf
  */
 
 import { BlitzPage } from "@blitzjs/next";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React from "react";
-import { API } from "src/core/db3/clientAPI";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorVariationSpec, StandardVariationSpec, gGeneralPaletteList } from "shared/color";
-import { ColorPaletteGrid, ColorPaletteListComponent, ColorPick, ColorSwatch, GetStyleVariablesForColor, GetStyleVariablesForColorVariation } from "src/core/components/Color";
 import { Button, FormControlLabel, Popover, Tooltip } from "@mui/material";
-import parse from 'parse-css-color'
+import { assert } from "blitz";
+import parse from 'parse-css-color';
+import React from "react";
+import { ColorPaletteEntry, ColorPaletteEntryVariation, ColorVariationSpec, StandardVariationSpec, gGeneralPaletteList } from "shared/color";
 import { lerp } from "shared/utils";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, OpenCloseIcon } from "src/core/components/CMCoreComponents";
-import { assert } from "blitz";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { ColorPaletteListComponent, ColorPick, GetStyleVariablesForColorVariation } from "src/core/components/Color";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { API } from "src/core/db3/clientAPI";
+import { gIconMap } from "src/core/db3/components/IconMap";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const gDarkSelectedBorderColor = "#444";
 const gLightSelectedBorderColor = "#ccc";

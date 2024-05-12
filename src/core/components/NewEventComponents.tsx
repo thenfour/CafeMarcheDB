@@ -10,11 +10,11 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl } from "src/core/components/VisibilityControl";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
 import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { DashboardContext } from "./DashboardContext";
 import { Permission } from "shared/permissions";
+import { gIconMap } from "../db3/components/IconMap";
 
 interface NewEventDialogProps {
     onCancel: () => void;

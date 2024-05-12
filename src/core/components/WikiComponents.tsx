@@ -7,7 +7,6 @@ import { unslugify } from "shared/rootroot";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 import updateWikiPage from "../db3/mutations/updateWikiPage";
 import { CustomTabPanel, TabA11yProps } from "./CMCoreComponents";
 import { NameValuePair } from "./CMCoreComponents2";
@@ -16,6 +15,7 @@ import { Markdown, MarkdownEditor } from "./RichTextEditor";
 import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
+import { gIconMap } from "../db3/components/IconMap";
 
 
 

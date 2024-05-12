@@ -12,9 +12,9 @@ import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreCo
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
-import { gIconMap } from "./IconSelectDialog";
 import { TAnyModel } from "../shared/apiTypes";
 import { AdminInspectObject } from "src/core/components/CMCoreComponents";
+import { gIconMap } from "./IconMap";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {

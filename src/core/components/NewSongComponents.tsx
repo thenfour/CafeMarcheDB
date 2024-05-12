@@ -6,11 +6,11 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { SongClientColumns } from "src/core/components/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import { DB3EditRowButton, DB3EditRowButtonAPI } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import { DashboardContext } from './DashboardContext';
 import { TAnyModel } from "../db3/shared/apiTypes";
+import { gIconMap } from "../db3/components/IconMap";
 
 export const NewSongButton = () => {
     const router = useRouter();

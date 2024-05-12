@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 

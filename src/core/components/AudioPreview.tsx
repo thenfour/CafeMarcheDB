@@ -4,7 +4,7 @@ import React from "react";
 import * as db3 from "src/core/db3/db3";
 import WaveSurfer from "wavesurfer.js";
 import { API } from '../db3/clientAPI';
-import { gIconMap } from "../db3/components/IconSelectDialog";
+import { gIconMap } from '../db3/components/IconMap';
 
 
 export interface AudioPreviewProps {

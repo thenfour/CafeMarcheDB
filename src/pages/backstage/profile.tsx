@@ -11,7 +11,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
-import { gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { gIconMap } from "src/core/db3/components/IconMap";
 import { DB3EditRowButton, DB3EditRowButtonAPI, DB3RowViewer } from "src/core/db3/components/db3NewObjectDialog";
 import * as db3 from "src/core/db3/db3";
 import { TAnyModel } from "src/core/db3/shared/apiTypes";

@@ -18,7 +18,7 @@ import { SongDetailContainer } from "src/core/components/SongComponents";
 import { CalculateSongMetadata, EnrichedVerboseSong } from "src/core/components/SongComponentsBase";
 import { API } from "src/core/db3/clientAPI";
 import { getURIForSong } from "src/core/db3/clientAPILL";
-import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconSelectDialog";
+import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import getSongFilterInfo from "src/core/db3/queries/getSongFilterInfo";
 import { GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "src/core/db3/shared/apiTypes";

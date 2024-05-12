@@ -18,7 +18,6 @@ import { SnackbarContext, SnackbarContextType } from "src/core/components/Snackb
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gCharMap, gIconMap } from "../db3/components/IconSelectDialog";
 import { TAnyModel } from '../db3/shared/apiTypes';
 import { AdminInspectObject, CMChipContainer, CMStandardDBChip, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText, CMSmallButton } from './CMCoreComponents2';
@@ -26,6 +25,7 @@ import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { DashboardContext } from './DashboardContext';
+import { gCharMap, gIconMap } from '../db3/components/IconMap';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
