@@ -540,3 +540,41 @@ export interface GetSongActivityReportRet {
 
 
 
+
+
+export interface GetGlobalStatsArgs {
+    // date stuff?
+    // event type
+};
+
+export interface GetGlobalStatsRetEvent {
+    id: number,
+    name: string,
+    startsAt: null | Date,
+    durationMillis: bigint,
+    isAllDay: boolean,
+    endDateTime: null | Date,
+};
+
+export interface GetGlobalStatsRetPopularSongOccurrance {
+    songId: number,
+    songName: string,
+    eventId: number,
+    eventName: string,
+    startsAt: null | Date,
+    durationMillis: bigint,
+    isAllDay: boolean,
+    endDateTime: null | Date,
+};
+
+export interface GetGlobalStatsRet {
+    allEvents: GetGlobalStatsRetEvent[];
+    popularSongsOccurrances: GetGlobalStatsRetPopularSongOccurrance[];
+    eventsQuery: string;
+    popularSongsQuery: string;
+};
+
+
+
+
+

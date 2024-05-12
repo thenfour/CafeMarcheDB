@@ -10,7 +10,7 @@ interface ActivityVisItemInfo {
 
 
 interface ActivityVisCellInfo {
-    tooltip: string | null;
+    tooltip: React.ReactNode;
 };
 
 type ActivityVisItemWithInfo<T> = {
@@ -27,6 +27,7 @@ export type ActivityVisBucket<T> = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface ActivityVisProps<T> {
     items: T[];
+    className?: string;
     selectedBucketId?: string | null;
     onBucketClick?: (bucket: ActivityVisBucket<T>) => void;
     getBucketInfo?: (bucket: ActivityVisBucket<T>) => ActivityVisCellInfo;
@@ -110,7 +111,7 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
     }
 
     return (
-        <table className='activityVis'>
+        <table className={`activityVis ${props.className}`}>
             <thead>
                 <tr>
                     <th></th>

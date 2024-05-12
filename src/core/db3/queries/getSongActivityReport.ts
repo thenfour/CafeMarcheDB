@@ -57,6 +57,7 @@ export default resolver.pipe(
                     Event
                 where
                     ${GetBasicVisFilterExpressionForEvent(u, "Event")}
+                    AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
             )
             select
                 e.id,

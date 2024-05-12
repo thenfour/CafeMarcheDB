@@ -32,7 +32,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
             getBucketInfo={(bucket) => {
                 if (bucket.items.length === 0) return { tooltip: "" };
                 return {
-                    tooltip: bucket.items.map(i => i.item.name).join("\r\n"),
+                    tooltip: <ul>{bucket.items.map(x => <li key={x.item.id}>{x.item.name}</li>)}</ul>
                 }
             }}
             selectedBucketId={selectedBucket?.bucketId || null}
