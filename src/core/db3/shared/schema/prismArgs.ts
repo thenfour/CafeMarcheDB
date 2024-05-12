@@ -3,6 +3,7 @@ import db, { Prisma } from "db";
 import { CMDBTableFilterModel, ImageEditParams, MakeDefaultImageEditParams, TAnyModel, parsePayloadJSON } from "../apiTypes";
 import { TableAccessor } from "shared/rootroot";
 import { ServerStartInfo } from "shared/serverStateBase";
+import { AuxUserArgs } from "types";
 //import { DateRangeInfo } from "shared/time";
 
 /*
@@ -425,7 +426,7 @@ export const InstrumentNaturalOrderBy: Prisma.InstrumentOrderByWithRelationInput
 // a medium-verbosity song payload, used for non-primary things like song lists etc.
 export const SongArgs = Prisma.validator<Prisma.SongArgs>()({
     include: {
-        createdByUser: true,
+        createdByUser: AuxUserArgs,
         visiblePermission: true,
         //     visiblePermission: {
         //         include: {
@@ -531,7 +532,7 @@ export const SongCreditArgsFromSong = Prisma.validator<Prisma.SongCreditDefaultA
 export const SongArgs_Verbose = Prisma.validator<Prisma.SongDefaultArgs>()({
     include: {
         //visiblePermission: VisiblePermissionInclude,
-        createdByUser: true,
+        createdByUser: AuxUserArgs,
         tags: true,
         // {
         //     include: {
@@ -602,7 +603,7 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
                 roles: true
             }
         },
-        createdByUser: true,
+        createdByUser: AuxUserArgs,
         status: true,
         tags: {
             orderBy: EventTagAssignmentNaturalOrderBy,
@@ -743,7 +744,7 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
     include: {
         status: true,
         //visiblePermission: VisiblePermissionInclude,
-        createdByUser: true,
+        createdByUser: AuxUserArgs,
         songLists: { ...EventSongListArgs, orderBy: EventSongListNaturalOrderBy },
         expectedAttendanceUserTag: {
             include: {

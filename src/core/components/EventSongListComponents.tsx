@@ -73,7 +73,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
     return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
-        <div className="td songIndex">{props.index + 1}
+        <div className="td songIndex">{props.index}
             {/* id:{props.value.id} so:{props.value.sortOrder} */}
         </div>
         <div className="td songName">
@@ -241,9 +241,12 @@ interface EventSongListValueViewerProps {
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
 };
 
+type SongListSortSpec = "sortOrderAsc" | "sortOrderDesc" | "nameAsc" | "nameDesc";
+
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     //const [currentUser] = useCurrentUser();
     const [showTags, setShowTags] = React.useState<boolean>(false);
+    const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
     //const visInfo = API.users.getVisibilityInfo(props.value);
     const snackbarContext = React.useContext(SnackbarContext);
 
@@ -258,6 +261,47 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
     });
 
     const stats = API.events.getSongListStats(props.value);
+
+    const handleClickSortOrderTH = () => {
+        if (sortSpec === 'sortOrderAsc') {
+            setSortSpec('sortOrderDesc');
+        }
+        else {
+            setSortSpec('sortOrderAsc');
+        }
+    };
+
+    const handleClickSongNameTH = () => {
+        if (sortSpec === 'nameAsc') {
+            setSortSpec('nameDesc');
+        }
+        else {
+            setSortSpec('nameAsc');
+        }
+    };
+
+    // create a id -> index map.
+    // the list is already sorted by sortorder
+    const indexMap = new Map<number, number>();
+    props.value.songs.forEach((s, i) => {
+        indexMap.set(s.id, i + 1);
+    });
+
+    let sortedSongs = [...props.value.songs];
+    sortedSongs.sort((a, b) => {
+        switch (sortSpec) {
+            case 'nameAsc':
+                return a.song.name < b.song.name ? -1 : 1;
+            case 'nameDesc':
+                return a.song.name > b.song.name ? -1 : 1;
+            default:
+            case 'sortOrderAsc':
+                return a.sortOrder < b.sortOrder ? -1 : 1;
+            case 'sortOrderDesc':
+                return a.sortOrder > b.sortOrder ? -1 : 1;
+        }
+    });
+
     return <div className={`EventSongListValue EventSongListValueViewer`}>
 
         <div className="header">
@@ -276,8 +320,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
             <div className="songListSongTable">
                 <div className="thead">
                     <div className="tr">
-                        <div className="th songIndex">#</div>
-                        <div className="th songName">Song</div>
+                        <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
+                        <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
                         <div className="th length">Length</div>
                         <div className="th tempo">Tempo</div>
                         <div className="th comment">
@@ -300,7 +344,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
                 <div className="tbody">
                     {
-                        props.value.songs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={index} value={s} songList={props.value} showTags={showTags} />)
+                        sortedSongs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={indexMap.get(s.id)!} value={s} songList={props.value} showTags={showTags} />)
                     }
 
                 </div>

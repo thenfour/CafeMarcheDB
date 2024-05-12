@@ -5,6 +5,15 @@ import { Prisma } from "db";
 import { Permission, gPublicPermissions } from "shared/permissions";
 //import { UserWithRolesPayload } from "src/core/db3/db3"; // circular dep
 
+// when you make a query that includes a n aux user like "CreatedBy", don't include everything.
+export const AuxUserArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
+  select: {
+    id: true,
+    name: true,
+  }
+});
+
+export type AuxUserPayload = Prisma.UserGetPayload<typeof AuxUserArgs>;
 
 
 export const UserWithRolesArgs = Prisma.validator<Prisma.UserArgs>()({

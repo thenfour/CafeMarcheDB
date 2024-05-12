@@ -4,6 +4,7 @@ import { Permission } from "shared/permissions";
 import { BoolField, ConstEnumStringField, GenericStringField, GhostField, MakeCreatedAtField, MakeTitleField, PKField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { CreatedByUserField } from "./user";
+import { AuxUserArgs } from "types";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.view_custom_links,
@@ -29,7 +30,7 @@ const CustomLinkArgs = Prisma.validator<Prisma.CustomLinkDefaultArgs>()({
                 visits: true,
             }
         },
-        createdByUser: true,
+        createdByUser: AuxUserArgs,
     }
 });
 

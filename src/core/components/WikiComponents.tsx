@@ -1,21 +1,19 @@
 
 import { useMutation } from "@blitzjs/rpc";
-import { Button, Tab, Tabs } from "@mui/material";
+import { Button } from "@mui/material";
 import React from "react";
 import { Permission } from "shared/permissions";
 import { unslugify } from "shared/rootroot";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
-import { API } from "../db3/clientAPI";
+import { gIconMap } from "../db3/components/IconMap";
 import updateWikiPage from "../db3/mutations/updateWikiPage";
-import { CustomTabPanel, TabA11yProps } from "./CMCoreComponents";
 import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextInputBase } from "./CMTextField";
-import { Markdown, MarkdownEditor } from "./RichTextEditor";
-import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
 import { DashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
-import { gIconMap } from "../db3/components/IconMap";
+import { Markdown } from "./RichTextEditor";
+import { VisibilityControl, VisibilityControlValue, VisibilityValue } from "./VisibilityControl";
 
 
 

@@ -1,5 +1,5 @@
-import db, { Prisma } from "db";
-
+import db from "db";
+import { AuxUserArgs, } from "types";
 
 export const GetWikiPageCore = async ({ slug }: { slug: string }) => {
     const ret = await db.wikiPage.findUnique({
@@ -17,7 +17,7 @@ export const GetWikiPageCore = async ({ slug }: { slug: string }) => {
                             visiblePermission: true,
                         }
                     },
-                    createdByUser: true,
+                    createdByUser: AuxUserArgs,
                 }
             },
         },

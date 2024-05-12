@@ -5,6 +5,7 @@ import { BoolField, ConstEnumStringField, ForeignSingleField, GenericStringField
 import * as db3 from "../db3core";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 import { gGeneralPaletteList } from "shared/color";
+import { AuxUserArgs } from "types";
 
 const xAuthMap: db3.DB3AuthContextPermissionMap = {
     PostQueryAsOwner: Permission.visibility_logged_in_users,
@@ -88,7 +89,7 @@ const WikiPageRevisionArgs = Prisma.validator<Prisma.WikiPageRevisionDefaultArgs
                 visiblePermission: true,
             }
         },
-        createdByUser: true,
+        createdByUser: AuxUserArgs,
     }
 });
 
