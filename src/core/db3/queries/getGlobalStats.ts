@@ -109,8 +109,8 @@ export default resolver.pipe(
                     count(distinct(e.id)) eventCount
                 from
                     s
-                    inner join eventSongListSong esls on esls.songId = s.id
-                    inner join eventSongList esl on esls.eventSongListId = esl.id
+                    inner join EventSongListSong esls on esls.songId = s.id
+                    inner join EventSongList esl on esls.eventSongListId = esl.id
                     inner join e on e.id = esl.eventId
                 group by
                     s.id
@@ -129,8 +129,8 @@ export default resolver.pipe(
                 e.endDateTime    
             from
                 popularSongs as ps
-                inner join eventSongListSong esls on esls.songId = ps.id
-                inner join eventSongList esl on esls.eventSongListId = esl.id
+                inner join EventSongListSong esls on esls.songId = ps.id
+                inner join EventSongList esl on esls.eventSongListId = esl.id
                 inner join e on e.id = esl.eventId
             group by
                 e.id,
