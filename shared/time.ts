@@ -23,7 +23,6 @@ export enum Timing {
     Future = 'Future',
 }
 
-
 export function formatMillisecondsToDHMS(milliseconds: number): string {
     if (milliseconds === 0) {
         return "--";

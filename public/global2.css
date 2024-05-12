@@ -207,9 +207,14 @@ input.CMTextInputBase.titleText {
     overflow: hidden;
     white-space: nowrap;
     display: flex;
+    align-items: center;
     /* override parent styles*/
     font-weight: normal;
     font-style: normal;
+}
+
+.CMChip.small svg {
+    height: 20px;
 }
 
 .CMChip>.chipMain {
@@ -2356,4 +2361,8 @@ table.activityVis.events .cell.highActivity {
 
 .ownAttendanceComment.freeButton:hover {
     text-decoration: none;
+}
+
+.SongHistoryInner {
+    min-height: 600px;
 }

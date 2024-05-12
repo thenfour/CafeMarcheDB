@@ -5,6 +5,7 @@ import { Permission } from "shared/permissions";
 import { GetBasicVisFilterExpressionForEvent, GetBasicVisFilterExpressionForSong } from "../db3";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetGlobalStatsArgs, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance } from "../shared/apiTypes";
+import { assertIsNumberArray } from "shared/utils";
 
 export default resolver.pipe(
     resolver.authorize(Permission.view_songs),
@@ -20,23 +21,87 @@ export default resolver.pipe(
                 };
             }
 
+
+            const eventFilters: string[] = [];
+
+            switch (args.filterSpec.timing) {
+                case "All":
+                    eventFilters.push("true");
+                    break;
+                case "All past":
+                    eventFilters.push("e.startsAt < curdate()");
+                    break;
+                case "Future":
+                    eventFilters.push("e.startsAt > curdate()");
+                    break;
+                case "Past 5 years":
+                    eventFilters.push("e.startsAt > date_sub(curdate(), interval 5 year)");
+                    break;
+                case "Past year":
+                    eventFilters.push("e.startsAt > date_sub(curdate(), interval 1 year)");
+                    break;
+            }
+
+            if (args.filterSpec.eventTypeIds && args.filterSpec.eventTypeIds.length > 0) {
+                assertIsNumberArray(args.filterSpec.eventTypeIds);
+                eventFilters.push(`(e.typeId in (${args.filterSpec.eventTypeIds.join(",")}))`);
+            }
+
+            if (args.filterSpec.eventStatusIds && args.filterSpec.eventStatusIds.length > 0) {
+                assertIsNumberArray(args.filterSpec.eventStatusIds);
+                eventFilters.push(`(e.statusId in (${args.filterSpec.eventStatusIds.join(",")}))`);
+            }
+
+            let eventHavingClause = "";
+
+            if (args.filterSpec.eventTagIds && args.filterSpec.eventTagIds.length > 0) {
+                assertIsNumberArray(args.filterSpec.eventTagIds);
+                eventFilters.push(`(eta.eventTagId in (${args.filterSpec.eventTagIds.join(",")}))`);
+                eventHavingClause = `
+                HAVING
+    				COUNT(DISTINCT eta.eventTagId) = ${args.filterSpec.eventTagIds.length}
+                `;
+            }
+
+            const songFilters: string[] = ["true"];
+            let songHavingClause = "";
+
+            if (args.filterSpec.songTagIds && args.filterSpec.songTagIds.length > 0) {
+                assertIsNumberArray(args.filterSpec.songTagIds);
+                songFilters.push(`(sta.tagId in (${args.filterSpec.songTagIds.join(",")}))`);
+                songHavingClause = `
+                HAVING
+    				COUNT(DISTINCT sta.tagId) = ${args.filterSpec.songTagIds.length}
+                `;
+            }
+
             const popularSongsQuery = `
             -- popular songs, with list of events where they appear.
             with s as (
                 select
-                    *
+                    s.*
                 from
-                    Song
+                    Song s
+                    inner join SongTagAssociation sta on sta.songId = s.id
                 where
-                    ${GetBasicVisFilterExpressionForSong(u, "Song")}
+                    ${GetBasicVisFilterExpressionForSong(u, "s")}
+                    AND (${songFilters.join(" AND ")})
+                group by
+                    s.id
+                ${songHavingClause}
             ),e as (
                 select
-                    *
+                    e.*
                 from
-                    Event
+                    Event e
+                    inner join EventTagAssignment eta on eta.eventId = e.id
                 where
-                    ${GetBasicVisFilterExpressionForEvent(u, "Event")}
-                    AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
+                    ${GetBasicVisFilterExpressionForEvent(u, "e")}
+                    AND (e.startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
+                    AND (${eventFilters.join(" AND ")})
+                group by
+                    e.id
+                ${eventHavingClause}
             ),
             popularSongs as (
                 select
@@ -78,12 +143,17 @@ export default resolver.pipe(
             -- list of events
             with e as (
                 select
-                    *
+                    e.*
                 from
-                    Event
+                    Event e
+                    inner join EventTagAssignment eta on eta.eventId = e.id
                 where
-                    ${GetBasicVisFilterExpressionForEvent(u, "Event")}
+                    ${GetBasicVisFilterExpressionForEvent(u, "e")}
                     AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
+                    AND (${eventFilters.join(" AND ")})
+                group by
+                    e.id
+                ${eventHavingClause}
             )
             select
                 e.id,

@@ -5,19 +5,120 @@ import * as mime from 'mime';
 import React from "react";
 import { Permission } from "shared/permissions";
 import { slugify, unslugify } from "shared/rootroot";
-import { IsNullOrWhitespace, parseMimeType } from "shared/utils";
+import { IsNullOrWhitespace, arraysContainSameValues, getEnumValues, parseMimeType } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
+import { IconEditCell, RenderMuiIcon } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
-import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
+import { AutoAssignInstrumentPartition, TAnyModel } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
+import { DashboardContext } from "src/core/components/DashboardContext";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { StandardVariationSpec } from "shared/color";
+import { Timing } from "shared/time";
+
+interface FilterSpec {
+    qfText: string;
+    selectedEventTypeId: number | null;
+    selectedSongTagIds: number[];
+    selectedEventTagIds: number[];
+    selectedTiming: Timing;
+};
+
+const FilterControlsTester = () => {
+    const defaultFilter: FilterSpec = {
+        qfText: "",
+        selectedEventTypeId: null,
+        selectedSongTagIds: [],
+        selectedEventTagIds: [],
+        selectedTiming: Timing.Present,
+    };
+    const [spec, setSpec] = React.useState<FilterSpec>(defaultFilter);
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const HasExtraFilters = (val: FilterSpec) => {
+        if (!arraysContainSameValues(val.selectedSongTagIds, defaultFilter.selectedSongTagIds)) return true;
+        if (!arraysContainSameValues(val.selectedEventTagIds, defaultFilter.selectedEventTagIds)) return true;
+        return false;
+    };
+
+    const HasAnyFilters = (val: FilterSpec) => {
+        // todo: what's the diff? refine the design.
+        if (spec.qfText !== "") return true;
+        if (spec.selectedEventTypeId) return true;
+        return HasExtraFilters(val);
+    };
+
+    const primaryFilter = <ChipFilterGroup
+        style="radio"
+        selectedIds={[spec.selectedTiming]}
+        items={getEnumValues(Timing).map(t => ({
+            id: t as Timing,
+            label: t,
+            shape: "rectangle",
+        }))}
+        onChange={(newSel) => setSpec({ ...spec, selectedTiming: newSel[0]! })}
+    />;
+
+    const extraFilter = <>
+        <div className="divider"></div>
+        <ChipFilterGroup
+            style="radiotoggle"
+            selectedIds={spec.selectedEventTypeId ? [spec.selectedEventTypeId] : []}
+            items={dashboardContext.eventType.map(t => ({
+                id: t.id,
+                label: <>{RenderMuiIcon(t.iconName)}{t.text}</>,
+                shape: "rectangle",
+                color: t.color,
+            }))}
+            onChange={(newSel) => setSpec({ ...spec, selectedEventTypeId: (newSel[0]! || null) })}
+        />
+        <ChipFilterGroup
+            style="toggle"
+            selectedIds={spec.selectedEventTagIds}
+            items={dashboardContext.eventTag.map(t => ({
+                id: t.id,
+                label: t.text,
+                color: t.color,
+            }))}
+            onChange={(newSel) => setSpec({ ...spec, selectedEventTagIds: newSel })}
+        />
+        <div className="divider"></div>
+
+        <ChipFilterGroup
+            style="toggle"
+            selectedIds={spec.selectedSongTagIds}
+            items={dashboardContext.songTag.map(t => ({
+                id: t.id,
+                label: t.text,
+                color: t.color,
+            }))}
+            onChange={(newSel) => setSpec({ ...spec, selectedSongTagIds: newSel })}
+        />
+    </>;
+
+    return <>
+        <FilterControls
+            quickFilterText={spec?.qfText}
+            onQuickFilterChange={v => setSpec({ ...spec, qfText: v })}
+            inCard={true}
+            hasAnyFilters={HasAnyFilters(spec)}
+            hasExtraFilters={HasExtraFilters(spec)}
+            extraFilter={extraFilter}
+            onResetFilter={() => setSpec(defaultFilter)}
+            primaryFilter={primaryFilter}
+        />
+        <pre>{JSON.stringify(spec, null, 2)}</pre>
+    </>;
+};
+
+
 
 
 const AutoAssignInstrumentTester = () => {
@@ -136,16 +237,23 @@ const MainContent = () => {
 
     return <>
 
-        <CMCoreComponents.CMSinglePageSurfaceCard>
+        <CMSinglePageSurfaceCard>
             <div className="content">
                 <MarkdownTester />
             </div>
-        </CMCoreComponents.CMSinglePageSurfaceCard>
+        </CMSinglePageSurfaceCard>
+
+
+        <CMSinglePageSurfaceCard>
+            <div className="content">
+                <FilterControlsTester />
+            </div>
+        </CMSinglePageSurfaceCard>
 
 
         <AutoAssignInstrumentTester />
 
-        <CMCoreComponents.CMSinglePageSurfaceCard>
+        <CMSinglePageSurfaceCard>
 
             <h3>SongAutocomplete</h3>
             <div style={{ backgroundColor: "#c4c", padding: "10px" }}>
@@ -163,15 +271,15 @@ const MainContent = () => {
                 name: (songValue?.name) || "<null>",
             }} />
 
-        </CMCoreComponents.CMSinglePageSurfaceCard>
+        </CMSinglePageSurfaceCard>
 
-        <CMCoreComponents.CMSinglePageSurfaceCard>
+        <CMSinglePageSurfaceCard>
 
             <h3>DateTimeRange</h3>
             <div>
                 <DateTimeRangeControlExample />
             </div>
-        </CMCoreComponents.CMSinglePageSurfaceCard>
+        </CMSinglePageSurfaceCard>
 
         <NameValuePair
             isReadOnly={false}
@@ -198,26 +306,26 @@ const MainContent = () => {
 
         <h3>CMSinglePageSurfaceCard</h3>
         <div>for elevating content on a page, or just use .contentSection / .header / .content</div>
-        <CMCoreComponents.CMSinglePageSurfaceCard>
+        <CMSinglePageSurfaceCard>
             <div className="header">CMSinglePageSurfaceCard.header</div>
             <div className="content">CMSinglePageSurfaceCard.content</div>
-        </CMCoreComponents.CMSinglePageSurfaceCard>
+        </CMSinglePageSurfaceCard>
 
         <Divider />
 
         <h3>CMChip</h3>
-        <CMCoreComponents.CMChipContainer>
-            <CMCoreComponents.CMChip color={"yes"} size="small" variation={{ enabled: false, selected: false, fillOption: "filled", variation: "strong" }}>(todo: all variations)</CMCoreComponents.CMChip>
-        </CMCoreComponents.CMChipContainer>
+        <CMChipContainer>
+            <CMChip color={"yes"} size="small" variation={{ enabled: false, selected: false, fillOption: "filled", variation: "strong" }}>(todo: all variations)</CMChip>
+        </CMChipContainer>
 
 
 
         <h3>CMChip on surface </h3>
-        <CMCoreComponents.CMSinglePageSurfaceCard>
-            <CMCoreComponents.CMChipContainer>
-                <CMCoreComponents.CMChip color={"yes"} size="small" variation={{ enabled: false, selected: false, fillOption: "filled", variation: "strong" }}>(todo: all variations)</CMCoreComponents.CMChip>
-            </CMCoreComponents.CMChipContainer>
-        </CMCoreComponents.CMSinglePageSurfaceCard>
+        <CMSinglePageSurfaceCard>
+            <CMChipContainer>
+                <CMChip color={"yes"} size="small" variation={{ enabled: false, selected: false, fillOption: "filled", variation: "strong" }}>(todo: all variations)</CMChip>
+            </CMChipContainer>
+        </CMSinglePageSurfaceCard>
 
 
         <h3>Icons</h3>

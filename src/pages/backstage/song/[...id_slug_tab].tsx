@@ -64,6 +64,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     if (tableClient.items.length > 1) throw new Error(`db returned too many songs; issues with filtering? exploited slug/id? count=${tableClient.items.length}`);
+    if (tableClient.items.length < 1) throw new Error(`Song not found`);
     const songRaw = tableClient.items[0]! as db3.SongPayload_Verbose;
     const song = db3.enrichSong(songRaw, dashboardContext);
 

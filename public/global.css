@@ -332,10 +332,6 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   width: var(--content-max-width);
 }
 
-.searchResults .contentSection {
-  /* width: unset; */
-}
-
 .contentSection>.header {
   padding: 3px;
   background-color: #eee;
@@ -462,71 +458,6 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   margin: 0 0 12px 0;
 }
 
-/* the idea is to make a visual distinction between the filter controls and the items which are listed below */
-.contentSection.filterControls {
-  box-shadow: none;
-  min-width: 450px;
-  padding-bottom: 0;
-  margin: 10px 0px;
-  background-color: #ddd;
-  /* width: unset; */
-  /* border-bottom: 6px solid black; */
-}
-
-
-@keyframes progressAnimation {
-  from {
-    background-position: 100% 0;
-  }
-
-  to {
-    background-position: 0 0;
-  }
-}
-
-.queryProgressLine {
-  height: 4px;
-  background-color: black;
-  margin-top: 10px;
-  /* Ensures the animation stays within the bounds of the progress line */
-  overflow: hidden;
-}
-
-.queryProgressLine.loading {
-  /*animation to indicate loading progress*/
-  background: linear-gradient(to right, black 50%, transparent 50%);
-  background-size: 200% 100%;
-  animation: progressAnimation 2s linear infinite;
-}
-
-.contentSection.filterControls .header {
-  font-size: 12px;
-  text-transform: uppercase;
-  background-color: #ddd;
-  color: #888;
-  letter-spacing: 1px;
-}
-
-.contentSection.filterControls .row {
-  /* add spacing for all filter control rows otherwise it's too stuffy */
-  margin-top: 5px;
-}
-
-.contentSection.filterControls .row.quickFilter {
-  display: flex;
-}
-
-.contentSection.filterControls .filterControlsContainer div.divider {
-  height: 1px;
-  background-color: #8888;
-  margin-top: 8px;
-  margin-bottom: 8px;
-}
-
-.EventDetail .contentSection.filterControls {
-  width: 100%;
-}
-
 .contentSection .smallInfoBox {
   display: flex;
   align-items: center;
@@ -538,11 +469,6 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
   margin: 4px 0px 6px 6px;
   letter-spacing: -.3px;
   line-height: 25px;
-}
-
-.contentSection .smallInfoBox.date {
-  /* color: #666;
-  font-size: 22px; */
 }
 
 .contentSection .smallInfoBox.date .text {
@@ -664,11 +590,6 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 .approvalButtonGroup .no {
   color: white;
   background-color: red;
-}
-
-.approvalButtonGroup .null {
-  /* color: white;
-  background-color: green; */
 }
 
 .approvalItem .responseChip {

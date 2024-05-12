@@ -2,13 +2,111 @@
 import { useQuery } from '@blitzjs/rpc';
 import { Tooltip } from "@mui/material";
 import React, { Suspense } from "react";
-import { IsNullOrWhitespace } from 'shared/utils';
+import { IsNullOrWhitespace, arraysContainSameValues, getEnumValues } from 'shared/utils';
 import getSongActivityReport from '../db3/queries/getSongActivityReport';
 import { EnrichedVerboseSong } from './SongComponentsBase';
-import { GetSongActivityReportRetEvent } from '../db3/shared/apiTypes';
+import { GetSongActivityReportFilterSpec, GetSongActivityReportFilterSpecTimingFilter, GetSongActivityReportRet, GetSongActivityReportRetEvent } from '../db3/shared/apiTypes';
 import { SettingMarkdown } from './SettingMarkdown';
 import { getURIForEvent } from '../db3/clientAPILL';
 import { ActivityVis, ActivityVisBucket } from './ActivityVis';
+
+import { DashboardContext } from './DashboardContext';
+import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from './FilterControl';
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface SongHistoryFilterControlsProps {
+    filterSpec: GetSongActivityReportFilterSpec;
+    setFilterSpec: (s: GetSongActivityReportFilterSpec) => void;
+    defaultFilterSpec: GetSongActivityReportFilterSpec;
+}
+
+export const SongHistoryFilterControls = ({ filterSpec, setFilterSpec, defaultFilterSpec }: SongHistoryFilterControlsProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const hasExtraFilters = () => {
+        if (!arraysContainSameValues(filterSpec.eventStatusIds, defaultFilterSpec.eventStatusIds)) return true;
+        if (!arraysContainSameValues(filterSpec.eventTagIds, defaultFilterSpec.eventTagIds)) return true;
+        if (!arraysContainSameValues(filterSpec.eventTypeIds, defaultFilterSpec.eventTypeIds)) return true;
+        return false;
+    };
+
+    const hasAnyFilters = () => {
+        if (filterSpec.timing !== defaultFilterSpec.timing) return true;
+        return hasExtraFilters();
+    };
+
+    const filters = <>
+        <ChipFilterGroup
+            style='radio'
+            items={getEnumValues(GetSongActivityReportFilterSpecTimingFilter).map(x => ({
+                id: x as keyof typeof GetSongActivityReportFilterSpecTimingFilter,
+                label: x,
+            }))}
+            onChange={(ns) => setFilterSpec({ ...filterSpec, timing: ns[0]! })}
+            selectedIds={[filterSpec.timing]}
+        />
+    </>;
+
+    const extFilters = <>
+        <div className='divider'></div>
+        <ChipFilterGroup
+            style='toggle'
+            items={dashboardContext.eventType.map((s): ChipFilterGroupItem<number> => ({
+                id: s.id,
+                label: s.text,
+                color: s.color,
+            }))}
+            onChange={(ns) => setFilterSpec({ ...filterSpec, eventTypeIds: ns })}
+            selectedIds={filterSpec.eventTypeIds}
+        />
+        <ChipFilterGroup
+            style='toggle'
+            items={dashboardContext.eventStatus.map((s): ChipFilterGroupItem<number> => ({
+                id: s.id,
+                label: s.label,
+                color: s.color,
+                shape: 'rectangle',
+            }))}
+            onChange={(ns) => setFilterSpec({ ...filterSpec, eventStatusIds: ns })}
+            selectedIds={filterSpec.eventStatusIds}
+        />
+        <ChipFilterGroup
+            style='toggle'
+            items={dashboardContext.eventTag.map((s): ChipFilterGroupItem<number> => ({
+                id: s.id,
+                label: s.text,
+                color: s.color,
+            }))}
+            onChange={(ns) => setFilterSpec({ ...filterSpec, eventTagIds: ns })}
+            selectedIds={filterSpec.eventTagIds}
+        />
+    </>;
+
+    return <FilterControls
+        inCard={true}
+        hasAnyFilters={false}
+        onResetFilter={() => setFilterSpec(defaultFilterSpec)}
+        primaryFilter={filters}
+        extraFilter={extFilters}
+    />;
+};
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface SongHistoryQuerierProps {
+    filterSpec: GetSongActivityReportFilterSpec,
+    songId: number;
+    setResults: (x: GetSongActivityReportRet) => void;
+}
+const SongHistoryQuerier = (props: SongHistoryQuerierProps) => {
+    const [results, queryInfo] = useQuery(getSongActivityReport, { songId: props.songId, filterSpec: props.filterSpec });
+    React.useEffect(() => {
+        props.setResults(results);
+    }, [results]);
+    return <div></div>;
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -18,10 +116,37 @@ export interface SongHistoryProps {
 }
 
 export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
+
+    const defaultFilterSpec: GetSongActivityReportFilterSpec = {
+        // primary
+        timing: "All past",
+
+        // extra
+        eventStatusIds: [], // don't include cancelled
+        eventTagIds: [],
+        eventTypeIds: [],
+    };
+
+    const [filterSpec, setFilterSpec] = React.useState<GetSongActivityReportFilterSpec>(defaultFilterSpec);
+    const [results, setResults] = React.useState<GetSongActivityReportRet>({
+        events: [],
+        query: "",
+    });
+
     const [selectedBucket, setSelectedBucket] = React.useState<null | ActivityVisBucket<GetSongActivityReportRetEvent>>(null);
-    const [results, { refetch }] = useQuery(getSongActivityReport, { songId: song.id });
 
     return <div className='SongHistoryInner'>
+
+        <SongHistoryFilterControls
+            defaultFilterSpec={defaultFilterSpec}
+            filterSpec={filterSpec}
+            setFilterSpec={setFilterSpec}
+        />
+
+        <Suspense>
+            <SongHistoryQuerier filterSpec={filterSpec} songId={song.id} setResults={setResults} />
+        </Suspense>
+
         <ActivityVis
             items={results.events.filter(e => !!e.startsAt)}
             getItemInfo={(item) => {

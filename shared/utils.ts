@@ -848,3 +848,10 @@ export function arrayToTSV(data: Record<string, string>[]): string {
     // Combine headers and rows
     return [headers.join('\t'), ...rows].join('\n');
 }
+
+
+
+// Function to get unique enum values
+export function getEnumValues<E extends { [key: string]: any }>(enumObject: E): string[] {
+    return Object.values(enumObject).filter(value => typeof value === 'string') as string[];
+}

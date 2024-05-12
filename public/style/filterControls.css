@@ -1,0 +1,69 @@
+/* as a top-level card */
+.contentSection.filterControls,
+.filterControlsContainer.inCard {
+    box-shadow: none;
+    min-width: 450px;
+    padding-bottom: 0;
+    margin: 10px 0px;
+    background-color: #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* inside a card */
+.filterControlsContainer.inCard>.content {
+    padding: 2px 15px;
+}
+
+@keyframes progressAnimation {
+    from {
+        background-position: 100% 0;
+    }
+
+    to {
+        background-position: 0 0;
+    }
+}
+
+.filterControlsContainer .queryProgressLine {
+    height: 4px;
+    background-color: black;
+    margin-top: 10px;
+    /* Ensures the animation stays within the bounds of the progress line */
+    overflow: hidden;
+}
+
+.queryProgressLine.loading {
+    /*animation to indicate loading progress*/
+    background: linear-gradient(to right, black 50%, transparent 50%);
+    background-size: 200% 100%;
+    animation: progressAnimation 2s linear infinite;
+}
+
+.filterControlsContainer .filterControls .header {
+    font-size: 12px;
+    text-transform: uppercase;
+    background-color: #ddd;
+    color: #888;
+    letter-spacing: 1px;
+}
+
+.filterControlsContainer .filterControls .row {
+    /* add spacing for all filter control rows otherwise it's too stuffy */
+    margin-top: 5px;
+}
+
+.filterControlsContainer .filterControls .row.quickFilter {
+    display: flex;
+}
+
+.filterControlsContainer div.divider {
+    height: 1px;
+    background-color: #8888;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.EventDetail .contentSection.filterControls {
+    width: 100%;
+}

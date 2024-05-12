@@ -517,11 +517,24 @@ export const AutoAssignInstrumentPartition = ({ allInstruments, fileLeafWithoutE
 };
 
 
+export enum GetSongActivityReportFilterSpecTimingFilter {
+    "All past",
+    "Past 5 years",
+    "Past year",
+    "Future",
+    "All",
+};
+
+export interface GetSongActivityReportFilterSpec {
+    eventTypeIds: number[];
+    timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
+    eventTagIds: number[];
+    eventStatusIds: number[];
+};
 
 export interface GetSongActivityReportArgs {
     songId: number;
-    // event type
-    // event date range
+    filterSpec: GetSongActivityReportFilterSpec;
 };
 
 export interface GetSongActivityReportRetEvent {
@@ -542,9 +555,16 @@ export interface GetSongActivityReportRet {
 
 
 
+export interface GetGlobalStatsFilterSpec {
+    eventTypeIds: number[];
+    timing: keyof typeof GetSongActivityReportFilterSpecTimingFilter;
+    eventTagIds: number[];
+    eventStatusIds: number[];
+    songTagIds: number[];
+};
+
 export interface GetGlobalStatsArgs {
-    // date stuff?
-    // event type
+    filterSpec: GetGlobalStatsFilterSpec;
 };
 
 export interface GetGlobalStatsRetEvent {
