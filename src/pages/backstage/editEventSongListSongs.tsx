@@ -25,9 +25,6 @@ const tableSpec = new DB3Client.xTableClientSpec({
 const MainContent = () => {
 
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
-        throw new Error(`unauthorized`);
-    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const eventSongListId: number | null = parseIntOrNull(urlParams.get('eventSongListId'));
@@ -43,7 +40,7 @@ const MainContent = () => {
 
 const EditEventSongListSongsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Song List Entries">
+        <DashboardLayout title="Song List Entries" basePermission={Permission.admin_events}>
             <MainContent />
         </DashboardLayout>
     )

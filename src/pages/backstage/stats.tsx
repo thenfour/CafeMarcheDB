@@ -272,10 +272,6 @@ const StatsPageInner = () => {
 };
 
 const MainContent = () => {
-    const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.view_events_nonpublic)) {
-        throw new Error(`unauthorized`);
-    }
 
     return <>
         <CMSinglePageSurfaceCard>
@@ -292,7 +288,7 @@ const MainContent = () => {
 
 const StatsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Global Stats">
+        <DashboardLayout title="Global Stats" basePermission={Permission.view_events_nonpublic}>
             <MainContent />
         </DashboardLayout>
     )

@@ -32,9 +32,6 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
-        throw new Error(`unauthorized`);
-    }
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
@@ -80,7 +77,7 @@ const MainContent = () => {
 
 const EditEventsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Events">
+        <DashboardLayout title="Events" basePermission={Permission.admin_events}>
             <MainContent />
         </DashboardLayout>
     )

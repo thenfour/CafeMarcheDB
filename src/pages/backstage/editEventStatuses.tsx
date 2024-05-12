@@ -25,9 +25,6 @@ const tableSpec = new DB3Client.xTableClientSpec({
 
 const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
-        throw new Error(`unauthorized`);
-    }
     return <>
         <SettingMarkdown setting="EditEventStatusesPage_markdown"></SettingMarkdown>
         <DB3EditGrid tableSpec={tableSpec} />
@@ -37,7 +34,7 @@ const MainContent = () => {
 
 const EditEventStatusesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event Statuses">
+        <DashboardLayout title="Event Statuses" basePermission={Permission.admin_events}>
             <MainContent />
         </DashboardLayout>
     )

@@ -12,9 +12,6 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 
 const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
-        throw new Error(`unauthorized`);
-    }
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventAttendance,
@@ -41,7 +38,7 @@ const MainContent = () => {
 
 const EditEventAttendancesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event Attendances">
+        <DashboardLayout title="Event Attendances" basePermission={Permission.admin_events}>
             <MainContent />
         </DashboardLayout>
     )

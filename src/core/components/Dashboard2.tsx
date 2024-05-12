@@ -28,19 +28,18 @@ import * as React from 'react';
 import * as DynMenu from "shared/dynMenuTypes";
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
+import { formatMillisecondsToDHMS } from "shared/time";
 import { IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import stopImpersonating from "src/auth/mutations/stopImpersonating";
 import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
-import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
-import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
-import { MetronomeDialogButton } from "./Metronome";
-import { AdminInspectObject } from "./CMCoreComponents";
-import { getServerStartState } from "shared/serverStateBase";
-import { formatMillisecondsToDHMS, formatTimeSpan } from "shared/time";
-import { KeyValueDisplay } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
+import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
+import { KeyValueDisplay } from "./CMCoreComponents2";
+import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
+import { LoginSignup } from "./LoginSignupForm";
+import { MetronomeDialogButton } from "./Metronome";
 
 const drawerWidth = 260;
 
@@ -576,9 +575,16 @@ const FlattenDynMenuItems = (dashboardContext: DashboardContextData, items: db3.
 
 const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChildren<{ navRealm?: NavRealm; basePermission?: Permission; }>) => {
     const dashboardContext = React.useContext(DashboardContext);
+    let forceLogin = false;
 
     if (basePermission && !dashboardContext.isAuthorized(basePermission)) {
-        throw new Error(`unauthorized`);
+        // are you even logged in?
+        if (!dashboardContext.session?.userId) {
+            // just redirect to login.
+            forceLogin = true;
+        } else {
+            throw new Error(`unauthorized`);
+        }
     }
 
     const theme = useTheme();
@@ -634,7 +640,7 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
         >
             <Toolbar />
             <React.Suspense>
-                {children}
+                {forceLogin ? <LoginSignup /> : children}
             </React.Suspense>
             {
                 dashboardContext.isShowingAdminControls &&

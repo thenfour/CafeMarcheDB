@@ -39,10 +39,6 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
 
 const MainContent = () => {
 
-    const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
-        throw new Error(`unauthorized`);
-    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
@@ -59,7 +55,7 @@ const MainContent = () => {
 
 const EditEventSongListsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Song Lists">
+        <DashboardLayout title="Song Lists" basePermission={Permission.admin_events}>
             <MainContent />
         </DashboardLayout>
     )

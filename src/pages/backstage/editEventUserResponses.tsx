@@ -12,9 +12,6 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 
 const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
-        throw new Error(`unauthorized`);
-    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const eventId: number | null = parseIntOrNull(urlParams.get('eventId'));
@@ -43,7 +40,7 @@ const MainContent = () => {
 
 const EventUserResponsePage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event Responses">
+        <DashboardLayout title="Event Responses" basePermission={Permission.admin_events}>
             <MainContent />
         </DashboardLayout>
     )

@@ -11,9 +11,6 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_files)) {
-        throw new Error(`unauthorized`);
-    }
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xFile,
@@ -49,7 +46,7 @@ const MainContent = () => {
 
 const EditFilesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Files">
+        <DashboardLayout title="Files" basePermission={Permission.admin_files}>
             <MainContent />
         </DashboardLayout>
     )

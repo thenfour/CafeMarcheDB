@@ -10,9 +10,6 @@ import React from 'react';
 
 const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.admin_events)) {
-        throw new Error(`unauthorized`);
-    }
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventType,
@@ -36,7 +33,7 @@ const MainContent = () => {
 
 const EditEventTypesPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Event Types">
+        <DashboardLayout title="Event Types" basePermission={Permission.admin_events}>
             <MainContent />
         </DashboardLayout>
     )

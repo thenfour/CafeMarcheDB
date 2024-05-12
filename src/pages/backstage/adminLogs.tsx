@@ -35,10 +35,6 @@ const MainContent = () => {
 
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
 
-    if (!dashboardContext.isAuthorized(Permission.sysadmin)) {
-        throw new Error(`unauthorized`);
-    }
-
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xChange,
         columns: [
@@ -164,7 +160,7 @@ const MainContent = () => {
 
 const AdminLogsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Admin Logs">
+        <DashboardLayout title="Admin Logs" basePermission={Permission.sysadmin}>
             <MainContent />
         </DashboardLayout>
     )
