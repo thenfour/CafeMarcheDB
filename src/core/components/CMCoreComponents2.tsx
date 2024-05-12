@@ -8,6 +8,7 @@ import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace, arraysContainSameValues } from "shared/utils";
 import * as db3 from "../db3/db3";
+import { gIconMap } from "../db3/components/IconSelectDialog";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -178,6 +179,7 @@ export const EventDateField = (props: React.PropsWithChildren<EventDateFieldProp
     const relativeTiming = CalcRelativeTiming(new Date(), props.dateRange);
 
     return <div className={`${props.className} ${relativeTiming.bucket} EventDateField container`}>
+        {gIconMap.CalendarMonth()}
         <span className={`DatePart`}>{props.dateRange.toString()}</span>
         <span className={`RelativeIndicator`}>{relativeTiming.label}</span>
         {props.children}

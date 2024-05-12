@@ -273,7 +273,7 @@ const StatsPageInner = () => {
 
 const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
-    if (!dashboardContext.isAuthorized(Permission.view_events)) {
+    if (!dashboardContext.isAuthorized(Permission.view_events_nonpublic)) {
         throw new Error(`unauthorized`);
     }
 
