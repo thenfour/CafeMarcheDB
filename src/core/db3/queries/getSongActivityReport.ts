@@ -1,32 +1,4 @@
-/*
 
--- list of events where a given song has appeared
-with e as (
-    select
-        *
-    from
-        event
-    where
-        isDeleted = false
-)
-select
-    e.id,
-    e.name,
-    e.startsAt,
-    e.durationMillis,
-    e.isAllDay,
-    e.endDateTime    
-from
-    Song s
-    inner join eventSongListSong esls on esls.songId = s.id
-    inner join eventSongList esl on esls.eventSongListId = esl.id
-    inner join e on e.id = esl.eventId
-where
-    s.id = 2
-group by
-    e.id
-    
-*/
 import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
@@ -97,7 +69,7 @@ export default resolver.pipe(
                     e.*
                 from
                     Event e
-                    inner join EventTagAssignment eta on eta.eventId = e.id
+                    left join EventTagAssignment eta on eta.eventId = e.id
                 where
                     ${GetBasicVisFilterExpressionForEvent(u, "e")}
                     AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param

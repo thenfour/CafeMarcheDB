@@ -82,7 +82,7 @@ export default resolver.pipe(
                     s.*
                 from
                     Song s
-                    inner join SongTagAssociation sta on sta.songId = s.id
+                    left join SongTagAssociation sta on sta.songId = s.id
                 where
                     ${GetBasicVisFilterExpressionForSong(u, "s")}
                     AND (${songFilters.join(" AND ")})
@@ -94,7 +94,7 @@ export default resolver.pipe(
                     e.*
                 from
                     Event e
-                    inner join EventTagAssignment eta on eta.eventId = e.id
+                    left join EventTagAssignment eta on eta.eventId = e.id
                 where
                     ${GetBasicVisFilterExpressionForEvent(u, "e")}
                     AND (e.startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param
@@ -146,7 +146,7 @@ export default resolver.pipe(
                     e.*
                 from
                     Event e
-                    inner join EventTagAssignment eta on eta.eventId = e.id
+                    left join EventTagAssignment eta on eta.eventId = e.id
                 where
                     ${GetBasicVisFilterExpressionForEvent(u, "e")}
                     AND (startsAt is not null) -- TBD events are almost by definition irrelevant to stats like this. don't bother with a param

@@ -12,6 +12,7 @@ import { ActivityVis, ActivityVisBucket } from './ActivityVis';
 
 import { DashboardContext } from './DashboardContext';
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from './FilterControl';
+import { AdminInspectObject } from './CMCoreComponents';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -85,10 +86,11 @@ export const SongHistoryFilterControls = ({ filterSpec, setFilterSpec, defaultFi
 
     return <FilterControls
         inCard={true}
-        hasAnyFilters={false}
+        hasAnyFilters={hasAnyFilters()}
         onResetFilter={() => setFilterSpec(defaultFilterSpec)}
         primaryFilter={filters}
         extraFilter={extFilters}
+        hasExtraFilters={hasExtraFilters()}
     />;
 };
 
@@ -136,6 +138,9 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
     const [selectedBucket, setSelectedBucket] = React.useState<null | ActivityVisBucket<GetSongActivityReportRetEvent>>(null);
 
     return <div className='SongHistoryInner'>
+
+        <AdminInspectObject src={results} label='results' />
+        <AdminInspectObject src={filterSpec} label='filterSpec' />
 
         <SongHistoryFilterControls
             defaultFilterSpec={defaultFilterSpec}

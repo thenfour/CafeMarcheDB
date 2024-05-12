@@ -231,7 +231,7 @@ const StatsPageInner = () => {
             <StatsPageQuerier filterSpec={filterSpec} setResults={setResults} />
         </Suspense>
 
-        <h1>Event activity</h1>
+        <h1>Event activity ({results.allEvents.length})</h1>
 
         {expanded &&
             <ActivityVis
@@ -292,7 +292,7 @@ const MainContent = () => {
 
 const StatsPage: BlitzPage = () => {
     return (
-        <DashboardLayout title="Files">
+        <DashboardLayout title="Global Stats">
             <MainContent />
         </DashboardLayout>
     )
