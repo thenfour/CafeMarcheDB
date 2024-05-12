@@ -1,28 +1,23 @@
 import { BlitzPage } from "@blitzjs/next";
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import { Divider } from "@mui/material";
-import { StandardVariationSpec } from "shared/color";
+import { Prisma } from "db";
+import * as mime from 'mime';
+import React from "react";
 import { Permission } from "shared/permissions";
+import { slugify, unslugify } from "shared/rootroot";
 import { IsNullOrWhitespace, parseMimeType } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import * as CMCoreComponents from "src/core/components/CMCoreComponents";
 import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
-import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import React from "react";
-import * as mime from 'mime';
-import { slugify, unslugify } from "shared/rootroot";
-import * as db3 from "src/core/db3/db3";
-import { SongAutocomplete } from "src/core/components/SongAutocomplete";
-import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { Prisma } from "db";
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { DateTimeRange, RelativeTimingBucket, RelativeTimingInfo } from "shared/time";
-import { MarkdownEditor } from "src/core/components/RichTextEditor";
-import { Markdown2Editor } from "src/core/components/MarkdownControl2";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
+import { SongAutocomplete } from "src/core/components/SongAutocomplete";
+import * as DB3Client from "src/core/db3/DB3Client";
+import { IconEditCell } from "src/core/db3/components/IconSelectDialog";
+import * as db3 from "src/core/db3/db3";
+import { AutoAssignInstrumentPartition } from "src/core/db3/shared/apiTypes";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const AutoAssignInstrumentTester = () => {

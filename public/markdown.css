@@ -107,11 +107,20 @@ test cases:
 
 
 /* -  --------------------------------- */
+.settingMarkdownContainer {
+    max-width: var(--content-max-width);
+}
+
+.settingMarkdownContainer.editable {
+    border: 1px solid #0002;
+    border-radius: 5px;
+}
 
 .MD3Container.editor {
     --radius: 8px;
     border: 1px solid #ddd;
     border-radius: var(--radius);
+    max-width: var(--content-max-width);
 }
 
 .MD3Container.editor .header {
@@ -132,6 +141,8 @@ test cases:
     border-top-left-radius: var(--radius);
     border-top-right-radius: var(--radius);
     padding: 3px 13px;
+    font-size: 15px;
+    font-weight: normal;
 }
 
 .MD3Container.editor .tabs .tab.selected {
@@ -176,10 +187,12 @@ test cases:
 .MD3Container.editor textarea {
     border-radius: var(--radius);
     padding: 10px;
+    resize: vertical;
 }
 
 .MD3Container.editor .previewContainer {
     padding: 10px;
+    background-color: white;
 }
 
 blockquote {

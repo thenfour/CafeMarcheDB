@@ -313,7 +313,7 @@ function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileT
     });
 
     if (spec.sortDirection === 'desc') {
-        filteredItems = filteredItems.toReversed();
+        filteredItems = filteredItems.reverse();
     }
 
     return filteredItems;

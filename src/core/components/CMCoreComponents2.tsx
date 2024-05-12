@@ -4,12 +4,10 @@ import { useSession } from "@blitzjs/auth";
 import { Box, Button, CircularProgress, CircularProgressProps, Typography } from "@mui/material";
 import React from "react";
 
+import { useRouter } from "next/router";
+import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace, arraysContainSameValues } from "shared/utils";
 import * as db3 from "../db3/db3";
-import { CalcRelativeTiming, DateTimeRange } from "shared/time";
-import { useRouter } from "next/router";
-import { useParams } from "next/navigation";
-import { gIconMap } from "../db3/components/IconSelectDialog";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -242,7 +240,7 @@ export function useURLState<T extends Serializable>(
             }
             const href = `${window.location.pathname}?${params}`;
             if (href !== router.asPath) {
-                router.replace(href, undefined, { shallow: true });
+                void router.replace(href, undefined, { shallow: true });
             }
         }
     }, [router, key, state, initialValue]);

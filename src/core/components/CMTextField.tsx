@@ -1,7 +1,4 @@
 import {
-    Button,
-    ButtonGroup,
-    CircularProgress,
     InputBase,
     TextField
 } from "@mui/material";
@@ -12,13 +9,8 @@ import {
 } from '@mui/icons-material';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { assert } from "blitz";
-import { StandardVariationSpec } from "shared/color";
 import { formatSongLength, parseSongLengthSeconds } from "shared/time";
-import { CoerceToNumberOrNull, TIconOptions } from "shared/utils";
-import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { RenderMuiIcon } from "../db3/components/IconSelectDialog";
-import { GetStyleVariablesForColor } from "./Color";
-import { DebouncedControl, DebouncedControlCustomRender, DebouncedControlCustomRenderArgs } from "./RichTextEditor";
+import { CoerceToNumberOrNull } from "shared/utils";
 
 
 
@@ -109,43 +101,43 @@ export function CMTextField({ validationError, label, value, onChange, autoFocus
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface EditableTextControlProps {
-    initialValue: string | null, // value which may be coming from the database.
-    onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
-    isSaving: boolean, // show the value as saving in progress
-    debounceMilliseconds: number,
-}
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interface EditableTextControlProps {
+//     initialValue: string | null, // value which may be coming from the database.
+//     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
+//     isSaving: boolean, // show the value as saving in progress
+//     debounceMilliseconds: number,
+// }
 
-export const DebouncedTextField = (props: EditableTextControlProps) => {
+// export const DebouncedTextField = (props: EditableTextControlProps) => {
 
-    const render = (args: DebouncedControlCustomRenderArgs) => {
-        return <div style={{ display: "flex" }}>
-            <CMTextField
-                value={args.value}
-                onChange={(e, value) => args.onChange(value)}
-                autoFocus={false}
-                //label="todo: label here"
-                validationError={null}
-                readOnly={false}
-            />
-            {args.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
-                args.isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
-                    <></>
-                )
-            )}
+//     const render = (args: DebouncedControlCustomRenderArgs) => {
+//         return <div style={{ display: "flex" }}>
+//             <CMTextField
+//                 value={args.value}
+//                 onChange={(e, value) => args.onChange(value)}
+//                 autoFocus={false}
+//                 //label="todo: label here"
+//                 validationError={null}
+//                 readOnly={false}
+//             />
+//             {args.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+//                 args.isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
+//                     <></>
+//                 )
+//             )}
 
-        </div>;
-    };
+//         </div>;
+//     };
 
-    return <DebouncedControlCustomRender
-        render={render}
-        debounceMilliseconds={props.debounceMilliseconds}
-        initialValue={props.initialValue}
-        isSaving={props.isSaving}
-        onValueChanged={props.onValueChanged}
-    />;
-};
+//     return <DebouncedControlCustomRender
+//         render={render}
+//         debounceMilliseconds={props.debounceMilliseconds}
+//         initialValue={props.initialValue}
+//         isSaving={props.isSaving}
+//         onValueChanged={props.onValueChanged}
+//     />;
+// };
 
 
 
@@ -195,150 +187,150 @@ export const DebouncedTextField = (props: EditableTextControlProps) => {
 
 
 
-export function EditableTextControl(props: EditableTextControlProps) {
+// export function EditableTextControl(props: EditableTextControlProps) {
 
-    const [editMode, setEditMode] = React.useState(false);
+//     const [editMode, setEditMode] = React.useState(false);
 
-    const view = <div style={{ display: "flex" }}>
-        <Button startIcon={RenderMuiIcon("Edit")} onClick={() => setEditMode(true)}></Button>
-        <div>{props.initialValue}</div>
-    </div>;
+//     const view = <div style={{ display: "flex" }}>
+//         <Button startIcon={RenderMuiIcon("Edit")} onClick={() => setEditMode(true)}></Button>
+//         <div>{props.initialValue}</div>
+//     </div>;
 
-    const edit = <div style={{ display: "flex" }}>
-        <Button startIcon={RenderMuiIcon("Done")} onClick={() => setEditMode(false)}></Button>
-        <DebouncedTextField
-            debounceMilliseconds={props.debounceMilliseconds}
-            initialValue={props.initialValue}
-            isSaving={props.isSaving}
-            onValueChanged={props.onValueChanged}
-        />
-    </div>;
+//     const edit = <div style={{ display: "flex" }}>
+//         <Button startIcon={RenderMuiIcon("Done")} onClick={() => setEditMode(false)}></Button>
+//         <DebouncedTextField
+//             debounceMilliseconds={props.debounceMilliseconds}
+//             initialValue={props.initialValue}
+//             isSaving={props.isSaving}
+//             onValueChanged={props.onValueChanged}
+//         />
+//     </div>;
 
-    return editMode ? edit : view;
-};
-
-
-
-////////////////k////////////////////////////////////////////////////////////////////////////////////////////////
-interface MutationTextControlProps {
-    initialValue: string | null,
-    refetch: () => void,
-    onChange: (value: string | null) => Promise<any>,
-    successMessage?: string,
-    errorMessage?: string,
-    debounceMilliseconds?: number,
-};
-
-export const MutationTextControl = (props: MutationTextControlProps) => {
-    const [isSaving, setIsSaving] = React.useState(false);
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    const onValueChanged = (newValue: string | null) => {
-        setIsSaving(true);
-        props.onChange(newValue).then(x => {
-            showSnackbar({ severity: "success", children: props.successMessage || "Updated" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: props.errorMessage || "Error" });
-        }).finally(() => {
-            setIsSaving(false);
-            props.refetch();
-        });
-    };
-
-    return <EditableTextControl
-        initialValue={props.initialValue || ""}
-        isSaving={isSaving}
-        onValueChanged={onValueChanged}
-        debounceMilliseconds={props.debounceMilliseconds || 1200}
-    />;
-};
+//     return editMode ? edit : view;
+// };
 
 
 
+// ////////////////k////////////////////////////////////////////////////////////////////////////////////////////////
+// interface MutationTextControlProps {
+//     initialValue: string | null,
+//     refetch: () => void,
+//     onChange: (value: string | null) => Promise<any>,
+//     successMessage?: string,
+//     errorMessage?: string,
+//     debounceMilliseconds?: number,
+// };
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface ButtonSelectOption {
-    value: any,
-    label: string,
-    iconName?: TIconOptions,
-    color: string | null,
-};
-export interface ButtonSelectControlProps {
-    options: ButtonSelectOption[],
-    initialValue: any, // value which may be coming from the database.
-    onValueChanged: (val: any) => void, // caller can save the changed value to a db here.
-    isSaving: boolean, // show the value as saving in progress
-}
+// export const MutationTextControl = (props: MutationTextControlProps) => {
+//     const [isSaving, setIsSaving] = React.useState(false);
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
-export function ButtonSelectControl(props: ButtonSelectControlProps) {
-    return <DebouncedControl
-        initialValue={props.initialValue}
-        debounceMilliseconds={600} // faster debounce for button select because you don't hit it so much to warrant debounce
-        isSaving={props.isSaving}
-        onValueChanged={props.onValueChanged}
-        className="ButtonArrayControl"
-        render={(showingEditor, value, onChange) => {
-            const selectedOption = props.options.find(o => o.value === value)!;
+//     const onValueChanged = (newValue: string | null) => {
+//         setIsSaving(true);
+//         props.onChange(newValue).then(x => {
+//             showSnackbar({ severity: "success", children: props.successMessage || "Updated" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: props.errorMessage || "Error" });
+//         }).finally(() => {
+//             setIsSaving(false);
+//             props.refetch();
+//         });
+//     };
 
-            const selectedStyle = GetStyleVariablesForColor({ color: selectedOption.color, ...StandardVariationSpec.Strong });
-
-            return <div className='valueContainer'>
-                {showingEditor ? <ButtonGroup>
-                    {props.options.map((option, i) => {
-                        const style = GetStyleVariablesForColor({ color: option.color, ...StandardVariationSpec.Strong });
-                        return <Button
-                            key={i}
-                            style={style.style}
-                            className={`applyColor ${style.cssClass} ${option.value === value ? "selected" : "notSelected"}`}
-                            startIcon={RenderMuiIcon(option.iconName)}
-                            onClick={() => { onChange(option.value) }}>
-                            {option.label}
-                        </Button>;
-                    })}
-                </ButtonGroup>
-                    :
-                    <div className="value applyColor  ${style.cssClass}" style={selectedStyle.style}>{selectedOption.label}</div>}
-            </div>
-
-        }}
-    />;
-}
+//     return <EditableTextControl
+//         initialValue={props.initialValue || ""}
+//         isSaving={isSaving}
+//         onValueChanged={onValueChanged}
+//         debounceMilliseconds={props.debounceMilliseconds || 1200}
+//     />;
+// };
 
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface MutationButtonSelectControlProps {
-    options: ButtonSelectOption[],
-    initialValue: any,
-    refetch: () => void,
-    onChange: (value: any) => Promise<any>,
-};
 
-export const MutationButtonSelectControl = (props: MutationButtonSelectControlProps) => {
-    const [isSaving, setIsSaving] = React.useState(false);
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// export interface ButtonSelectOption {
+//     value: any,
+//     label: string,
+//     iconName?: TIconOptions,
+//     color: string | null,
+// };
+// export interface ButtonSelectControlProps {
+//     options: ButtonSelectOption[],
+//     initialValue: any, // value which may be coming from the database.
+//     onValueChanged: (val: any) => void, // caller can save the changed value to a db here.
+//     isSaving: boolean, // show the value as saving in progress
+// }
 
-    const onValueChanged = (newValue: string | null) => {
-        setIsSaving(true);
-        props.onChange(newValue).then(x => {
-            showSnackbar({ severity: "success", children: "Updated" });
-        }).catch(e => {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "Error" });
-        }).finally(() => {
-            setIsSaving(false);
-            props.refetch();
-        });
-    };
+// export function ButtonSelectControl(props: ButtonSelectControlProps) {
+//     return <DebouncedControl
+//         initialValue={props.initialValue}
+//         debounceMilliseconds={600} // faster debounce for button select because you don't hit it so much to warrant debounce
+//         isSaving={props.isSaving}
+//         onValueChanged={props.onValueChanged}
+//         className="ButtonArrayControl"
+//         render={(showingEditor, value, onChange) => {
+//             const selectedOption = props.options.find(o => o.value === value)!;
 
-    return <ButtonSelectControl
-        options={props.options}
-        initialValue={props.initialValue}
-        isSaving={isSaving}
-        onValueChanged={onValueChanged}
-    />;
-};
+//             const selectedStyle = GetStyleVariablesForColor({ color: selectedOption.color, ...StandardVariationSpec.Strong });
+
+//             return <div className='valueContainer'>
+//                 {showingEditor ? <ButtonGroup>
+//                     {props.options.map((option, i) => {
+//                         const style = GetStyleVariablesForColor({ color: option.color, ...StandardVariationSpec.Strong });
+//                         return <Button
+//                             key={i}
+//                             style={style.style}
+//                             className={`applyColor ${style.cssClass} ${option.value === value ? "selected" : "notSelected"}`}
+//                             startIcon={RenderMuiIcon(option.iconName)}
+//                             onClick={() => { onChange(option.value) }}>
+//                             {option.label}
+//                         </Button>;
+//                     })}
+//                 </ButtonGroup>
+//                     :
+//                     <div className="value applyColor  ${style.cssClass}" style={selectedStyle.style}>{selectedOption.label}</div>}
+//             </div>
+
+//         }}
+//     />;
+// }
+
+
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interface MutationButtonSelectControlProps {
+//     options: ButtonSelectOption[],
+//     initialValue: any,
+//     refetch: () => void,
+//     onChange: (value: any) => Promise<any>,
+// };
+
+// export const MutationButtonSelectControl = (props: MutationButtonSelectControlProps) => {
+//     const [isSaving, setIsSaving] = React.useState(false);
+//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+//     const onValueChanged = (newValue: string | null) => {
+//         setIsSaving(true);
+//         props.onChange(newValue).then(x => {
+//             showSnackbar({ severity: "success", children: "Updated" });
+//         }).catch(e => {
+//             console.log(e);
+//             showSnackbar({ severity: "error", children: "Error" });
+//         }).finally(() => {
+//             setIsSaving(false);
+//             props.refetch();
+//         });
+//     };
+
+//     return <ButtonSelectControl
+//         options={props.options}
+//         initialValue={props.initialValue}
+//         isSaving={isSaving}
+//         onValueChanged={onValueChanged}
+//     />;
+// };
 
 
 

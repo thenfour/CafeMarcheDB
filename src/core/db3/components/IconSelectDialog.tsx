@@ -1,67 +1,67 @@
 
 import AddIcon from '@mui/icons-material/Add';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
-import CelebrationIcon from '@mui/icons-material/Celebration';
 import CancelIcon from '@mui/icons-material/Cancel';
+import CelebrationIcon from '@mui/icons-material/Celebration';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import CloseIcon from '@mui/icons-material/Close';
 import CommentIcon from '@mui/icons-material/Comment';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import DeleteIcon from '@mui/icons-material/Delete';
 import DoneIcon from '@mui/icons-material/Done';
 import EditIcon from '@mui/icons-material/Edit';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import ErrorIcon from '@mui/icons-material/Error';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import GraphicEqIcon from '@mui/icons-material/GraphicEq';
 import GroupIcon from '@mui/icons-material/Group';
 import GroupsIcon from '@mui/icons-material/Groups';
-import HomeIcon from '@mui/icons-material/Home';
-import InfoIcon from '@mui/icons-material/Info';
-import ImageIcon from '@mui/icons-material/Image';
 import HelpIcon from '@mui/icons-material/Help';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
+import HomeIcon from '@mui/icons-material/Home';
 import HourglassBottomIcon from '@mui/icons-material/HourglassBottom';
+import ImageIcon from '@mui/icons-material/Image';
+import InfoIcon from '@mui/icons-material/Info';
+import LaunchIcon from '@mui/icons-material/Launch';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import LinkIcon from '@mui/icons-material/Link';
+import LockIcon from '@mui/icons-material/Lock';
 import MicIcon from '@mui/icons-material/Mic';
+import MoreIcon from '@mui/icons-material/More';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
-import TagIcon from '@mui/icons-material/Tag';
 import NightlifeIcon from '@mui/icons-material/Nightlife';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import PersonIcon from '@mui/icons-material/Person';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import PlaceIcon from '@mui/icons-material/Place';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import PublicIcon from '@mui/icons-material/Public';
 import QuestionMarkIcon from '@mui/icons-material/QuestionMark';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import SaveIcon from '@mui/icons-material/Save';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import SearchIcon from '@mui/icons-material/Search';
 import SecurityIcon from '@mui/icons-material/Security';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ShareIcon from '@mui/icons-material/Share';
+import StarsIcon from '@mui/icons-material/Stars';
+import TagIcon from '@mui/icons-material/Tag';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import TuneIcon from '@mui/icons-material/Tune';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import ShareIcon from '@mui/icons-material/Share';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import React from "react";
 import { TIconOptions, gIconOptions } from "shared/utils";
 import { ChoiceEditCell } from "../../components/ChooseItemDialog";
-import HighlightOffIcon from '@mui/icons-material/HighlightOff';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import DeleteIcon from '@mui/icons-material/Delete';
-import StarsIcon from '@mui/icons-material/Stars';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import MoreIcon from '@mui/icons-material/More';
-import LaunchIcon from '@mui/icons-material/Launch';
-import LockIcon from '@mui/icons-material/Lock';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ContentCutIcon from '@mui/icons-material/ContentCut';
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
+//import { SettingMarkdown } from 'src/core/components/SettingMarkdown';
 import { VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
 
 // interface IIconMap {
@@ -153,7 +153,7 @@ export interface ChooseIconDialogProps {
 export function IconEditCell(props: ChooseIconDialogProps) {
     return <ChoiceEditCell
         selectDialogTitle="Select icon"
-        dialogDescription={<SettingMarkdown setting={`IconEditCellDialogDescription`} />}
+        dialogDescription={""}
         items={Object.keys(gIconOptions)}
         readonly={props.readonly}
         value={props.value}

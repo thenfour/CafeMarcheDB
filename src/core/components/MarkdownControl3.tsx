@@ -15,7 +15,9 @@ import { Markdown, MarkdownEditor } from "./RichTextEditor";
 interface Markdown3EditorProps {
     value: string;
     autoFocus?: boolean;
+    minHeight?: number;
     onChange: (v: string) => void;
+    onSave?: () => void;
 };
 
 type M3Tab = "write" | "preview";
@@ -233,6 +235,8 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
             <div style={editorContainerStyle}>
                 <MarkdownEditor
                     onValueChanged={props.onChange}
+                    onSave={props.onSave}
+                    height={props.minHeight}
                     value={props.value}
                     autoFocus={props.autoFocus}
                     headingTrig={headingTrig}
@@ -252,6 +256,12 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                     strikethroughTrig={strikethroughTrig}
                     refocusTrig={refocusTrig}
                 />
+                <div>
+                    <span className="helpText">
+                        Markdown syntax is supported. <a href="/backstage/wiki/markdown-help" target="_blank">Click here</a> for details.
+                    </span>
+
+                </div>
             </div>
             {tab === "preview" &&
                 <div className="previewContainer">

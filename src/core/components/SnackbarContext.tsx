@@ -1,6 +1,6 @@
-import React, { createContext, useState } from 'react';
-import Snackbar from '@mui/material/Snackbar';
 import Alert, { AlertProps } from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
+import React, { createContext } from 'react';
 
 type SnackbarProps = Pick<AlertProps, 'children' | 'severity'> | null;
 

@@ -3,28 +3,23 @@
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
 
 // todo: paste attachments
-import { Button, CircularProgress } from "@mui/material";
-import MarkdownIt from 'markdown-it';
-import React from "react";
-import CloseIcon from '@mui/icons-material/Close';
-import EditIcon from '@mui/icons-material/Edit';
-import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
-import "@webscopeio/react-textarea-autocomplete/style.css";
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
+import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
+import "@webscopeio/react-textarea-autocomplete/style.css";
+import MarkdownIt from 'markdown-it';
+import React from "react";
 
-import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
-import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
-import { useDebounce } from "shared/useDebounce"; // 0 internal refs
-import { CoerceToBoolean, IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
+import { IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
+import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
+import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
 
-import { CMSmallButton } from "./CMCoreComponents2";
-import { CMDBUploadFile } from "./CMDBUploadFile";
-import { CollapsableUploadFileComponent, FileDropWrapper, UploadFileComponent } from "./FileDrop";
 import { getURLClass } from "../db3/clientAPILL";
+import { CMDBUploadFile } from "./CMDBUploadFile";
+import { CollapsableUploadFileComponent, FileDropWrapper } from "./FileDrop";
 
 const INDENT_SIZE = 4;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);
@@ -240,6 +235,7 @@ async function fetchEventOrSongTagsAt(keyword: string): Promise<string[]> {
 interface MarkdownEditorProps {
     value: string | null, // value which may be coming from the database.
     onValueChanged: (val: string) => void, // caller can save the changed value to a db here.
+    onSave?: () => void,
     height?: number,
     autoFocus?: boolean;
     displayUploadFileComponent?: boolean;
@@ -706,7 +702,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     React.useEffect(() => {
         const handleKeyDown = (event) => {
             if (!event.ctrlKey && !event.metaKey) return;
-
             switch (event.key.toUpperCase()) {
                 case 'B':
                     event.preventDefault();
@@ -728,6 +723,11 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     if (event.shiftKey) {
                         event.preventDefault();
                         ToolbarActions.strikethrough();
+                    } else {
+                        if (props.onSave) {
+                            event.preventDefault();
+                            props.onSave();
+                        }
                     }
                     break;
                 case 'K':
@@ -758,7 +758,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                     event.preventDefault();
                     ToolbarActions.outdent();
                     break;
-                // Add more as needed
             }
         };
 
@@ -832,207 +831,207 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     );
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible. external / internal values are different.
-// the "value" is used in a react.useEffect() so for isEqual() functionality just comply with that.
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible. external / internal values are different.
+// // the "value" is used in a react.useEffect() so for isEqual() functionality just comply with that.
 
-// this version allows complete control over rendering by passing a render function.
-// another approach would allow rendering using a react context and child components. but meh that's more verbose and complex plumbing than this
-export interface DebouncedControlCustomRenderArgs {
-    isSaving: boolean;
-    isDebouncing: boolean;
-    value: any;
-    onChange: (value: any) => void;
-};
+// // this version allows complete control over rendering by passing a render function.
+// // another approach would allow rendering using a react context and child components. but meh that's more verbose and complex plumbing than this
+// export interface DebouncedControlCustomRenderArgs {
+//     isSaving: boolean;
+//     isDebouncing: boolean;
+//     value: any;
+//     onChange: (value: any) => void;
+// };
 
-export interface DebouncedControlCustomRenderProps {
-    initialValue: any, // value which may be coming from the database.
-    onValueChanged: (value) => void, // caller can save the changed value to a db here.
-    isSaving: boolean, // show the value as saving in progress
-    debounceMilliseconds?: number,
-    render: (args: DebouncedControlCustomRenderArgs) => React.ReactElement,
-}
+// export interface DebouncedControlCustomRenderProps {
+//     initialValue: any, // value which may be coming from the database.
+//     onValueChanged: (value) => void, // caller can save the changed value to a db here.
+//     isSaving: boolean, // show the value as saving in progress
+//     debounceMilliseconds?: number,
+//     render: (args: DebouncedControlCustomRenderArgs) => React.ReactElement,
+// }
 
-// here we let callers completely customize rendering with nested callbacks.
-// this calls props.onRender()
-export function DebouncedControlCustomRender(props: DebouncedControlCustomRenderProps) {
-    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
-    const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
-    const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
+// // here we let callers completely customize rendering with nested callbacks.
+// // this calls props.onRender()
+// export function DebouncedControlCustomRender(props: DebouncedControlCustomRenderProps) {
+//     const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
+//     const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
+//     const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); //
 
-    const saveNow = () => {
-        if (firstUpdate && debouncedValue === props.initialValue) {
-            setFirstUpdate(false);
-            return; // avoid onchange when the control first loads and sets debounced state.
-        }
-        props.onValueChanged(debouncedValue);
-    };
+//     const saveNow = () => {
+//         if (firstUpdate && debouncedValue === props.initialValue) {
+//             setFirstUpdate(false);
+//             return; // avoid onchange when the control first loads and sets debounced state.
+//         }
+//         props.onValueChanged(debouncedValue);
+//     };
 
-    React.useEffect(saveNow, [debouncedValue]);
+//     React.useEffect(saveNow, [debouncedValue]);
 
-    return props.render({
-        isSaving: props.isSaving,
-        isDebouncing,
-        value: valueState,
-        onChange: (value) => { setValueState(value) },
-    });
-};
+//     return props.render({
+//         isSaving: props.isSaving,
+//         isDebouncing,
+//         value: valueState,
+//         onChange: (value) => { setValueState(value) },
+//     });
+// };
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// debounce control with default rendering (edit button, save progress)
-interface DebouncedControlProps {
-    initialValue: any, // value which may be coming from the database.
-    onValueChanged: (value) => void, // caller can save the changed value to a db here.
-    isSaving: boolean, // show the value as saving in progress
-    debounceMilliseconds?: number,
-    className?: string,
-    render: (showingEditor: boolean, value, onChange: (value) => void) => React.ReactElement,
-    editButtonText?: string,
-    helpText?: React.ReactNode,
-    closeButtonText?: string,
-}
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// // debounce control with default rendering (edit button, save progress)
+// interface DebouncedControlProps {
+//     initialValue: any, // value which may be coming from the database.
+//     onValueChanged: (value) => void, // caller can save the changed value to a db here.
+//     isSaving: boolean, // show the value as saving in progress
+//     debounceMilliseconds?: number,
+//     className?: string,
+//     render: (showingEditor: boolean, value, onChange: (value) => void) => React.ReactElement,
+//     editButtonText?: string,
+//     helpText?: React.ReactNode,
+//     closeButtonText?: string,
+// }
 
-export function DebouncedControl(props: DebouncedControlProps) {
-    const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
-    const [debouncedValue, { isDebouncing, isFirstUpdate }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); // 
+// export function DebouncedControl(props: DebouncedControlProps) {
+//     const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
+//     const [debouncedValue, { isDebouncing, isFirstUpdate }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); //
 
-    const saveNow = () => {
-        if (isFirstUpdate) return;
-        props.onValueChanged(debouncedValue);
-    };
+//     const saveNow = () => {
+//         if (isFirstUpdate) return;
+//         props.onValueChanged(debouncedValue);
+//     };
 
-    React.useEffect(saveNow, [debouncedValue]);
+//     React.useEffect(saveNow, [debouncedValue]);
 
-    const onChange = (value) => {
-        setValueState(value);
-    };
+//     const onChange = (value) => {
+//         setValueState(value);
+//     };
 
-    const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
+//     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
 
-    const editButton = <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.editButtonText ?? "Edit"}</Button>;
+//     const editButton = <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.editButtonText ?? "Edit"}</Button>;
 
-    return (
-        <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
-            <div className='editControlsContainer'>
-                {!showingEditor && editButton}
-                {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.closeButtonText ?? "Close"}</Button>}
-                {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
-                    isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
-                        <></>
-                    )
-                )}
-                {props.helpText && <div className="helpText">{props.helpText}</div>}
-            </div>
-            {props.render(showingEditor, valueState, onChange)}
-        </div>
-    );
-}
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
-interface MarkdownControlProps {
-    initialValue: string | null, // value which may be coming from the database.
-    className?: string;
-    onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
-    isSaving: boolean, // show the value as saving in progress
-    debounceMilliseconds: number,
-    editButtonText?: string,
-    helpText?: React.ReactNode,
-    closeButtonText?: string,
-    readonly?: boolean,
-}
-
-export function MarkdownControl(props: MarkdownControlProps) {
-    if (props.readonly) return <Markdown markdown={props.initialValue} />;
-    return <DebouncedControl
-        debounceMilliseconds={props.debounceMilliseconds}
-        initialValue={props.initialValue}
-        isSaving={props.isSaving}
-        onValueChanged={props.onValueChanged}
-        className={`richTextContainer editable ${props.className || ""}`}
-        editButtonText={props.editButtonText}
-        helpText={props.helpText}
-        closeButtonText={props.closeButtonText}
-        render={(showingEditor, value, onChange) => {
-            return <div className='richTextContentContainer'>
-                {showingEditor && <MarkdownEditor value={value} onValueChanged={onChange} />}
-                <Markdown markdown={value} />
-            </div>
-
-        }}
-    />;
-}
-
-
-
-
+//     return (
+//         <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
+//             <div className='editControlsContainer'>
+//                 {!showingEditor && editButton}
+//                 {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.closeButtonText ?? "Close"}</Button>}
+//                 {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
+//                     isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
+//                         <></>
+//                     )
+//                 )}
+//                 {props.helpText && <div className="helpText">{props.helpText}</div>}
+//             </div>
+//             {props.render(showingEditor, valueState, onChange)}
+//         </div>
+//     );
+// }
 
 
 
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// NO DEBOUNCE behavior here.
-interface CompactMarkdownControlProps {
-    initialValue: string | null, // value which may be coming from the database.
-    className?: string;
-    onValueChanged: (val: string) => Promise<void>, // caller can save the changed value to a db here.
-    cancelButtonMessage?: string,
-    saveButtonMessage?: string,
-    editButtonMessage?: string,
-    editButtonVariant?: "framed" | "default";
-    height?: number;
-    readonly?: boolean;
-    alwaysEditMode?: boolean; // avoid edit/save/cancel buttons; just make it always edit. useful for edit object dialogs
-}
+// // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
+// interface MarkdownControlProps {
+//     initialValue: string | null, // value which may be coming from the database.
+//     className?: string;
+//     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
+//     isSaving: boolean, // show the value as saving in progress
+//     debounceMilliseconds: number,
+//     editButtonText?: string,
+//     helpText?: React.ReactNode,
+//     closeButtonText?: string,
+//     readonly?: boolean,
+// }
 
-export function CompactMarkdownControl({ initialValue, onValueChanged, ...props }: CompactMarkdownControlProps) {
-    const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
-    const [value, setValue] = React.useState<string>(initialValue || "");
-    const alwaysEdit = CoerceToBoolean(props.alwaysEditMode, false);
-    const showingEditor2 = !props.readonly && (showingEditor || alwaysEdit);
+// export function MarkdownControl(props: MarkdownControlProps) {
+//     if (props.readonly) return <Markdown markdown={props.initialValue} />;
+//     return <DebouncedControl
+//         debounceMilliseconds={props.debounceMilliseconds}
+//         initialValue={props.initialValue}
+//         isSaving={props.isSaving}
+//         onValueChanged={props.onValueChanged}
+//         className={`richTextContainer editable ${props.className || ""}`}
+//         editButtonText={props.editButtonText}
+//         helpText={props.helpText}
+//         closeButtonText={props.closeButtonText}
+//         render={(showingEditor, value, onChange) => {
+//             return <div className='richTextContentContainer'>
+//                 {showingEditor && <MarkdownEditor value={value} onValueChanged={onChange} />}
+//                 <Markdown markdown={value} />
+//             </div>
 
-    const onCancel = () => {
-        setValue(initialValue || "");
-        setShowingEditor(false);
-    };
+//         }}
+//     />;
+// }
 
-    const onSave = () => {
-        void onValueChanged(value).then(() => {
-            setShowingEditor(false);
-        });
-    };
 
-    if (showingEditor2) {
-        return (<div className={`compactMarkdownControlRoot editing ${props.className}`}>
-            <div className="CMSmallButtonGroup">
-                {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>}
-                {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>}
-                <span className="helpText">
-                    Markdown syntax is supported. <a href="/backstage/wiki/markdown-help" target="_blank">Click here</a> for details.
-                </span>
-            </div>
-            <div className="richTextContainer compactMarkdownControl">
-                <div className='richTextContentContainer'>
-                    <MarkdownEditor value={value} onValueChanged={(v) => {
-                        setValue(v);
-                        if (alwaysEdit) {
-                            void onValueChanged(v); // async throwaway
-                        }
-                    }} height={props.height || 50} />
-                </div>
-            </div>
-            {value !== "" && <div className="tinyCaption">Preview:</div>}
-            <Markdown markdown={value} />
-        </div>);
-    }
 
-    // not editor just viewer.
-    return <div className={`richTextContainer compactMarkdownControl notEditing ${props.readonly ? "readonly" : "editable interactable"} compactMarkdownControlRoot ${props.className}`} onClick={() => setShowingEditor(true)} >
-        <Markdown markdown={value} className={props.className} />
-        {!props.readonly && IsNullOrWhitespace(value) && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
-    </div >;
-};
+
+
+
+
+
+// // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// // NO DEBOUNCE behavior here.
+// interface CompactMarkdownControlProps {
+//     initialValue: string | null, // value which may be coming from the database.
+//     className?: string;
+//     onValueChanged: (val: string) => Promise<void>, // caller can save the changed value to a db here.
+//     cancelButtonMessage?: string,
+//     saveButtonMessage?: string,
+//     editButtonMessage?: string,
+//     editButtonVariant?: "framed" | "default";
+//     height?: number;
+//     readonly?: boolean;
+//     alwaysEditMode?: boolean; // avoid edit/save/cancel buttons; just make it always edit. useful for edit object dialogs
+// }
+
+// export function CompactMarkdownControl({ initialValue, onValueChanged, ...props }: CompactMarkdownControlProps) {
+//     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
+//     const [value, setValue] = React.useState<string>(initialValue || "");
+//     const alwaysEdit = CoerceToBoolean(props.alwaysEditMode, false);
+//     const showingEditor2 = !props.readonly && (showingEditor || alwaysEdit);
+
+//     const onCancel = () => {
+//         setValue(initialValue || "");
+//         setShowingEditor(false);
+//     };
+
+//     const onSave = () => {
+//         void onValueChanged(value).then(() => {
+//             setShowingEditor(false);
+//         });
+//     };
+
+//     if (showingEditor2) {
+//         return (<div className={`compactMarkdownControlRoot editing ${props.className}`}>
+//             <div className="CMSmallButtonGroup">
+//                 {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>}
+//                 {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>}
+//                 <span className="helpText">
+//                     Markdown syntax is supported. <a href="/backstage/wiki/markdown-help" target="_blank">Click here</a> for details.
+//                 </span>
+//             </div>
+//             <div className="richTextContainer compactMarkdownControl">
+//                 <div className='richTextContentContainer'>
+//                     <MarkdownEditor value={value} onValueChanged={(v) => {
+//                         setValue(v);
+//                         if (alwaysEdit) {
+//                             void onValueChanged(v); // async throwaway
+//                         }
+//                     }} height={props.height || 50} />
+//                 </div>
+//             </div>
+//             {value !== "" && <div className="tinyCaption">Preview:</div>}
+//             <Markdown markdown={value} />
+//         </div>);
+//     }
+
+//     // not editor just viewer.
+//     return <div className={`richTextContainer compactMarkdownControl notEditing ${props.readonly ? "readonly" : "editable interactable"} compactMarkdownControlRoot ${props.className}`} onClick={() => setShowingEditor(true)} >
+//         <Markdown markdown={value} className={props.className} />
+//         {!props.readonly && IsNullOrWhitespace(value) && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
+//     </div >;
+// };
 

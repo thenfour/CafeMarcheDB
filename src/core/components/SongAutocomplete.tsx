@@ -97,7 +97,7 @@ export const SongAutocomplete = ({ value, onChange, index, fadedSongIds }: SongA
         }}
         renderOption={(props, option) => {
             const songId = typeof option === 'string' ? null : option.id as number;
-            return <li {...props} className={`${props.className} songAutocompleteLI ${(songId && fadedSongIds.includes(songId)) ? "faded" : "notfaded"}`}>
+            return <li {...props} className={`${props.className} songAutocompleteLI ${(songId && fadedSongIds!.includes(songId)) ? "faded" : "notfaded"}`}>
                 {typeof option === 'string' ? option : option.name}
             </li>
         }}

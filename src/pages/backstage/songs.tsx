@@ -259,7 +259,7 @@ const SongsList = ({ filterSpec, filterInfo, ...props }: SongsListArgs) => {
     const items = (filterInfo.fullSongs as db3.SongPayload_Verbose[]).map(s => db3.enrichSong(s, dashboardContext));
 
     const handleCopy = async () => {
-        CopySongListCSV(snackbarContext, items);
+        await CopySongListCSV(snackbarContext, items);
     };
 
     return <div className="songsList searchResults">

@@ -122,14 +122,18 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { RenderMuiIcon } from '../db3/components/IconSelectDialog';
-import { AdminInspectObject, CMChip, CMChipContainer } from './CMCoreComponents';
+import { RenderMuiIcon, gIconMap } from '../db3/components/IconSelectDialog';
+import { AdminInspectObject, CMChip, CMChipContainer, ReactiveInputDialog } from './CMCoreComponents';
 import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, NameValuePair } from "./CMCoreComponents2";
 import { EventWithMetadata } from "./EventComponentsBase";
-import { CompactMutationMarkdownControl } from './SettingMarkdown';
+//import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { DashboardContext } from "./DashboardContext";
 import { ArrayElement } from "shared/utils";
 import { Prisma } from "db";
+import { Markdown } from "./RichTextEditor";
+import { Markdown3Editor } from "./MarkdownControl3";
+import { DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 
 const gCaptionMap = {};
@@ -242,6 +246,102 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
 
 
 
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// // a view/edit control for the comment only (including mutation)
+// interface EventAttendanceCommentControlProps {
+//   userResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>,
+//   onRefetch: () => void,
+//   readonly: boolean,
+// };
+
+// const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
+//   const token = API.events.updateUserEventAttendance.useToken();
+//   const val = props.userResponse.response.userComment || "";
+//   return <CompactMutationMarkdownControl
+//     initialValue={props.userResponse.response.userComment}
+//     editButtonMessage={val === "" ? "Add a comment" : "Edit comment"}
+//     editButtonVariant={val === "" ? "default" : "framed"}
+//     refetch={props.onRefetch}
+//     readonly={props.readonly}
+//     className="compact"
+//     onChange={async (value) => {
+//       return await token.invoke({
+//         userId: props.userResponse.user.id,
+//         eventId: props.userResponse.event.id,
+//         comment: value,
+//       });
+//     }} />;
+// };
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface EventAttendanceCommentEditorProps {
+  userResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>,
+  onRefetch: () => void,
+  onClose: () => void;
+  initialValue: string;
+};
+
+const EventAttendanceCommentEditor = (props: EventAttendanceCommentEditorProps) => {
+  const [value, setValue] = React.useState<string>(props.initialValue);
+  const token = API.events.updateUserEventAttendance.useToken();
+  const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+  const handleSave = async (): Promise<boolean> => {
+    try {
+      await token.invoke({
+        userId: props.userResponse.user.id,
+        eventId: props.userResponse.event.id,
+        comment: value,
+      });
+      showSnackbar({ severity: "success", children: "Success" });
+      props.onRefetch();
+      return true;
+    } catch (e) {
+      console.log(e);
+      showSnackbar({ severity: "error", children: "error updating event description" });
+      return false;
+    }
+  };
+
+  // const hasEdits = (props.initialValue !== value);
+
+  const handleSaveAndClose = async (): Promise<boolean> => {
+    const r = await handleSave();
+    props.onClose();
+    return r;
+  };
+
+  return <ReactiveInputDialog
+    onCancel={props.onClose}
+  >
+
+    <DialogTitle>
+      <SettingMarkdown setting="EventAttendanceCommentDialog_TitleMarkdown" />
+    </DialogTitle>
+    <DialogContent dividers>
+      <SettingMarkdown setting="EventAttendanceCommentDialog_DescriptionMarkdown" />
+
+      <Markdown3Editor
+        onChange={(v) => setValue(v)}
+        value={value}
+        onSave={() => { void handleSave() }}
+        minHeight={140}
+      //enableSaveProgress={false}
+      />
+
+      <DialogActions className="actionButtonsRow">
+        <div className={`freeButton cancelButton`} onClick={props.onClose}>Cancel</div>
+        {/* <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div> */}
+        <div className={`saveButton saveAndCloseButton freeButton changed`} onClick={handleSaveAndClose}>{gIconMap.CheckCircleOutline()}Save</div>
+      </DialogActions>
+
+    </DialogContent>
+  </ReactiveInputDialog>;
+};
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // a view/edit control for the comment only (including mutation)
 interface EventAttendanceCommentControlProps {
@@ -251,23 +351,25 @@ interface EventAttendanceCommentControlProps {
 };
 
 const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
-  const token = API.events.updateUserEventAttendance.useToken();
+  const [editing, setEditing] = React.useState<boolean>(false);
+  //const token = API.events.updateUserEventAttendance.useToken();
   const val = props.userResponse.response.userComment || "";
-  return <CompactMutationMarkdownControl
-    initialValue={props.userResponse.response.userComment}
-    editButtonMessage={val === "" ? "Add a comment" : "Edit comment"}
-    editButtonVariant={val === "" ? "default" : "framed"}
-    refetch={props.onRefetch}
-    readonly={props.readonly}
-    className="compact"
-    onChange={async (value) => {
-      return await token.invoke({
-        userId: props.userResponse.user.id,
-        eventId: props.userResponse.event.id,
-        comment: value,
-      });
-    }} />;
+
+  const clickToEdit = !props.readonly && !editing;
+
+  return <div className={`ownAttendanceComment freeButton ${clickToEdit && "clickToEdit"}`} onClick={clickToEdit ? () => setEditing(true) : undefined}>
+    <div>
+      {editing ? <EventAttendanceCommentEditor
+        onClose={() => setEditing(false)}
+        initialValue={val}
+        onRefetch={props.onRefetch}
+        userResponse={props.userResponse}
+      /> : <Markdown markdown={val} />}
+    </div>
+    <div className="clickToAddComment">Click to add/edit a comment</div>
+  </div>;
 };
+
 
 
 ////////////////////////////////////////////////////////////////

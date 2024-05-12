@@ -5,7 +5,6 @@
 // all of which propagate up to a db controller
 
 import { BlitzPage } from "@blitzjs/next";
-import { CheckBox } from "@mui/icons-material";
 import { Button, Checkbox, FormControlLabel, Tooltip } from "@mui/material";
 import { assert } from "blitz";
 import React from "react";
@@ -15,12 +14,13 @@ import { formatFileSize } from "shared/rootroot";
 import { calculateNewDimensions, gDefaultImageArea } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
-import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { CollapsableUploadFileComponent, FileDropWrapper, UploadFileComponent } from "src/core/components/FileDrop";
-import { Markdown2Control } from "src/core/components/MarkdownControl2";
-import { MutationMarkdownControl, SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/FileDrop";
+import { Markdown3Editor } from "src/core/components/MarkdownControl3";
+import { Markdown } from "src/core/components/RichTextEditor";
+//import { Markdown2Control } from "src/core/components/MarkdownControl2";
+import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { VisibilityControl, VisibilityControlValue } from "src/core/components/VisibilityControl";
 import { HomepageMain } from "src/core/components/homepageComponents";
@@ -28,7 +28,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
 import { gIconMap } from "src/core/db3/components/IconSelectDialog";
 import * as db3 from "src/core/db3/db3";
-import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams, getFileCustomData } from "src/core/db3/shared/apiTypes";
+import { Coord2D, ImageEditParams, MakeDefaultImageEditParams, MulSize, Size, UpdateGalleryItemImageParams } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
@@ -120,46 +120,80 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
 
 };
 
+interface GalleryItemDescriptionEditorProps {
+    initialValue: string;
+    refetch: () => void;
+    onClose: () => void;
+    galleryItem: db3.FrontpageGalleryItemPayload;
+    client: DB3Client.xTableRenderClient;
+};
+
+export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditorProps) => {
+    const [value, setValue] = React.useState<string>(props.initialValue);
+
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const handleSave = async (): Promise<boolean> => {
+        try {
+            const newrow: db3.FrontpageGalleryItemPayload = { ...props.galleryItem, caption: value || "" };
+            await props.client.doUpdateMutation(newrow);
+            showSnackbar({ severity: "success", children: "Success" });
+            props.client.refetch();
+            return true;
+        } catch (e) {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating gallery item description" });
+            return false;
+        }
+    };
+
+    const handleSaveAndClose = async (): Promise<boolean> => {
+        const r = await handleSave();
+        props.onClose();
+        return r;
+    };
+
+    return <>
+        <Markdown3Editor
+            onChange={(v) => setValue(v)}
+            value={value}
+            onSave={() => { void handleSave() }}
+        />
+
+        <div className="actionButtonsRow">
+            <div className={`freeButton cancelButton`} onClick={props.onClose}>Close</div>
+            <div className={`saveButton saveAndCloseButton freeButton changed`} onClick={handleSaveAndClose}>{gIconMap.CheckCircleOutline()}Save & close</div>
+        </div>
+    </>;
+};
 
 
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface GalleryItemDescriptionControlProps {
     value: db3.FrontpageGalleryItemPayload;
     client: DB3Client.xTableRenderClient;
 };
 export const GalleryItemDescriptionControl = (props: GalleryItemDescriptionControlProps) => {
-    // return <MutationMarkdownControl
-    //     initialValue={props.value.caption}
-    //     editButtonText="Edit caption"
-    //     refetch={props.client.refetch}
-    //     onChange={(newValue) => {
-    //         const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, caption: newValue || "" };
-    //         return props.client.doUpdateMutation(newrow);
-    //     }}
-    // />;
-
-    const onValueSaved = async (newValue: string): Promise<boolean> => {
-        try {
-            const newrow: db3.FrontpageGalleryItemPayload = { ...props.value, caption: newValue || "" };
-            await props.client.doUpdateMutation(newrow);
-            //showSnackbar({ severity: "success", children: "Success" });
-            props.client.refetch();
-            return true;
-        } catch (e) {
-            console.log(e);
-            //showSnackbar({ severity: "error", children: "error updating event visibility" });
-            return false;
-        }
-    };
-    return <Markdown2Control
-        isExisting={true}
-        readonly={false}
-        value={props.value.caption}
-        onValueSaved={onValueSaved}
-    />;
-
+    const [editing, setEditing] = React.useState<boolean>(false);
+    return <div className='descriptionContainer'>
+        {!editing && <Button onClick={() => setEditing(true)}>Edit description</Button>}
+        {editing ? <GalleryItemDescriptionEditor
+            onClose={() => setEditing(false)}
+            client={props.client}
+            galleryItem={props.value}
+            initialValue={props.value.caption}
+            refetch={props.client.refetch}
+        /> : <Markdown markdown={props.value.caption} />}
+    </div>;
 };
+
+
+
+
+
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

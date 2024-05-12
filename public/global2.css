@@ -2319,3 +2319,25 @@ table.activityVis .cell.highActivity {
     opacity: 30%;
     filter: saturate(0);
 }
+
+
+/* -  --------------------------------- */
+
+.ownAttendanceComment {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.ownAttendanceComment .clickToAddComment {
+    color: #ccc;
+    font-style: italic;
+}
+
+.ownAttendanceComment.freeButton {
+    text-decoration: none;
+}
+
+.ownAttendanceComment.freeButton:hover {
+    text-decoration: none;
+}

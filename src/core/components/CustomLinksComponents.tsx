@@ -2,7 +2,6 @@ import { Tooltip } from "@mui/material";
 import React from "react";
 import { gLightSwatchColors, gSwatchColors } from "shared/color";
 import { Permission } from 'shared/permissions';
-import { IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -10,12 +9,12 @@ import * as db3 from "src/core/db3/db3";
 import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { gIconMap } from '../db3/components/IconSelectDialog';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
+import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
 import { CMChip, CMChipContainer } from "./CMCoreComponents";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
-import { MutationMarkdownControl } from './SettingMarkdown';
-import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
 import { DashboardContext } from "./DashboardContext";
+import { Markdown } from "./RichTextEditor";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {
@@ -84,15 +83,15 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
         });
     };
 
-    const handleDescriptionChange = async (value: string | null) => {
-        const obj: db3.CustomLinkPayload = { ...props.item, description: value || "" };
-        await props.client.doUpdateMutation(obj);
-    };
+    // const handleDescriptionChange = async (value: string | null) => {
+    //     const obj: db3.CustomLinkPayload = { ...props.item, description: value || "" };
+    //     await props.client.doUpdateMutation(obj);
+    // };
 
-    const handleIntermediateMessageChange = async (value: string | null) => {
-        const obj: db3.CustomLinkPayload = { ...props.item, intermediateMessage: value || "" };
-        await props.client.doUpdateMutation(obj);
-    };
+    // const handleIntermediateMessageChange = async (value: string | null) => {
+    //     const obj: db3.CustomLinkPayload = { ...props.item, intermediateMessage: value || "" };
+    //     await props.client.doUpdateMutation(obj);
+    // };
 
     const handleDelete = (api: DB3EditRowButtonAPI) => {
         props.client.doDeleteMutation(props.item.id, 'softWhenPossible').then(() => {
@@ -145,13 +144,7 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
             <div className='subtitleLine'>Visited {props.item._count.visits} times</div>
             <div className='subtitleLine'>Created by {props.item.createdByUser?.name} on {props.item.createdAt.toDateString()}</div>
 
-            {!IsNullOrWhitespace(props.item.description) && <MutationMarkdownControl
-                editButtonText='Edit description'
-                initialValue={props.item.description}
-                refetch={props.client.refetch}
-                readonly={props.readonly}
-                onChange={handleDescriptionChange}
-            />}
+            <Markdown markdown={props.item.description} />
 
             <NameValuePair
                 isReadOnly={props.readonly}
@@ -177,14 +170,8 @@ export const CustomLinkItem = (props: CustomLinkItemProps) => {
                 </div>}
             />
 
-            {redirectType === "IntermediatePage" && !IsNullOrWhitespace(props.item.intermediateMessage) &&
-                <MutationMarkdownControl
-                    editButtonText='Intermediate page custom message'
-                    initialValue={props.item.intermediateMessage}
-                    refetch={props.client.refetch}
-                    readonly={props.readonly}
-                    onChange={handleIntermediateMessageChange}
-                />}
+            {redirectType === "IntermediatePage" &&
+                <Markdown markdown={props.item.intermediateMessage} />}
 
         </div>
     </div>;

@@ -529,7 +529,7 @@ const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: Event
     const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
 
     const handleCopy = async () => {
-        CopyEventListCSV(snackbarContext, events);
+        await CopyEventListCSV(snackbarContext, events);
     };
 
     return <div className="eventList searchResults">

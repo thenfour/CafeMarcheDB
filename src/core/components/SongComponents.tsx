@@ -1,7 +1,7 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs, Link, Tab, Tabs, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, Link, Tab, Tabs, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { StandardVariationSpec } from 'shared/color';
@@ -18,7 +18,6 @@ import { CMChipContainer, CMStandardDBChip, CustomTabPanel, InspectObject, TabA1
 import { NameValuePair } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
-import { Markdown2Control } from './MarkdownControl2';
 import { MetronomeButton } from './Metronome';
 import { Markdown } from './RichTextEditor';
 import { SearchableNameColumnClient } from './SearchableNameColumnClient';
@@ -27,6 +26,7 @@ import { CalculateSongMetadata, EnrichedVerboseSong, SongWithMetadata } from './
 import { FilesTabContent } from './SongFileComponents';
 import { VisibilityValue } from './VisibilityControl';
 import { SongHistory } from './SongHistory';
+import { Markdown3Editor } from './MarkdownControl3';
 
 
 export const SongClientColumns = {
@@ -96,11 +96,60 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
 };
 
 
+////////////////////////////////////////////////////////////////
+interface SongDescriptionEditorProps {
+    song: db3.SongPayloadMinimum;
+    refetch: () => void;
+    onClose: () => void;
+};
 
+export const SongDescriptionEditor = (props: SongDescriptionEditorProps) => {
+    const [value, setValue] = React.useState<string>(props.song.description || "");
 
-export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.SongPayloadMinimum, refetch: () => void, readonly: boolean }) => {
     const mutationToken = API.songs.updateSongBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const handleSave = async (): Promise<boolean> => {
+        try {
+            await mutationToken.invoke({
+                songId: props.song.id,
+                description: value,
+            });
+            showSnackbar({ severity: "success", children: "Success" });
+            props.refetch();
+            return true;
+        } catch (e) {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating song description" });
+            return false;
+        }
+    };
+
+    const hasEdits = (props.song.description !== value);
+
+    const handleSaveAndClose = async (): Promise<boolean> => {
+        const r = await handleSave();
+        props.onClose();
+        return r;
+    };
+
+    return <>
+        <Markdown3Editor
+            onChange={(v) => setValue(v)}
+            value={value}
+            onSave={() => { void handleSave() }}
+        />
+
+        <div className="actionButtonsRow">
+            <div className={`freeButton cancelButton`} onClick={props.onClose}>{hasEdits ? "Cancel" : "Close"}</div>
+            <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div>
+            <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSaveAndClose : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
+        </div>
+    </>;
+};
+
+export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.SongPayloadMinimum, refetch: () => void, readonly: boolean }) => {
+    const [editing, setEditing] = React.useState<boolean>(false);
 
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
@@ -113,29 +162,27 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.
         publicData,
     });
 
-    const onValueSaved = async (newValue: string): Promise<boolean> => {
-        try {
-            await mutationToken.invoke({
-                songId: song.id,
-                description: newValue || "",
-            });
-            showSnackbar({ severity: "success", children: "Success" });
-            refetch();
-            return true;
-        } catch (e) {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event visibility" });
-            return false;
-        }
-    };
-    return <Markdown2Control
-        isExisting={true}
-        readonly={readonly || !authorized}
-        value={song.description}
-        onValueSaved={onValueSaved}
-        displayUploadFileComponent={true} // #133 for mobile,this gives an opportunity to upload/embed.
-    />;
+    readonly = readonly && authorized;
+
+    return <div className='descriptionContainer'>
+        {!readonly && !editing && <Button onClick={() => setEditing(true)}>Edit</Button>}
+        {editing ? <SongDescriptionEditor
+            song={song}
+            refetch={refetch}
+            onClose={() => setEditing(false)}
+        /> : <Markdown markdown={song.description} />}
+    </div>;
 };
+
+
+
+
+
+
+
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

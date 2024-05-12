@@ -16,15 +16,16 @@ import React, { Suspense } from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
-import { AdminInspectObject, CMChip, CMChipContainer, InspectObject } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
-import { CompactMarkdownControl, Markdown } from "src/core/components/RichTextEditor";
+import { Markdown } from "src/core/components/RichTextEditor";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell, RenderMuiIcon } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
+import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { TAnyModel, gNullValue } from "../shared/apiTypes";
 
@@ -367,16 +368,17 @@ export class MarkdownStringColumnClient extends DB3ClientCore.IColumnClient {
         return this.defaultRenderer({
             isReadOnly: false,
             validationResult: params.validationResult,
-            value: <CompactMarkdownControl
-                alwaysEditMode={true} // don't put an inline edit mode in the middle of an edit dialog. either always edit, OR use a new modal.
-                initialValue={params.value as string}
-                height={120}
-                onValueChanged={async (val) => {
+            value: <Markdown3Editor
+                value={params.value as string}
+                minHeight={120}
+                onChange={async (val) => {
                     params.api.setFieldValues({ [this.columnName]: val });
                 }}
-            />,
+            />
         });
     }
+
+
 };
 
 

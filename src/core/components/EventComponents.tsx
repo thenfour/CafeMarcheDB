@@ -3,10 +3,10 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, DialogActions, DialogContent, DialogTitle, FormControlLabel, Link, Tab, Tabs, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, DialogActions, DialogContent, DialogTitle, Link, Tab, Tabs, Tooltip } from "@mui/material";
+import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
@@ -20,25 +20,24 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconSelectDialog';
-import { AdminInspectObject, AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps, TimingChip } from './CMCoreComponents';
+import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
+import { AdminInspectObject, AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps } from './CMCoreComponents';
 import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
+import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata, CalculateEventMetadata_Verbose, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
+import { CalculateEventMetadata_Verbose, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
+import { Markdown3Editor } from './MarkdownControl3';
 import { Markdown } from './RichTextEditor';
-import { GenerateDefaultDescriptionSettingName, MutationMarkdownControl, SettingMarkdown } from './SettingMarkdown';
+import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
-import { Markdown2Control } from './MarkdownControl2';
-import { DashboardContext } from './DashboardContext';
-import { assert } from 'blitz';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -486,9 +485,59 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
 
 };
 
-export const EventDescriptionControl = ({ event, refetch, readonly }: { event: db3.EventPayloadMinimum, refetch: () => void, readonly: boolean }) => {
+interface EventDescriptionEditorProps {
+    event: db3.EventPayloadMinimum;
+    refetch: () => void;
+    onClose: () => void;
+};
+
+export const EventDescriptionEditor = (props: EventDescriptionEditorProps) => {
+    const [value, setValue] = React.useState<string>(props.event.description || "");
+
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const handleSave = async (): Promise<boolean> => {
+        try {
+            await mutationToken.invoke({
+                eventId: props.event.id,
+                description: value,
+            });
+            showSnackbar({ severity: "success", children: "Success" });
+            props.refetch();
+            return true;
+        } catch (e) {
+            console.log(e);
+            showSnackbar({ severity: "error", children: "error updating event description" });
+            return false;
+        }
+    };
+
+    const hasEdits = (props.event.description !== value);
+
+    const handleSaveAndClose = async (): Promise<boolean> => {
+        const r = await handleSave();
+        props.onClose();
+        return r;
+    };
+
+    return <>
+        <Markdown3Editor
+            onChange={(v) => setValue(v)}
+            value={value}
+            onSave={() => { void handleSave() }}
+        />
+
+        <div className="actionButtonsRow">
+            <div className={`freeButton cancelButton`} onClick={props.onClose}>{hasEdits ? "Cancel" : "Close"}</div>
+            <div className={`saveButton saveProgressButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSave : undefined}>Save progress</div>
+            <div className={`saveButton saveAndCloseButton ${hasEdits ? "freeButton changed" : "unchanged"}`} onClick={hasEdits ? handleSaveAndClose : undefined}>{gIconMap.CheckCircleOutline()}Save & close</div>
+        </div>
+    </>;
+};
+
+export const EventDescriptionControl = ({ event, refetch, readonly }: { event: db3.EventPayloadMinimum, refetch: () => void, readonly: boolean }) => {
+    const [editing, setEditing] = React.useState<boolean>(false);
 
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
@@ -501,28 +550,12 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
         publicData,
     });
 
-    const onValueSaved = async (newValue: string): Promise<boolean> => {
-        try {
-            await mutationToken.invoke({
-                eventId: event.id,
-                description: newValue || "",
-            });
-            showSnackbar({ severity: "success", children: "Success" });
-            refetch();
-            return true;
-        } catch (e) {
-            console.log(e);
-            showSnackbar({ severity: "error", children: "error updating event visibility" });
-            return false;
-        }
-    };
-    return <Markdown2Control
-        isExisting={true}
-        readonly={readonly || !authorized}
-        value={event.description}
-        displayUploadFileComponent={true} // #133 for mobile,this gives an opportunity to upload/embed.
-        onValueSaved={onValueSaved}
-    />;
+    readonly = readonly && authorized;
+
+    return <div className='descriptionContainer'>
+        {!readonly && !editing && <Button onClick={() => setEditing(true)}>Edit</Button>}
+        {editing ? <EventDescriptionEditor event={event} refetch={refetch} onClose={() => setEditing(false)} /> : <Markdown markdown={event.description} />}
+    </div>;
 };
 
 

@@ -166,6 +166,8 @@ export enum Setting {
     EventAttendanceEditDialog_DescriptionMarkdown = "EventAttendanceEditDialog_DescriptionMarkdown",
     EditEventSongListDialogDescription = "EditEventSongListDialogDescription",
     EditEventSongListDialogTitle = "EditEventSongListDialogTitle",
+    EventAttendanceCommentDialog_TitleMarkdown = "EventAttendanceCommentDialog_TitleMarkdown",
+    EventAttendanceCommentDialog_DescriptionMarkdown = "EventAttendanceCommentDialog_DescriptionMarkdown",
 
     // mostly pages or sections of pages...
     HomeDescription = "HomeDescription",
