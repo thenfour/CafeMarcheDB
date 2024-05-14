@@ -8,6 +8,7 @@ import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
+import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
 
 interface TArgs {
     filterSpec: {
@@ -243,6 +244,16 @@ export default resolver.pipe(
                 }, u);
 
                 fullEvents = queryResult.items as any;
+
+                switch (args.filterSpec.orderBy) {
+                    default:
+                    case "StartAsc":
+                        fullEvents.sort((a, b) => DateSortPredicateAsc(a.startsAt, b.startsAt));
+                        break;
+                    case "StartDesc":
+                        fullEvents.sort((a, b) => DateSortPredicateDesc(a.startsAt, b.startsAt));
+                        break;
+                }
             }
 
             const expectedAttendanceUserTagIds = new Set<number>();

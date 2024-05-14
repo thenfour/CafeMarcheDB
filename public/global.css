@@ -688,7 +688,7 @@ table td {
 .tinyCaption {
   font-size: 13px;
   font-style: italic;
-  color: #aaa;
+  color: #888;
 }
 
 /* as a convenience, text fields for fields called "name" to be emphasized. */

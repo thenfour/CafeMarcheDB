@@ -208,6 +208,22 @@ export const MinDateOrLateNull = (a: Date | null, b: Date | null) => {
     return a < b ? a : b; // no nulls; return earliest date.
 }
 
+// null means in the future.
+export const DateSortPredicateAsc = (a: Date | null, b: Date | null): number => {
+    if (a === null && b === null) {
+        return 0; // both are in the future, so they are considered equal
+    }
+    if (a === null) {
+        return 1; // a is in the future, so it should come after b
+    }
+    if (b === null) {
+        return -1; // b is in the future, so a should come before b
+    }
+    return a.getTime() - b.getTime(); // both are dates, so compare them
+};
+export const DateSortPredicateDesc = (a: Date | null, b: Date | null): number => {
+    return DateSortPredicateAsc(a, b) * -1;
+};
 
 
 

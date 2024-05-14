@@ -72,16 +72,16 @@ const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValuePr
         props.onChange(newSpec);
     };
 
-    const selectionChips: Record<SongSelectionFilter, string> = {
-        "relevant": "Search songs from upcoming and recent events",
-        "all": "Search all songs",
-    };
+    // const selectionChips: Record<SongSelectionFilter, string> = {
+    //     "relevant": "Search songs from upcoming and recent events",
+    //     "all": "Search all songs",
+    // };
 
-    const selectSelection = (t: SongSelectionFilter) => {
-        const newSpec: SongsFilterSpec = { ...props.filterSpec };
-        newSpec.selection = t;
-        props.onChange(newSpec);
-    };
+    // const selectSelection = (t: SongSelectionFilter) => {
+    //     const newSpec: SongsFilterSpec = { ...props.filterSpec };
+    //     newSpec.selection = t;
+    //     props.onChange(newSpec);
+    // };
 
     return <div className={`SongsFilterControlsValue`}>
         {/* <div className="row" style={{ display: "flex", alignItems: "center" }}>
@@ -143,8 +143,8 @@ const SongsControls = (props: SongsControlsProps) => {
     };
 
     const selectionChips: Record<SongSelectionFilter, string> = {
-        "relevant": "Search songs from upcoming and recent events",
-        "all": "Search all songs",
+        "relevant": "Showing songs from upcoming and recent events",
+        "all": "Showing all songs",
     };
 
     const selectSelection = (t: SongSelectionFilter) => {

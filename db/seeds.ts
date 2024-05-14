@@ -3,14 +3,10 @@ import { gPermissionOrdered } from '../shared/permissions'
 import { faker } from '@faker-js/faker';
 import { slugify } from '../shared/rootroot';
 import { DateTimeRange, gMillisecondsPerDay, roundToNearest15Minutes } from '../shared/time';
+import { SeedingState } from './seeding/base';
+import { SeedEvents_VeryRandom } from './seeding/events';
 
-const prisma = new PrismaClient()
-
-const fakerConfig = {
-  userCount: 100,
-  songCount: 200,
-  eventCount: 200,
-};
+const gState = new SeedingState();
 
 
 const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
@@ -48,138 +44,6 @@ const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreate
   return updatedItems;
 };
 
-const RandomEventDate = () => {
-  const now = new Date();
-  // so it's not very simple... we want dates which are very spread, but also cluster around "now".
-  // so first determine past or future
-  // then generate a 0-1 which we can curve, and use it to lerp between the dates.
-  const gMaxDaysInPast = 365 * 2.2;
-  const gMaxDaysInFuture = 400;
-  const isPast = faker.datatype.boolean(gMaxDaysInPast / (gMaxDaysInPast + gMaxDaysInFuture));
-  let t01 = faker.number.float();
-  t01 = Math.pow(t01, 0.7); // curve downward favoring smaller values
-  if (isPast) {
-    const mindate = now;
-    mindate.setDate(mindate.getDate() - gMaxDaysInPast * (1.0 - t01));
-    return faker.date.between({ from: mindate, to: now });
-  }
-  const maxdate = now;
-  maxdate.setDate(maxdate.getDate() + gMaxDaysInFuture * t01);
-  return faker.date.between({ from: now, to: maxdate });
-};
-
-// if no base range specified, it will be random.
-const RandomDateRange = (refRange: DateTimeRange): DateTimeRange => {
-  const typeOptions = [0, 1, 1, 1, 2, 2, 2];
-  const type = faker.helpers.arrayElement(typeOptions);
-  if (type === 0) {
-    // TBD
-    return new DateTimeRange();
-  }
-
-  let refDate: Date = new Date();
-  let isPast = faker.datatype.boolean();
-
-  const durationDays = faker.number.int({ min: 1, max: 4 }); // if all day
-
-  if (refRange.isTBD()) {
-    refDate = RandomEventDate();
-  } else if (isPast) {
-    refDate = refRange.getStartDateTime()!;
-  } else {
-    refDate = refRange.getEndDateTime()!;
-  }
-
-  if (type === 1) {
-    // all-day
-
-    // figure out the start time.
-    const paddingDays = faker.number.int({ min: 0, max: 2 });
-    const startsAtDateTime = refDate;
-    if (isPast) {
-      startsAtDateTime.setDate(startsAtDateTime.getDate() - durationDays - paddingDays);
-    } else {
-      startsAtDateTime.setDate(startsAtDateTime.getDate() + paddingDays);
-    }
-
-    return new DateTimeRange({
-      durationMillis: durationDays * gMillisecondsPerDay,
-      isAllDay: true,
-      startsAtDateTime,
-    });
-  }
-
-  // NOT all-day.
-  const gIntervalMs = 15 * 60 * 1000; // 15 minutes = 900000 ms
-  const gMaxHours = 12;
-  const intervalCount = faker.number.int({ min: 1, max: gMaxHours * 4 });
-  const durationMillis = gIntervalMs * intervalCount; // if not all day
-
-  const paddingIntervals = faker.number.int({ min: 0, max: 8 });
-  const paddingMS = gIntervalMs * paddingIntervals;
-
-  let startsAtDateTime = roundToNearest15Minutes(refDate);
-  if (isPast) {
-    startsAtDateTime = new Date(startsAtDateTime.valueOf() - durationMillis - paddingMS);
-  } else {
-    startsAtDateTime = new Date(startsAtDateTime.valueOf() + paddingMS);
-  }
-
-  // 15-minute increments.
-  return new DateTimeRange({
-    durationMillis,
-    isAllDay: false,
-    startsAtDateTime,
-  });
-};
-
-const FakeFile = async (visiblePermissionId) => {
-  return await prisma.file.create({
-    data: {
-      storedLeafName: faker.git.commitSha(),
-      isDeleted: faker.datatype.boolean(0.8),
-      fileLeafName: faker.git.commitSha(),
-      description: faker.datatype.boolean(0.9) ? "" : faker.database.column(),
-      uploadedAt: faker.date.past(),
-      mimeType: faker.helpers.arrayElement([
-        null,
-        "application/vnd.google-apps.document",
-        "application/vnd.ms-excel",
-        "application/pdf",
-        "application/msword",
-        "text/plain",
-        "audio/wav",
-        "audio/mpeg",
-        "audio/ogg",
-        "image/png",
-        "image/svg+xml",
-        "video/x-m4v",
-        "video/x-msvideo",
-      ]),
-      sizeBytes: faker.number.int({ min: 0, max: 1000000000 }),
-      externalURI: faker.datatype.boolean(0.5) ? null : faker.internet.url(),
-      visiblePermissionId,
-    }
-  });
-};
-
-// const SeedTable = async <Ttable extends { create: (inp: { data: TuncheckedCreateInput }) => any }, TuncheckedCreateInput>(tableName: string, table: Ttable, items: TuncheckedCreateInput[]) => {
-//   console.log(`Seeding table ${tableName}`);
-//   for (let i = 0; i < items.length; ++i) {
-//     const ret = await table.create({
-//       data: items[i]!
-//     });
-
-//     if (ret.name) {
-//       console.log(`created '${tableName}': { name:'${ret.name}', id: '${ret.id}'}`);
-//     } else if (ret.text) {
-//       console.log(`created '${tableName}': { text:'${ret.text}', id: '${ret.id}'}`);
-//     } else {
-//       console.log(`created '${tableName}': { id: '${ret.id}'}`);
-//     }
-//   }
-// };
-
 
 const UpdateTable = async <Ttable extends { update: (inp: { data: TuncheckedUpdateInput, where: any }) => any }, TuncheckedUpdateInput>(tableName: string, matchField: string, table: Ttable, items: TuncheckedUpdateInput[]) => {
   for (let i = 0; i < items.length; ++i) {
@@ -201,6 +65,9 @@ const UpdateTable = async <Ttable extends { update: (inp: { data: TuncheckedUpda
   }
 };
 
+
+
+
 /*
  * This seed function is executed when you run `blitz db seed`.
  *
@@ -219,7 +86,7 @@ const main = async () => {
     }
   ];
 
-  await SeedTable("instrumentTag", prisma.instrumentTag, instrumentTagSeed);
+  await SeedTable("instrumentTag", gState.prisma.instrumentTag, instrumentTagSeed);
 
 
   const songTagSeed: Prisma.SongTagUncheckedCreateInput[] = [
@@ -265,9 +132,9 @@ const main = async () => {
     }
   ];
 
-  await SeedTable("songTag", prisma.songTag, songTagSeed);
+  await SeedTable("songTag", gState.prisma.songTag, songTagSeed);
 
-  await SeedTable("fileTag", prisma.fileTag, [
+  await SeedTable("fileTag", gState.prisma.fileTag, [
     {
       "text": "Partition",
       "description": "",
@@ -291,7 +158,7 @@ const main = async () => {
     }
   ]);
 
-  await SeedTable("eventTag", prisma.eventTag, [
+  await SeedTable("eventTag", gState.prisma.eventTag, [
     {
       "text": "Majoretteketet",
       "visibleOnFrontpage": true,
@@ -310,7 +177,7 @@ const main = async () => {
     }
   ]);
 
-  await SeedTable("eventStatus", prisma.eventStatus,
+  await SeedTable("eventStatus", gState.prisma.eventStatus,
     [
       {
         "label": "New",
@@ -355,7 +222,7 @@ const main = async () => {
     ]
   );
 
-  await SeedTable("eventType", prisma.eventType,
+  await SeedTable("eventType", gState.prisma.eventType,
     [
       {
         "text": "Concert",
@@ -393,7 +260,7 @@ const main = async () => {
   );
 
 
-  await SeedTable("eventAttendance", prisma.eventAttendance,
+  await SeedTable("eventAttendance", gState.prisma.eventAttendance,
     [
       {
         "text": "No",
@@ -449,7 +316,7 @@ const main = async () => {
 
 
 
-  await SeedTable("songCreditType", prisma.songCreditType, [
+  await SeedTable("songCreditType", gState.prisma.songCreditType, [
     {
       "text": "Arranger",
       "description": "",
@@ -615,9 +482,9 @@ const main = async () => {
       }
     ]
 
-  const functionalGroupsResult = await SeedTable("instrumentFunctionalGroup", prisma.instrumentFunctionalGroup, functionalGroupSeed);
+  const functionalGroupsResult = await SeedTable("instrumentFunctionalGroup", gState.prisma.instrumentFunctionalGroup, functionalGroupSeed);
 
-  await SeedTable("instrument", prisma.instrument,
+  await SeedTable("instrument", gState.prisma.instrument,
     functionalGroupSeed.map(g => ({
       name: g.name,
       slug: slugify(g.name),
@@ -651,7 +518,7 @@ const main = async () => {
   // Percussion	percus
 
 
-  await SeedTable("role", prisma.role,
+  await SeedTable("role", gState.prisma.role,
     [
       {
         "name": "Public",
@@ -713,7 +580,7 @@ const main = async () => {
   //const codePermissions = PermissionOrdered;Object.values(Permission);
   for (let i = 0; i < gPermissionOrdered.length; ++i) {
     const codePermission = gPermissionOrdered[i]!;
-    await prisma.permission.create({
+    await gState.prisma.permission.create({
       data: {
         name: codePermission,
         description: `auto-inserted by server`,
@@ -723,7 +590,7 @@ const main = async () => {
     });
   }
 
-  await UpdateTable("permission", "name", prisma.permission, [
+  await UpdateTable("permission", "name", gState.prisma.permission, [
     {
       "name": "visibility_editors",
       "description": `Restricted visibility: This is visible only to site editors`,
@@ -880,13 +747,13 @@ const main = async () => {
   console.log(`Seeding role-permission assignments`);
   for (let i = 0; i < rolePermissionAssignments.length; ++i) {
     const assignment = rolePermissionAssignments[i]!;
-    const role = await prisma.role.findFirstOrThrow({
+    const role = await gState.prisma.role.findFirstOrThrow({
       where: { name: assignment[0] }
     });
-    const permission = await prisma.permission.findFirstOrThrow({
+    const permission = await gState.prisma.permission.findFirstOrThrow({
       where: { name: assignment[1] }
     });
-    const ass = await prisma.rolePermission.create({
+    const ass = await gState.prisma.rolePermission.create({
       data: {
         permissionId: permission.id,
         roleId: role.id,
@@ -895,25 +762,7 @@ const main = async () => {
     console.log(`-> assId:${ass.id} ${role.id}(${role.name}) - ${permission.id}(${permission.name})`);
   }
 
-
-  // // grant all perms to admin
-  // const adminRole = await prisma.role.findFirst({ where: { name: adminRoleName } });
-  // if (!adminRole) throw new Error(`why wasn't the admin role created??? changed the way you seed roles maybe?`);
-  // const allPermissions = await prisma.permission.findMany();
-
-  // for (const perm of allPermissions) {
-  //   await prisma.rolePermission.create({
-  //     data: {
-  //       permissionId: perm.id,
-  //       roleId: adminRole.id,
-  //     }
-  //   });
-  // }
-
-  // todo: grant public perms to public, remaining mappings
-  // 
-
-  await SeedTable("setting", prisma.setting,
+  await SeedTable("setting", gState.prisma.setting,
     [
       {
         "name": "EnableNewPublicHomepageBackstageLink",
@@ -991,7 +840,7 @@ const main = async () => {
   );
 
 
-  await SeedTable("userTag", prisma.userTag,
+  await SeedTable("userTag", gState.prisma.userTag,
     [
       {
         "text": "musician",
@@ -1019,22 +868,18 @@ const main = async () => {
 
   faker.seed(104);
 
-  const adminRole = (await prisma.role.findFirst({
+  const adminRole = (await gState.prisma.role.findFirst({
     where: { name: "Admin" }
   }))!;
-  const allVisibilityPermissions = await prisma.permission.findMany({
+  gState.gAllVisibilityPermissions = await gState.prisma.permission.findMany({
     where: {
       isVisibility: true,
     }
   });
 
-  const allRoles = await prisma.role.findMany();
-  const allInstruments = await prisma.instrument.findMany();
-  const allUserTags = await prisma.userTag.findMany();
-
-  const randomVisibilityPermissionId = () => {
-    return faker.helpers.arrayElement([null, ...allVisibilityPermissions])?.id || null;
-  };
+  gState.gAllRoles = await gState.prisma.role.findMany();
+  gState.gAllInstruments = await gState.prisma.instrument.findMany();
+  gState.gAllUserTags = await gState.prisma.userTag.findMany();
 
   // returns a boolean with `probability`% probability of being true.
   const probabool = (probability01: number): boolean => {
@@ -1042,28 +887,28 @@ const main = async () => {
   };
 
   // Creating random users
-  console.log(`creating ${fakerConfig.userCount} users...`);
-  const userCount = fakerConfig.userCount;
+  console.log(`creating ${gState.config.userCount} users...`);
+  const userCount = gState.config.userCount;
   const carlsIndex = faker.number.int({ max: userCount });
   for (let i = 0; i < userCount; i++) {
     const isCarl = i === carlsIndex;
-    const user = await prisma.user.create({
+    const user = await gState.prisma.user.create({
       data: {
         name: (isCarl) ? "carl" : faker.person.fullName(),
         email: (isCarl) ? "carlco@gmail.com" : faker.internet.email(),
         phone: faker.phone.number(),
         accessToken: faker.git.commitSha(),
         isSysAdmin: (isCarl),
-        roleId: (isCarl) ? adminRole.id : faker.helpers.arrayElement(allRoles).id,
+        roleId: (isCarl) ? adminRole.id : faker.helpers.arrayElement(gState.gAllRoles).id,
       },
     });
 
     // assign this user instruments
     const instrumentCount = probabool(0.08) ? 0 : faker.number.int({ min: 1, max: 3 });
-    const instruments = faker.helpers.arrayElements(allInstruments, isCarl ? 3 : instrumentCount);
+    const instruments = faker.helpers.arrayElements(gState.gAllInstruments, isCarl ? 3 : instrumentCount);
     const primaryIndex = faker.number.int({ min: 0, max: Math.max(0, instruments.length - 1) });
     await instruments.forEach(async (instrument, index) => {
-      await prisma.userInstrument.create({
+      await gState.prisma.userInstrument.create({
         data: {
           instrumentId: instrument.id,
           userId: user.id,
@@ -1072,9 +917,9 @@ const main = async () => {
       });
     });
 
-    const tags = faker.helpers.arrayElements(allUserTags);
+    const tags = faker.helpers.arrayElements(gState.gAllUserTags);
     await tags.forEach(async (tag) => {
-      await prisma.userTagAssignment.create({
+      await gState.prisma.userTagAssignment.create({
         data: {
           userId: user.id,
           userTagId: tag.id,
@@ -1085,15 +930,15 @@ const main = async () => {
   } // for each create user
 
   // create random songs
-  const allUsers = await prisma.user.findMany();
-  const allSongTags = await prisma.songTag.findMany();
-  const allSongCreditTypes = await prisma.songCreditType.findMany();
+  gState.gAllUsers = await gState.prisma.user.findMany();
+  gState.gAllSongTags = await gState.prisma.songTag.findMany();
+  gState.gAllSongCreditTypes = await gState.prisma.songCreditType.findMany();
   const randYear = () => faker.number.int({ min: 2003, max: 2024 });
 
-  console.log(`creating ${fakerConfig.songCount} songs...`);
-  for (let i = 0; i < fakerConfig.songCount; i++) {
+  console.log(`creating ${gState.config.songCount} songs...`);
+  for (let i = 0; i < gState.config.songCount; i++) {
     const songName = faker.music.songName();
-    const song = await prisma.song.create({
+    const song = await gState.prisma.song.create({
       data: {
         name: songName,
         slug: slugify(songName),
@@ -1103,13 +948,13 @@ const main = async () => {
         endBPM: probabool(0.3) ? faker.number.int({ min: 70, max: 160 }) : undefined,
         introducedYear: probabool(0.3) ? randYear() : undefined,
         lengthSeconds: probabool(0.3) ? faker.number.int({ min: 30, max: 500 }) : undefined,
-        visiblePermissionId: randomVisibilityPermissionId(),
+        visiblePermissionId: gState.randomVisibilityPermissionId(),
       },
     });
 
-    const tags = faker.helpers.arrayElements(allSongTags, { min: 0, max: 4 });
+    const tags = faker.helpers.arrayElements(gState.gAllSongTags, { min: 0, max: 4 });
     await tags.forEach(async (tag) => {
-      await prisma.songTagAssociation.create({
+      await gState.prisma.songTagAssociation.create({
         data: {
           songId: song.id,
           tagId: tag.id,
@@ -1120,12 +965,12 @@ const main = async () => {
     // credits.
     const creditCount = faker.number.int({ min: 0, max: 3 });
     for (let ic = 0; ic < creditCount; ++ic) {
-      await prisma.songCredit.create({
+      await gState.prisma.songCredit.create({
         data: {
           comment: probabool(0.2) ? faker.lorem.sentence({ min: 1, max: 10 }) : "",
           songId: song.id,
-          typeId: faker.helpers.arrayElement(allSongCreditTypes).id,
-          userId: faker.helpers.arrayElement(allUsers).id,
+          typeId: faker.helpers.arrayElement(gState.gAllSongCreditTypes).id,
+          userId: faker.helpers.arrayElement(gState.gAllUsers).id,
           year: probabool(0.5) ? randYear().toString() : undefined,
         }
       });
@@ -1133,8 +978,8 @@ const main = async () => {
 
     const fileCount = probabool(0.5) ? 0 : faker.number.int({ max: 12 });
     for (let j = 0; j < fileCount; ++j) {
-      const file = await FakeFile(randomVisibilityPermissionId());
-      await prisma.fileSongTag.create({
+      const file = await gState.FakeFile(gState.randomVisibilityPermissionId());
+      await gState.prisma.fileSongTag.create({
         data: {
           fileId: file.id,
           songId: song.id,
@@ -1145,191 +990,23 @@ const main = async () => {
   }// } create random songs
 
   // create random events
-  const allEventTypes = await prisma.eventType.findMany();
-  const allEventStatuses = await prisma.eventStatus.findMany();
-  const allEventTags = await prisma.eventTag.findMany();
-  const allSongs = await prisma.song.findMany();
-  const allAttendanceOptions = await prisma.eventAttendance.findMany();
-  const nullableAttendanceOptions = [...allAttendanceOptions, null];
+  gState.gAllEventTypes = await gState.prisma.eventType.findMany();
+  gState.gAllEventStatuses = await gState.prisma.eventStatus.findMany();
+  gState.gAllEventTags = await gState.prisma.eventTag.findMany();
+  gState.gAllSongs = await gState.prisma.song.findMany();
+  gState.gAllAttendanceOptions = await gState.prisma.eventAttendance.findMany();
 
-  console.log(`creating ${fakerConfig.eventCount} events...`);
-  for (let i = 0; i < fakerConfig.eventCount; i++) {
-    const eventName = faker.word.words({ count: { min: 1, max: 7 }, });
-    console.log(`creating event #${i} ${eventName}`);
-
-    const segmentCount = probabool(0.66) ? 1 : faker.helpers.arrayElement([0, 2, 3]); // most of the time 1 segment. otherwise 0, 2, 3.
-    const segmentDateRanges: DateTimeRange[] = [];
-    let eventRange = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
-    for (let ii = 0; ii < segmentCount; ++ii) {
-      const segrange = RandomDateRange(eventRange);
-      segmentDateRanges[ii] = segrange;
-      eventRange = eventRange.unionWith(segrange);
-    }
-
-    const event = await prisma.event.create({
-      data: {
-        name: eventName,
-        revision: 0,
-        slug: slugify(eventName),
-        expectedAttendanceUserTagId: probabool(0.8) ? faker.helpers.arrayElement(allUserTags).id : null,
-        calendarInputHash: faker.string.uuid(),
-        uid: faker.string.uuid(),
-        description: probabool(0.4) ? "" : faker.lorem.paragraphs({ min: 1, max: 5 }),
-        createdAt: new Date(),
-        visiblePermissionId: randomVisibilityPermissionId(),
-        typeId: probabool(0.3) ? null : faker.helpers.arrayElement(allEventTypes).id,
-        statusId: probabool(0.3) ? null : faker.helpers.arrayElement(allEventStatuses).id,
-        locationDescription: probabool(0.5) ? undefined : faker.location.streetAddress(),
-
-        startsAt: eventRange.getSpec().startsAtDateTime,
-        durationMillis: eventRange.getSpec().durationMillis,
-        isAllDay: eventRange.getSpec().isAllDay,
-        endDateTime: eventRange.getEndDateTime(),
-
-        frontpageVisible: probabool(0.5),
-      }
-    });
-
-    const tags = faker.helpers.arrayElements(allEventTags, { min: 0, max: 4 });
-    await tags.forEach(async (tag) => {
-      await prisma.eventTagAssignment.create({
-        data: {
-          eventTagId: tag.id,
-          eventId: event.id,
-        }
-      });
-    });
-
-    // segments
-    const segments: Prisma.EventSegmentGetPayload<{}>[] = [];
-    for (let ii = 0; ii < segmentCount; ++ii) {
-
-      // generate a random datetime span. whew.
-      const range = segmentDateRanges[ii]!;
-
-      const seg = await prisma.eventSegment.create({
-        data: {
-          description: probabool(0.15) ? faker.lorem.paragraph() : "",
-          startsAt: range.getSpec().startsAtDateTime,
-          durationMillis: range.getSpec().durationMillis,
-          isAllDay: range.getSpec().isAllDay,
-          name: `Set ${faker.lorem.word()}`,
-          eventId: event.id,
-        }
-      });
-
-      segments.push(seg);
-    }
-
-    // song lists
-    const songListCount = faker.number.int({ max: 2 });
-    for (let ii = 0; ii < songListCount; ++ii) {
-
-      const songList = await prisma.eventSongList.create({
-        data: {
-          name: `Setlist ${faker.lorem.word()}`,
-          description: probabool(0.15) ? faker.lorem.paragraph() : "",
-          eventId: event.id,
-          sortOrder: ii,
-        }
-      });
-
-      const songCount = probabool(0.1) ? 0 : faker.number.int(40);
-      for (let iii = 0; iii < songCount; ++iii) {
-        await prisma.eventSongListSong.create({
-          data: {
-            eventSongListId: songList.id,
-            songId: faker.helpers.arrayElement(allSongs).id,
-            sortOrder: iii,
-            subtitle: probabool(0.1) ? faker.lorem.sentence() : undefined,
-          }
-        });
-      }
-
-    } // create song lists
-
-    // generate event & segment user responses.
-    let userList: Prisma.UserGetPayload<{}>[] = [];
-    const userListStyle = faker.number.int({ max: 3 }); // 0 1 2 3
-    switch (userListStyle) {
-      case 0:
-        // no users.
-        break;
-      case 1:
-        // few users
-        userList = faker.helpers.arrayElements(allUsers, { min: 1, max: fakerConfig.userCount * 0.1 });
-      case 2:
-        // many users
-        userList = faker.helpers.arrayElements(allUsers, { min: fakerConfig.userCount * .8, max: fakerConfig.userCount });
-      case 3:
-        // all users
-        userList = [...allUsers];
-        break;
-    }
-
-    const users = faker.helpers.arrayElements(allUsers);
-    users.forEach(async (u, ui) => {
-      await prisma.eventUserResponse.create({
-        data: {
-          eventId: event.id,
-          userId: u.id,
-          instrumentId: probabool(0.15) ? faker.helpers.arrayElement(allInstruments).id : null,
-          isInvited: probabool(0.5),
-          userComment: probabool(0.05) ? faker.lorem.sentence() : undefined,
-        }
-      });
-
-      // segment responses.
-      const segmentsToRespondToStyle = faker.number.int({ max: 3 }); // 0 1 2 3
-      let segmentsToRespondTo: Prisma.EventSegmentGetPayload<{}>[] = [];// = faker.helpers.arrayElements(segments);
-      switch (segmentsToRespondToStyle) {
-        case 0:
-          // no segments.
-          break;
-        case 1:
-          // some
-          segmentsToRespondTo = faker.helpers.arrayElements(segments);
-        case 2:
-          // all
-          segmentsToRespondTo = [...segments];
-          break;
-      }
-
-      segmentsToRespondTo.forEach(async (seg, si) => {
-        await prisma.eventSegmentUserResponse.create({
-          data: {
-            userId: u.id,
-            eventSegmentId: seg.id,
-            attendanceId: faker.helpers.arrayElement(nullableAttendanceOptions)?.id || null,
-          }
-        });
-      });
-    });
-
-    // files
-    const fileCount = probabool(0.5) ? 0 : faker.number.int({ max: 12 });
-    for (let j = 0; j < fileCount; ++j) {
-      const file = await FakeFile(randomVisibilityPermissionId());
-      await prisma.fileEventTag.create({
-        data: {
-          fileId: file.id,
-          eventId: event.id,
-        }
-      });
-    }
-
-  } // for each create event
-
+  await SeedEvents_VeryRandom(gState);
 
 };
 
 main()
   .then(async () => {
-    await prisma.$disconnect()
+    await gState.prisma.$disconnect()
   })
   .catch(async (e) => {
     console.error(e)
-    await prisma.$disconnect()
+    await gState.prisma.$disconnect()
     process.exit(1)
   })
 
