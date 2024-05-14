@@ -14,9 +14,9 @@ import {
 } from "@mui/material";
 import { GridRenderCellParams, GridRenderEditCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
-import React from "react";
+import React, { Suspense } from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
-import { Coalesce, SettingKey, gQueryOptions, parseIntOrNull } from "shared/utils";
+import { Coalesce, SettingKey, SplitQuickFilter, gQueryOptions, parseIntOrNull } from "shared/utils";
 import { AdminInspectObject, CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -475,7 +475,7 @@ export class ForeignSingleFieldRenderContext<TForeign> {
             tableName: args.spec.typedSchemaColumn.getForeignTableSchema().tableName,
             orderBy: undefined,
             clientIntention: args.clientIntention,
-            filter: { items: [] },
+            filter: { items: [], quickFilterValues: SplitQuickFilter(args.filterText) },
             cmdbQueryContext: "ForeignSingleFieldRenderContext",
         }, gQueryOptions.default);
         this.items = items as any;
@@ -506,6 +506,57 @@ export const useForeignSingleFieldRenderContext = <TForeign,>(args: ForeignSingl
 
 
 
+////////////////////////////////////////////////////////
+interface SelectSingleForeignDialogQuerierProps<TForeign> {
+    spec: ForeignSingleFieldClient<TForeign>;
+    clientIntention: db3.xTableClientUsageContext,
+    filterText: string;
+    allowCreateNew: boolean;
+
+    onResults: (items: TForeign[]) => void;
+    onSelectObj: (x: TForeign) => void;
+};
+export function SelectSingleForeignDialogQuerier<TForeign>(props: SelectSingleForeignDialogQuerierProps<TForeign>) {
+    const db3Context = useForeignSingleFieldRenderContext({
+        filterText: props.filterText,
+        spec: props.spec,
+        clientIntention: props.clientIntention,
+    });
+    const items = db3Context.items;
+    React.useEffect(() => {
+        props.onResults(items);
+    }, [items]);
+
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+
+    const onNewClicked = (e) => {
+        db3Context.doInsertFromString(props.filterText)
+            .then((updatedObj) => {
+                props.onSelectObj(updatedObj);
+                showSnackbar({ children: "New item created successfully", severity: 'success' });
+                db3Context.refetch();
+            }).catch((err => {
+                console.log(err);
+                showSnackbar({ children: "create error", severity: 'error' });
+                db3Context.refetch(); // should revert the data.
+            }));
+    };
+
+    return <Box>
+        {props.allowCreateNew &&
+            <Button
+                size="small"
+                startIcon={<AddIcon />}
+                onClick={onNewClicked}
+            >
+                Create new item "{props.filterText}"
+            </Button>
+        }
+    </Box>;
+
+};
+
+
 
 export interface SelectSingleForeignDialogProps<TForeign> {
     value: TForeign | null;
@@ -523,28 +574,8 @@ export interface SelectSingleForeignDialogProps<TForeign> {
 export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
     const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
     const [filterText, setFilterText] = React.useState("");
+    const [items, setItems] = React.useState<TForeign[]>([]);
     const publicData = useAuthenticatedSession();
-
-    const db3Context = useForeignSingleFieldRenderContext({
-        filterText,
-        spec: props.spec,
-        clientIntention: props.clientIntention,
-    });
-    const items = db3Context.items;
-
-    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-
-    const onNewClicked = (e) => {
-        db3Context.doInsertFromString(filterText)
-            .then((updatedObj) => {
-                setSelectedObj(updatedObj);
-                showSnackbar({ children: "created new success", severity: 'success' });
-                db3Context.refetch();
-            }).catch((err => {
-                showSnackbar({ children: "create error", severity: 'error' });
-                db3Context.refetch(); // should revert the data.
-            }));
-    };
 
     const isEqual = (a: TForeign | null, b: TForeign | null) => {
         const anull = (a === null || a === undefined);
@@ -566,7 +597,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
         }
     };
 
-    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText)); //.  spec.args.
+    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText));
 
     const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({
         clientIntention: props.clientIntention,
@@ -599,18 +630,16 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
                 />
             </Box>
 
-            {
-                !!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && insertAuthorized && (
-                    <Box><Button
-                        size="small"
-                        startIcon={<AddIcon />}
-                        onClick={onNewClicked}
-                    >
-                        add {filterText}
-                    </Button>
-                    </Box>
-                )
-            }
+            <Suspense>
+                <SelectSingleForeignDialogQuerier
+                    allowCreateNew={!!filterText.length && !filterMatchesAnyItemsExactly && props.spec.typedSchemaColumn.allowInsertFromString && insertAuthorized}
+                    clientIntention={props.clientIntention}
+                    filterText={filterText}
+                    onResults={(v) => setItems(v)}
+                    spec={props.spec}
+                    onSelectObj={(x) => setSelectedObj(x)}
+                />
+            </Suspense>
 
             {
                 (items.length == 0) ?
