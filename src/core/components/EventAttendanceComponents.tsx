@@ -127,7 +127,7 @@ import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, NameVal
 import { EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { DashboardContext } from "./DashboardContext";
-import { ArrayElement } from "shared/utils";
+import { ArrayElement, CoalesceBool } from "shared/utils";
 import { Prisma } from "db";
 import { Markdown } from "./RichTextEditor";
 import { Markdown3Editor } from "./MarkdownControl3";
@@ -545,17 +545,21 @@ export interface EventAttendanceControlProps {
   >;
   onRefetch: () => void,
   userMap: db3.UserInstrumentList,
+  alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };
 
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const dashboardContext = React.useContext(DashboardContext);
+  const alertOnly = CoalesceBool(props.alertOnly, false);
 
-  if (!props.eventData.responseInfo) return null;
-  if (props.eventData.event.segments.length < 1) return null;
+  if (!props.eventData.responseInfo) return <AdminInspectObject src={"hidden bc no response info; this is an error"} label="AttendanceControl" />;
+  if (props.eventData.event.segments.length < 1) return <AdminInspectObject src={"hidden bc no segments. no attendance can be recorded."} label="AttendanceControl" />;
 
   // never show attendance alert control for cancelled events
-  if (props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled) return null;
+  if (props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled) {
+    return <AdminInspectObject src={"hidden bc cancelled."} label="AttendanceControl" />;
+  }
 
   const [userSelectedEdit, setUserSelectedEdit] = React.useState<boolean>(false);
   //const [refreshSerial, setRefreshSerial] = React.useState(0);
@@ -565,22 +569,19 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
   if (!eventResponse) {
     // this should always return a value; if not it means it can't be done.
-    return null;
+    return <AdminInspectObject src={"hidden bc no eventResponse; this is an error."} label="AttendanceControl" />;
   }
 
   const eventTiming = props.eventData.eventTiming;
-  if (eventTiming === Timing.Past) return null;
+  // if (eventTiming === Timing.Past) {
+  //   return <AdminInspectObject src={"hidden bc in the past."} label="AttendanceControl" />;
+  // }
+  const isPast = (eventTiming === Timing.Past);
 
   const isInvited = eventResponse.isInvited;
   const isSingleSegment = segmentResponses.length === 1;
 
   const allAttendances = segmentResponses.map(sr => dashboardContext.eventAttendance.getById(sr.response.attendanceId));
-
-  // const anyAnswered = segmentResponses.some(r => !!r.response.attendance);
-  // const allAnswered = segmentResponses.every(r => !!r.response.attendance);
-  // const allAffirmative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength > 50);
-  // const someAffirmative = segmentResponses.some(r => !!r.response.attendance && r.response.attendance!.strength > 50);
-  // const allNegative = segmentResponses.every(r => !!r.response.attendance && r.response.attendance!.strength <= 50);
 
   const anyAnswered = allAttendances.some(r => !!r);
   const allAnswered = allAttendances.every(r => !!r);
@@ -588,16 +589,35 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const someAffirmative = allAttendances.some(r => !!r && r.strength > 50);
   const allNegative = allAttendances.every(r => !!r && r.strength <= 50);
 
-  const alertFlag = isInvited && !allAnswered;
-  //const canExpandUnexpand = !inputAlert && !isSingleSegment;
-  const visible = anyAnswered || isInvited;// hide the control entirely if you're not invited, but still show if you already responded.
-  if (!visible) return null;
+  const alertFlag = isInvited && !allAnswered && !isPast;
+  const hideBecauseNotAlert = !alertFlag && alertOnly;
+  const visible = !hideBecauseNotAlert && (anyAnswered || isInvited);// hide the control entirely if you're not invited, but still show if you already responded.
 
   // there are really just 2 modes here for simplicity
   // view (compact, instrument & segments on same line)
   // edit (full, instrument & segments on separate lines with full text)
   const allowViewMode = !alertFlag;
   const editMode = userSelectedEdit || !allowViewMode;
+
+  const debugView = <AdminInspectObject src={{
+    isPast,
+    isInvited,
+    isSingleSegment,
+    allAttendances,
+    anyAnswered,
+    allAnswered,
+    allAffirmative,
+    someAffirmative,
+    allNegative,
+    alertFlag,
+    alertOnly,
+    hideBecauseNotAlert,
+    visible,
+    allowViewMode,
+    editMode,
+  }} label="AttendanceControl" />;
+
+  if (!visible) return debugView;
 
   const inspectable = {
     event: {
@@ -622,7 +642,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const mapIndex = !allAnswered ? 0 : (allAffirmative ? 1 : (allNegative ? 2 : 3));
 
   return <div className={`eventAttendanceControl ${alertFlag && "alert"}`}>
-
+    {debugView}
     <div className='header'>
       <div>{gCaptionMap[eventTiming][mapIndex]}</div>
       {editMode && allowViewMode && <CMSmallButton variant="framed" onClick={() => { setUserSelectedEdit(false) }}>{"Close"}</CMSmallButton>}
@@ -662,7 +682,6 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
       ) : (
 
         <CMChipContainer>
-          <DebugCollapsibleAdminText caption="compact" />
           <EventAttendanceInstrumentButton key={"__"}
             selected={false}
             value={eventResponse.instrument}

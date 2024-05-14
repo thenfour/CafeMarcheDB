@@ -478,14 +478,12 @@ const EventListItem = ({ event, ...props }: EventListItemProps) => {
     );
 
     return <EventSearchItemContainer event={event}>
-        {eventData.eventTiming !== Timing.Past &&
-            <EventAttendanceControl
-                eventData={eventData}
-                onRefetch={props.refetch}
-                userMap={userMap}
-            />
-        }
-
+        <EventAttendanceControl
+            eventData={eventData}
+            onRefetch={props.refetch}
+            userMap={userMap}
+            alertOnly={true}
+        />
     </EventSearchItemContainer>;
 };
 

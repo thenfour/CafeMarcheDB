@@ -1443,6 +1443,7 @@ in particular the date range picker is wide.*/
     color: #00f;
     padding-right: 10px;
     font-weight: bold;
+    background-color: #00f1;
 }
 
 .attendanceDetailTable .nameCellContainer>.editButton {
@@ -1548,7 +1549,7 @@ in particular the date range picker is wide.*/
 .eventAttendanceControl {
     max-width: 650px;
     background-color: #eee;
-    padding: 6px;
+    padding: 0 6px;
     border-radius: 3px;
     border: 2px solid #ddd;
     border-left: 8px solid #ddd;
@@ -1570,7 +1571,7 @@ in particular the date range picker is wide.*/
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: bold;
 }
 

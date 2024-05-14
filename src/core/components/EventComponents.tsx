@@ -1066,6 +1066,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
             eventData={eventData}
             onRefetch={tableClient.refetch}
             userMap={userMap}
+            alertOnly={false} // show this always, allow users to respond always.
         />
 
         <SegmentList
