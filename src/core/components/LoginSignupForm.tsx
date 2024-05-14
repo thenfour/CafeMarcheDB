@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { LoginForm } from "src/auth/components/LoginForm";
+import { simulateLinkClick } from "./CMCoreComponents2";
 
 export const LoginSignup = () => {
     const router = useRouter();
@@ -22,7 +23,7 @@ export const LoginSignup = () => {
                     onSuccess={(_user) => {
                         //const next = router.query.next ? decodeURIComponent(router.query.next as string) : "/"
                         //return router.push(next)
-                        void router.push("/backstage");
+                        simulateLinkClick("/backstage");
                     }}
                 />
             </div>

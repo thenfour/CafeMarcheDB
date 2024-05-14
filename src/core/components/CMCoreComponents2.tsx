@@ -9,6 +9,8 @@ import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { IsNullOrWhitespace, arraysContainSameValues } from "shared/utils";
 import * as db3 from "../db3/db3";
 import { gIconMap } from "../db3/components/IconMap";
+import { RouteUrlObject } from "blitz";
+import { UrlObject } from "url";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
@@ -18,6 +20,40 @@ export function useIsShowingAdminControls() {
 };
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+type Url = string | UrlObject;
+
+const formatUrl = (url: UrlObject): string => {
+    const { pathname = '', query = {}, hash = '' } = url;
+    const searchParams = new URLSearchParams(query as Record<string, string>).toString();
+    return `${pathname}${searchParams ? `?${searchParams}` : ''}${hash ? `#${hash}` : ''}`;
+};
+
+export const simulateLinkClick = (url: Url, as?: Url, options?: any) => {
+    let href: string;
+
+    if (typeof url === 'string') {
+        href = url;
+    } else {
+        href = formatUrl(url);
+    }
+
+    if (as) {
+        if (typeof as === 'string') {
+            href = as;
+        } else {
+            href = formatUrl(as);
+        }
+    }
+
+    const link = document.createElement('a');
+    link.href = href;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const DebugCollapsibleText = ({ text, caption, obj }: { text?: string, caption?: string, obj?: any }) => {

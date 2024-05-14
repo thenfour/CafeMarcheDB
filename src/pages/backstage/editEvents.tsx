@@ -11,18 +11,19 @@ import { pickFromObject } from "shared/utils";
 import { EventTableClientColumns } from "src/core/components/EventComponents";
 import React from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
+import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter();
     return <>
         <Button onClick={() => {
-            void router.push({
+            simulateLinkClick({
                 pathname: '/backstage/editEventSegments',
                 query: { eventId: gridArgs.row.id },
             });
         }}>Segments</Button>
         <Button onClick={() => {
-            void router.push({
+            simulateLinkClick({
                 pathname: '/backstage/editEventSongLists',
                 query: { eventId: gridArgs.row.id },
             });

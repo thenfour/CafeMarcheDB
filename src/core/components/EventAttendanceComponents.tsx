@@ -599,6 +599,10 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   const allowViewMode = !alertFlag;
   const editMode = userSelectedEdit || !allowViewMode;
 
+  // try to make the process slightly more linear by first asking about attendance. when you've answered that, THEN ask on what instrument.
+  // also don't ask about instrument if all answers are negative.
+  const allowInstrumentSelect = allAnswered && someAffirmative;
+
   const debugView = <AdminInspectObject src={{
     isPast,
     isInvited,
@@ -615,6 +619,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
     visible,
     allowViewMode,
     editMode,
+    allowInstrumentSelect,
   }} label="AttendanceControl" />;
 
   if (!visible) return debugView;
@@ -654,7 +659,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
       </div>
 
       {editMode ? (<>
-        <div className='instrument'>
+        {allowInstrumentSelect && <div className='instrument'>
           <EventAttendanceInstrumentControl
             eventUserResponse={eventResponse}
             onRefetch={props.onRefetch}
@@ -662,7 +667,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             onChanged={() => { }} // when a user selects an item, allow the control to go back to view mode again.
             eventId={props.eventData.event.id}
           />
-        </div>
+        </div>}
         <div className="segmentList">
           {segmentResponses.map(segment => {
             return <EventAttendanceSegmentControl

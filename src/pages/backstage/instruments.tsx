@@ -9,6 +9,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import PageviewIcon from '@mui/icons-material/Pageview';
 import { GridActionsCellItem } from "@mui/x-data-grid";
 import { useRouter } from "next/router";
+import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 
 const InstrumentListContent = () => {
     const router = useRouter();
@@ -42,7 +43,7 @@ const InstrumentListContent = () => {
                 label="View"
                 color="inherit"
                 onClick={() => {
-                    void router.push(`/backstage/instrument/${args.row["slug"]}`);
+                    simulateLinkClick(`/backstage/instrument/${args.row["slug"]}`);
                 }}
             />}
         />

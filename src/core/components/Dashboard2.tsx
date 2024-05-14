@@ -36,7 +36,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
-import { KeyValueDisplay } from "./CMCoreComponents2";
+import { KeyValueDisplay, simulateLinkClick } from "./CMCoreComponents2";
 import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
 import { MetronomeDialogButton } from "./Metronome";
@@ -88,7 +88,7 @@ const AppBarUserIcon_MenuItems = () => {
 
         <MenuItem onClick={async () => {
             // just doing the mutation here will keep a bunch of app state; better to cleanly navigate to a simple logout page where we don't risk access exceptions.
-            void router.push(Routes.LogoutPage());
+            simulateLinkClick(Routes.LogoutPage());
         }}>
             Log out
         </MenuItem>

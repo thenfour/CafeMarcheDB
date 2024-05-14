@@ -15,6 +15,7 @@ import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
 import { DashboardContext } from "./DashboardContext";
 import { Permission } from "shared/permissions";
 import { gIconMap } from "../db3/components/IconMap";
+import { simulateLinkClick } from "./CMCoreComponents2";
 
 interface NewEventDialogProps {
     onCancel: () => void;
@@ -98,16 +99,16 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
 
     const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new", clientIntention);
 
-    const handleSaveClick = () => {
+    const handleSaveClick = async () => {
         const payload: TinsertEventArgs = {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),
         };
-        mut.invoke(payload).then((ret) => {
+        mut.invoke(payload).then(async (ret) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
 
-            void router.push(API.events.getURIForEvent(ret.event.id, ret.event.slug));
+            simulateLinkClick(API.events.getURIForEvent(ret.event.id, ret.event.slug));
 
         }).catch(err => {
             console.log(err);

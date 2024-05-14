@@ -10,6 +10,7 @@ import { useRouter } from "next/router";
 import { Button } from "@mui/material";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import React from 'react';
+import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 
 
 const tableSpec = new DB3Client.xTableClientSpec({
@@ -28,7 +29,7 @@ const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) =
     const router = useRouter();
     return <>
         <Button onClick={() => {
-            void router.push({
+            simulateLinkClick({
                 pathname: '/backstage/editEventSongListSongs',
                 query: { eventSongListId: gridArgs.row.id },
             });

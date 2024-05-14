@@ -13,6 +13,7 @@ import { Routes } from "@blitzjs/next"
 import * as React from 'react';
 import forgotPassword from "src/auth/mutations/forgotPassword";
 import { useTheme } from "@mui/material/styles";
+import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 
 const AdminResetPasswordButton = ({ user }: { user: db3.UserPayload }) => {
     const [showConfirm, setShowConfirm] = React.useState<boolean>(false);
@@ -114,7 +115,7 @@ const UserListContent = () => {
                     userId: args.row.id,
                 }).then(() => {
                     // navigate to home page
-                    void router.push(Routes.Home());
+                    simulateLinkClick(Routes.Home());
                 }).catch((e) => {
                     console.log(e);
                 });
