@@ -35,9 +35,11 @@ export default resolver.pipe(
                     filters.push("e.startsAt > curdate()");
                     break;
                 case "Past 5 years":
+                    filters.push("e.startsAt < curdate()");
                     filters.push("e.startsAt > date_sub(curdate(), interval 5 year)");
                     break;
                 case "Past year":
+                    filters.push("e.startsAt < curdate()");
                     filters.push("e.startsAt > date_sub(curdate(), interval 1 year)");
                     break;
             }

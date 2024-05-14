@@ -2244,7 +2244,10 @@ pre.serverStartInfo {
 /* -  --------------------------------- */
 
 table.activityVis {
+    --dim: 30px;
+    --yearWidth: 100px;
     font-family: monospace;
+    font-size: 14px;
 }
 
 table.activityVis th,
@@ -2253,15 +2256,23 @@ table.activityVis td {
     padding: 4px;
 }
 
+table.activityVis .cell {
+    background-color: #080;
+    cursor: pointer;
+    width: var(--dim);
+    height: var(--dim);
+}
+
 table.activityVis .cell.hasActivity {
     background-color: #080;
     cursor: pointer;
 }
 
 table.activityVis .cell .cellInner {
-    --dim: 30px;
-    width: var(--dim);
-    height: var(--dim);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff8;
 }
 
 table.activityVis .cell.hasActivity:hover,
@@ -2269,31 +2280,30 @@ table.activityVis .cell.hasActivity.selected {
     outline: 2px solid blue;
 }
 
-table.activityVis .cell.lowActivity {
-    background-color: #9be9a8;
+
+table.activityVis .yearTotalGraphTD {
+    background-color: #eee;
+    width: var(--yearWidth);
+    height: var(--dim);
 }
 
-table.activityVis .cell.medActivity {
-    background-color: #40c463;
+table.activityVis .yearTotalGraphWrap {
+    background-color: #eee;
+    display: flex;
+    height: 100%;
+    opacity: 50%;
 }
 
-table.activityVis .cell.highActivity {
-    background-color: #216e39;
+table.activityVis .yearTotalFilledPart {
+    /* to be set on element */
+    --color: #f0f;
+    /*same.*/
+    --normValue: 0.0;
+    background-color: var(--color);
+    width: calc(var(--normValue) * 100px);
+    color: #fff8;
+    padding-left: 8px;
 }
-
-
-table.activityVis.events .cell.lowActivity {
-    background-color: #9ba8e9;
-}
-
-table.activityVis.events .cell.medActivity {
-    background-color: #4063c4;
-}
-
-table.activityVis.events .cell.highActivity {
-    background-color: #21396e;
-}
-
 
 
 

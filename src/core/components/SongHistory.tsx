@@ -152,6 +152,10 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
             <SongHistoryQuerier filterSpec={filterSpec} songId={song.id} setResults={setResults} />
         </Suspense>
 
+        <div>
+            This song has appeared in {results.events.length} events that match your filter
+        </div>
+
         <ActivityVis
             items={results.events.filter(e => !!e.startsAt)}
             getItemInfo={(item) => {
@@ -165,9 +169,9 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
                     tooltip: <ul>{bucket.items.map(x => <li key={x.item.id}>{x.item.name}</li>)}</ul>
                 }
             }}
-            selectedBucketId={selectedBucket?.bucketId || null}
+            selectedMonthBucketId={selectedBucket?.monthBucketId || null}
             onBucketClick={(bucket) => {
-                if (bucket.bucketId === selectedBucket?.bucketId) {
+                if (bucket.monthBucketId === selectedBucket?.monthBucketId) {
                     // toggle off.
                     setSelectedBucket(null);
                     return;

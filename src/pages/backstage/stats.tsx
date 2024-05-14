@@ -138,7 +138,7 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
                         tooltip: <ul>{b.items.map(x => <li key={x.item.eventId}>{x.item.eventName}</li>)}</ul>
                     };
                 }}
-                selectedBucketId={selectedBucket?.bucketId || null}
+                selectedMonthBucketId={selectedBucket?.monthBucketId || null}
                 onBucketClick={(b) => setSelectedBucket(b)}
             />
             <div>
@@ -210,6 +210,11 @@ const StatsPageInner = () => {
         }
     });
 
+    const sortedSongs = [...songMap.values()];
+    sortedSongs.sort((a, b) => {
+        return b.length - a.length; // desc
+    });
+
     return <div>
         <AdminInspectObject src={results} label="results" />
 
@@ -247,7 +252,7 @@ const StatsPageInner = () => {
                         tooltip: <ul>{b.items.map(x => <li key={x.item.id}>{x.item.name}</li>)}</ul>
                     };
                 }}
-                selectedBucketId={selectedEventBucket?.bucketId || null}
+                selectedMonthBucketId={selectedEventBucket?.monthBucketId || null}
                 onBucketClick={(b) => setSelectedEventBucket(b)}
             />}
 
@@ -264,9 +269,8 @@ const StatsPageInner = () => {
         </div>
 
         <h1>Most popular songs (top 10)</h1>
-        {[...songMap.keys()].map(songId => {
-            const x = songMap.get(songId)!;
-            return <StatsPagePopularSong key={songId} occurrances={x} expanded={expanded} />;
+        {sortedSongs.map(s => {
+            return <StatsPagePopularSong key={s[0]!.songId} occurrances={s} expanded={expanded} />;
         })}
     </div>;
 };
