@@ -2282,27 +2282,33 @@ table.activityVis .cell.hasActivity.selected {
 
 
 table.activityVis .yearTotalGraphTD {
-    background-color: #eee;
+    background-color: #fff;
     width: var(--yearWidth);
     height: var(--dim);
 }
 
 table.activityVis .yearTotalGraphWrap {
-    background-color: #eee;
+
     display: flex;
     height: 100%;
     opacity: 50%;
 }
 
 table.activityVis .yearTotalFilledPart {
-    /* to be set on element */
     --color: #f0f;
-    /*same.*/
     --normValue: 0.0;
     background-color: var(--color);
-    width: calc(var(--normValue) * 100px);
+    width: calc(var(--yearWidth) * var(--normValue));
     color: #fff8;
     padding-left: 8px;
+    padding-right: 8px;
+    /* margin-top: 4px; */
+    /* margin-bottom: 4px; */
+    line-height: 1px;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    height: 12px;
 }
 
 
