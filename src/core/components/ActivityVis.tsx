@@ -1,7 +1,7 @@
 
 import { Tooltip } from "@mui/material";
 import React from "react";
-import { Clamp, IsNullOrWhitespace } from 'shared/utils';
+import { Clamp, IsNullOrWhitespace, lerp } from 'shared/utils';
 
 
 interface ActivityVisItemInfo {
@@ -182,8 +182,10 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
                 </Tooltip>
                 ;
 
+            const opacity = normCount === 0 ? undefined : lerp(.5, 1, normCount);
+
             cells.push(
-                <td className={classes.join(" ")} style={{ backgroundColor: getColorClass(normCount) }} key={month} onClick={!props.onBucketClick ? undefined : (() => props.onBucketClick!(bucket))}>
+                <td className={classes.join(" ")} style={{ backgroundColor: getColorClass(normCount), opacity }} key={month} onClick={!props.onBucketClick ? undefined : (() => props.onBucketClick!(bucket))}>
                     {ch}
                 </td>
             );

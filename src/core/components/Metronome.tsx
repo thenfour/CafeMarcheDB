@@ -12,19 +12,26 @@ const gTickSampleFilePath = "/Metronome.mp3";
 const gMinBPM = 30;
 const gMaxBPM = 240;
 
+
 export interface MetronomePlayerProps {
     bpm: number;
     syncTrigger: number;
-    isTapping: boolean;
+    mute: boolean;
+    running: boolean;
 };
 
-
-export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigger, isTapping }) => {
-    const classes = ['metronomeIndicator tick', 'metronomeIndicator tock'] as const;
-    const [activeClass, setActiveClass] = React.useState<boolean>(false);
+// this is just a metronome player.
+export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigger, mute, running }) => {
+    const classes = ['metronomeIndicator', 'metronomeIndicator tick', 'metronomeIndicator tock'] as const;
+    const [activeClass, setActiveClass] = React.useState<number>(0);
+    const [runningInitialized, setRunningInitialized] = React.useState<boolean | null>(null); // null = not initialized.
+    const [initialSyncTrig, _] = React.useState<number>(() => syncTrigger);
+    const [initialBpm, setInitialBpm] = React.useState<number | null>(() => bpm);
     const timerIDRef = React.useRef<number | undefined>(undefined);
     const audioContextRef = React.useRef<AudioContext | null>(null);
+    const gainNodeRef = React.useRef<GainNode | null>(null);
     const tickBufferRef = React.useRef<AudioBuffer | null>(null);
+    const nextFlashTimerIdRef = React.useRef<number | undefined>(undefined);
 
     // the sample that's scheduled to play next.
     const nextTickSource = React.useRef<AudioBufferSourceNode | null>(null);
@@ -37,22 +44,8 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
 
     bpm = Clamp(bpm, gMinBPM, gMaxBPM);
 
-    const scheduleTick = (t?: number | undefined) => {
-        const ctx = audioContextRef.current!;
-        const tickSource = ctx.createBufferSource();
-        tickSource.buffer = tickBufferRef.current;
-        tickSource.connect(ctx.destination);
-        tickSource.start(t);
-        const currentTime = ctx.currentTime;
-        if (t === undefined) {
-            setActiveClass((value) => !value);
-        } else {
-            const ms = 1000 * (t - currentTime);
-            if (ms > 0) {
-                window.setTimeout(() => setActiveClass((val) => !val), ms);
-            }
-        }
-        return tickSource;
+    const flash = () => {
+        setActiveClass((value) => value === 2 ? 1 : 2);
     };
 
     const beatsAndBPMToMS = (beats: number, bpm__) => beats * 1000 * 60 / bpm__;
@@ -61,10 +54,59 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
     const beatsAndBPMToSec = (beats: number, bpm__) => beats * 60 / bpm__;
     const beatsToSec = (beats: number) => beatsAndBPMToSec(beats, bpm);//beats * 1000 * 60 / bpm;
 
+    const killTimer = () => {
+        if (timerIDRef.current) {
+            clearTimeout(timerIDRef.current);
+            timerIDRef.current = undefined;
+        }
+    };
+    const killSchedule = () => {
+        if (nextFlashTimerIdRef.current) {
+            clearTimeout(nextFlashTimerIdRef.current);
+            nextFlashTimerIdRef.current = undefined;
+        }
+        if (tickTrash.current) {
+            tickTrash.current.stop();
+            tickTrash.current.disconnect();
+            tickTrash.current = null;
+        }
+        if (nextTickSource.current) {
+            nextTickSource.current.stop();
+            nextTickSource.current.disconnect();
+            nextTickSource.current = null;
+        }
+    };
+
+    const scheduleTick = (why: string, t?: number | undefined) => {
+        const ctx = audioContextRef.current;
+        if (!ctx) return null;
+        //console.log(`scheduletick ${why}`);
+        const tickSource = ctx.createBufferSource();
+        tickSource.buffer = tickBufferRef.current;
+        tickSource.connect(gainNodeRef.current!);
+        tickSource.start(t);
+        const currentTime = ctx.currentTime;
+        if (nextFlashTimerIdRef.current) {
+            clearTimeout(nextFlashTimerIdRef.current);
+            nextFlashTimerIdRef.current = undefined;
+        }
+        if (t === undefined) {
+            flash();
+        } else {
+            let ms = 1000 * (t - currentTime);
+            if (ms > 0) {
+                ms += 10;
+                nextFlashTimerIdRef.current = window.setTimeout(flash, ms);
+            }
+        }
+        return tickSource;
+    };
+
     // timer proc to ensure there's a next tick scheduled for play.
     // Scheduler function to queue up ticks in the audio context; setInterval is not accurate enough.
     // basically this runs and schedules a tick a short time in the future.
-    const tickProc = (forceImmediate?: boolean, isTapping?: boolean) => {
+    const tickProc = (forceImmediate?: boolean) => {
+        //console.log(`tickproc`);
         const ctx = audioContextRef.current!;
         const currentTime = ctx.currentTime;
         const halfBeatMS = beatsToMS(0.5);
@@ -83,7 +125,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
                 nextTickSource.current.disconnect();
                 nextTickSource.current = null;
             }
-            nextTickSource.current = scheduleTick(); // plays immediatly
+            nextTickSource.current = scheduleTick("tick:forceImmediate"); // plays immediatly
             nextTickBPM.current = bpm;
             nextTickScheduledTime.current = currentTime;
             // timer set for middle of beat.
@@ -92,7 +134,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
         }
 
         if (!nextTickSource.current) {
-            nextTickSource.current = scheduleTick(); // plays immediatly
+            nextTickSource.current = scheduleTick("tick:nonext?"); // plays immediatly
             nextTickBPM.current = bpm;
             nextTickScheduledTime.current = currentTime;
             // timer set for middle of beat.
@@ -109,24 +151,18 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
             const beatFrac = timeElapsed * (nextTickBPM.current / 60); // beats, expressed in ITS BPM
             let remainingSec = beatsToSec(1.0 - beatFrac);
 
-            // if you're tapping tempo, you want beats to line up with your taps.
-            // this has the effect of bringing tap tempo bpm changes closer to NOW (the time you tap) over time.
-            if (isTapping) {
-                remainingSec = 0;
-            }
-
             nextTickBPM.current = bpm;
 
             // it could be that we somehow miss a beat, especially during weird turbuent times or changing BPMs. in that case we can choose to skip it or to schedule it.
             if (remainingSec <= 0) {
-                scheduleTick(undefined); // immediate.
+                nextTickSource.current = scheduleTick("tickProc:missed a beat", undefined); // immediate.
                 nextTickScheduledTime.current = currentTime + remainingSec;
                 timerIDRef.current = window.setTimeout(tickProc, halfBeatMS);
                 return;
             }
 
             nextTickScheduledTime.current = currentTime + remainingSec;
-            nextTickSource.current = scheduleTick(currentTime + remainingSec);
+            nextTickSource.current = scheduleTick("tickProc:normal", currentTime + remainingSec);
             // and set our next timeout to the middle of the beat after nexttick.
             timerIDRef.current = window.setTimeout(tickProc, (remainingSec * 1000) + halfBeatMS);
             return;
@@ -141,26 +177,33 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
     };
 
     const doBeatSync = () => {
-        if (!audioContextRef.current) return;
-        if (timerIDRef.current) {
-            clearTimeout(timerIDRef.current);
-            timerIDRef.current = undefined;
+        killTimer();
+        killSchedule();
+        if (running) {
+            //console.log(`running`);
+            tickProc(true);
         }
-
-        tickProc(true);
+        else {
+            flash();
+        }
     };
 
     const doInit = async () => {
         if (!!audioContextRef.current) return; // double mount?
         audioContextRef.current = new AudioContext();
+        gainNodeRef.current = audioContextRef.current.createGain();
+        gainNodeRef.current.connect(audioContextRef.current.destination);
         const response = await fetch(gTickSampleFilePath);
         const arrayBuffer = await response.arrayBuffer();
         const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
         tickBufferRef.current = audioBuffer;
+
         doBeatSync();
     };
 
     const doStop = () => {
+        killTimer();
+
         if (tickTrash.current) {
             tickTrash.current.disconnect();
             tickTrash.current = null;
@@ -170,44 +213,66 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
             nextTickSource.current.disconnect();
             nextTickSource.current = null;
         }
-
-        if (timerIDRef.current) {
-            clearTimeout(timerIDRef.current);
-            timerIDRef.current = undefined;
-        }
     };
 
     React.useEffect(() => {
+        //console.log(`=== mount ===`);
         void doInit();
         return () => doStop();
     }, []);
 
     React.useEffect(() => {
-        doBeatSync();
+        if (syncTrigger > initialSyncTrig) {
+            //console.log(`sync trig ${syncTrigger} > ${initialSyncTrig}`);
+            doBeatSync();
+        }
     }, [syncTrigger]);
 
     React.useEffect(() => {
-        if (timerIDRef.current) {
-            clearTimeout(timerIDRef.current);
-            timerIDRef.current = undefined;
+        //console.log(`BPM change ${bpm}`);
+        if (initialBpm === bpm) {
+            return;
         }
+        setInitialBpm(null); // allow further bpm changes to always work even if === initial
+        //console.log(`YES BPM change ${bpm}`);
 
-        tickProc(false, isTapping);
+        // run the timer proc ASAP to evaluate what to do.
+        killTimer();
+
+        // if not running, do nothing.
+        if (running) {
+            tickProc(false);
+        }
     }, [bpm]);
 
+    React.useEffect(() => {
+        if (gainNodeRef.current) {
+            gainNodeRef.current.gain.value = mute ? 0 : 1;
+        }
+    }, [mute, gainNodeRef.current]);
+
+    React.useEffect(() => {
+        killTimer();
+        if (running && runningInitialized) {
+            //console.log(`RUNNING change ${bpm}`);
+            tickProc(false);
+        }
+        if (!runningInitialized) {
+            setRunningInitialized(true);
+        }
+    }, [running]);
+
     return <div className="metronomePlayerContainer">
-        <div className={classes[activeClass ? 0 : 1]}>
+        <div className={classes[activeClass]}>
         </div>
     </div>;
 };
 
 
-
-
-export const MetronomeButton = ({ bpm, mountPlaying, beatSyncTrigger, isTapping }: { bpm: number, mountPlaying?: boolean, beatSyncTrigger?: number, isTapping: boolean }) => {
+export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping }: { bpm: number, mountPlaying?: boolean, tapTrigger: number, isTapping: boolean }) => {
     const [playing, setPlaying] = React.useState<boolean>(mountPlaying || false);
     const dashboardContext = React.useContext(DashboardContext);
-    const [beatSyncToggle, setBeatSyncToggle] = React.useState<number>(0);
+    const [beatSyncTrigger, setBeatSyncTrigger] = React.useState<number>(0);
     const mySilencer = React.useRef<() => void>(() => setPlaying(false));
 
     React.useEffect(() => {
@@ -227,13 +292,18 @@ export const MetronomeButton = ({ bpm, mountPlaying, beatSyncTrigger, isTapping 
         }
     }, [playing]);
 
+    // when tapping,
+    // the metronome should behave differently:
+    // - ONLY play on sync triggers
+    // - ONLY flash.
+
     return <div className="metronomeButtonContainer">
         <div onClick={() => setPlaying(!playing)} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"}`}>
             {playing ? gIconMap.VolumeUp() : gIconMap.VolumeOff()}
-            {playing && <MetronomePlayer bpm={bpm} syncTrigger={(beatSyncTrigger || 0) + beatSyncToggle} isTapping={isTapping} />}
+            {playing && <MetronomePlayer bpm={bpm} syncTrigger={tapTrigger + beatSyncTrigger} mute={isTapping} running={!isTapping} />}
         </div>
         {playing && <div className="metronomeSyncButton freeButton" onClick={(e) => {
-            setBeatSyncToggle(beatSyncToggle + 1);
+            setBeatSyncTrigger(beatSyncTrigger + 1);
             e.stopPropagation();
             e.preventDefault();
         }}>
@@ -270,9 +340,9 @@ export const MetronomeButton = ({ bpm, mountPlaying, beatSyncTrigger, isTapping 
 // }
 
 // uses IQR filter + linear weighted average
-function calculateBPM(tapIntervals) {
+function calculateBPM(tapIntervals): number | null {
     if (tapIntervals.length < 2) {
-        return 0; // Not enough taps to calculate BPM accurately
+        return null; // Not enough taps to calculate BPM accurately
     }
 
     // Filter out outliers using IQR
@@ -286,7 +356,7 @@ function calculateBPM(tapIntervals) {
     const filteredIntervals = sortedIntervals.filter(x => (x >= lowerBound && x <= upperBound));
 
     if (filteredIntervals.length < 1) {
-        return 0; // Not enough valid taps after filtering
+        return null; // Not enough valid taps after filtering
     }
 
     // Calculate the simple average of the filtered intervals
@@ -334,13 +404,12 @@ function calculateBPM(tapIntervals) {
 
 
 export interface TapTempoProps {
-    onFirstClick: () => void;
     onStopTapping: () => void;
-    onChange: (newBpm: number, tapCount: number) => void;
+    onTap: (newBpm: number | null, tapCount: number) => void;
 }
 
 
-export const TapTempo: React.FC<TapTempoProps> = ({ onChange, onFirstClick, onStopTapping }) => {
+export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping }) => {
     const [lastTapTime, setLastTapTime] = React.useState<number | null>(null);
     const tapTimes = React.useRef<number[]>([]);
     const [classToggle, setClassToggle] = React.useState<boolean>(false);
@@ -351,9 +420,9 @@ export const TapTempo: React.FC<TapTempoProps> = ({ onChange, onFirstClick, onSt
     ];
 
     const handleTap = () => {
-        if (tapTimes.current.length === 0) {
-            onFirstClick();
-        }
+        // if (tapTimes.current.length === 0) {
+        //     onFirstClick();
+        // }
 
         const currentTime = Date.now();
         if (lastTapTime !== null && currentTime - lastTapTime < 200) { // Debounce rapid taps
@@ -372,9 +441,7 @@ export const TapTempo: React.FC<TapTempoProps> = ({ onChange, onFirstClick, onSt
         setLastTapTime(currentTime);
 
         const calculatedBpm = calculateBPM(tapTimes.current);
-        if (calculatedBpm) {
-            onChange(calculatedBpm, tapTimes.current.length);
-        }
+        onTap(calculatedBpm, tapTimes.current.length);
 
         timerIDRef.current = window.setTimeout(() => {
             tapTimes.current = [];
@@ -396,8 +463,8 @@ export interface MetronomeDialogProps {
 
 export const MetronomeDialog = (props: MetronomeDialogProps) => {
     const [bpm, setBPM] = useURLState<number>("bpm", 120);
-    const [textBpm, setTextBpm] = React.useState<string>("120");
-    const [beatSyncToggle, setBeatSyncToggle] = React.useState<number>(0);
+    const [textBpm, setTextBpm] = React.useState<string>(bpm.toString());
+    const [tapTrigger, setTapTrigger] = React.useState<number>(0);
     const [isTapping, setIsTapping] = React.useState<boolean>(false);
 
     return <ReactiveInputDialog onCancel={props.onClose} className="GlobalMetronomeDialog">
@@ -405,7 +472,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             Metronome
         </DialogTitle>
         <DialogContent dividers>
-            <MetronomeButton bpm={bpm} mountPlaying={true} beatSyncTrigger={beatSyncToggle} isTapping={isTapping} />
+            <MetronomeButton bpm={bpm} mountPlaying={true} isTapping={isTapping} tapTrigger={tapTrigger} />
             <div className="bpmAndTapRow">
                 <CMTextInputBase
                     onChange={(e, v) => {
@@ -419,16 +486,16 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     value={textBpm}
                 />
                 <TapTempo
-                    onFirstClick={() => {
-                        setIsTapping(true);
-                        setBeatSyncToggle(beatSyncToggle + 1);
-                    }}
                     onStopTapping={() => {
                         setIsTapping(false);
                     }}
-                    onChange={(newBpm, count) => {
-                        setBPM(newBpm);
-                        setTextBpm(newBpm.toString());
+                    onTap={(newBpm, count) => {
+                        setIsTapping(true);
+                        setTapTrigger(tapTrigger + 1);
+                        if (newBpm !== null) {
+                            setBPM(newBpm);
+                            setTextBpm(newBpm.toString());
+                        }
                     }} />
             </div>
             <div className="sliderContainer">

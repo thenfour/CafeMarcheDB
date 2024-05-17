@@ -1834,16 +1834,21 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 
 .metronomeIndicator {
-    --color1: #fff;
+    --color1: #ff6;
     --color2: #0f0;
     --color3: #040;
-    --duration: .15s;
+    --duration: .12s;
     --timingfunction: linear;
     border-radius: 50%;
     margin: 0 10px;
     width: 32px;
     height: 32px;
     border: 2px solid #0004;
+    box-shadow: 0 0 25px var(--color3);
+
+
+    /* default animation state */
+    background-color: var(--color3);
     box-shadow: 0 0 25px var(--color3);
 }
 
@@ -1854,9 +1859,9 @@ table.songMetadata tr:hover td .CMSmallButton {
         box-shadow: 0 0 25px var(--color1);
     }
 
-    30% {
-        background-color: var(--color2);
-        box-shadow: 0 0 25px var(--color2);
+    50% {
+        background-color: var(--color1);
+        box-shadow: 0 0 25px var(--color1);
     }
 
     100% {
@@ -1871,9 +1876,9 @@ table.songMetadata tr:hover td .CMSmallButton {
         box-shadow: 0 0 25px var(--color1);
     }
 
-    30% {
-        background-color: var(--color2);
-        box-shadow: 0 0 25px var(--color2);
+    50% {
+        background-color: var(--color1);
+        box-shadow: 0 0 25px var(--color1);
     }
 
     100% {
