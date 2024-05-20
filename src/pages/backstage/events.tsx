@@ -129,7 +129,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                 <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: dashboardContext.currentUser?.accessToken || null, eventUid: event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
             </Tooltip>
 
-            <VisibilityValue permission={event.visiblePermission} variant='minimal' />
+            {/* <VisibilityValue permission={event.visiblePermission} variant='minimal' /> */}
 
         </div>
 

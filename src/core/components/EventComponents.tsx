@@ -831,6 +831,8 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
         `status_${eventData.event.status?.significance}`,
     ];
 
+    const showVisibility = props.showVisibility && dashboardContext.isAuthorized(Permission.manage_events);
+
     return <div style={typeStyle.style} className={classes.join(" ")}>
         <div className='header'>
             <CMChipContainer>
@@ -913,7 +915,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                 <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: currentUser?.accessToken || null, eventUid: eventData.event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
             </Tooltip>
 
-            {props.showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
+            {showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
 
         </div>
 
