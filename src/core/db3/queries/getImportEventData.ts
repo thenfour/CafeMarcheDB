@@ -3,19 +3,62 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
+import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string, sleep } from "shared/utils";
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TGetImportEventDataArgs, TGetImportEventDataRet, TimingFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
 import { DateSortPredicateAsc, DateSortPredicateDesc, gMillisecondsPerDay } from "shared/time";
 
-interface Song {
+
+
+interface ExtractDescriptionResult {
+    beforeSeparator: string;
+    afterSeparator: string | null;
+}
+
+const ExtractDescription = (text: string, separator: string = "-----"): ExtractDescriptionResult => {
+    // Split the text into lines
+    const lines = text.split('\n');
+
+    // Find the index of the separator line
+    const separatorIndex = lines.findIndex(line => line.trim() === separator);
+
+    if (separatorIndex !== -1) {
+        // Text before the separator
+        const beforeSeparator = lines.slice(0, separatorIndex).join('\n').trim();
+
+        // Text after the separator, with leading and trailing whitespace/empty lines removed
+        const afterSeparatorLines = lines.slice(separatorIndex + 1);
+        const trimmedAfterSeparator = afterSeparatorLines
+            .join('\n')
+            .split('\n')
+            .filter(line => line.trim().length > 0)
+            .join('\n')
+            .trim();
+
+        return {
+            beforeSeparator,
+            afterSeparator: trimmedAfterSeparator
+        };
+    }
+
+    // If the separator is not found, return all text as beforeSeparator and null as afterSeparator
+    return {
+        beforeSeparator: text.trim(),
+        afterSeparator: null
+    };
+};
+
+
+
+
+interface SongParsed {
     songName: string;
     comment: string | null;
 }
 
-const splitSongAndComment = (input: string): Song => {
+const splitSongAndComment = (input: string): SongParsed => {
     // Define a regex pattern to capture the song name and the optional comment
     const pattern = /^(.*?)\s*\((.*?)\)?$/;
 
@@ -138,14 +181,13 @@ const extractFirstNonEmptyLine = (text: string): string | null => {
 export default resolver.pipe(
     resolver.authorize(Permission.admin_events),
     async (args: TGetImportEventDataArgs, ctx: AuthenticatedCtx): Promise<TGetImportEventDataRet> => {
-        const eventTxt = args.text;
-
         // start with defaults.
         const ret: TGetImportEventDataRet = {
             log: [],
             event: {
                 expectedAttendanceUserTagId: null,
                 name: "",
+                description: "",
                 statusId: null,
                 tags: [],
                 typeId: null,
@@ -170,6 +212,23 @@ export default resolver.pipe(
                 }
             }))!.id;
 
+            const edr = ExtractDescription(args.text);
+            const eventTxt = edr.beforeSeparator;
+
+            ret.event.description = edr.afterSeparator || "";
+
+            ret.event.statusId = (await db.eventStatus.findFirst({
+                where: {
+                    significance: db3.EventStatusSignificance.FinalConfirmation,
+                }
+            }))!.id;
+
+            ret.event.expectedAttendanceUserTagId = (await db.userTag.findFirst({
+                where: {
+                    significance: db3.UserTagSignificance.DefaultInvitation,
+                }
+            }))!.id;
+
             // extract event type. either concert or rehearsal
             const concertPattern = /\bconcert|performance\b/i;
             if (concertPattern.test(eventTxt)) {
@@ -189,7 +248,7 @@ export default resolver.pipe(
             }
 
             // find a fallback year by searching for "y2024"
-            const fallbackYear = extractYear(eventTxt) || 2023;
+            const fallbackYear = extractYear(args.config) || 2023;
             ret.log.push(`fallbackYear: ${fallbackYear}`);
             ret.log.push(`extractDate: ${extractDate(eventTxt, fallbackYear)}`);
             ret.segment.startsAt = extractDate(eventTxt, fallbackYear) || new Date();
@@ -216,6 +275,8 @@ export default resolver.pipe(
             ret.log.push(`carl: ${carl?.id}`);
             ret.log.push(`peter: ${peter?.id}`);
             ret.log.push(`guido: ${guido?.id}`);
+
+            //await sleep(500);
 
             const yesId = (await db.eventAttendance.findFirst({
                 where: {

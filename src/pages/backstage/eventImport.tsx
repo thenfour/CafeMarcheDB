@@ -24,6 +24,8 @@ import { bigint } from "zod";
 import { useQuery } from "@blitzjs/rpc";
 import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
+import { Markdown } from "src/core/components/RichTextEditor";
+import { useDebounce } from "shared/useDebounce";
 
 interface InsertResult {
     event: {
@@ -48,12 +50,6 @@ const NewEventForm = (props: NewEventDialogProps) => {
     const dashboardContext = React.useContext(DashboardContext);
     const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
         const ret = db3.xEvent.createNew(clientIntention) as Partial<db3.EventPayload>;
-        ret.visiblePermission = (dashboardContext.permission.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null) as any;
-        ret.visiblePermissionId = ret.visiblePermission?.id || null;
-        ret.status = dashboardContext.eventStatus.find(s => s.significance === db3.EventStatusSignificance.FinalConfirmation);
-        ret.statusId = ret.status?.id || null;
-        ret.expectedAttendanceUserTag = dashboardContext.userTag.find(t => t.significance === db3.UserTagSignificance.DefaultInvitation);
-        ret.expectedAttendanceUserTagId = ret.expectedAttendanceUserTag?.id || null;
         return ret as any;
     });
     const [segmentValue, setSegmentValue] = React.useState<db3.EventSegmentPayload>(() => {
@@ -73,8 +69,15 @@ const NewEventForm = (props: NewEventDialogProps) => {
         setEventValue({
             ...eventValue,
             name: props.serverData?.event.name || "",
+            description: props.serverData?.event.description || "",
             type: dashboardContext.eventType.getById(props.serverData?.event.typeId),
             typeId: props.serverData?.event.typeId || 1,
+            status: dashboardContext.eventStatus.getById(props.serverData?.event.statusId),
+            statusId: props.serverData?.event.statusId || null,
+            expectedAttendanceUserTag: dashboardContext.userTag.getById(props.serverData?.event.expectedAttendanceUserTagId),
+            expectedAttendanceUserTagId: props.serverData?.event.expectedAttendanceUserTagId || null,
+            visiblePermission: dashboardContext.permission.getById(props.serverData?.event.visiblePermissionId) as any,
+            visiblePermissionId: props.serverData?.event.visiblePermissionId || null,
         });
     }, [props.serverData]);
 
@@ -85,6 +88,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
         columns: [
             EventTableClientColumns.id,
             EventTableClientColumns.name,
+            EventTableClientColumns.description,
             EventTableClientColumns.slug,
             EventTableClientColumns.type,
             EventTableClientColumns.status,
@@ -183,14 +187,15 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
         <NameValuePair
             name={`Set list (${props.serverData?.songList.length})`}
-            value={<ul className="setlist">
+            value={<ol className="setlist">
                 {props.serverData?.songList.map((r, i) => <li key={i}>{`${r.songName || "?"} (${r.songId})`} {r.comment}</li>)}
-            </ul>}
+            </ol>}
         />
 
         {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI, false)}
         {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI, false)}
         {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI, false)}
+        {renderColumn(eventTableSpec, "description", eventValue, eventValidationResult, eventAPI, false)}
 
         <Button onClick={handleSaveClick}>Save</Button>
 
@@ -201,13 +206,15 @@ const NewEventForm = (props: NewEventDialogProps) => {
 
 interface QuerierProps {
     text: string;
+    config: string;
     onReceive: (v: TGetImportEventDataRet) => void;
 };
 const Querier = (props: QuerierProps) => {
-    const [serverData, dataInfo] = useQuery(getImportEventData, {
-        text: props.text,
-    });
+    const [searchParams, setSearchParams] = useDebounce([props.text, props.config], 200);
+    const [serverData, dataInfo] = useQuery(getImportEventData, { text: searchParams[0]!, config: searchParams[1]! });
+
     React.useEffect(() => {
+        console.log(serverData);
         props.onReceive(serverData);
     }, [serverData]);
 
@@ -234,7 +241,7 @@ const ImportEventsPageContent = () => {
     return <div className="ImportEventsPageContent">
         {/* <MechanicalSelector minValue={30} maxValue={280} value={value} onChange={setValue} /> */}
         <Suspense fallback={<div className="querier suspended"></div>}>
-            <Querier text={eventTxt + "\n" + configTxt} onReceive={setServerData} />
+            <Querier text={eventTxt} config={configTxt} onReceive={setServerData} />
         </Suspense>
         <div className="twocolumns">
             <div className="leftColumn">

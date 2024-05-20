@@ -610,12 +610,14 @@ export interface GetGlobalStatsRet {
 
 export interface TGetImportEventDataArgs {
     text: string;
+    config: string;
 };
 
 export interface TGetImportEventDataRet {
     log: string[],
     event: {
         name: string,
+        description: string;
         typeId: number | null,
         statusId: number | null,
         tags: number[],
