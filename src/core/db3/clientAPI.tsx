@@ -2,22 +2,17 @@
 // this file NEEDS clientbasicfields because we have tableclients & corresponding columns.
 // so it means the clientbasicfields is lower level than this file, which feels wrong but ok.
 
-import { ClientSession, useSession } from "@blitzjs/auth";
+import { useSession } from "@blitzjs/auth";
 import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
-import { ColorVariationSpec, gAppColors } from "shared/color";
-import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
 import { Clamp, CoerceToNumberOr, SettingKey, gMinImageDimension, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
-import getPopularSongTags from "src/auth/queries/getPopularSongTags";
 import getSetting from "src/auth/queries/getSetting";
 import * as db3 from "src/core/db3/db3";
-import { GetStyleVariablesForColor } from "../components/Color";
 import * as ClientAPILL from "./clientAPILL";
-import * as DB3ClientCore from './components/DB3ClientCore';
 import deleteEventSongList from "./mutations/deleteEventSongList";
 import insertEvent from "./mutations/insertEvent";
 import insertEventSongListMutation from "./mutations/insertEventSongListMutation";
@@ -189,35 +184,6 @@ class UsersAPI {
         return user.instruments[0]!.instrument;
     };
 
-    // getAllPermissions = () => {
-    //     return DB3ClientCore.useTableRenderContext({
-    //         tableSpec: new DB3ClientCore.xTableClientSpec({
-    //             table: db3.xPermission,
-    //             columns: [
-    //             ],
-    //         }),
-    //         requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-    //         clientIntention: { intention: 'user', mode: 'primary' },
-    //     });
-
-    // };
-
-    // getPermission = (q: Permission) => {
-    //     return (this.getAllPermissions().items as Prisma.PermissionGetPayload<{}>[]).find(p => p.name === q);
-    // };
-
-    // getDefaultVisibilityPermission = () => {
-    //     return this.getPermission(Permission.visibility_members)!;
-    // };
-
-    // // useSession -> this
-    // isAuthorizedFor = (session: ClientSession | null | undefined, q: Permission) => {
-    //     // public
-    //     if (!session || !session.permissions) return q === Permission.visibility_public;
-    //     if (session.isSysAdmin) return true;
-    //     return session.permissions.some(v => v === q);
-    // };
-
     updateUserPrimaryInstrument = CreateAPIMutationFunction(updateUserPrimaryInstrumentMutation);
 };
 
@@ -283,68 +249,10 @@ class EventsAPI {
         return ret;
     }
 
-    // getEventTiming(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
-    //     const r = this.getEventDateRange(event);
-    //     return r.hitTestDateTime();
-    // }
-
-    // getEventTiming(event: Prisma.EventGetPayload<{ select:  { startsAt: true, durationMillis: true, isAllDay } }>) {
-    //     //const r = this.getEventDateRange(event);
-    //     return r.hitTestDateTime();
-    // }
-
     getURIForEvent(eventId: number | string, eventSlug?: string, tabSlug?: string) {
         return ClientAPILL.getURIForEvent(eventId, eventSlug, tabSlug);
     }
-    // getMinMaxAttendees({ event }: { event: db3.EventClientPayload_Verbose }) {
-    //     const ret: EventMinMaxAttendeesResult = {
-    //         minAttendees: null,
-    //         maxAttendees: null,
-    //     };
-    //     event.segments.forEach(seg => {
-    //         // count attendees for this segment who are going
-    //         const att = seg.responses.filter(resp => resp.attendance && (resp.attendance.strength > 50)).length;
-    //         if (ret.minAttendees === null || att < ret.minAttendees) ret.minAttendees = att;
-    //         if (ret.maxAttendees === null || att > ret.maxAttendees) ret.maxAttendees = att;
-    //     });
-    //     return ret;
-    // }
 
-    // returns an array, one element per segment, containing # of people attending.
-
-    // getEventTypesClient() {
-    //     return DB3ClientCore.useTableRenderContext({
-    //         tableSpec: new DB3ClientCore.xTableClientSpec({
-    //             table: db3.xEventType,
-    //             columns: [
-    //                 new DB3ClientFields.PKColumnClient({ columnName: "id" }),
-    //             ],
-    //         }),
-    //         requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-    //         clientIntention: { intention: 'user', mode: 'primary' },
-    //     });
-    // }
-
-    // getEventStatusesClient() {
-    //     return DB3ClientCore.useTableRenderContext({
-    //         tableSpec: new DB3ClientCore.xTableClientSpec({
-    //             table: db3.xEventStatus,
-    //             columns: [
-    //                 new DB3ClientFields.PKColumnClient({ columnName: "id" }),
-    //             ],
-    //         }),
-    //         requestedCaps: DB3ClientCore.xTableClientCaps.Query,
-    //         clientIntention: { intention: 'user', mode: 'primary' },
-    //     });
-    // }
-
-    // usePopularEventTagsQuery = () => {
-    //     return useQuery(getPopularEventTags, {}, gQueryOptions.default);
-    // };
-
-    // getInstrumentForUserResponse = (response: db3.EventUserResponsePayload, user: db3.UserWithInstrumentsPayload): (db3.InstrumentPayload | null) => {
-    //     return db3.getInstrumentForEventUserResponse(response, user);
-    // }
 
     getSongListStats = (songList: db3.EventSongListPayload): SongListStats => {
         console.assert(songList.songs);
@@ -401,10 +309,6 @@ class SongsAPI {
         }
         return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
     }
-
-    usePopularSongTagsQuery = () => {
-        return useQuery(getPopularSongTags, {}, gQueryOptions.default);
-    };
 
     updateSongBasicFields = CreateAPIMutationFunction(updateSongBasicFields);
 };
