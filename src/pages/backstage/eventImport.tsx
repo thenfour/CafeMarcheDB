@@ -26,6 +26,7 @@ import getImportEventData from "src/core/db3/queries/getImportEventData";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { useDebounce } from "shared/useDebounce";
+import { DateTimeRangeControl } from "src/core/components/DateTimeRangeControl";
 
 interface InsertResult {
     event: {
@@ -173,9 +174,33 @@ const NewEventForm = (props: NewEventDialogProps) => {
         }} />
 
         {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI, true)}
-        <EventDateField dateRange={range} />
 
-        {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)}
+
+        {/* {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)} */}
+
+        <NameValuePair
+            name="Date"
+            value={
+                <div>
+                    <EventDateField dateRange={range} />
+                    <DateTimeRangeControl
+                        items={[]}
+                        onChange={(newValue) => {
+                            const spec = newValue.getSpec();
+                            setSegmentValue({
+                                ...segmentValue,
+                                startsAt: spec.startsAtDateTime,
+                                durationMillis: BigInt(spec.durationMillis),
+                                isAllDay: spec.isAllDay,
+                            });
+                        }}
+                        value={db3.getEventSegmentDateTimeRange(segmentValue)}
+                    />
+                </div>
+            }
+        />
+
+
         {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI, false)}
 
         <NameValuePair

@@ -966,7 +966,7 @@ export const xEventSongListSong = new db3.xTable({
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListSongPayload) => ({
-        name: row.song.name,
+        name: row.song?.name || "?",
         description: row.subtitle || "",
         ownerUserId: null,
     }),

@@ -40,7 +40,9 @@
 .ImportEventsPageContent .EventDateField {
     display: flex;
     font-weight: bold;
-    font-size: 18px;
+    font-size: 24px;
+    align-items: center;
+    color: var(--cm-blue);
 }
 
 
@@ -57,4 +59,9 @@
 .ImportEventsPageContent ul.attendanceList li {
     display: flex;
     margin: 0;
+}
+
+.ImportEventsPageContent input.CMTextInputBase.titleText {
+    font-size: 30px;
+    color: var(--cm-blue);
 }
