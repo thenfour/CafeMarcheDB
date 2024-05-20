@@ -307,9 +307,9 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
             rowClassName: "bpm", cells: [<th key={0}>Tempo</th>,
             <td key={1} colSpan={1} className='bpmControlsTD' >
                 <div className='bpmControlsContainer'>
-                    {songData.song.startBPM !== null && <MetronomeButton bpm={songData.song.startBPM} isTapping={false} />}
+                    {songData.song.startBPM !== null && <MetronomeButton bpm={songData.song.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} />}
                     <div className='bpmValue'>{songData.formattedBPM}</div>
-                    {songData.song.endBPM !== null && (songData.song.startBPM != songData.song.endBPM) && <MetronomeButton bpm={songData.song.endBPM} isTapping={false} />}
+                    {songData.song.endBPM !== null && (songData.song.startBPM != songData.song.endBPM) && <MetronomeButton bpm={songData.song.endBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} />}
                 </div>
             </td>,
             <td key={2} colSpan={2}></td>, null]
