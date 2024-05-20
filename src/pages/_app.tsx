@@ -15,6 +15,8 @@ import '../../public/global2.css';
 import '../../public/markdown.css';
 import '../../public/frontpage.css';
 import '../../public/style/filterControls.css';
+import '../../public/style/metronome.css';
+import '../../public/style/ImportEvents.css';
 import React from "react";
 import { useTheme } from "@mui/material/styles";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";

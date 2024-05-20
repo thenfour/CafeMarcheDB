@@ -95,7 +95,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
         } else {
             let ms = 1000 * (t - currentTime);
             if (ms > 0) {
-                ms += 10;
+                ms += 10; // to align better with the sound in CHrome, a small delay. hacky and doubtfully accurate but it feels better than 0 delay.
                 nextFlashTimerIdRef.current = window.setTimeout(flash, ms);
             }
         }
@@ -269,7 +269,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
 };
 
 
-export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping }: { bpm: number, mountPlaying?: boolean, tapTrigger: number, isTapping: boolean }) => {
+export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSyncClick }: { bpm: number, mountPlaying?: boolean, tapTrigger: number, isTapping: boolean, onSyncClick: () => void }) => {
     const [playing, setPlaying] = React.useState<boolean>(mountPlaying || false);
     const dashboardContext = React.useContext(DashboardContext);
     const [beatSyncTrigger, setBeatSyncTrigger] = React.useState<number>(0);
@@ -304,6 +304,7 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping }: { 
         </div>
         {playing && <div className="metronomeSyncButton freeButton" onClick={(e) => {
             setBeatSyncTrigger(beatSyncTrigger + 1);
+            onSyncClick();
             e.stopPropagation();
             e.preventDefault();
         }}>
@@ -406,10 +407,11 @@ function calculateBPM(tapIntervals): number | null {
 export interface TapTempoProps {
     onStopTapping: () => void;
     onTap: (newBpm: number | null, tapCount: number) => void;
+    killTapTrigger: number;
 }
 
 
-export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping }) => {
+export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping, killTapTrigger }) => {
     const [lastTapTime, setLastTapTime] = React.useState<number | null>(null);
     const tapTimes = React.useRef<number[]>([]);
     const [classToggle, setClassToggle] = React.useState<boolean>(false);
@@ -418,6 +420,15 @@ export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping }) => {
         'tapTempoButton freeButton tick',
         'tapTempoButton freeButton tock',
     ];
+
+    const stopTapping = () => {
+        if (timerIDRef.current) {
+            clearTimeout(timerIDRef.current);
+        }
+        tapTimes.current = [];
+        setLastTapTime(null);
+        onStopTapping();
+    };
 
     const handleTap = () => {
         // if (tapTimes.current.length === 0) {
@@ -443,12 +454,12 @@ export const TapTempo: React.FC<TapTempoProps> = ({ onTap, onStopTapping }) => {
         const calculatedBpm = calculateBPM(tapTimes.current);
         onTap(calculatedBpm, tapTimes.current.length);
 
-        timerIDRef.current = window.setTimeout(() => {
-            tapTimes.current = [];
-            setLastTapTime(null);
-            onStopTapping();
-        }, 1400);
+        timerIDRef.current = window.setTimeout(stopTapping, 1400);
     };
+
+    React.useEffect(() => {
+        stopTapping();
+    }, [killTapTrigger]);
 
     return (
         <div onClick={handleTap} className={classes[classToggle ? 0 : 1]}>
@@ -465,14 +476,19 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
     const [bpm, setBPM] = useURLState<number>("bpm", 120);
     const [textBpm, setTextBpm] = React.useState<string>(bpm.toString());
     const [tapTrigger, setTapTrigger] = React.useState<number>(0);
+    const [killTapTrigger, setKillTapTrigger] = React.useState<number>(0);// trigger to exit tap mode
     const [isTapping, setIsTapping] = React.useState<boolean>(false);
+
+    const handleSync = () => {
+        setKillTapTrigger(killTapTrigger + 1);
+    };
 
     return <ReactiveInputDialog onCancel={props.onClose} className="GlobalMetronomeDialog">
         <DialogTitle>
             Metronome
         </DialogTitle>
         <DialogContent dividers>
-            <MetronomeButton bpm={bpm} mountPlaying={true} isTapping={isTapping} tapTrigger={tapTrigger} />
+            <MetronomeButton bpm={bpm} mountPlaying={true} isTapping={isTapping} tapTrigger={tapTrigger} onSyncClick={handleSync} />
             <div className="bpmAndTapRow">
                 <CMTextInputBase
                     onChange={(e, v) => {
@@ -486,6 +502,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     value={textBpm}
                 />
                 <TapTempo
+                    killTapTrigger={killTapTrigger}
                     onStopTapping={() => {
                         setIsTapping(false);
                     }}

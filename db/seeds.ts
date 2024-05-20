@@ -597,7 +597,8 @@ const main = async () => {
       //"sortOrder": 1300,
       //"isVisibility": true,
       "color": "orange",
-      "iconName": "Lock"
+      "iconName": "Lock",
+      "significance": "Visibility_Editors",
     },
     {
       "name": "visibility_members",
@@ -605,7 +606,8 @@ const main = async () => {
       // "sortOrder": 1200,
       // "isVisibility": true,
       "color": "gold",
-      "iconName": "Security"
+      "iconName": "Security",
+      "significance": "Visibility_Members",
     },
     {
       "name": "visibility_logged_in_users",
@@ -613,7 +615,8 @@ const main = async () => {
       // "sortOrder": 1100,
       // "isVisibility": true,
       "color": "blue",
-      "iconName": "Person"
+      "iconName": "Person",
+      "significance": "Visibility_LoggedInUsers",
     },
     {
       "name": "visibility_public",
@@ -621,7 +624,8 @@ const main = async () => {
       // "sortOrder": 1000,
       // "isVisibility": true,
       "color": "green",
-      "iconName": "Public"
+      "iconName": "Public",
+      "significance": "Visibility_Public",
     },
   ]);
 
@@ -840,6 +844,22 @@ const main = async () => {
   );
 
 
+
+  const getDistinctRandomValues = (userCount: number, count: number = 3): number[] => {
+    if (count > userCount + 1) {
+      throw new Error('The number of distinct random values requested exceeds the range.');
+    }
+
+    const uniqueValues = new Set<number>();
+
+    while (uniqueValues.size < count) {
+      const randomValue = faker.datatype.number(userCount);
+      uniqueValues.add(randomValue);
+    }
+
+    return Array.from(uniqueValues);
+  };
+
   await SeedTable("userTag", gState.prisma.userTag,
     [
       {
@@ -889,23 +909,56 @@ const main = async () => {
   // Creating random users
   console.log(`creating ${gState.config.userCount} users...`);
   const userCount = gState.config.userCount;
+  const indices = getDistinctRandomValues(userCount, 3);
+  const specialUsers = [
+    {
+      index: indices[0],
+      name: "Carl",
+      email: "carlco@gmail.com",
+    },
+    {
+      index: indices[1],
+      name: "Peter",
+      email: "peter@gmail.com",
+    },
+    {
+      index: indices[2],
+      name: "Guido",
+      email: "guido@gmail.com",
+    },
+  ];
   const carlsIndex = faker.number.int({ max: userCount });
   for (let i = 0; i < userCount; i++) {
-    const isCarl = i === carlsIndex;
-    const user = await gState.prisma.user.create({
-      data: {
-        name: (isCarl) ? "carl" : faker.person.fullName(),
-        email: (isCarl) ? "carlco@gmail.com" : faker.internet.email(),
-        phone: faker.phone.number(),
-        accessToken: faker.git.commitSha(),
-        isSysAdmin: (isCarl),
-        roleId: (isCarl) ? adminRole.id : faker.helpers.arrayElement(gState.gAllRoles).id,
-      },
-    });
+    //const isCarl = i === carlsIndex;
+    const specialUser = specialUsers.find(u => u.index === i);
+    let user: Prisma.UserGetPayload<{}>;
+    if (specialUser) {
+      user = await gState.prisma.user.create({
+        data: {
+          name: specialUser.name,
+          email: specialUser.email,
+          phone: faker.phone.number(),
+          accessToken: faker.git.commitSha(),
+          isSysAdmin: true,
+          roleId: adminRole.id,
+        },
+      });
+    } else {
+      user = await gState.prisma.user.create({
+        data: {
+          name: faker.person.fullName(),
+          email: faker.internet.email(),
+          phone: faker.phone.number(),
+          accessToken: faker.git.commitSha(),
+          isSysAdmin: false,
+          roleId: faker.helpers.arrayElement(gState.gAllRoles).id,
+        },
+      });
+    }
 
     // assign this user instruments
     const instrumentCount = probabool(0.08) ? 0 : faker.number.int({ min: 1, max: 3 });
-    const instruments = faker.helpers.arrayElements(gState.gAllInstruments, isCarl ? 3 : instrumentCount);
+    const instruments = faker.helpers.arrayElements(gState.gAllInstruments, !!specialUser ? 3 : instrumentCount);
     const primaryIndex = faker.number.int({ min: 0, max: Math.max(0, instruments.length - 1) });
     await instruments.forEach(async (instrument, index) => {
       await gState.prisma.userInstrument.create({

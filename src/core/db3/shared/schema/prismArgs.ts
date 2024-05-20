@@ -120,6 +120,7 @@ export const FileTagSignificance = {
 
 export const UserTagSignificance = {
     General: "General",
+    DefaultInvitation: "DefaultInvitation",
 } as const satisfies Record<string, string>;
 
 export const PermissionSignificance = {

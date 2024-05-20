@@ -24,7 +24,6 @@ interface NewEventDialogProps {
 
 const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    const router = useRouter();
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };

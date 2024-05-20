@@ -363,6 +363,13 @@ const gMenuItemGroup2: MenuItemGroup[] = [
             { type: "link", path: "/backstage/rolePermissions", linkCaption: "Permission matrix", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
         ],
     },
+    {
+        name: "Admin-Temporary",
+        className: "admin temporary",
+        items: [
+            { type: "link", path: "/backstage/eventImport", linkCaption: "Import events", renderIcon: gIconMap.CalendarMonth, permission: Permission.admin_events },
+        ],
+    },
 
     {
         name: "Admin Instruments",

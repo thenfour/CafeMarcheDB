@@ -1,0 +1,19 @@
+ul.mechanicalSelector {
+    display: flex;
+    padding: 0;
+    width: 280px;
+    overflow: auto;
+    background: linear-gradient(to right, #eeee88, #ffffcc, #eeee88);
+    box-shadow: inset 0 0 20px 0 black;
+    font-family: monospace;
+    font-size: 22px;
+    font-weight: bold;
+    user-select: none;
+}
+
+ul.mechanicalSelector>li {
+    display: flex;
+    margin: 0;
+    padding: 12px;
+    box-shadow: inset 0 0 20px 0 #0003;
+}

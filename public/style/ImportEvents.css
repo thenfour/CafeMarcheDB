@@ -1,0 +1,60 @@
+.ImportEventsPageContent .twocolumns {
+    display: flex;
+    min-height: 400px;
+    width: 100%;
+    align-items: stretch;
+}
+
+.ImportEventsPageContent .twocolumns>* {
+    padding: 8px;
+
+    width: 50%;
+}
+
+.ImportEventsPageContent .twocolumns .leftColumn {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.ImportEventsPageContent textarea {
+    /* height: 100%; */
+    flex-grow: 1;
+}
+
+.ImportEventsPageContent textarea.configTxt {
+    max-height: 100px;
+}
+
+.ImportEventsPageContent ul.history {
+    max-height: 100px;
+    overflow: auto;
+}
+
+.ImportEventsPageContent .querier {
+    height: 10px;
+    width: 100%;
+    background-color: #4c4;
+}
+
+.ImportEventsPageContent .EventDateField {
+    display: flex;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+
+.ImportEventsPageContent .querier.suspended {
+    height: 10px;
+    width: 100%;
+    background-color: #cc4;
+}
+
+.ImportEventsPageContent ul.attendanceList {
+    display: flex;
+}
+
+.ImportEventsPageContent ul.attendanceList li {
+    display: flex;
+    margin: 0;
+}

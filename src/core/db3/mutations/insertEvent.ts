@@ -47,7 +47,47 @@ export default resolver.pipe(
         };
 
         // create the initial segment.
-        const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx, clientIntention);
+        const segment = await mutationCore.insertImpl(db3.xEventSegment, segmentFields, ctx, clientIntention) as db3.EventSegmentPayloadMinimum;
+
+        // create song lists
+        if (args.songList) {
+            // create the song list
+            const songListFields: Partial<db3.EventSongListPayload> = {
+                userId: currentUser.id,
+                eventId: newEvent.id,
+                description: "",
+                event: newEvent,
+                name: "Setlist",
+                sortOrder: 0,
+                //songs: [],
+                //id: 0,
+            };
+            const songList = await mutationCore.insertImpl(db3.xEventSongList, songListFields, ctx, clientIntention) as db3.EventSongListPayload;
+            // add songs.
+            args.songList.forEach(async (s, i) => {
+                const songFields: Partial<db3.EventSongListSongPayload> = {
+                    eventSongListId: songList.id,
+                    //id: 0,
+                    //song: null,
+                    songId: s.songId,
+                    sortOrder: i,
+                    subtitle: s.comment || "",
+                };
+                await mutationCore.insertImpl(db3.xEventSongListSong, songFields, ctx, clientIntention);
+            });
+        }
+
+        // create user responses.
+        if (args.responses) {
+            args.responses.forEach(async (r) => {
+                const responseFields: Partial<db3.EventSegmentUserResponsePayload> = {
+                    eventSegmentId: segment.id,
+                    attendanceId: r.attendanceId,
+                    userId: r.userId,
+                };
+                await mutationCore.insertImpl(db3.xEventSegmentUserResponse, responseFields, ctx, clientIntention);
+            });
+        }
 
         return {
             event: newEvent,

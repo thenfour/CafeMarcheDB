@@ -142,6 +142,18 @@ export interface TinsertEventCommentArgs {
     // created at, updated at = automatic
 };
 
+export interface TinsertEventSong {
+    songId: number;
+    songName?: string; // not always used; context-dependent.
+    comment: string;
+};
+
+export interface TinsertEventResponse {
+    userId: number;
+    userName?: string; // not always used; context-dependent.
+    attendanceId: number;
+};
+
 export interface TinsertEventArgs {
     event: {
         name: string,
@@ -159,7 +171,9 @@ export interface TinsertEventArgs {
         isAllDay: boolean,
         name: string,
         description: string,
-    }
+    },
+    songList?: TinsertEventSong[],
+    responses?: TinsertEventResponse[],
 }
 
 export interface TupdateEventCommentArgs {
@@ -594,7 +608,28 @@ export interface GetGlobalStatsRet {
     popularSongsQuery: string;
 };
 
+export interface TGetImportEventDataArgs {
+    text: string;
+};
 
-
+export interface TGetImportEventDataRet {
+    log: string[],
+    event: {
+        name: string,
+        typeId: number | null,
+        statusId: number | null,
+        tags: number[],
+        expectedAttendanceUserTagId: number | null,
+        visiblePermissionId: number | null;
+    },
+    segment: {
+        startsAt: Date | null,
+        durationMillis: number,
+        isAllDay: boolean,
+        name: string,
+    },
+    songList: TinsertEventSong[],
+    responses: TinsertEventResponse[],
+};
 
 
