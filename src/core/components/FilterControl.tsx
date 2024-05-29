@@ -2,10 +2,13 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Button } from "@mui/material";
 import React from "react";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
+import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec, gGeneralPaletteList, gSwatchColors } from "shared/color";
 import { toggleValueInArray } from "shared/utils";
 import { CMChip, CMChipBorderOption, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMCoreComponents";
 import { SearchInput } from "src/core/components/CMTextField";
+import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOption } from '../db3/shared/apiTypes';
+import { gCharMap, gIconMap } from '../db3/components/IconMap';
+import { OpposingSortDirection, SortDirection } from 'shared/rootroot';
 
 type FilterControlsProps = {
     hasExtraFilters?: boolean; // default falsy
@@ -60,6 +63,9 @@ export const FilterControls = (props: FilterControlsProps) => {
     </div>
 };
 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface ChipFilterGroupItem<Tid> {
     id: Tid;
     label: React.ReactNode;
@@ -114,4 +120,335 @@ export const ChipFilterGroup = <Tid extends number | string,>(props: ChipFilterG
             </CMChip>;
         })}
     </CMChipContainer>;
+};
+
+
+
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// enum FSFilterInclusion {
+//     Off,
+//     Include,
+//     Exclude,
+// };
+
+// const gFSFilterInclusionMap: { [key in DiscreteCriterionFilterType]: FSFilterInclusion } = {
+//     "alwaysMatch": FSFilterInclusion.Off,
+
+//     "hasSomeOf": FSFilterInclusion.Include,
+//     "hasAllOf": FSFilterInclusion.Include,
+//     "hasNone": FSFilterInclusion.Include,
+
+//     "hasAny": FSFilterInclusion.Exclude,
+//     "doesntHaveAnyOf": FSFilterInclusion.Exclude,
+//     "doesntHaveAllOf": FSFilterInclusion.Exclude,
+// } as const;
+
+interface ForeignSingleFilterGroupProps {
+    items: SearchResultsFacetOption[];
+    value: DiscreteCriterion;
+    onChange: (v: DiscreteCriterion) => void;
+
+    label: React.ReactNode;
+
+    className?: string;
+    variation?: ColorVariationSpec;
+    size?: CMChipSizeOptions;
+    shape?: CMChipShapeOptions;
+};
+export const ForeignSingleFilterGroup = (props: ForeignSingleFilterGroupProps) => {
+    //const [inclusion, setInclusion] = React.useState<FilterInclusion>(gFilterInclusionMap[props.value.behavior]);
+    //const inclusion = gFSFilterInclusionMap[props.value.behavior];
+
+    const handleClick = (item: SearchResultsFacetOption) => {
+        if (item.id === null) {
+            const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
+                "alwaysMatch": DiscreteCriterionFilterType.hasNone, // this shouldn't be possible anyay to click null when OFF
+                "hasNone": undefined, // clicking null when "has none" is a nop.
+                "hasAny": undefined, // 
+                "hasSomeOf": DiscreteCriterionFilterType.hasNone,
+                "hasAllOf": DiscreteCriterionFilterType.hasNone,
+                "doesntHaveAnyOf": DiscreteCriterionFilterType.hasNone,
+                "doesntHaveAllOf": DiscreteCriterionFilterType.hasNone,
+            } as const;
+            // clicking null
+            props.onChange({
+                ...props.value,
+                behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
+                options: []
+            });
+        } else {
+            // clicking null will change multi-criteria to single (from hasSome to hasAny for example)
+            const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
+                "alwaysMatch": DiscreteCriterionFilterType.hasSomeOf, // this shouldn't be possible anyay to click null when OFF
+                "hasNone": DiscreteCriterionFilterType.hasSomeOf, // clicking null when "has none" is a nop.
+                "hasAny": DiscreteCriterionFilterType.hasSomeOf, // 
+                "hasSomeOf": undefined,
+                "hasAllOf": undefined,
+                "doesntHaveAnyOf": undefined,
+                "doesntHaveAllOf": undefined,
+            } as const;
+
+            props.onChange({
+                ...props.value,
+                behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
+                options: toggleValueInArray(props.value.options, item.id),
+            });
+        }
+    }
+
+    return <div className='filterGroup'>
+        <div className='filterGroupHeader'>
+            <div className='filterGroupLabel'>{props.label}</div>
+            <div className='filterGroupOptions'>
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.alwaysMatch && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.alwaysMatch })}
+                >
+                    No filter
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasAny && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasAny })}
+                >
+                    Has any
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasNone && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasNone })}
+                >
+                    Has none
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasSomeOf && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasSomeOf })}
+                >
+                    Is any of
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.doesntHaveAnyOf && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.doesntHaveAnyOf })}
+                >
+                    Is not any of
+                </div>
+            </div>
+        </div>
+        <CMChipContainer className={props.className}>
+
+            {/* <div className='horizDivider' /> */}
+
+            {props.items.map(item => {
+                const variation = StandardVariationSpec.Strong;
+                const isInOptions = props.value.options.includes(item.id);
+                const nullIsSelected = (props.value.behavior === DiscreteCriterionFilterType.hasNone);
+                const hasAnySelected = (props.value.behavior === DiscreteCriterionFilterType.hasAny);
+                const selected = (isInOptions && !nullIsSelected && !hasAnySelected) || (item.id === null && nullIsSelected);
+                return <CMChip
+                    key={item.id}
+                    color={item.color}
+                    variation={{ ...variation, selected: selected, enabled: item.rowCount > 0 }}
+                    size={props.size || "small"}
+                    shape={props.shape || 'rectangle'}
+                    border={'noBorder'}
+                    tooltip={item.tooltip}
+                    onClick={() => handleClick(item)}
+                >
+                    <div className='filterChipLabelContainer'>
+                        <div className='label'>{item.label || "-"}</div>
+                        <div className='rowCount'>({item.rowCount})</div>
+                    </div>
+                </CMChip>;
+            })}
+        </CMChipContainer>
+    </div>
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface TagsFilterGroupProps {
+    items: SearchResultsFacetOption[];
+    value: DiscreteCriterion;
+    onChange: (v: DiscreteCriterion) => void;
+
+    label: React.ReactNode;
+    className?: string;
+    variation?: ColorVariationSpec;
+    size?: CMChipSizeOptions;
+    shape?: CMChipShapeOptions;
+};
+export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
+    //const inclusion = gTagsFilterInclusionMap[props.value.behavior];
+
+    const handleClick = (item: SearchResultsFacetOption) => {
+        if (item.id === null) {
+            const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
+                "alwaysMatch": DiscreteCriterionFilterType.hasNone, // this shouldn't be possible anyay to click null when OFF
+                "hasNone": undefined, // clicking null when "has none" is a nop.
+                "hasAny": undefined, // 
+                "hasSomeOf": DiscreteCriterionFilterType.hasNone,
+                "hasAllOf": DiscreteCriterionFilterType.hasNone,
+                "doesntHaveAnyOf": DiscreteCriterionFilterType.hasNone,
+                "doesntHaveAllOf": DiscreteCriterionFilterType.hasNone,
+            } as const;
+            // clicking null
+            props.onChange({
+                ...props.value,
+                behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
+                options: []
+            });
+        } else {
+            // clicking null will change multi-criteria to single (from hasSome to hasAny for example)
+            const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
+                "alwaysMatch": DiscreteCriterionFilterType.hasSomeOf, // this shouldn't be possible anyay to click null when OFF
+                "hasNone": DiscreteCriterionFilterType.hasSomeOf, // clicking null when "has none" is a nop.
+                "hasAny": DiscreteCriterionFilterType.hasSomeOf, // 
+                "hasSomeOf": undefined,
+                "hasAllOf": undefined,
+                "doesntHaveAnyOf": undefined,
+                "doesntHaveAllOf": undefined,
+            } as const;
+
+            props.onChange({
+                ...props.value,
+                behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
+                options: toggleValueInArray(props.value.options, item.id),
+            });
+        }
+    }
+
+    return <div className='filterGroup'>
+        <div className='filterGroupHeader'>
+            <div className='filterGroupLabel'>{props.label}</div>
+            <div className='filterGroupOptions'>
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.alwaysMatch && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.alwaysMatch })}
+                >
+                    No filter
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasNone && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasNone })}
+                >
+                    Have none
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasAny && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasAny })}
+                >
+                    Have any
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasSomeOf && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasSomeOf })}
+                >
+                    Have any of
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasAllOf && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasAllOf })}
+                >
+                    Have all of
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.doesntHaveAnyOf && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.doesntHaveAnyOf })}
+                >
+                    Don't have any of
+                </div>
+
+                <div
+                    className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.doesntHaveAllOf && "selected"}`}
+                    onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.doesntHaveAllOf })}
+                >
+                    Don't have all of
+                </div>
+
+                <div className='horizDivider' />
+            </div>
+        </div>
+
+        <CMChipContainer className={props.className} margins='tightMargins'>
+
+            {props.items.map(item => {
+                const variation = StandardVariationSpec.Strong;
+                const isInOptions = props.value.options.includes(item.id);
+                const nullIsSelected = (props.value.behavior === DiscreteCriterionFilterType.hasNone);
+                const hasAnySelected = (props.value.behavior === DiscreteCriterionFilterType.hasAny);
+                const selected = (isInOptions && !nullIsSelected && !hasAnySelected) || (item.id === null && nullIsSelected);
+                return <CMChip
+                    key={item.id}
+                    color={item.color}
+                    variation={{ ...variation, selected: selected, enabled: item.rowCount > 0 }}
+                    size={props.size || "small"}
+                    shape={props.shape || 'rectangle'}
+                    border={'noBorder'}
+                    tooltip={item.tooltip}
+                    onClick={() => handleClick(item)}
+                >
+                    <div className='filterChipLabelContainer'>
+                        <div className='label'>{item.label || "-"}</div>
+                        <div className='rowCount'>({item.rowCount})</div>
+                    </div>
+                </CMChip>;
+            })}
+        </CMChipContainer>
+    </div>;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+export interface SortBySpec {
+    columnName: string;
+    direction: SortDirection;
+};
+
+export interface SortByGroupProps {
+    columnOptions: string[];
+    value: SortBySpec;
+    setValue: (v: SortBySpec) => void;
+};
+
+export const SortByGroup = (props: SortByGroupProps) => {
+
+    return <div className='filterGroup'>
+        <div className='filterGroupHeader'>
+            <div className='filterGroupLabel'>Sort by</div>
+            <div className='filterGroupOptions'>
+                {
+                    props.columnOptions.map(k => {
+                        const selected = props.value.columnName === k;
+                        return <div
+                            key={k}
+                            className={`option freeButton ${selected && "selected"}`}
+                            onClick={() => {
+                                if (selected) {
+                                    props.setValue({ ...props.value, direction: OpposingSortDirection(props.value.direction) });
+                                } else {
+                                    props.setValue({ columnName: k, direction: "asc" });
+                                }
+                            }}
+                        >
+                            <div className="sortFieldName">
+                                {k}
+                            </div>
+                            <div className="sortFieldDirection">
+                                {selected && (props.value.direction === "asc" ? gCharMap.DownArrow() : gCharMap.UpArrow())}
+                            </div>
+                        </div>
+                    })
+                }
+            </div>
+        </div>
+    </div>
 };

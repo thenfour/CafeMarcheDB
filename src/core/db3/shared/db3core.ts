@@ -3,9 +3,10 @@ import { assert } from "blitz";
 import db, { Prisma } from "db";
 import { ColorPaletteEntry } from "shared/color";
 import { Permission, gPublicPermissions } from "shared/permissions";
-import { CalculateChanges, CalculateChangesResult, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
+import { CalculateChanges, CalculateChangesResult, SqlCombineAndExpression, createEmptyCalculateChangesResult, isEmptyArray } from "shared/utils";
 import { PublicDataType } from "types";
-import { CMDBTableFilterModel, TAnyModel } from "./apiTypes";
+import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, GetSearchResultsInput, GetSearchResultsSortModel, SearchCustomDataHookId, SearchResultsFacetQuery, SearchResultsRet, SortQueryElements, TAnyModel } from "./apiTypes";
+import { SortDirection } from "shared/rootroot";
 
 
 // server-side code for db schema expression.
@@ -340,6 +341,13 @@ export interface DB3AuthorizeAndSanitizeResult<T> {
     rowIsAuthorized: boolean, // in theory you could have access to view some fields of a row, but not the row itself or its existence.
 };
 
+export interface SqlGetSortableQueryElementsAPI {
+    sortModel: GetSearchResultsSortModel;
+    primaryTableAlias: string;
+    getColumnAlias: () => string; // for getting a unique alias name for select expressions
+    getTableAlias: () => string; // for getting a unique table alias for joins
+};
+
 export abstract class FieldBase<FieldDataType> {
     fieldTableAssociation: FieldAssociationWithTable;
     member: string;
@@ -360,6 +368,23 @@ export abstract class FieldBase<FieldDataType> {
     abstract getQuickFilterWhereClause: (query: string, clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
     abstract getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
     abstract getOverallWhereClause: (clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
+
+    // return null to not perform filtering on this criterion.
+    abstract SqlGetDiscreteCriterionElements: (crit: DiscreteCriterion, tableAlias: string) => CriterionQueryElements | null;
+
+    // provide the sql expression for filtering a column on this 1 token. e.g. if the token is "conce", return "(Name like "%conce%")"
+    // be sure to sql escape the token.
+    // the reason i pass the whole quickFilterTokens in as well is because for example pk fields only want to be searched when it's
+    // the only token in the query.
+    // return null to not support filtering
+    abstract SqlGetQuickFilterElementsForToken: (token: string, quickFilterTokens: string[]) => string | null;
+
+    // return a SQL query
+    // return null to not calculate any facet info for this criterion
+    abstract SqlGetFacetInfoQuery: (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion) => SearchResultsFacetQuery | null;
+
+    // return a SQL expression for sorting by this value ascending.
+    abstract SqlGetSortableQueryElements: (api: SqlGetSortableQueryElementsAPI) => SortQueryElements | null;
 
     // the edit grid needs to be able to call this in order to validate the whole form and optionally block saving
     abstract ValidateAndParse: (args: ValidateAndParseArgs<FieldDataType>) => ValidateAndParseResult<FieldDataType | null | undefined>;// => {
@@ -439,7 +464,7 @@ export interface xTableClientUsageContext {
 
 export interface SortModel {
     field: string,
-    order: "asc" | "desc",
+    order: SortDirection,
 };
 
 export interface RowInfo {
@@ -480,6 +505,19 @@ export interface TableDesc {
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 
     tableAuthMap: DB3AuthTablePermissionMap;
+
+    // this allows tables to supplement search results with extra "customdata".
+    SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
+    SqlGetSpecialColumns?: SqlSpecialColumns;
+};
+
+export interface SqlSpecialColumns {
+    sortOrder?: string | undefined,
+    label?: string | undefined,
+
+    color?: string | undefined,
+    iconName?: string | undefined,
+    tooltip?: string | undefined,
 };
 
 // we don't care about createinput, because updateinput is the same thing with optional fields so it's a bit too redundant.
@@ -504,6 +542,9 @@ export class xTable implements TableDesc {
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
+    SqlGetSpecialColumns: SqlSpecialColumns;
+
+    SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
@@ -511,9 +552,26 @@ export class xTable implements TableDesc {
         this.tableID = args.tableUniqueName || args.tableName;
         gAllTables[this.tableID.toLowerCase()] = this;
 
+        this.SqlGetSpecialColumns = this.SqlGetSpecialColumns || {};
+
         args.columns.forEach(field => {
             field.connectToTable(this);
         });
+    }
+
+    // AND this into your query to apply visibility & soft delete logic.
+    SqlGetVisFilterExpression(currentUser: UserWithRolesPayload, tableAlias: string) {
+        const AND: string[] = [];
+        if (this.softDeleteSpec?.isDeletedColumnName) {
+            AND.push(`(${tableAlias}.isDeleted = false)`);
+        }
+        if (this.visibilitySpec?.ownerUserIDColumnName) {
+            AND.push(`
+            (${tableAlias}.visiblePermissionId IN (${currentUser.role?.permissions.map(p => p.permissionId)}))
+            OR (${tableAlias}.visiblePermissionId is NULL AND ${tableAlias}.createdByUserId = ${currentUser.id})
+            `);
+        }
+        return SqlCombineAndExpression(AND);
     }
 
     // authorization is at the field level, and serves to:
@@ -768,7 +826,7 @@ export class xTable implements TableDesc {
     };
 
     CalculateWhereClause = async ({ filterModel, clientIntention, skipVisibilityCheck }: CalculateWhereClauseArgs) => {
-        const and: any[] = [];
+        const and: Prisma.EventWhereInput[] = [];
         skipVisibilityCheck = !!skipVisibilityCheck; // default to false.
 
         // QUICK FILTER
@@ -800,6 +858,15 @@ export class xTable implements TableDesc {
             if (filterItems) {
                 and.push(...filterItems);
             }
+        }
+
+        if (filterModel && filterModel.pks) {
+            const expr: Prisma.EventWhereInput = {
+                [this.pkMember]: {
+                    in: filterModel.pks
+                }
+            };
+            and.push(expr);
         }
 
         const overallWhere = this.GetOverallWhereClauseExpression(clientIntention);

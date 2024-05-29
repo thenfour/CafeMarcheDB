@@ -17,12 +17,11 @@
 // - CalculatedEventDateRangeField
 
 
-import { assert } from "blitz";
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
-import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, isValidURL } from "shared/utils";
-import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
-import { CMDBTableFilterModel, TAnyModel } from "./apiTypes";
 import { slugify } from "shared/rootroot";
+import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, MysqlEscape, assertIsNumberArray, isValidURL } from "shared/utils";
+import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
+import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 
 export type DB3AuthSpec = {
     authMap: DB3AuthContextPermissionMap;
@@ -80,6 +79,12 @@ export class GhostField extends FieldBase<number> {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+
 }
 
 
@@ -136,6 +141,28 @@ export class PKField extends FieldBase<number> {
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel) => {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
+    }
+
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
+        return {
+            join: [],
+            select: [
+                {
+                    alias: api.getColumnAlias(),
+                    expression: `${api.primaryTableAlias}.${this.member}`,
+                    direction: api.sortModel.direction,
+                }
+            ],
+        };
+    };
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
+        // the only time we support searching by pk is when it's the only token in the qf, and then search for an exact match.
+        if (quickFilterTokens.length !== 1) return null;
+        if (!/^\d+$/.test(token)) return null; // must be a pure integer.
+        return `(${this.member} = ${token})`;
     }
 }
 
@@ -297,6 +324,22 @@ export class GenericStringField extends FieldBase<string> {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
+        return {
+            join: [],
+            select: [{
+                alias: api.getColumnAlias(),
+                expression: `${api.primaryTableAlias}.${this.member}`,
+                direction: api.sortModel.direction,
+            }],
+        };
+    };
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
+        return `(${this.member} like '%${MysqlEscape(token)}%')`;
+    }
 };
 
 
@@ -387,6 +430,22 @@ export class GenericIntegerField extends FieldBase<number> {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
+        return {
+            join: [],
+            select: [
+                {
+                    alias: api.getColumnAlias(),
+                    expression: `${api.primaryTableAlias}.${this.member}`,
+                    direction: api.sortModel.direction,
+                }
+            ],
+        };
+    };
 };
 
 
@@ -480,6 +539,22 @@ export class DateTimeField extends FieldBase<Date> {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
+        return {
+            join: [],
+            select: [
+                {
+                    alias: api.getColumnAlias(),
+                    expression: `${api.primaryTableAlias}.${this.member}`,
+                    direction: api.sortModel.direction,
+                }
+            ],
+        };
+    };
 };
 
 
@@ -563,6 +638,11 @@ export class ColorField extends FieldBase<ColorPaletteEntry> {
         return SuccessfulValidateAndParseResult(objValue);
     };
 
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -628,6 +708,12 @@ export class BoolField extends FieldBase<boolean> {
         }
         return SuccessfulValidateAndParseResult(objValue);
     };
+
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
 };
 
 
@@ -711,6 +797,10 @@ export class ConstEnumStringField extends FieldBase<string> {
         return SuccessfulValidateAndParseResult(objValue);
     };
 
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -871,6 +961,127 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         });
     };
 
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => {
+        assertIsNumberArray(crit.options);
+        const map: { [key in DiscreteCriterionFilterType]: () => CriterionQueryElements | null } = {
+            alwaysMatch: () => {
+                return {
+                    whereAnd: `(true)`,
+                }
+            },
+            hasAny: () => { // no options considered
+                return {
+                    whereAnd: `(${this.fkMember} is not null)`,
+                };
+            },
+            hasNone: () => { // no options considered
+                return {
+                    whereAnd: `(${this.fkMember} is null)`,
+                };
+            },
+            hasSomeOf: () => {
+                // this is a bit meaningless but let's allow it. if you are demanding "some of" but don't specify anything, you necessarily get no results.
+                // it gives continuity when selecting/deselecting items in the gui or switching back and forth between "include" vs. "exclude"
+                if (crit.options.length === 0) return {
+                    whereAnd: `(false)`,//whereAnd: `(${this.fkMember} is null)`,
+                };
+                if (crit.options.length === 1) return {
+                    whereAnd: `(${this.fkMember} = ${crit.options[0]})`,
+                };
+                return {
+                    whereAnd: `(${this.fkMember} in (${crit.options.join(",")}))`,
+                };
+            },
+            hasAllOf: () => {
+                // you can't have multiple of this type of member; it would be impossible 
+                throw new Error(`query type 'hasAllOf' is impossible for foreign single fields. make sure your filter spec doesn't invoke it.`);
+            },
+            doesntHaveAnyOf: () => {
+                // similar to hasSomeOf with 0 items, treat 0 items as a synonym for null.
+                if (crit.options.length === 0) return {
+                    whereAnd: `(${this.fkMember} is not null)`,
+                };
+                if (crit.options.length === 1) return {
+                    whereAnd: `(${this.fkMember} != ${crit.options[0]})`,
+                };
+                return {
+                    whereAnd: `(${this.fkMember} not in (${crit.options.join(",")}))`,
+                };
+            },
+            doesntHaveAllOf: () => {
+                // this also doesn't make sense for fk fields. exclude it if it has all of (x,y,z) is meaningless.
+                // yes, if there is 1 option here then it can mean something but then use doesntHaveAnyOf.
+                throw new Error(`query type 'doesntHaveAllOf' is impossible for foreign single fields. make sure your filter spec doesn't invoke it; maybe you mean to use 'doesntHaveAnyOf'.`);
+            },
+        };
+        return map[crit.behavior]();
+    };
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => {
+
+        const filteredQuery = filteredItemsQueryExcludingThisCriterion;
+
+        // a query that returns 1 row per option
+        const foreignSchema = this.getForeignTableSchema();
+        const foreignTable = foreignSchema.tableName;
+        const foreignMembers = foreignSchema.SqlGetSpecialColumns;
+
+        // we actually need to exclude this field from search
+        return {
+            sql: `with FIQ as (
+                ${filteredQuery}
+        )
+        -- null option
+        SELECT
+            null id,
+            null label,
+            null color,
+            null iconName,
+            null tooltip,
+            count(distinct(FIQ.id)) AS rowCount,
+            -1 sortOrder
+        FROM
+            FIQ -- filtered events
+            inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the statusId field
+        where
+            P.${this.fkMember} is null
+
+        union all
+
+        SELECT
+            FT.${foreignSchema.pkMember} id,
+            ${foreignMembers.label ? `FT.${foreignMembers.label}` : "null"} label,
+            ${foreignMembers.color ? `FT.${foreignMembers.color}` : "null"} color,
+            ${foreignMembers.iconName ? `FT.${foreignMembers.iconName}` : "null"} iconName,
+            ${foreignMembers.tooltip ? `FT.${foreignMembers.tooltip}` : "null"} tooltip,
+            count(distinct(FIQ.id)) AS rowCount,
+            FT.${foreignMembers.sortOrder || foreignSchema.pkMember} sortOrder
+        FROM
+            FIQ -- filtered events
+            inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the statusId field
+            right join ${foreignTable} as FT on FT.${foreignSchema.pkMember} = P.${this.fkMember}            -- like eventStatus
+        where
+            ${foreignSchema.SqlGetVisFilterExpression(currentUser, "FT")} -- account for delete, visibility
+        GROUP BY 
+            FT.${foreignSchema.pkMember}
+        order by
+            sortOrder asc
+            `,
+            transformResult: (row: { id: number, label: string | null, color: string | null, iconName: string | null, tooltip: string | null, rowCount: bigint }) => {
+                const rowCount = new Number(row.rowCount).valueOf();
+                return {
+                    id: row.id,
+                    rowCount,
+                    label: row.label || row.id?.toString() || null,
+                    color: row.color,
+                    iconName: row.iconName,
+                    tooltip: row.tooltip,
+                };
+            },
+        };
+    };
 };
 
 
@@ -1033,6 +1244,136 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         if (value === undefined) return UndefinedValidateAndParseResult();
         return SuccessfulValidateAndParseResult(objValue);
     };
+
+
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion, tableAlias: string): CriterionQueryElements | null => {
+        assertIsNumberArray(crit.options);
+        // select 1 from eventTagAssociations mt where mt.eventId = 
+        const associationSchema = this.getAssociationTableShema();
+        const associationTable = associationSchema.tableName;
+        const assLocalId = this.associationLocalIDMember;
+        const assTagId = this.associationForeignIDMember;
+        const hasAny: CriterionQueryElements = {
+            whereAnd: `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id)`,
+        };
+        const hasNone: CriterionQueryElements = {
+            whereAnd: `NOT EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id)`,
+        };
+        const map: { [key in DiscreteCriterionFilterType]: () => CriterionQueryElements | null } = {
+            alwaysMatch: () => {
+                return {
+                    whereAnd: `(true)`,
+                }
+            },
+            hasAny: () => {
+                return hasAny;
+            },
+            hasNone: () => {
+                return hasNone;
+            },
+            hasSomeOf: () => {
+                // this is a bit meaningless but let's allow it. if you are demanding "some of" but don't specify anything,
+                // treat as if "is null". this has simple continuity for gui.
+                if (crit.options.length === 0) return hasNone;
+                return {
+                    whereAnd: `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} IN (${crit.options.join(",")}))`,
+                };
+            },
+            hasAllOf: () => {
+                if (crit.options.length === 0) return hasNone;
+                const subQueries = crit.options.map(option =>
+                    `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} = ${option})`
+                );
+                return {
+                    whereAnd: `(${subQueries.join(" AND ")})`,
+                };
+            },
+            doesntHaveAnyOf: () => {
+                if (crit.options.length === 0) return hasAny;
+                return {
+                    whereAnd: `NOT EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} IN (${crit.options.join(",")}))`,
+                };
+            },
+            doesntHaveAllOf: () => {
+                if (crit.options.length === 0) return hasAny;
+                const subQueries = crit.options.map(option =>
+                    `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} = ${option})`
+                );
+                return {
+                    whereAnd: `NOT (${subQueries.join(" AND ")})`,
+                };
+            },
+        };
+        return map[crit.behavior]();
+    }
+
+    SqlGetFacetInfoQuery = (
+        currentUser: UserWithRolesPayload,
+        filteredItemsQuery: string,
+        filteredItemsQueryExcludingThisCriterion: string,
+        crit: DiscreteCriterion
+    ): SearchResultsFacetQuery | null => {
+        //return null;
+        const foreignSchema = this.getForeignTableShema();
+        const foreignTable = foreignSchema.tableName;
+        const foreignMembers = foreignSchema.SqlGetSpecialColumns;
+        const filteredQuery = filteredItemsQueryExcludingThisCriterion;
+        return {
+            sql: `
+            with FIQ as (${filteredQuery})
+
+            -- null option
+            SELECT
+                null id,
+                null label,
+                null color,
+                null iconName,
+                null tooltip,
+                count(distinct(FIQ.id)) AS rowCount,
+                -1 sortOrder
+            FROM
+                FIQ -- filtered events
+                left join ${this.getAssociationTableShema().tableName} ASS on ASS.${this.associationLocalIDMember} = FIQ.id
+            where
+                ASS.${this.associationForeignIDMember} is null
+    
+            union all
+    
+            select
+                FT.${foreignSchema.pkMember} AS id,
+                ${foreignMembers.label ? `FT.${foreignMembers.label}` : "null"} AS label,
+                ${foreignMembers.color ? `FT.${foreignMembers.color}` : "null"} AS color,
+                ${foreignMembers.iconName ? `FT.${foreignMembers.iconName}` : "null"} AS iconName,
+                ${foreignMembers.tooltip ? `FT.${foreignMembers.tooltip}` : "null"} AS tooltip,
+                count(distinct(FIQ.id)) AS rowCount,
+                FT.${foreignMembers.sortOrder || foreignSchema.pkMember} AS sortOrder
+            from
+                FIQ
+                inner join ${this.getAssociationTableShema().tableName} ASS on ASS.${this.associationLocalIDMember} = FIQ.id
+                right join ${foreignTable} FT on FT.${foreignSchema.pkMember} = ASS.${this.associationForeignIDMember}
+            group by
+                FT.${foreignSchema.pkMember}
+
+            order by
+                sortOrder asc
+                `,
+            transformResult: (row: { id: number, label: string | null, color: string | null, iconName: string | null, tooltip: string | null, rowCount: bigint }) => {
+                const rowCount = new Number(row.rowCount).valueOf();
+                return {
+                    id: row.id,
+                    rowCount,
+                    label: row.label || row.id?.toString() || null,
+                    color: row.color,
+                    iconName: row.iconName,
+                    tooltip: row.tooltip,
+                };
+            },
+        }
+    }
+
 };
 
 
@@ -1129,6 +1470,65 @@ export class EventStartsAtField extends FieldBase<Date> {
         console.assert(dbModel[this.member] instanceof Date);
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => {
+        return {
+            join: [],
+            select: [
+                {
+                    alias: api.getColumnAlias(),
+                    expression: `${api.primaryTableAlias}.${this.member} is null`,
+                    direction: api.sortModel.direction,
+                },
+                {
+                    alias: api.getColumnAlias(),
+                    expression: `${api.primaryTableAlias}.${this.member}`,
+                    direction: api.sortModel.direction,
+                }
+            ],
+        };
+    };
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
+
+        // types of date formats to match:
+        // 2023 (find events in 2023)
+        // 2023-1 (find events in Jan 2023)
+        // 2023-01
+        // 202301
+        // 202301-05 (find events on 5 Jan, 2023)
+        // 2023-1-5 (find events on 5 Jan, 2023)
+        // 20230105 (find events on 5 Jan, 2023)
+
+        // year part is 2nnn (match[1])
+        // optional hyphen
+        // optional month part is n or nn (match[2])
+        // optional hyphen
+        // optional day part is n or nn (match[3])
+        const regex = /\b(2\d{3})-?(\d{1,2})?-?(\d{1,2})?\b/;
+
+        // Execute the regex on the input string
+        const match = regex.exec(token);
+
+        // Check if the match was successful
+        if (match) {
+            const parts: string[] = [];
+            if (match[1]) {
+                parts.push(`(YEAR(${this.member}) = ${match[1]})`);
+            }
+            if (match[2]) {
+                parts.push(`(MONTH(${this.member}) = ${match[2]})`);
+            }
+            if (match[3]) {
+                parts.push(`(dayofmonth(${this.member}) = ${match[3]})`);
+            }
+            return `(${parts.join(` AND `)})`;
+        }
+
+        return null;
+    }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
 };
 
 
@@ -1200,6 +1600,11 @@ export class CreatedAtField extends FieldBase<Date> {
         console.assert(dbModel[this.member] instanceof Date);
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
 };
 
 
@@ -1260,6 +1665,11 @@ export class RevisionField extends FieldBase<number> {
         if (dbModel[this.member] === undefined) return; // don't clobber
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
 };
 
 
@@ -1333,6 +1743,11 @@ export class SlugField extends FieldBase<string> {
         if (dbModel[this.member] === undefined) return;
         clientModel[this.member] = dbModel[this.member];
     }
+
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
+    SqlGetSortableQueryElements = (api: SqlGetSortableQueryElementsAPI): SortQueryElements | null => null;
+    SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => null;
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
 };
 
 

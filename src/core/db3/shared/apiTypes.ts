@@ -1,5 +1,6 @@
 
 import { Prisma } from "db";
+import { SortDirection } from "shared/rootroot";
 import { z } from "zod";
 
 // types used by mutations and other blitzy-things which can't export more than 1 thing, or just as a "no dependency" base
@@ -25,6 +26,7 @@ export interface CMDBTableFilterItem { // from MUI GridFilterItem
 export interface CMDBTableFilterModel {
     items: CMDBTableFilterItem[];
     quickFilterValues?: any[];
+    pks?: number[]; // if specified, find items `where id in (...pks)`
 
     tagIds?: number[];
     tableParams?: TAnyModel;
@@ -635,3 +637,124 @@ export interface TGetImportEventDataRet {
 };
 
 
+///////////////////////////////////////////////////////
+
+export interface SearchResultsFacetOption {
+    id: number;
+    rowCount: number;
+
+    label: string | null;
+    color: string | null;
+    iconName: string | null;
+    tooltip: string | null;
+};
+
+export interface SearchResultsFacet {
+    db3Column: string;
+    items: SearchResultsFacetOption[];
+};
+
+export interface SearchResultsFacetQuery {
+    sql: string;
+    transformResult: (row: TAnyModel) => SearchResultsFacetOption;
+};
+
+export interface SearchQueryMetric {
+    title: string;
+    millis: number;
+    query: string;
+    rowCount: number;
+};
+
+export interface SearchResultsRet {
+    rowCount: number;
+    results: any[];
+    facets: SearchResultsFacet[];
+
+    // use case: events search results also want to do some extra querying
+    // to avoid further query roundtrips. in particular, more info about invited
+    // users, user tags, etc, to be returned separate from the main search results array.
+    customData: unknown;
+
+    queryMetrics: SearchQueryMetric[];
+};
+
+export interface CriterionQueryElements {
+    whereAnd: string;
+    // joins
+    // havings
+    // ...?
+};
+
+export interface SortQuerySelectElement {
+    expression: string;
+    alias: string;
+    direction: SortDirection;
+};
+
+export interface SortQueryJoinElement {
+    expression: string;
+    alias: string;
+};
+
+export interface SortQueryElements {
+    select: SortQuerySelectElement[];
+    join: SortQueryJoinElement[];
+    // havings
+    // ...?
+};
+
+export enum DiscreteCriterionFilterType {
+    alwaysMatch = "alwaysMatch",
+    hasNone = "hasNone",// no options required
+    hasSomeOf = "hasSomeOf",
+    hasAllOf = "hasAllOf",
+    hasAny = "hasAny", // no options required
+    doesntHaveAnyOf = "doesntHaveAnyOf",
+    doesntHaveAllOf = "doesntHaveAllOf",
+};
+
+// criterion for discrete items like tags or foreign references.
+// could also be integers, boolean, enum values, that kind of thing.
+// but would not work for dates, strings, floats, etc.
+export interface DiscreteCriterion {
+    // the db3 column name. for a foreign ref for example this would be "type" or "tag", NOT "typeId" etc;
+    // because SQL query is passed to the column where the correct SQL column would be used.
+    db3Column: string;
+
+    // which items has the user selected for filtering.
+    options: (number | boolean | string)[];
+
+    // type of filtering
+    behavior: DiscreteCriterionFilterType;
+};
+
+export interface DateCriterion {
+    db3Column: string;
+
+    minDate: Date | undefined;
+    maxDate: Date | undefined;
+};
+
+export enum SearchCustomDataHookId {
+    Events = "Events",
+};
+
+export interface GetSearchResultsSortModel {
+    db3Column: string; // the db3 column name to use for sorting
+    direction: SortDirection,
+};
+
+export interface GetSearchResultsInput {
+    tableID: string;
+
+    pageSize: number;
+    page: number;
+
+    sort: GetSearchResultsSortModel[];
+
+    quickFilter: string,
+    discreteCriteria: DiscreteCriterion[],
+    dateCriteria: DateCriterion[],
+    // TODO: filtering by dates, scalars, etc.
+};

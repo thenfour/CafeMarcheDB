@@ -12,6 +12,7 @@ import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
+import { GetServerSideProps } from 'next';
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
@@ -86,8 +87,8 @@ interface PageProps {
     eventId: number | null,
 };
 
-export const getServerSideProps = async ({ params }) => {
-    const [id__, slug, tab] = params.id_slug_tab as string[];
+export const getServerSideProps: GetServerSideProps = async ({ params, req }) => {
+    const [id__, slug, tab] = params!.id_slug_tab as string[];
     const id = CoerceToNumberOrNull(id__);
     if (!id) throw new Error(`no id`);
 
@@ -101,13 +102,21 @@ export const getServerSideProps = async ({ params }) => {
         select: {
             id: true,
             name: true,
+            startsAt: true,
         },
         where: {
             id,
         }
     });
+
     if (event) {
-        ret.props.title = `${event.name}`;
+        // Format the date using the user's locale
+        const acceptLanguage = req.headers['accept-language'] || 'en-US'; // Default to 'en-US' if not specified
+        const locale = acceptLanguage.split(',')[0]; // Get the first preferred language
+        const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
+        const formattedDate = event.startsAt ? ` | ${event.startsAt.toLocaleDateString(locale, options)}` : "";
+
+        ret.props.title = `${event.name}${formattedDate}`;
         ret.props.eventId = event.id;
     }
 

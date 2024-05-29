@@ -2,31 +2,30 @@
 // for example i should be able to edit my own posts but not others. etc.
 // or think about the concept of user blocking, or not being able to see responses of certain kinds of events or people. todo...
 
+import { assert } from "blitz";
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { CoalesceBool, assertIsNumberArray, assertIsStringArray, gIconOptions } from "shared/utils";
+import { assertIsNumberArray, assertIsStringArray, gIconOptions } from "shared/utils";
+import { CMDBTableFilterModel, SearchCustomDataHookId, TAnyModel } from "../apiTypes";
 import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSlugField, MakeSortOrderField, MakeTitleField, PKField, RevisionField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import {
     DashboardContextDataBase,
-    EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload, EventClientPayload_Verbose, EventNaturalOrderBy, EventPayload, EventPayloadClient,
-    EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, EventSegmentPayload, EventSegmentPayloadMinimum, EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
+    EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload,
+    EventNaturalOrderBy, EventPayload, EventPayloadClient,
+    EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, EventSegmentPayload,
+    EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
     EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
     EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
     EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload,
     EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
     EventUserResponsePayload,
-    EventVerbose_EventSegmentPayload,
-    InstrumentArgs,
     InstrumentPayload,
-    UserTagPayload, UserWithInstrumentsArgs, UserWithInstrumentsPayload
+    UserWithInstrumentsPayload
 } from "./prismArgs";
 import { CreatedByUserField, EventResponses_ExpectedUserTag, VisiblePermissionField } from "./user";
-import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
-import { assert } from "blitz";
-import { TableAccessor } from "shared/rootroot";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
@@ -189,6 +188,13 @@ export const xEventType = new db3.xTable({
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
+    SqlGetSpecialColumns: {
+        color: "color",
+        iconName: "iconName",
+        label: "text",
+        sortOrder: "sortOrder",
+        tooltip: "description",
+    },
     columns: [
         new PKField({ columnName: "id" }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
@@ -229,6 +235,13 @@ export const xEventStatus = new db3.xTable({
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },
+    SqlGetSpecialColumns: {
+        label: "label",
+        sortOrder: "sortOrder",
+        color: "color",
+        iconName: "iconName",
+        tooltip: "description",
+    },
     columns: [
         new PKField({ columnName: "id" }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
@@ -267,6 +280,13 @@ export const xEventTag = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
+    SqlGetSpecialColumns: {
+        label: "text",
+        sortOrder: "sortOrder",
+        color: "color",
+        iconName: undefined,
+        tooltip: "description",
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("text", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
@@ -324,11 +344,16 @@ export interface EventTableParams {
     userIdForResponses?: number; // when searching for multiple events, include this to limit returned responses to this user. prevents huge bloat.
 };
 
+export interface EventSearchCustomData {
+    userTags: unknown[],
+};
+
 export const xEventArgs_Base: db3.TableDesc = {
     tableName: "event",
     getInclude: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventInclude => {
         return EventArgs.include;
     },
+    SearchCustomDataHookId: SearchCustomDataHookId.Events,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
@@ -337,6 +362,7 @@ export const xEventArgs_Base: db3.TableDesc = {
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
         ownerUserId: row.createdByUserId,
     }),
+
     getParameterizedWhereClause: (params: EventTableParams, clientIntention: db3.xTableClientUsageContext): (Prisma.EventWhereInput[]) => {
         const ret: Prisma.EventWhereInput[] = [];
 
@@ -1201,7 +1227,6 @@ export function createMockEventUserResponse<TEvent extends EventResponses_Minima
     args: createMockEventUserResponseArgs<TEvent, TResponse>
 ): EventUserResponse<TEvent, TResponse> | null {
     const invitedByDefault: boolean = args.defaultInvitees.has(args.userId);
-    if (!args.users) debugger;
     const user = args.users.find(u => u.id === args.userId)!;
 
     // mock response when none exists
@@ -1438,20 +1463,42 @@ export function GetEventResponseInfo<
         defaultInvitationUserIds = new Set<number>(expectedAttendanceTag.userAssignments.map(ua => ua.userId));
         expectedAttendanceTag.userAssignments.forEach(ua => {
             const user = userMap.find(u => u.id === ua.userId);
-            if (user) users.push(user);
+            if (user) {
+                users.push(user);
+            }
         });
     }
     event.segments.forEach((seg) => {
         // get user ids for this segment
         seg.responses.forEach(resp => {
-            if (users.find(u => u.id === resp.userId) == null) {
-                users.push(userMap.find(u => u.id === resp.userId)!);
+            if (users.find(u => u.id === resp.userId) == null) { // doesn't already exist
+                const mapUser = userMap.find(u => u.id === resp.userId);
+                if (!mapUser) {
+                    // console.log(`resp.userId=${resp.userId}`);
+                    // console.log(userMap);
+                    // throw new Error("your user map is missing someone. check console for requested user, and usermap");
+                } else {
+                    users.push(mapUser);
+                }
             }
         });
     });
     event.responses.forEach((eventResponse) => {
-        if (users.find(u => u.id === eventResponse.userId) == null) {
-            users.push(userMap.find(u => u.id === eventResponse.userId)!);
+        // if (users.find(u => u.id === eventResponse.userId) == null) {
+        //     users.push(userMap.find(u => u.id === eventResponse.userId)!);
+        // }
+        if (users.find((u) => {
+            //if (!u) debugger;
+            return u.id === eventResponse.userId;
+        }) == null) {
+            const mappedUser = userMap.find(u => u.id === eventResponse.userId);
+            if (!mappedUser) {
+                // console.log(`resp.userId=${eventResponse.userId}`);
+                // console.log(userMap);
+                // throw new Error("your user map is missing someone. check console for requested user, and usermap");
+            } else {
+                users.push(mappedUser);
+            }
         }
     });
 

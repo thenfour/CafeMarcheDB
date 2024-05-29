@@ -148,12 +148,13 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                 <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
             </div>
 
-            <div className='titleLine'>
-                <div className="location smallInfoBox">
-                    {gIconMap.Place()}
-                    <span className="text">{IsNullOrWhitespace(event.locationDescription) ? "Location TBD" : event.locationDescription}</span>
-                </div>
-            </div>
+            {!IsNullOrWhitespace(event.locationDescription) &&
+                <div className='titleLine'>
+                    <div className="location smallInfoBox">
+                        {gIconMap.Place()}
+                        <span className="text">{event.locationDescription}</span>
+                    </div>
+                </div>}
 
             <CMChipContainer>
                 {event.tags.map(tag => <CMStandardDBChip

@@ -1,5 +1,10 @@
 // 0-dependency file.
 
+export type SortDirection = "asc" | "desc";
+
+export function OpposingSortDirection(x: SortDirection) {
+    return x === "asc" ? "desc" : "asc";
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // slug field is calculated from another field.

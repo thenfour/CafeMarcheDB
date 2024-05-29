@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string, sleep } from "shared/utils";
+import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, MysqlEscape, sleep } from "shared/utils";
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";

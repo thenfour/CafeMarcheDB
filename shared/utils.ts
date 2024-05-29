@@ -791,7 +791,7 @@ export function getExcelColumnName(index: number): string {
 }
 
 // https://stackoverflow.com/questions/7744912/making-a-javascript-string-sql-friendly
-export function mysql_real_escape_string(str) {
+export function MysqlEscape(str) {
     return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
         switch (char) {
             case "\0":
@@ -855,3 +855,15 @@ export function arrayToTSV(data: Record<string, string>[]): string {
 export function getEnumValues<E extends { [key: string]: any }>(enumObject: E): string[] {
     return Object.values(enumObject).filter(value => typeof value === 'string') as string[];
 }
+
+export function SqlCombineAndExpression(expressions: string[]): string {
+    if (expressions.length === 0) return "(true)";
+    if (expressions.length === 1) return expressions[0]!;
+    return `(${expressions.join(`\n    AND `)})`;
+};
+
+export function SqlCombineOrExpression(expressions: string[]): string {
+    if (expressions.length === 0) return "(true)";
+    if (expressions.length === 1) return expressions[0]!;
+    return `(${expressions.join(`\n    OR `)})`;
+};

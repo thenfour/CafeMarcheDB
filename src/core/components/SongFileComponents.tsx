@@ -21,7 +21,7 @@ import { DashboardContext } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
-import { formatFileSize } from 'shared/rootroot';
+import { SortDirection, formatFileSize } from 'shared/rootroot';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 
 
@@ -237,7 +237,7 @@ interface FileFilterAndSortSpec {
     mimeTypes: string[];
 
     sortBy: SortByKey;
-    sortDirection: "asc" | "desc";
+    sortDirection: SortDirection;
 };
 
 function sortAndFilter(items: FileTagBase[], spec: FileFilterAndSortSpec): FileTagBase[] {

@@ -4,7 +4,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
+import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, MysqlEscape } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
 import { GetBasicVisFilterExpressionForSong, SongPayload_Verbose, SongTableParams, xSong_Verbose } from "../db3";
@@ -38,7 +38,7 @@ export default resolver.pipe(
                 // tokens are AND'd together.
                 const tokens = SplitQuickFilter(args.filterSpec.quickFilter);
                 const tokensExpr = tokens.map(t => {
-                    const qf = mysql_real_escape_string(t);
+                    const qf = MysqlEscape(t);
                     const or = [
                         `(Song.name LIKE '%${qf}%')`,
                         `(Song.aliases LIKE '%${qf}%')`,

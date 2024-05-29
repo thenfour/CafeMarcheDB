@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, mysql_real_escape_string } from "shared/utils";
+import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, MysqlEscape } from "shared/utils";
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
@@ -49,7 +49,7 @@ export default resolver.pipe(
                 // tokens are AND'd together.
                 const tokens = SplitQuickFilter(args.filterSpec.quickFilter);
                 const tokensExpr = tokens.map(t => {
-                    const qf = mysql_real_escape_string(t);
+                    const qf = MysqlEscape(t);
                     const or = [
                         `(Event.name LIKE '%${qf}%')`,
                         `(Event.locationDescription LIKE '%${qf}%')`,

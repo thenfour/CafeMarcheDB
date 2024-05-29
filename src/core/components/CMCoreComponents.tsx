@@ -122,8 +122,8 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const CMChipContainer = (props: React.PropsWithChildren<{ className?: string, orientation?: "vertical" | "horizontal" }>) => {
-    return <div className={`CMChipContainer ${props.className || ""} ${props.orientation}`}>{props.children}</div>
+export const CMChipContainer = (props: React.PropsWithChildren<{ className?: string, orientation?: "vertical" | "horizontal", margins?: "tightMargins" | "defaultMargins" }>) => {
+    return <div className={`CMChipContainer ${props.className || ""} ${props.orientation} ${props.margins}`}>{props.children}</div>
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

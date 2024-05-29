@@ -159,8 +159,22 @@ input.CMTextInputBase.titleText {
 }
 
 .CMChipContainer .CMChip {
-    margin: 1px 1px;
+    margin-left: 0;
+    margin-right: 0;
 }
+
+.CMChipContainer.tightMargins>.CMChip {
+    margin: 1px 0;
+}
+
+
+.CMChipContainer>div.horizDivider {
+    margin-left: 10px;
+    margin-right: 10px;
+    border-left: 1px dotted #888;
+    height: 16px;
+}
+
 
 .CMChip {
     /* requires an .applyColor css class for coloring */
