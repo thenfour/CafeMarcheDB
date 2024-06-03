@@ -14,7 +14,7 @@ import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
-import { ChipFilterGroup, FilterControls, ForeignSingleFilterGroup, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
+import { ChipFilterGroup, FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { API } from "src/core/db3/clientAPI";
@@ -255,7 +255,8 @@ async function CopyEventListCSV(snackbarContext: SnackbarContextType, value: db3
 interface EventsListArgs {
     filterSpec: EventsFilterSpec,
     results: SearchResultsRet;
-    setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
+    //    setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
+    setPage: (n: number) => void,
     events: db3.EnrichedSearchEventPayload[],
     refetch: () => void;
 };
@@ -295,7 +296,7 @@ const EventsList = ({ filterSpec, results, events, refetch, ...props }: EventsLi
             page={filterSpec.page + 1}
             onChange={(e, newPage) => {
                 //console.log(`filterSpec.page: ${filterSpec.page} // setting to ${newPage - 1}`);
-                props.setFilterSpec({ ...filterSpec, page: newPage - 1 });
+                props.setPage(newPage - 1);
             }} />
     </div>;
 };
@@ -342,8 +343,11 @@ const EventListQuerier = (props: EventListQuerierProps) => {
 const EventListOuter = () => {
     const [page, setPage] = useURLState<number>("p", 0);
     const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
-    const [tagFilter, setTagFilter] = React.useState<DiscreteCriterion>({ db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] });
-    const [statusFilter, setStatusFilter] = React.useState<DiscreteCriterion>({ db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] });
+    const [tagFilterWhenEnabled, setTagFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "tags", behavior: DiscreteCriterionFilterType.hasAllOf, options: [] });
+    const [tagFilterEnable, setTagFilterEnable] = React.useState<boolean>(false);
+    const [statusFilterWhenEnabled, setStatusFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "status", behavior: DiscreteCriterionFilterType.hasAny, options: [] });
+    const [statusFilterEnabled, setStatusFilterEnabled] = React.useState<boolean>(false);
+    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
     const [sortModel, setSortModel] = React.useState<SortBySpec>({
         columnName: OrderByColumnOptions.startsAt,
         direction: "asc",
@@ -352,24 +356,13 @@ const EventListOuter = () => {
 
     const filterSpec: EventsFilterSpec = {
         pageSize: 20,
-        refreshSerial: 0,
+        refreshSerial,
         page,
         quickFilter,
-        tagFilter,
-        statusFilter,
+        tagFilter: tagFilterEnable ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        statusFilter: statusFilterEnabled ? statusFilterWhenEnabled : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         orderByColumn: sortModel.columnName as any,
         orderByDirection: sortModel.direction,
-    };
-
-    const setFilterSpec = (x: EventsFilterSpec) => {
-        setPage(x.page);
-        setQuickFilter(x.quickFilter);
-        setTagFilter(x.tagFilter);
-        setStatusFilter(x.statusFilter);
-        setSortModel({
-            columnName: x.orderByColumn,
-            direction: x.orderByDirection,
-        });
     };
 
     const [results, setResults] = React.useState<SearchResultsRet>({
@@ -389,8 +382,11 @@ const EventListOuter = () => {
     }
 
     const specHash = JSON.stringify(everythingButPage);
+    // React.useEffect(() => {
+    //     setFilterSpec({ ...filterSpec, page: 0 });
+    // }, [specHash]);
     React.useEffect(() => {
-        setFilterSpec({ ...filterSpec, page: 0 });
+        setPage(0);
     }, [specHash]);
 
     const enrichedEvents = results.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
@@ -407,17 +403,27 @@ const EventListOuter = () => {
                     hasExtraFilters={false}
                     quickFilterText={filterSpec.quickFilter}
                     primaryFilter={<div>
-                        <ForeignSingleFilterGroup
+                        <TagsFilterGroup
                             label={"Status"}
-                            value={filterSpec.statusFilter}
-                            onChange={(n) => setStatusFilter(n)}
+                            style="foreignSingle"
+                            value={statusFilterWhenEnabled}
+                            filterEnabled={statusFilterEnabled}
+                            onChange={(n, enabled) => {
+                                setStatusFilterWhenEnabled(n);
+                                setStatusFilterEnabled(enabled);
+                            }}
                             items={results.facets.find(f => f.db3Column === "status")?.items || []}
                         />
                         <div className="divider" />
                         <TagsFilterGroup
                             label={"Tags"}
-                            value={filterSpec.tagFilter}
-                            onChange={(n) => setTagFilter(n)}
+                            style="tags"
+                            filterEnabled={tagFilterEnable}
+                            value={tagFilterWhenEnabled}
+                            onChange={(n, enabled) => {
+                                setTagFilterEnable(enabled);
+                                setTagFilterWhenEnabled(n);
+                            }}
                             items={results.facets.find(f => f.db3Column === "tags")?.items || []}
                         />
                         <div className="divider" />
@@ -439,10 +445,11 @@ const EventListOuter = () => {
         </CMSinglePageSurfaceCard >
         <EventsList
             filterSpec={filterSpec}
-            setFilterSpec={setFilterSpec}
+            //setFilterSpec={setFilterSpec}
+            setPage={setPage}
             events={enrichedEvents}
             results={results}
-            refetch={() => setFilterSpec({ ...filterSpec, refreshSerial: filterSpec.refreshSerial + 1 })}
+            refetch={() => setRefreshSerial(filterSpec.refreshSerial + 1)}
         />
     </>;
 };

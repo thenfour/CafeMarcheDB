@@ -92,7 +92,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
         shape,
         variant.enabled ? "enabled" : "disabled",
         variant.selected ? "selected" : "notselected",
-        (props.onClick || props.onDelete) ? "interactable" : "noninteractable",
+        ((props.onClick || props.onDelete) && variant.enabled) ? "interactable" : "noninteractable",
     ];
     if (props.className) {
         wrapperClasses.push(props.className);

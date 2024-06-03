@@ -56,11 +56,15 @@ interface GetStyleVariablesForColorArgs extends ColorVariationSpec {
 // access both. might as well support both methods tbh.
 export const GetStyleVariablesForColor = (args: GetStyleVariablesForColorArgs): GetStyleVariablesForColorResult => {
     let entry: ColorPaletteEntry | null = null;
-    if (typeof args.color === 'string') {
+    if (!args.enabled) {
+        // #196: disabled states should be unified.
+        entry = CreateNullPaletteEntry();
+    } else if (typeof args.color === 'string') {
         entry = gGeneralPaletteList.findEntry(args.color);
     } else if (!!args.color) {
         entry = args.color; // implicitly this is a non-null entry.
     }
+
     if (!entry) {
         entry = CreateNullPaletteEntry();
     }
