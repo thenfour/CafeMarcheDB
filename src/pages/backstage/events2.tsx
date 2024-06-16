@@ -14,7 +14,7 @@ import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
-import { ChipFilterGroup, FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
+import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { API } from "src/core/db3/clientAPI";
@@ -42,8 +42,10 @@ interface EventsFilterSpec {
     orderByColumn: OrderByColumnOption;
     orderByDirection: SortDirection;
 
+    typeFilter: DiscreteCriterion;
     tagFilter: DiscreteCriterion;
     statusFilter: DiscreteCriterion;
+    dateFilter: DiscreteCriterion;
 };
 
 
@@ -217,6 +219,7 @@ const EventListItem = ({ event, ...props }: EventListItemProps) => {
         event={event}
         highlightTagIds={props.filterSpec.tagFilter.options as number[]}
         highlightStatusIds={props.filterSpec.statusFilter.options as number[]}
+        highlightTypeIds={props.filterSpec.typeFilter.options as number[]}
     >
         <EventAttendanceControl
             eventData={eventData}
@@ -322,10 +325,11 @@ const EventListQuerier = (props: EventListQuerierProps) => {
 
         quickFilter: props.filterSpec.quickFilter,
         discreteCriteria: [
+            props.filterSpec.dateFilter,
+            props.filterSpec.typeFilter,
             props.filterSpec.statusFilter,
             props.filterSpec.tagFilter,
         ],
-        dateCriteria: [],
     });
 
     React.useEffect(() => {
@@ -343,10 +347,19 @@ const EventListQuerier = (props: EventListQuerierProps) => {
 const EventListOuter = () => {
     const [page, setPage] = useURLState<number>("p", 0);
     const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
+
     const [tagFilterWhenEnabled, setTagFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "tags", behavior: DiscreteCriterionFilterType.hasAllOf, options: [] });
     const [tagFilterEnable, setTagFilterEnable] = React.useState<boolean>(false);
+
     const [statusFilterWhenEnabled, setStatusFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "status", behavior: DiscreteCriterionFilterType.hasAny, options: [] });
     const [statusFilterEnabled, setStatusFilterEnabled] = React.useState<boolean>(false);
+
+    const [typeFilterWhenEnabled, setTypeFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "type", behavior: DiscreteCriterionFilterType.hasAny, options: [] });
+    const [typeFilterEnabled, setTypeFilterEnabled] = React.useState<boolean>(false);
+
+    const [dateFilterWhenEnabled, setDateFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "startsAt", behavior: DiscreteCriterionFilterType.hasAny, options: [] });
+    const [dateFilterEnabled, setDateFilterEnabled] = React.useState<boolean>(false);
+
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
     const [sortModel, setSortModel] = React.useState<SortBySpec>({
         columnName: OrderByColumnOptions.startsAt,
@@ -359,8 +372,12 @@ const EventListOuter = () => {
         refreshSerial,
         page,
         quickFilter,
+
         tagFilter: tagFilterEnable ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         statusFilter: statusFilterEnabled ? statusFilterWhenEnabled : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        typeFilter: typeFilterEnabled ? typeFilterWhenEnabled : { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        dateFilter: dateFilterEnabled ? dateFilterWhenEnabled : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+
         orderByColumn: sortModel.columnName as any,
         orderByDirection: sortModel.direction,
     };
@@ -371,6 +388,10 @@ const EventListOuter = () => {
         rowCount: 0,
         customData: null,
         queryMetrics: [],
+        filterQueryResult: {
+            errors: [],
+            sqlSelect: "",
+        },
     });
     const dashboardContext = React.useContext(DashboardContext);
 
@@ -406,25 +427,53 @@ const EventListOuter = () => {
                         <TagsFilterGroup
                             label={"Status"}
                             style="foreignSingle"
+                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "status")?.error}
                             value={statusFilterWhenEnabled}
                             filterEnabled={statusFilterEnabled}
                             onChange={(n, enabled) => {
-                                setStatusFilterWhenEnabled(n);
                                 setStatusFilterEnabled(enabled);
+                                setStatusFilterWhenEnabled(n);
                             }}
                             items={results.facets.find(f => f.db3Column === "status")?.items || []}
+                        />
+                        <div className="divider" />
+                        <TagsFilterGroup
+                            label={"Type"}
+                            style="foreignSingle"
+                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "type")?.error}
+                            value={typeFilterWhenEnabled}
+                            filterEnabled={typeFilterEnabled}
+                            onChange={(n, enabled) => {
+                                setTypeFilterEnabled(enabled);
+                                setTypeFilterWhenEnabled(n);
+                            }}
+                            items={results.facets.find(f => f.db3Column === "type")?.items || []}
                         />
                         <div className="divider" />
                         <TagsFilterGroup
                             label={"Tags"}
                             style="tags"
                             filterEnabled={tagFilterEnable}
+                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "tags")?.error}
                             value={tagFilterWhenEnabled}
                             onChange={(n, enabled) => {
                                 setTagFilterEnable(enabled);
                                 setTagFilterWhenEnabled(n);
                             }}
                             items={results.facets.find(f => f.db3Column === "tags")?.items || []}
+                        />
+                        <div className="divider" />
+                        <TagsFilterGroup
+                            label={"Date"}
+                            style="radio"
+                            filterEnabled={dateFilterEnabled}
+                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
+                            value={dateFilterWhenEnabled}
+                            onChange={(n, enabled) => {
+                                setDateFilterEnabled(enabled);
+                                setDateFilterWhenEnabled(n);
+                            }}
+                            items={results.facets.find(f => f.db3Column === "startsAt")?.items || []}
                         />
                         <div className="divider" />
 

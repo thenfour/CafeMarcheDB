@@ -9,7 +9,7 @@ import { SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } fro
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetSearchResultsInput, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel } from "../shared/apiTypes";
+import { CalculateFilterQueryResult, GetSearchResultsInput, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel } from "../shared/apiTypes";
 import { Stopwatch } from "shared/rootroot";
 
 async function GetCustomSearchResultsHook(currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
@@ -116,13 +116,17 @@ function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQ
     return sortElements;
 };
 
-
 // construct a SQL select clause returning filtered items.
 // no pagination or sorting applied yet
-function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSearchResultsInput, excludeCriterionColumn: string | null, sortElements: SortQueryElements): string {
+function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSearchResultsInput, excludeCriterionColumn: string | null, sortElements: SortQueryElements): CalculateFilterQueryResult {
     const table = db3.GetTableById(args.tableID);
     if (!table) {
         throw new Error(`table ${args.tableID} not found`);
+    }
+
+    const result: CalculateFilterQueryResult = {
+        sqlSelect: "",
+        errors: [],
     }
 
     // each criterion will supply the info we need to construct the correct query.
@@ -155,6 +159,14 @@ function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSe
         const elements = col.SqlGetDiscreteCriterionElements(criterion, "P");
         // no filtering to be done on this column
         if (!elements) continue;
+
+        if (!!elements.error) {
+            result.errors.push({
+                column: criterion.db3Column,
+                error: elements.error,
+            });
+            continue;
+        }
 
         // integrate elements
         whereAnd.push(elements.whereAnd);
@@ -225,8 +237,9 @@ function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSe
             ${SqlCombineAndExpression(whereAnd)}
         group by
             P.${table.pkMember}
-`;
-    return ret;
+    `;
+    result.sqlSelect = ret;
+    return result;
 };
 
 export default resolver.pipe(
@@ -240,6 +253,10 @@ export default resolver.pipe(
                 rowCount: 0,
                 customData: null,
                 queryMetrics: [],
+                filterQueryResult: {
+                    errors: [],
+                    sqlSelect: "",
+                }
             };
             const u = (await getCurrentUserCore(ctx))!;
             if (!u.role || u.role.permissions.length < 1) {
@@ -255,7 +272,8 @@ export default resolver.pipe(
 
             const sortElements = ProcessSortModel(table, args);
 
-            const filteredItemsQuery = calculateFilterQuery(u, args, null, sortElements);
+            const filterResult = calculateFilterQuery(u, args, null, sortElements);
+            ret.filterQueryResult = filterResult;
 
             const queries: Promise<any>[] = [];
 
@@ -265,7 +283,10 @@ export default resolver.pipe(
                 if (!col) {
                     throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
                 }
-                const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filteredItemsQuery, calculateFilterQuery(u, args, col.member, sortElements), criterion);
+
+                const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements);
+
+                const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filterResult.sqlSelect, filterResult2.sqlSelect, criterion);
                 // no facet info to be done on this column
                 if (!facetInfoQuery) continue;
 
@@ -304,7 +325,7 @@ export default resolver.pipe(
 
                 const paginatedResultQuery = `
                     with FilteredItems as (
-                        ${filteredItemsQuery}
+                        ${filterResult.sqlSelect}
                     )
                     select
                         id
@@ -332,7 +353,7 @@ export default resolver.pipe(
                 const sw = new Stopwatch();
                 const totalRowCountQuery = `
                 with FilteredItems as (
-                    ${filteredItemsQuery}
+                    ${filterResult.sqlSelect}
                 )
                 select
                     count(*) as rowCount

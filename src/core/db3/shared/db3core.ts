@@ -369,15 +369,15 @@ export abstract class FieldBase<FieldDataType> {
     abstract getCustomFilterWhereClause: (query: CMDBTableFilterModel) => TAnyModel | boolean;
     abstract getOverallWhereClause: (clientIntention: xTableClientUsageContext) => TAnyModel | boolean;
 
-    // return null to not perform filtering on this criterion.
-    abstract SqlGetDiscreteCriterionElements: (crit: DiscreteCriterion, tableAlias: string) => CriterionQueryElements | null;
-
     // provide the sql expression for filtering a column on this 1 token. e.g. if the token is "conce", return "(Name like "%conce%")"
     // be sure to sql escape the token.
     // the reason i pass the whole quickFilterTokens in as well is because for example pk fields only want to be searched when it's
     // the only token in the query.
     // return null to not support filtering
     abstract SqlGetQuickFilterElementsForToken: (token: string, quickFilterTokens: string[]) => string | null;
+
+    // return null to not perform filtering on this criterion.
+    abstract SqlGetDiscreteCriterionElements: (crit: DiscreteCriterion, tableAlias: string) => CriterionQueryElements | null;
 
     // return a SQL query
     // return null to not calculate any facet info for this criterion

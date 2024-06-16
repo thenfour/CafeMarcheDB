@@ -512,12 +512,18 @@ export const gQueryOptions = {
 
 export function assertIsNumberArray(value: any): asserts value is number[] {
     if (!Array.isArray(value) || !value.every((item) => typeof item === 'number')) {
-        throw new Error('Value is not a number array');
+        console.log(`{ the following value is not a number array`);
+        console.log(value);
+        console.log(`}`);
+        throw new Error('Value is not a number array; see console');
     }
 }
 
 export function assertIsStringArray(value: any): asserts value is string[] {
     if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
+        console.log(`{ the following value is not a string array`);
+        console.log(value);
+        console.log(`}`);
         throw new Error('Value is not a string array');
     }
 }

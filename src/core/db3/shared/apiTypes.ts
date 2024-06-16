@@ -642,6 +642,7 @@ export interface TGetImportEventDataRet {
 export interface SearchResultsFacetOption {
     id: number;
     rowCount: number;
+    extraInfo?: unknown; // for things like filtering by date facets, this could specify what kind of facet it is, or additional type-specific info about the facet.
 
     label: string | null;
     color: string | null;
@@ -666,10 +667,18 @@ export interface SearchQueryMetric {
     rowCount: number;
 };
 
+
+export interface CalculateFilterQueryResult {
+    sqlSelect: string;
+    errors: { column: string, error: string }[];
+};
+
+
 export interface SearchResultsRet {
     rowCount: number;
     results: any[];
     facets: SearchResultsFacet[];
+    filterQueryResult: CalculateFilterQueryResult;
 
     // use case: events search results also want to do some extra querying
     // to avoid further query roundtrips. in particular, more info about invited
@@ -680,6 +689,7 @@ export interface SearchResultsRet {
 };
 
 export interface CriterionQueryElements {
+    error: string | undefined;
     whereAnd: string;
     // joins
     // havings
@@ -725,16 +735,14 @@ export interface DiscreteCriterion {
     // which items has the user selected for filtering.
     options: (number | boolean | string)[];
 
+    // for date filtering
+    minDate?: Date | undefined;
+    maxDate?: Date | undefined;
+
     // type of filtering
     behavior: DiscreteCriterionFilterType;
 };
 
-export interface DateCriterion {
-    db3Column: string;
-
-    minDate: Date | undefined;
-    maxDate: Date | undefined;
-};
 
 export enum SearchCustomDataHookId {
     Events = "Events",
@@ -755,6 +763,6 @@ export interface GetSearchResultsInput {
 
     quickFilter: string,
     discreteCriteria: DiscreteCriterion[],
-    dateCriteria: DateCriterion[],
+    //dateCriteria: DateCriterion[],
     // TODO: filtering by dates, scalars, etc.
 };

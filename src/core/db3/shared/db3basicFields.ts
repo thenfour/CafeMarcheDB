@@ -19,9 +19,10 @@
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
 import { slugify } from "shared/rootroot";
-import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, MysqlEscape, assertIsNumberArray, isValidURL } from "shared/utils";
-import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
+import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, MysqlEscape, assertIsNumberArray, getNextSequenceId, isValidURL } from "shared/utils";
+import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOption, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
+import { assert } from "blitz";
 
 export type DB3AuthSpec = {
     authMap: DB3AuthContextPermissionMap;
@@ -969,16 +970,19 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         const map: { [key in DiscreteCriterionFilterType]: () => CriterionQueryElements | null } = {
             alwaysMatch: () => {
                 return {
+                    error: undefined,
                     whereAnd: `(true)`,
                 }
             },
             hasAny: () => { // no options considered
                 return {
+                    error: undefined,
                     whereAnd: `(${this.fkMember} is not null)`,
                 };
             },
             hasNone: () => { // no options considered
                 return {
+                    error: undefined,
                     whereAnd: `(${this.fkMember} is null)`,
                 };
             },
@@ -986,12 +990,15 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
                 // this is a bit meaningless but let's allow it. if you are demanding "some of" but don't specify anything, you necessarily get no results.
                 // it gives continuity when selecting/deselecting items in the gui or switching back and forth between "include" vs. "exclude"
                 if (crit.options.length === 0) return {
+                    error: "Select options to filter on",
                     whereAnd: `(false)`,//whereAnd: `(${this.fkMember} is null)`,
                 };
                 if (crit.options.length === 1) return {
+                    error: undefined,
                     whereAnd: `(${this.fkMember} = ${crit.options[0]})`,
                 };
                 return {
+                    error: undefined,
                     whereAnd: `(${this.fkMember} in (${crit.options.join(",")}))`,
                 };
             },
@@ -1002,12 +1009,15 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             doesntHaveAnyOf: () => {
                 // similar to hasSomeOf with 0 items, treat 0 items as a synonym for null.
                 if (crit.options.length === 0) return {
+                    error: "Select options to filter on",
                     whereAnd: `(${this.fkMember} is not null)`,
                 };
                 if (crit.options.length === 1) return {
+                    error: undefined,
                     whereAnd: `(${this.fkMember} != ${crit.options[0]})`,
                 };
                 return {
+                    error: undefined,
                     whereAnd: `(${this.fkMember} not in (${crit.options.join(",")}))`,
                 };
             },
@@ -1256,15 +1266,22 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         const associationTable = associationSchema.tableName;
         const assLocalId = this.associationLocalIDMember;
         const assTagId = this.associationForeignIDMember;
+        const errorResult: CriterionQueryElements = {
+            whereAnd: `(true)`,
+            error: "Select options to filter on",
+        };
         const hasAny: CriterionQueryElements = {
+            error: undefined,
             whereAnd: `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id)`,
         };
         const hasNone: CriterionQueryElements = {
+            error: undefined,
             whereAnd: `NOT EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id)`,
         };
         const map: { [key in DiscreteCriterionFilterType]: () => CriterionQueryElements | null } = {
             alwaysMatch: () => {
                 return {
+                    error: undefined,
                     whereAnd: `(true)`,
                 }
             },
@@ -1277,32 +1294,36 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             hasSomeOf: () => {
                 // this is a bit meaningless but let's allow it. if you are demanding "some of" but don't specify anything,
                 // treat as if "is null". this has simple continuity for gui.
-                if (crit.options.length === 0) return hasNone;
+                if (crit.options.length === 0) return errorResult;
                 return {
+                    error: undefined,
                     whereAnd: `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} IN (${crit.options.join(",")}))`,
                 };
             },
             hasAllOf: () => {
-                if (crit.options.length === 0) return hasNone;
+                if (crit.options.length === 0) return errorResult;
                 const subQueries = crit.options.map(option =>
                     `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} = ${option})`
                 );
                 return {
+                    error: undefined,
                     whereAnd: `(${subQueries.join(" AND ")})`,
                 };
             },
             doesntHaveAnyOf: () => {
-                if (crit.options.length === 0) return hasAny;
+                if (crit.options.length === 0) return errorResult;
                 return {
+                    error: undefined,
                     whereAnd: `NOT EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} IN (${crit.options.join(",")}))`,
                 };
             },
             doesntHaveAllOf: () => {
-                if (crit.options.length === 0) return hasAny;
+                if (crit.options.length === 0) return errorResult;
                 const subQueries = crit.options.map(option =>
                     `EXISTS (SELECT 1 FROM ${associationTable} mt WHERE mt.${assLocalId} = ${tableAlias}.id AND mt.${assTagId} = ${option})`
                 );
                 return {
+                    error: undefined,
                     whereAnd: `NOT (${subQueries.join(" AND ")})`,
                 };
             },
@@ -1372,7 +1393,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
                 };
             },
         }
-    }
+    } // SqlGetFacetInfoQuery
 
 };
 
@@ -1382,9 +1403,32 @@ export type EventStartsAtFieldArgs = {
     allowNull: boolean;
 } & DB3AuthSpec;
 
+type EventStartsAtFieldDiscreteFilterTRow = {
+    id: number, // facet IDs for this custom faceting are not database pks, they are contrived. but required for selecting etc.
+    facetType: string,
+    year: number | null, // null = TBD
+    rowCount: bigint
+};
+
+
+export interface EventStartsAtFieldDiscreteFilterDomain {
+    id: number,
+    matchesId: (id: number) => boolean;
+    transformResult: (row: EventStartsAtFieldDiscreteFilterTRow) => SearchResultsFacetOption,
+    SqlMatch: (id: number) => string,
+}
+
+const gTbdId = 9999;
+
 export class EventStartsAtField extends FieldBase<Date> {
 
     allowNull: boolean;
+    localTableSpec: xTable;
+
+    yearDomain: EventStartsAtFieldDiscreteFilterDomain;
+    pastDomain: EventStartsAtFieldDiscreteFilterDomain;
+    futureDomain: EventStartsAtFieldDiscreteFilterDomain;
+    searchDomains: EventStartsAtFieldDiscreteFilterDomain[];
 
     constructor(args: EventStartsAtFieldArgs) {
         super({
@@ -1395,9 +1439,70 @@ export class EventStartsAtField extends FieldBase<Date> {
             _customAuth: (args as any)._customAuth || null,
         });
         this.allowNull = args.allowNull;
+
+        this.yearDomain = {
+            id: 0, // for per-year, the year IS the ID.
+            transformResult: (row) => {
+                const id = new Number(row.year || gTbdId).valueOf();
+                return {
+                    id, // something representing null year.
+                    label: id === gTbdId ? "TBD" : id.toString(),
+                    color: null,
+                    iconName: null,
+                    rowCount: new Number(row.rowCount).valueOf(),
+                    tooltip: `Select year ${row.year}`,
+                };
+            },
+            SqlMatch: (id: number) => {
+                if (id === gTbdId) {
+                    return `isnull(${this.member})`;
+                }
+                return `(year(${this.member}) = ${id})`;
+            },
+            matchesId: (id: number) => {
+                return id < 10000;
+            },
+        };
+
+        this.pastDomain = {
+            id: 10000,
+            transformResult: (row) => ({
+                id: new Number(row.id).valueOf(),
+                label: "Past",
+                color: null,
+                iconName: null,
+                rowCount: new Number(row.rowCount).valueOf(),
+                tooltip: `Past`,
+            }),
+            SqlMatch: () => `(${this.member} < curdate())`,
+            matchesId: (id: number) => id === 10000,
+        };
+
+        this.futureDomain =
+        {
+            id: 10001,
+            transformResult: (row) => ({
+                id: new Number(row.id).valueOf(),
+                label: "Future",
+                color: null,
+                iconName: null,
+                rowCount: new Number(row.rowCount).valueOf(),
+                tooltip: `Future`,
+            }),
+            SqlMatch: () => `(${this.member} >= curdate())`,
+            matchesId: (id: number) => id === 10001,
+        };
+
+        this.searchDomains = [
+            this.yearDomain,
+            this.pastDomain,
+            this.futureDomain,
+        ];
     }
 
-    connectToTable = (table: xTable) => { };
+    connectToTable = (table: xTable) => {
+        this.localTableSpec = table;
+    };
 
     // don't support quick filter on date fields
     getQuickFilterWhereClause = (query: string): TAnyModel | boolean => {
@@ -1527,8 +1632,118 @@ export class EventStartsAtField extends FieldBase<Date> {
         return null;
     }
 
-    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => null;
-    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredItemsQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => null;
+    SqlGetDiscreteCriterionElements = (crit: DiscreteCriterion): CriterionQueryElements | null => {
+        assertIsNumberArray(crit.options);
+
+        // for the moment only support either having 1 criterion or none.
+        const generalMatch = (): CriterionQueryElements => {
+            if (crit.options.length !== 1) {
+                return {
+                    error: "Please select 1 option",
+                    whereAnd: `(false)`,
+                };
+            }
+            const id = crit.options[0] as number;
+            const d = this.searchDomains.find(x => x.matchesId(id));
+            if (!d) throw new Error(`date search facet domain not found: ${id}; should be a year, past, future, ...`);
+            return {
+                error: undefined,
+                whereAnd: d.SqlMatch(id),
+            };
+        };
+
+        const map: { [key in DiscreteCriterionFilterType]: () => CriterionQueryElements | null } = {
+            alwaysMatch: () => {
+                return {
+                    error: undefined,
+                    whereAnd: `(true)`,
+                }
+            },
+            hasAny: () => { // no options considered
+                return {
+                    error: undefined,
+                    whereAnd: `(${this.member} is not null)`, // "has any date" i am not 100% certain makes sense to filter for TBD. but go for it; edge case
+                };
+            },
+            hasNone: () => { // no options considered
+                return {
+                    error: undefined,
+                    whereAnd: `(${this.member} is null)`,
+                };
+            },
+            hasSomeOf: generalMatch,
+            hasAllOf: generalMatch,
+            doesntHaveAnyOf: () => {
+                throw new Error(`query type 'doesntHaveAnyOf' is impossible for date fields.`);
+            },
+            doesntHaveAllOf: () => {
+                throw new Error(`query type 'doesntHaveAllOf' is impossible for date fields.`);
+            },
+        };
+        return map[crit.behavior]();
+    };
+
+    // return a SQL query which is executed, then a transformation function that returns the 
+    SqlGetFacetInfoQuery = (currentUser: UserWithRolesPayload, filteredQuery: string, filteredItemsQueryExcludingThisCriterion: string, crit: DiscreteCriterion): SearchResultsFacetQuery | null => {
+        return {
+            sql: `
+        with FIQ as (${filteredQuery})
+
+        select
+            -- NB: make sure the columns conform to EventStartsAtFieldDiscreteFilterTRow
+            coalesce(year(${this.member}), ${gTbdId}) id,
+            'year' facetType,
+            coalesce(year(${this.member}), ${gTbdId}) year,
+            coalesce(year(${this.member}), ${gTbdId}) sortOrder,
+            count(FIQ.id) rowCount
+        from
+            ${this.localTableSpec.tableName} as P
+            left join FIQ on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
+        group by
+            coalesce(year(${this.member}), ${gTbdId})
+        
+        union all
+        
+        select
+            ${this.pastDomain.id} id,
+            'past' facetType,
+            null year,
+            10000 sortOrder,
+            count(P.id) rowCount
+        from
+            FIQ
+            inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
+        where
+            ${this.member} < curdate()
+        
+        union all
+        
+        select
+            ${this.futureDomain.id} id,
+            'future' facetType,
+            null year,
+            10001 sortOrder,
+            count(P.id) rowCount
+        from
+            FIQ
+            inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
+        where
+            ${this.member} >= curdate()
+
+        order by
+            sortOrder
+            `,
+            transformResult: (row: EventStartsAtFieldDiscreteFilterTRow): SearchResultsFacetOption => {
+                //const d = this.domainMap[row.id];
+                row.id = new Number(row.id).valueOf();
+                const d = this.searchDomains.find(x => x.matchesId(row.id));
+                assert(!!d, `incomplete domain map? row doesn't have corresponding startsAt filter domain: ${JSON.stringify(row)}`);
+                return d.transformResult(row);
+            },
+        }
+    };
+
+
 };
 
 

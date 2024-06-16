@@ -6,7 +6,7 @@ import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec, gGeneralP
 import { toggleValueInArray } from "shared/utils";
 import { CMChip, CMChipBorderOption, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMCoreComponents";
 import { SearchInput } from "src/core/components/CMTextField";
-import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOption } from '../db3/shared/apiTypes';
+import { CalculateFilterQueryResult, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOption } from '../db3/shared/apiTypes';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { OpposingSortDirection, SortDirection } from 'shared/rootroot';
 
@@ -123,156 +123,14 @@ export const ChipFilterGroup = <Tid extends number | string,>(props: ChipFilterG
 };
 
 
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// enum FSFilterInclusion {
-//     Off,
-//     Include,
-//     Exclude,
-// };
-
-// const gFSFilterInclusionMap: { [key in DiscreteCriterionFilterType]: FSFilterInclusion } = {
-//     "alwaysMatch": FSFilterInclusion.Off,
-
-//     "hasSomeOf": FSFilterInclusion.Include,
-//     "hasAllOf": FSFilterInclusion.Include,
-//     "hasNone": FSFilterInclusion.Include,
-
-//     "hasAny": FSFilterInclusion.Exclude,
-//     "doesntHaveAnyOf": FSFilterInclusion.Exclude,
-//     "doesntHaveAllOf": FSFilterInclusion.Exclude,
-// } as const;
-
-// interface ForeignSingleFilterGroupProps {
-//     items: SearchResultsFacetOption[];
-//     value: DiscreteCriterion;
-//     onChange: (v: DiscreteCriterion) => void;
-
-//     label: React.ReactNode;
-
-//     className?: string;
-//     variation?: ColorVariationSpec;
-//     size?: CMChipSizeOptions;
-//     shape?: CMChipShapeOptions;
-// };
-// export const ForeignSingleFilterGroup = (props: ForeignSingleFilterGroupProps) => {
-//     //const [inclusion, setInclusion] = React.useState<FilterInclusion>(gFilterInclusionMap[props.value.behavior]);
-//     //const inclusion = gFSFilterInclusionMap[props.value.behavior];
-
-//     const handleClick = (item: SearchResultsFacetOption) => {
-//         if (item.id === null) {
-//             const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
-//                 "alwaysMatch": DiscreteCriterionFilterType.hasNone, // this shouldn't be possible anyay to click null when OFF
-//                 "hasNone": undefined, // clicking null when "has none" is a nop.
-//                 "hasAny": undefined, // 
-//                 "hasSomeOf": DiscreteCriterionFilterType.hasNone,
-//                 "hasAllOf": DiscreteCriterionFilterType.hasNone,
-//                 "doesntHaveAnyOf": DiscreteCriterionFilterType.hasNone,
-//                 "doesntHaveAllOf": DiscreteCriterionFilterType.hasNone,
-//             } as const;
-//             // clicking null
-//             props.onChange({
-//                 ...props.value,
-//                 behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
-//                 options: []
-//             });
-//         } else {
-//             // clicking null will change multi-criteria to single (from hasSome to hasAny for example)
-//             const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
-//                 "alwaysMatch": DiscreteCriterionFilterType.hasSomeOf, // this shouldn't be possible anyay to click null when OFF
-//                 "hasNone": DiscreteCriterionFilterType.hasSomeOf, // clicking null when "has none" is a nop.
-//                 "hasAny": DiscreteCriterionFilterType.hasSomeOf, // 
-//                 "hasSomeOf": undefined,
-//                 "hasAllOf": undefined,
-//                 "doesntHaveAnyOf": undefined,
-//                 "doesntHaveAllOf": undefined,
-//             } as const;
-
-//             props.onChange({
-//                 ...props.value,
-//                 behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
-//                 options: toggleValueInArray(props.value.options, item.id),
-//             });
-//         }
-//     }
-
-//     return <div className='filterGroup'>
-//         <div className='filterGroupHeader'>
-//             <div className='filterGroupLabel'>{props.label}</div>
-//             <div className='filterGroupOptions'>
-//                 <div
-//                     className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.alwaysMatch && "selected"}`}
-//                     onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] })}
-//                 >
-//                     No filter
-//                 </div>
-
-//                 <div
-//                     className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasAny && "selected"}`}
-//                     onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasAny })}
-//                 >
-//                     Has any
-//                 </div>
-
-//                 <div
-//                     className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasNone && "selected"}`}
-//                     onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasNone })}
-//                 >
-//                     Has none
-//                 </div>
-
-//                 <div
-//                     className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.hasSomeOf && "selected"}`}
-//                     onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.hasSomeOf })}
-//                 >
-//                     Is any of
-//                 </div>
-
-//                 <div
-//                     className={`option freeButton ${props.value.behavior === DiscreteCriterionFilterType.doesntHaveAnyOf && "selected"}`}
-//                     onClick={() => props.onChange({ ...props.value, behavior: DiscreteCriterionFilterType.doesntHaveAnyOf })}
-//                 >
-//                     Is not any of
-//                 </div>
-//             </div>
-//         </div>
-//         <CMChipContainer className={props.className}>
-//             {props.items.map(item => {
-//                 const variation = StandardVariationSpec.Strong;
-//                 const isInOptions = props.value.options.includes(item.id);
-//                 const enabled = (props.value.behavior !== DiscreteCriterionFilterType.alwaysMatch);
-//                 const nullIsSelected = (props.value.behavior === DiscreteCriterionFilterType.hasNone);
-//                 const hasAnySelected = (props.value.behavior === DiscreteCriterionFilterType.hasAny);
-//                 const selected = ((isInOptions && !nullIsSelected && !hasAnySelected) || (item.id === null && nullIsSelected));
-//                 return <CMChip
-//                     key={item.id}
-//                     color={item.color}
-//                     variation={{ ...variation, selected: selected, enabled: enabled && (item.rowCount > 0) }}
-//                     size={props.size || "small"}
-//                     shape={props.shape || 'rectangle'}
-//                     border={'noBorder'}
-//                     tooltip={item.tooltip}
-//                     onClick={() => handleClick(item)}
-//                 >
-//                     <div className='filterChipLabelContainer'>
-//                         <div className='label'>{item.label || "-"}</div>
-//                         <div className='rowCount'>{item.rowCount}</div>
-//                     </div>
-//                 </CMChip>;
-//             })}
-//         </CMChipContainer>
-//     </div>
-// };
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface TagsFilterGroupProps {
     items: SearchResultsFacetOption[];
     value: DiscreteCriterion; // don't pass "alwaysmatch" here; this should be the value which is preserved while enabled=false.
     onChange: (v: DiscreteCriterion, enabled: boolean) => void; // callers should respect enabled by setting the behavior to AlwaysMatch when disabled.
+    errorMessage: string | undefined; // from CalculateFilterQueryResult
     filterEnabled: boolean;
-    style: "tags" | "foreignSingle";
+    style: "tags" | "foreignSingle" | "radio";
 
     label: React.ReactNode;
     className?: string;
@@ -283,8 +141,18 @@ interface TagsFilterGroupProps {
 export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
     //const [enabled, setEnabled] = React.useState<boolean>(() => props.value.behavior !== DiscreteCriterionFilterType.alwaysMatch);
 
-    const handleClick = (item: SearchResultsFacetOption) => {
+    const handleClickFacet = (item: SearchResultsFacetOption) => {
+        if (props.style === 'radio') {
+            // clicking an item in radio mode 
+            props.onChange({
+                ...props.value,
+                behavior: DiscreteCriterionFilterType.hasAllOf,
+                options: [item.id]
+            }, true);
+            return;
+        }
         if (item.id === null) {
+            // clicking null
             const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
                 "alwaysMatch": DiscreteCriterionFilterType.hasNone, // this shouldn't be possible anyay to click null when OFF
                 "hasNone": undefined, // clicking null when "has none" is a nop.
@@ -294,44 +162,46 @@ export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
                 "doesntHaveAnyOf": DiscreteCriterionFilterType.hasNone,
                 "doesntHaveAllOf": DiscreteCriterionFilterType.hasNone,
             } as const;
-            // clicking null
             props.onChange({
                 ...props.value,
                 behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
                 options: []
-            }, props.filterEnabled);
-        } else {
-            // clicking null will change multi-criteria to single (from hasSome to hasAny for example)
-            const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
-                "alwaysMatch": DiscreteCriterionFilterType.hasSomeOf, // this shouldn't be possible anyay to click null when OFF
-                "hasNone": DiscreteCriterionFilterType.hasSomeOf, // clicking null when "has none" is a nop.
-                "hasAny": DiscreteCriterionFilterType.hasSomeOf, // 
-                "hasSomeOf": undefined,
-                "hasAllOf": undefined,
-                "doesntHaveAnyOf": undefined,
-                "doesntHaveAllOf": undefined,
-            } as const;
-
-            props.onChange({
-                ...props.value,
-                behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
-                options: toggleValueInArray(props.value.options, item.id),
-            }, props.filterEnabled);
+            }, true);
+            return;
         }
+        // clicking null will change multi-criteria to single (from hasSome to hasAny for example)
+        const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
+            "alwaysMatch": DiscreteCriterionFilterType.hasSomeOf, // this shouldn't be possible anyay to click null when OFF
+            "hasNone": DiscreteCriterionFilterType.hasSomeOf, // clicking null when "has none" is a nop.
+            "hasAny": DiscreteCriterionFilterType.hasSomeOf, // 
+            "hasSomeOf": undefined,
+            "hasAllOf": undefined,
+            "doesntHaveAnyOf": undefined,
+            "doesntHaveAllOf": undefined,
+        } as const;
+
+        props.onChange({
+            ...props.value,
+            behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
+            options: toggleValueInArray(props.value.options, item.id),
+        }, true);
     }
 
-    return <div className='filterGroup'>
+    return <div className={`filterGroup ${props.errorMessage ? "alert" : "noalert"} ${props.filterEnabled ? "filterEnabled" : "filterDisabled"}`}>
         <div className='filterGroupHeader'>
-            <div className='filterGroupSwitch'>
-                <Switch
-                    size='small'
-                    onChange={(e, checked) => {
-                        props.onChange(props.value, checked);
-                    }}
-                    value={props.filterEnabled}
-                />
+            <div className='switchContainer'>
+                <div className='filterGroupSwitch'>
+                    {/* {JSON.stringify(props.filterEnabled)} */}
+                    <Switch
+                        size='small'
+                        onChange={(e, checked) => {
+                            props.onChange(props.value, checked);
+                        }}
+                        checked={props.filterEnabled}
+                    />
+                </div>
+                <div className='filterGroupLabel'>{props.label}</div>
             </div>
-            <div className='filterGroupLabel'>{props.label}</div>
 
             <div className='filterGroupOptions'>
                 {props.style === 'foreignSingle' && <>
@@ -450,7 +320,7 @@ export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
                     shape={props.shape || 'rectangle'}
                     border={'noBorder'}
                     tooltip={item.tooltip}
-                    onClick={() => handleClick(item)}
+                    onClick={() => handleClickFacet(item)}
                 >
                     <div className='filterChipLabelContainer'>
                         <div className='label'>{item.label || "-"}</div>
@@ -459,6 +329,9 @@ export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
                 </CMChip>;
             })}
         </CMChipContainer>
+
+        {props.errorMessage && <div className='alertMessage'>{props.errorMessage}</div>}
+
     </div>;
 };
 
