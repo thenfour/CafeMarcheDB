@@ -938,12 +938,14 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                 </div>
             </div>
 
-            <div className='titleLine'>
-                <div className="location smallInfoBox">
-                    <PlaceIcon className="icon" />
-                    <span className="text">{IsNullOrWhitespace(eventData.event.locationDescription) ? "Location TBD" : eventData.event.locationDescription}</span>
+            {!IsNullOrWhitespace(eventData.event.locationDescription) &&
+                <div className='titleLine'>
+                    <div className="location smallInfoBox">
+                        <PlaceIcon className="icon" />
+                        <span className="text">{eventData.event.locationDescription}</span>
+                    </div>
                 </div>
-            </div>
+            }
 
             <CMChipContainer>
                 {eventData.event.tags.map(tag => <CMStandardDBChip

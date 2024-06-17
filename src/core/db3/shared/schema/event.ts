@@ -348,6 +348,14 @@ export interface EventSearchCustomData {
     userTags: unknown[],
 };
 
+
+export const EventAPI = {
+    getLabel: (e: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>) => {
+        return `${e.name} (${e.startsAt ? e.startsAt.toLocaleDateString() : "TBD"})`;
+    }
+};
+
+
 export const xEventArgs_Base: db3.TableDesc = {
     tableName: "event",
     getInclude: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventInclude => {
@@ -357,7 +365,7 @@ export const xEventArgs_Base: db3.TableDesc = {
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
-        name: row.name,
+        name: EventAPI.getLabel(row),
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
         ownerUserId: row.createdByUserId,
@@ -626,12 +634,6 @@ const xEventArgs_Verbose: db3.TableDesc = {
 };
 
 export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
-
-export const EventAPI = {
-    getLabel: (e: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>) => {
-        return `${e.name} (${e.startsAt ? e.startsAt.toLocaleDateString() : "TBD"})`;
-    }
-};
 
 
 

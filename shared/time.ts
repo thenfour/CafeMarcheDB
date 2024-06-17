@@ -408,9 +408,16 @@ export class DateTimeRange {
         const startDate = this.getStartDateTime(now);
         const endDate = this.getEndDateTime(now);
 
-        return `${formatDate(startDate)} ${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} (${this.durationToString()})`;
-        // Monday 4 October 2023, 18-19h
-        // Monday 4 October 2023 - Wednesday 6 October 2023
+        // scenarios:
+        // TBD:                      : TBD
+        // all-day sameyearmonthday  : Thursday 23 June, 2024
+        // all-day sameyearmonth     : 23-24 June, 2024
+        // all-day sameyear          : 23 June - 2 July, 2024 (3d)
+        // all-day                   : 23 December 2024 - 2 January, 2025 (4d)
+        // notallday, both 0 minutes : Thursday 23 June, 2024 / 20-22h
+        // notallday                 : Thursday 23 June, 2024 / 20-22:30h
+
+        return `${startDate.toLocaleDateString([], { weekday: "long", day: 'numeric', month: 'long', year: 'numeric' })} / ${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
 
     durationToString() {

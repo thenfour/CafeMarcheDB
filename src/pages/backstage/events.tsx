@@ -1,69 +1,105 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Button, ListItemIcon, Menu, MenuItem, Pagination, Tooltip } from "@mui/material";
+import { ListItemIcon, Menu, MenuItem, Pagination, Tooltip } from "@mui/material";
 import Link from "next/link";
-import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CalcRelativeTiming, Timing } from "shared/time";
-import { IsNullOrWhitespace, arrayToTSV, arraysContainSameValues, toggleValueInArray } from "shared/utils";
+import { SortDirection } from "shared/rootroot";
+import { Timing } from "shared/time";
+import { IsNullOrWhitespace, arrayToTSV, arraysContainSameValues } from "shared/utils";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, DebugCollapsibleAdminText, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
-import { SearchInput } from "src/core/components/CMTextField";
+import { CMSmallButton, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
 import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
-import { NewEventButton } from "src/core/components/NewEventComponents";
+import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
-import { VisibilityValue } from "src/core/components/VisibilityControl";
 import { API } from "src/core/db3/clientAPI";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
-import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import getEventFilterInfo from "src/core/db3/queries/getEventFilterInfo";
-import { GetEventFilterInfoRet, GetICalRelativeURIForUserAndEvent, MakeGetEventFilterInfoRet, TimingFilter } from "src/core/db3/shared/apiTypes";
+import getSearchResults from "src/core/db3/queries/getSearchResults";
+import { DiscreteCriterion, DiscreteCriterionFilterType, GetICalRelativeURIForUserAndEvent, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+
+enum OrderByColumnOptions {
+    id = "id",
+    startsAt = "startsAt",
+    name = "name",
+};
+
+type OrderByColumnOption = keyof typeof OrderByColumnOptions;// "startsAt" | "name";
+
+interface EventsFilterSpec {
+    pageSize: number;
+    page: number;
+    quickFilter: string;
+    refreshSerial: number; // this is necessary because you can do things to change the results from this page. think of adding an event then refetching.
+
+    orderByColumn: OrderByColumnOption;
+    orderByDirection: SortDirection;
+
+    typeFilter: DiscreteCriterion;
+    tagFilter: DiscreteCriterion;
+    statusFilter: DiscreteCriterion;
+    dateFilter: DiscreteCriterion;
+};
+
+// // for serializing in compact querystring
+interface CriterionStatic {
+    o: number[];
+    b: DiscreteCriterionFilterType;
+}
+
+// for serializing in compact querystring
+interface EventsFilterSpecStatic {
+    label: string,
+    helpText: string,
+
+    orderByColumn: OrderByColumnOption;
+    orderByDirection: SortDirection;
+
+    typeFilterEnabled: boolean;
+    typeFilterBehavior: DiscreteCriterionFilterType;
+    typeFilterOptions: number[];
+
+    tagFilterEnabled: boolean;
+    tagFilterBehavior: DiscreteCriterionFilterType;
+    tagFilterOptions: number[];
+
+    statusFilterEnabled: boolean;
+    statusFilterBehavior: DiscreteCriterionFilterType;
+    statusFilterOptions: number[];
+
+    dateFilterEnabled: boolean;
+    dateFilterBehavior: DiscreteCriterionFilterType;
+    dateFilterOptions: number[];
+};
 
 export interface EventSearchItemContainerProps {
     event: db3.EventSearch_Event;
 
     highlightTagIds?: number[];
-    highlightStatusId?: number[];
-    highlightTypeId?: number[];
+    highlightStatusIds?: number[];
+    highlightTypeIds?: number[];
 }
 
 export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
     const dashboardContext = React.useContext(DashboardContext);
     const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
 
-    //const [currentUser] = useCurrentUser()!;
-    const router = useRouter();
-    //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-    //const isShowingAdminControls = API.other.useIsShowingAdminControls();
     const highlightTagIds = props.highlightTagIds || [];
-    const highlightStatusIds = props.highlightStatusId || [];
-    const highlightTypeIds = props.highlightTypeId || [];
+    const highlightStatusIds = props.highlightStatusIds || [];
+    const highlightTypeIds = props.highlightTypeIds || [];
 
-    // const refetch = () => {
-    //     tableClient?.refetch();
-    // };
     const eventURI = API.events.getURIForEvent(event.id, event.slug);
     const dateRange = API.events.getEventDateRange(event);
     const eventTiming = dateRange.hitTestDateTime();
-    const relativeTiming = CalcRelativeTiming(new Date(), dateRange);
 
     const visInfo = dashboardContext.getVisibilityInfo(event);
-
-    // const timingLabel: { [key in Timing]: string } = {
-    //     [Timing.Past]: "Past event",
-    //     [Timing.Present]: "Ongoing event",
-    //     [Timing.Future]: "Future event",
-    // } as const;
 
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Strong,
@@ -99,12 +135,6 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                     model={event.status}
                     getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
                 />}
-                {/* 
-                <TimingChip value={eventTiming} tooltip={dateRange.toString()}>
-                    {gIconMap.CalendarMonth()}
-                    {timingLabel[eventTiming]}
-                </TimingChip> */}
-
             </CMChipContainer>
 
             <div className='flex-spacer'></div>
@@ -128,13 +158,9 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
             <Tooltip title="Add to your calendar (iCal)">
                 <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: dashboardContext.currentUser?.accessToken || null, eventUid: event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
             </Tooltip>
-
-            {/* <VisibilityValue permission={event.visiblePermission} variant='minimal' /> */}
-
         </div>
 
         <div className='content'>
-
             {/* for search results it's really best if we allow the whole row to be clickable. */}
             <Link href={eventURI} className="titleLink">
                 <div className='titleLine'>
@@ -174,269 +200,9 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
 };
 
 
-
-/// there's a problem with showing calendars.
-// while it does show a cool overview, interactivity is a problem.
-// 1. how many months? each month is very awkward on screen space.
-// 2. interactivity? you can't actually display any info per-day, so interactivity is important but then it massively complicates things.
-// therefore: no calendars for the moment.
-interface EventsFilterSpec {
-    pageSize: number;
-    page: number;
-    quickFilter: string;
-    refreshSerial: number;
-
-    tagFilter: number[];
-    statusFilter: number[];
-    typeFilter: number[];
-    timingFilter: TimingFilter;
-
-    orderBy: "StartAsc" | "StartDesc";
-};
-
-const gDefaultFilter: EventsFilterSpec = {
-    pageSize: 20,
-    page: 0,
-    refreshSerial: 0,
-    quickFilter: "",
-    tagFilter: [],
-    statusFilter: [],
-    typeFilter: [],
-    timingFilter: "relevant",
-    orderBy: "StartAsc",
-};// cannot be as const because the array is writable.
-
-const HasExtraFilters = (val: EventsFilterSpec) => {
-    if (val.pageSize != gDefaultFilter.pageSize) return true;
-    if (val.quickFilter != gDefaultFilter.quickFilter) return true;
-    if (!arraysContainSameValues(val.tagFilter, gDefaultFilter.tagFilter)) return true;
-    if (!arraysContainSameValues(val.statusFilter, gDefaultFilter.statusFilter)) return true;
-    if (!arraysContainSameValues(val.typeFilter, gDefaultFilter.typeFilter)) return true;
-    if (val.timingFilter != gDefaultFilter.timingFilter) return true;
-    if (val.orderBy != gDefaultFilter.orderBy) return true;
-    return false;
-};
-
-const HasAnyFilters = (val: EventsFilterSpec) => {
-    if (val.quickFilter != gDefaultFilter.quickFilter) return true;
-    return HasExtraFilters(val);
-};
-
-
-interface EventsControlsProps {
-    filterSpec: EventsFilterSpec;
-    filterInfo: GetEventFilterInfoRet;
-    onChange: (value: EventsFilterSpec) => void;
-};
-
-type EventsControlsValueProps = EventsControlsProps & {
-    filterInfo: GetEventFilterInfoRet,
-};
-
-type EventsControlsDynProps = EventsControlsProps & {
-    filterInfo: GetEventFilterInfoRet,
-};
-
-const EventsFilterControlsValue = ({ filterInfo, ...props }: EventsControlsValueProps) => {
-
-    const toggleTag = (tagId: number) => {
-        const newSpec: EventsFilterSpec = { ...props.filterSpec };
-        newSpec.tagFilter = toggleValueInArray(newSpec.tagFilter, tagId);
-        props.onChange(newSpec);
-    };
-
-    const toggleStatus = (id: number) => {
-        const newSpec: EventsFilterSpec = { ...props.filterSpec };
-        newSpec.statusFilter = toggleValueInArray(newSpec.statusFilter, id);
-        props.onChange(newSpec);
-    };
-
-    const toggleType = (id: number) => {
-        const newSpec: EventsFilterSpec = { ...props.filterSpec };
-        newSpec.typeFilter = toggleValueInArray(newSpec.typeFilter, id);
-        props.onChange(newSpec);
-    };
-
-
-    return <div className={`EventsFilterControlsValue`}>
-        <div className="divider"></div>
-
-
-        <div className="row">
-            {/* <div className="caption cell">event type</div> */}
-            <CMChipContainer className="cell">
-                {(filterInfo.types).map(type => (
-                    <CMChip
-                        key={type.id}
-                        variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.typeFilter.some(id => id === type.id) }}
-                        onClick={() => toggleType(type.id)}
-                        color={type.color}
-                        size="small"
-
-                    //tooltip={status.tooltip} // no. it gets in the way and is annoying.
-                    >
-                        {RenderMuiIcon(type.iconName)}{type.label} ({type.rowCount})
-                    </CMChip>
-                ))}
-
-            </CMChipContainer>
-        </div>
-
-        <div className="row">
-            <CMChipContainer className="cell">
-                {
-                    filterInfo.statuses.map(status => (
-                        <CMChip
-                            key={status.id}
-                            size="small"
-
-                            onClick={() => toggleStatus(status.id)}
-                            color={status.color}
-                            shape="rectangle"
-                            variation={{ ...StandardVariationSpec.Strong, selected: props.filterSpec.statusFilter.some(id => id === status.id) }}
-                        //tooltip={status.tooltip} // no. it gets in the way and is annoying.
-                        >
-                            {RenderMuiIcon(status.iconName)}{status.label} ({status.rowCount})
-                        </CMChip>
-                    ))}
-            </CMChipContainer>
-        </div >
-
-        <div className="row">
-            {/* <div className="caption cell">tags</div> */}
-            <CMChipContainer className="cell">
-                {filterInfo.tags.map(tag => (
-                    <CMChip
-                        key={tag.id}
-                        size="small"
-                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.some(id => id === tag.id) }}
-                        onClick={() => toggleTag(tag.id)}
-                        color={tag.color}
-                    //tooltip={status.tooltip} // no. it gets in the way and is annoying.
-                    >
-                        {RenderMuiIcon(tag.iconName)}{tag.label} ({tag.rowCount})
-                    </CMChip>
-                ))}
-            </CMChipContainer>
-        </div>
-
-        <div className="divider"></div>
-
-        <div className="row">
-            <CMChipContainer className="cell">
-                <CMChip
-                    size="small"
-                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.orderBy === "StartAsc" }}
-                    onClick={() => props.onChange({ ...props.filterSpec, orderBy: "StartAsc" })}
-                >
-                    old to new (chronological)
-                </CMChip>
-                <CMChip
-                    size="small"
-                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.orderBy === "StartDesc" }}
-                    onClick={() => props.onChange({ ...props.filterSpec, orderBy: "StartDesc" })}
-                >
-                    new to old
-                </CMChip>
-            </CMChipContainer>
-        </div>
-    </div>;
-};
-
-
-const EventsFilterControlsDyn = (props: EventsControlsDynProps) => {
-    return <EventsFilterControlsValue {...props} />;
-};
-
-
-const EventsControls = (props: EventsControlsProps) => {
-    const [expanded, setExpanded] = React.useState<boolean>(false);
-    const hasExtraFilters = HasExtraFilters(props.filterSpec);
-    const hasAnyFilters = HasAnyFilters(props.filterSpec);
-
-    const setFilterText = (quickFilter: string) => {
-        const newSpec: EventsFilterSpec = { ...props.filterSpec, quickFilter };
-        props.onChange(newSpec);
-    };
-
-    const handleClearFilter = () => {
-        props.onChange({ ...gDefaultFilter });
-    };
-
-    const selectTiming = (t: TimingFilter) => {
-        const newSpec: EventsFilterSpec = { ...props.filterSpec };
-        newSpec.timingFilter = t;
-
-        switch (t) {
-            case "all":
-            case "past":
-                newSpec.orderBy = "StartDesc";
-                break;
-            case "future":
-            case "relevant":
-            case "since 60 days":
-                newSpec.orderBy = "StartAsc";
-                break;
-        }
-
-        props.onChange(newSpec);
-    };
-
-    const timingChips: Record<TimingFilter, string> = {
-        "past": "Showing events that already ended",
-        "since 60 days": "Showing events no more than 60 days ago",
-        "relevant": "Showing upcoming and recent events",
-        "future": "Showing upcoming events",
-        "all": "Showing all events",
-    };
-
-    return <div className="filterControlsContainer">
-        <div className="content">
-            <div className="row">
-                <div className="filterControls">
-
-                    <div className="row quickFilter">
-                        <SearchInput
-                            onChange={(v) => setFilterText(v)}
-                            value={props.filterSpec.quickFilter}
-                            autoFocus={true}
-                        />
-                        {(hasAnyFilters) && <Button onClick={handleClearFilter}>Reset filter</Button>}
-                        <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
-                            Filter {hasExtraFilters && "*"}
-                            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </div>
-                    </div>
-
-                    <div className={`EventsFilterControlsValue`}>
-                        <div className="row" style={{ display: "flex", alignItems: "center" }}>
-                            {/* <div className="caption cell">event type</div> */}
-                            <CMChipContainer className="cell">
-                                {Object.keys(timingChips).map(k => <CMChip
-                                    key={k}
-                                    variation={{ fillOption: "hollow", selected: (k === props.filterSpec.timingFilter), enabled: true, variation: "weak" }}
-                                    onClick={() => selectTiming(k as any)}
-                                    shape="rectangle"
-                                    size="small"
-                                >
-                                    {k}
-                                </CMChip>)
-                                }
-                            </CMChipContainer>
-                            <div className="tinyCaption">{timingChips[props.filterSpec.timingFilter]}</div>
-                        </div>
-                    </div>
-
-                    {expanded && <EventsFilterControlsDyn {...props} filterInfo={props.filterInfo} />}
-                </div>
-            </div>
-        </div>{/* content */}
-    </div>; // {/* filterControlsContainer */ }
-};
-
 interface EventListItemProps {
     event: db3.EnrichedSearchEventPayload;
-    filterInfo: GetEventFilterInfoRet;
+    results: SearchResultsRet;
     refetch: () => void;
     filterSpec: EventsFilterSpec;
 };
@@ -445,7 +211,8 @@ const EventListItem = ({ event, ...props }: EventListItemProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
     const userMap: db3.UserInstrumentList = [dashboardContext.currentUser!];
-    const userTags = props.filterInfo.userTags as db3.EventResponses_ExpectedUserTag[];
+    const customData = props.results.customData as db3.EventSearchCustomData;
+    const userTags = (customData ? customData.userTags : []) as db3.EventResponses_ExpectedUserTag[];
     const expectedAttendanceUserTag = userTags.find(t => t.id === event.expectedAttendanceUserTagId) || null;
 
     const eventData = CalculateEventMetadata<
@@ -478,7 +245,12 @@ const EventListItem = ({ event, ...props }: EventListItemProps) => {
         },
     );
 
-    return <EventSearchItemContainer event={event}>
+    return <EventSearchItemContainer
+        event={event}
+        highlightTagIds={props.filterSpec.tagFilter.options as number[]}
+        highlightStatusIds={props.filterSpec.statusFilter.options as number[]}
+        highlightTypeIds={props.filterSpec.typeFilter.options as number[]}
+    >
         <EventAttendanceControl
             eventData={eventData}
             onRefetch={props.refetch}
@@ -515,13 +287,14 @@ async function CopyEventListCSV(snackbarContext: SnackbarContextType, value: db3
 
 interface EventsListArgs {
     filterSpec: EventsFilterSpec,
-    filterInfo: GetEventFilterInfoRet;
-    setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
+    results: SearchResultsRet;
+    //    setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
+    setPage: (n: number) => void,
     events: db3.EnrichedSearchEventPayload[],
     refetch: () => void;
 };
 
-const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: EventsListArgs) => {
+const EventsList = ({ filterSpec, results, events, refetch, ...props }: EventsListArgs) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
 
@@ -533,7 +306,7 @@ const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: Event
 
     return <div className="eventList searchResults">
         <div className="searchRecordCount">
-            {filterInfo.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {filterInfo.rowCount} total</>}
+            {results.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {results.rowCount} total</>}
             <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
             <Menu
                 id="menu-searchResults"
@@ -550,13 +323,13 @@ const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: Event
                 </MenuItem>
             </Menu>
         </div>
-        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} refetch={refetch} filterInfo={filterInfo} />)}
+        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} refetch={refetch} results={results} />)}
         <Pagination
-            count={Math.ceil(filterInfo.rowCount / filterSpec.pageSize)}
+            count={Math.ceil(results.rowCount / filterSpec.pageSize)}
             page={filterSpec.page + 1}
             onChange={(e, newPage) => {
                 //console.log(`filterSpec.page: ${filterSpec.page} // setting to ${newPage - 1}`);
-                props.setFilterSpec({ ...filterSpec, page: newPage - 1 });
+                props.setPage(newPage - 1);
             }} />
     </div>;
 };
@@ -565,82 +338,225 @@ const EventsList = ({ filterSpec, filterInfo, events, refetch, ...props }: Event
 //////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventListQuerierProps {
     filterSpec: EventsFilterSpec;
-    setFilterInfo: (v: GetEventFilterInfoRet) => void;
-    //setEventsQueryResult: (v: db3.EventClientPayload_Verbose[]) => void;
+    setResults: (v: SearchResultsRet) => void;
 };
 
 const EventListQuerier = (props: EventListQuerierProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    //const dashboardContext = React.useContext(DashboardContext);
 
-    // QUERY: filtered results & info
-    const [queriedFilterInfo, getFilterInfoExtra] = useQuery(getEventFilterInfo, {
-        filterSpec: {
-            quickFilter: props.filterSpec.quickFilter,
-            statusIds: props.filterSpec.statusFilter,
-            tagIds: props.filterSpec.tagFilter,
-            typeIds: props.filterSpec.typeFilter,
-            orderBy: props.filterSpec.orderBy,
-            pageSize: props.filterSpec.pageSize,
-            timingFilter: props.filterSpec.timingFilter,
-            page: props.filterSpec.page,
-            refreshSerial: props.filterSpec.refreshSerial,
-        }
+    const [searchResult, queryExtra] = useQuery(getSearchResults, {
+        page: props.filterSpec.page,
+        pageSize: props.filterSpec.pageSize,
+        tableID: db3.xEvent.tableID,
+        sort: [{
+            db3Column: props.filterSpec.orderByColumn,
+            direction: props.filterSpec.orderByDirection,
+        }],
+
+        quickFilter: props.filterSpec.quickFilter,
+        discreteCriteria: [
+            props.filterSpec.dateFilter,
+            props.filterSpec.typeFilter,
+            props.filterSpec.statusFilter,
+            props.filterSpec.tagFilter,
+        ],
     });
 
     React.useEffect(() => {
-        if (getFilterInfoExtra.isSuccess) {
-            props.setFilterInfo({ ...queriedFilterInfo });
+        if (queryExtra.isSuccess) {
+            console.log(searchResult);
+            props.setResults({ ...searchResult });
         }
-    }, [getFilterInfoExtra.dataUpdatedAt]);
+    }, [queryExtra.dataUpdatedAt]);
 
     return <div className="queryProgressLine idle"></div>;
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+const gStaticFilters: EventsFilterSpecStatic[] = [
+    {
+        label: "All",
+        helpText: "Searching all events",
+        orderByColumn: OrderByColumnOptions.startsAt,
+        orderByDirection: "asc",
+        typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+        typeFilterOptions: [],
+        typeFilterEnabled: false,
+        tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+        tagFilterOptions: [],
+        tagFilterEnabled: false,
+        statusFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+        statusFilterOptions: [],
+        statusFilterEnabled: false,
+        dateFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+        dateFilterOptions: [],
+        dateFilterEnabled: false,
+    },
+    {
+        label: "Relevant",
+        helpText: "Searching all events no more than 1 week old",
+        "orderByColumn": "startsAt",
+        "orderByDirection": "asc",
+        "statusFilterEnabled": false,
+        "statusFilterBehavior": "hasNone" as any,
+        "statusFilterOptions": [
+            2
+        ],
+        "typeFilterEnabled": false,
+        "typeFilterBehavior": "hasSomeOf" as any,
+        "typeFilterOptions": [
+            3
+        ],
+        "tagFilterEnabled": false,
+        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterOptions": [],
+        "dateFilterEnabled": true,
+        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterOptions": [
+            10002
+        ]
+    },
+    {
+        label: "Rehearsals since 60 days",
+        helpText: "Searching rehearsals more recent than 60 days",
+        "orderByColumn": "startsAt",
+        "orderByDirection": "asc",
+        "statusFilterEnabled": false,
+        "statusFilterBehavior": "hasNone" as any,
+        "statusFilterOptions": [
+            2
+        ],
+        "typeFilterEnabled": true,
+        "typeFilterBehavior": "hasSomeOf" as any,
+        "typeFilterOptions": [
+            3
+        ],
+        "tagFilterEnabled": false,
+        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterOptions": [],
+        "dateFilterEnabled": true,
+        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterOptions": [
+            10003
+        ]
+    },
+
+] as const;
+
+const gDefaultStaticFilterName = "Relevant" as const;
+const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultStaticFilterName)!;
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-interface EventListOuterProps {
-};
+const EventListOuter = () => {
+    const dashboardContext = React.useContext(DashboardContext);
+    const snackbarContext = React.useContext(SnackbarContext);
 
-const EventListOuter = (props: EventListOuterProps) => {
-    //const [filterSpec, setFilterSpec] = React.useState<EventsFilterSpec>({ ...gDefaultFilter });
-
-    //const [pageSize, setPageSize] = useURLState<number>("pageSize", 20);
     const [page, setPage] = useURLState<number>("p", 0);
-    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
-    const [refreshSerial, setRefreshSerial] = useURLState<number>("rs", 0);
-    const [tagFilter, setTagFilter] = useURLState<number[]>("tags", []);
-    const [statusFilter, setStatusFilter] = useURLState<number[]>("statuses", []);
-    const [typeFilter, setTypeFilter] = useURLState<number[]>("types", []);
-    const [timingFilter, setTimingFilter] = useURLState<TimingFilter>("timing", "relevant");
-    const [orderBy, setOrderBy] = useURLState<"StartAsc" | "StartDesc">("sort", "StartAsc");
+    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
 
+    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
+
+    const [sortColumn, setSortColumn] = useURLState<string>("sc", gDefaultStaticFilterValue.orderByColumn);
+    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection);
+
+    const sortModel: SortBySpec = {
+        columnName: sortColumn,
+        direction: sortDirection,
+    };
+    const setSortModel = (x: SortBySpec) => {
+        setSortColumn(x.columnName);
+        setSortDirection(x.direction);
+    };
+
+    // "tg" prefix
+    const [tagFilterBehaviorWhenEnabled, setTagFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tgb", gDefaultStaticFilterValue.tagFilterBehavior);
+    const [tagFilterOptionsWhenEnabled, setTagFilterOptionsWhenEnabled] = useURLState<number[]>("tgo", gDefaultStaticFilterValue.tagFilterOptions);
+    const [tagFilterEnabled, setTagFilterEnabled] = useURLState<boolean>("tge", gDefaultStaticFilterValue.tagFilterEnabled);
+    const tagFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "tags",
+        behavior: tagFilterBehaviorWhenEnabled,
+        options: tagFilterOptionsWhenEnabled,
+    };
+    const setTagFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setTagFilterBehaviorWhenEnabled(x.behavior);
+        setTagFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // "st" prefix
+    const [statusFilterBehaviorWhenEnabled, setStatusFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("stb", gDefaultStaticFilterValue.statusFilterBehavior);
+    const [statusFilterOptionsWhenEnabled, setStatusFilterOptionsWhenEnabled] = useURLState<number[]>("sto", gDefaultStaticFilterValue.statusFilterOptions);
+    const [statusFilterEnabled, setStatusFilterEnabled] = useURLState<boolean>("ste", gDefaultStaticFilterValue.statusFilterEnabled);
+    const statusFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "status",
+        behavior: statusFilterBehaviorWhenEnabled,
+        options: statusFilterOptionsWhenEnabled,
+    };
+    const setStatusFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setStatusFilterBehaviorWhenEnabled(x.behavior);
+        setStatusFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // "tp" prefix
+    const [typeFilterBehaviorWhenEnabled, setTypeFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tpb", gDefaultStaticFilterValue.typeFilterBehavior);
+    const [typeFilterOptionsWhenEnabled, setTypeFilterOptionsWhenEnabled] = useURLState<number[]>("tpo", gDefaultStaticFilterValue.typeFilterOptions);
+    const [typeFilterEnabled, setTypeFilterEnabled] = useURLState<boolean>("tpe", gDefaultStaticFilterValue.typeFilterEnabled);
+
+    const typeFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "type",
+        behavior: typeFilterBehaviorWhenEnabled,
+        options: typeFilterOptionsWhenEnabled,
+    };
+    const setTypeFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setTypeFilterBehaviorWhenEnabled(x.behavior);
+        setTypeFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // "dt" prefix
+    const [dateFilterBehaviorWhenEnabled, setDateFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("dtb", gDefaultStaticFilterValue.dateFilterBehavior);
+    const [dateFilterOptionsWhenEnabled, setDateFilterOptionsWhenEnabled] = useURLState<number[]>("dto", gDefaultStaticFilterValue.dateFilterOptions);
+    const [dateFilterEnabled, setDateFilterEnabled] = useURLState<boolean>("dte", gDefaultStaticFilterValue.dateFilterEnabled);
+
+    const dateFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "startsAt",
+        behavior: dateFilterBehaviorWhenEnabled,
+        options: dateFilterOptionsWhenEnabled,
+    };
+    const setDateFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setDateFilterBehaviorWhenEnabled(x.behavior);
+        setDateFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
         pageSize: 20,
-        page,
-        quickFilter,
         refreshSerial,
-        tagFilter,
-        statusFilter,
-        typeFilter,
-        timingFilter,
-        orderBy,
+        page,
+
+        // in dto...
+        quickFilter,
+
+        orderByColumn: sortColumn as any,
+        orderByDirection: sortDirection,
+
+        tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        statusFilter: statusFilterEnabled ? statusFilterWhenEnabled : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        typeFilter: typeFilterEnabled ? typeFilterWhenEnabled : { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        dateFilter: dateFilterEnabled ? dateFilterWhenEnabled : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
-    const setFilterSpec = (x: EventsFilterSpec) => {
-        //setPageSize(x.pageSize);
-        setPage(x.page);
-        setQuickFilter(x.quickFilter);
-        setRefreshSerial(x.refreshSerial);
-        setTagFilter(x.tagFilter);
-        setStatusFilter(x.statusFilter);
-        setTypeFilter(x.typeFilter);
-        setTimingFilter(x.timingFilter);
-        setOrderBy(x.orderBy);
-    };
-
-    const [filterInfo, setFilterInfo] = React.useState<GetEventFilterInfoRet>(MakeGetEventFilterInfoRet());
-    //const [eventsQueryResult, setEventsQueryResult] = React.useState<db3.EventClientPayload_Verbose[]>([]);
-    const dashboardContext = React.useContext(DashboardContext);
+    const [results, setResults] = React.useState<SearchResultsRet>({
+        facets: [],
+        results: [],
+        rowCount: 0,
+        customData: null,
+        queryMetrics: [],
+        filterQueryResult: {
+            errors: [],
+            sqlSelect: "",
+        },
+    });
 
     // # when filter spec (other than page change), reset page to 0.
     let everythingButPage: any = {};
@@ -650,57 +566,240 @@ const EventListOuter = (props: EventListOuterProps) => {
     }
 
     const specHash = JSON.stringify(everythingButPage);
+    // React.useEffect(() => {
+    //     setFilterSpec({ ...filterSpec, page: 0 });
+    // }, [specHash]);
     React.useEffect(() => {
-        setFilterSpec({ ...filterSpec, page: 0 });
+        setPage(0);
     }, [specHash]);
 
-    const enrichedEvents = filterInfo.fullEvents.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
+    const enrichedEvents = results.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
+
+    const handleCopyFilterspec = () => {
+        const o: EventsFilterSpecStatic = {
+            label: "(n/a)",
+            helpText: "",
+            orderByColumn: sortColumn as any,
+            orderByDirection: sortDirection,
+
+            statusFilterEnabled,
+            statusFilterBehavior: statusFilterBehaviorWhenEnabled,
+            statusFilterOptions: statusFilterOptionsWhenEnabled,
+
+            typeFilterEnabled,
+            typeFilterBehavior: typeFilterBehaviorWhenEnabled,
+            typeFilterOptions: typeFilterOptionsWhenEnabled,
+
+            tagFilterEnabled,
+            tagFilterBehavior: tagFilterBehaviorWhenEnabled,
+            tagFilterOptions: tagFilterOptionsWhenEnabled,
+
+            dateFilterEnabled,
+            dateFilterBehavior: dateFilterBehaviorWhenEnabled,
+            dateFilterOptions: dateFilterOptionsWhenEnabled,
+        }
+        const txt = JSON.stringify(o, null, 2);
+        navigator.clipboard.writeText(txt).then(() => {
+            snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+        }).catch(() => {
+            // nop
+        });
+    };
+
+    const handleClickStaticFilter = (x: EventsFilterSpecStatic) => {
+        setSortColumn(x.orderByColumn);
+        setSortDirection(x.orderByDirection);
+
+        setTypeFilterEnabled(x.typeFilterEnabled);
+        setTypeFilterBehaviorWhenEnabled(x.typeFilterBehavior);
+        setTypeFilterOptionsWhenEnabled(x.typeFilterOptions);
+
+        setStatusFilterEnabled(x.statusFilterEnabled);
+        setStatusFilterBehaviorWhenEnabled(x.statusFilterBehavior);
+        setStatusFilterOptionsWhenEnabled(x.statusFilterOptions);
+
+        setTagFilterEnabled(x.tagFilterEnabled);
+        setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
+        setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+
+        setDateFilterEnabled(x.dateFilterEnabled);
+        setDateFilterBehaviorWhenEnabled(x.dateFilterBehavior);
+        setDateFilterOptionsWhenEnabled(x.dateFilterOptions);
+    };
+
+    const MatchesStaticFilter = (x: EventsFilterSpecStatic): boolean => {
+        if (sortColumn !== x.orderByColumn) return false;
+        if (sortDirection !== x.orderByDirection) return false;
+
+        if (x.typeFilterEnabled !== typeFilterEnabled) return false;
+        if (typeFilterEnabled) {
+            if (typeFilterBehaviorWhenEnabled !== x.typeFilterBehavior) return false;
+            if (!arraysContainSameValues(typeFilterOptionsWhenEnabled, x.typeFilterOptions)) return false;
+        }
+
+        if (x.statusFilterEnabled !== statusFilterEnabled) return false;
+        if (statusFilterEnabled) {
+            if (statusFilterBehaviorWhenEnabled !== x.statusFilterBehavior) return false;
+            if (!arraysContainSameValues(statusFilterOptionsWhenEnabled, x.statusFilterOptions)) return false;
+        }
+
+        if (x.tagFilterEnabled !== tagFilterEnabled) return false;
+        if (tagFilterEnabled) {
+            if (tagFilterBehaviorWhenEnabled !== x.tagFilterBehavior) return false;
+            if (!arraysContainSameValues(tagFilterOptionsWhenEnabled, x.tagFilterOptions)) return false;
+        }
+
+        if (x.dateFilterEnabled !== dateFilterEnabled) return false;
+        if (dateFilterEnabled) {
+            if (dateFilterBehaviorWhenEnabled !== x.dateFilterBehavior) return false;
+            if (!arraysContainSameValues(dateFilterOptionsWhenEnabled, x.dateFilterOptions)) return false;
+        }
+
+        return true;
+    };
+
+    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x));
+
+    const hasExtraFilters = ((): boolean => {
+        if (!!matchingStaticFilter) return false;
+        if (typeFilterEnabled) return true;
+        if (statusFilterEnabled) return true;
+        if (tagFilterEnabled) return true;
+        if (dateFilterEnabled) return true;
+        return false;
+    })();
+
+    const hasAnyFilters = hasExtraFilters;
 
     return <>
-        <NewEventButton onOK={() => { }} />
-
-        <DebugCollapsibleAdminText obj={filterSpec} caption={"filterSpec"} />
-        <DebugCollapsibleAdminText text={filterInfo.statusesQuery} caption={"statusesQuery"} />
-        <DebugCollapsibleAdminText text={filterInfo.tagsQuery} caption={"tagsQuery"} />
-        <DebugCollapsibleAdminText text={filterInfo.typesQuery} caption={"typesQuery"} />
-        <DebugCollapsibleAdminText text={filterInfo.paginatedEventQuery} caption={"paginatedEventQuery"} />
-
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
-                <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} />
+
+                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+
+                {/* <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} /> */}
+                <FilterControls
+                    inCard={false}
+                    onQuickFilterChange={(v) => setQuickFilter(v)}
+                    onResetFilter={() => {
+                        handleClickStaticFilter(gDefaultStaticFilterValue);
+                    }}
+                    hasAnyFilters={hasAnyFilters}
+                    hasExtraFilters={hasExtraFilters}
+                    quickFilterText={filterSpec.quickFilter}
+                    primaryFilter={
+                        <div>
+                            <CMChipContainer>
+                                {
+                                    gStaticFilters.map(e => {
+                                        const doesMatch = e.label === matchingStaticFilter?.label;// MatchesStaticFilter(e[1]);
+                                        return <CMChip
+                                            key={e.label}
+                                            onClick={() => handleClickStaticFilter(e)} size="small"
+                                            variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
+                                        >
+                                            {e.label}
+                                        </CMChip>;
+                                    })
+                                }
+                                {matchingStaticFilter && <div className="tinyCaption">{matchingStaticFilter.helpText}</div>}
+                            </CMChipContainer>
+                        </div>
+                    }
+                    extraFilter={
+                        <div>
+                            <TagsFilterGroup
+                                label={"Status"}
+                                style="foreignSingle"
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "status")?.error}
+                                value={statusFilterWhenEnabled}
+                                filterEnabled={statusFilterEnabled}
+                                onChange={(n, enabled) => {
+                                    setStatusFilterEnabled(enabled);
+                                    setStatusFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "status")?.items || []}
+                            />
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Type"}
+                                style="foreignSingle"
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "type")?.error}
+                                value={typeFilterWhenEnabled}
+                                filterEnabled={typeFilterEnabled}
+                                onChange={(n, enabled) => {
+                                    setTypeFilterEnabled(enabled);
+                                    setTypeFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "type")?.items || []}
+                            />
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Tags"}
+                                style="tags"
+                                filterEnabled={tagFilterEnabled}
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "tags")?.error}
+                                value={tagFilterWhenEnabled}
+                                onChange={(n, enabled) => {
+                                    setTagFilterEnabled(enabled);
+                                    setTagFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "tags")?.items || []}
+                            />
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Date"}
+                                style="radio"
+                                filterEnabled={dateFilterEnabled}
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
+                                value={dateFilterWhenEnabled}
+                                onChange={(n, enabled) => {
+                                    setDateFilterEnabled(enabled);
+                                    setDateFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "startsAt")?.items || []}
+                            />
+                            <div className="divider" />
+
+                            <SortByGroup
+                                columnOptions={Object.keys(OrderByColumnOptions)}
+                                setValue={setSortModel}
+                                value={sortModel}
+                            />
+
+                        </div>
+                    }
+                />
             </div>
 
             <Suspense fallback={<div className="queryProgressLine loading"></div>}>
-                <EventListQuerier filterSpec={filterSpec} setFilterInfo={setFilterInfo} />
+                <EventListQuerier filterSpec={filterSpec} setResults={setResults} />
             </Suspense>
-        </CMSinglePageSurfaceCard>
+        </CMSinglePageSurfaceCard >
         <EventsList
             filterSpec={filterSpec}
-            setFilterSpec={setFilterSpec}
+            //setFilterSpec={setFilterSpec}
+            setPage={setPage}
             events={enrichedEvents}
-            filterInfo={filterInfo}
-            refetch={() => setFilterSpec({ ...filterSpec, refreshSerial: filterSpec.refreshSerial + 1 })}
+            results={results}
+            refetch={() => setRefreshSerial(filterSpec.refreshSerial + 1)}
         />
     </>;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-const EventListPageContent = () => {
-    return <div className="eventsMainContent searchPage">
-        <Suspense>
-            <SettingMarkdown setting="events_markdown"></SettingMarkdown>
-        </Suspense>
-
-        <EventListOuter />
-    </div>;
-};
-
-const ViewEventsPage: BlitzPage = (props) => {
+const SearchEventsPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Events" basePermission={Permission.view_events_nonpublic}>
-            <EventListPageContent />
+            <div className="eventsMainContent searchPage">
+                <Suspense>
+                    <SettingMarkdown setting="events_markdown"></SettingMarkdown>
+                </Suspense>
+
+                <EventListOuter />
+            </div>
         </DashboardLayout>
     )
 }
 
-export default ViewEventsPage;
+export default SearchEventsPage;
