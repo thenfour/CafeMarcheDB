@@ -2265,6 +2265,7 @@ pre.serverStartInfo {
 table.activityVis {
     --dim: 30px;
     --yearWidth: 100px;
+    --aggMonthHeight: 60px;
     font-family: monospace;
     font-size: 14px;
 }
@@ -2299,7 +2300,7 @@ table.activityVis .cell.hasActivity.selected {
     outline: 2px solid blue;
 }
 
-
+/* YEAR TOTAL CELLS */
 table.activityVis .yearTotalGraphTD {
     background-color: #fff;
     width: var(--yearWidth);
@@ -2307,10 +2308,8 @@ table.activityVis .yearTotalGraphTD {
 }
 
 table.activityVis .yearTotalGraphWrap {
-
     display: flex;
     height: 100%;
-    /* opacity: 50%; */
 }
 
 table.activityVis .yearTotalFilledPart {
@@ -2318,11 +2317,8 @@ table.activityVis .yearTotalFilledPart {
     --normValue: 0.0;
     background-color: var(--color);
     width: calc(var(--yearWidth) * var(--normValue));
-    /* color: #fff8; */
     padding-left: 8px;
     padding-right: 8px;
-    /* margin-top: 4px; */
-    /* margin-bottom: 4px; */
     line-height: 1px;
     display: flex;
     align-items: center;
@@ -2330,6 +2326,32 @@ table.activityVis .yearTotalFilledPart {
     height: 12px;
 }
 
+
+table.activityVis tr.aggMonthRow td {
+    background-color: #fff;
+    height: var(--aggMonthHeight);
+    width: var(--dim);
+}
+
+table.activityVis tr.aggMonthRow .aggMonthWrap {
+    display: flex;
+    justify-content: center;
+    height: 100%;
+    align-items: flex-end;
+}
+
+table.activityVis tr.aggMonthRow .totalFilledPart {
+    --color: #f0f;
+    --normValue: 0.0;
+    background-color: var(--color);
+    border-radius: 4px;
+    height: calc(var(--aggMonthHeight) * var(--normValue));
+    width: 12px;
+    /*center text*/
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
 
 
 .actionButtonsRow {

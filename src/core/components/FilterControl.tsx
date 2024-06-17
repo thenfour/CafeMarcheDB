@@ -143,7 +143,7 @@ export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
 
     const handleClickFacet = (item: SearchResultsFacetOption) => {
         if (props.style === 'radio') {
-            // clicking an item in radio mode 
+            // clicking an item in radio mode sets the 1 option, done.
             props.onChange({
                 ...props.value,
                 behavior: DiscreteCriterionFilterType.hasAllOf,
@@ -169,16 +169,27 @@ export const TagsFilterGroup = (props: TagsFilterGroupProps) => {
             }, true);
             return;
         }
+
         // clicking null will change multi-criteria to single (from hasSome to hasAny for example)
         const newBehaviorMap: { [key in DiscreteCriterionFilterType]: DiscreteCriterionFilterType | undefined } = {
-            "alwaysMatch": DiscreteCriterionFilterType.hasSomeOf, // this shouldn't be possible anyay to click null when OFF
-            "hasNone": DiscreteCriterionFilterType.hasSomeOf, // clicking null when "has none" is a nop.
-            "hasAny": DiscreteCriterionFilterType.hasSomeOf, // 
+            "alwaysMatch": DiscreteCriterionFilterType.hasSomeOf,
+            "hasNone": DiscreteCriterionFilterType.hasSomeOf,
+            "hasAny": DiscreteCriterionFilterType.hasSomeOf,
             "hasSomeOf": undefined,
             "hasAllOf": undefined,
             "doesntHaveAnyOf": undefined,
             "doesntHaveAllOf": undefined,
         } as const;
+
+        if (!props.filterEnabled) {
+            // clicking on items when the filter is disabled will enable it, select the 1 option.
+            props.onChange({
+                ...props.value,
+                behavior: newBehaviorMap[props.value.behavior] || props.value.behavior,
+                options: [item.id],
+            }, true);
+            return;
+        }
 
         props.onChange({
             ...props.value,

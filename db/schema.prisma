@@ -671,10 +671,11 @@ model EventAttendance {
   id        Int @id @default(autoincrement())
   sortOrder Int @default(0)
 
-  text             String @db.VarChar(768) // generic button text ("yes", "probably")
-  personalText     String @default("") // more personal text explanation ("you are going", "you are probably going")
-  pastText         String @default("") // "went"
-  pastPersonalText String @default("") // "you went"
+  text             String  @db.VarChar(768) // generic button text ("yes", "probably")
+  personalText     String  @default("") // more personal text explanation ("you are going", "you are probably going")
+  pastText         String  @default("") // "went"
+  pastPersonalText String  @default("") // "you went"
+  isActive         Boolean @default(true) // is it offered to users as an option?
 
   description String  @db.MediumText // explanation
   color       String?

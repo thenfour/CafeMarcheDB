@@ -10,7 +10,7 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { getURIForEvent, getURIForSong } from "src/core/db3/clientAPILL";
-import { EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
+import { EventAPI, EventStatusSignificance, EventTypeSignificance } from "src/core/db3/db3";
 import getGlobalStats from "src/core/db3/queries/getGlobalStats";
 import { GetGlobalStatsFilterSpec, GetGlobalStatsRet, GetGlobalStatsRetEvent, GetGlobalStatsRetPopularSongOccurrance, GetSongActivityReportFilterSpecTimingFilter } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -138,7 +138,7 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
                         tooltip: <ul>{b.items.map(x => <li key={x.item.eventId}>{x.item.eventName}</li>)}</ul>
                     };
                 }}
-                selectedMonthBucketId={selectedBucket?.monthBucketId || null}
+                selectedMonthBucketId={selectedBucket?.yearMonthBucketId || null}
                 onBucketClick={(b) => setSelectedBucket(b)}
             />
             <div>
@@ -249,10 +249,10 @@ const StatsPageInner = () => {
                 }}
                 getBucketInfo={(b) => {
                     return {
-                        tooltip: <ul>{b.items.map(x => <li key={x.item.id}>{x.item.name}</li>)}</ul>
+                        tooltip: <ul>{b.items.map(x => <li key={x.item.id}>{EventAPI.getLabel(x.item)}</li>)}</ul>
                     };
                 }}
-                selectedMonthBucketId={selectedEventBucket?.monthBucketId || null}
+                selectedMonthBucketId={selectedEventBucket?.yearMonthBucketId || null}
                 onBucketClick={(b) => setSelectedEventBucket(b)}
             />}
 
@@ -261,7 +261,7 @@ const StatsPageInner = () => {
                 {selectedEventBucket?.items.map(i => {
                     return <li key={i.item.id}>
                         <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item.id)}>
-                            {i.item.startsAt?.toLocaleDateString()} {i.item.name}
+                            {EventAPI.getLabel(i.item)}
                         </a></li>;
 
                 })}

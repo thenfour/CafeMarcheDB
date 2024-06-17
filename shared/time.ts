@@ -680,14 +680,14 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): Relativ
 
     if (timing === Timing.Past) {
         const yesterday = dayjs(refTimeN).add(-1, "d");
+        const diffWeeks = Math.abs(calculateCalendarWeeksDistance(startDate, dayjs(refTime)));
 
         if (yesterday.isSame(startDate, "d")) return { bucket: RelativeTimingBucket.Yesterday, label: "Yesterday" };
-        if (diffDays <= 5) return { bucket: RelativeTimingBucket.DaysAgo, label: `${diffDays} days ago` };
+        if (diffWeeks < 3) return { bucket: RelativeTimingBucket.DaysAgo, label: `${diffDays} days ago` };
 
-        const diffWeeks = Math.abs(calculateCalendarWeeksDistance(startDate, dayjs(refTime)));
-        if (diffWeeks <= 1) return { bucket: RelativeTimingBucket.LastWeek, label: `Last week` };
+        //if (diffWeeks <= 1) return { bucket: RelativeTimingBucket.LastWeek, label: `Last week` };
 
-        if (diffWeeks < 7) return { bucket: RelativeTimingBucket.WeeksAgo, label: `${diffWeeks} weeks ago` };
+        if (diffWeeks < 8) return { bucket: RelativeTimingBucket.WeeksAgo, label: `${diffWeeks} weeks ago` };
 
         const diffMonths = Math.abs(calculateCalendarMonthsDistance(startDate, dayjs(refTime)));
         if (diffMonths <= 18) return { bucket: RelativeTimingBucket.MonthsAgo, label: `${diffMonths} months ago` };
@@ -701,13 +701,15 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): Relativ
     const diffWeeks = Math.abs(calculateCalendarWeeksDistance(startDateN, refTimeN));
 
     if (tomorrow.isSame(startDate, "d")) return { bucket: RelativeTimingBucket.Tomorrow, label: "Tomorrow" };
-    if (diffWeeks < 1 || diffDays < 5) return { bucket: RelativeTimingBucket.InDays, label: `In ${diffDays} days` };
-    if (diffWeeks === 1) return { bucket: RelativeTimingBucket.NextWeek, label: `Next week` };
+    if (diffWeeks < 3) return { bucket: RelativeTimingBucket.InDays, label: `In ${diffDays} days` }; // days still count for quite a while. "in 12 days" e.g. is better than in 1 or 2 weeks; in 7 days is better than "next week" even.
 
-    if (diffWeeks < 7) return { bucket: RelativeTimingBucket.InWeeks, label: `In ${diffWeeks} weeks` };
+    // "in 3 weeks"
+    //if (diffWeeks === 1) return { bucket: RelativeTimingBucket.NextWeek, label: `Next week` };
+
+    if (diffWeeks < 8) return { bucket: RelativeTimingBucket.InWeeks, label: `In ${diffWeeks} weeks` };
 
     const diffMonths = Math.abs(calculateCalendarMonthsDistance(startDate, dayjs(refTime)));//  Math.round(Math.max(1, diffDays / 30));
-    if (diffMonths <= 1) return { bucket: RelativeTimingBucket.NextMonth, label: `Next month` };
+    //if (diffMonths <= 1) return { bucket: RelativeTimingBucket.NextMonth, label: `Next month` };
     if (diffMonths <= 18) return { bucket: RelativeTimingBucket.InMonths, label: `In ${diffMonths} months` };
 
     const diffYears = Math.round(Math.max(1, diffMonths / 12));

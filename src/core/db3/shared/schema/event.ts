@@ -627,7 +627,11 @@ const xEventArgs_Verbose: db3.TableDesc = {
 
 export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
 
-
+export const EventAPI = {
+    getLabel: (e: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>) => {
+        return `${e.name} (${e.startsAt ? e.startsAt.toLocaleDateString() : "TBD"})`;
+    }
+};
 
 
 
@@ -773,7 +777,7 @@ export const xEventAttendance = new db3.xTable({
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({
         name: row.text,
-        description: row.description,
+        description: `${row.isActive ? "" : "(inactive) "}${row.description}`,
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
         iconName: row.iconName,
@@ -793,6 +797,7 @@ export const xEventAttendance = new db3.xTable({
         MakeIntegerField("strength", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        new BoolField({ columnName: "isActive", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         new GhostField({ memberName: "responses", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });

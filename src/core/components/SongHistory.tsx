@@ -13,6 +13,7 @@ import { ActivityVis, ActivityVisBucket } from './ActivityVis';
 import { DashboardContext } from './DashboardContext';
 import { ChipFilterGroup, ChipFilterGroupItem, FilterControls } from './FilterControl';
 import { AdminInspectObject } from './CMCoreComponents';
+import { EventAPI } from '../db3/db3';
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -166,12 +167,12 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
             getBucketInfo={(bucket) => {
                 if (bucket.items.length === 0) return { tooltip: "" };
                 return {
-                    tooltip: <ul>{bucket.items.map(x => <li key={x.item.id}>{x.item.name}</li>)}</ul>
+                    tooltip: <ul>{bucket.items.map(x => <li key={x.item.id}>{EventAPI.getLabel(x.item)}</li>)}</ul>
                 }
             }}
-            selectedMonthBucketId={selectedBucket?.monthBucketId || null}
+            selectedMonthBucketId={selectedBucket?.yearMonthBucketId || null}
             onBucketClick={(bucket) => {
-                if (bucket.monthBucketId === selectedBucket?.monthBucketId) {
+                if (bucket.yearMonthBucketId === selectedBucket?.yearMonthBucketId) {
                     // toggle off.
                     setSelectedBucket(null);
                     return;
@@ -183,7 +184,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
             {selectedBucket && selectedBucket.items.map(i => {
                 return <li key={i.item.id}>
                     <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item.id)}>
-                        {i.item.startsAt?.toLocaleDateString()} {i.item.name}
+                        {EventAPI.getLabel(i.item)}
                     </a></li>;
             })}
         </ul>

@@ -56,6 +56,9 @@ interface CriterionStatic {
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
+    label: string,
+    helpText: string,
+
     orderByColumn: OrderByColumnOption;
     orderByDirection: SortDirection;
 
@@ -370,77 +373,79 @@ const EventListQuerier = (props: EventListQuerierProps) => {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-const gAllFilter: EventsFilterSpecStatic = {
-    orderByColumn: OrderByColumnOptions.startsAt,
-    orderByDirection: "asc",
-    typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    typeFilterOptions: [],
-    typeFilterEnabled: false,
-    tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
-    tagFilterOptions: [],
-    tagFilterEnabled: false,
-    statusFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    statusFilterOptions: [],
-    statusFilterEnabled: false,
-    dateFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
-    dateFilterOptions: [],
-    dateFilterEnabled: false,
-};
 
-const past60DaysRehearsals: EventsFilterSpecStatic = {
-    "orderByColumn": "startsAt",
-    "orderByDirection": "asc",
-    "statusFilterEnabled": false,
-    "statusFilterBehavior": "hasNone" as any,
-    "statusFilterOptions": [
-        2
-    ],
-    "typeFilterEnabled": true,
-    "typeFilterBehavior": "hasSomeOf" as any,
-    "typeFilterOptions": [
-        3
-    ],
-    "tagFilterEnabled": false,
-    "tagFilterBehavior": "hasAllOf" as any,
-    "tagFilterOptions": [],
-    "dateFilterEnabled": true,
-    "dateFilterBehavior": "hasAllOf" as any,
-    "dateFilterOptions": [
-        10003
-    ]
-};
+const gStaticFilters: EventsFilterSpecStatic[] = [
+    {
+        label: "All",
+        helpText: "Searching all events",
+        orderByColumn: OrderByColumnOptions.startsAt,
+        orderByDirection: "asc",
+        typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+        typeFilterOptions: [],
+        typeFilterEnabled: false,
+        tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+        tagFilterOptions: [],
+        tagFilterEnabled: false,
+        statusFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+        statusFilterOptions: [],
+        statusFilterEnabled: false,
+        dateFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+        dateFilterOptions: [],
+        dateFilterEnabled: false,
+    },
+    {
+        label: "Relevant",
+        helpText: "Searching all events no more than 1 week old",
+        "orderByColumn": "startsAt",
+        "orderByDirection": "asc",
+        "statusFilterEnabled": false,
+        "statusFilterBehavior": "hasNone" as any,
+        "statusFilterOptions": [
+            2
+        ],
+        "typeFilterEnabled": false,
+        "typeFilterBehavior": "hasSomeOf" as any,
+        "typeFilterOptions": [
+            3
+        ],
+        "tagFilterEnabled": false,
+        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterOptions": [],
+        "dateFilterEnabled": true,
+        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterOptions": [
+            10002
+        ]
+    },
+    {
+        label: "Rehearsals since 60 days",
+        helpText: "Searching rehearsals more recent than 60 days",
+        "orderByColumn": "startsAt",
+        "orderByDirection": "asc",
+        "statusFilterEnabled": false,
+        "statusFilterBehavior": "hasNone" as any,
+        "statusFilterOptions": [
+            2
+        ],
+        "typeFilterEnabled": true,
+        "typeFilterBehavior": "hasSomeOf" as any,
+        "typeFilterOptions": [
+            3
+        ],
+        "tagFilterEnabled": false,
+        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterOptions": [],
+        "dateFilterEnabled": true,
+        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterOptions": [
+            10003
+        ]
+    },
 
-const relevantFilter: EventsFilterSpecStatic = {
-    "orderByColumn": "startsAt",
-    "orderByDirection": "asc",
-    "statusFilterEnabled": false,
-    "statusFilterBehavior": "hasNone" as any,
-    "statusFilterOptions": [
-        2
-    ],
-    "typeFilterEnabled": false,
-    "typeFilterBehavior": "hasSomeOf" as any,
-    "typeFilterOptions": [
-        3
-    ],
-    "tagFilterEnabled": false,
-    "tagFilterBehavior": "hasAllOf" as any,
-    "tagFilterOptions": [],
-    "dateFilterEnabled": true,
-    "dateFilterBehavior": "hasAllOf" as any,
-    "dateFilterOptions": [
-        10002
-    ]
-};
+] as const;
 
-const gStaticFilters = {
-    "All": gAllFilter,
-    "Relevant": relevantFilter,
-    "Rehearsals since 2 months": past60DaysRehearsals,
-} as const;
-
-const gDefaultStaticFilterName: keyof typeof gStaticFilters = "Relevant" as const;
-const gDefaultStaticFilterValue = gStaticFilters[gDefaultStaticFilterName];
+const gDefaultStaticFilterName = "Relevant" as const;
+const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultStaticFilterName)!;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
@@ -572,6 +577,8 @@ const EventListOuter = () => {
 
     const handleCopyFilterspec = () => {
         const o: EventsFilterSpecStatic = {
+            label: "(n/a)",
+            helpText: "",
             orderByColumn: sortColumn as any,
             orderByDirection: sortDirection,
 
@@ -651,14 +658,17 @@ const EventListOuter = () => {
         return true;
     };
 
+    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x));
+
     const hasExtraFilters = ((): boolean => {
-        if (MatchesStaticFilter(gDefaultStaticFilterValue)) return false;
+        if (!!matchingStaticFilter) return false;
         if (typeFilterEnabled) return true;
         if (statusFilterEnabled) return true;
         if (tagFilterEnabled) return true;
         if (dateFilterEnabled) return true;
         return false;
     })();
+
     const hasAnyFilters = hasExtraFilters;
 
     return <>
@@ -681,16 +691,18 @@ const EventListOuter = () => {
                         <div>
                             <CMChipContainer>
                                 {
-                                    Object.entries(gStaticFilters).map(e => {
-                                        const doesMatch = MatchesStaticFilter(e[1]);
+                                    gStaticFilters.map(e => {
+                                        const doesMatch = e.label === matchingStaticFilter?.label;// MatchesStaticFilter(e[1]);
                                         return <CMChip
-                                            onClick={() => handleClickStaticFilter(e[1])} size="small"
+                                            key={e.label}
+                                            onClick={() => handleClickStaticFilter(e)} size="small"
                                             variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
                                         >
-                                            {e[0]}
+                                            {e.label}
                                         </CMChip>;
                                     })
                                 }
+                                {matchingStaticFilter && <div className="tinyCaption">{matchingStaticFilter.helpText}</div>}
                             </CMChipContainer>
                         </div>
                     }
