@@ -222,31 +222,10 @@ export const EventDateField = (props: React.PropsWithChildren<EventDateFieldProp
     </div>;
 };
 
-
-
 ////////////////////////////////////////////////////////////////
-// export function useURLState(key, initialValue) {
-//     const [state, setState] = React.useState(() => {
-//         const params = new URLSearchParams(window.location.search);
-//         const value = params.get(key);
-//         return value !== null ? JSON.parse(value) : initialValue;
-//     });
-
-//     React.useEffect(() => {
-//         const params = new URLSearchParams(window.location.search);
-//         if (state === initialValue) {
-//             params.delete(key);
-//         } else {
-//             params.set(key, JSON.stringify(state));
-//         }
-//         window.history.replaceState({}, '', `${window.location.pathname}?${params}`);
-//     }, [key, state, initialValue]);
-
-//     return [state, setState];
-// }
-
 
 type Serializable = string | number | boolean | null | undefined | Serializable[] | { [key: string]: Serializable };
+//type Serializable = any; // we're using JSON.stringify so we could justify using the same argument type if ever needed.
 
 export function useURLState<T extends Serializable>(
     key: string,

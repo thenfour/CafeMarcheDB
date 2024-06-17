@@ -7,7 +7,7 @@ import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { Timing } from "shared/time";
-import { IsNullOrWhitespace, arrayToTSV } from "shared/utils";
+import { IsNullOrWhitespace, arrayToTSV, arraysContainSameValues } from "shared/utils";
 import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
@@ -48,24 +48,33 @@ interface EventsFilterSpec {
     dateFilter: DiscreteCriterion;
 };
 
-// for serializing in compact querystring
-interface CriterionDto {
+// // for serializing in compact querystring
+interface CriterionStatic {
     o: number[];
     b: DiscreteCriterionFilterType;
 }
 
 // for serializing in compact querystring
-interface EventsFilterSpecDto {
-    qf: string; // quick filter
-    oc: OrderByColumnOption;
-    od: SortDirection;
+interface EventsFilterSpecStatic {
+    orderByColumn: OrderByColumnOption;
+    orderByDirection: SortDirection;
 
-    fty: CriterionDto | null; // type
-    ftg: CriterionDto | null; // tag
-    fst: CriterionDto | null; // status
-    fdt: CriterionDto | null; // date
-}
+    typeFilterEnabled: boolean;
+    typeFilterBehavior: DiscreteCriterionFilterType;
+    typeFilterOptions: number[];
 
+    tagFilterEnabled: boolean;
+    tagFilterBehavior: DiscreteCriterionFilterType;
+    tagFilterOptions: number[];
+
+    statusFilterEnabled: boolean;
+    statusFilterBehavior: DiscreteCriterionFilterType;
+    statusFilterOptions: number[];
+
+    dateFilterEnabled: boolean;
+    dateFilterBehavior: DiscreteCriterionFilterType;
+    dateFilterOptions: number[];
+};
 
 export interface EventSearchItemContainerProps {
     event: db3.EventSearch_Event;
@@ -361,50 +370,175 @@ const EventListQuerier = (props: EventListQuerierProps) => {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-const gStaticFilters: Record<string, EventsFilterSpecDto> = {
+const gAllFilter: EventsFilterSpecStatic = {
+    orderByColumn: OrderByColumnOptions.startsAt,
+    orderByDirection: "asc",
+    typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+    typeFilterOptions: [],
+    typeFilterEnabled: false,
+    tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+    tagFilterOptions: [],
+    tagFilterEnabled: false,
+    statusFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+    statusFilterOptions: [],
+    statusFilterEnabled: false,
+    dateFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
+    dateFilterOptions: [],
+    dateFilterEnabled: false,
+};
+
+const past60DaysRehearsals: EventsFilterSpecStatic = {
+    "orderByColumn": "startsAt",
+    "orderByDirection": "asc",
+    "statusFilterEnabled": false,
+    "statusFilterBehavior": "hasNone" as any,
+    "statusFilterOptions": [
+        2
+    ],
+    "typeFilterEnabled": true,
+    "typeFilterBehavior": "hasSomeOf" as any,
+    "typeFilterOptions": [
+        3
+    ],
+    "tagFilterEnabled": false,
+    "tagFilterBehavior": "hasAllOf" as any,
+    "tagFilterOptions": [],
+    "dateFilterEnabled": true,
+    "dateFilterBehavior": "hasAllOf" as any,
+    "dateFilterOptions": [
+        10003
+    ]
+};
+
+const relevantFilter: EventsFilterSpecStatic = {
+    "orderByColumn": "startsAt",
+    "orderByDirection": "asc",
+    "statusFilterEnabled": false,
+    "statusFilterBehavior": "hasNone" as any,
+    "statusFilterOptions": [
+        2
+    ],
+    "typeFilterEnabled": false,
+    "typeFilterBehavior": "hasSomeOf" as any,
+    "typeFilterOptions": [
+        3
+    ],
+    "tagFilterEnabled": false,
+    "tagFilterBehavior": "hasAllOf" as any,
+    "tagFilterOptions": [],
+    "dateFilterEnabled": true,
+    "dateFilterBehavior": "hasAllOf" as any,
+    "dateFilterOptions": [
+        10002
+    ]
+};
+
+const gStaticFilters = {
+    "All": gAllFilter,
+    "Relevant": relevantFilter,
+    "Rehearsals since 2 months": past60DaysRehearsals,
 } as const;
 
+const gDefaultStaticFilterName: keyof typeof gStaticFilters = "Relevant" as const;
+const gDefaultStaticFilterValue = gStaticFilters[gDefaultStaticFilterName];
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const EventListOuter = () => {
-    const [page, setPage] = useURLState<number>("p", 0);
-    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
-
-    const [tagFilterWhenEnabled, setTagFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "tags", behavior: DiscreteCriterionFilterType.hasAllOf, options: [] });
-    const [tagFilterEnable, setTagFilterEnable] = React.useState<boolean>(false);
-
-    const [statusFilterWhenEnabled, setStatusFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "status", behavior: DiscreteCriterionFilterType.hasAny, options: [] });
-    const [statusFilterEnabled, setStatusFilterEnabled] = React.useState<boolean>(false);
-
-    const [typeFilterWhenEnabled, setTypeFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "type", behavior: DiscreteCriterionFilterType.hasAny, options: [] });
-    const [typeFilterEnabled, setTypeFilterEnabled] = React.useState<boolean>(false);
-
-    const [dateFilterWhenEnabled, setDateFilterWhenEnabled] = React.useState<DiscreteCriterion>({ db3Column: "startsAt", behavior: DiscreteCriterionFilterType.hasAny, options: [] });
-    const [dateFilterEnabled, setDateFilterEnabled] = React.useState<boolean>(false);
-
-    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
-    const [sortModel, setSortModel] = React.useState<SortBySpec>({
-        columnName: OrderByColumnOptions.startsAt,
-        direction: "asc",
-    });
-
     const dashboardContext = React.useContext(DashboardContext);
     const snackbarContext = React.useContext(SnackbarContext);
 
+    const [page, setPage] = useURLState<number>("p", 0);
+    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
+
+    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
+
+    const [sortColumn, setSortColumn] = useURLState<string>("sc", gDefaultStaticFilterValue.orderByColumn);
+    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection);
+
+    const sortModel: SortBySpec = {
+        columnName: sortColumn,
+        direction: sortDirection,
+    };
+    const setSortModel = (x: SortBySpec) => {
+        setSortColumn(x.columnName);
+        setSortDirection(x.direction);
+    };
+
+    // "tg" prefix
+    const [tagFilterBehaviorWhenEnabled, setTagFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tgb", gDefaultStaticFilterValue.tagFilterBehavior);
+    const [tagFilterOptionsWhenEnabled, setTagFilterOptionsWhenEnabled] = useURLState<number[]>("tgo", gDefaultStaticFilterValue.tagFilterOptions);
+    const [tagFilterEnabled, setTagFilterEnabled] = useURLState<boolean>("tge", gDefaultStaticFilterValue.tagFilterEnabled);
+    const tagFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "tags",
+        behavior: tagFilterBehaviorWhenEnabled,
+        options: tagFilterOptionsWhenEnabled,
+    };
+    const setTagFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setTagFilterBehaviorWhenEnabled(x.behavior);
+        setTagFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // "st" prefix
+    const [statusFilterBehaviorWhenEnabled, setStatusFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("stb", gDefaultStaticFilterValue.statusFilterBehavior);
+    const [statusFilterOptionsWhenEnabled, setStatusFilterOptionsWhenEnabled] = useURLState<number[]>("sto", gDefaultStaticFilterValue.statusFilterOptions);
+    const [statusFilterEnabled, setStatusFilterEnabled] = useURLState<boolean>("ste", gDefaultStaticFilterValue.statusFilterEnabled);
+    const statusFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "status",
+        behavior: statusFilterBehaviorWhenEnabled,
+        options: statusFilterOptionsWhenEnabled,
+    };
+    const setStatusFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setStatusFilterBehaviorWhenEnabled(x.behavior);
+        setStatusFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // "tp" prefix
+    const [typeFilterBehaviorWhenEnabled, setTypeFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tpb", gDefaultStaticFilterValue.typeFilterBehavior);
+    const [typeFilterOptionsWhenEnabled, setTypeFilterOptionsWhenEnabled] = useURLState<number[]>("tpo", gDefaultStaticFilterValue.typeFilterOptions);
+    const [typeFilterEnabled, setTypeFilterEnabled] = useURLState<boolean>("tpe", gDefaultStaticFilterValue.typeFilterEnabled);
+
+    const typeFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "type",
+        behavior: typeFilterBehaviorWhenEnabled,
+        options: typeFilterOptionsWhenEnabled,
+    };
+    const setTypeFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setTypeFilterBehaviorWhenEnabled(x.behavior);
+        setTypeFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // "dt" prefix
+    const [dateFilterBehaviorWhenEnabled, setDateFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("dtb", gDefaultStaticFilterValue.dateFilterBehavior);
+    const [dateFilterOptionsWhenEnabled, setDateFilterOptionsWhenEnabled] = useURLState<number[]>("dto", gDefaultStaticFilterValue.dateFilterOptions);
+    const [dateFilterEnabled, setDateFilterEnabled] = useURLState<boolean>("dte", gDefaultStaticFilterValue.dateFilterEnabled);
+
+    const dateFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "startsAt",
+        behavior: dateFilterBehaviorWhenEnabled,
+        options: dateFilterOptionsWhenEnabled,
+    };
+    const setDateFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setDateFilterBehaviorWhenEnabled(x.behavior);
+        setDateFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
         pageSize: 20,
         refreshSerial,
         page,
+
+        // in dto...
         quickFilter,
 
-        tagFilter: tagFilterEnable ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+        orderByColumn: sortColumn as any,
+        orderByDirection: sortDirection,
+
+        tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         statusFilter: statusFilterEnabled ? statusFilterWhenEnabled : { db3Column: "status", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         typeFilter: typeFilterEnabled ? typeFilterWhenEnabled : { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         dateFilter: dateFilterEnabled ? dateFilterWhenEnabled : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
-
-        orderByColumn: sortModel.columnName as any,
-        orderByDirection: sortModel.direction,
     };
 
     const [results, setResults] = React.useState<SearchResultsRet>({
@@ -437,7 +571,27 @@ const EventListOuter = () => {
     const enrichedEvents = results.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
 
     const handleCopyFilterspec = () => {
-        const txt = JSON.stringify(filterSpec, null, 2);
+        const o: EventsFilterSpecStatic = {
+            orderByColumn: sortColumn as any,
+            orderByDirection: sortDirection,
+
+            statusFilterEnabled,
+            statusFilterBehavior: statusFilterBehaviorWhenEnabled,
+            statusFilterOptions: statusFilterOptionsWhenEnabled,
+
+            typeFilterEnabled,
+            typeFilterBehavior: typeFilterBehaviorWhenEnabled,
+            typeFilterOptions: typeFilterOptionsWhenEnabled,
+
+            tagFilterEnabled,
+            tagFilterBehavior: tagFilterBehaviorWhenEnabled,
+            tagFilterOptions: tagFilterOptionsWhenEnabled,
+
+            dateFilterEnabled,
+            dateFilterBehavior: dateFilterBehaviorWhenEnabled,
+            dateFilterOptions: dateFilterOptionsWhenEnabled,
+        }
+        const txt = JSON.stringify(o, null, 2);
         navigator.clipboard.writeText(txt).then(() => {
             snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
         }).catch(() => {
@@ -445,9 +599,67 @@ const EventListOuter = () => {
         });
     };
 
-    const handleClickStaticFilter = (x: EventsFilterSpec) => {
-        // ...
+    const handleClickStaticFilter = (x: EventsFilterSpecStatic) => {
+        setSortColumn(x.orderByColumn);
+        setSortDirection(x.orderByDirection);
+
+        setTypeFilterEnabled(x.typeFilterEnabled);
+        setTypeFilterBehaviorWhenEnabled(x.typeFilterBehavior);
+        setTypeFilterOptionsWhenEnabled(x.typeFilterOptions);
+
+        setStatusFilterEnabled(x.statusFilterEnabled);
+        setStatusFilterBehaviorWhenEnabled(x.statusFilterBehavior);
+        setStatusFilterOptionsWhenEnabled(x.statusFilterOptions);
+
+        setTagFilterEnabled(x.tagFilterEnabled);
+        setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
+        setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+
+        setDateFilterEnabled(x.dateFilterEnabled);
+        setDateFilterBehaviorWhenEnabled(x.dateFilterBehavior);
+        setDateFilterOptionsWhenEnabled(x.dateFilterOptions);
     };
+
+    const MatchesStaticFilter = (x: EventsFilterSpecStatic): boolean => {
+        if (sortColumn !== x.orderByColumn) return false;
+        if (sortDirection !== x.orderByDirection) return false;
+
+        if (x.typeFilterEnabled !== typeFilterEnabled) return false;
+        if (typeFilterEnabled) {
+            if (typeFilterBehaviorWhenEnabled !== x.typeFilterBehavior) return false;
+            if (!arraysContainSameValues(typeFilterOptionsWhenEnabled, x.typeFilterOptions)) return false;
+        }
+
+        if (x.statusFilterEnabled !== statusFilterEnabled) return false;
+        if (statusFilterEnabled) {
+            if (statusFilterBehaviorWhenEnabled !== x.statusFilterBehavior) return false;
+            if (!arraysContainSameValues(statusFilterOptionsWhenEnabled, x.statusFilterOptions)) return false;
+        }
+
+        if (x.tagFilterEnabled !== tagFilterEnabled) return false;
+        if (tagFilterEnabled) {
+            if (tagFilterBehaviorWhenEnabled !== x.tagFilterBehavior) return false;
+            if (!arraysContainSameValues(tagFilterOptionsWhenEnabled, x.tagFilterOptions)) return false;
+        }
+
+        if (x.dateFilterEnabled !== dateFilterEnabled) return false;
+        if (dateFilterEnabled) {
+            if (dateFilterBehaviorWhenEnabled !== x.dateFilterBehavior) return false;
+            if (!arraysContainSameValues(dateFilterOptionsWhenEnabled, x.dateFilterOptions)) return false;
+        }
+
+        return true;
+    };
+
+    const hasExtraFilters = ((): boolean => {
+        if (MatchesStaticFilter(gDefaultStaticFilterValue)) return false;
+        if (typeFilterEnabled) return true;
+        if (statusFilterEnabled) return true;
+        if (tagFilterEnabled) return true;
+        if (dateFilterEnabled) return true;
+        return false;
+    })();
+    const hasAnyFilters = hasExtraFilters;
 
     return <>
         <CMSinglePageSurfaceCard className="filterControls">
@@ -459,17 +671,25 @@ const EventListOuter = () => {
                 <FilterControls
                     inCard={false}
                     onQuickFilterChange={(v) => setQuickFilter(v)}
-                    onResetFilter={() => { }}
-                    hasAnyFilters={false}
-                    hasExtraFilters={false}
+                    onResetFilter={() => {
+                        handleClickStaticFilter(gDefaultStaticFilterValue);
+                    }}
+                    hasAnyFilters={hasAnyFilters}
+                    hasExtraFilters={hasExtraFilters}
                     quickFilterText={filterSpec.quickFilter}
                     primaryFilter={
                         <div>
                             <CMChipContainer>
                                 {
-                                    // Object.entries(gStaticFilters).map(e => {
-                                    //     return <CMChip onClick={() => handleClickStaticFilter(e[1])} size="small">{e[0]}</CMChip>;
-                                    // })
+                                    Object.entries(gStaticFilters).map(e => {
+                                        const doesMatch = MatchesStaticFilter(e[1]);
+                                        return <CMChip
+                                            onClick={() => handleClickStaticFilter(e[1])} size="small"
+                                            variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
+                                        >
+                                            {e[0]}
+                                        </CMChip>;
+                                    })
                                 }
                             </CMChipContainer>
                         </div>
@@ -505,11 +725,11 @@ const EventListOuter = () => {
                             <TagsFilterGroup
                                 label={"Tags"}
                                 style="tags"
-                                filterEnabled={tagFilterEnable}
+                                filterEnabled={tagFilterEnabled}
                                 errorMessage={results.filterQueryResult.errors.find(x => x.column === "tags")?.error}
                                 value={tagFilterWhenEnabled}
                                 onChange={(n, enabled) => {
-                                    setTagFilterEnable(enabled);
+                                    setTagFilterEnabled(enabled);
                                     setTagFilterWhenEnabled(n);
                                 }}
                                 items={results.facets.find(f => f.db3Column === "tags")?.items || []}

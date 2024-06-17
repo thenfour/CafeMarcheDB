@@ -113,12 +113,13 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
             // "#c1c300",
             // "#ffcc00",
 
+            // quite practical blue to yellow
             // {"c":["#4d4","#fd0","#7cf"],"m":"hsl","z":1,"op":"TL"}
-            "#77ccff",
-            "#5af1c2",
-            "#44dd44",
-            "#95ed23",
-            "#ffdd00",
+            // "#77ccff",
+            // "#5af1c2",
+            // "#44dd44",
+            // "#95ed23",
+            // "#ffdd00",
 
 
             // almost usable. pretty purple/pink/orange, but it's too many colors.
@@ -169,6 +170,25 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
             // "#d0ff71",
             // "#ffd47d",
             // "#ff8888",
+
+            // 1D blue to red
+            // {"c":["#88f","#f88","black"],"m":"lab","z":4,"op":"row"}
+            // "#8888ff",
+            // "#ac88e7",
+            // "#c787cf",
+            // "#dc87b8",
+            // "#ef88a0",
+            // "#ff8888",
+
+            // probably the most usable 3-color so far? light blue - green - red
+            // {"c":["#9d9","#fa8","#ddf"],"m":"lab","z":2,"op":"TL"}
+            "#ddddff",
+            "#c8dedd",
+            "#b2debb",
+            "#99dd99",
+            "#c2ce93",
+            "#e3bd8d",
+            "#ffaa88",
 
         ];
 
