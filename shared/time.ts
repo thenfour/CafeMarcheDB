@@ -392,32 +392,67 @@ export class DateTimeRange {
         return this.spec.durationMillis / gMillisecondsPerDay;
     }
 
-    toString() {
+
+    // Helper to format date with different levels of detail
+    private formatDate(date: Date, format: string): string {
+        return dayjs(date).format(format);
+    }
+
+    private formatTime(date: Date): string {
+        const hour = dayjs(date).hour();
+        const minutes = dayjs(date).minute();
+        if (minutes === 0) {
+            return `${hour}`; // Return only hour with 'h' if minutes are 0
+        }
+        return `${hour}:${minutes.toString().padStart(2, '0')}`; // Return full time with minutes and 'h' suffix
+    }
+
+    // Method to determine the appropriate format string based on date range
+    private getDateRangeFormat(startDate: Date, endDate: Date): string {
+        if (dayjs(startDate).isSame(endDate, 'day')) {
+            return 'dddd, D MMMM YYYY'; // Same day
+        } else if (dayjs(startDate).isSame(endDate, 'month')) {
+            return 'D'; // Same month
+        } else if (dayjs(startDate).isSame(endDate, 'year')) {
+            return 'D MMMM'; // Same year
+        } else {
+            return 'D MMMM YYYY'; // Different year
+        }
+    }
+
+    // Enhanced toString method
+    public toString(): string {
         if (this.isTBD()) {
             return "TBD";
         }
-        const now = new Date();
+
+        const startDate = this.getStartDateTime()!;
+        const endDate = this.getEndDateTime()!;
+
         if (this.isAllDay()) {
-            //return `${formatDate(this.getStartDateTime(new Date()))} - ${formatDate(this.getEndDateTime(new Date()))}`;
-            const begin = formatDate(this.getStartDateTime(now));
-            const end = formatDate(this.getLastDateTime(now));
-            if (begin === end) return begin;
-            return `${begin} - ${end} (${this.durationToString()})`;
+            const startFormat = this.getDateRangeFormat(startDate, endDate);
+            const endFormat = dayjs(startDate).isSame(endDate, 'year') ? 'D MMMM' : 'D MMMM YYYY';
+
+            if (dayjs(startDate).isSame(endDate, 'day')) {
+                return this.formatDate(startDate, 'dddd, D MMMM YYYY');
+            }
+
+            const durationDays = this.getDurationDays();
+            const durationText = durationDays > 1 ? ` (${durationDays}d)` : '';
+            return `${this.formatDate(startDate, startFormat)}-${this.formatDate(endDate, endFormat)}${durationText}`;
+        } else {
+            const dateStr = this.formatDate(startDate, 'dddd, D MMMM YYYY');
+            const startTime = this.formatTime(startDate);
+            const endTime = this.formatTime(endDate);
+            const sameDay = dayjs(startDate).isSame(endDate, 'day');
+
+            if (sameDay) {
+                return `${dateStr} / ${startTime}-${endTime}h`;
+            } else {
+                const endDateStr = this.formatDate(endDate, 'dddd, D MMMM YYYY');
+                return `${dateStr} / ${startTime} - ${endDateStr} / ${endTime}`;
+            }
         }
-
-        const startDate = this.getStartDateTime(now);
-        const endDate = this.getEndDateTime(now);
-
-        // scenarios:
-        // TBD:                      : TBD
-        // all-day sameyearmonthday  : Thursday 23 June, 2024
-        // all-day sameyearmonth     : 23-24 June, 2024
-        // all-day sameyear          : 23 June - 2 July, 2024 (3d)
-        // all-day                   : 23 December 2024 - 2 January, 2025 (4d)
-        // notallday, both 0 minutes : Thursday 23 June, 2024 / 20-22h
-        // notallday                 : Thursday 23 June, 2024 / 20-22:30h
-
-        return `${startDate.toLocaleDateString([], { weekday: "long", day: 'numeric', month: 'long', year: 'numeric' })} / ${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
 
     durationToString() {
