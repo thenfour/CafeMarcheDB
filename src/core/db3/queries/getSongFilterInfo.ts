@@ -6,7 +6,7 @@ import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, MysqlEscape } from "shared/utils";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
+import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "../shared/apiTypes";
 import { GetBasicVisFilterExpressionForSong, SongPayload_Verbose, SongTableParams, xSong_Verbose } from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 
@@ -81,7 +81,7 @@ export default resolver.pipe(
             join
                 EventSongListSong ESLS on ESL.id = ESLS.eventSongListId
             where 
-                ${gEventRelevantFilterExpression}
+                ${EventRelevantFilterExpression({ startsAtExpr: `startsAt` })}
             group by
                 ESLS.songID
             order by

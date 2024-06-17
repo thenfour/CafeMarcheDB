@@ -2193,7 +2193,7 @@ pre.serverStartInfo {
     font-size: 15px;
     font-weight: normal;
     letter-spacing: 0;
-    box-shadow: 0 0 15px var(--chip-color);
+    box-shadow: 0 0 5px var(--chip-color);
 }
 
 
@@ -2225,7 +2225,7 @@ pre.serverStartInfo {
     color: white;
     font-size: 18px;
     font-weight: bold;
-    animation: glow 1s infinite;
+    /* animation: glow 1s infinite; */
 }
 
 /* "soon!" */
@@ -2235,7 +2235,7 @@ pre.serverStartInfo {
     color: white;
     font-size: 18px;
     font-weight: bold;
-    animation: glow 1s infinite;
+    /* animation: glow 1s infinite; */
 }
 
 /* "future!" */
@@ -2291,7 +2291,7 @@ table.activityVis .cell .cellInner {
     display: flex;
     justify-content: center;
     align-items: center;
-    color: #fff8;
+    /* color: #fff8; */
 }
 
 table.activityVis .cell.hasActivity:hover,
@@ -2310,7 +2310,7 @@ table.activityVis .yearTotalGraphWrap {
 
     display: flex;
     height: 100%;
-    opacity: 50%;
+    /* opacity: 50%; */
 }
 
 table.activityVis .yearTotalFilledPart {
@@ -2318,7 +2318,7 @@ table.activityVis .yearTotalFilledPart {
     --normValue: 0.0;
     background-color: var(--color);
     width: calc(var(--yearWidth) * var(--normValue));
-    color: #fff8;
+    /* color: #fff8; */
     padding-left: 8px;
     padding-right: 8px;
     /* margin-top: 4px; */

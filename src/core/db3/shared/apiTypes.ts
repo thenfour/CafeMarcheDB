@@ -403,7 +403,11 @@ export const MakeGetEventFilterInfoRet = (): GetEventFilterInfoRet => ({
     userTags: [],
 });
 
-export const gEventRelevantFilterExpression = `((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`;
+export const EventRelevantFilterExpression = (args: { startsAtExpr: string }) => `((${args.startsAtExpr} >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (${args.startsAtExpr} IS NULL))`;
+export const EventPast60DaysFilterExpression = (args: { startsAtExpr: string }) => `((${args.startsAtExpr} >= DATE_SUB(curdate(), INTERVAL 60 day)) OR (${args.startsAtExpr} IS NULL))`;
+export const EventPastFilterExpression = (args: { startsAtExpr: string }) => `(${args.startsAtExpr} <= curdate())`;
+export const EventFutureFilterExpression = (args: { startsAtExpr: string }) => `(${args.startsAtExpr} > curdate())`;
+export const EventThisYearFilterExpression = (args: { startsAtExpr: string }) => `(year(${args.startsAtExpr}) = year(curdate()))`;
 
 
 export type SongSelectionFilter = "relevant" | "all";
@@ -735,9 +739,9 @@ export interface DiscreteCriterion {
     // which items has the user selected for filtering.
     options: (number | boolean | string)[];
 
-    // for date filtering
-    minDate?: Date | undefined;
-    maxDate?: Date | undefined;
+    // // for date filtering
+    // minDate?: Date | undefined;
+    // maxDate?: Date | undefined;
 
     // type of filtering
     behavior: DiscreteCriterionFilterType;

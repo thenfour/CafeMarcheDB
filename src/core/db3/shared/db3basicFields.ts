@@ -17,10 +17,10 @@
 // - CalculatedEventDateRangeField
 
 
-import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList } from "shared/color";
+import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
 import { slugify } from "shared/rootroot";
 import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, MysqlEscape, assertIsNumberArray, getNextSequenceId, isValidURL } from "shared/utils";
-import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOption, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
+import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, EventFutureFilterExpression, EventPast60DaysFilterExpression, EventPastFilterExpression, EventRelevantFilterExpression, SearchResultsFacetOption, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 import { assert } from "blitz";
 
@@ -1395,8 +1395,9 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         }
     } // SqlGetFacetInfoQuery
 
-};
+}; // TagsField
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export type EventStartsAtFieldArgs = {
     columnName: string;
@@ -1409,7 +1410,6 @@ type EventStartsAtFieldDiscreteFilterTRow = {
     year: number | null, // null = TBD
     rowCount: bigint
 };
-
 
 export interface EventStartsAtFieldDiscreteFilterDomain {
     id: number,
@@ -1428,6 +1428,9 @@ export class EventStartsAtField extends FieldBase<Date> {
     yearDomain: EventStartsAtFieldDiscreteFilterDomain;
     pastDomain: EventStartsAtFieldDiscreteFilterDomain;
     futureDomain: EventStartsAtFieldDiscreteFilterDomain;
+    relevantDomain: EventStartsAtFieldDiscreteFilterDomain;
+    past60DaysDomain: EventStartsAtFieldDiscreteFilterDomain;
+
     searchDomains: EventStartsAtFieldDiscreteFilterDomain[];
 
     constructor(args: EventStartsAtFieldArgs) {
@@ -1442,11 +1445,24 @@ export class EventStartsAtField extends FieldBase<Date> {
 
         this.yearDomain = {
             id: 0, // for per-year, the year IS the ID.
+            matchesId: (id: number) => {
+                return id < 10000;
+            },
             transformResult: (row) => {
-                const id = new Number(row.year || gTbdId).valueOf();
+                const id = row.id;//new Number(row.year || gTbdId).valueOf();
+                if (id === gTbdId) {
+                    return {
+                        id,
+                        label: "TBD",
+                        color: gSwatchColors.light_gray,
+                        iconName: null,
+                        rowCount: new Number(row.rowCount).valueOf(),
+                        tooltip: `Select TBD events (with no date)`,
+                    };
+                }
                 return {
-                    id, // something representing null year.
-                    label: id === gTbdId ? "TBD" : id.toString(),
+                    id,
+                    label: id.toString(),
                     color: null,
                     iconName: null,
                     rowCount: new Number(row.rowCount).valueOf(),
@@ -1459,44 +1475,71 @@ export class EventStartsAtField extends FieldBase<Date> {
                 }
                 return `(year(${this.member}) = ${id})`;
             },
-            matchesId: (id: number) => {
-                return id < 10000;
-            },
         };
 
         this.pastDomain = {
             id: 10000,
+            matchesId: (id: number) => id === 10000,
             transformResult: (row) => ({
                 id: new Number(row.id).valueOf(),
                 label: "Past",
-                color: null,
+                color: gSwatchColors.light_gray,
                 iconName: null,
                 rowCount: new Number(row.rowCount).valueOf(),
                 tooltip: `Past`,
             }),
-            SqlMatch: () => `(${this.member} < curdate())`,
-            matchesId: (id: number) => id === 10000,
+            SqlMatch: () => EventPastFilterExpression({ startsAtExpr: this.member }),
         };
 
         this.futureDomain =
         {
             id: 10001,
+            matchesId: (id: number) => id === 10001,
             transformResult: (row) => ({
                 id: new Number(row.id).valueOf(),
                 label: "Future",
-                color: null,
+                color: gSwatchColors.light_gray,
                 iconName: null,
                 rowCount: new Number(row.rowCount).valueOf(),
                 tooltip: `Future`,
             }),
-            SqlMatch: () => `(${this.member} >= curdate())`,
-            matchesId: (id: number) => id === 10001,
+            SqlMatch: () => EventFutureFilterExpression({ startsAtExpr: this.member }),
+        };
+
+        this.relevantDomain = {
+            id: 10002,
+            matchesId: (id: number) => id === 10002,
+            transformResult: (row) => ({
+                id: new Number(row.id).valueOf(),
+                label: "Relevant",
+                color: gSwatchColors.light_gray,
+                iconName: null,
+                rowCount: new Number(row.rowCount).valueOf(),
+                tooltip: "Relevant (6 days ago and later)",
+            }),
+            SqlMatch: () => EventRelevantFilterExpression({ startsAtExpr: this.member }),
+        };
+
+        this.past60DaysDomain = {
+            id: 10003,
+            matchesId: (id: number) => id === 10003,
+            transformResult: (row) => ({
+                id: new Number(row.id).valueOf(),
+                label: "Past 60 days",
+                color: gSwatchColors.light_gray,
+                iconName: null,
+                rowCount: new Number(row.rowCount).valueOf(),
+                tooltip: "60 days ago until now",
+            }),
+            SqlMatch: () => EventPast60DaysFilterExpression({ startsAtExpr: this.member }),
         };
 
         this.searchDomains = [
             this.yearDomain,
             this.pastDomain,
             this.futureDomain,
+            this.relevantDomain,
+            this.past60DaysDomain,
         ];
     }
 
@@ -1708,13 +1751,13 @@ export class EventStartsAtField extends FieldBase<Date> {
             ${this.pastDomain.id} id,
             'past' facetType,
             null year,
-            10000 sortOrder,
+            ${this.pastDomain.id} sortOrder,
             count(P.id) rowCount
         from
             FIQ
             inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
         where
-            ${this.member} < curdate()
+            ${EventPastFilterExpression({ startsAtExpr: this.member })}
         
         union all
         
@@ -1722,14 +1765,42 @@ export class EventStartsAtField extends FieldBase<Date> {
             ${this.futureDomain.id} id,
             'future' facetType,
             null year,
-            10001 sortOrder,
+            ${this.futureDomain.id} sortOrder,
             count(P.id) rowCount
         from
             FIQ
             inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
         where
-            ${this.member} >= curdate()
+            ${EventFutureFilterExpression({ startsAtExpr: this.member })}
 
+        union all
+        
+            select
+                ${this.relevantDomain.id} id,
+                'relevant' facetType,
+                null year,
+                ${this.relevantDomain.id} sortOrder,
+                count(P.id) rowCount
+            from
+                FIQ
+                inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
+            where
+                ${EventRelevantFilterExpression({ startsAtExpr: this.member })}
+
+        union all
+    
+            select
+                ${this.past60DaysDomain.id} id,
+                'relevant' facetType,
+                null year,
+                ${this.past60DaysDomain.id} sortOrder,
+                count(P.id) rowCount
+            from
+                FIQ
+                inner join ${this.localTableSpec.tableName} as P on P.${this.localTableSpec.pkMember} = FIQ.id   -- join to events, to get access to the startsAt field
+            where
+                ${EventPast60DaysFilterExpression({ startsAtExpr: this.member })}
+    
         order by
             sortOrder
             `,

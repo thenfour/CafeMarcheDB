@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { Timing } from "shared/time";
 import { IsNullOrWhitespace, arrayToTSV } from "shared/utils";
-import { CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -47,6 +47,24 @@ interface EventsFilterSpec {
     statusFilter: DiscreteCriterion;
     dateFilter: DiscreteCriterion;
 };
+
+// for serializing in compact querystring
+interface CriterionDto {
+    o: number[];
+    b: DiscreteCriterionFilterType;
+}
+
+// for serializing in compact querystring
+interface EventsFilterSpecDto {
+    qf: string; // quick filter
+    oc: OrderByColumnOption;
+    od: SortDirection;
+
+    fty: CriterionDto | null; // type
+    ftg: CriterionDto | null; // tag
+    fst: CriterionDto | null; // status
+    fdt: CriterionDto | null; // date
+}
 
 
 export interface EventSearchItemContainerProps {
@@ -342,6 +360,11 @@ const EventListQuerier = (props: EventListQuerierProps) => {
     return <div className="queryProgressLine idle"></div>;
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+const gStaticFilters: Record<string, EventsFilterSpecDto> = {
+} as const;
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const EventListOuter = () => {
@@ -365,7 +388,9 @@ const EventListOuter = () => {
         columnName: OrderByColumnOptions.startsAt,
         direction: "asc",
     });
-    //const [orderByDirection, setOrderByDirection] = React.useState<SortDirection>("asc");
+
+    const dashboardContext = React.useContext(DashboardContext);
+    const snackbarContext = React.useContext(SnackbarContext);
 
     const filterSpec: EventsFilterSpec = {
         pageSize: 20,
@@ -393,7 +418,6 @@ const EventListOuter = () => {
             sqlSelect: "",
         },
     });
-    const dashboardContext = React.useContext(DashboardContext);
 
     // # when filter spec (other than page change), reset page to 0.
     let everythingButPage: any = {};
@@ -412,9 +436,25 @@ const EventListOuter = () => {
 
     const enrichedEvents = results.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
 
+    const handleCopyFilterspec = () => {
+        const txt = JSON.stringify(filterSpec, null, 2);
+        navigator.clipboard.writeText(txt).then(() => {
+            snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+        }).catch(() => {
+            // nop
+        });
+    };
+
+    const handleClickStaticFilter = (x: EventsFilterSpec) => {
+        // ...
+    };
+
     return <>
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
+
+                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+
                 {/* <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} /> */}
                 <FilterControls
                     inCard={false}
@@ -423,68 +463,80 @@ const EventListOuter = () => {
                     hasAnyFilters={false}
                     hasExtraFilters={false}
                     quickFilterText={filterSpec.quickFilter}
-                    primaryFilter={<div>
-                        <TagsFilterGroup
-                            label={"Status"}
-                            style="foreignSingle"
-                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "status")?.error}
-                            value={statusFilterWhenEnabled}
-                            filterEnabled={statusFilterEnabled}
-                            onChange={(n, enabled) => {
-                                setStatusFilterEnabled(enabled);
-                                setStatusFilterWhenEnabled(n);
-                            }}
-                            items={results.facets.find(f => f.db3Column === "status")?.items || []}
-                        />
-                        <div className="divider" />
-                        <TagsFilterGroup
-                            label={"Type"}
-                            style="foreignSingle"
-                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "type")?.error}
-                            value={typeFilterWhenEnabled}
-                            filterEnabled={typeFilterEnabled}
-                            onChange={(n, enabled) => {
-                                setTypeFilterEnabled(enabled);
-                                setTypeFilterWhenEnabled(n);
-                            }}
-                            items={results.facets.find(f => f.db3Column === "type")?.items || []}
-                        />
-                        <div className="divider" />
-                        <TagsFilterGroup
-                            label={"Tags"}
-                            style="tags"
-                            filterEnabled={tagFilterEnable}
-                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "tags")?.error}
-                            value={tagFilterWhenEnabled}
-                            onChange={(n, enabled) => {
-                                setTagFilterEnable(enabled);
-                                setTagFilterWhenEnabled(n);
-                            }}
-                            items={results.facets.find(f => f.db3Column === "tags")?.items || []}
-                        />
-                        <div className="divider" />
-                        <TagsFilterGroup
-                            label={"Date"}
-                            style="radio"
-                            filterEnabled={dateFilterEnabled}
-                            errorMessage={results.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
-                            value={dateFilterWhenEnabled}
-                            onChange={(n, enabled) => {
-                                setDateFilterEnabled(enabled);
-                                setDateFilterWhenEnabled(n);
-                            }}
-                            items={results.facets.find(f => f.db3Column === "startsAt")?.items || []}
-                        />
-                        <div className="divider" />
+                    primaryFilter={
+                        <div>
+                            <CMChipContainer>
+                                {
+                                    // Object.entries(gStaticFilters).map(e => {
+                                    //     return <CMChip onClick={() => handleClickStaticFilter(e[1])} size="small">{e[0]}</CMChip>;
+                                    // })
+                                }
+                            </CMChipContainer>
+                        </div>
+                    }
+                    extraFilter={
+                        <div>
+                            <TagsFilterGroup
+                                label={"Status"}
+                                style="foreignSingle"
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "status")?.error}
+                                value={statusFilterWhenEnabled}
+                                filterEnabled={statusFilterEnabled}
+                                onChange={(n, enabled) => {
+                                    setStatusFilterEnabled(enabled);
+                                    setStatusFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "status")?.items || []}
+                            />
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Type"}
+                                style="foreignSingle"
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "type")?.error}
+                                value={typeFilterWhenEnabled}
+                                filterEnabled={typeFilterEnabled}
+                                onChange={(n, enabled) => {
+                                    setTypeFilterEnabled(enabled);
+                                    setTypeFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "type")?.items || []}
+                            />
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Tags"}
+                                style="tags"
+                                filterEnabled={tagFilterEnable}
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "tags")?.error}
+                                value={tagFilterWhenEnabled}
+                                onChange={(n, enabled) => {
+                                    setTagFilterEnable(enabled);
+                                    setTagFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "tags")?.items || []}
+                            />
+                            <div className="divider" />
+                            <TagsFilterGroup
+                                label={"Date"}
+                                style="radio"
+                                filterEnabled={dateFilterEnabled}
+                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
+                                value={dateFilterWhenEnabled}
+                                onChange={(n, enabled) => {
+                                    setDateFilterEnabled(enabled);
+                                    setDateFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "startsAt")?.items || []}
+                            />
+                            <div className="divider" />
 
-                        <SortByGroup
-                            columnOptions={Object.keys(OrderByColumnOptions)}
-                            setValue={setSortModel}
-                            value={sortModel}
-                        />
+                            <SortByGroup
+                                columnOptions={Object.keys(OrderByColumnOptions)}
+                                setValue={setSortModel}
+                                value={sortModel}
+                            />
 
-                    </div>}
-                    extraFilter={<div>x</div>}
+                        </div>
+                    }
                 />
             </div>
 

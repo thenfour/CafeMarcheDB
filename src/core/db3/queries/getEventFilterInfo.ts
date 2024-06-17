@@ -7,7 +7,7 @@ import { IsNullOrWhitespace, SplitQuickFilter, assertIsNumberArray, MysqlEscape 
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter, gEventRelevantFilterExpression } from "../shared/apiTypes";
+import { EventRelevantFilterExpression, GetEventFilterInfoChipInfo, GetEventFilterInfoRet, MakeGetEventFilterInfoRet, TimingFilter } from "../shared/apiTypes";
 import { DateSortPredicateAsc, DateSortPredicateDesc } from "shared/time";
 
 interface TArgs {
@@ -71,7 +71,7 @@ export default resolver.pipe(
             const timingFilterExpressions: Record<TimingFilter, string | null> = {
                 "past": `(endDateTime <= curdate())`,
                 "since 60 days": `((startsAt >= DATE_SUB(curdate(), INTERVAL 60 day)) OR (startsAt IS NULL))`,
-                "relevant": gEventRelevantFilterExpression,//`((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`,
+                "relevant": EventRelevantFilterExpression({ startsAtExpr: `startsAt` }),//`((startsAt >= DATE_SUB(curdate(), INTERVAL 6 day)) OR (startsAt IS NULL))`,
                 "future": `((startsAt >= curdate()) or (startsAt is null))`,
                 "all": null,
             };

@@ -104,7 +104,7 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
             // "#ff8888",
 
             // very usable. green-yellow
-            // //- // {"c":["#0a0","#fc0","#ccc"],"m":"lab","z":2,"op":"TL"}
+            // {"c":["#0a0","#fc0","#ccc"],"m":"lab","z":2,"op":"TL"}
             // "#cccccc",
             // "#9ec292",
             // "#6ab757",
@@ -112,6 +112,14 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
             // "#7db800",
             // "#c1c300",
             // "#ffcc00",
+
+            // {"c":["#4d4","#fd0","#7cf"],"m":"hsl","z":1,"op":"TL"}
+            "#77ccff",
+            "#5af1c2",
+            "#44dd44",
+            "#95ed23",
+            "#ffdd00",
+
 
             // almost usable. pretty purple/pink/orange, but it's too many colors.
             // // {"c":["#88f","#f84","#8f8"],"m":"lab","z":2,"op":"TL"}
@@ -144,13 +152,23 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
             // "#ffcc00",
 
             // {"c":["#88f","#f84","#8f8"],"m":"cmyk","z":2,"op":"TL"}
-            "#88ff88",
-            "#88d7b0",
-            "#88b0d7",
-            "#8888ff",
-            "#b088c1",
-            "#d78882",
-            "#ff8844",
+            // "#88ff88",
+            // "#88d7b0",
+            // "#88b0d7",
+            // "#8888ff",
+            // "#b088c1",
+            // "#d78882",
+            // "#ff8844",
+
+            // cool blue to green to yellow is nice but hard to execute on a light background
+            // {"c":["#6f6","#f88","#ccf"],"m":"hsl","z":2,"op":"TL"}
+            // "#ccccff",
+            // "#aae3ff",
+            // "#88ffd7",
+            // "#66ff66",
+            // "#d0ff71",
+            // "#ffd47d",
+            // "#ff8888",
 
         ];
 
@@ -182,10 +200,11 @@ export const ActivityVis = <T,>(props: ActivityVisProps<T>) => {
                 </Tooltip>
                 ;
 
-            const opacity = normCount === 0 ? undefined : lerp(.5, 1, normCount);
+            //const opacity = normCount === 0 ? undefined : lerp(.5, 1, normCount);
+            //const opacity = 1;
 
             cells.push(
-                <td className={classes.join(" ")} style={{ backgroundColor: getColorClass(normCount), opacity }} key={month} onClick={!props.onBucketClick ? undefined : (() => props.onBucketClick!(bucket))}>
+                <td className={classes.join(" ")} style={{ backgroundColor: getColorClass(normCount) }} key={month} onClick={!props.onBucketClick ? undefined : (() => props.onBucketClick!(bucket))}>
                     {ch}
                 </td>
             );
