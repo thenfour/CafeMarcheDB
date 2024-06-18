@@ -198,10 +198,10 @@ export const FileEditor = (props: FileEditorProps) => {
                     if (!args.value) {
                         return <CMChip>--</CMChip>
                     }
-                    return <><EventChip value={args.value.event} />aoeu</>;
+                    return <EventChip value={args.value.event} />;
                 },
                 renderAsListItem: (props, value, selected) => {
-                    return <><EventChip value={value.event} /></>;
+                    return <EventChip value={value.event} />;
                 }
             }),
         ],
