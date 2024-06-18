@@ -784,6 +784,9 @@ export const xEventAttendance = new db3.xTable({
         ownerUserId: null,
         iconName: row.iconName,
     }),
+    activeAsSelectable: (row: EventAttendancePayload) => {
+        return row.isActive;
+    },
     softDeleteSpec: {
         isDeletedColumnName: "isDeleted",
     },

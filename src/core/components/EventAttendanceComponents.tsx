@@ -474,7 +474,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     {editMode ? (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-          {(dashboardContext.eventAttendance).map(option =>
+          {dashboardContext.eventAttendance.filter(o => o.isActive).map(option =>
             <EventAttendanceAnswerButton key={option.id} noItemSelected={selectedAttendanceId === null} selected={option.id === selectedAttendanceId} value={option} onSelect={() => handleChange(option)} tooltip={tooltip} />)}
           <EventAttendanceAnswerButton noItemSelected={selectedAttendanceId === null} selected={null === selectedAttendanceId} value={null} onSelect={() => handleChange(null)} tooltip={tooltip} />
         </CMChipContainer>

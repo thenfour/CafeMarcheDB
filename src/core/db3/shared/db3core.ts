@@ -504,6 +504,9 @@ export interface TableDesc {
     naturalOrderBy?: TAnyModel;
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 
+    // for things like attendance options, where options can go stale and become "inactive", allow table schemas to filter items out.
+    activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
+
     tableAuthMap: DB3AuthTablePermissionMap;
 
     // this allows tables to supplement search results with extra "customdata".
@@ -537,6 +540,8 @@ export class xTable implements TableDesc {
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
+
+    activeAsSelectable?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => boolean;
 
     tableAuthMap: DB3AuthTablePermissionMap;
 

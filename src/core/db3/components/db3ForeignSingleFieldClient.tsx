@@ -73,7 +73,11 @@ export const ForeignSingleFieldInlineValues = <TForeign,>(props: ForeignSingleFi
         spec: props.foreignSpec,
         clientIntention: props.clientIntention,
     });
-    const items = db3Context.items;
+    let items = db3Context.items;
+    const fs = props.foreignSpec.typedSchemaColumn.getForeignTableSchema();
+    if (fs.activeAsSelectable) {
+        items = items.filter(o => fs.activeAsSelectable!(o as any, props.clientIntention));
+    }
 
     const isEqual = (a: TForeign | null, b: TForeign | null) => {
         const anull = (a === null || a === undefined);
