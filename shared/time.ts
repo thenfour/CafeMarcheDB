@@ -392,67 +392,81 @@ export class DateTimeRange {
         return this.spec.durationMillis / gMillisecondsPerDay;
     }
 
-
-    // Helper to format date with different levels of detail
-    private formatDate(date: Date, format: string): string {
-        return dayjs(date).format(format);
-    }
-
-    private formatTime(date: Date): string {
-        const hour = dayjs(date).hour();
-        const minutes = dayjs(date).minute();
-        if (minutes === 0) {
-            return `${hour}`; // Return only hour with 'h' if minutes are 0
-        }
-        return `${hour}:${minutes.toString().padStart(2, '0')}`; // Return full time with minutes and 'h' suffix
-    }
-
-    // Method to determine the appropriate format string based on date range
-    private getDateRangeFormat(startDate: Date, endDate: Date): string {
-        if (dayjs(startDate).isSame(endDate, 'day')) {
-            return 'dddd, D MMMM YYYY'; // Same day
-        } else if (dayjs(startDate).isSame(endDate, 'month')) {
-            return 'D'; // Same month
-        } else if (dayjs(startDate).isSame(endDate, 'year')) {
-            return 'D MMMM'; // Same year
-        } else {
-            return 'D MMMM YYYY'; // Different year
-        }
-    }
-
     // Enhanced toString method
     public toString(): string {
         if (this.isTBD()) {
             return "TBD";
         }
 
+        // returns the time part, either as HH or HH:MM
+        const formatTime = (date: Date): string => {
+            const hour = dayjs(date).hour();
+            const minutes = dayjs(date).minute();
+            if (minutes === 0) {
+                return `${hour}`; // Return only hour with 'h' if minutes are 0
+            }
+            return `${hour}:${minutes.toString().padStart(2, '0')}`; // Return full time with minutes and 'h' suffix
+        };
+
+        // formatting:
+        // https://day.js.org/docs/en/display/format
+        // dddd = weekday
+        // D    = day of month (1-31)
+        // MMMM = full month name
+        // YYYY = 4-digit year
+
+        // for tooltip kinda things we want a short and long version
+        // ALL-DAY styles:
+        // SHORT:                                    LONG: (actually just a fixed long verbose format + duration)    Note:               
+        // -----------------                         -------                                                                        
+        // Wednesday 29 June 2024                    Wednesday 29 June 2024 (1d)                                     same year, month, day
+        // 29-30 June 2024                           Wednesday 29 June 2024 - Thursday 30 June 2024 (2d)             same year, month                
+        // 29 June - 3 July 2024                     Wednesday 29 June 2024 - Wednesday 5 July 2024 (7d)             same year               
+        // 29 December 2024 - 2 January 2025         Wednesday 29 December 2024 - Saturday 2 January 2025 (3d)       else               
+
+        // NOT-ALL-DAY STYLES:
+        // SHORT:                                               Note:
+        // -----------------                                    -------
+        // Wednesday 29 June 2024 @ 20-22h                      same year, month, day, zerominutes
+        // Wednesday 29 June 2024 @ 20:15-22:30h                same year, month, day
+        // 31 December 2024 @ 20:30 - 2 January 2025 @ 18:30    else (worst case)
+
         const startDate = this.getStartDateTime()!;
+        const startDateDjs = dayjs(startDate);
         const endDate = this.getEndDateTime()!;
+        const endDateDjs = dayjs(endDate);
+        // in fact a "same day" means the duration is <= 24 hours. Why? because events can start at 10pm and last 4 hours.
+        // using the date would make this look like it spans 2 days. but it's clearer/more intuitive to count that as the same day.
+        //const isSameDay = startDateDjs.isSame(endDateDjs, 'day');
+        const isSameDay = this.getDurationDays() <= 1.0;
 
         if (this.isAllDay()) {
-            const startFormat = this.getDateRangeFormat(startDate, endDate);
-            const endFormat = dayjs(startDate).isSame(endDate, 'year') ? 'D MMMM' : 'D MMMM YYYY';
 
-            if (dayjs(startDate).isSame(endDate, 'day')) {
-                return this.formatDate(startDate, 'dddd, D MMMM YYYY');
+            if (isSameDay) {
+                return startDateDjs.format(`dddd, D MMMM YYYY`); // Wednesday 29 June 2024
+            }
+            const isSameMonth = startDateDjs.isSame(endDateDjs, 'month');
+            if (isSameMonth) {
+                // 29-30 June 2024
+                return `${startDateDjs.format(`D`)} - ${endDateDjs.format(`D MMMM YYYY`)}`;
+            }
+            const isSameYear = startDateDjs.isSame(endDateDjs, 'year');
+            if (isSameYear) {
+                // 29 June - 3 July 2024
+                return `${startDateDjs.format(`D MMMM`)} - ${endDateDjs.format(`D MMMM YYYY`)}`;
             }
 
-            const durationDays = this.getDurationDays();
-            const durationText = durationDays > 1 ? ` (${durationDays}d)` : '';
-            return `${this.formatDate(startDate, startFormat)}-${this.formatDate(endDate, endFormat)}${durationText}`;
-        } else {
-            const dateStr = this.formatDate(startDate, 'dddd, D MMMM YYYY');
-            const startTime = this.formatTime(startDate);
-            const endTime = this.formatTime(endDate);
-            const sameDay = dayjs(startDate).isSame(endDate, 'day');
-
-            if (sameDay) {
-                return `${dateStr} / ${startTime}-${endTime}h`;
-            } else {
-                const endDateStr = this.formatDate(endDate, 'dddd, D MMMM YYYY');
-                return `${dateStr} / ${startTime} - ${endDateStr} / ${endTime}`;
-            }
+            // 29 December 2024 - 2 January 2025
+            return `${startDateDjs.format(`D MMMM YYYY`)} - ${endDateDjs.format(`D MMMM YYYY`)}`;
         }
+
+        // not all-day (time specified)
+        if (isSameDay) {
+            return `${startDateDjs.format(`dddd, D MMMM YYYY`)} @ ${formatTime(startDate)}-${formatTime(endDate)}h`;
+        }
+
+        return `${startDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(startDate)} - ${endDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(endDate)}h`;
+
     }
 
     durationToString() {

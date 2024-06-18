@@ -24,6 +24,7 @@ type FilterControlsProps = {
     // renderers
     primaryFilter?: React.ReactNode;
     extraFilter?: React.ReactNode;
+    footerFilter?: React.ReactNode;
 };
 export const FilterControls = (props: FilterControlsProps) => {
     const [expanded, setExpanded] = React.useState<boolean>(false);
@@ -56,6 +57,7 @@ export const FilterControls = (props: FilterControlsProps) => {
                     </div>
 
                     {expanded && props.extraFilter}
+                    {props.footerFilter}
                 </div>
             </div>
         </div>{/* content */}

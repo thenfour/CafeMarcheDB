@@ -420,12 +420,13 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 
 .contentSection.event {
   --border-left-color: #3575;
-  border-left: solid 16px var(--border-left-color);
+  border-left: solid 8px var(--border-left-color);
   overflow: hidden;
 }
 
 .contentSection.event.ApplyBorderLeftColor {
-  --border-left-color: var(--color-foreground);
+  /* --border-left-color: var(--color-foreground); */
+  --border-left-color: var(--color-background);
 }
 
 /* only for search results list; don't fade a cancelled event when you're looking into its details */
@@ -524,7 +525,7 @@ div.instrumentListVertical .instrumentAndPrimaryContainer {
 .searchResults .contentSection {
   margin-bottom: 20px;
   --border-left-color: #ccc;
-  border-left: solid 6px var(--border-left-color);
+  border-left: solid 4px var(--border-left-color);
   box-shadow: var(--even-more-subtle-elevation);
   padding-bottom: 0px;
 }

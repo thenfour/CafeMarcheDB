@@ -102,7 +102,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     const visInfo = dashboardContext.getVisibilityInfo(event);
 
     const typeStyle = GetStyleVariablesForColor({
-        ...StandardVariationSpec.Strong,
+        ...StandardVariationSpec.Weak,
         color: event.type?.color || null,
     });
 
@@ -118,16 +118,8 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     ];
 
     return <div style={typeStyle.style} className={classes.join(" ")}>
-        <div className='header'>
+        <div className='header applyColor'>
             <CMChipContainer>
-                {event.type && //<EventTypeValue type={event.type} />
-                    <CMStandardDBChip
-                        model={event.type}
-                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(event.typeId!) }}
-                    />
-                }
-
                 {event.status && <CMStandardDBChip
                     variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(event.statusId!) }}
                     border='border'
@@ -138,6 +130,18 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
             </CMChipContainer>
 
             <div className='flex-spacer'></div>
+
+            <CMChipContainer>
+                {event.type &&
+                    <CMStandardDBChip
+                        model={event.type}
+                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(event.typeId!) }}
+                        className='eventTypeChip'
+                    />
+                }
+
+            </CMChipContainer>
 
             {
                 dashboardContext.isShowingAdminControls && <>
@@ -364,7 +368,6 @@ const EventListQuerier = (props: EventListQuerierProps) => {
 
     React.useEffect(() => {
         if (queryExtra.isSuccess) {
-            console.log(searchResult);
             props.setResults({ ...searchResult });
         }
     }, [queryExtra.dataUpdatedAt]);
@@ -759,14 +762,17 @@ const EventListOuter = () => {
                                 }}
                                 items={results.facets.find(f => f.db3Column === "startsAt")?.items || []}
                             />
-                            <div className="divider" />
 
+                        </div>
+                    } // extra filter
+                    footerFilter={
+                        <div>
+                            <div className="divider" />
                             <SortByGroup
                                 columnOptions={Object.keys(OrderByColumnOptions)}
                                 setValue={setSortModel}
                                 value={sortModel}
                             />
-
                         </div>
                     }
                 />

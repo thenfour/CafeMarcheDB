@@ -816,7 +816,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
     // } as const;
 
     const typeStyle = GetStyleVariablesForColor({
-        ...StandardVariationSpec.Strong,
+        ...StandardVariationSpec.Weak,
         color: eventData.event.type?.color || null,
     });
 
@@ -834,16 +834,8 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
     const showVisibility = props.showVisibility && dashboardContext.isAuthorized(Permission.manage_events);
 
     return <div style={typeStyle.style} className={classes.join(" ")}>
-        <div className='header'>
+        <div className='header  applyColor'>
             <CMChipContainer>
-                {eventData.event.type && //<EventTypeValue type={event.type} />
-                    <CMStandardDBChip
-                        model={eventData.event.type}
-                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(eventData.event.typeId!) }}
-                    />
-                }
-
                 {eventData.event.status && <CMStandardDBChip
                     variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(eventData.event.statusId!) }}
                     border='border'
@@ -852,14 +844,23 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
                 />}
 
-                {/* <TimingChip value={eventData.eventTiming} tooltip={eventData.dateRange.toString()}>
-                    <CalendarMonthIcon className="icon" />
-                    {timingLabel[eventData.eventTiming]}
-                </TimingChip> */}
-
             </CMChipContainer>
 
             <div className='flex-spacer'></div>
+
+            <CMChipContainer>
+                {eventData.event.type && //<EventTypeValue type={event.type} />
+                    <CMStandardDBChip
+                        className='eventTypeChip'
+                        size='small'
+                        model={eventData.event.type}
+                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(eventData.event.typeId!) }}
+                    />
+                }
+
+            </CMChipContainer>
+
 
             {
                 isShowingAdminControls && <>
