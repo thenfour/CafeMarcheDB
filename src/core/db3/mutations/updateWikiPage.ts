@@ -6,12 +6,15 @@ import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TUpdateWikiPageArgs, ZTUpdateWikiPageArgs } from "../shared/apiTypes";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.edit_wiki_pages),
     resolver.zod(ZTUpdateWikiPageArgs),
     async ({ slug, name, content, visiblePermissionId }: TUpdateWikiPageArgs, ctx: AuthenticatedCtx) => {
+
+        const changeContext = CreateChangeContext("updateWikiPage");
 
         const wikiPage = await db.wikiPage.findUnique({
             where: { slug },
@@ -39,6 +42,15 @@ export default resolver.pipe(
                 });
             }
 
+            await RegisterChange({
+                action: ChangeAction.insert,
+                ctx,
+                changeContext,
+                pkid: revision.id,
+                table: "wikiPageRevision",
+                newValues: revision,
+            });
+
             return revision;
         } else {
             // Page doesn't exist, create page and revision
@@ -59,6 +71,15 @@ export default resolver.pipe(
                     visiblePermission: true,
                 },
             })
+
+            await RegisterChange({
+                action: ChangeAction.insert,
+                ctx,
+                changeContext,
+                pkid: newWikiPage.revisions[0]!.id,
+                table: "wikiPageRevision",
+                newValues: newWikiPage.revisions[0],
+            });
 
             return newWikiPage.revisions[0];
         }
