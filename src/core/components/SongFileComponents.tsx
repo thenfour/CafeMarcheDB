@@ -190,7 +190,20 @@ export const FileEditor = (props: FileEditorProps) => {
             }),
             new DB3Client.TagsFieldClient<db3.FileUserTagPayload>({ columnName: "taggedUsers", cellWidth: 150, allowDeleteFromCell: false }),
             new DB3Client.TagsFieldClient<db3.FileSongTagPayload>({ columnName: "taggedSongs", cellWidth: 150, allowDeleteFromCell: false }),
-            new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({ columnName: "taggedEvents", cellWidth: 150, allowDeleteFromCell: false }),
+            new DB3Client.TagsFieldClient<db3.FileEventTagPayload>({
+                columnName: "taggedEvents",
+                cellWidth: 150,
+                allowDeleteFromCell: false,
+                renderAsChip: (args) => {
+                    if (!args.value) {
+                        return <CMChip>--</CMChip>
+                    }
+                    return <><EventChip value={args.value.event} />aoeu</>;
+                },
+                renderAsListItem: (props, value, selected) => {
+                    return <><EventChip value={value.event} /></>;
+                }
+            }),
         ],
     });
 

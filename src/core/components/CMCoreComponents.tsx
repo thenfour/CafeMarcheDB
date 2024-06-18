@@ -520,14 +520,16 @@ export interface EventChipProps {
 };
 
 export const EventChip = (props: EventChipProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+
     return <CMChip
         variation={props.variation}
         size={props.size}
         onClick={props.onClick}
         className={props.className}
-    //color={props.value.functionalGroup.color}
+        color={dashboardContext.eventType.getById(props.value.typeId)?.color}
     >
-        {props.value.name}
+        {db3.EventAPI.getLabel(props.value)}
     </CMChip>
 }
 
