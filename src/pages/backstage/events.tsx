@@ -444,8 +444,7 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
             10003
         ]
     },
-
-] as const;
+];
 
 const gDefaultStaticFilterName = "Relevant" as const;
 const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultStaticFilterName)!;

@@ -388,6 +388,7 @@ export type UserPayloadMinimum = Prisma.UserGetPayload<{}>;
 export const UserWithInstrumentsArgs = Prisma.validator<Prisma.UserDefaultArgs>()({
     include: {
         instruments: true,
+        tags: true,
     }
     // include: {
     //     //instruments: UserInstrumentArgs,

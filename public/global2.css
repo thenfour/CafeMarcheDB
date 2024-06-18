@@ -2254,10 +2254,24 @@ pre.serverStartInfo {
     color: #ccc;
 }
 
+/* - custom css for db stuff --------------------------------- */
+/* 
 .userCssClass_director {
     border: 1px solid #00f;
     border-radius: 3px;
     padding: 0 10px;
+} */
+
+.userTagCssClass_director {
+    border: 1px solid #00f;
+    border-radius: 3px;
+    padding: 0 10px;
+}
+
+.userTagCssClass_guest {
+    /* color: green; */
+    font-style: italic;
+    font-weight: bold;
 }
 
 /* -  --------------------------------- */

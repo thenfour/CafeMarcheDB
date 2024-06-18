@@ -19,6 +19,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
+import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
 import { AdminInspectObject, AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps } from './CMCoreComponents';
 import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
@@ -37,7 +38,6 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { gCharMap, gIconMap } from '../db3/components/IconMap';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -297,8 +297,8 @@ export interface EventAttendanceDetailRowProps {
 
 export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, readonly, userMap }: EventAttendanceDetailRowProps) => {
     const currentUser = useCurrentUser()[0]!;
-    const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
+    //const publicData = useAuthenticatedSession();
+    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
     const dashboardContext = React.useContext(DashboardContext);
 
     const eventResponse = responseInfo.getEventResponseForUser(user, dashboardContext, userMap);
@@ -311,9 +311,16 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
     const authorizedForEdit = dashboardContext.isAuthorized(Permission.change_others_event_responses);
     const isYou = eventResponse.user.id === currentUser.id;
 
+    const classes = [
+        `nameCellContainer`,
+        isYou && "you",
+        `userCssClass_${user.cssClass}`,
+        ...user.tags.map(ta => `userTagCssClass_${dashboardContext.userTag.getById(ta.userTagId)?.cssClass}`),
+    ];
+
     return <tr>
         <td>
-            <div className={`nameCellContainer ${isYou && "you"}  userCssClass_${user.cssClass}`}>
+            <div className={classes.join(" ")}>
                 <div className={`name`}>{user.name}</div>
                 {isYou && <div className='you'>(you)</div>}
             </div>

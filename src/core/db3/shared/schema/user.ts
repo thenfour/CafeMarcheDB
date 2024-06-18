@@ -454,6 +454,12 @@ const userTagBaseArgs: db3.TableDesc =
         MakeMarkdownTextField("description", { authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeSortOrderField("sortOrder", { authMap: xUserAuthMap_R_EOwn_EManagers }),
         MakeColorField("color", { authMap: xUserAuthMap_R_EOwn_EManagers }),
+        new GenericStringField({
+            columnName: "cssClass",
+            allowNull: true,
+            format: "raw",
+            authMap: xUserAuthMap_R_EAdmins,
+        }),
         MakeSignificanceField("significance", UserTagSignificance, { authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "userAssignments", authMap: xUserAuthMap_R_EOwn_EManagers }),
     ]
