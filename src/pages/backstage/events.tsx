@@ -352,6 +352,7 @@ const EventListQuerier = (props: EventListQuerierProps) => {
         page: props.filterSpec.page,
         pageSize: props.filterSpec.pageSize,
         tableID: db3.xEvent.tableID,
+        refreshSerial: props.filterSpec.refreshSerial,
         sort: [{
             db3Column: props.filterSpec.orderByColumn,
             direction: props.filterSpec.orderByDirection,
@@ -678,6 +679,7 @@ const EventListOuter = () => {
             <div className="content">
 
                 {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+                <AdminInspectObject src={filterSpec} label="Filter spec" />
                 <AdminInspectObject src={results} label="Results obj" />
 
                 {/* <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} /> */}
