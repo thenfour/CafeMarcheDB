@@ -739,10 +739,6 @@ export interface DiscreteCriterion {
     // which items has the user selected for filtering.
     options: (number | boolean | string)[];
 
-    // // for date filtering
-    // minDate?: Date | undefined;
-    // maxDate?: Date | undefined;
-
     // type of filtering
     behavior: DiscreteCriterionFilterType;
 };
@@ -767,6 +763,41 @@ export interface GetSearchResultsInput {
 
     quickFilter: string,
     discreteCriteria: DiscreteCriterion[],
-    //dateCriteria: DateCriterion[],
-    // TODO: filtering by dates, scalars, etc.
 };
+
+
+
+// alphanumerics or underscores only.
+const ZDBSymbol = z.string().regex(/^[a-zA-Z0-9_]+$/);
+
+// Enum for SortDirection as a Zod enum
+const ZSortDirection = z.enum(["asc", "desc"]);
+
+// Zod schema for DiscreteCriterionFilterType using enum values
+const ZDiscreteCriterionFilterType = z.nativeEnum(DiscreteCriterionFilterType);
+
+// Zod schema for DiscreteCriterion
+const ZDiscreteCriterion = z.object({
+    db3Column: ZDBSymbol,
+    options: z.array(z.union([z.number(), z.boolean(), ZDBSymbol])),
+    behavior: ZDiscreteCriterionFilterType,
+});
+
+// Zod schema for GetSearchResultsSortModel
+const ZGetSearchResultsSortModel = z.object({
+    db3Column: ZDBSymbol,
+    direction: ZSortDirection,
+});
+
+// Zod schema for GetSearchResultsInput
+export const ZGetSearchResultsInput = z.object({
+    tableID: ZDBSymbol,
+
+    pageSize: z.number(),
+    page: z.number(),
+
+    sort: z.array(ZGetSearchResultsSortModel),
+
+    quickFilter: z.string(),
+    discreteCriteria: z.array(ZDiscreteCriterion),
+});

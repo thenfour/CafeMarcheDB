@@ -9,7 +9,7 @@ import { SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } fro
 import * as db3 from "../db3";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { CalculateFilterQueryResult, GetSearchResultsInput, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel } from "../shared/apiTypes";
+import { CalculateFilterQueryResult, GetSearchResultsInput, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel, ZGetSearchResultsInput } from "../shared/apiTypes";
 import { Stopwatch } from "shared/rootroot";
 
 async function GetCustomSearchResultsHook(currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
@@ -244,6 +244,7 @@ function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSe
 
 export default resolver.pipe(
     resolver.authorize(Permission.visibility_members), // ? right or?
+    resolver.zod(ZGetSearchResultsInput),
     async (args: GetSearchResultsInput, ctx: AuthenticatedCtx): Promise<SearchResultsRet> => {
         try {
             const rootsw = new Stopwatch();

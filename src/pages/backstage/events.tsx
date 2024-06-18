@@ -699,6 +699,7 @@ const EventListOuter = () => {
                                             key={e.label}
                                             onClick={() => handleClickStaticFilter(e)} size="small"
                                             variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
+                                            shape="rectangle"
                                         >
                                             {e.label}
                                         </CMChip>;
