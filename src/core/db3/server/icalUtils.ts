@@ -96,7 +96,7 @@ const songListToString = (l: EventSongListForCal) => {
     return `-------------
 ${l.name}
 
-${songsFormatted.join("\r\n")}`;
+${songsFormatted.join("\n")}`;
 
     //     const setLists = event.songLists.map(l => {
     //         `-------------
@@ -170,7 +170,7 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalenda
     // so just bake it, and keep the payload simple.
     let descriptionText = event.description ? markdownToPlainText(event.description) : "";
     if (setLists.length) {
-        descriptionText += "\r\n\r\n" + setLists.join(`\r\n\r\n`);
+        descriptionText += "\n\n" + setLists.join(`\n\n`);
     }
 
     // for all-day events, the datetime range will return midnight of the start day.

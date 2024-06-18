@@ -97,13 +97,13 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 async function CopySongListNames(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const txt = value.songs.filter(s => !!s.song).map(s => s.song.name).join("\r\n");
+    const txt = value.songs.filter(s => !!s.song).map(s => s.song.name).join("\n");
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
 }
 
 async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const txt = value.songs.filter(s => !!s.song).map((s, i) => `${i + 1}. ${s.song.name}`).join("\r\n");
+    const txt = value.songs.filter(s => !!s.song).map((s, i) => `${i + 1}. ${s.song.name}`).join("\n");
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
 }
@@ -145,7 +145,7 @@ async function CopySongListMarkdown(snackbarContext: SnackbarContextType, value:
         // so uh i'm technically putting markdown in markdown so this is not correct but let's go for it anyway.
         const commentTxt = IsNullOrWhitespace(s.subtitle) ? "" : ` *${s.subtitle}*`;
         return `${i + 1}. **${s.song.name}**${commentTxt}`;
-    }).join("\r\n");
+    }).join("\n");
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
 }

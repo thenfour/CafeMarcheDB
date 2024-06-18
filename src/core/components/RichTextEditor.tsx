@@ -572,7 +572,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     };
 
     const ToolbarActions = {
-        heading: () => { insertTextAtCursor(`\r\n### `); ta.current.focus(); },
+        heading: () => { insertTextAtCursor(`\n### `); ta.current.focus(); },
         bold: () => formatText('**'),
         italic: () => formatText('*'),
         underline: () => formatText('<u>', "</u>"),

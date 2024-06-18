@@ -79,7 +79,7 @@ export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: 
         className={`dayContainer ${classes.join(" ")}`}
     >
         <Tooltip
-            title={tooltips.length ? <div style={{ whiteSpace: 'pre-line' }}>{tooltips.join(` \r\n`)}</div> : null}
+            title={tooltips.length ? <div style={{ whiteSpace: 'pre-line' }}>{tooltips.join(` \n`)}</div> : null}
             arrow
             disableInteractive
         >
