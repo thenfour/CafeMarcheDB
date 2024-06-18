@@ -510,8 +510,6 @@ export interface UpdateEventSongListSongsArgs {
 // - we have additional info in the association table.
 export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: UpdateEventSongListSongsArgs) => {
 
-    // TODO: authorization.
-
     // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
     const desiredValues: TinsertOrUpdateEventSongListSong[] = args.desiredValues.map((a, index) => ({
         id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
@@ -552,17 +550,17 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     });
 
     // register those deletions
-    for (let i = 0; i < cp.delete.length; ++i) {
-        const oldValues = cp.delete[i];
-        await RegisterChange({
-            action: ChangeAction.delete,
-            changeContext,
-            table: "eventSongListSong",
-            pkid: oldValues!.id!,
-            oldValues,
-            ctx,
-        });
-    }
+    // for (let i = 0; i < cp.delete.length; ++i) {
+    //     const oldValues = cp.delete[i];
+    //     await RegisterChange({
+    //         action: ChangeAction.delete,
+    //         changeContext,
+    //         table: "eventSongListSong",
+    //         pkid: oldValues!.id!,
+    //         oldValues,
+    //         ctx,
+    //     });
+    // }
 
     // create new associations
     for (let i = 0; i < cp.create.length; ++i) {
@@ -577,14 +575,14 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
             },
         });
 
-        await RegisterChange({
-            action: ChangeAction.insert,
-            changeContext,
-            table: "eventSongListSong",
-            pkid: newAssoc.id,
-            newValues: item,
-            ctx,
-        });
+        // await RegisterChange({
+        //     action: ChangeAction.insert,
+        //     changeContext,
+        //     table: "eventSongListSong",
+        //     pkid: newAssoc.id,
+        //     newValues: item,
+        //     ctx,
+        // });
     }
 
     // update the rest.
@@ -613,16 +611,28 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
             data,
         });
 
-        await RegisterChange({
-            action: ChangeAction.update,
-            changeContext,
-            table: "eventSongListSong",
-            pkid: newAssoc.id,
-            oldValues: item.a,
-            newValues: item.b,
-            ctx,
-        });
+        // await RegisterChange({
+        //     action: ChangeAction.update,
+        //     changeContext,
+        //     table: "eventSongListSong",
+        //     pkid: newAssoc.id,
+        //     oldValues: item.a,
+        //     newValues: item.b,
+        //     ctx,
+        // });
     }
+
+    // make a custom change obj. let's not bother with "old state"; this just gets too verbose and that's not helpful.
+    await RegisterChange({
+        action: ChangeAction.update,
+        changeContext,
+        table: "eventSongList:Songs",
+        pkid: args.songListID,
+        oldValues: {},
+        newValues: cp.desiredState,
+        ctx,
+        options: { dontCalculateChanges: true },
+    });
 
     await CallMutateEventHooks({
         tableName: "eventSongList",

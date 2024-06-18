@@ -54,6 +54,10 @@ export const CreateChangeContext = (contextDescription: string): ChangeContext =
     };
 };
 
+export type RegisterChangeOptions = {
+    dontCalculateChanges?: boolean;
+};
+
 export type RegisterChangeArgs = {
     action: ChangeAction, // database operation
     changeContext: ChangeContext,
@@ -62,6 +66,7 @@ export type RegisterChangeArgs = {
     oldValues?: any,
     newValues?: any,
     ctx: Ctx,
+    options?: RegisterChangeOptions,
 }
 
 export type CalculateChangesResult = {
@@ -101,24 +106,30 @@ export async function RegisterChange(args: RegisterChangeArgs) {
     let oldValues: any = null;
     let newValues: any = null;
 
-    switch (args.action) {
-        case ChangeAction.insert:
-            newValues = args.newValues;
-            break;
-        case ChangeAction.delete:
-            oldValues = args.oldValues;
-            break;
-        case ChangeAction.update:
-            const changes = CalculateChanges(args.oldValues, args.newValues);
-            if (Object.keys(changes.oldValues).length < 1) {
-                // you didn't change anything.
-                return;
-            }
-            oldValues = changes.oldValues;
-            newValues = changes.newValues;
-            break;
-        default:
-            throw new Error(`unknown change action ${args?.action || "<null>"}`);
+    if (CoalesceBool(args.options?.dontCalculateChanges, false)) {
+        // used by custom change objects like song lists
+        oldValues = args.oldValues || {};
+        newValues = args.newValues || {};
+    } else {
+        switch (args.action) {
+            case ChangeAction.insert:
+                newValues = args.newValues;
+                break;
+            case ChangeAction.delete:
+                oldValues = args.oldValues;
+                break;
+            case ChangeAction.update:
+                const changes = CalculateChanges(args.oldValues, args.newValues);
+                if (Object.keys(changes.oldValues).length < 1) {
+                    // you didn't change anything.
+                    return;
+                }
+                oldValues = changes.oldValues;
+                newValues = changes.newValues;
+                break;
+            default:
+                throw new Error(`unknown change action ${args?.action || "<null>"}`);
+        }
     }
 
     try {
