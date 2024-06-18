@@ -39,7 +39,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentFunctionalGroupInclude => {
         return InstrumentFunctionalGroupArgs.include;
     },
-    tableName: "instrumentFunctionalGroup",
+    tableName: "InstrumentFunctionalGroup",
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
     getRowInfo: (row: InstrumentFunctionalGroupPayload) => ({
@@ -83,7 +83,7 @@ export const xInstrumentTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentTagInclude => {
         return InstrumentTagArgs.include;
     },
-    tableName: "instrumentTag",
+    tableName: "InstrumentTag",
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.InstrumentTagCreateInput => {
@@ -174,7 +174,7 @@ export const xInstrument = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.InstrumentInclude => {
         return InstrumentArgs.include;
     },
-    tableName: "instrument",
+    tableName: "Instrument",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({
         name: row.name,

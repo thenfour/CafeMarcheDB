@@ -61,7 +61,7 @@ export const xSongTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongTagInclude => {
         return SongTagArgs.include;
     },
-    tableName: "songTag",
+    tableName: "SongTag",
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
     naturalOrderBy: SongTagNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongTagCreateInput => {
@@ -310,7 +310,7 @@ export const xSongCreditType = new db3.xTable({
         return SongCreditTypeArgs.include;
     },
     tableAuthMap: xSongTableAuthMap_R_EAdmins,
-    tableName: "songCreditType",
+    tableName: "SongCreditType",
     naturalOrderBy: SongCreditTypeNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.SongCreditTypeCreateInput => {
         return {
@@ -361,7 +361,7 @@ export const xSongCredit = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.SongCreditInclude => {
         return SongCreditArgs.include;
     },
-    tableName: "songCredit",
+    tableName: "SongCredit",
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({

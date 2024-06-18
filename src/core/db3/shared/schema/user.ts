@@ -69,7 +69,7 @@ export const xUserMinimum = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
         return UserArgs.include;
     },
-    tableName: "user",
+    tableName: "User",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserMinimumPayload) => ({
         name: row.name,
@@ -155,7 +155,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.PermissionInclude => {
         return PermissionArgs.include;
     },
-    tableName: "permission",
+    tableName: "Permission",
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
@@ -277,7 +277,7 @@ export const xRole = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.RoleInclude => {
         return RoleArgs.include;
     },
-    tableName: "role",
+    tableName: "Role",
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RoleNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.RoleCreateInput => {
@@ -557,7 +557,7 @@ const userBaseArgs: db3.TableDesc = {
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.UserInclude => {
         return UserArgs.include;
     },
-    tableName: "user",
+    tableName: "User",
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({

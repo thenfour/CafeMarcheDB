@@ -216,7 +216,7 @@ export const xEventStatus = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventStatusInclude => {
         return EventStatusArgs.include;
     },
-    tableName: "eventStatus",
+    tableName: "EventStatus",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventStatusNaturalOrderBy,
     createInsertModelFromString: (input: string): Prisma.EventStatusCreateInput => {
@@ -357,7 +357,7 @@ export const EventAPI = {
 
 
 export const xEventArgs_Base: db3.TableDesc = {
-    tableName: "event",
+    tableName: "Event", // case matters :(
     getInclude: (clientIntention: db3.xTableClientUsageContext, filterModel): Prisma.EventInclude => {
         return EventArgs.include;
     },
@@ -774,7 +774,7 @@ export const xEventAttendance = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventAttendanceInclude => {
         return EventAttendanceArgs.include;
     },
-    tableName: "eventAttendance",
+    tableName: "EventAttendance",
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({
@@ -814,7 +814,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSegmentUserResponseInclude => {
         return EventSegmentUserResponseArgs.include;
     },
-    tableName: "eventSegmentUserResponse",
+    tableName: "EventSegmentUserResponse",
     tableAuthMap: xEventTableAuthMap_UserResponse,
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
@@ -874,7 +874,7 @@ export const xEventUserResponse = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventUserResponseInclude => {
         return EventUserResponseArgs.include;
     },
-    tableName: "eventUserResponse",
+    tableName: "EventUserResponse",
     naturalOrderBy: EventUserResponseNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_UserResponse,
     getRowInfo: (row: EventUserResponsePayload) => ({
@@ -946,7 +946,7 @@ export const xEventSongList = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListInclude => {
         return EventSongListArgs.include;
     },
-    tableName: "eventSongList",
+    tableName: "EventSongList",
     naturalOrderBy: EventSongListNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListPayload) => ({
@@ -998,7 +998,7 @@ export const xEventSongListSong = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListSongInclude => {
         return EventSongListSongArgs.include;
     },
-    tableName: "eventSongListSong",
+    tableName: "EventSongListSong",
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListSongPayload) => ({

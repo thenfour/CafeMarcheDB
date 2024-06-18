@@ -84,7 +84,7 @@ export const xFileTag = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.FileTagInclude => {
         return FileTagArgs.include;
     },
-    tableName: "fileTag",
+    tableName: "FileTag",
     naturalOrderBy: FileTagNaturalOrderBy,
     tableAuthMap: xFileTableAuth_AdminObjects,
     createInsertModelFromString: (input: string): Prisma.FileTagCreateInput => {

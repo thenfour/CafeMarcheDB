@@ -55,7 +55,7 @@ export const xCustomLink = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.CustomLinkInclude => {
         return CustomLinkArgs.include;
     },
-    tableName: "customLink",
+    tableName: "CustomLink",
     naturalOrderBy: CustomLinkNaturalOrderBy,
     getRowInfo: (row: CustomLinkPayload) => ({
         name: row.name,

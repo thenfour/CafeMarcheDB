@@ -635,7 +635,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     });
 
     await CallMutateEventHooks({
-        tableName: "eventSongList",
+        tableName: "EventSongList",
         model: { id: args.songListID }
     });
 

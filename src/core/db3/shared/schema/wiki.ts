@@ -42,7 +42,7 @@ export const xWikiPage = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.WikiPageInclude => {
         return WikiPageArgs.include;
     },
-    tableName: "wikiPage",
+    tableName: "WikiPage",
     naturalOrderBy: WikiPageNaturalOrderBy,
     getRowInfo: (row: WikiPagePayload) => ({
         name: row.slug,
@@ -108,7 +108,7 @@ export const xWikiPageRevision = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.WikiPageRevisionInclude => {
         return WikiPageRevisionArgs.include;
     },
-    tableName: "wikiPageRevision",
+    tableName: "WikiPageRevision",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
     getRowInfo: (row: WikiPageRevisionPayload) => ({
         name: row.name,

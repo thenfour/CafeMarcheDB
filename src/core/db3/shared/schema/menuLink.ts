@@ -43,7 +43,7 @@ export const xMenuLink = new db3.xTable({
     getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.MenuLinkInclude => {
         return MenuLinkArgs.include;
     },
-    tableName: "menuLink",
+    tableName: "MenuLink",
     naturalOrderBy: MenuLinkNaturalOrderBy,
     getRowInfo: (row: MenuLinkPayload) => ({
         name: row.caption,

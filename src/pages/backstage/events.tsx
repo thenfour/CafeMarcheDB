@@ -8,7 +8,7 @@ import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
 import { Timing } from "shared/time";
 import { IsNullOrWhitespace, arrayToTSV, arraysContainSameValues } from "shared/utils";
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject } from "src/core/components/CMCoreComponents";
+import { AdminInspectObject, CMChip, CMChipContainer, CMSinglePageSurfaceCard, CMStandardDBChip, InspectObject } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -678,6 +678,7 @@ const EventListOuter = () => {
             <div className="content">
 
                 {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+                <AdminInspectObject src={results} label="Results obj" />
 
                 {/* <EventsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} /> */}
                 <FilterControls
