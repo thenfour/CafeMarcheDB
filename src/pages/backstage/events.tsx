@@ -15,6 +15,7 @@ import { EventAttendanceControl } from "src/core/components/EventAttendanceCompo
 import { EventListItem, EventSearchItemContainer } from "src/core/components/EventComponents";
 import { CalculateEventMetadata, EventListQuerier, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "src/core/components/EventComponentsBase";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
+import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { API } from "src/core/db3/clientAPI";
@@ -552,6 +553,7 @@ const SearchEventsPage: BlitzPage = (props) => {
                 <Suspense>
                     <SettingMarkdown setting="events_markdown"></SettingMarkdown>
                 </Suspense>
+                <NewEventButton />
 
                 <EventListOuter />
             </div>

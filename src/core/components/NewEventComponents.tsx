@@ -152,7 +152,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     </ReactiveInputDialog>;
 };
 
-export const NewEventButton = (props: { onOK: () => void }) => {
+export const NewEventButton = (props: {}) => {
     const [open, setOpen] = React.useState<boolean>(false);
     const dashboardContext = React.useContext(DashboardContext);
 
@@ -170,7 +170,6 @@ export const NewEventButton = (props: { onOK: () => void }) => {
                     }}
                 onOK={() => {
                     setOpen(false);
-                    props.onOK();
                 }} />
         </ReactiveInputDialog>}
     </>;

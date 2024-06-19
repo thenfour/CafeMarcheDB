@@ -560,7 +560,9 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
     readonly = readonly && authorized;
 
     return <div className='descriptionContainer'>
-        {!readonly && !editing && <Button onClick={() => setEditing(true)}>Edit</Button>}
+        {!readonly && !editing && <Button onClick={() => setEditing(true)}>
+            {IsNullOrWhitespace(event.description) ? <>{gIconMap.Edit()}Add info</> : <>{gIconMap.Edit()}Edit info</>}
+        </Button>}
         {editing ? <EventDescriptionEditor event={event} refetch={refetch} onClose={() => setEditing(false)} /> : <Markdown markdown={event.description} />}
     </div>;
 };

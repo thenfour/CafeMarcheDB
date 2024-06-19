@@ -66,7 +66,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const event = db3.enrichSearchResultEvent(eventRaw, dashboardContext);
 
     return <div className="eventDetailComponent">
-        <NewEventButton onOK={() => { }} />
+        <NewEventButton />
         {event ? <>
             <EventBreadcrumbs event={event} />
             <EventDetailFull readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} />
