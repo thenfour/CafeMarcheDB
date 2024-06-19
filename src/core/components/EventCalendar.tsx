@@ -196,7 +196,9 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
                 }}
                 date={props.date}
 
-                onSelectEvent={(e: EventWithSearchResult) => props.setSelectedEvent(e)}
+                onSelectEvent={(e: EventWithSearchResult) => {
+                    props.setSelectedEvent(e);
+                }}
                 selected={props.selectedEvent}
 
                 components={{
@@ -280,7 +282,13 @@ export const BigEventCalendar = () => {
             <div className="content">
                 <BigEventCalendarMonth
                     selectedEvent={selectedEvent}
-                    setSelectedEvent={setSelectedEvent}
+                    setSelectedEvent={(e) => {
+                        if (e?.event.id === selectedEvent?.event.id) {
+                            setSelectedEvent(null);
+                            return;
+                        }
+                        setSelectedEvent(e);
+                    }}
                     date={date}
                     enrichedEvents={enrichedEvents}
                     filterSpec={filterSpec}
@@ -291,7 +299,6 @@ export const BigEventCalendar = () => {
                 <EventListQuerier
                     filterSpec={filterSpec}
                     setResults={(r, ee) => {
-                        console.log(`new results incoming with refreshreiral ${refreshSerial}`);
                         setResults(r);
                         setEnrichedEvents(ee.map(e => ({
                             event: e,

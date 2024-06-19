@@ -232,7 +232,6 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
         eventTiming: props.eventData.eventTiming,
         eventIsPast: props.eventData.eventTiming === Timing.Past,
 
-
         isInvited: false,
         isSingleSegment: false,
 
@@ -273,7 +272,7 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
     ret.someAffirmative = ret.allAttendances.some(r => !!r && r.strength > 50);
     ret.allNegative = ret.allAttendances.every(r => !!r && r.strength <= 50);
 
-    ret.alertFlag = ret.isInvited && !ret.allAnswered && !ret.eventIsPast;
+    ret.alertFlag = ret.isInvited && !ret.allAnswered && !ret.eventIsPast && !ret.eventIsCancelled;
     ret.hideBecauseNotAlert = !ret.alertFlag && alertOnly;
     ret.visible = !ret.eventIsCancelled && !ret.noSegments && !ret.hideBecauseNotAlert && (ret.anyAnswered || ret.isInvited);// hide the control entirely if you're not invited, but still show if you already responded.
 
@@ -378,8 +377,6 @@ export interface EventListQuerierProps {
 
 const EventListQuerierInner = (props: EventListQuerierProps) => {
     const dashboardContext = React.useContext(DashboardContext);
-
-    console.log(`refresh serial: ${props.filterSpec.refreshSerial}`);
 
     const [searchResult, queryExtra] = useQuery(getSearchResults, {
         page: props.filterSpec.page,
