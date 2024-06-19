@@ -23,6 +23,8 @@ import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/compo
 import { StandardVariationSpec } from "shared/color";
 import { Timing } from "shared/time";
 import { RenderMuiIcon } from "src/core/db3/components/IconMap";
+import { BigEventCalendarMonth } from "src/core/components/EventCalendar";
+import { DateCalendar, DatePicker } from "@mui/x-date-pickers";
 
 interface FilterSpec {
     qfText: string;
@@ -228,6 +230,20 @@ const MarkdownTester = () => {
     </div>
 };
 
+
+const EventCalendarTester = () => {
+    return <div>
+        Event calendar test
+
+        <BigEventCalendarMonth
+            items={[]}
+            value={new Date()}
+            onChange={() => { }}
+        />
+
+    </div>;
+};
+
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
     const [slugOrNot, setSlugOrNot] = React.useState<string>("");
@@ -237,6 +253,13 @@ const MainContent = () => {
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <>
+
+        <CMSinglePageSurfaceCard>
+            <div className="content">
+                <EventCalendarTester />
+            </div>
+        </CMSinglePageSurfaceCard>
+
 
         <CMSinglePageSurfaceCard>
             <div className="content">

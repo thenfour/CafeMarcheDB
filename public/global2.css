@@ -2185,36 +2185,20 @@ pre.serverStartInfo {
 
 .EventDateField.container .RelativeIndicator {
     --chip-color: #ddd;
-    background-color: var(--chip-color);
-    color: #777;
+    /* background-color: var(--chip-color); */
+    /* color: #777; */
+    color: var(--chip-color);
     margin: 0 10px;
     padding: 0px 6px;
     font-style: italic;
     font-size: 15px;
     font-weight: normal;
     letter-spacing: 0;
-    box-shadow: 0 0 5px var(--chip-color);
+    /* box-shadow: 0 0 5px var(--chip-color); */
 }
-
 
 .EventDateField.container.TBD .RelativeIndicator {
     display: none;
-}
-
-
-/* Animation for the glow effect */
-@keyframes glow {
-    0% {
-        box-shadow: 0 0 5px var(--chip-color);
-    }
-
-    50% {
-        box-shadow: 0 0 20px var(--chip-color);
-    }
-
-    100% {
-        box-shadow: 0 0 5px var(--chip-color);
-    }
 }
 
 /* critical */
@@ -2222,9 +2206,9 @@ pre.serverStartInfo {
 .EventDateField.container.HappeningNow .RelativeIndicator,
 .EventDateField.container.Tomorrow .RelativeIndicator {
     --chip-color: #3c3;
-    color: white;
+    /* color: white; */
     font-size: 18px;
-    font-weight: bold;
+    /* font-weight: bold; */
     /* animation: glow 1s infinite; */
 }
 
@@ -2232,9 +2216,9 @@ pre.serverStartInfo {
 .EventDateField.container.InDays .RelativeIndicator,
 .EventDateField.container.NextWeek .RelativeIndicator {
     --chip-color: #f80;
-    color: white;
+    /* color: white; */
     font-size: 18px;
-    font-weight: bold;
+    /* font-weight: bold; */
     /* animation: glow 1s infinite; */
 }
 
@@ -2244,9 +2228,9 @@ pre.serverStartInfo {
 .EventDateField.container.InMonths .RelativeIndicator,
 .EventDateField.container.InYears .RelativeIndicator {
     --chip-color: #88f;
-    color: white;
+    /* color: white; */
     font-size: 18px;
-    font-weight: bold;
+    /* font-weight: bold; */
 }
 
 /* for dupe songs in the song list*/

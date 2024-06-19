@@ -1638,21 +1638,57 @@ export class EventStartsAtField extends FieldBase<Date> {
     };
     SqlGetQuickFilterElementsForToken = (token: string, quickFilterTokens: string[]): string | null => {
 
-        // types of date formats to match:
-        // 2023 (find events in 2023)
-        // 2023-1 (find events in Jan 2023)
-        // 2023-01
-        // 202301
-        // 202301-05 (find events on 5 Jan, 2023)
-        // 2023-1-5 (find events on 5 Jan, 2023)
-        // 20230105 (find events on 5 Jan, 2023)
+        // for ranges, attempting to keep the optional hyphens is just impractical and confusing. so a more strict format is required and clearer.
+        // 2023-2024
+        // 202311-202312
+        // 20231122-20231220
+        const rangeRegex = /^(2\d{3})(\d\d)?(\d\d)?-(2\d{3})(\d\d)?(\d\d)?/;
+        // groups:
+        // 1: start year (required)
+        // 2: start month
+        // 3: start day
+        // 4: end year (required)
+        // 5: end month
+        // 6: end day
+        const rangeMatch = rangeRegex.exec(token);
+        if (rangeMatch) {
+            const startYear = rangeMatch[1];
+            const startMonth = rangeMatch[2] || '01';
+            const startDay = rangeMatch[3] || '01';
+            const endYear = rangeMatch[4];
+            const endMonth = rangeMatch[5] || '12';
+            let endDay: string;
+
+            // Calculate the last day of the end month
+            if (!rangeMatch[6]) {
+                const lastDayOfMonth = new Date(Number(endYear), Number(endMonth), 0).getDate();
+                endDay = lastDayOfMonth.toString().padStart(2, '0');
+            } else {
+                endDay = rangeMatch[6];
+            }
+
+            // Note: date() extracts the date portion, which allows us to use 31 December as the end date rather than having to go to 1 Jan of the next year which is more complex.
+
+            const startDate = `${startYear}-${startMonth}-${startDay}`;
+            const endDate = `${endYear}-${endMonth}-${endDay}`;
+
+            const expr = `(date(${this.member}) BETWEEN '${startDate}' AND '${endDate}')`;
+            return expr;
+        }
+
+        // types of date formats:
+        // 2023
+        // 2023-11
+        // 202311
+        // 2023-11-22
+        // 20231122
 
         // year part is 2nnn (match[1])
         // optional hyphen
         // optional month part is n or nn (match[2])
         // optional hyphen
         // optional day part is n or nn (match[3])
-        const regex = /\b(2\d{3})-?(\d{1,2})?-?(\d{1,2})?\b/;
+        const regex = /^(2\d{3})-?(\d{1,2})?-?(\d{1,2})?/;
 
         // Execute the regex on the input string
         const match = regex.exec(token);
