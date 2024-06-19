@@ -692,6 +692,20 @@ export interface SearchResultsRet {
     queryMetrics: SearchQueryMetric[];
 };
 
+export function MakeEmptySearchResultsRet() {
+    return {
+        facets: [],
+        results: [],
+        rowCount: 0,
+        customData: null,
+        queryMetrics: [],
+        filterQueryResult: {
+            errors: [],
+            sqlSelect: "",
+        },
+    }
+};
+
 export interface CriterionQueryElements {
     error: string | undefined;
     whereAnd: string;

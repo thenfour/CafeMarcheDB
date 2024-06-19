@@ -25,7 +25,7 @@
     }
 }
 
-.filterControlsContainer .queryProgressLine {
+.queryProgressLine {
     height: 4px;
     background-color: black;
     margin-top: 10px;

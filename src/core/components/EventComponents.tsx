@@ -20,7 +20,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
-import { GetICalRelativeURIForUserAndEvent } from '../db3/shared/apiTypes';
+import { GetICalRelativeURIForUserAndEvent, SearchResultsRet } from '../db3/shared/apiTypes';
 import { AdminInspectObject, AttendanceChip, CMChipContainer, CMStandardDBChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps } from './CMCoreComponents';
 import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { ChoiceEditCell } from './ChooseItemDialog';
@@ -28,7 +28,7 @@ import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata_Verbose, EventEnrichedVerbose_Event, EventWithMetadata } from './EventComponentsBase';
+import { CalculateEventMetadata, CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata, EventsFilterSpec } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -1092,6 +1092,161 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         </Suspense>
     </EventDetailContainer>;
 };
+
+
+export interface EventSearchItemContainerProps {
+    event: db3.EventSearch_Event;
+
+    highlightTagIds?: number[];
+    highlightStatusIds?: number[];
+    highlightTypeIds?: number[];
+}
+
+export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
+    const dashboardContext = React.useContext(DashboardContext);
+    const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
+
+    const highlightTagIds = props.highlightTagIds || [];
+    const highlightStatusIds = props.highlightStatusIds || [];
+    const highlightTypeIds = props.highlightTypeIds || [];
+
+    const eventURI = API.events.getURIForEvent(event.id, event.slug);
+    const dateRange = API.events.getEventDateRange(event);
+    const eventTiming = dateRange.hitTestDateTime();
+
+    const visInfo = dashboardContext.getVisibilityInfo(event);
+
+    const typeStyle = GetStyleVariablesForColor({
+        ...StandardVariationSpec.Weak,
+        color: event.type?.color || null,
+    });
+
+    const classes = [
+        `EventDetail`,
+        `contentSection`,
+        `event`,
+        `ApplyBorderLeftColor`,
+        event.type?.text,
+        visInfo.className,
+        ((eventTiming === Timing.Past)) ? "past" : "notPast",
+        `status_${event.status?.significance}`,
+    ];
+
+    return <div style={typeStyle.style} className={classes.join(" ")}>
+        <div className='header applyColor'>
+            <CMChipContainer>
+                {event.status && <CMStandardDBChip
+                    variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(event.statusId!) }}
+                    border='border'
+                    shape="rectangle"
+                    model={event.status}
+                    getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
+                />}
+            </CMChipContainer>
+
+            <div className='flex-spacer'></div>
+
+            <CMChipContainer>
+                {event.type &&
+                    <CMStandardDBChip
+                        model={event.type}
+                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(event.typeId!) }}
+                        className='eventTypeChip'
+                    />
+                }
+
+            </CMChipContainer>
+
+            {
+                dashboardContext.isShowingAdminControls && <>
+                    <NameValuePair
+                        isReadOnly={true}
+                        name={"eventId"}
+                        value={event.id}
+                    />
+                    <NameValuePair
+                        isReadOnly={true}
+                        name={"revision"}
+                        value={event.revision}
+                    />
+                    <InspectObject src={event} />
+                </>
+            }
+
+            <Tooltip title="Add to your calendar (iCal)">
+                <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: dashboardContext.currentUser?.accessToken || null, eventUid: event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
+            </Tooltip>
+        </div>
+
+        <div className='content'>
+            {/* for search results it's really best if we allow the whole row to be clickable. */}
+            <Link href={eventURI} className="titleLink">
+                <div className='titleLine'>
+                    <div className="titleText">
+                        {event.name}
+                    </div>
+                </div>
+            </Link>
+
+            <div className='titleLine'>
+                <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
+            </div>
+
+            {!IsNullOrWhitespace(event.locationDescription) &&
+                <div className='titleLine'>
+                    <div className="location smallInfoBox">
+                        {gIconMap.Place()}
+                        <span className="text">{event.locationDescription}</span>
+                    </div>
+                </div>}
+
+            <CMChipContainer>
+                {event.tags.map(tag => <CMStandardDBChip
+                    key={tag.id}
+                    model={tag.eventTag}
+                    size='small'
+                    variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
+                    getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
+                />)}
+            </CMChipContainer>
+
+            {props.children}
+
+        </div>
+
+    </div>;
+};
+
+
+
+export interface EventListItemProps {
+    event: db3.EnrichedSearchEventPayload;
+    results: SearchResultsRet;
+    refetch: () => void;
+    filterSpec: EventsFilterSpec;
+};
+
+export const EventListItem = ({ event, ...props }: EventListItemProps) => {
+
+    const { eventData, userMap } = CalculateEventSearchResultsMetadata({ event, results: props.results });
+
+    return <EventSearchItemContainer
+        event={event}
+        highlightTagIds={props.filterSpec.tagFilter.options as number[]}
+        highlightStatusIds={props.filterSpec.statusFilter.options as number[]}
+        highlightTypeIds={props.filterSpec.typeFilter.options as number[]}
+    >
+        <EventAttendanceControl
+            eventData={eventData}
+            onRefetch={props.refetch}
+            userMap={userMap}
+            alertOnly={true}
+        />
+    </EventSearchItemContainer>;
+};
+
+
 
 export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),

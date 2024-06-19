@@ -1,5 +1,4 @@
 import { BlitzPage } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
 import { ListItemIcon, Menu, MenuItem, Pagination, Tooltip } from "@mui/material";
 import Link from "next/link";
 import React, { Suspense } from "react";
@@ -13,7 +12,8 @@ import { CMSmallButton, EventDateField, NameValuePair, useURLState } from "src/c
 import { GetStyleVariablesForColor } from "src/core/components/Color";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
-import { CalculateEventMetadata } from "src/core/components/EventComponentsBase";
+import { EventListItem, EventSearchItemContainer } from "src/core/components/EventComponents";
+import { CalculateEventMetadata, EventListQuerier, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "src/core/components/EventComponentsBase";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
@@ -21,45 +21,21 @@ import { API } from "src/core/db3/clientAPI";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import getSearchResults from "src/core/db3/queries/getSearchResults";
-import { DiscreteCriterion, DiscreteCriterionFilterType, GetICalRelativeURIForUserAndEvent, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterion, DiscreteCriterionFilterType, GetICalRelativeURIForUserAndEvent, MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
-enum OrderByColumnOptions {
-    id = "id",
-    startsAt = "startsAt",
-    name = "name",
-};
-
-type OrderByColumnOption = keyof typeof OrderByColumnOptions;// "startsAt" | "name";
-
-interface EventsFilterSpec {
-    pageSize: number;
-    page: number;
-    quickFilter: string;
-    refreshSerial: number; // this is necessary because you can do things to change the results from this page. think of adding an event then refetching.
-
-    orderByColumn: OrderByColumnOption;
-    orderByDirection: SortDirection;
-
-    typeFilter: DiscreteCriterion;
-    tagFilter: DiscreteCriterion;
-    statusFilter: DiscreteCriterion;
-    dateFilter: DiscreteCriterion;
-};
-
 // // for serializing in compact querystring
-interface CriterionStatic {
-    o: number[];
-    b: DiscreteCriterionFilterType;
-}
+// interface CriterionStatic {
+//     o: number[];
+//     b: DiscreteCriterionFilterType;
+// }
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
     label: string,
     helpText: string,
 
-    orderByColumn: OrderByColumnOption;
+    orderByColumn: EventOrderByColumnOption;
     orderByDirection: SortDirection;
 
     typeFilterEnabled: boolean;
@@ -78,192 +54,6 @@ interface EventsFilterSpecStatic {
     dateFilterBehavior: DiscreteCriterionFilterType;
     dateFilterOptions: number[];
 };
-
-export interface EventSearchItemContainerProps {
-    event: db3.EventSearch_Event;
-
-    highlightTagIds?: number[];
-    highlightStatusIds?: number[];
-    highlightTypeIds?: number[];
-}
-
-export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<EventSearchItemContainerProps>) => {
-    const dashboardContext = React.useContext(DashboardContext);
-    const event = db3.enrichSearchResultEvent(props.event, dashboardContext);
-
-    const highlightTagIds = props.highlightTagIds || [];
-    const highlightStatusIds = props.highlightStatusIds || [];
-    const highlightTypeIds = props.highlightTypeIds || [];
-
-    const eventURI = API.events.getURIForEvent(event.id, event.slug);
-    const dateRange = API.events.getEventDateRange(event);
-    const eventTiming = dateRange.hitTestDateTime();
-
-    const visInfo = dashboardContext.getVisibilityInfo(event);
-
-    const typeStyle = GetStyleVariablesForColor({
-        ...StandardVariationSpec.Weak,
-        color: event.type?.color || null,
-    });
-
-    const classes = [
-        `EventDetail`,
-        `contentSection`,
-        `event`,
-        `ApplyBorderLeftColor`,
-        event.type?.text,
-        visInfo.className,
-        ((eventTiming === Timing.Past)) ? "past" : "notPast",
-        `status_${event.status?.significance}`,
-    ];
-
-    return <div style={typeStyle.style} className={classes.join(" ")}>
-        <div className='header applyColor'>
-            <CMChipContainer>
-                {event.status && <CMStandardDBChip
-                    variation={{ ...StandardVariationSpec.Strong, selected: highlightStatusIds.includes(event.statusId!) }}
-                    border='border'
-                    shape="rectangle"
-                    model={event.status}
-                    getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
-                />}
-            </CMChipContainer>
-
-            <div className='flex-spacer'></div>
-
-            <CMChipContainer>
-                {event.type &&
-                    <CMStandardDBChip
-                        model={event.type}
-                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
-                        variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(event.typeId!) }}
-                        className='eventTypeChip'
-                    />
-                }
-
-            </CMChipContainer>
-
-            {
-                dashboardContext.isShowingAdminControls && <>
-                    <NameValuePair
-                        isReadOnly={true}
-                        name={"eventId"}
-                        value={event.id}
-                    />
-                    <NameValuePair
-                        isReadOnly={true}
-                        name={"revision"}
-                        value={event.revision}
-                    />
-                    <InspectObject src={event} />
-                </>
-            }
-
-            <Tooltip title="Add to your calendar (iCal)">
-                <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: dashboardContext.currentUser?.accessToken || null, eventUid: event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
-            </Tooltip>
-        </div>
-
-        <div className='content'>
-            {/* for search results it's really best if we allow the whole row to be clickable. */}
-            <Link href={eventURI} className="titleLink">
-                <div className='titleLine'>
-                    <div className="titleText">
-                        {event.name}
-                    </div>
-                </div>
-            </Link>
-
-            <div className='titleLine'>
-                <EventDateField className="date smallInfoBox text" dateRange={dateRange} />
-            </div>
-
-            {!IsNullOrWhitespace(event.locationDescription) &&
-                <div className='titleLine'>
-                    <div className="location smallInfoBox">
-                        {gIconMap.Place()}
-                        <span className="text">{event.locationDescription}</span>
-                    </div>
-                </div>}
-
-            <CMChipContainer>
-                {event.tags.map(tag => <CMStandardDBChip
-                    key={tag.id}
-                    model={tag.eventTag}
-                    size='small'
-                    variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
-                    getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
-                />)}
-            </CMChipContainer>
-
-            {props.children}
-
-        </div>
-
-    </div>;
-};
-
-
-interface EventListItemProps {
-    event: db3.EnrichedSearchEventPayload;
-    results: SearchResultsRet;
-    refetch: () => void;
-    filterSpec: EventsFilterSpec;
-};
-
-const EventListItem = ({ event, ...props }: EventListItemProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
-
-    const userMap: db3.UserInstrumentList = [dashboardContext.currentUser!];
-    const customData = props.results.customData as db3.EventSearchCustomData;
-    const userTags = (customData ? customData.userTags : []) as db3.EventResponses_ExpectedUserTag[];
-    const expectedAttendanceUserTag = userTags.find(t => t.id === event.expectedAttendanceUserTagId) || null;
-
-    const eventData = CalculateEventMetadata<
-        db3.EnrichedSearchEventPayload,
-        db3.EventSearch_EventUserResponse,
-        db3.EventSearch_EventSegment,
-        db3.EventSearch_EventSegmentUserResponse
-    >(event, undefined, dashboardContext,
-        userMap,
-        expectedAttendanceUserTag,
-        (segment, user) => {
-            if (!user?.id) return null;
-            return {
-                attendanceId: null,
-                eventSegmentId: segment.id,
-                id: -1,
-                userId: user.id,
-            }
-        },
-        (event, user, isInvited) => {
-            if (!user?.id) return null;
-            return {
-                userComment: "",
-                eventId: event.id,
-                id: -1,
-                userId: user.id,
-                instrumentId: null,
-                isInvited,
-            }
-        },
-    );
-
-    return <EventSearchItemContainer
-        event={event}
-        highlightTagIds={props.filterSpec.tagFilter.options as number[]}
-        highlightStatusIds={props.filterSpec.statusFilter.options as number[]}
-        highlightTypeIds={props.filterSpec.typeFilter.options as number[]}
-    >
-        <EventAttendanceControl
-            eventData={eventData}
-            onRefetch={props.refetch}
-            userMap={userMap}
-            alertOnly={true}
-        />
-    </EventSearchItemContainer>;
-};
-
 
 
 
@@ -338,51 +128,13 @@ const EventsList = ({ filterSpec, results, events, refetch, ...props }: EventsLi
     </div>;
 };
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-interface EventListQuerierProps {
-    filterSpec: EventsFilterSpec;
-    setResults: (v: SearchResultsRet) => void;
-};
-
-const EventListQuerier = (props: EventListQuerierProps) => {
-    //const dashboardContext = React.useContext(DashboardContext);
-
-    const [searchResult, queryExtra] = useQuery(getSearchResults, {
-        page: props.filterSpec.page,
-        pageSize: props.filterSpec.pageSize,
-        tableID: db3.xEvent.tableID,
-        refreshSerial: props.filterSpec.refreshSerial,
-        sort: [{
-            db3Column: props.filterSpec.orderByColumn,
-            direction: props.filterSpec.orderByDirection,
-        }],
-
-        quickFilter: props.filterSpec.quickFilter,
-        discreteCriteria: [
-            props.filterSpec.dateFilter,
-            props.filterSpec.typeFilter,
-            props.filterSpec.statusFilter,
-            props.filterSpec.tagFilter,
-        ],
-    });
-
-    React.useEffect(() => {
-        if (queryExtra.isSuccess) {
-            props.setResults({ ...searchResult });
-        }
-    }, [queryExtra.dataUpdatedAt]);
-
-    return <div className="queryProgressLine idle"></div>;
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
 const gStaticFilters: EventsFilterSpecStatic[] = [
     {
         label: "All",
         helpText: "Searching all events",
-        orderByColumn: OrderByColumnOptions.startsAt,
+        orderByColumn: EventOrderByColumnOptions.startsAt,
         orderByDirection: "asc",
         typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
         typeFilterOptions: [],
@@ -549,17 +301,8 @@ const EventListOuter = () => {
         dateFilter: dateFilterEnabled ? dateFilterWhenEnabled : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
-    const [results, setResults] = React.useState<SearchResultsRet>({
-        facets: [],
-        results: [],
-        rowCount: 0,
-        customData: null,
-        queryMetrics: [],
-        filterQueryResult: {
-            errors: [],
-            sqlSelect: "",
-        },
-    });
+    const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
+    const [enrichedEvents, setEnrichedEvents] = React.useState<db3.EnrichedSearchEventPayload[]>([]);
 
     // # when filter spec (other than page change), reset page to 0.
     let everythingButPage: any = {};
@@ -576,7 +319,7 @@ const EventListOuter = () => {
         setPage(0);
     }, [specHash]);
 
-    const enrichedEvents = results.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
+    //const enrichedEvents = results.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
 
     const handleCopyFilterspec = () => {
         const o: EventsFilterSpecStatic = {
@@ -772,7 +515,7 @@ const EventListOuter = () => {
                         <div>
                             <div className="divider" />
                             <SortByGroup
-                                columnOptions={Object.keys(OrderByColumnOptions)}
+                                columnOptions={Object.keys(EventOrderByColumnOptions)}
                                 setValue={setSortModel}
                                 value={sortModel}
                             />
@@ -781,9 +524,14 @@ const EventListOuter = () => {
                 />
             </div>
 
-            <Suspense fallback={<div className="queryProgressLine loading"></div>}>
-                <EventListQuerier filterSpec={filterSpec} setResults={setResults} />
-            </Suspense>
+            <EventListQuerier
+                filterSpec={filterSpec}
+                setResults={(r, ee) => {
+                    setResults(r);
+                    setEnrichedEvents(ee);
+                }}
+                render={(isLoading) => <div className={`queryProgressLine ${isLoading ? "loading" : "idle"}`}></div>}
+            />
         </CMSinglePageSurfaceCard >
         <EventsList
             filterSpec={filterSpec}

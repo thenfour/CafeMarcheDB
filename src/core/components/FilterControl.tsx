@@ -61,7 +61,7 @@ export const FilterControls = (props: FilterControlsProps) => {
                 </div>
             </div>
         </div>{/* content */}
-        <div className="queryProgressLine idle"></div>
+        {/* <div className="queryProgressLine idle"></div> */}
     </div>
 };
 

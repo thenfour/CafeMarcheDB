@@ -1,0 +1,98 @@
+.CMBigCalendar .rbc-toolbar .rbc-toolbar-label {
+    text-transform: uppercase;
+    color: var(--cm-red);
+    font-size: 30px;
+    letter-spacing: -.9px;
+    font-weight: bold;
+    /* because we don't show view buttons, layout requires some tweaking. this just looks nicer; centering doesn't make sense. */
+    align-items: flex-start;
+    display: flex;
+}
+
+.CMBigCalendar .rbc-event-content {
+    font-size: 13px;
+}
+
+.CMBigCalendar .rbc-toolbar {
+    /* because we don't show view buttons, this puts the nav buttons to the right */
+    flex-direction: row-reverse;
+}
+
+.CMBigCalendar .rbc-event {
+    padding: 0 5px;
+}
+
+.CMBigCalendar .CMCustomEventWrapper {
+    display: flex;
+    position: relative;
+}
+
+.CMBigCalendar .CMCustomEventWrapper.statusSignificance_Cancelled {
+    opacity: 40%;
+}
+
+.CMBigCalendar .CMCustomEventWrapper.attendanceAlert {
+    outline: 3px solid #f00;
+    border-radius: 3px;
+    box-shadow: 0 0 15px #f00;
+}
+
+.CMBigCalendar .CMCustomEventWrapper.selected {
+    outline: 2px solid black;
+    border-radius: 3px;
+}
+
+.CMBigCalendar .CMCustomEventWrapper.selected {
+    outline: 2px solid black;
+    border-radius: 3px;
+}
+
+.CMBigCalendar .badgeContainer {
+    /* must overlay because of how the calendar positions */
+    position: absolute;
+    right: 1px;
+    display: flex;
+}
+
+.CMBigCalendar .badgeContainer .badge {
+    --badge-dim: 18px;
+    --half-badge-dim: 9px;
+
+    width: var(--badge-dim);
+    height: var(--badge-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.CMBigCalendar .badge .MuiSvgIcon-root {
+    width: 12px;
+}
+
+.CMBigCalendar .badgeContainer .badge.alert {
+    --badge-dim: 24px;
+    --half-badge-dim: 12px;
+    border-radius: 50%;
+    background-color: #ff0;
+    translate: var(--half-badge-dim) calc(4px + -1* var(--half-badge-dim));
+    font-size: 20px;
+    color: #f00;
+    border: 2px solid #f00;
+}
+
+.CMBigCalendar .badgeContainer .badge.alert .MuiSvgIcon-root {
+    fill: red;
+    width: 30px;
+}
+
+
+.CMBigCalendar .badgeContainer .badge.statusIndicator {
+    border-radius: 50%;
+    width: 12px;
+    height: 12px;
+}
+
+.CMBigCalendar .badgeContainer .badge.statusIndicator .MuiSvgIcon-root {
+    width: 10px;
+}

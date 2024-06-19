@@ -23,7 +23,7 @@ import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/compo
 import { StandardVariationSpec } from "shared/color";
 import { Timing } from "shared/time";
 import { RenderMuiIcon } from "src/core/db3/components/IconMap";
-import { BigEventCalendarMonth } from "src/core/components/EventCalendar";
+import { BigEventCalendar, BigEventCalendarMonth } from "src/core/components/EventCalendar";
 import { DateCalendar, DatePicker } from "@mui/x-date-pickers";
 
 interface FilterSpec {
@@ -232,16 +232,7 @@ const MarkdownTester = () => {
 
 
 const EventCalendarTester = () => {
-    return <div>
-        Event calendar test
-
-        <BigEventCalendarMonth
-            items={[]}
-            value={new Date()}
-            onChange={() => { }}
-        />
-
-    </div>;
+    return <BigEventCalendar />
 };
 
 const MainContent = () => {
@@ -254,12 +245,7 @@ const MainContent = () => {
 
     return <>
 
-        <CMSinglePageSurfaceCard>
-            <div className="content">
-                <EventCalendarTester />
-            </div>
-        </CMSinglePageSurfaceCard>
-
+        <EventCalendarTester />
 
         <CMSinglePageSurfaceCard>
             <div className="content">

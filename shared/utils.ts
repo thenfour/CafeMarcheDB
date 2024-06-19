@@ -219,6 +219,7 @@ export enum Setting {
     EventCompletenessTabMarkdown = "EventCompletenessTabMarkdown",
     FrontpageAgendaPage_markdown = "FrontpageAgendaPage_markdown",
     BackstageFrontpageMarkdown = "BackstageFrontpageMarkdown",
+    BackstageFrontpageHeaderMarkdown = "BackstageFrontpageHeaderMarkdown",
     DashboardStats_SongsMarkdown = "DashboardStats_SongsMarkdown",
     DashboardStats_EventsMarkdown = "DashboardStats_EventsMarkdown",
     CustomLinksPageMarkdown = "CustomLinksPageMarkdown",

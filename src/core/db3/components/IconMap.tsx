@@ -145,4 +145,7 @@ export const gCharMap = {
     DownArrow: () => '\u2193',
     HorizontalEllipses: () => '\u2026',
     VerticalEllipses: () => '\u22EE',
+    Checkmark: () => '✓',
+    RightTriangle: () => '▶',
+    LeftTriangle: () => '◀',
 } as const;

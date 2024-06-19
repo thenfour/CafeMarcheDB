@@ -2,10 +2,17 @@
 import { DateTimeRange, Timing } from 'shared/time';
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../db3/components/DB3ClientCore';
 import { Prisma } from "db";
 import { DashboardContextData } from './DashboardContext';
+import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
+import { SortDirection } from 'shared/rootroot';
+import { DashboardContext } from "src/core/components/DashboardContext";
+import { useQuery } from '@blitzjs/rpc';
+import getSearchResults from '../db3/queries/getSearchResults';
+import { CoalesceBool } from 'shared/utils';
+import { assert } from 'blitz';
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {
@@ -81,9 +88,6 @@ export function CalculateEventMetadata<
 
 
 export type EventEnrichedVerbose_Event = db3.EnrichedEvent<Prisma.EventGetPayload<typeof db3.EventArgs_Verbose>>;
-// export type EventEnrichedVerbose_EventUserResponse = Prisma.EventUserResponseGetPayload<typeof db3.EventArgs_Verbose.include.responses>;
-// export type EventEnrichedVerbose_EventSegment = Prisma.EventSegmentGetPayload<typeof db3.EventArgs_Verbose.include.segments>;
-// export type EventEnrichedVerbose_EventSegmentUserResponse = Prisma.EventSegmentUserResponseGetPayload<typeof db3.EventArgs_Verbose.include.segments.include.responses>;
 
 interface CalculateEventMetadata_VerboseArgs {
     event: EventEnrichedVerbose_Event,
@@ -164,3 +168,255 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
         eventData,
     };
 };
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+export interface CalcEventAttendanceArgs {
+    eventData: EventWithMetadata<
+        db3.EnrichedSearchEventPayload,
+        db3.EventResponses_MinimalEventUserResponse,
+        db3.EventResponses_MinimalEventSegment,
+        db3.EventResponses_MinimalEventSegmentUserResponse
+    >;
+    userMap: db3.UserInstrumentList,
+    alertOnly?: boolean; // when true, the control hides unless it's an alert.
+};
+
+export interface EventAttendanceResult {
+    eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
+    segmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
+
+    noSegments: boolean;
+    eventIsCancelled: boolean;
+    eventTiming: Timing;
+    eventIsPast: boolean;
+
+
+    isInvited: boolean;
+    isSingleSegment: boolean;
+
+    allAttendances: Prisma.EventAttendanceGetPayload<{}>[];
+
+    anyAnswered: boolean;
+    allAnswered: boolean;
+    allAffirmative: boolean;
+    someAffirmative: boolean;
+    allNegative: boolean;
+
+    alertFlag: boolean;
+    hideBecauseNotAlert: boolean;
+    visible: boolean;
+
+    allowViewMode: boolean;
+
+    allowInstrumentSelect: boolean;
+};
+
+// breaks out all the logic from the alert control into a function
+// eventUserResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>;
+// segmentUserResponses: db3.EventSegmentUserResponse<db3.EventResponses_MinimalEventSegment, db3.EventResponses_MinimalEventSegmentUserResponse>[];
+
+export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttendanceResult => {
+    const dashboardContext = React.useContext(DashboardContext);
+    const user = dashboardContext.currentUser!;
+
+    const alertOnly = CoalesceBool(props.alertOnly, false);
+    if (!props.eventData.responseInfo) throw new Error("no response info");
+
+    const ret: EventAttendanceResult = {
+        eventUserResponse: props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap)!,
+        segmentUserResponses: Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user)),
+
+        noSegments: (props.eventData.event.segments.length < 1),
+        eventIsCancelled: (props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled),
+        eventTiming: props.eventData.eventTiming,
+        eventIsPast: props.eventData.eventTiming === Timing.Past,
+
+
+        isInvited: false,
+        isSingleSegment: false,
+
+        allAttendances: [],
+
+        anyAnswered: false,
+        allAnswered: false,
+        allAffirmative: false,
+        someAffirmative: false,
+        allNegative: false,
+
+        alertFlag: false,
+        hideBecauseNotAlert: false,
+        visible: false,
+
+        allowViewMode: false,
+
+        allowInstrumentSelect: false,
+    };
+
+    //if (props.eventData.event.segments.length < 1) ret.noSegments = true;//return <AdminInspectObject src={"hidden bc no segments. no attendance can be recorded."} label="AttendanceControl" />;
+
+    // never show attendance alert control for cancelled events
+    //ret.eventIsCancelled = ;
+
+    ret.segmentUserResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
+    //const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
+    assert(!!ret.eventUserResponse, "getEventResponseForUser should be designed to always return an event response obj");
+
+    ret.isInvited = ret.eventUserResponse.isInvited;
+    ret.isSingleSegment = ret.segmentUserResponses.length === 1;
+
+    ret.allAttendances = ret.segmentUserResponses.map(sr => dashboardContext.eventAttendance.getById(sr.response.attendanceId)!);
+
+    ret.anyAnswered = ret.allAttendances.some(r => !!r);
+    ret.allAnswered = ret.allAttendances.every(r => !!r);
+    ret.allAffirmative = ret.allAttendances.every(r => !!r && r.strength > 50);
+    ret.someAffirmative = ret.allAttendances.some(r => !!r && r.strength > 50);
+    ret.allNegative = ret.allAttendances.every(r => !!r && r.strength <= 50);
+
+    ret.alertFlag = ret.isInvited && !ret.allAnswered && !ret.eventIsPast;
+    ret.hideBecauseNotAlert = !ret.alertFlag && alertOnly;
+    ret.visible = !ret.eventIsCancelled && !ret.noSegments && !ret.hideBecauseNotAlert && (ret.anyAnswered || ret.isInvited);// hide the control entirely if you're not invited, but still show if you already responded.
+
+    // there are really just 2 modes here for simplicity
+    // view (compact, instrument & segments on same line)
+    // edit (full, instrument & segments on separate lines with full text)
+    ret.allowViewMode = !ret.alertFlag;
+    //const editMode = userSelectedEdit || !allowViewMode;
+
+    // try to make the process slightly more linear by first asking about attendance. when you've answered that, THEN ask on what instrument.
+    // also don't ask about instrument if all answers are negative.
+    ret.allowInstrumentSelect = ret.allAnswered && ret.someAffirmative;
+
+    return ret;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+export interface EventListItemProps {
+    event: db3.EnrichedSearchEventPayload;
+    results: SearchResultsRet;
+    //refetch: () => void;
+    //filterSpec: EventsFilterSpec;
+};
+
+export const CalculateEventSearchResultsMetadata = ({ event, results }: EventListItemProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const userMap: db3.UserInstrumentList = [dashboardContext.currentUser!];
+    const customData = results.customData as db3.EventSearchCustomData;
+    const userTags = (customData ? customData.userTags : []) as db3.EventResponses_ExpectedUserTag[];
+    const expectedAttendanceUserTag = userTags.find(t => t.id === event.expectedAttendanceUserTagId) || null;
+
+    const eventData = CalculateEventMetadata<
+        db3.EnrichedSearchEventPayload,
+        db3.EventSearch_EventUserResponse,
+        db3.EventSearch_EventSegment,
+        db3.EventSearch_EventSegmentUserResponse
+    >(event, undefined, dashboardContext,
+        userMap,
+        expectedAttendanceUserTag,
+        (segment, user) => {
+            if (!user?.id) return null;
+            return {
+                attendanceId: null,
+                eventSegmentId: segment.id,
+                id: -1,
+                userId: user.id,
+            }
+        },
+        (event, user, isInvited) => {
+            if (!user?.id) return null;
+            return {
+                userComment: "",
+                eventId: event.id,
+                id: -1,
+                userId: user.id,
+                instrumentId: null,
+                isInvited,
+            }
+        },
+    );
+
+    return {
+        eventData,
+        userMap,
+    };
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+export enum EventOrderByColumnOptions {
+    id = "id",
+    startsAt = "startsAt",
+    name = "name",
+};
+
+export type EventOrderByColumnOption = keyof typeof EventOrderByColumnOptions;// "startsAt" | "name";
+
+export interface EventsFilterSpec {
+    pageSize: number;
+    page: number;
+    quickFilter: string;
+    refreshSerial: number; // this is necessary because you can do things to change the results from this page. think of adding an event then refetching.
+
+    orderByColumn: EventOrderByColumnOption;
+    orderByDirection: SortDirection;
+
+    typeFilter: DiscreteCriterion;
+    tagFilter: DiscreteCriterion;
+    statusFilter: DiscreteCriterion;
+    dateFilter: DiscreteCriterion;
+};
+
+
+export interface EventListQuerierProps {
+    filterSpec: EventsFilterSpec;
+    setResults: (v: SearchResultsRet, enrichedEvents: db3.EnrichedSearchEventPayload[]) => void;
+    render: (isLoading: boolean) => React.ReactNode;
+};
+
+const EventListQuerierInner = (props: EventListQuerierProps) => {
+    const dashboardContext = React.useContext(DashboardContext);
+
+    console.log(`refresh serial: ${props.filterSpec.refreshSerial}`);
+
+    const [searchResult, queryExtra] = useQuery(getSearchResults, {
+        page: props.filterSpec.page,
+        pageSize: props.filterSpec.pageSize,
+        tableID: db3.xEvent.tableID,
+        refreshSerial: props.filterSpec.refreshSerial,
+        sort: [{
+            db3Column: props.filterSpec.orderByColumn,
+            direction: props.filterSpec.orderByDirection,
+        }],
+
+        quickFilter: props.filterSpec.quickFilter,
+        discreteCriteria: [
+            props.filterSpec.dateFilter,
+            props.filterSpec.typeFilter,
+            props.filterSpec.statusFilter,
+            props.filterSpec.tagFilter,
+        ],
+    });
+
+    React.useEffect(() => {
+        if (queryExtra.isSuccess) {
+            const enrichedEvents = searchResult.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
+            props.setResults({ ...searchResult, }, enrichedEvents);
+        }
+    }, [queryExtra.dataUpdatedAt]);
+
+    return <>{props.render(queryExtra.isLoading)}</>;// <div className={`queryProgressLine idle`}></div>;
+};
+
+
+export const EventListQuerier = (props: EventListQuerierProps) => {
+    return <Suspense fallback={props.render(true)}>
+        <EventListQuerierInner
+            {...props}
+        />
+    </Suspense>
+};
+
+

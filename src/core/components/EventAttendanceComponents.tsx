@@ -124,7 +124,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { AdminInspectObject, CMChip, CMChipContainer, ReactiveInputDialog } from './CMCoreComponents';
 import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, NameValuePair } from "./CMCoreComponents2";
-import { EventWithMetadata } from "./EventComponentsBase";
+import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
 import { DashboardContext } from "./DashboardContext";
 import { ArrayElement, CoalesceBool } from "shared/utils";
@@ -550,11 +550,12 @@ export interface EventAttendanceControlProps {
 
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
-  const dashboardContext = React.useContext(DashboardContext);
-  const alertOnly = CoalesceBool(props.alertOnly, false);
 
-  if (!props.eventData.responseInfo) return <AdminInspectObject src={"hidden bc no response info; this is an error"} label="AttendanceControl" />;
-  if (props.eventData.event.segments.length < 1) return <AdminInspectObject src={"hidden bc no segments. no attendance can be recorded."} label="AttendanceControl" />;
+  const y = CalcEventAttendance({
+    eventData: props.eventData,
+    userMap: props.userMap,
+    alertOnly: props.alertOnly,
+  });
 
   // never show attendance alert control for cancelled events
   if (props.eventData.event.status?.significance === db3.EventStatusSignificance.Cancelled) {
@@ -562,106 +563,31 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   }
 
   const [userSelectedEdit, setUserSelectedEdit] = React.useState<boolean>(false);
-  //const [refreshSerial, setRefreshSerial] = React.useState(0);
-  const user = useCurrentUser()[0]!;
-  const segmentResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));
-  segmentResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
-  const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
-  if (!eventResponse) {
-    // this should always return a value; if not it means it can't be done.
-    return <AdminInspectObject src={"hidden bc no eventResponse; this is an error."} label="AttendanceControl" />;
-  }
 
-  const eventTiming = props.eventData.eventTiming;
-  // if (eventTiming === Timing.Past) {
-  //   return <AdminInspectObject src={"hidden bc in the past."} label="AttendanceControl" />;
-  // }
-  const isPast = (eventTiming === Timing.Past);
+  const editMode = userSelectedEdit || !y.allowViewMode;
 
-  const isInvited = eventResponse.isInvited;
-  const isSingleSegment = segmentResponses.length === 1;
+  const debugView = <AdminInspectObject src={y} label="AttendanceControl" />;
 
-  const allAttendances = segmentResponses.map(sr => dashboardContext.eventAttendance.getById(sr.response.attendanceId));
+  if (!y.visible) return debugView;
 
-  const anyAnswered = allAttendances.some(r => !!r);
-  const allAnswered = allAttendances.every(r => !!r);
-  const allAffirmative = allAttendances.every(r => !!r && r.strength > 50);
-  const someAffirmative = allAttendances.some(r => !!r && r.strength > 50);
-  const allNegative = allAttendances.every(r => !!r && r.strength <= 50);
+  const mapIndex = !y.allAnswered ? 0 : (y.allAffirmative ? 1 : (y.allNegative ? 2 : 3));
 
-  const alertFlag = isInvited && !allAnswered && !isPast;
-  const hideBecauseNotAlert = !alertFlag && alertOnly;
-  const visible = !hideBecauseNotAlert && (anyAnswered || isInvited);// hide the control entirely if you're not invited, but still show if you already responded.
-
-  // there are really just 2 modes here for simplicity
-  // view (compact, instrument & segments on same line)
-  // edit (full, instrument & segments on separate lines with full text)
-  const allowViewMode = !alertFlag;
-  const editMode = userSelectedEdit || !allowViewMode;
-
-  // try to make the process slightly more linear by first asking about attendance. when you've answered that, THEN ask on what instrument.
-  // also don't ask about instrument if all answers are negative.
-  const allowInstrumentSelect = allAnswered && someAffirmative;
-
-  const debugView = <AdminInspectObject src={{
-    isPast,
-    isInvited,
-    isSingleSegment,
-    allAttendances,
-    anyAnswered,
-    allAnswered,
-    allAffirmative,
-    someAffirmative,
-    allNegative,
-    alertFlag,
-    alertOnly,
-    hideBecauseNotAlert,
-    visible,
-    allowViewMode,
-    editMode,
-    allowInstrumentSelect,
-  }} label="AttendanceControl" />;
-
-  if (!visible) return debugView;
-
-  const inspectable = {
-    event: {
-      isSingleSegment,
-      isInvited,
-    },
-    yourResponses: {
-      anyAnswered,
-      allAnswered,
-      allAffirmative,
-      someAffirmative,
-      allNegative,
-    },
-    componentState: {
-      alertFlag,
-      allowViewMode,
-      userSelectedEdit,
-      editMode,
-    }
-  };
-
-  const mapIndex = !allAnswered ? 0 : (allAffirmative ? 1 : (allNegative ? 2 : 3));
-
-  return <div className={`eventAttendanceControl ${alertFlag && "alert"}`}>
+  return <div className={`eventAttendanceControl ${y.alertFlag && "alert"}`}>
     {debugView}
     <div className='header'>
-      <div>{gCaptionMap[eventTiming][mapIndex]}</div>
-      {editMode && allowViewMode && <CMSmallButton variant="framed" onClick={() => { setUserSelectedEdit(false) }}>{"Close"}</CMSmallButton>}
+      <div>{gCaptionMap[y.eventTiming][mapIndex]}</div>
+      {editMode && y.allowViewMode && <CMSmallButton variant="framed" onClick={() => { setUserSelectedEdit(false) }}>{"Close"}</CMSmallButton>}
     </div>
 
     <div className="attendanceResponseInput">
       <div className='comment'>
-        <EventAttendanceCommentControl onRefetch={props.onRefetch} userResponse={eventResponse} readonly={false} />
+        <EventAttendanceCommentControl onRefetch={props.onRefetch} userResponse={y.eventUserResponse} readonly={false} />
       </div>
 
       {editMode ? (<>
-        {allowInstrumentSelect && <div className='instrument'>
+        {y.allowInstrumentSelect && <div className='instrument'>
           <EventAttendanceInstrumentControl
-            eventUserResponse={eventResponse}
+            eventUserResponse={y.eventUserResponse}
             onRefetch={props.onRefetch}
             //onChanged={() => setUserSelectedEdit(false)} // when a user selects an item, allow the control to go back to view mode again.
             onChanged={() => { }} // when a user selects an item, allow the control to go back to view mode again.
@@ -669,15 +595,15 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
           />
         </div>}
         <div className="segmentList">
-          {segmentResponses.map(segment => {
+          {y.segmentUserResponses.map(segment => {
             return <EventAttendanceSegmentControl
-              isSingleSegment={isSingleSegment}
+              isSingleSegment={y.isSingleSegment}
               key={segment.segment.id}
               initialEditMode={true}
               onRefetch={props.onRefetch}
               onReadonlyClick={() => setUserSelectedEdit(true)}
               onSelectedItem={() => { }} // setUserSelectedEdit(false) would allow the control to go back to view mode. but it's a bit distracting, and anyway the user has already been interacting here so don't.
-              eventUserResponse={eventResponse}
+              eventUserResponse={y.eventUserResponse}
               segmentUserResponse={segment}
             //eventData={props.eventData}
             />;
@@ -689,14 +615,14 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
         <CMChipContainer>
           <EventAttendanceInstrumentButton key={"__"}
             selected={false}
-            value={eventResponse.instrument}
+            value={y.eventUserResponse.instrument}
             onSelect={() => setUserSelectedEdit(true)}
           />
-          {segmentResponses.map(segment => {
+          {y.segmentUserResponses.map(segment => {
             return <EventAttendanceAnswerControl
               forceEditMode={false} // compact mode never has edit by default
               key={segment.segment.id}
-              eventUserResponse={eventResponse}
+              eventUserResponse={y.eventUserResponse}
               onRefetch={props.onRefetch}
               segmentUserResponse={segment}
               onReadonlyClick={() => setUserSelectedEdit(true)} // when a user selects an item, allow the control to go back to view mode again.
@@ -706,8 +632,6 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
           }
         </CMChipContainer>
       )}
-
-      <DebugCollapsibleAdminText obj={inspectable} />
     </div>
 
   </div>;
