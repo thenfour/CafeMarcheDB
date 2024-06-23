@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import db, { Prisma } from "db";
 import { Signup } from "../schemas";
 import { CreatePublicData } from "types";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils"
+import { ChangeAction, CreateChangeContext, RegisterChange, getIntersectingFields } from "shared/utils"
 
 type CreateInput = Prisma.UserUncheckedCreateInput & {
   password?: string;
@@ -33,13 +33,15 @@ export default resolver.pipe(
         include: { role: { include: { permissions: { include: { permission: true } } } } }
       });
 
+      // strip out fields not worth reporting
+      const reportedValues = getIntersectingFields(fields, user);
 
       await RegisterChange({
         action: ChangeAction.insert,
         changeContext: CreateChangeContext("signupMutation"),
         table: "user",
         pkid: user.id,
-        newValues: user,
+        newValues: reportedValues,
         ctx,
       });
 

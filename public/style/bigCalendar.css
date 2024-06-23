@@ -87,12 +87,8 @@
 }
 
 
-.CMBigCalendar .badgeContainer .badge.statusIndicator {
-    border-radius: 50%;
-    width: 12px;
-    height: 12px;
-}
+.CMBigCalendar .badgeContainer .statusIndicator {}
 
-.CMBigCalendar .badgeContainer .badge.statusIndicator .MuiSvgIcon-root {
-    width: 10px;
+.CMBigCalendar .badgeContainer .statusIndicator.status_cancelled {
+    color: black;
 }

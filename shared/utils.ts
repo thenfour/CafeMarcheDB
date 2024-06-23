@@ -885,3 +885,14 @@ export function SqlCombineOrExpression(expressions: string[]): string {
     if (expressions.length === 1) return expressions[0]!;
     return `(${expressions.join(`\n    OR `)})`;
 };
+
+
+// Returns a partial extract of oldValues, where the fields appear in newObject
+export function getIntersectingFields(newValues: { [key: string]: any }, oldValues: { [key: string]: any }) {
+    return Object.keys(newValues).reduce((acc, key) => {
+        if (key in oldValues) {
+            acc[key] = oldValues[key];
+        }
+        return acc;
+    }, {} as { [key: string]: any });
+}

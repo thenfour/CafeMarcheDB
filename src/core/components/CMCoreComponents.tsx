@@ -19,6 +19,7 @@ import { CMTextField } from "./CMTextField";
 import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from "./DashboardContext";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
+import { Permission } from "shared/permissions";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -714,3 +715,17 @@ export const TimingChip = ({ value, tooltip, children }: React.PropsWithChildren
     return <CMChip {...configMap[value]} tooltip={tooltip}>{children}</CMChip>;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface PermissionBoundaryProps {
+    permission: Permission;
+    fallback?: React.ReactNode;
+};
+
+export const PermissionBoundary = (props: React.PropsWithChildren<PermissionBoundaryProps>) => {
+    const dashboardContext = React.useContext(DashboardContext);
+    if (!dashboardContext.isAuthorized(props.permission)) {
+        return <>{props.fallback}</>;
+    }
+    return <>{props.children}</>;
+}

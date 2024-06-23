@@ -5,23 +5,40 @@ import { Calendar, momentLocalizer } from 'react-big-calendar';
 import { StandardVariationSpec, gAppColors } from 'shared/color';
 import * as db3 from "src/core/db3/db3";
 import { DiscreteCriterionFilterType, MakeEmptySearchResultsRet, SearchResultsRet } from '../db3/shared/apiTypes';
-import { AdminInspectObject, CMSinglePageSurfaceCard } from './CMCoreComponents';
+import { AdminInspectObject, CMSinglePageSurfaceCard, InspectObject } from './CMCoreComponents';
 import { useURLState } from './CMCoreComponents2';
 import { GetStyleVariablesForColor } from './Color';
 import { EventListItem, EventSearchItemContainer } from './EventComponents';
 import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventListQuerier, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
 import { RenderMuiIcon, gCharMap, gIconMap } from "../db3/components/IconMap";
-import { Tooltip } from "@mui/material";
+import { NoSsr, Tooltip } from "@mui/material";
 import { DashboardContext } from "./DashboardContext";
+import "moment/locale/nl-be"; // forces the calendar to use nl-BE locale
 
-
-const localizer = momentLocalizer(moment) // or globalizeLocalizer
 
 // attach useful data to the event for passing around the calendar.
 type EventWithSearchResult = {
     event: db3.EnrichedSearchEventPayload;
     result: SearchResultsRet;
 }
+
+
+// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// interface CustomDateCellWrapperProps {
+//     value: Date;
+//     range: Date[];
+// };
+
+// const CustomDateCellWrapper = (props: React.PropsWithChildren<CustomDateCellWrapperProps>) => {
+//     // rbc-selected-cell
+//     // rbc-today
+//     //"rbc-off-range-bg";
+//     console.log(props)
+//     return <div className={`rbc-day-bg CMCustomDateCellWrapper ${(props.value.getDay() == 0 || props.value.getDay() == 6) ? "weekend" : "weekday"}`}>
+//         {props.children}
+//     </div>;
+// }
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -96,14 +113,14 @@ const AttendanceIndicator = (props: AttendanceIndicatorProps) => {
     </>;
 }
 
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // interface StatusIndicatorProps {
 //     data: EventWithSearchResult;
 // };
 
 // const StatusIndicator = (props: StatusIndicatorProps) => {
+//     //const dashboardContext = React.useContext(DashboardContext);
 //     if (!props.data.event.status) return null;
-
 //     const shownStatuses: (string | null)[] = [
 //         db3.EventStatusSignificance.FinalConfirmation,
 //         db3.EventStatusSignificance.Cancelled,
@@ -117,12 +134,16 @@ const AttendanceIndicator = (props: AttendanceIndicatorProps) => {
 //         color: props.data.event.status?.color || null,
 //     });
 
-//     return <Tooltip title={`${props.data.event.status.label}\n${props.data.event.status.description}`}><div className={`statusIndicator badge applyColor ${statusStyle.cssClass}`} style={statusStyle.style}>
-//         {RenderMuiIcon(props.data.event.status.iconName)}
-//     </div></Tooltip>;
+//     return <Tooltip title={`${props.data.event.status.label}\n${props.data.event.status.description}`} disableInteractive>
+//         <div className={`statusIndicator badge applyColor ${statusStyle.cssClass}`} style={statusStyle.style}>
+//             {RenderMuiIcon(props.data.event.status.iconName)}
+//         </div>
+//     </Tooltip >;
 // }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 interface CustomEventWrapperProps {
     event: EventWithSearchResult;
@@ -141,13 +162,16 @@ const CustomEventWrapper = (props: React.PropsWithChildren<CustomEventWrapperPro
         alertOnly: false,
     });
 
-    return <div className={`CMCustomEventWrapper ${props.selected && "selected"} ${y.alertFlag && "attendanceAlert"} statusSignificance_${props.event.event.status?.significance}`}>
-        <div className="badgeContainer">
-            <AttendanceIndicator data={props.event} attendanceInfo={y} />
-            {/* <StatusIndicator data={props.event} /> */}
+    return <Tooltip title={db3.EventAPI.getLabel(eventData.event)} disableInteractive>
+        <div className={`CMCustomEventWrapper ${props.selected && "selected"} ${y.alertFlag && "attendanceAlert"} statusSignificance_${props.event.event.status?.significance}`}>
+            <div className="badgeContainer">
+                {/* <StatusIndicator data={props.event} /> */}
+                <AttendanceIndicator data={props.event} attendanceInfo={y} />
+            </div>
+            {props.children}
         </div>
-        {props.children}
-    </div>;
+    </Tooltip>
+        ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,12 +189,16 @@ export interface BigEventCalendarMonthProps {
 };
 
 export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
+    // moment.locale('nl-be'); // doesn't work.
+    const localizer = momentLocalizer(moment) // or globalizeLocalizer
     return <div className="EventCalendarMonthContainer">
         <AdminInspectObject src={props.filterSpec} label='filterSpec' />
         <AdminInspectObject src={props.results} label='results' />
         <AdminInspectObject src={props.enrichedEvents} label='enrichedEvents' />
 
         {/* {date.toISOString()} */}
+
+        {/* {moment.locale()} */}
 
         {/* require a fixed height; it's required by the component. */}
         <div className="myCustomHeight" style={{ height: 550 }}>
@@ -205,6 +233,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
                     event: CustomEvent,
                     eventWrapper: CustomEventWrapper,
                     //dateCellWrapper: CustomDateCellWrapper,
+                    //dateHeader: DateCellContent,
                 }}
 
                 messages={{
@@ -233,7 +262,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     </div>;
 };
 
-export const BigEventCalendar = () => {
+export const BigEventCalendarInner = () => {
     const [selectedEvent, setSelectedEvent] = React.useState<EventWithSearchResult | null>(null);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
     const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
@@ -277,6 +306,7 @@ export const BigEventCalendar = () => {
         dateFilter: { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
+    // nossr to prevent using server's locale settings.
     return <>
         <CMSinglePageSurfaceCard>
             <div className="content">
@@ -325,4 +355,14 @@ export const BigEventCalendar = () => {
         />}
     </>;
 
+};
+
+
+
+
+export const BigEventCalendar = () => {
+    // nossr to prevent using server's locale settings.
+    return <NoSsr>
+        <BigEventCalendarInner />
+    </NoSsr>;
 };

@@ -1,7 +1,8 @@
 import { BlitzPage } from "@blitzjs/next";
 import { Suspense } from "react";
+import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { gIconMap } from "src/core/db3/components/IconMap";
@@ -17,7 +18,7 @@ const DynamicContent = () => {
 
     {limitedAccountWarning && <CMSinglePageSurfaceCard className="noInstrumentsWarning">
       <div>{gIconMap.ErrorOutline()}</div>
-      <div>By default your account has limited access. Please contact an admin to gain access to all site features.
+      <div>Your account has limited access; please ask Carl to grant you access 😊.
       </div>
     </CMSinglePageSurfaceCard>}
 
@@ -31,7 +32,9 @@ const DynamicContent = () => {
 
     <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
 
-    <BigEventCalendar />
+    <PermissionBoundary permission={Permission.view_events_nonpublic}>
+      <BigEventCalendar />
+    </PermissionBoundary>
 
     <SettingMarkdown setting="BackstageFrontpageMarkdown" />
 

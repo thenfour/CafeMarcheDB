@@ -8,7 +8,7 @@ import { nanoid } from 'nanoid';
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange } from "shared/utils";
+import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, getIntersectingFields } from "shared/utils";
 import sharp from "sharp";
 import * as db3 from "../db3";
 import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
@@ -407,7 +407,8 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         const { localFields, associationFields } = db3.separateMutationValues({ table, fields: dbModel });
         // at this point `fields` should not be used.
 
-        const oldValues = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
+        const fullOldObj = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
+        const oldValues = getIntersectingFields(localFields, fullOldObj); // only care about values which will actually change.
         let obj = oldValues;
 
         if (Object.keys(localFields).length > 0) {

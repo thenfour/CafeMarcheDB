@@ -36,10 +36,11 @@ import * as db3 from "src/core/db3/db3";
 import { API } from "../db3/clientAPI";
 import { gIconMap } from "../db3/components/IconMap";
 import { GetICalRelativeURIForUserUpcomingEvents } from "../db3/shared/apiTypes";
-import { KeyValueDisplay, simulateLinkClick } from "./CMCoreComponents2";
+import { CMSmallButton, KeyValueDisplay, simulateLinkClick } from "./CMCoreComponents2";
 import { DashboardContext, DashboardContextData, DashboardContextProvider } from "./DashboardContext";
 import { LoginSignup } from "./LoginSignupForm";
 import { MetronomeDialogButton } from "./Metronome";
+import { SnackbarContext } from "./SnackbarContext";
 
 const drawerWidth = 260;
 
@@ -52,6 +53,7 @@ const AppBarUserIcon_MenuItems = () => {
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
     const isShowingAdminControls = !!sess.showAdminControls;
     const [currentUser] = useCurrentUser();
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
 
@@ -79,9 +81,21 @@ const AppBarUserIcon_MenuItems = () => {
         }
 
         {currentUser &&
-            <MenuItem component={Link} href={GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken })} target="_blank" rel="noreferrer">
-                {gIconMap.CalendarMonth()} Calendar feed (iCal format)
-            </MenuItem>
+            <>
+                <MenuItem component={Link} href={`/backstage/wiki/${slugify("calendar-sync-help")}`} target="_blank" rel="noreferrer">
+                    {gIconMap.Help()} How to use calendar sync...
+                </MenuItem>
+                <MenuItem onClick={async () => {
+                    await navigator.clipboard.writeText(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
+                    showSnackbar({ children: "Link address copied", severity: 'success' });
+                }}>
+                    {gIconMap.ContentCopy()} Copy Calendar Link Address
+                </MenuItem>
+                <MenuItem component={Link} href={GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken })} target="_blank" rel="noreferrer">
+                    {gIconMap.CalendarMonth()} Calendar feed (iCal format)
+                </MenuItem>
+                <Divider />
+            </>
         }
 
         <MenuItem component={Link} href='/backstage/profile'>Your profile</MenuItem>
