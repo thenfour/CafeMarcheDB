@@ -40,6 +40,7 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
     const [outdentTrig, setOutdentTrig] = React.useState<number>(0);
     const [underlineTrig, setUnderlineTrig] = React.useState<number>(0);
     const [strikethroughTrig, setStrikethroughTrig] = React.useState<number>(0);
+    const [abcjsTrig, setAbcjsTrig] = React.useState<number>(0);
 
     // when coming back from preview mode to 
     const [refocusTrig, setRefocusTrig] = React.useState<number>(0);
@@ -54,6 +55,7 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
         setLinkTrig(0);
         setOrderedListTrig(0);
         setUnorderedListTrig(0);
+        setAbcjsTrig(0);
         setAttachFilesTrig(0);
         setMentionTrig(0);
         setReferenceTrig(0);
@@ -187,6 +189,13 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                 <StrikethroughSIcon />
             </div>
         </Tooltip>,
+        abcjs: <Tooltip title={"Insert ABC music notation"} disableInteractive>
+            <div className="toolItem abcjs" onClick={() => setAbcjsTrig(abcjsTrig + 1)}>
+                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-music Button-visual">
+                    <path d="M12 1.75v10.598c-.192-.05-.392-.096-.598-.096a3.6 3.6 0 0 0-1.847.527A1.987 1.987 0 0 0 8 14.25a2 2 0 1 0 4 0V7.352l2-.5V8.25c-.192-.05-.392-.096-.598-.096a3.6 3.6 0 0 0-1.847.527A1.987 1.987 0 0 0 12 10.25a2 2 0 1 0 4 0V1.75a.75.75 0 0 0-.924-.72l-8 2A.75.75 0 0 0 7 3.75v8.598c-.192-.05-.392-.096-.598-.096a3.6 3.6 0 0 0-1.847.527A1.987 1.987 0 0 0 4 14.25a2 2 0 1 0 4 0V5.352l6-1.5V1.75h-2Z"></path>
+                </svg>
+            </div>
+        </Tooltip>,
     };
 
     const editorContainerStyle: React.CSSProperties = tab === 'write' ? {} : {
@@ -223,6 +232,9 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                 {toolItems.outdent}
                 <div className="divider" />
 
+                {toolItems.abcjs}
+                <div className="divider" />
+
                 {toolItems.link}
                 {toolItems.mention}
                 {toolItems.reference}
@@ -255,6 +267,7 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                     underlineTrig={underlineTrig}
                     strikethroughTrig={strikethroughTrig}
                     refocusTrig={refocusTrig}
+                    abcjsTrig={abcjsTrig}
                 />
                 <div>
                     <span className="helpText">

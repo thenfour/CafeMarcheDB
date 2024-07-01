@@ -10,19 +10,48 @@ import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
 import MarkdownIt from 'markdown-it';
 import React from "react";
+import 'abcjs/abcjs-audio.css';
+import * as abcjs from 'abcjs';
 
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
-import { IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
+import { IsNullOrWhitespace, getNextSequenceId, isValidURL, parseMimeType } from "shared/utils";
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
 import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
 
 import { getURLClass } from "../db3/clientAPILL";
 import { CMDBUploadFile } from "./CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "./FileDrop";
+import { NoSsr } from '@mui/material';
 
 const INDENT_SIZE = 4;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);
+
+
+export default function markdownItABCjs(md: MarkdownIt) {
+
+    function renderABCjs(content: string) {
+        const containerId = `abcjs-markdown-${getNextSequenceId()}`;
+        const renderedBlock = `<div id="${containerId}" data-abc-content="${content.trim().replace(/"/g, '&quot;')}"></div>`;
+        return renderedBlock;
+    }
+
+    md.core.ruler.after('block', 'abcjs', function (state) {
+        state.tokens.forEach(token => {
+            if (token.type !== 'fence') return;
+            if (token.info !== 'abcjs') return;
+
+            token.type = 'html_block';
+            token.content = renderABCjs(token.content);
+            token.tag = '';
+            token.nesting = 0;
+            token.attrs = null;
+            token.map = null;
+            token.children = null;
+        });
+    });
+}
+
 
 function markdownItImageDimensions(md) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
@@ -103,6 +132,8 @@ interface MarkdownProps {
 export const Markdown = (props: MarkdownProps) => {
     const [html, setHtml] = React.useState('');
 
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
     React.useEffect(() => {
         if (IsNullOrWhitespace(props.markdown)) {
             setHtml("");
@@ -120,14 +151,12 @@ export const Markdown = (props: MarkdownProps) => {
         md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
             // If you are sure other plugins can't add `target` - drop check below
             var ihref = tokens[idx].attrIndex('href');
-            //console.log(tokens[idx]);
             let className = " externalLink";
             let addTargetBlank = true;
 
             if (ihref >= 0) {
                 // distinguish internal vs. external.
                 const href = tokens[idx].attrs[ihref][1];
-                console.log(href);
                 if (href) {
                     const hrefClass = getURLClass(href);
                     switch (hrefClass) {
@@ -167,15 +196,28 @@ export const Markdown = (props: MarkdownProps) => {
             // pass token to default renderer.
             return defaultRender(tokens, idx, options, env, self);
         };
+
         md.use(cmLinkPlugin);
         md.use(markdownItImageDimensions);
+        md.use(markdownItABCjs);
 
         setHtml(md.render(props.markdown));
+
+        setTimeout(() => {
+            if (containerRef.current) {
+                const containers = containerRef.current.querySelectorAll('div[data-abc-content]');
+                containers.forEach(container => {
+                    const abcContent = container.getAttribute('data-abc-content') || '';
+                    const result = abcjs.renderAbc(container.id, abcContent);
+                });
+            }
+        }, 0);
+
     }, [props.markdown]);
 
-    return <div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
-        <div id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
-    </div >;
+    return <NoSsr><div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
+        <div ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
+    </div ></NoSsr>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,6 +298,7 @@ interface MarkdownEditorProps {
     underlineTrig?: undefined | number;
     strikethroughTrig?: undefined | number;
     refocusTrig?: undefined | number;
+    abcjsTrig?: undefined | number;
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
@@ -301,8 +344,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
 
         let newText;
         if (selectedText.length > 0) {
-            console.log(`newText = ${newText}`);
-
             newText = `${textBefore}${startMarker}${selectedText}${endMarker}${textAfter}`;
             setTimeout(() => {
                 textarea.selectionStart = start;
@@ -357,6 +398,29 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         //if (typeof props.onValueChanged === 'function') {
         props.onValueChanged(newText);
         //}
+    };
+
+    const insertABCjsBlock = () => {
+        const textarea = ta.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const textBefore = textarea.value.substring(0, start);
+        const textAfter = textarea.value.substring(end);
+        const selectedText = textarea.value.substring(start, end);
+
+        const abcjsBlock = `\n\`\`\`abcjs\n${selectedText || 'C D E F | G A B c |'}\n\`\`\`\n`;
+
+        const newText = textBefore + abcjsBlock + textAfter;
+
+        setTimeout(() => {
+            textarea.selectionStart = start + abcjsBlock.length - textAfter.length - 1;
+            textarea.selectionEnd = start + abcjsBlock.length - textAfter.length - 1;
+            textarea.focus();
+        }, 0);
+
+        props.onValueChanged(newText);
     };
 
     const insertList = (type) => {
@@ -591,6 +655,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 fileInputRef.current.click();
             }
         },
+        abcjs: () => insertABCjsBlock(),
     };
 
     React.useEffect(() => {
@@ -611,6 +676,13 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         }
     }, [props.italicTrig]);
 
+
+    // Add an effect for the new trigger, similar to others
+    React.useEffect(() => {
+        if ((props.abcjsTrig || 0) > 0) {
+            ToolbarActions.abcjs();
+        }
+    }, [props.abcjsTrig]);
 
     React.useEffect(() => {
         if ((props.underlineTrig || 0) > 0) {
@@ -830,208 +902,4 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     </div>
     );
 }
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible. external / internal values are different.
-// // the "value" is used in a react.useEffect() so for isEqual() functionality just comply with that.
-
-// // this version allows complete control over rendering by passing a render function.
-// // another approach would allow rendering using a react context and child components. but meh that's more verbose and complex plumbing than this
-// export interface DebouncedControlCustomRenderArgs {
-//     isSaving: boolean;
-//     isDebouncing: boolean;
-//     value: any;
-//     onChange: (value: any) => void;
-// };
-
-// export interface DebouncedControlCustomRenderProps {
-//     initialValue: any, // value which may be coming from the database.
-//     onValueChanged: (value) => void, // caller can save the changed value to a db here.
-//     isSaving: boolean, // show the value as saving in progress
-//     debounceMilliseconds?: number,
-//     render: (args: DebouncedControlCustomRenderArgs) => React.ReactElement,
-// }
-
-// // here we let callers completely customize rendering with nested callbacks.
-// // this calls props.onRender()
-// export function DebouncedControlCustomRender(props: DebouncedControlCustomRenderProps) {
-//     const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
-//     const [firstUpdate, setFirstUpdate] = React.useState<boolean>(true);
-//     const [debouncedValue, { isDebouncing }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); //
-
-//     const saveNow = () => {
-//         if (firstUpdate && debouncedValue === props.initialValue) {
-//             setFirstUpdate(false);
-//             return; // avoid onchange when the control first loads and sets debounced state.
-//         }
-//         props.onValueChanged(debouncedValue);
-//     };
-
-//     React.useEffect(saveNow, [debouncedValue]);
-
-//     return props.render({
-//         isSaving: props.isSaving,
-//         isDebouncing,
-//         value: valueState,
-//         onChange: (value) => { setValueState(value) },
-//     });
-// };
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // debounce control with default rendering (edit button, save progress)
-// interface DebouncedControlProps {
-//     initialValue: any, // value which may be coming from the database.
-//     onValueChanged: (value) => void, // caller can save the changed value to a db here.
-//     isSaving: boolean, // show the value as saving in progress
-//     debounceMilliseconds?: number,
-//     className?: string,
-//     render: (showingEditor: boolean, value, onChange: (value) => void) => React.ReactElement,
-//     editButtonText?: string,
-//     helpText?: React.ReactNode,
-//     closeButtonText?: string,
-// }
-
-// export function DebouncedControl(props: DebouncedControlProps) {
-//     const [valueState, setValueState] = React.useState<string | null>(props.initialValue);
-//     const [debouncedValue, { isDebouncing, isFirstUpdate }] = useDebounce<string | null>(valueState, props.debounceMilliseconds || 1200); //
-
-//     const saveNow = () => {
-//         if (isFirstUpdate) return;
-//         props.onValueChanged(debouncedValue);
-//     };
-
-//     React.useEffect(saveNow, [debouncedValue]);
-
-//     const onChange = (value) => {
-//         setValueState(value);
-//     };
-
-//     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
-
-//     const editButton = <Button startIcon={<EditIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.editButtonText ?? "Edit"}</Button>;
-
-//     return (
-//         <div className={`${props.className} ${showingEditor ? "editMode" : ""}`}>
-//             <div className='editControlsContainer'>
-//                 {!showingEditor && editButton}
-//                 {showingEditor && <Button startIcon={<CloseIcon />} onClick={() => { setShowingEditor(!showingEditor) }} >{props.closeButtonText ?? "Close"}</Button>}
-//                 {props.isSaving ? (<><CircularProgress color="info" size="1rem" /> Saving ...</>) : (
-//                     isDebouncing ? (<><CircularProgress color="warning" size="1rem" /></>) : (
-//                         <></>
-//                     )
-//                 )}
-//                 {props.helpText && <div className="helpText">{props.helpText}</div>}
-//             </div>
-//             {props.render(showingEditor, valueState, onChange)}
-//         </div>
-//     );
-// }
-
-
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // must be uncontrolled because of the debouncing. if caller sets the value, then debounce is not possible.
-// interface MarkdownControlProps {
-//     initialValue: string | null, // value which may be coming from the database.
-//     className?: string;
-//     onValueChanged: (val: string | null) => void, // caller can save the changed value to a db here.
-//     isSaving: boolean, // show the value as saving in progress
-//     debounceMilliseconds: number,
-//     editButtonText?: string,
-//     helpText?: React.ReactNode,
-//     closeButtonText?: string,
-//     readonly?: boolean,
-// }
-
-// export function MarkdownControl(props: MarkdownControlProps) {
-//     if (props.readonly) return <Markdown markdown={props.initialValue} />;
-//     return <DebouncedControl
-//         debounceMilliseconds={props.debounceMilliseconds}
-//         initialValue={props.initialValue}
-//         isSaving={props.isSaving}
-//         onValueChanged={props.onValueChanged}
-//         className={`richTextContainer editable ${props.className || ""}`}
-//         editButtonText={props.editButtonText}
-//         helpText={props.helpText}
-//         closeButtonText={props.closeButtonText}
-//         render={(showingEditor, value, onChange) => {
-//             return <div className='richTextContentContainer'>
-//                 {showingEditor && <MarkdownEditor value={value} onValueChanged={onChange} />}
-//                 <Markdown markdown={value} />
-//             </div>
-
-//         }}
-//     />;
-// }
-
-
-
-
-
-
-
-
-// // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // NO DEBOUNCE behavior here.
-// interface CompactMarkdownControlProps {
-//     initialValue: string | null, // value which may be coming from the database.
-//     className?: string;
-//     onValueChanged: (val: string) => Promise<void>, // caller can save the changed value to a db here.
-//     cancelButtonMessage?: string,
-//     saveButtonMessage?: string,
-//     editButtonMessage?: string,
-//     editButtonVariant?: "framed" | "default";
-//     height?: number;
-//     readonly?: boolean;
-//     alwaysEditMode?: boolean; // avoid edit/save/cancel buttons; just make it always edit. useful for edit object dialogs
-// }
-
-// export function CompactMarkdownControl({ initialValue, onValueChanged, ...props }: CompactMarkdownControlProps) {
-//     const [showingEditor, setShowingEditor] = React.useState<boolean>(false);
-//     const [value, setValue] = React.useState<string>(initialValue || "");
-//     const alwaysEdit = CoerceToBoolean(props.alwaysEditMode, false);
-//     const showingEditor2 = !props.readonly && (showingEditor || alwaysEdit);
-
-//     const onCancel = () => {
-//         setValue(initialValue || "");
-//         setShowingEditor(false);
-//     };
-
-//     const onSave = () => {
-//         void onValueChanged(value).then(() => {
-//             setShowingEditor(false);
-//         });
-//     };
-
-//     if (showingEditor2) {
-//         return (<div className={`compactMarkdownControlRoot editing ${props.className}`}>
-//             <div className="CMSmallButtonGroup">
-//                 {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onSave()}>{props.saveButtonMessage || "Save"}</CMSmallButton>}
-//                 {!alwaysEdit && <CMSmallButton variant={"framed"} onClick={() => onCancel()}>{props.cancelButtonMessage || "Cancel"}</CMSmallButton>}
-//                 <span className="helpText">
-//                     Markdown syntax is supported. <a href="/backstage/wiki/markdown-help" target="_blank">Click here</a> for details.
-//                 </span>
-//             </div>
-//             <div className="richTextContainer compactMarkdownControl">
-//                 <div className='richTextContentContainer'>
-//                     <MarkdownEditor value={value} onValueChanged={(v) => {
-//                         setValue(v);
-//                         if (alwaysEdit) {
-//                             void onValueChanged(v); // async throwaway
-//                         }
-//                     }} height={props.height || 50} />
-//                 </div>
-//             </div>
-//             {value !== "" && <div className="tinyCaption">Preview:</div>}
-//             <Markdown markdown={value} />
-//         </div>);
-//     }
-
-//     // not editor just viewer.
-//     return <div className={`richTextContainer compactMarkdownControl notEditing ${props.readonly ? "readonly" : "editable interactable"} compactMarkdownControlRoot ${props.className}`} onClick={() => setShowingEditor(true)} >
-//         <Markdown markdown={value} className={props.className} />
-//         {!props.readonly && IsNullOrWhitespace(value) && <CMSmallButton variant={props.editButtonVariant} onClick={() => setShowingEditor(true)}>{props.editButtonMessage || "Edit"}</CMSmallButton>}
-//     </div >;
-// };
 

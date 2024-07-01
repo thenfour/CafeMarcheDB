@@ -224,7 +224,35 @@ const AutoAssignInstrumentTester = () => {
 };
 
 const MarkdownTester = () => {
-    const [text, setText] = React.useState<string>("write here");
+
+    const markdownContent = `
+# My Music Sheet
+
+Here is some ABCjs music notation:
+
+\`\`\`abcjs
+X: 1
+T: Scale
+M: 4/4
+L: 1/4
+K: C
+C D E F | G A B c |
+\`\`\`
+
+Another ABCjs block:
+
+\`\`\`abcjs
+X: 2
+T: Another Scale
+M: 4/4
+L: 1/4
+K: G
+G A B c | d e f g |
+\`\`\`
+    `;
+
+
+    const [text, setText] = React.useState<string>(markdownContent);
     return <div>
         <Markdown3Editor value={text} onChange={(v) => setText(v)} />
     </div>
