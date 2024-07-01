@@ -41,6 +41,7 @@ import { DashboardContext, DashboardContextData, DashboardContextProvider } from
 import { LoginSignup } from "./LoginSignupForm";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
+import { getAbsoluteUrl } from "../db3/clientAPILL";
 
 const drawerWidth = 260;
 
@@ -86,7 +87,8 @@ const AppBarUserIcon_MenuItems = () => {
                     {gIconMap.Help()} How to use calendar sync...
                 </MenuItem>
                 <MenuItem onClick={async () => {
-                    await navigator.clipboard.writeText(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
+                    const uri = getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
+                    await navigator.clipboard.writeText(uri);
                     showSnackbar({ children: "Link address copied", severity: 'success' });
                 }}>
                     {gIconMap.ContentCopy()} Copy Calendar Link Address
