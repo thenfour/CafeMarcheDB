@@ -2,16 +2,31 @@
 // <MarkdownEditor> = just the text editor which outputs markdown
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
 
-// todo: paste attachments
+// syntax updates:
+// ```abcjs
+// ...
+// ```
+
+// inline ABC:
+// {{abc:...}}
+
+// rehearsal mark:
+// {{enclosed:...}}
+
+// references?
+// wiki, song, event, ...?
+
+// image dimensions
+
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import ReactTextareaAutocomplete from "@webscopeio/react-textarea-autocomplete";
 import "@webscopeio/react-textarea-autocomplete/style.css";
+import * as abcjs from 'abcjs';
+import 'abcjs/abcjs-audio.css';
 import MarkdownIt from 'markdown-it';
 import React from "react";
-import 'abcjs/abcjs-audio.css';
-import * as abcjs from 'abcjs';
 
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
@@ -19,27 +34,33 @@ import { IsNullOrWhitespace, getNextSequenceId, isValidURL, parseMimeType } from
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
 import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
 
+import { NoSsr } from '@mui/material';
 import { getURLClass } from "../db3/clientAPILL";
 import { CMDBUploadFile } from "./CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "./FileDrop";
-import { NoSsr } from '@mui/material';
 
 const INDENT_SIZE = 4;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);
 
 
-export default function markdownItABCjs(md: MarkdownIt) {
+function markdownItABCjs(md: MarkdownIt) {
 
     function renderABCjs(content: string) {
-        const containerId = `abcjs-markdown-${getNextSequenceId()}`;
+        const containerId = `abc-markdown-${getNextSequenceId()}`;
         const renderedBlock = `<div id="${containerId}" data-abc-content="${content.trim().replace(/"/g, '&quot;')}"></div>`;
         return renderedBlock;
     }
 
-    md.core.ruler.after('block', 'abcjs', function (state) {
+    function renderInlineABCjs(content: string) {
+        const containerId = `abc-inline-${getNextSequenceId()}`;
+        return `<span id="${containerId}" class="abc-inline" data-abc-content="${content.trim().replace(/"/g, '&quot;')}"></span>`;
+    }
+
+    // Block ABCjs rule
+    md.core.ruler.after('block', 'abc', function (state) {
         state.tokens.forEach(token => {
             if (token.type !== 'fence') return;
-            if (token.info !== 'abcjs') return;
+            if (token.info !== 'abc') return;
 
             token.type = 'html_block';
             token.content = renderABCjs(token.content);
@@ -50,6 +71,67 @@ export default function markdownItABCjs(md: MarkdownIt) {
             token.children = null;
         });
     });
+
+    // Inline ABCjs rule
+    md.inline.ruler.before('emphasis', 'abc', function (state, silent) {
+        const start = state.pos;
+        if (state.src.charCodeAt(start) !== 0x7B /* { */) return false;
+        const match = state.src.slice(start).match(/^\{\{abc\:([^}]+)\}\}/);
+        if (!match) return false;
+
+        if (!silent) {
+            const token = state.push('abc_inline', '', 0);
+            token.content = match[1].trim();
+        }
+        state.pos += match[0].length;
+        return true;
+    });
+
+    md.renderer.rules.abc_inline = function (tokens, idx) {
+        return renderInlineABCjs(tokens[idx].content);
+    };
+}
+
+
+
+
+function markdownItEnclosed(md: MarkdownIt) {
+
+    function render(content: string): string {
+        const containerId = `enclosed-inline-${getNextSequenceId()}`;
+
+        // Create a span element using DOM
+        const span = document.createElement('span');
+        span.id = containerId;
+        span.className = 'enclosed-inline';
+        span.textContent = content;
+
+        // Return the outer HTML of the span element
+        return span.outerHTML;
+    }
+
+    // function render(content: string) {
+    //     const containerId = `enclosed-inline-${getNextSequenceId()}`;
+    //     return `<span id="${containerId}" class="enclosed-inline"></span>`;
+    // }
+
+    md.inline.ruler.before('emphasis', 'enclosed', function (state, silent) {
+        const start = state.pos;
+        if (state.src.charCodeAt(start) !== 0x7B /* { */) return false;
+        const match = state.src.slice(start).match(/^\{\{enclosed\:([^}]+)\}\}/);
+        if (!match) return false;
+
+        if (!silent) {
+            const token = state.push('enclosed_inline', '', 0);
+            token.content = match[1].trim();
+        }
+        state.pos += match[0].length;
+        return true;
+    });
+
+    md.renderer.rules.enclosed_inline = function (tokens, idx) {
+        return render(tokens[idx].content);
+    };
 }
 
 
@@ -200,16 +282,32 @@ export const Markdown = (props: MarkdownProps) => {
         md.use(cmLinkPlugin);
         md.use(markdownItImageDimensions);
         md.use(markdownItABCjs);
+        md.use(markdownItEnclosed);
 
         setHtml(md.render(props.markdown));
 
         setTimeout(() => {
             if (containerRef.current) {
-                const containers = containerRef.current.querySelectorAll('div[data-abc-content]');
-                containers.forEach(container => {
+                const divs = containerRef.current.querySelectorAll('div[data-abc-content]');
+                divs.forEach(container => {
                     const abcContent = container.getAttribute('data-abc-content') || '';
-                    const result = abcjs.renderAbc(container.id, abcContent);
+                    const result = abcjs.renderAbc(container.id, abcContent, {
+                        staffwidth: 690, // eh.
+                    });
                 });
+
+                const spans = containerRef.current.querySelectorAll('span[data-abc-content]');
+                spans.forEach(container => {
+                    const abcContent = container.getAttribute('data-abc-content') || '';
+                    const result = abcjs.renderAbc(container.id, abcContent, {
+                        staffwidth: 60, // this is a minimum width i guess? hard to understand what's going on here but it works
+                        paddingbottom: 0,
+                        paddingleft: 0,
+                        paddingright: 0,
+                        paddingtop: 0,
+                    });
+                });
+
             }
         }, 0);
 
@@ -299,6 +397,8 @@ interface MarkdownEditorProps {
     strikethroughTrig?: undefined | number;
     refocusTrig?: undefined | number;
     abcjsTrig?: undefined | number;
+    specialCharacterTrig?: undefined | number;
+    specialCharacter?: string;
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
@@ -400,28 +500,29 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         //}
     };
 
-    const insertABCjsBlock = () => {
-        const textarea = ta.current;
-        if (!textarea) return;
+    // const insertABCjsBlock = () => {
+    //     const textarea = ta.current;
+    //     if (!textarea) return;
 
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const textBefore = textarea.value.substring(0, start);
-        const textAfter = textarea.value.substring(end);
-        const selectedText = textarea.value.substring(start, end);
+    //     const start = textarea.selectionStart;
+    //     const end = textarea.selectionEnd;
+    //     const textBefore = textarea.value.substring(0, start);
+    //     const textAfter = textarea.value.substring(end);
+    //     const selectedText = textarea.value.substring(start, end);
 
-        const abcjsBlock = `\n\`\`\`abcjs\n${selectedText || 'C D E F | G A B c |'}\n\`\`\`\n`;
+    //     //const abcjsBlock = `\n\`\`\`abcjs\n${selectedText || 'C D E F | G A B c |'}\n\`\`\`\n`;
+    //     const abcjsBlock = `\n\`\`\`abcjs\n${selectedText}\n\`\`\`\n`;
 
-        const newText = textBefore + abcjsBlock + textAfter;
+    //     const newText = textBefore + abcjsBlock + textAfter;
 
-        setTimeout(() => {
-            textarea.selectionStart = start + abcjsBlock.length - textAfter.length - 1;
-            textarea.selectionEnd = start + abcjsBlock.length - textAfter.length - 1;
-            textarea.focus();
-        }, 0);
+    //     setTimeout(() => {
+    //         textarea.selectionStart = start + abcjsBlock.length - textAfter.length - 1;
+    //         textarea.selectionEnd = start + abcjsBlock.length - textAfter.length - 1;
+    //         textarea.focus();
+    //     }, 0);
 
-        props.onValueChanged(newText);
-    };
+    //     props.onValueChanged(newText);
+    // };
 
     const insertList = (type) => {
         const textarea = ta.current;
@@ -655,7 +756,8 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 fileInputRef.current.click();
             }
         },
-        abcjs: () => insertABCjsBlock(),
+        //abcjs: () => insertABCjsBlock(),
+        abcjs: () => formatText("\n```abcjs\n", "\n```\n"),
     };
 
     React.useEffect(() => {
@@ -762,6 +864,13 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             ta.current.focus();
         }
     }, [props.refocusTrig]);
+
+    React.useEffect(() => {
+        if ((props.specialCharacterTrig || 0) > 0) {
+            insertTextAtCursor(props.specialCharacter);
+            ta.current.focus();
+        }
+    }, [props.specialCharacterTrig]);
 
     const handleNativeFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {

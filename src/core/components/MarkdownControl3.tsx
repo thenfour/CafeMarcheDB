@@ -7,9 +7,49 @@ import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
 import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
 import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
 import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
-import { Tooltip } from "@mui/material";
+import { Menu, MenuItem, Tooltip } from "@mui/material";
 import React from "react";
 import { Markdown, MarkdownEditor } from "./RichTextEditor";
+import { gIconMap } from '../db3/components/IconMap';
+import EmojiSymbolsIcon from '@mui/icons-material/EmojiSymbols';
+
+//////////////////////////////////////////////////
+interface SpecialCharacterDropdownProps {
+    anchorEl: HTMLElement | null;
+    onSelect: (character: string) => void;
+    onClose: () => void;
+}
+
+const specialCharacters = [
+    { category: 'Musical Symbols', symbols: ['♪', '♫', '♩', '♬', '♭', '♮', '♯', '𝄞', '𝄢', '𝄡'], display: undefined },
+    //{ category: 'Rehearsal marks', symbols: ['Ⓐ', 'Ⓑ', 'Ⓒ', 'Ⓓ', 'Ⓔ', 'Ⓕ', 'Ⓖ', 'Ⓗ', 'Ⓘ', 'Ⓙ', 'Ⓚ', 'Ⓛ', 'Ⓜ', 'Ⓝ', 'Ⓞ', 'Ⓟ', 'Ⓠ', 'Ⓡ', 'Ⓢ', 'Ⓣ', 'Ⓤ', 'Ⓥ', 'Ⓦ', 'Ⓧ', 'Ⓨ', 'Ⓩ', '⓪', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'] },
+    //{ category: 'Math Symbols', symbols: ['∞', '√', '∑', 'π', '∆', '≈', '≠', '≤', '≥', '∫', '∂', '∇', '∈', '∉', '∪', '∩', '⊂', '⊃', '⊆', '⊇'] },
+    //{ category: 'Currency Symbols', symbols: ['$', '€', '£', '¥', '₩', '₽', '₹', '₺', '₿'] },
+    //{ category: 'Rehearsal marks', symbols: ['🄰', '🄱', '🄲', '🄳', '🄴', '🄵', '🄶', '🄷', '🄸', '🄹', '🄺', '🄻', '🄼', '🄽', '🄾', '🄿', '🅀', '🅁', '🅂', '🅃', '🅄', '🅅', '🅆', '🅇', '🅈', '🅉', '🅊', '🅋', '🅌', '🅍', '🅎', '🅏', '🅐', '🅑', '🅒', '🅓', '🅔', '🅕', '🅖', '🅗', '🅘', '🅙', '🅚', '🅛', '🅜', '🅝', '🅞', '🅟', '🅠', '🅡', '🅢', '🅣', '🅤', '🅥', '🅦', '🅧', '🅨', '🅩'] },
+    //{ category: 'Rehearsal marks', symbols: ['{{enclosed:A}}'], display:["A"] },
+    { category: 'Rehearsal marks', symbols: ['{{enclosed:A}}', '{{enclosed:B}}', '{{enclosed:C}}', '{{enclosed:D}}', '{{enclosed:E}}', '{{enclosed:F}}', '{{enclosed:G}}', '{{enclosed:H}}', '{{enclosed:I}}', '{{enclosed:J}}', '{{enclosed:K}}', '{{enclosed:L}}', '{{enclosed:M}}', '{{enclosed:N}}', '{{enclosed:O}}', '{{enclosed:P}}', '{{enclosed:Q}}', '{{enclosed:R}}', '{{enclosed:S}}', '{{enclosed:T}}', '{{enclosed:U}}', '{{enclosed:V}}', '{{enclosed:W}}', '{{enclosed:X}}', '{{enclosed:Y}}', '{{enclosed:Z}}', '{{enclosed:1}}', '{{enclosed:2}}', '{{enclosed:3}}', '{{enclosed:4}}', '{{enclosed:5}}', '{{enclosed:6}}', '{{enclosed:7}}', '{{enclosed:8}}', '{{enclosed:9}}', '{{enclosed:10}}'], display: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] },
+    { category: 'Arrows', symbols: ['→', '←', '↑', '↓', '↔', '↕', '⇒', '⇐', '⇑', '⇓', '⇔', '⇕'], display: undefined },
+    { category: 'Miscellaneous', symbols: ['©', '®', '™', '✓', '✗', '★', '☆', '♠', '♣', '♥', '♦', '☀', '☁', '☂', '☃', '☎', '✉', '✂', '✍', '✏'], display: undefined },
+];
+
+const SpecialCharacterDropdown: React.FC<SpecialCharacterDropdownProps> = ({ anchorEl, onSelect, onClose }) => {
+
+    return <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={onClose}>
+        {specialCharacters.map((category) => (
+            <div key={category.category}>
+                <MenuItem disabled>{category.category}</MenuItem>
+                {category.symbols.map((symbol, i) => (
+                    <MenuItem key={i} onClick={() => onSelect(symbol)}>
+                        {category.display ? category.display[i] : symbol}
+                    </MenuItem>
+                ))}
+            </div>
+        ))}
+    </Menu>;
+};
+
+
+
 
 //////////////////////////////////////////////////
 interface Markdown3EditorProps {
@@ -41,6 +81,10 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
     const [underlineTrig, setUnderlineTrig] = React.useState<number>(0);
     const [strikethroughTrig, setStrikethroughTrig] = React.useState<number>(0);
     const [abcjsTrig, setAbcjsTrig] = React.useState<number>(0);
+    const [specialCharacterMenuOpen, setSpecialCharacterMenuOpen] = React.useState<boolean>(false);
+    const [specialCharacterTrig, setSpecialCharacterTrig] = React.useState<number>(0);
+    const [specialCharacter, setSpecialCharacter] = React.useState<string>("");
+    const [specialCharacterMenuAnchorEl, setSpecialCharacterMenuAnchorEl] = React.useState<null | HTMLElement>(null);
 
     // when coming back from preview mode to 
     const [refocusTrig, setRefocusTrig] = React.useState<number>(0);
@@ -63,6 +107,8 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
         setOutdentTrig(0);
         setUnderlineTrig(0);
         setStrikethroughTrig(0);
+        setSpecialCharacterTrig(0);
+        setSpecialCharacterMenuOpen(false);
 
         setTab(newTab);
     };
@@ -191,11 +237,31 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
         </Tooltip>,
         abcjs: <Tooltip title={"Insert ABC music notation"} disableInteractive>
             <div className="toolItem abcjs" onClick={() => setAbcjsTrig(abcjsTrig + 1)}>
-                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" className="octicon octicon-music Button-visual">
-                    <path d="M12 1.75v10.598c-.192-.05-.392-.096-.598-.096a3.6 3.6 0 0 0-1.847.527A1.987 1.987 0 0 0 8 14.25a2 2 0 1 0 4 0V7.352l2-.5V8.25c-.192-.05-.392-.096-.598-.096a3.6 3.6 0 0 0-1.847.527A1.987 1.987 0 0 0 12 10.25a2 2 0 1 0 4 0V1.75a.75.75 0 0 0-.924-.72l-8 2A.75.75 0 0 0 7 3.75v8.598c-.192-.05-.392-.096-.598-.096a3.6 3.6 0 0 0-1.847.527A1.987 1.987 0 0 0 4 14.25a2 2 0 1 0 4 0V5.352l6-1.5V1.75h-2Z"></path>
-                </svg>
+                {gIconMap.MusicNote()}
             </div>
         </Tooltip>,
+        specialCharacter: <>
+            <Tooltip title={"Insert special character"} disableInteractive>
+                <div
+                    className="toolItem specialCharacter"
+                    onClick={(event: React.MouseEvent<HTMLElement>) => {
+                        setSpecialCharacterMenuOpen(!specialCharacterMenuOpen);
+                        setSpecialCharacterMenuAnchorEl(event.currentTarget);
+                    }}
+                >
+                    <EmojiSymbolsIcon />
+                </div>
+            </Tooltip>
+            {specialCharacterMenuOpen && <SpecialCharacterDropdown
+                onSelect={(ch) => {
+                    setSpecialCharacterMenuOpen(false);
+                    setSpecialCharacter(ch);
+                    setSpecialCharacterTrig(specialCharacterTrig + 1);
+                }}
+                anchorEl={specialCharacterMenuAnchorEl}
+                onClose={() => setSpecialCharacterMenuOpen(false)}
+            />}
+        </>,
     };
 
     const editorContainerStyle: React.CSSProperties = tab === 'write' ? {} : {
@@ -233,6 +299,7 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                 <div className="divider" />
 
                 {toolItems.abcjs}
+                {toolItems.specialCharacter}
                 <div className="divider" />
 
                 {toolItems.link}
@@ -268,10 +335,14 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                     strikethroughTrig={strikethroughTrig}
                     refocusTrig={refocusTrig}
                     abcjsTrig={abcjsTrig}
+                    specialCharacterTrig={specialCharacterTrig}
+                    specialCharacter={specialCharacter}
                 />
                 <div>
                     <span className="helpText">
-                        Markdown syntax is supported. <a href="/backstage/wiki/markdown-help" target="_blank">Click here</a> for details.
+                        <a href="/backstage/wiki/markdown-help" target="_blank">{gIconMap.Launch()} Markdown formatting help</a>
+                        |
+                        <a href="/backstage/wiki/abc-help" target="_blank">{gIconMap.Launch()} ABC formatting help</a>
                     </span>
 
                 </div>

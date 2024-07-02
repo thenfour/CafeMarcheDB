@@ -690,6 +690,17 @@ table td {
   font-size: 13px;
   font-style: italic;
   color: #888;
+  display: flex;
+  align-items: center;
+}
+
+.helpText * {
+  display: flex;
+  align-items: center;
+}
+
+.helpText a {
+  margin: 0 10px;
 }
 
 /* as a convenience, text fields for fields called "name" to be emphasized. */

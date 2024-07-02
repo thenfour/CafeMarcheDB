@@ -196,8 +196,18 @@ test cases:
     background-color: white;
 }
 
-blockquote {
+.MD3Container blockquote {
     padding: 0 1em;
     color: #636c76;
     border-left: .25em solid #d0d7de;
+}
+
+.MD3Container .enclosed-inline {
+    border: 1px solid black;
+    padding: 3px;
+    font-size: 20px;
+    font-family: serif;
+    line-height: 17px;
+    display: inline-flex;
+    margin: 0 2px;
 }
