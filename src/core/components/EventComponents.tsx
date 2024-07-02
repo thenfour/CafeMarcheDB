@@ -555,6 +555,7 @@ export const EventDescriptionControl = ({ event, refetch, readonly }: { event: d
         columnName: "description",
         clientIntention,
         publicData,
+        fallbackOwnerId: event.createdByUserId,
     });
 
     readonly = readonly && authorized;
@@ -633,6 +634,7 @@ export const EventAttendanceUserTagControl = ({ event, refetch, readonly }: { ev
         publicData,
         model: event,
         columnName: "expectedAttendanceUserTag",
+        fallbackOwnerId: event.createdByUserId,
     });
 
     const handleChange = (value: db3.UserTagPayload | null) => {

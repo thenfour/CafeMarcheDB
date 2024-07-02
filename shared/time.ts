@@ -721,7 +721,10 @@ export function CalcRelativeTiming(refTime: Date, range: DateTimeRange): Relativ
 
     const timing = range.hitTestDateTime(refTime);
     if (timing === Timing.Present) {
-        return { bucket: RelativeTimingBucket.HappeningNow, label: "Happening now" };
+        // for all-day events, be more safe about this. Very often events are marked as all-day even though they're not 100% of the day.
+        // either for laziness, or just because you can't specify the start/end times of day for all-day events.
+        // and seeing "happening now" when it's not actually ongoing is worse than seeing "today".
+        return { bucket: RelativeTimingBucket.HappeningNow, label: range.isAllDay() ? "Today" : "Happening now" };
     }
 
     // today can be in the past or present so do that first

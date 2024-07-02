@@ -222,6 +222,7 @@ export function DB3EditObject2Dialog({ onOK, onCancel, tableRenderClient, initia
                                     columnName: c.columnName,
                                     model: obj,
                                     publicData,
+                                    fallbackOwnerId: null,// assume model has this.
                                 }));
                             }).map(column => {
                                 let autoFocus = false;

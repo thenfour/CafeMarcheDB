@@ -59,6 +59,7 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: db3.User
             clientIntention,
             rowMode: "view",
             model: row,
+            fallbackOwnerId: null, // assume model contains this
         }));
 
         // any unknown / unauthorized columns are simply discarded.
@@ -136,6 +137,7 @@ export const DB3PaginatedQueryCore = async (input: db3.PaginatedQueryInput, ctx:
         clientIntention,
         rowMode: "view",
         model: row,
+        fallbackOwnerId: null, // assume model contains this
     }));
 
     // any unknown / unauthorized columns are simply discarded.

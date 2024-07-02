@@ -160,6 +160,7 @@ export const SongDescriptionControl = ({ song, refetch, readonly }: { song: db3.
         columnName: "description",
         clientIntention,
         publicData,
+        fallbackOwnerId: song.createdByUserId,
     });
 
     readonly = readonly && authorized;

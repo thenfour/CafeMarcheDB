@@ -69,6 +69,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         publicData,
         model: props.event,
         columnName: props.fieldSpec.fieldName,
+        fallbackOwnerId: null,
     });
 
     const readonly = props.readonly || !canEdit;
@@ -144,6 +145,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         publicData,
         columnName: "frontpageVisible",
         model: props.event,
+        fallbackOwnerId: null,
     });
 
     return <div className='EventFrontpageTabContent'>

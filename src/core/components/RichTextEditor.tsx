@@ -92,28 +92,16 @@ function markdownItABCjs(md: MarkdownIt) {
     };
 }
 
-
-
-
 function markdownItEnclosed(md: MarkdownIt) {
 
     function render(content: string): string {
         const containerId = `enclosed-inline-${getNextSequenceId()}`;
-
-        // Create a span element using DOM
         const span = document.createElement('span');
         span.id = containerId;
         span.className = 'enclosed-inline';
         span.textContent = content;
-
-        // Return the outer HTML of the span element
         return span.outerHTML;
     }
-
-    // function render(content: string) {
-    //     const containerId = `enclosed-inline-${getNextSequenceId()}`;
-    //     return `<span id="${containerId}" class="enclosed-inline"></span>`;
-    // }
 
     md.inline.ruler.before('emphasis', 'enclosed', function (state, silent) {
         const start = state.pos;
@@ -133,7 +121,6 @@ function markdownItEnclosed(md: MarkdownIt) {
         return render(tokens[idx].content);
     };
 }
-
 
 function markdownItImageDimensions(md) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {

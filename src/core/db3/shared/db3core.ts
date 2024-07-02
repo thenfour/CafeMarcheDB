@@ -302,10 +302,11 @@ export interface DB3AuthorizeAndSanitizeInput<T extends TAnyModel> {
     rowMode: DB3RowMode,
     publicData: EmptyPublicData | Partial<PublicDataType>,
     clientIntention: xTableClientUsageContext,
+    fallbackOwnerId: number | null;
 };
 
 export type DB3AuthorizeAndSanitizeFieldInput<T extends TAnyModel> = DB3AuthorizeAndSanitizeInput<T> & {
-    rowInfo: RowInfo | null;
+    //rowInfo: RowInfo | null;
     authContext: DB3AuthorizationContext;
     isOwner: boolean;
 };
@@ -316,6 +317,15 @@ export interface DB3AuthorizeForViewColumnArgs<T extends TAnyModel> {
     publicData: EmptyPublicData | Partial<PublicDataType>,
     clientIntention: xTableClientUsageContext,
     columnName: string;
+};
+
+
+export interface DB3AuthorizeForEditColumnArgs<T extends TAnyModel> {
+    model: T | null,
+    publicData: EmptyPublicData | Partial<PublicDataType>,
+    clientIntention: xTableClientUsageContext,
+    columnName: string;
+    fallbackOwnerId: number | null;
 };
 
 
@@ -535,7 +545,6 @@ export class xTable implements TableDesc {
     visibilitySpec?: VisibilitySpec; // visibility
 
     pkMember: string;
-
     rowNameMember?: string;
     rowDescriptionMember?: string;
     naturalOrderBy?: TAnyModel;
@@ -595,7 +604,8 @@ export class xTable implements TableDesc {
     // if model is empty, then 
     authorizeAndSanitize = (args: DB3AuthorizeAndSanitizeInput<TAnyModel>): DB3AuthorizeAndSanitizeResult<TAnyModel> => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
-        const isOwner = rowInfo ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId) : false;
+        const ownerUserId = rowInfo?.ownerUserId || args.fallbackOwnerId;
+        const isOwner = ownerUserId ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === ownerUserId) : false;
         let authContext: DB3AuthorizationContext = "PostQuery";
         switch (args.rowMode) {
             case "new":
@@ -620,7 +630,7 @@ export class xTable implements TableDesc {
             rowIsAuthorized: false,
         };
 
-        const fieldInput: DB3AuthorizeAndSanitizeFieldInput<TAnyModel> = { ...args, authContext, rowInfo, isOwner };
+        const fieldInput: DB3AuthorizeAndSanitizeFieldInput<TAnyModel> = { ...args, authContext, isOwner };
 
         if (args.model) {
             Object.entries(args.model).forEach(e => {
@@ -679,24 +689,25 @@ export class xTable implements TableDesc {
             contextDesc: "(authorizeColumnForView)",
             model: args.model,
             publicData: args.publicData,
-            rowInfo,
+            fallbackOwnerId: null, // for viewing this is not currently necessary
         });
     };
 
-    authorizeColumnForEdit = <T extends TAnyModel,>(args: DB3AuthorizeForViewColumnArgs<T>) => {
+    authorizeColumnForEdit = <T extends TAnyModel,>(args: DB3AuthorizeForEditColumnArgs<T>) => {
         const rowInfo = args.model ? this.getRowInfo(args.model) : null;
-        const isOwner = rowInfo ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === rowInfo.ownerUserId) : false;
+        const ownerUserId = rowInfo?.ownerUserId || args.fallbackOwnerId;
+        const isOwner = ownerUserId ? ((args.publicData.userId || 0) > 0) && (args.publicData.userId === ownerUserId) : false;
         const col = this.getColumn(args.columnName);
         if (!col) return false;
         return col.authorize({
             clientIntention: args.clientIntention,
             authContext: isOwner ? "PreMutateAsOwner" : "PreMutate",
             rowMode: "update",
-            isOwner: isOwner,
+            isOwner,
             contextDesc: "(authorizeColumnForView)",
             model: args.model,
             publicData: args.publicData,
-            rowInfo,
+            fallbackOwnerId: ownerUserId,
         });
     };
 
@@ -711,7 +722,7 @@ export class xTable implements TableDesc {
             contextDesc: "(authorizeColumnForView)",
             model: null,
             publicData: args.publicData,
-            rowInfo: null,
+            fallbackOwnerId: null,
         });
     };
 

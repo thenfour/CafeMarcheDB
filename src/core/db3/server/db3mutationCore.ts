@@ -338,6 +338,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
                 model: localFields,
                 publicData: ctx.session.$publicData,
                 rowMode: "new",
+                fallbackOwnerId: null,
             });
 
             if (!authResult.rowIsAuthorized) {
@@ -408,6 +409,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         // at this point `fields` should not be used.
 
         const fullOldObj = await dbTableClient.findFirst({ where: { [table.pkMember]: pkid } });
+        const oldRowInfo = table.getRowInfo(fullOldObj);
         const oldValues = getIntersectingFields(localFields, fullOldObj); // only care about values which will actually change.
         let obj = oldValues;
 
@@ -420,6 +422,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                 model: oldValues,//localFields,
                 publicData: ctx.session.$publicData,
                 rowMode: "update",
+                fallbackOwnerId: oldRowInfo.ownerUserId,
             });
 
             if (!authResult.rowIsAuthorized) {
@@ -685,6 +688,7 @@ export const queryManyImpl = async <TitemPayload,>({ clientIntention, filterMode
         clientIntention,
         rowMode: "view",
         model: row,
+        fallbackOwnerId: null,
     }));
 
     // any unknown / unauthorized columns are simply discarded.
@@ -734,6 +738,7 @@ export const queryFirstImpl = async <TitemPayload,>({ clientIntention, filterMod
             clientIntention,
             rowMode: "view",
             model: item,
+            fallbackOwnerId: null,
         });
         // any unknown / unauthorized columns are simply discarded.
         if (!rowAuthResult.rowIsAuthorized) {
