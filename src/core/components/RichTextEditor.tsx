@@ -92,35 +92,42 @@ function markdownItABCjs(md: MarkdownIt) {
     };
 }
 
-function markdownItEnclosed(md: MarkdownIt) {
-
-    function render(content: string): string {
-        const containerId = `enclosed-inline-${getNextSequenceId()}`;
+function markdownItSpanClass(md: MarkdownIt) {
+    function render(token: string, content: string): string {
         const span = document.createElement('span');
-        span.id = containerId;
-        span.className = 'enclosed-inline';
+        span.className = `markdown-class-${token}`;
         span.textContent = content;
         return span.outerHTML;
     }
 
-    md.inline.ruler.before('emphasis', 'enclosed', function (state, silent) {
+    md.inline.ruler.before('emphasis', 'token', function (state, silent) {
         const start = state.pos;
-        if (state.src.charCodeAt(start) !== 0x7B /* { */) return false;
-        const match = state.src.slice(start).match(/^\{\{enclosed\:([^}]+)\}\}/);
-        if (!match) return false;
+        if (state.src.charCodeAt(start) !== 0x7B /* { */) return false; // optimized check
+        const match = state.src.slice(start).match(/^\{\{(\w+)\:([^}]+)\}\}/);
+        if (!match) {
+            console.log(`no match : ${state.src.slice(start)}`);
+
+            return false;
+        }
+
+        console.log(`match`);
 
         if (!silent) {
-            const token = state.push('enclosed_inline', '', 0);
-            token.content = match[1].trim();
+            const token = state.push('token_inline', '', 0);
+            token.meta = { token: match[1] }; // Store the token type
+            token.content = match[2].trim();
         }
         state.pos += match[0].length;
         return true;
     });
 
-    md.renderer.rules.enclosed_inline = function (tokens, idx) {
-        return render(tokens[idx].content);
+    md.renderer.rules.token_inline = function (tokens, idx) {
+        const token = tokens[idx].meta.token;
+        const content = tokens[idx].content;
+        return render(token, content);
     };
 }
+
 
 function markdownItImageDimensions(md) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
@@ -269,7 +276,7 @@ export const Markdown = (props: MarkdownProps) => {
         md.use(cmLinkPlugin);
         md.use(markdownItImageDimensions);
         md.use(markdownItABCjs);
-        md.use(markdownItEnclosed);
+        md.use(markdownItSpanClass);
 
         setHtml(md.render(props.markdown));
 
