@@ -196,13 +196,13 @@ test cases:
     background-color: white;
 }
 
-.MD3Container blockquote {
+.markdown blockquote {
     padding: 0 1em;
     color: #636c76;
     border-left: .25em solid #d0d7de;
 }
 
-.MD3Container .markdown-class-enclosed {
+.markdown .markdown-class-enclosed {
     border: 1px solid black;
     padding: 3px;
     font-size: 20px;
@@ -212,11 +212,33 @@ test cases:
     margin: 0 2px;
 }
 
-.MD3Container .markdown-class-big {
+.markdown .markdown-class-big {
     font-size: 20px;
 }
 
 
-.MD3Container .markdown-class-bigger {
+.markdown .markdown-class-bigger {
     font-size: 30px;
+}
+
+.markdown .markdown-class-highlight {
+    background-color: #fe0a;
+    padding: 3px 5px;
+}
+
+.markdown .markdown-class-highlightred {
+    background-color: #f008;
+    padding: 3px 5px;
+}
+
+
+.markdown .markdown-class-highlightgreen {
+    background-color: #0f0a;
+    padding: 3px 5px;
+}
+
+
+.markdown .markdown-class-highlightblue {
+    background-color: #00f6;
+    padding: 3px 5px;
 }
