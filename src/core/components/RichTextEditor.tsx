@@ -3,8 +3,7 @@
 // <MarkdownControl> = full editor with debounced commitment (caller actually commits), displays saving indicator, switch between edit/view
 
 // syntax updates:
-// ```abcjs
-// ...
+// ```abc
 // ```
 
 // inline ABC:
@@ -27,10 +26,12 @@ import * as abcjs from 'abcjs';
 import 'abcjs/abcjs-audio.css';
 import MarkdownIt from 'markdown-it';
 import React from "react";
+import { createRoot } from 'react-dom/client';
+
 
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
-import { IsNullOrWhitespace, getNextSequenceId, isValidURL, parseMimeType } from "shared/utils";
+import { CoerceToNumber, CoerceToNumberOr, IsNullOrWhitespace, getNextSequenceId, isValidURL, parseMimeType } from "shared/utils";
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
 import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
 
@@ -38,32 +39,126 @@ import { NoSsr } from '@mui/material';
 import { getURLClass } from "../db3/clientAPILL";
 import { CMDBUploadFile } from "./CMDBUploadFile";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "./FileDrop";
+import { CMChip } from './CMCoreComponents';
 
 const INDENT_SIZE = 4;  // Number of spaces for one indent level
 const SPACES = ' '.repeat(INDENT_SIZE);
 
+interface MarkdownReactPlugin {
+    componentName: string;
+    render: (node: Element, componentName: string, propsString: string) => React.ReactNode;
+};
 
-function markdownItABCjs(md: MarkdownIt) {
+const RenderMarkdownSpanWithClass = (node: Element, componentName: string, propsString: string) => {
+    return <span className={`markdown-class-${componentName}`}>{propsString}</span>
+};
 
-    function renderABCjs(content: string) {
-        const containerId = `abc-markdown-${getNextSequenceId()}`;
-        const renderedBlock = `<div id="${containerId}" data-abc-content="${content.trim().replace(/"/g, '&quot;')}"></div>`;
-        return renderedBlock;
+const spanClasses = [
+    "big",
+    "bigger",
+    "highlight",
+    "highlightred",
+    "highlightblue",
+    "highlightgreen",
+    "enclosed",
+] as const;
+
+
+
+interface ABCProps {
+    abcCode: string;
+};
+
+const ABCInlineComponent = (props: ABCProps) => {
+    const ref = React.useRef<HTMLSpanElement | null>(null);
+    React.useEffect(() => {
+        const result = abcjs.renderAbc(ref.current!, props.abcCode, {
+            staffwidth: 60, // this is a minimum width i guess? hard to understand what's going on here but it works
+            paddingbottom: 0,
+            paddingleft: 0,
+            paddingright: 0,
+            paddingtop: 0,
+        });
+    });
+    return <span ref={ref}></span>;
+};
+
+const ABCBlockComponent = (props: ABCProps) => {
+    const ref = React.useRef<HTMLDivElement | null>(null);
+    React.useEffect(() => {
+        const result = abcjs.renderAbc(ref.current!, props.abcCode, {
+            staffwidth: 690, // eh.
+        });
+    });
+    return <div ref={ref}></div>;
+};
+
+const ABCReactPlugin = (node: Element, componentName: string, propsString: string) => {
+    if (node.getAttribute("data-inline")) {
+        return <ABCInlineComponent abcCode={propsString} />;
     }
+    return <ABCBlockComponent abcCode={propsString} />;
+};
 
-    function renderInlineABCjs(content: string) {
-        const containerId = `abc-inline-${getNextSequenceId()}`;
-        return `<span id="${containerId}" class="abc-inline" data-abc-content="${content.trim().replace(/"/g, '&quot;')}"></span>`;
+const markdownReactPlugins: MarkdownReactPlugin[] = [
+    ...spanClasses.map(className => ({
+        componentName: className,
+        render: RenderMarkdownSpanWithClass,
+    })),
+    {
+        componentName: "abc",
+        render: ABCReactPlugin
+    }
+];
+
+
+function markdownItReactInline(md: MarkdownIt, onComponentAdd: () => void) {
+    const defaultRender = md.renderer.rules.text || ((tokens, idx, options, env, self) => {
+        return self.renderToken(tokens, idx, options);
+    });
+
+    md.renderer.rules.text = (tokens, idx, options, env, self) => {
+        const token = tokens[idx];
+        const text = token.content as string;
+        // {{word:props}} or {{word}}
+        let newText = text.replace(/\{\{(\w+)(:.*?)?\}\}/g, (match, componentName, propsString = '') => {
+            if (propsString && propsString.length > 1) {
+                propsString = propsString.slice(1).replaceAll("\\}", "}"); // chop off the colon and allow escaping } with \}
+            }
+
+            const span = document.createElement('span');
+            span.setAttribute("data-component", componentName);
+            span.setAttribute("data-props", propsString);
+            span.setAttribute("data-inline", "true");
+            onComponentAdd();
+            return span.outerHTML;
+        });
+
+        // Call default renderer for any remaining text
+        return newText === text ? defaultRender(tokens, idx, options, env, self) : newText;
+    };
+}
+
+
+function markdownItReactBlock(md: MarkdownIt, onComponentAdd: () => void) {
+    function render(tag: string, content: string) {
+        const div = document.createElement("div");
+        div.setAttribute("data-component", tag);
+        div.setAttribute("data-props", content.trim());
+        onComponentAdd();
+        return div.outerHTML;
     }
 
     // Block ABCjs rule
     md.core.ruler.after('block', 'abc', function (state) {
         state.tokens.forEach(token => {
             if (token.type !== 'fence') return;
-            if (token.info !== 'abc') return;
+            // token.info is the little tag. like ```tag
+            if (!markdownReactPlugins.some(p => p.componentName === token.info)) return;
+            //if (token.info !== 'abc') return; 
 
             token.type = 'html_block';
-            token.content = renderABCjs(token.content);
+            token.content = render(token.info, token.content);
             token.tag = '';
             token.nesting = 0;
             token.attrs = null;
@@ -71,63 +166,7 @@ function markdownItABCjs(md: MarkdownIt) {
             token.children = null;
         });
     });
-
-    // Inline ABCjs rule
-    md.inline.ruler.before('emphasis', 'abc', function (state, silent) {
-        const start = state.pos;
-        if (state.src.charCodeAt(start) !== 0x7B /* { */) return false;
-        const match = state.src.slice(start).match(/^\{\{abc\:([^}]+)\}\}/);
-        if (!match) return false;
-
-        if (!silent) {
-            const token = state.push('abc_inline', '', 0);
-            token.content = match[1].trim();
-        }
-        state.pos += match[0].length;
-        return true;
-    });
-
-    md.renderer.rules.abc_inline = function (tokens, idx) {
-        return renderInlineABCjs(tokens[idx].content);
-    };
 }
-
-function markdownItSpanClass(md: MarkdownIt) {
-    function render(token: string, content: string): string {
-        const span = document.createElement('span');
-        span.className = `markdown-class-${token}`;
-        span.textContent = content;
-        return span.outerHTML;
-    }
-
-    md.inline.ruler.before('emphasis', 'token', function (state, silent) {
-        const start = state.pos;
-        if (state.src.charCodeAt(start) !== 0x7B /* { */) return false; // optimized check
-        const match = state.src.slice(start).match(/^\{\{(\w+)\:([^}]+)\}\}/);
-        if (!match) {
-            console.log(`no match : ${state.src.slice(start)}`);
-
-            return false;
-        }
-
-        console.log(`match`);
-
-        if (!silent) {
-            const token = state.push('token_inline', '', 0);
-            token.meta = { token: match[1] }; // Store the token type
-            token.content = match[2].trim();
-        }
-        state.pos += match[0].length;
-        return true;
-    });
-
-    md.renderer.rules.token_inline = function (tokens, idx) {
-        const token = tokens[idx].meta.token;
-        const content = tokens[idx].content;
-        return render(token, content);
-    };
-}
-
 
 function markdownItImageDimensions(md) {
     const defaultRender = md.renderer.rules.image || function (tokens, idx, options, env, self) {
@@ -207,10 +246,19 @@ interface MarkdownProps {
 }
 export const Markdown = (props: MarkdownProps) => {
     const [html, setHtml] = React.useState('');
+    const expectedComponentCount = React.useRef<number>(0);
+    const componentMountTimer = React.useRef<NodeJS.Timer | null>(null);
 
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
+        //if (!containerRef.current) return;
+        if (componentMountTimer.current) {
+            clearInterval(componentMountTimer.current);
+            componentMountTimer.current = null;
+        }
+        expectedComponentCount.current = 0; // make sure we're counting from 0
+
         if (IsNullOrWhitespace(props.markdown)) {
             setHtml("");
             return;
@@ -275,46 +323,70 @@ export const Markdown = (props: MarkdownProps) => {
 
         md.use(cmLinkPlugin);
         md.use(markdownItImageDimensions);
-        md.use(markdownItABCjs);
-        md.use(markdownItSpanClass);
+
+        const onComponentAdd = () => {
+            expectedComponentCount.current++;
+            console.log(`oncomponent add; ${expectedComponentCount.current}`);
+        }
+        md.use(md => markdownItReactInline(md, onComponentAdd));
+        md.use(md => markdownItReactBlock(md, onComponentAdd));
 
         setHtml(md.render(props.markdown));
 
-        setTimeout(() => {
-            if (containerRef.current) {
-                const divs = containerRef.current.querySelectorAll('div[data-abc-content]');
-                divs.forEach(container => {
-                    const abcContent = container.getAttribute('data-abc-content') || '';
-                    const result = abcjs.renderAbc(container.id, abcContent, {
-                        staffwidth: 690, // eh.
-                    });
-                });
+        console.log(`init unprocessed children: ${expectedComponentCount.current}`);
 
-                const spans = containerRef.current.querySelectorAll('span[data-abc-content]');
-                spans.forEach(container => {
-                    const abcContent = container.getAttribute('data-abc-content') || '';
-                    const result = abcjs.renderAbc(container.id, abcContent, {
-                        staffwidth: 60, // this is a minimum width i guess? hard to understand what's going on here but it works
-                        paddingbottom: 0,
-                        paddingleft: 0,
-                        paddingright: 0,
-                        paddingtop: 0,
-                    });
-                });
-
+        // mount embedded react components. we have to wait for the browser to get this mounted and it's not possible to know when it will be.
+        // careful also to consider multiple markdown components on the page at the same time so global flags will break.
+        // how to accomplish this? we want to choose an interval carefully, polling for readiness. maybe set an expected component value somehow?
+        const TimerProc = () => {
+            if (!containerRef.current) {
+                return; // i guess wait longer? honestly i don't expect this to happen.
             }
-        }, 0);
+            if (expectedComponentCount.current < 1) {
+                if (componentMountTimer.current) clearInterval(componentMountTimer.current);
+                return;
+            }
+            const allNodes = containerRef.current.querySelectorAll('[data-component]');
+            const nodes = Array.from(allNodes).filter(el => !el.getAttribute('data-rendered'));
+
+            // count all nodes in case of weird reloads; expected component count bases itself on the TOTAL
+            console.log(`processing ${allNodes.length} nodes; expecting ${expectedComponentCount.current}`);
+
+            nodes.forEach(node => {
+                const componentName = node.getAttribute('data-component');
+                if (!componentName) return;
+                node.setAttribute("data-rendered", "true");
+
+                const lowercaseComponentName = componentName.toLowerCase();
+                for (let i = 0; i < markdownReactPlugins.length; ++i) {
+                    const plugin = markdownReactPlugins[i]!;
+                    if (plugin.componentName === lowercaseComponentName) {
+                        const root = createRoot(node);
+                        const renderedComponent = plugin.render(node, lowercaseComponentName, node.getAttribute('data-props') || "");
+                        root.render(renderedComponent);
+                        node.setAttribute("data-rendered-with-plugin", plugin.componentName);
+                        break;
+                    }
+                }
+            });
+
+            expectedComponentCount.current -= allNodes.length;
+            console.log(`unprocessed children: ${expectedComponentCount.current}`);
+        };
+
+        componentMountTimer.current = setInterval(TimerProc, 33);
 
     }, [props.markdown]);
 
-    return <NoSsr><div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
-        <div ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
-    </div ></NoSsr>;
+    return <NoSsr>
+        <div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
+            <div ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
+        </div >
+    </NoSsr>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 async function fetchWikiSlugs(keyword: string): Promise<string[]> {
-    const slugified = slugify(keyword);
     if (keyword.includes("]]")) return []; // make sure we don't autocomplete outside of the link syntax
     if (!keyword.startsWith("[")) {
         return []; // ensure this is a wiki link. you typed "[" to trigger the autocomplete. this is the 2nd '['
@@ -323,6 +395,7 @@ async function fetchWikiSlugs(keyword: string): Promise<string[]> {
         return [];
     }
 
+    const slugified = slugify(keyword);
     const response = await fetch(`/api/wiki/searchWikiSlugs?keyword=${slugified}`);
 
     if (!response.ok) {
@@ -330,6 +403,22 @@ async function fetchWikiSlugs(keyword: string): Promise<string[]> {
     }
     return response.json();
 }
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+async function fetchInlineClasses(keyword: string): Promise<string[]> {
+    if (keyword.includes("}}")) return []; // make sure we don't autocomplete outside of the link syntax
+    if (!keyword.startsWith("{")) {
+        return []; // ensure this is a wiki link. you typed "[" to trigger the autocomplete. this is the 2nd '['
+    }
+    const ret = [
+        ...spanClasses,
+        "abc",
+    ].filter(x => x.toLowerCase().includes(keyword.slice(1).toLowerCase()));
+    return ret;
+}
+
+
 
 // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // async function fetchEventOrSongTagsBracketAt(keyword: string): Promise<string[]> {
@@ -493,30 +582,6 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         props.onValueChanged(newText);
         //}
     };
-
-    // const insertABCjsBlock = () => {
-    //     const textarea = ta.current;
-    //     if (!textarea) return;
-
-    //     const start = textarea.selectionStart;
-    //     const end = textarea.selectionEnd;
-    //     const textBefore = textarea.value.substring(0, start);
-    //     const textAfter = textarea.value.substring(end);
-    //     const selectedText = textarea.value.substring(start, end);
-
-    //     //const abcjsBlock = `\n\`\`\`abcjs\n${selectedText || 'C D E F | G A B c |'}\n\`\`\`\n`;
-    //     const abcjsBlock = `\n\`\`\`abcjs\n${selectedText}\n\`\`\`\n`;
-
-    //     const newText = textBefore + abcjsBlock + textAfter;
-
-    //     setTimeout(() => {
-    //         textarea.selectionStart = start + abcjsBlock.length - textAfter.length - 1;
-    //         textarea.selectionEnd = start + abcjsBlock.length - textAfter.length - 1;
-    //         textarea.focus();
-    //     }, 0);
-
-    //     props.onValueChanged(newText);
-    // };
 
     const insertList = (type) => {
         const textarea = ta.current;
@@ -751,7 +816,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             }
         },
         //abcjs: () => insertABCjsBlock(),
-        abcjs: () => formatText("\n```abcjs\n", "\n```\n"),
+        abcjs: () => formatText("\n```abc\n", "\n```\n"),
     };
 
     React.useEffect(() => {
@@ -982,6 +1047,11 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                         // renders the item in the suggestion list.
                         component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem wiki ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
                         output: (item: string) => `[[${item}]]`
+                    },
+                    "{{": { // it's hard to understand how these triggers work; are these chars or strings??
+                        dataProvider: token => fetchInlineClasses(token),
+                        component: ({ entity, selected }: { entity: string, selected: boolean }) => <div className={`autoCompleteCMLinkItem inlineclass ${selected ? "selected" : "notSelected"}`}>{entity}</div>,
+                        output: (item: string) => `{{${item}:}}`
                     },
                     "@": {
                         dataProvider: token => fetchEventOrSongTagsAt(token),
