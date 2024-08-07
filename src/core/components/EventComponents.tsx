@@ -38,6 +38,7 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
+import { WorkflowContainerPOC } from './WorkflowComponents';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -1023,11 +1024,12 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
             scrollButtons="auto"
         >
             <Tab label="Info" {...TabA11yProps('event', 0)} />
-            <Tab label={`Setlists (${event.songLists.length})`} {...TabA11yProps('event', 1)} />
-            <Tab label={`Responses ${segmentResponseCountStr}`} {...TabA11yProps('event', 2)} />
-            <Tab label={`By Instrument`} {...TabA11yProps('event', 3)} />
-            <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 4)} />
-            <Tab label={`Frontpage`} {...TabA11yProps('event', 5)} />
+            <Tab label="Workflow" {...TabA11yProps('event', 1)} />
+            <Tab label={`Setlists (${event.songLists.length})`} {...TabA11yProps('event', 2)} />
+            <Tab label={`Responses ${segmentResponseCountStr}`} {...TabA11yProps('event', 3)} />
+            <Tab label={`By Instrument`} {...TabA11yProps('event', 4)} />
+            <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 5)} />
+            <Tab label={`Frontpage`} {...TabA11yProps('event', 6)} />
         </Tabs>
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
@@ -1037,27 +1039,31 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
         </CustomTabPanel>
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
-            <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+            <WorkflowContainerPOC />
         </CustomTabPanel>
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
+            <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+        </CustomTabPanel>
+
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
             <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
             <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
         </CustomTabPanel>
 
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
             <SettingMarkdown setting='EventCompletenessTabMarkdown' />
             <EventCompletenessTabContent eventData={eventData} userMap={userMap} />
         </CustomTabPanel>
 
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
             {/* <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} /> */}
             <FilesTabContent fileTags={enrichedFiles} uploadTags={{
                 taggedEventId: event.id,
             }} refetch={refetch} readonly={props.readonly} />
         </CustomTabPanel>
 
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
+        <CustomTabPanel tabPanelID='event' value={selectedTab} index={6}>
             <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
         </CustomTabPanel>
     </>;

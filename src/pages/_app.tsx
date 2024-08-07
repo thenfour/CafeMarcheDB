@@ -18,6 +18,7 @@ import '../../public/style/filterControls.css';
 import '../../public/style/bigCalendar.css';
 import '../../public/style/metronome.css';
 import '../../public/style/ImportEvents.css';
+import '../../public/style/workflow.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import React from "react";
 import { useTheme } from "@mui/material/styles";

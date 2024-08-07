@@ -129,7 +129,7 @@ export const NameValuePair = (props: NameValuePairProps) => {
 }
 
 // Define TypeScript type for the props
-type KeyValueDisplayValueType = string | null | undefined | number | Date;
+type KeyValueDisplayValueType = string | null | undefined | number | Date | boolean;
 type KeyValueDisplayProps = {
     data: Record<string, KeyValueDisplayValueType>;
     className?: string;
@@ -153,6 +153,8 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data, classNam
             else if (typeof value === 'string') {
                 valueStr = value;
             } else if (typeof value === 'number') {
+                valueStr = value.toString();
+            } else if (typeof value === 'boolean') {
                 valueStr = value.toString();
             } else if (value.toISOString) {
                 valueStr = value.toISOString();

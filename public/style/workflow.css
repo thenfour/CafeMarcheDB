@@ -1,0 +1,40 @@
+.workflowNodeGroupContainer {
+    padding: 3px;
+    border: 1px solid var(--color-foreground);
+    border-left: 6px solid var(--color-foreground);
+    margin: 5px;
+}
+
+.workflowNodeContainer {
+    padding: 3px;
+    margin: 5px;
+}
+
+.workflowNodeContainer:hover {
+    background-color: #ddd;
+}
+
+.workflowNodeContainer .name {
+    font-weight: bold;
+    font-size: large;
+}
+
+.workflowNodeContainer.Irrelevant .name {
+    color: #000;
+    background-color: #eee;
+}
+
+.workflowNodeContainer.Relevant .name {
+    color: #888;
+    background-color: #eee;
+}
+
+.workflowNodeContainer.Activated .name {
+    color: #fff;
+    background-color: #44c;
+}
+
+.workflowNodeContainer.Completed .name {
+    color: #888;
+    background-color: #000;
+}

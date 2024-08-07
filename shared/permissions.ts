@@ -76,6 +76,12 @@ export enum Permission {
     view_wiki_pages = "view_wiki_pages",
     edit_wiki_pages = "edit_wiki_pages",
 
+    // ******************** workflow
+    view_workflow_instances = "view_workflow_instances", // you can view the workflows tab
+    edit_workflow_instances = "edit_workflow_instances", // you can control things like assignees & due dates
+    manage_workflow_defs = "manage_workflow_defs", // can you create or edit workflow definitions / graphs?
+    admin_workflow_defs = "admin_workflow_defs", // technical admin operations
+
     // ******************** menu customization
     customize_menu = "customize_menu",
 };
