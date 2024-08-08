@@ -896,3 +896,16 @@ export function getIntersectingFields(newValues: { [key: string]: any }, oldValu
         return acc;
     }, {} as { [key: string]: any });
 }
+
+
+export function hashString(inp: string) {
+    var hash = 0,
+        i, chr;
+    if (inp.length === 0) return hash;
+    for (i = 0; i < inp.length; i++) {
+        chr = inp.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
+}

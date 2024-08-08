@@ -38,3 +38,23 @@
     color: #888;
     background-color: #000;
 }
+
+
+.react-flow__node-cmNormal {
+    color: #888;
+    background-color: #fffc;
+    border: 2.5px solid #888;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+
+.react-flow__node-cmNormal.selected {
+    color: black;
+    border-color: black;
+    background-color: #feec;
+}
+
+.react-flow__edge-path {
+    stroke-width: 2.5px;
+}
