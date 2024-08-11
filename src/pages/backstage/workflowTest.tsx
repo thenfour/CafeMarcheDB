@@ -14,18 +14,30 @@ import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowDefMutator, Workfl
 const minimalWorkflow = {
     "id": 100,
     "name": "Minimal workflow",
-    "groups": [
+    "groupDefs": [
         {
             "id": 1000,
             "name": "all group",
             "color": "pink",
-            position: { x: 0, y: 0 },
+            "position": {
+                "x": 75,
+                "y": 90
+            },
+            "width": 584,
+            "height": 194,
+            "selected": false
         },
         {
             "id": 1001,
             "name": "results",
             "color": "red",
-            position: { x: 0, y: 10 },
+            "position": {
+                "x": 75,
+                "y": 375
+            },
+            "width": 614,
+            "height": 179,
+            "selected": false
         }
     ],
     "nodeDefs": [
@@ -43,10 +55,12 @@ const minimalWorkflow = {
             "thisNodeProgressWeight": 1,
             "nodeDependencies": [],
             "position": {
-                "x": 240,
+                "x": 90,
                 "y": 60
             },
-            "selected": false
+            "selected": false,
+            "width": 108,
+            "height": 48
         },
         {
             "id": 501,
@@ -62,10 +76,12 @@ const minimalWorkflow = {
             "fieldName": "question2",
             "fieldValueOperator": "Truthy",
             "position": {
-                "x": 360,
-                "y": 75
+                "x": 225,
+                "y": 60
             },
-            "selected": false
+            "selected": false,
+            "width": 108,
+            "height": 48
         },
         {
             "id": 502,
@@ -81,10 +97,12 @@ const minimalWorkflow = {
             "fieldName": "question3",
             "fieldValueOperator": "Truthy",
             "position": {
-                "x": 480,
-                "y": 90
+                "x": 360,
+                "y": 60
             },
-            "selected": false
+            "selected": false,
+            "width": 108,
+            "height": 48
         },
         {
             "id": 503,
@@ -97,47 +115,8 @@ const minimalWorkflow = {
             "activationCriteriaType": "someNodesComplete",
             "relevanceCriteriaType": "always",
             "position": {
-                "x": 450,
-                "y": 270
-            },
-            "selected": true,
-            "nodeDependencies": [
-                {
-                    "nodeDefId": 500,
-                    "determinesActivation": true,
-                    "determinesCompleteness": true,
-                    "determinesRelevance": false,
-                    "selected": false
-                },
-                {
-                    "nodeDefId": 501,
-                    "determinesActivation": true,
-                    "determinesCompleteness": true,
-                    "determinesRelevance": false,
-                    "selected": false
-                },
-                {
-                    "nodeDefId": 502,
-                    "determinesActivation": true,
-                    "determinesCompleteness": true,
-                    "determinesRelevance": false,
-                    "selected": false
-                }
-            ]
-        },
-        {
-            "id": 504,
-            "name": "OR When any are answered",
-            "groupDefId": 1001,
-            "displayStyle": "Normal",
-            "defaultAssignees": [],
-            "thisNodeProgressWeight": 1,
-            "completionCriteriaType": "allNodesComplete",
-            "activationCriteriaType": "allNodesComplete",
-            "relevanceCriteriaType": "always",
-            "position": {
-                "x": 165,
-                "y": 240
+                "x": 315,
+                "y": 75
             },
             "selected": false,
             "nodeDependencies": [
@@ -162,7 +141,50 @@ const minimalWorkflow = {
                     "determinesRelevance": false,
                     "selected": false
                 }
-            ]
+            ],
+            "width": 230,
+            "height": 48
+        },
+        {
+            "id": 504,
+            "name": "OR When any are answered",
+            "groupDefId": 1001,
+            "displayStyle": "Normal",
+            "defaultAssignees": [],
+            "thisNodeProgressWeight": 1,
+            "completionCriteriaType": "allNodesComplete",
+            "activationCriteriaType": "allNodesComplete",
+            "relevanceCriteriaType": "always",
+            "position": {
+                "x": 30,
+                "y": 75
+            },
+            "selected": false,
+            "nodeDependencies": [
+                {
+                    "nodeDefId": 500,
+                    "determinesActivation": true,
+                    "determinesCompleteness": true,
+                    "determinesRelevance": false,
+                    "selected": false
+                },
+                {
+                    "nodeDefId": 501,
+                    "determinesActivation": true,
+                    "determinesCompleteness": true,
+                    "determinesRelevance": false,
+                    "selected": false
+                },
+                {
+                    "nodeDefId": 502,
+                    "determinesActivation": true,
+                    "determinesCompleteness": true,
+                    "determinesRelevance": false,
+                    "selected": false
+                }
+            ],
+            "width": 229,
+            "height": 48
         }
     ]
 }
@@ -174,40 +196,41 @@ const minimalWorkflow = {
 const MainContent = () => {
     const [workflowDef, setWorkflowDef] = React.useState<WorkflowDef>(minimalWorkflow as any);
     const defMutator: WorkflowDefMutator = {
+        setWorkflowDef: (args) => {
+            setWorkflowDef(args.flowDef);
+        },
         addNode: (args) => {
-            const newFlow = { ...workflowDef };
-            newFlow.nodeDefs.push(args.nodeDef);
-            setWorkflowDef(newFlow);
+            args.sourceDef.nodeDefs.push(args.nodeDef);
+            return args.sourceDef;
         },
         setNodePosition: (args) => {
-            const newFlow = { ...workflowDef };
-            const n = newFlow.nodeDefs.find(n => n.id === args.nodeDef.id);
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
             if (!n) throw new Error(`setting position on an unknown node huh?`);
+            if (n.position.x === args.position.x && n.position.y === args.position.y) return undefined;
             n.position = { ...args.position };
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         setNodeSize: (args) => {
-            const newFlow = { ...workflowDef };
-            const n = newFlow.nodeDefs.find(n => n.id === args.nodeDef.id);
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
             if (!n) throw new Error(`setting size on an unknown node huh?`);
+            if (n.width === args.width && n.height === args.height) return;
             n.width = args.width;
             n.height = args.height;
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         setNodeSelected: (args) => {
-            const newFlow = { ...workflowDef };
-            const n = newFlow.nodeDefs.find(n => n.id === args.nodeDef.id);
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
             if (!n) throw new Error(`setting selected on an unknown node huh?`);
+            if (n.selected === args.selected) return;
             n.selected = args.selected;
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         connectNodes: (args) => {
-            const newFlow = { ...workflowDef };
-            const src = newFlow.nodeDefs.find(n => n.id === args.sourceNodeDef.id);
+            const src = args.sourceDef.nodeDefs.find(n => n.id === args.sourceNodeDef.id);
             if (!src) throw new Error(`connecting -> unknown source node huh?`);
-            const dest = newFlow.nodeDefs.find(n => n.id === args.targetNodeDef.id);
+            const dest = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
             if (!dest) throw new Error(`connecting -> unknown dest node huh?`);
-            if (dest.nodeDependencies.find(d => d.nodeDefId === src.id)) throw new Error(`connecting -> src node is already connected.`);
+            if (dest.nodeDependencies.find(d => d.nodeDefId === src.id)) return; // already connected
             dest.nodeDependencies.push({
                 selected: false,
                 nodeDefId: src.id,
@@ -215,68 +238,64 @@ const MainContent = () => {
                 determinesActivation: false,
                 determinesCompleteness: true,
             });
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         setEdgeSelected: (args) => {
-            const newFlow = { ...workflowDef };
-            const targetNode = newFlow.nodeDefs.find(n => n.id === args.targetNodeDef.id);
+            const targetNode = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
             if (!targetNode) throw new Error(`selecting an edge; unknown target`);
             const edge = targetNode.nodeDependencies.find(d => d.nodeDefId === args.sourceNodeDef.id);
             if (!edge) throw new Error(`selecting an edge; unknown source`);
+            if (edge.selected === args.selected) return;
             edge.selected = args.selected;
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         deleteNode: (args) => {
-            const newFlow = { ...workflowDef };
             // delete any dependencies or references to this node.
-            newFlow.nodeDefs.forEach(n => {
+            args.sourceDef.nodeDefs.forEach(n => {
                 n.nodeDependencies = n.nodeDependencies.filter(d => d.nodeDefId !== args.nodeDef.id);
             });
-            newFlow.nodeDefs = newFlow.nodeDefs.filter(n => n.id !== args.nodeDef.id);
-            setWorkflowDef(newFlow);
+            args.sourceDef.nodeDefs = args.sourceDef.nodeDefs.filter(n => n.id !== args.nodeDef.id);
+            return args.sourceDef;
         },
         deleteConnection: (args) => {
-            const newFlow = { ...workflowDef };
-            const targetNode = newFlow.nodeDefs.find(n => n.id === args.targetNodeDef.id);
+            const targetNode = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
             if (!targetNode) throw new Error(`selecting an edge; unknown target`);
             targetNode.nodeDependencies = targetNode.nodeDependencies.filter(d => d.nodeDefId !== args.sourceNodeDef.id);
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         addGroup: (args) => {
-            const newFlow = { ...workflowDef };
-            newFlow.groups.push(args.groupDef);
-            setWorkflowDef(newFlow);
+            args.sourceDef.groupDefs.push(args.groupDef);
+            return args.sourceDef;
         },
         deleteGroup: (args) => {
-            const newFlow = { ...workflowDef };
             // delete any dependencies or references to this.
-            newFlow.nodeDefs.forEach(n => {
+            args.sourceDef.nodeDefs.forEach(n => {
                 if (n.groupDefId === args.groupDef.id) n.groupDefId = undefined;
             });
-            newFlow.groups = newFlow.groups.filter(n => n.id !== args.groupDef.id);
-            setWorkflowDef(newFlow);
+            args.sourceDef.groupDefs = args.sourceDef.groupDefs.filter(n => n.id !== args.groupDef.id);
+            return args.sourceDef;
         },
         setGroupSelected: (args) => {
-            const newFlow = { ...workflowDef };
-            const n = newFlow.groups.find(n => n.id === args.groupDef.id);
+            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
             if (!n) throw new Error(`setting selected on an unknown group huh?`);
+            if (n.selected === args.selected) return;
             n.selected = args.selected;
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         setGroupPosition: (args) => {
-            const newFlow = { ...workflowDef };
-            const n = newFlow.groups.find(n => n.id === args.groupDef.id);
+            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
             if (!n) throw new Error(`setting position on an unknown group huh?`);
+            if (n.position.x === args.position.x && n.position.y === args.position.y) return;
             n.position = { ...args.position };
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
         setGroupSize: (args) => {
-            const newFlow = { ...workflowDef };
-            const n = newFlow.groups.find(n => n.id === args.groupDef.id);
+            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
             if (!n) throw new Error(`setting size on an unknown group huh?`);
+            if (n.width === args.width && n.height === args.height) return;
             n.width = args.width;
             n.height = args.height;
-            setWorkflowDef(newFlow);
+            return args.sourceDef;
         },
     };
     return <div>
