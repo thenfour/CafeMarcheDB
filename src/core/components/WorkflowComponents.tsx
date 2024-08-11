@@ -38,11 +38,14 @@ import {
     EdgeChange,
     Connection,
     XYPosition,
+    useReactFlow,
+    ReactFlowProvider,
+    NodeResizer,
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
 import { nanoid } from "nanoid";
-import { getNextSequenceId, hashString } from "shared/utils";
+import { getNextSequenceId, hashString, sortBy } from "shared/utils";
 import { InspectObject } from "./CMCoreComponents";
 
 
@@ -95,7 +98,11 @@ export interface WorkflowNodeGroup {
     id: number;
     name: string;
     color: string;
-    sortOrder: number;
+    //sortOrder: number;
+    selected: boolean;
+    position: XYPosition;
+    width: number | undefined;
+    height: number | undefined;
 };
 
 export enum WorkflowNodeDisplayStyle {
@@ -111,10 +118,10 @@ export interface WorkflowNodeAssignee {
 export interface WorkflowNodeDef {
     id: number;
     name: string;
-    groupId: number; // WorkflowNodeGroup.id
+    groupDefId: number | undefined; // WorkflowNodeGroup.id
 
     // UI display & basic behaviors
-    sortOrder: number;
+    //sortOrder: number;
     displayStyle: WorkflowNodeDisplayStyle;
 
     // relevance + activation dependencies must ALL be complete to be considered satisfied.
@@ -133,8 +140,10 @@ export interface WorkflowNodeDef {
     defaultAssignees: WorkflowNodeAssignee[]; // user ids that this node is assigned to by default
     defaultDueDateDurationMsAfterStarted?: number | undefined; // if not set, no due date is specified
 
-    position: { x: number, y: number }, // for React Flow
+    position: XYPosition, // for React Flow
     selected: boolean;
+    width: number | undefined;
+    height: number | undefined;
 };
 
 export interface WorkflowDef {
@@ -248,6 +257,8 @@ export function GetWorkflowDefSchemaHash(flowDef: WorkflowDef) {
         switch (key) {
             case 'position':
             case 'selected':
+            case 'width':
+            case 'height':
                 return 0;
         }
         return val;
@@ -583,11 +594,20 @@ const makeConnectionId = (srcNodeDefId: number, targetNodeDefId: number) => {
     return `${srcNodeDefId}:${targetNodeDefId}`;
 }
 
-const parseConnectionId = (id: string) => {
+const makeNormalNodeId = (nodeDefId: number) => {
+    return `n:${nodeDefId}`;
+}
+
+const makeGroupNodeId = (groupDefId: number) => {
+    return `g:${groupDefId}`;
+}
+
+const parseNodeId = (id: string): { type: "group" | "node", defId: number } => {
     const parts = id.split(':');
-    const srcNodeDefId = parseInt(parts[0]!, 10);
-    const targetNodeDefId = parseInt(parts[1]!, 10);
-    return { srcNodeDefId, targetNodeDefId };
+    const typeChar = parts[0]!;
+    const type = typeChar === 'g' ? "group" : "node";
+    const defId = parseInt(parts[1]!, 10);
+    return { type, defId };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -652,22 +672,33 @@ export const WorkflowNodeComponent = ({ flowDef, evaluatedNode, api }: WorkflowN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowGroupProps {
-    groupId: number;
+    groupDefId: number | undefined;
     flowDef: WorkflowDef;
     nodeInstances: WorkflowEvaluatedNode[];
     api: WorkflowEvalProvider;
 };
 
 export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
-    const groupDef = props.flowDef.groups.find(g => g.id === props.groupId)!;
+    const groupDef = props.flowDef.groups.find(g => g.id === props.groupDefId) || {
+        color: "gray",
+        name: "ungrouped",
+        id: -1334,
+        selected: false,
+        position: { x: 0, y: 0 },
+        height: 100,
+        width: 150,
+    };
     const vars = GetStyleVariablesForColor({ color: groupDef.color, enabled: true, fillOption: "filled", selected: false, variation: "strong" });
+    const getNodeDef = (nodeDefId: number) => props.flowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
+    const filteredNodes = props.nodeInstances.filter(ni => {
+        const nodeDef = props.flowDef.nodeDefs.find(n => n.id === ni.nodeDefId)!;
+        return nodeDef.groupDefId === props.groupDefId;
+    });
+    const sortedNodes = sortBy(filteredNodes, n => getNodeDef(n.nodeDefId).position.y);
     return (
         <div className="workflowNodeGroupContainer" style={vars.style}>
             <div>{groupDef.name}</div>
-            {props.nodeInstances.sort(x => {
-                const nodeDef = props.flowDef.nodeDefs.find(nd => nd.id === x.nodeDefId)!;
-                return nodeDef.sortOrder;
-            }).map(x => <WorkflowNodeComponent flowDef={props.flowDef} key={x.nodeDefId} evaluatedNode={x} api={props.api} />)}
+            {sortedNodes.map(x => <WorkflowNodeComponent flowDef={props.flowDef} key={x.nodeDefId} evaluatedNode={x} api={props.api} />)}
         </div>
     );
 };
@@ -682,18 +713,33 @@ interface WorkflowContainerProps {
 export const WorkflowContainer = (props: WorkflowContainerProps) => {
     const { flow } = props;
 
+    const sortedGroups = sortBy(props.flowDef.groups, g => g.position.y);
+    const ungroupedNodes = flow.evaluatedNodes.filter(node => {
+        const nodeDef = props.flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId);
+        if (!nodeDef) return false;
+        return nodeDef.groupDefId === undefined;
+    });
+
     return (
         <div className="workflowContainer">
-            {props.flowDef.groups.map(groupDef => {
+            {
+                ungroupedNodes.length && <WorkflowGroupComponent
+                    flowDef={props.flowDef}
+                    groupDefId={undefined}
+                    nodeInstances={ungroupedNodes}
+                    api={props.api}
+                />
+            }
+            {sortedGroups.map(groupDef => {
                 const nodeInstances = flow.evaluatedNodes.filter(node => {
                     const nodeDef = props.flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId);
-                    return nodeDef?.groupId === groupDef.id;
+                    return nodeDef?.groupDefId === groupDef.id;
                 });
                 return (
                     <WorkflowGroupComponent
                         key={groupDef.id}
                         flowDef={props.flowDef}
-                        groupId={groupDef.id}
+                        groupDefId={groupDef.id}
                         nodeInstances={nodeInstances}
                         api={props.api}
                     />
@@ -706,26 +752,26 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
 
 
 interface FlowNodeData extends Record<string, unknown> {
-    evaluatedNode: WorkflowEvaluatedNode,
+    evaluatedNode?: WorkflowEvaluatedNode | undefined,
+    groupDef?: WorkflowNodeGroup | undefined,
     flowDef: WorkflowDef,
     evaluatedWorkflow: EvaluatedWorkflow,
 };
 type CMFlowNode = Node<FlowNodeData>;
 
-interface FlowNodeProps {
+interface FlowNodeNormalProps {
     id: string;
     isConnectable: boolean;
     data: FlowNodeData;
-
 };
 
-const FlowNodeNormal = (props: FlowNodeProps) => {
-    const nodeDef = props.data.flowDef.nodeDefs.find(nd => nd.id === props.data.evaluatedNode.nodeDefId)!;
+const FlowNodeNormal = (props: FlowNodeNormalProps) => {
+    const nodeDef = props.data.flowDef.nodeDefs.find(nd => nd.id === props.data.evaluatedNode!.nodeDefId)!;
     return <>
         <Handle
             type="target"
             position={Position.Top}
-            style={{ background: '#555' }}
+            //style={{ background: '#555' }}
             onConnect={(params) => console.log('handle onConnect', params)}
         />
         <div>
@@ -739,11 +785,14 @@ const FlowNodeNormal = (props: FlowNodeProps) => {
     </>;
 };
 
-
-interface WorkflowDefMutator_SetNodePositionArgs {
-    nodeDef: WorkflowNodeDef;
-    position: XYPosition;
+const FlowNodeGroup = (props: FlowNodeNormalProps) => {
+    //const groupDef = props.data.flowDef.nodeDefs.find(nd => nd.id === props.data.evaluatedNode.nodeDefId)!;
+    return <>
+        <NodeResizer minWidth={100} minHeight={30} />
+        <div>group: {props.data.groupDef!.name || "xxx"}</div>
+    </>;
 };
+
 
 interface WorkflowDefMutator_AddNodeArgs {
     nodeDef: WorkflowNodeDef;
@@ -753,18 +802,52 @@ interface WorkflowDefMutator_DeleteNodeArgs {
     nodeDef: WorkflowNodeDef;
 };
 
-interface WorkflowDefMutator_ConnectNodesArgs {
-    sourceNodeDef: WorkflowNodeDef;
-    targetNodeDef: WorkflowNodeDef;
-};
-
-interface WorkflowDefMutator_AddNodeArgs {
-    nodeDef: WorkflowNodeDef;
-};
-
 interface WorkflowDefMutator_SetNodeSelectedArgs {
     nodeDef: WorkflowNodeDef;
     selected: boolean;
+};
+
+interface WorkflowDefMutator_SetNodePositionArgs {
+    nodeDef: WorkflowNodeDef;
+    position: XYPosition;
+};
+
+interface WorkflowDefMutator_SetNodeSizeArgs {
+    nodeDef: WorkflowNodeDef;
+    width: number;
+    height: number;
+};
+
+
+
+
+interface WorkflowDefMutator_AddGroupArgs {
+    groupDef: WorkflowNodeGroup;
+};
+
+interface WorkflowDefMutator_DeleteGroupArgs {
+    groupDef: WorkflowNodeGroup;
+};
+
+interface WorkflowDefMutator_SetGroupSelectedArgs {
+    groupDef: WorkflowNodeGroup;
+    selected: boolean;
+};
+
+interface WorkflowDefMutator_SetGroupPositionArgs {
+    groupDef: WorkflowNodeGroup;
+    position: XYPosition;
+};
+
+interface WorkflowDefMutator_SetGroupSizeArgs {
+    groupDef: WorkflowNodeGroup;
+    width: number;
+    height: number;
+};
+
+interface WorkflowDefMutator_ConnectNodesArgs {
+    sourceNodeDef: WorkflowNodeDef;
+    targetNodeDef: WorkflowNodeDef;
 };
 
 interface WorkflowDefMutator_SetEdgeSelectedArgs {
@@ -774,13 +857,21 @@ interface WorkflowDefMutator_SetEdgeSelectedArgs {
 };
 
 export interface WorkflowDefMutator {
-    setNodePosition: (args: WorkflowDefMutator_SetNodePositionArgs) => void;
-    setNodeSelected: (args: WorkflowDefMutator_SetNodeSelectedArgs) => void;
-    setEdgeSelected: (args: WorkflowDefMutator_SetEdgeSelectedArgs) => void;
     addNode: (args: WorkflowDefMutator_AddNodeArgs) => void;
     deleteNode: (args: WorkflowDefMutator_DeleteNodeArgs) => void;
+    setNodeSelected: (args: WorkflowDefMutator_SetNodeSelectedArgs) => void;
+    setNodePosition: (args: WorkflowDefMutator_SetNodePositionArgs) => void;
+    setNodeSize: (args: WorkflowDefMutator_SetNodeSizeArgs) => void;
+
     connectNodes: (args: WorkflowDefMutator_ConnectNodesArgs) => void;
     deleteConnection: (args: WorkflowDefMutator_ConnectNodesArgs) => void;
+    setEdgeSelected: (args: WorkflowDefMutator_SetEdgeSelectedArgs) => void;
+
+    addGroup: (args: WorkflowDefMutator_AddGroupArgs) => void;
+    deleteGroup: (args: WorkflowDefMutator_DeleteGroupArgs) => void;
+    setGroupSelected: (args: WorkflowDefMutator_SetGroupSelectedArgs) => void;
+    setGroupPosition: (args: WorkflowDefMutator_SetGroupPositionArgs) => void;
+    setGroupSize: (args: WorkflowDefMutator_SetGroupSizeArgs) => void;
 };
 
 interface CMReactFlowState {
@@ -791,13 +882,13 @@ interface CMReactFlowState {
 const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: WorkflowDef/*, reactFlowState: CMReactFlowState*/): CMReactFlowState => {
     const nodes: CMFlowNode[] = evaluatedWorkflow.evaluatedNodes.map((node: WorkflowEvaluatedNode) => {
         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId);
-
-        return ({
+        const ret: CMFlowNode = {
             position: nodeDef?.position || { x: 0, y: 0 },
             selected: nodeDef?.selected || false,
+            //width: 100, // without this, nodes sometimes randomly disappear. :x
 
             // and new data
-            id: node.nodeDefId.toString(),
+            id: makeNormalNodeId(node.nodeDefId),
             hidden: false,
             type: "cmNormal",
             data: {
@@ -805,8 +896,32 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
                 evaluatedWorkflow,
                 flowDef,
             },
-        });
+        };
+        return ret;
     });
+
+    const groups: CMFlowNode[] = flowDef.groups.map(group => {
+        const ret: CMFlowNode = {
+            position: group.position,
+            selected: group.selected,
+            width: group.width,
+            height: group.height,
+
+            // and new data
+            id: makeGroupNodeId(group.id),
+            hidden: false,
+            type: "cmGroup",
+            data: {
+                evaluatedNode: undefined,
+                groupDef: group,
+                evaluatedWorkflow,
+                flowDef,
+            },
+        };
+        return ret;
+    });
+
+    nodes.push(...groups);
 
     const edges: Edge[] = flowDef.nodeDefs.flatMap((nodeDef: WorkflowNodeDef) =>
         nodeDef.nodeDependencies.map(dep => {
@@ -835,6 +950,7 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
 
 const gNodeTypes = {
     cmNormal: FlowNodeNormal,
+    cmGroup: FlowNodeGroup,
 };
 
 interface WorkflowReactFlowEditorProps {
@@ -846,37 +962,128 @@ interface WorkflowReactFlowEditorProps {
 
 const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evaluatedWorkflow, ...props }) => {
 
+    const reactFlow = useReactFlow();
+
     const s = calcReactFlowObjects(evaluatedWorkflow, props.flowDef);//, props.reactFlowState);
 
-    const getNodeDef = (id: string | number): WorkflowNodeDef => {
-        const nodeDefId = typeof id === 'string' ? parseInt(id) : id;
-        const nodeDef = props.flowDef.nodeDefs.find(n => n.id === nodeDefId)!;
-        return nodeDef;
+    const getGroupDef__ = (id: number) => {
+        return props.flowDef.groups.find(g => g.id === id)!;
     }
+
+    const getNodeDef__ = (id: number) => {
+        return props.flowDef.nodeDefs.find(g => g.id === id)!;
+    }
+
+    interface ParsedGroupDef {
+        type: "group";
+        groupDef: WorkflowNodeGroup;
+    };
+    interface ParsedNodeDef {
+        type: "node";
+        nodeDef: WorkflowNodeDef;
+    };
+
+    const getDef = (id: string): (ParsedNodeDef | ParsedGroupDef) & { defId: number } => {
+        const p = parseNodeId(id);
+        if (p.type === "group") {
+            return {
+                type: p.type,
+                defId: p.defId,
+                groupDef: getGroupDef__(p.defId),
+            }
+        }
+        //if (p.type === "node") {
+        return {
+            type: p.type,
+            defId: p.defId,
+            nodeDef: getNodeDef__(p.defId),
+        }
+        //}
+        //const nodeDef = props.flowDef.nodeDefs.find(n => n.id === nodeDefId)!;
+        //return nodeDef;
+    };
+    // const getDef = (id: string | number): { type: "" | "", nodeDef: WorkflowNodeDef | undefined, groupDef: WorkflowNodeGroup | undefined } => {
+    //     //const nodeDefId = typeof id === 'string' ? parseInt(id) : id;
+    //     const p = parseNodeId(id);
+
+    //     const nodeDef = props.flowDef.nodeDefs.find(n => n.id === nodeDefId)!;
+    //     return nodeDef;
+    // };
+
+    console.log(`flow container rendering ${Date.now()}`);
+
+    const parseConnectionId = (id: string) => {
+        const parts = id.split(':');
+        const srcNodeDefId = parseInt(parts[0]!, 10);
+        const targetNodeDefId = parseInt(parts[1]!, 10);
+        return { srcNodeDef: getNodeDef__(srcNodeDefId), targetNodeDef: getNodeDef__(targetNodeDefId) };
+    };
 
     const handleNodesChange = (changes: NodeChange<CMFlowNode>[]) => {
         changes.forEach(change => {
             if (change.type === 'position' && change.position) {
+                const parsedDef = getDef(change.id);
                 if (!isNaN(change.position.x) && !isNaN(change.position.y))// why is this even a thing? but it is.
                 {
-                    props.defMutator.setNodePosition({
-                        nodeDef: getNodeDef(change.id),
-                        position: change.position
-                    });
+                    if (parsedDef.type === "group") {
+                        props.defMutator.setGroupPosition({
+                            groupDef: parsedDef.groupDef,
+                            position: change.position
+                        });
+                    } else {
+                        props.defMutator.setNodePosition({
+                            nodeDef: parsedDef.nodeDef,
+                            position: change.position
+                        });
+                    }
+                }
+            }
+
+            if (change.type === 'dimensions' && change.dimensions) {
+                console.log(`dimensions: ${JSON.stringify(change)}`);
+                const parsedDef = getDef(change.id);
+                if (!isNaN(change.dimensions.height) && !isNaN(change.dimensions.width)) // this may not be necessary
+                {
+                    if (parsedDef.type === "group") {
+                        props.defMutator.setGroupSize({
+                            groupDef: parsedDef.groupDef,
+                            height: change.dimensions.height,
+                            width: change.dimensions.width,
+                        });
+                    } else {
+                        props.defMutator.setNodeSize({
+                            nodeDef: parsedDef.nodeDef,
+                            height: change.dimensions.height,
+                            width: change.dimensions.width,
+                        });
+                    }
                 }
             }
             if (change.type === "select" && change.selected !== undefined) {
-                props.defMutator.setNodeSelected({
-                    nodeDef: getNodeDef(change.id),
-                    selected: change.selected,
-                });
+                const parsedDef = getDef(change.id);
+                if (parsedDef.type === "group") {
+                    props.defMutator.setGroupSelected({
+                        groupDef: parsedDef.groupDef,
+                        selected: change.selected,
+                    });
+                } else {
+                    props.defMutator.setNodeSelected({
+                        nodeDef: parsedDef.nodeDef,
+                        selected: change.selected,
+                    });
+                }
             }
             if (change.type === "remove") {
-                console.log(`remove node :`);
-                console.log(change);
-                props.defMutator.deleteNode({
-                    nodeDef: getNodeDef(change.id),
-                });
+                const parsedDef = getDef(change.id);
+                if (parsedDef.type === "group") {
+                    props.defMutator.deleteGroup({
+                        groupDef: parsedDef.groupDef,
+                    });
+                } else {
+                    props.defMutator.deleteNode({
+                        nodeDef: parsedDef.nodeDef,
+                    });
+                }
             }
         });
     };
@@ -891,21 +1098,21 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                     break;
                 case "remove":
                     {
-                        const ids = parseConnectionId(change.id);
+                        const parsed = parseConnectionId(change.id);
                         props.defMutator.deleteConnection({
-                            sourceNodeDef: getNodeDef(ids.srcNodeDefId),
-                            targetNodeDef: getNodeDef(ids.targetNodeDefId)
+                            sourceNodeDef: parsed.srcNodeDef,
+                            targetNodeDef: parsed.targetNodeDef,
                         });
                         break;
                     }
                 //case "replace":
                 case "select":
                     {
-                        const ids = parseConnectionId(change.id);
+                        const parsed = parseConnectionId(change.id);
                         props.defMutator.setEdgeSelected({
                             selected: change.selected,
-                            sourceNodeDef: getNodeDef(ids.srcNodeDefId),
-                            targetNodeDef: getNodeDef(ids.targetNodeDefId),
+                            sourceNodeDef: parsed.srcNodeDef,
+                            targetNodeDef: parsed.targetNodeDef,
                         });
                         break;
                     }
@@ -914,14 +1121,15 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
     };
 
     const handleConnect = (connection: Connection) => {
-        props.defMutator.connectNodes({
-            sourceNodeDef: getNodeDef(connection.source),
-            targetNodeDef: getNodeDef(connection.target),
-        });
+        const parsedSource = getDef(connection.source);
+        const parsedTarget = getDef(connection.target);
+        if (parsedSource.type === "node" && parsedTarget.type === "node") {
+            props.defMutator.connectNodes({
+                sourceNodeDef: parsedSource.nodeDef,
+                targetNodeDef: parsedTarget.nodeDef,
+            });
+        }
     };
-
-    console.log(`Rendering flow....`);
-    console.log(s);
 
     return (
         <div style={{ width: '100%', height: '700px', border: '2px solid black' }}>
@@ -933,7 +1141,36 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                 snapToGrid={true}
                 onConnect={handleConnect}
                 nodeTypes={gNodeTypes}
+                onlyRenderVisibleElements={true} // not sure but this may contribute to nodes disappearing randomly?
             >
+                <div style={{ position: "absolute", zIndex: 4 }}>
+                    <InspectObject label="reactflow state" src={{
+                        ...s,
+                        flowDef: props.flowDef
+                    }} />
+                    <div>
+                        <CMSmallButton onClick={() => {
+                            const n: WorkflowNodeDef = {
+                                id: 1000 + getNextSequenceId(),
+                                name: nanoid(),
+                                groupDefId: 1000,
+                                displayStyle: WorkflowNodeDisplayStyle.Normal,
+                                completionCriteriaType: WorkflowCompletionCriteriaType.always,
+                                activationCriteriaType: WorkflowCompletionCriteriaType.always,
+                                relevanceCriteriaType: WorkflowCompletionCriteriaType.always,
+                                defaultAssignees: [],
+                                thisNodeProgressWeight: 1,
+                                nodeDependencies: [],
+                                position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
+                                selected: true,
+                                width: undefined,
+                                height: undefined,
+                            };
+                            // todo: deselect all other nodes
+                            props.defMutator.addNode({ nodeDef: n });
+                        }}>add a node</CMSmallButton>
+                    </div>
+                </div>
                 <Controls />
                 <Background />
             </ReactFlow>
@@ -942,14 +1179,71 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
 };
 
 interface WorkflowNodeEditorProps {
+    evaluatedWorkflow: EvaluatedWorkflow;
     workflowDef: WorkflowDef;
     nodeDef: WorkflowNodeDef;
 };
 
 const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
+    const relevanceDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesRelevance);
+    const activationDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesActivation);
+    const completionDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesCompleteness);
+    const getNodeDef = (nodeDefId: number) => props.workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
+    const getEvaluatedNode = (nodeDefId: number) => props.evaluatedWorkflow.evaluatedNodes.find(en => en.nodeDefId === nodeDefId)!;
+    const evaluated = getEvaluatedNode(props.nodeDef.id);
     return <div className="CMWorkflowNodeEditorContainer">
-        <div>ID:{props.nodeDef.id}</div>
-        <div>Name:{props.nodeDef.name}</div>
+        <div><b>ID</b>{props.nodeDef.id}</div>
+        <div><b>Name</b>{props.nodeDef.name}</div>
+        <div><b>Display style</b> {props.nodeDef.displayStyle}</div>
+        <div><b>Default assignees</b>
+            <ul>
+                {props.nodeDef.defaultAssignees.map(a => <span key={a.userId}>{a.userId} ({a.isRequired ? "required" : "optional"})</span>)}
+            </ul>
+        </div>
+        <div><b>Due date</b> {props.nodeDef.defaultDueDateDurationMsAfterStarted || "(none)"}</div>
+        <div><b>Progress weight</b> {props.nodeDef.thisNodeProgressWeight}<small>the weight used to calculate progress when nodes depend on this one</small></div>
+        <div>
+            <b>Field</b>
+            <div>{props.nodeDef.fieldName}</div>
+            <div>Operator: {props.nodeDef.fieldValueOperator}</div>
+            {/* {props.nodeDef.fieldValueOperand2} */}
+        </div>
+        <div>
+            <b>Relevance</b>
+            <small>When is this node considered part of the flow? A task that, in some conditions, is not even a part of the flow.</small>
+            <div>{props.nodeDef.relevanceCriteriaType} ({relevanceDependencies.length})</div>
+            <ul>
+                {relevanceDependencies.map(d => {
+                    const en = getEvaluatedNode(d.nodeDefId);
+                    return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} ({en.evaluation.progressState})</li>;
+                })}
+            </ul>
+            --&gt; {evaluated.evaluation.relevanceSatisfied ? "satisfied" : "incomplete"}
+        </div>
+        <div>
+            <b>Start / Activation</b>
+            <small>When is this node considered actionable? If this criteria is not satisfied, the node is grayed.</small>
+            <div>{props.nodeDef.activationCriteriaType} ({activationDependencies.length})</div>
+            <ul>
+                {activationDependencies.map(d => {
+                    const en = getEvaluatedNode(d.nodeDefId);
+                    return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} ({en.evaluation.progressState})</li>;
+                })}
+            </ul>
+            --&gt; {evaluated.evaluation.activationSatisfied ? "satisfied" : "incomplete"}
+        </div>
+        <div>
+            <b>Completion</b>
+            <small>When is this node considered complete? While activated but not completed, progress is tracked.</small>
+            <div>{props.nodeDef.completionCriteriaType} ({completionDependencies.length})</div>
+            <ul>
+                {completionDependencies.map(d => {
+                    const en = getEvaluatedNode(d.nodeDefId);
+                    return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} ({en.evaluation.progressState})</li>;
+                })}
+            </ul>
+            --&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}
+        </div>
     </div>;
 };
 
@@ -959,13 +1253,22 @@ export interface WorkflowEditorPOCProps {
 };
 
 export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
-    const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => initializeWorkflowInstance(props.workflowDef));
+    const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
+        //console.log(`creating NEW blank instance`);
+        return initializeWorkflowInstance(props.workflowDef);
+    });
 
-    const [evaluatedWorkflow, setEvaluatedWorkflow] = React.useState<EvaluatedWorkflow>();
     const [model, setModel] = React.useState({
         question1: false,
         question2: false,
+        changeSerial: 0,
     });
+
+    // console.log(`WorkflowEditorPOC render:`);
+    // console.log({
+    //     workflowInstance,
+    //     model,
+    // });
 
     let selectedNodeDef = props.workflowDef.nodeDefs.find(nd => !!nd.selected);
 
@@ -993,11 +1296,13 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
             const nodeDef = props.workflowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
             const fieldVal: boolean = model[nodeDef.fieldName!]!;
             return <CMSmallButton onClick={() => {
-                setModel(prevModel => ({
-                    ...prevModel,
+                const newModel = {
+                    ...model,
                     [nodeDef.fieldName!]: !fieldVal
-                }));
+                };
+                setModel(newModel);
                 setWorkflowInstance({ ...workflowInstance });
+
             }}>{fieldVal ? "unapprove" : "approve"}</CMSmallButton>
         },
         RegisterStateChange: (node: WorkflowEvaluatedNode, oldState) => {
@@ -1007,53 +1312,32 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
 
     const schemaHash = GetWorkflowDefSchemaHash(props.workflowDef);
 
-    React.useEffect(() => {
-        console.log(`Schema hash changed: RE-evaluating workflow...`);
-        const tidiedInstance = TidyWorkflowInstance(workflowInstance, props.workflowDef);
-        const newEvalFlow = EvaluateWorkflow(props.workflowDef, tidiedInstance, provider);
-        console.log(newEvalFlow);
-        setEvaluatedWorkflow(newEvalFlow);
-    }, [schemaHash]);
+    // why not eval every time?
+    const tidiedInstance = TidyWorkflowInstance(workflowInstance, props.workflowDef);
+    const newEvalFlow = EvaluateWorkflow(props.workflowDef, tidiedInstance, provider);
+    const evaluatedWorkflow = newEvalFlow;
 
     return (
         <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
-            <div>
-                <CMSmallButton onClick={() => {
-                    const n: WorkflowNodeDef = {
-                        id: 1000 + getNextSequenceId(),
-                        name: nanoid(),
-                        groupId: 1000,
-                        sortOrder: 100 + getNextSequenceId(),
-                        displayStyle: WorkflowNodeDisplayStyle.Normal,
-                        completionCriteriaType: WorkflowCompletionCriteriaType.always,
-                        activationCriteriaType: WorkflowCompletionCriteriaType.always,
-                        relevanceCriteriaType: WorkflowCompletionCriteriaType.always,
-                        defaultAssignees: [],
-                        thisNodeProgressWeight: 1,
-                        nodeDependencies: [],
-                        position: { x: 0, y: 0 },
-                        selected: false,
-                    };
-                    props.defMutator.addNode({ nodeDef: n });
-                }}>add a node</CMSmallButton>
-            </div>
             {evaluatedWorkflow && <>
                 <div>Schema hash: {schemaHash}</div>
                 <div>selected {selectedNodeDef?.id ?? "<null>"}: {evaluatedWorkflow.flowInstance.nodeInstances.find(ni => ni.nodeDefId === selectedNodeDef?.id)?.id || "<null>"}</div>
-                <InspectObject src={props.workflowDef} label="Definition" />
                 <div style={{ display: "flex", flexDirection: "row" }}>
                     <div style={{ width: "33%" }}>
-                        <WorkflowReactFlowEditor
-                            evaluatedWorkflow={evaluatedWorkflow}
-                            schemaHash={schemaHash}
-                            flowDef={props.workflowDef}
-                            defMutator={props.defMutator}
-                        />
+                        <ReactFlowProvider>
+                            <WorkflowReactFlowEditor
+                                evaluatedWorkflow={evaluatedWorkflow}
+                                schemaHash={schemaHash}
+                                flowDef={props.workflowDef}
+                                defMutator={props.defMutator}
+                            />
+                        </ReactFlowProvider>
                     </div>
                     <div style={{ width: "33%" }}>
                         {selectedNodeDef &&
                             <WorkflowNodeEditor
                                 workflowDef={props.workflowDef}
+                                evaluatedWorkflow={evaluatedWorkflow}
                                 nodeDef={selectedNodeDef}
                             />
                         }

@@ -48,6 +48,14 @@
     padding: 10px;
 }
 
+.react-flow__node-cmGroup {
+    color: #888;
+    background-color: #fffc;
+    border: 0;
+    border-radius: 4px;
+    padding: 10px;
+}
+
 
 .react-flow__node-cmNormal.selected {
     color: black;

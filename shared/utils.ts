@@ -909,3 +909,20 @@ export function hashString(inp: string) {
     }
     return hash;
 }
+
+// array sort by selector
+export function sortBy<T, U>(array: T[], selector: (item: T) => U): T[] {
+    return array.slice().sort((a, b) => {
+        const aValue = selector(a);
+        const bValue = selector(b);
+
+        if (aValue < bValue) {
+            return -1;
+        }
+        if (aValue > bValue) {
+            return 1;
+        }
+        return 0;
+    });
+}
+

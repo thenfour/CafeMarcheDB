@@ -19,21 +19,20 @@ const minimalWorkflow = {
             "id": 1000,
             "name": "all group",
             "color": "pink",
-            "sortOrder": 1
+            position: { x: 0, y: 0 },
         },
         {
             "id": 1001,
             "name": "results",
             "color": "red",
-            "sortOrder": 2
+            position: { x: 0, y: 10 },
         }
     ],
     "nodeDefs": [
         {
             "id": 500,
             "name": "question #1",
-            "groupId": 1000,
-            "sortOrder": 1,
+            "groupDefId": 1000,
             "displayStyle": "Normal",
             "completionCriteriaType": "fieldValue",
             "activationCriteriaType": "always",
@@ -52,8 +51,7 @@ const minimalWorkflow = {
         {
             "id": 501,
             "name": "question #2",
-            "groupId": 1000,
-            "sortOrder": 2,
+            "groupDefId": 1000,
             "displayStyle": "Normal",
             "defaultAssignees": [],
             "thisNodeProgressWeight": 1,
@@ -72,8 +70,7 @@ const minimalWorkflow = {
         {
             "id": 502,
             "name": "question #3",
-            "groupId": 1000,
-            "sortOrder": 3,
+            "groupDefId": 1000,
             "displayStyle": "Normal",
             "defaultAssignees": [],
             "thisNodeProgressWeight": 1,
@@ -92,8 +89,7 @@ const minimalWorkflow = {
         {
             "id": 503,
             "name": "AND When all are answered",
-            "groupId": 1001,
-            "sortOrder": 4,
+            "groupDefId": 1001,
             "displayStyle": "Normal",
             "defaultAssignees": [],
             "thisNodeProgressWeight": 1,
@@ -132,8 +128,7 @@ const minimalWorkflow = {
         {
             "id": 504,
             "name": "OR When any are answered",
-            "groupId": 1001,
-            "sortOrder": 5,
+            "groupDefId": 1001,
             "displayStyle": "Normal",
             "defaultAssignees": [],
             "thisNodeProgressWeight": 1,
@@ -191,6 +186,14 @@ const MainContent = () => {
             n.position = { ...args.position };
             setWorkflowDef(newFlow);
         },
+        setNodeSize: (args) => {
+            const newFlow = { ...workflowDef };
+            const n = newFlow.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`setting size on an unknown node huh?`);
+            n.width = args.width;
+            n.height = args.height;
+            setWorkflowDef(newFlow);
+        },
         setNodeSelected: (args) => {
             const newFlow = { ...workflowDef };
             const n = newFlow.nodeDefs.find(n => n.id === args.nodeDef.id);
@@ -237,6 +240,42 @@ const MainContent = () => {
             const targetNode = newFlow.nodeDefs.find(n => n.id === args.targetNodeDef.id);
             if (!targetNode) throw new Error(`selecting an edge; unknown target`);
             targetNode.nodeDependencies = targetNode.nodeDependencies.filter(d => d.nodeDefId !== args.sourceNodeDef.id);
+            setWorkflowDef(newFlow);
+        },
+        addGroup: (args) => {
+            const newFlow = { ...workflowDef };
+            newFlow.groups.push(args.groupDef);
+            setWorkflowDef(newFlow);
+        },
+        deleteGroup: (args) => {
+            const newFlow = { ...workflowDef };
+            // delete any dependencies or references to this.
+            newFlow.nodeDefs.forEach(n => {
+                if (n.groupDefId === args.groupDef.id) n.groupDefId = undefined;
+            });
+            newFlow.groups = newFlow.groups.filter(n => n.id !== args.groupDef.id);
+            setWorkflowDef(newFlow);
+        },
+        setGroupSelected: (args) => {
+            const newFlow = { ...workflowDef };
+            const n = newFlow.groups.find(n => n.id === args.groupDef.id);
+            if (!n) throw new Error(`setting selected on an unknown group huh?`);
+            n.selected = args.selected;
+            setWorkflowDef(newFlow);
+        },
+        setGroupPosition: (args) => {
+            const newFlow = { ...workflowDef };
+            const n = newFlow.groups.find(n => n.id === args.groupDef.id);
+            if (!n) throw new Error(`setting position on an unknown group huh?`);
+            n.position = { ...args.position };
+            setWorkflowDef(newFlow);
+        },
+        setGroupSize: (args) => {
+            const newFlow = { ...workflowDef };
+            const n = newFlow.groups.find(n => n.id === args.groupDef.id);
+            if (!n) throw new Error(`setting size on an unknown group huh?`);
+            n.width = args.width;
+            n.height = args.height;
             setWorkflowDef(newFlow);
         },
     };
