@@ -297,6 +297,92 @@ const MainContent = () => {
             n.height = args.height;
             return args.sourceDef;
         },
+        setGroupParams: (args) => {
+            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
+            if (!n) throw new Error(`setting params on an unknown group huh?`);
+            // react flow doesn't update this so there's no risk of infinite loop by always returning an object
+            if (args.color !== undefined) {
+                n.color = args.color;
+            }
+            if (args.name !== undefined) {
+                n.name = args.name;
+            }
+            return args.sourceDef;
+        },
+        setNodeBasicInfo: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            if (args.displayStyle !== undefined) {
+                n.displayStyle = args.displayStyle;
+            }
+            if (args.name !== undefined) {
+                n.name = args.name;
+            }
+            if (args.thisNodeProgressWeight !== undefined) {
+                n.thisNodeProgressWeight = args.thisNodeProgressWeight;
+            }
+            return args.sourceDef;
+        },
+        setNodeGroup: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            n.groupDefId = args.groupDefId;
+            return args.sourceDef;
+        },
+        setNodeFieldInfo: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            n.fieldName = args.fieldName;
+            n.fieldValueOperator = args.fieldValueOperator;
+            n.fieldValueOperand2 = args.fieldValueOperand2;
+            return args.sourceDef;
+        },
+        setNodeRelevanceCriteriaType: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            n.relevanceCriteriaType = args.criteriaType;
+            return args.sourceDef;
+        },
+        setNodeActivationCriteriaType: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            n.activationCriteriaType = args.criteriaType;
+            return args.sourceDef;
+        },
+        setNodeCompletionCriteriaType: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            n.completionCriteriaType = args.criteriaType;
+            return args.sourceDef;
+        },
+        setNodeDefaultAssignees: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            n.defaultAssignees = [...args.defaultAssignees];
+            return args.sourceDef;
+        },
+        setNodeDefaultDueDateMsAfterStarted: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            n.defaultDueDateDurationMsAfterStarted = args.defaultDueDateDurationMsAfterStarted;
+            return args.sourceDef;
+        },
+        setEdgeInfo: (args) => {
+            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
+            if (!n) throw new Error(`unknown node`);
+            const nd = n.nodeDependencies.find(d => d.nodeDefId === args.dependencyDef.nodeDefId);
+            if (!nd) throw new Error(`unknown node dependency`);
+            if (args.determinesRelevance !== undefined) {
+                nd.determinesRelevance = args.determinesRelevance;
+            }
+            if (args.determinesActivation !== undefined) {
+                nd.determinesActivation = args.determinesActivation;
+            }
+            if (args.determinesCompleteness !== undefined) {
+                nd.determinesCompleteness = args.determinesCompleteness;
+            }
+            return args.sourceDef;
+        },
     };
     return <div>
         <WorkflowEditorPOC workflowDef={workflowDef} defMutator={defMutator} />

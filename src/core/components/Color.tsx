@@ -270,7 +270,7 @@ export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps)
 };
 
 export interface ColorPickProps {
-    value: ColorPaletteEntry | null;
+    value: ColorPaletteEntry | null | string;
     allowNull: boolean;
     palettes: ColorPaletteList;
     onChange: (value: ColorPaletteEntry | null) => void;
@@ -280,7 +280,7 @@ export interface ColorPickProps {
 export const ColorPick = (props: ColorPickProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const isOpen = Boolean(anchorEl);
-    const entry = props.value;
+    const entry = props.palettes.findEntry(props.value);
 
     const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);

@@ -1,7 +1,7 @@
 .workflowNodeGroupContainer {
     padding: 3px;
-    border: 1px solid var(--color-foreground);
-    border-left: 6px solid var(--color-foreground);
+    border: 1px solid var(--color-background);
+    border-left: 6px solid var(--color-background);
     margin: 5px;
 }
 
@@ -49,13 +49,19 @@
 }
 
 .react-flow__node-cmGroup {
-    color: #888;
-    background-color: #fffc;
     border: 0;
-    border-radius: 4px;
     padding: 10px;
 }
 
+.react-flow__node-cmGroup .CMFlowGroup {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+}
 
 .react-flow__node-cmNormal.selected {
     color: black;
@@ -63,6 +69,13 @@
     background-color: #feec;
 }
 
-.react-flow__edge-path {
+
+.react-flow__edges path {
     stroke-width: 2.5px;
+}
+
+.react-flow__handle,
+.react-flow__resize-control.handle {
+    width: 8px;
+    height: 8px;
 }
