@@ -2,6 +2,7 @@ import { Ctx } from "@blitzjs/next";
 import { randomUUID } from "crypto";
 import db from "db"
 import { Size } from "src/core/db3/shared/apiTypes";
+import { crc32 } from "@foxglove/crc";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);
 export const Date_MAX_VALUE = new Date(8640000000000000);
@@ -898,24 +899,22 @@ export function getIntersectingFields(newValues: { [key: string]: any }, oldValu
 }
 
 
-export function hashString(inp: string) {
-    var hash = 0,
-        i, chr;
-    if (inp.length === 0) return hash;
-    for (i = 0; i < inp.length; i++) {
-        chr = inp.charCodeAt(i);
-        hash = ((hash << 5) - hash) + chr;
-        hash |= 0; // Convert to 32bit integer
+const str2ab = function (str: string): ArrayBufferView {
+    const array = new Uint8Array(str.length)
+    for (let i = 0; i < str.length; i++) {
+        array[i] = str.charCodeAt(i)
     }
-    return hash;
+    return array
+}
+
+export function hashString(inp: string) {
+    return crc32(str2ab(inp));
 }
 
 export const getHashedColor = (text: string, options?: { saturation?: string, luminosity?: string, alpha?: string }): string => {
     let hash = hashString(text);
-    // for (let i = 0; i < text.length; i++) {
-    //     hash = text.charCodeAt(i) + ((hash << 5) - hash);
-    // }
     const color = `hsla(${hash % 360}, ${options?.saturation || '100%'}, ${options?.luminosity || "35%"}, ${options?.alpha || "100%"})`;
+    //console.log(color);
     return color;
 };
 

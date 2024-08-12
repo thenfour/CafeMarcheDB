@@ -50,6 +50,7 @@ import { InspectObject } from "./CMCoreComponents";
 import { gAppColors, gGeneralPaletteList, gLightSwatchColors } from "shared/color";
 import { CMTextField, CMTextInputBase } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
+import { Button, Checkbox, FormControlLabel, Tooltip } from "@mui/material";
 
 
 
@@ -116,7 +117,7 @@ export interface WorkflowNodeDef {
     id: number;
 
     name: string;
-    groupDefId: number | undefined; // WorkflowNodeGroup.id
+    groupDefId: number | null; // WorkflowNodeGroup.id
 
     // UI display & basic behaviors
     displayStyle: WorkflowNodeDisplayStyle;
@@ -607,6 +608,7 @@ const parseNodeId = (id: string): { type: "group" | "node", defId: number } => {
     return { type, defId };
 };
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowNodeProps {
     evaluatedNode: WorkflowEvaluatedNode;
@@ -619,43 +621,57 @@ interface WorkflowNodeProps {
     flowDef: WorkflowDef;
     evaluatedNode: WorkflowEvaluatedNode;
     api: WorkflowEvalProvider;
+    //selected?: boolean | undefined;
+    drawSelectionHandles: boolean;
+    onClickToSelect?: (() => void) | undefined;
 };
 
-export const WorkflowNodeComponent = ({ flowDef, evaluatedNode, api }: WorkflowNodeProps) => {
-    const obj = {
-        progress: `${evaluatedNode.evaluation.progressState} (${evaluatedNode.evaluation.completenessNodesCompletedIncludingThis} / ${evaluatedNode.evaluation.completenessNodesTotalIncludingThis}) ${evaluatedNode.evaluation.progress01 === undefined ? "NA (p01=undefined)" : Math.round(evaluatedNode.evaluation.progress01 * 100)} %`,
-    };
+export const WorkflowNodeComponent = ({ flowDef, evaluatedNode, api, ...props }: WorkflowNodeProps) => {
+    // const obj = {
+    //     progress: `${evaluatedNode.evaluation.progressState} (${evaluatedNode.evaluation.completenessNodesCompletedIncludingThis} / ${evaluatedNode.evaluation.completenessNodesTotalIncludingThis}) ${evaluatedNode.evaluation.progress01 === undefined ? "NA (p01=undefined)" : Math.round(evaluatedNode.evaluation.progress01 * 100)} %`,
+    // };
 
     const nodeDef = flowDef.nodeDefs.find(nd => nd.id === evaluatedNode.nodeDefId)!;
 
     let activeControls: React.ReactNode = null;
     switch (nodeDef.completionCriteriaType) {
-        case WorkflowCompletionCriteriaType.never:
-            activeControls = <div>(never complete)</div>;
-            break;
-        case WorkflowCompletionCriteriaType.always:
-            activeControls = <div>(always complete)</div>;
-            break;
-        case WorkflowCompletionCriteriaType.allNodesComplete:
-            activeControls = <div>(dependent nodes not complete)</div>;
-            break;
-        case WorkflowCompletionCriteriaType.someNodesComplete:
-            activeControls = <div>(no dependent nodes complete)</div>;
-            break;
+        // case WorkflowCompletionCriteriaType.never:
+        //     activeControls = <div>(never complete)</div>;
+        //     break;
+        // case WorkflowCompletionCriteriaType.always:
+        //     activeControls = <div>(always complete)</div>;
+        //     break;
+        // case WorkflowCompletionCriteriaType.allNodesComplete:
+        //     activeControls = <div>(dependent nodes not complete)</div>;
+        //     break;
+        // case WorkflowCompletionCriteriaType.someNodesComplete:
+        //     activeControls = <div>(no dependent nodes complete)</div>;
+        //     break;
         case WorkflowCompletionCriteriaType.fieldValue:
             activeControls = api.RenderFieldEditorForNode(evaluatedNode);
     }
 
     return (
-        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState}`}>
-            <div className={`name`}>{nodeDef.name} - #{evaluatedNode.nodeDefId} - {evaluatedNode.evaluation.progressState} ({evaluatedNode.evaluation.dependentNodes.length} dependencies)</div>
-            {
+        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState} ${(props.drawSelectionHandles && nodeDef.selected) ? "selected" : "not-selected"}`}>
+
+            <div className={`nodeName name ${props.onClickToSelect ? "selectable" : "notSelectable"}`}
+                onClick={props.onClickToSelect ? (() => {
+                    props.onClickToSelect!();
+                }) : undefined}
+            >
+                {props.drawSelectionHandles && <Tooltip title="Select this node" disableInteractive>
+                    <span className={`selectionHandle`}
+                    ></span>
+                </Tooltip>}
+                {nodeDef.name} - #{evaluatedNode.nodeDefId} - {evaluatedNode.evaluation.progressState} ({evaluatedNode.evaluation.dependentNodes.length} dependencies)
+            </div>
+            {/* {
                 evaluatedNode.evaluation.dependentNodes.length > 0 && (
                     evaluatedNode.evaluation.dependentNodes.map(n => <div key={n.nodeDefId}>#{n.nodeDefId}: {n.evaluation.progressState} / complete:{n.evaluation.isComplete ? "complete" : "not completed"}</div>)
                 )
-            }
-            <DebugCollapsibleText obj={evaluatedNode.evaluation} />
-            <KeyValueDisplay data={obj} />
+            } */}
+            {/* <DebugCollapsibleText obj={evaluatedNode.evaluation} /> */}
+            {/* <KeyValueDisplay data={obj} /> */}
 
             {/* <WorkflowNodeDueDateControl evaluatedNode={evaluatedNode} api={api} /> */}
 
@@ -669,10 +685,13 @@ export const WorkflowNodeComponent = ({ flowDef, evaluatedNode, api }: WorkflowN
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowGroupProps {
-    groupDefId: number | undefined;
+    groupDefId: number | null;
     flowDef: WorkflowDef;
     nodeInstances: WorkflowEvaluatedNode[];
     api: WorkflowEvalProvider;
+    drawNodeSelectionHandles: boolean;
+    onClickToSelectNode?: ((args: { nodeDefId: number }) => void) | undefined;
+    onClickToSelectGroup?: ((args: { groupDefId: number }) => void) | undefined;
 };
 
 export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
@@ -693,9 +712,36 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
     });
     const sortedNodes = sortBy(filteredNodes, n => getNodeDef(n.nodeDefId).position.y);
     return (
-        <div className="workflowNodeGroupContainer" style={vars.style}>
-            <div>{groupDef.name}</div>
-            {sortedNodes.map(x => <WorkflowNodeComponent flowDef={props.flowDef} key={x.nodeDefId} evaluatedNode={x} api={props.api} />)}
+        <div className={`workflowNodeGroupContainer ${(props.drawNodeSelectionHandles && groupDef.selected) ? "selected" : "notSelected"}`} style={vars.style}
+        >
+            <div className="header">
+                <div className={`groupName name ${props.onClickToSelectGroup ? "selectable" : "notSelectable"}`}
+                    onClick={props.onClickToSelectGroup ? (() => props.onClickToSelectGroup!({ groupDefId: props.groupDefId! })) : undefined}
+                >
+                    {
+                        // don't allow selecting the null group
+                        props.drawNodeSelectionHandles && props.groupDefId &&
+                        <Tooltip title="Select this group" disableInteractive>
+                            <span className={`selectionHandle ${groupDef.selected ? "selected" : "not-selected"}`}>
+                            </span></Tooltip>}
+                    {groupDef.name}
+                </div>
+            </div>
+            <div className="content">
+                {sortedNodes.map(x => <WorkflowNodeComponent
+                    flowDef={props.flowDef}
+                    key={x.nodeDefId}
+                    evaluatedNode={x}
+                    api={props.api}
+                    drawSelectionHandles={props.drawNodeSelectionHandles}
+                    onClickToSelect={props.onClickToSelectNode ? () => {
+                        props.onClickToSelectNode!({
+                            nodeDefId: x.nodeDefId,
+                        });
+                    } : undefined}
+                />
+                )}
+            </div>
         </div>
     );
 };
@@ -705,6 +751,9 @@ interface WorkflowContainerProps {
     flowDef: WorkflowDef;
     flow: EvaluatedWorkflow;
     api: WorkflowEvalProvider;
+    drawNodeSelectionHandles: boolean;
+    onClickToSelectNode?: ((args: { nodeDefId: number }) => void) | undefined;
+    onClickToSelectGroup?: ((args: { groupDefId: number }) => void) | undefined;
 };
 
 export const WorkflowContainer = (props: WorkflowContainerProps) => {
@@ -720,11 +769,13 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
     return (
         <div className="workflowContainer">
             {
-                ungroupedNodes.length && <WorkflowGroupComponent
+                (ungroupedNodes.length > 0) && <WorkflowGroupComponent
                     flowDef={props.flowDef}
-                    groupDefId={undefined}
+                    groupDefId={null}
                     nodeInstances={ungroupedNodes}
                     api={props.api}
+                    drawNodeSelectionHandles={props.drawNodeSelectionHandles}
+                    onClickToSelectNode={props.onClickToSelectNode}
                 />
             }
             {sortedGroups.map(groupDef => {
@@ -739,6 +790,9 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
                         groupDefId={groupDef.id}
                         nodeInstances={nodeInstances}
                         api={props.api}
+                        drawNodeSelectionHandles={props.drawNodeSelectionHandles}
+                        onClickToSelectGroup={props.onClickToSelectGroup}
+                        onClickToSelectNode={props.onClickToSelectNode}
                     />
                 );
             })}
@@ -831,7 +885,7 @@ type WorkflowDefMutator_SetNodeBasicInfoArgs = WorkflowDefMutator_Args & {
 
 type WorkflowDefMutator_SetNodeGroupArgs = WorkflowDefMutator_Args & {
     nodeDef: WorkflowNodeDef;
-    groupDefId: number | undefined;
+    groupDefId: number | null;
 };
 
 
@@ -882,6 +936,8 @@ export interface WorkflowDefMutator {
     // after mutations, this gets called to set state.
     setWorkflowDef: (args: { flowDef: WorkflowDef }) => void;
 
+    deselectAll: WorkflowDefMutator_MutatorFn<{}>;
+
     // take the incoming source workflow def and output a mutated version. if no mutation, return undefined. that's important to avoid endless state loop
     addNode: (args: WorkflowDefMutator_AddNodeArgs) => WorkflowDef | undefined;
     deleteNode: (args: WorkflowDefMutator_DeleteNodeArgs) => WorkflowDef | undefined;
@@ -923,6 +979,29 @@ export interface WorkflowDefMutator {
     setGroupParams: (args: WorkflowDefMutator_SetGroupParams) => WorkflowDef | undefined;
 };
 
+function chainMutations(
+    initialWorkflowDef: WorkflowDef,
+    mutators: ((workflowDef: WorkflowDef) => WorkflowDef | undefined)[]
+): { changesOccurred: boolean, flowDef: WorkflowDef } {
+    let currentWorkflowDef: WorkflowDef | undefined = initialWorkflowDef;
+    let changesOccurred: boolean = false;
+
+    for (const mutator of mutators) {
+        if (currentWorkflowDef) {
+            const mutatedWorkflowDef = mutator(currentWorkflowDef);
+            if (mutatedWorkflowDef) {
+                changesOccurred = true;
+                currentWorkflowDef = mutatedWorkflowDef;
+            }
+        }
+    }
+    return {
+        changesOccurred,
+        flowDef: currentWorkflowDef,
+    };
+}
+
+
 interface CMReactFlowState {
     nodes: CMFlowNode[];
     edges: Edge[];
@@ -960,7 +1039,7 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
             zIndex: 150,
 
             extent: (nodeDef?.groupDefId) === undefined ? undefined : "parent",
-            parentId: (nodeDef?.groupDefId) === undefined ? undefined : makeGroupNodeId(nodeDef.groupDefId),
+            parentId: !(nodeDef?.groupDefId) ? undefined : makeGroupNodeId(nodeDef.groupDefId),
 
             // and new data
             id: makeNormalNodeId(node.nodeDefId),
@@ -1259,7 +1338,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                             const n: WorkflowNodeDef = {
                                 id: props.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
                                 name: nanoid(),
-                                groupDefId: undefined,
+                                groupDefId: null,
                                 displayStyle: WorkflowNodeDisplayStyle.Normal,
                                 completionCriteriaType: WorkflowCompletionCriteriaType.always,
                                 activationCriteriaType: WorkflowCompletionCriteriaType.always,
@@ -1279,7 +1358,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                             if (r) {
                                 props.defMutator.setWorkflowDef({ flowDef: r });
                             }
-                        }}>new node</button>
+                        }}>New node</button>
                     </div>
                     <div>
                         <button onClick={() => {
@@ -1321,11 +1400,18 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
     const relevanceDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesRelevance);
     const activationDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesActivation);
     const completionDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesCompleteness);
+    const usesNodeDependencies = (t: WorkflowCompletionCriteriaType) => [WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(t);
+    const relevanceUsesNodeDependencies = usesNodeDependencies(props.nodeDef.relevanceCriteriaType);
+    const activationUsesNodeDependencies = usesNodeDependencies(props.nodeDef.activationCriteriaType);
+    const completionUsesNodeDependencies = usesNodeDependencies(props.nodeDef.completionCriteriaType);
     const getNodeDef = (nodeDefId: number) => props.workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
     const getEvaluatedNode = (nodeDefId: number) => props.evaluatedWorkflow.evaluatedNodes.find(en => en.nodeDefId === nodeDefId)!;
     const evaluated = getEvaluatedNode(props.nodeDef.id);
     const requiredAssignees = props.nodeDef.defaultAssignees.filter(a => a.isRequired);
     const optionalAssignees = props.nodeDef.defaultAssignees.filter(a => !a.isRequired);
+
+    const groupOptions = [{ value: null, label: "<none>" }, ...sortBy(props.workflowDef.groupDefs, g => g.position.y).map(g => ({ value: g.id, label: g.name, color: g.color }))];
+
     return <div className="CMWorkflowNodeEditorContainer">
         <h2>Node/step/question/task #{props.nodeDef.id}</h2>
 
@@ -1353,42 +1439,16 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         const newFlow = props.defMutator.setNodeGroup({
                             sourceDef: { ...props.workflowDef },
                             nodeDef: props.nodeDef,
-                            groupDefId: val || undefined,
+                            groupDefId: val || null,
                         });
                         if (newFlow) {
                             props.defMutator.setWorkflowDef({ flowDef: newFlow });
                         }
                     }}
-                    options={sortBy(props.workflowDef.groupDefs, g => g.position.y).map(g => ({ value: g.id, label: g.name }))}
+                    options={groupOptions}
                     value={props.nodeDef.groupDefId}
                 />
             </>}
-        />
-
-        <NameValuePair
-            name={"Display style"}
-            value={<>
-                <EnumChipSelector
-                    editable={true}
-                    onChange={(val) => {
-                        const newFlow = props.defMutator.setNodeBasicInfo({
-                            sourceDef: { ...props.workflowDef },
-                            nodeDef: props.nodeDef,
-                            displayStyle: val || WorkflowNodeDisplayStyle.Normal,
-                        });
-                        if (newFlow) {
-                            props.defMutator.setWorkflowDef({ flowDef: newFlow });
-                        }
-                    }}
-                    enumObj={WorkflowNodeDisplayStyle}
-                    value={props.nodeDef.displayStyle}
-                />
-            </>}
-        />
-
-        <NameValuePair
-            name={"Weight"}
-            value={props.nodeDef.thisNodeProgressWeight}
         />
 
         <NameValuePair
@@ -1412,6 +1472,9 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         return option.value !== WorkflowCompletionCriteriaType.fieldValue; // field value not supported for relevance / activation.
                     }}
                 />
+
+                {relevanceUsesNodeDependencies && (relevanceDependencies.length === 0) && <div className="alert">You haven't defined any dependent nodes.</div>}
+                {!relevanceUsesNodeDependencies && (relevanceDependencies.length > 0) && <div className="alert">There are nodes configured to affect relevance, but relevance style {props.nodeDef.completionCriteriaType} will just ignore them.</div>}
 
                 <ul>
                     {relevanceDependencies.map(d => {
@@ -1445,6 +1508,9 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         return option.value !== WorkflowCompletionCriteriaType.fieldValue; // field value not supported for relevance / activation.
                     }}
                 />
+
+                {activationUsesNodeDependencies && (activationDependencies.length === 0) && <div className="alert">You haven't defined any dependent nodes.</div>}
+                {!activationUsesNodeDependencies && (activationDependencies.length > 0) && <div className="alert">There are nodes configured to affect activation, but activation style {props.nodeDef.completionCriteriaType} will just ignore them.</div>}
 
                 <ul>
                     {activationDependencies.map(d => {
@@ -1483,6 +1549,11 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         {/* {props.nodeDef.fieldValueOperand2} */}
                     </div>
                 }
+
+                {completionUsesNodeDependencies && (completionDependencies.length === 0) && <div className="alert">You haven't defined any dependent nodes.</div>}
+                {!completionUsesNodeDependencies && (completionDependencies.length > 0) && <div className="alert">There are nodes configured to affect completion, but completion style {props.nodeDef.completionCriteriaType} will just ignore them.</div>}
+                {(props.nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) && (!props.nodeDef.fieldName) && <div className="alert">! completion depends on a field value, but none is specified.</div>}
+
                 <ul>
                     {completionDependencies.map(d => {
                         const en = getEvaluatedNode(d.nodeDefId);
@@ -1492,7 +1563,6 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                 <div>--&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}</div>
             </>}
         />
-
 
         <NameValuePair
             name={"Default assignees"}
@@ -1511,6 +1581,32 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
         <NameValuePair
             name={"Default due date set"}
             value={props.nodeDef.defaultDueDateDurationMsAfterStarted || "(none)"}
+        />
+
+        <NameValuePair
+            name={"Display style"}
+            value={<>
+                <EnumChipSelector
+                    editable={true}
+                    onChange={(val) => {
+                        const newFlow = props.defMutator.setNodeBasicInfo({
+                            sourceDef: { ...props.workflowDef },
+                            nodeDef: props.nodeDef,
+                            displayStyle: val || WorkflowNodeDisplayStyle.Normal,
+                        });
+                        if (newFlow) {
+                            props.defMutator.setWorkflowDef({ flowDef: newFlow });
+                        }
+                    }}
+                    enumObj={WorkflowNodeDisplayStyle}
+                    value={props.nodeDef.displayStyle}
+                />
+            </>}
+        />
+
+        <NameValuePair
+            name={"Weight"}
+            value={props.nodeDef.thisNodeProgressWeight}
         />
 
     </div>;
@@ -1580,6 +1676,7 @@ export interface WorkflowEditorPOCProps {
 };
 
 export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
+    const [showSelectionHandles, setShowSelectionHandles] = React.useState<boolean>(true);
     const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
         //console.log(`creating NEW blank instance`);
         return initializeWorkflowInstance(props.workflowDef);
@@ -1694,7 +1791,39 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                         }
                     </div>
                     <div style={{ width: "33%" }}>
-                        <WorkflowContainer flowDef={props.workflowDef} flow={evaluatedWorkflow} api={provider} />
+                        <Button
+                            onClick={() => {
+                                setWorkflowInstance(initializeWorkflowInstance(props.workflowDef));
+                                // todo: reset model but we need an instanceMutator
+                            }}
+                        >Reset instance & model</Button>
+                        <FormControlLabel label={"Show selection handles"} control={<input type="checkbox" checked={showSelectionHandles} onChange={e => setShowSelectionHandles(e.target.checked)} />} />
+                        <WorkflowContainer
+                            flowDef={props.workflowDef}
+                            flow={evaluatedWorkflow}
+                            api={provider}
+                            drawNodeSelectionHandles={showSelectionHandles}
+                            onClickToSelectNode={(args) => {
+                                const nd = props.workflowDef.nodeDefs.find(nd => nd.id === args.nodeDefId)!;
+                                const r = chainMutations({ ...props.workflowDef }, [
+                                    (sourceDef) => props.defMutator.deselectAll({ sourceDef }),
+                                    (sourceDef) => props.defMutator.setNodeSelected({ sourceDef, selected: true, nodeDef: nd }),
+                                ]);
+                                if (r.changesOccurred) {
+                                    props.defMutator.setWorkflowDef({ flowDef: r.flowDef });
+                                }
+                            }}
+                            onClickToSelectGroup={(args) => {
+                                const nd = props.workflowDef.groupDefs.find(nd => nd.id === args.groupDefId)!;
+                                const r = chainMutations({ ...props.workflowDef }, [
+                                    (sourceDef) => props.defMutator.deselectAll({ sourceDef }),
+                                    (sourceDef) => props.defMutator.setGroupSelected({ sourceDef, selected: true, groupDef: nd }),
+                                ]);
+                                if (r.changesOccurred) {
+                                    props.defMutator.setWorkflowDef({ flowDef: r.flowDef });
+                                }
+                            }}
+                        />
                     </div>
                 </div>
             </>}

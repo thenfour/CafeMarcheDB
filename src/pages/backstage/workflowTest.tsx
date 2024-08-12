@@ -195,11 +195,40 @@ const minimalWorkflow = {
 
 const MainContent = () => {
     const [workflowDef, setWorkflowDef] = React.useState<WorkflowDef>(minimalWorkflow as any);
+    const deselectAllGeneric = (items: { selected: boolean }[]): boolean => {
+        let changed: boolean = false;
+        items.forEach(d => {
+            if (d.selected) {
+                changed = true;
+                d.selected = false;
+            }
+        });
+        return changed;
+    };
+    const deselectAll = (flowDef: WorkflowDef): boolean => {
+        let changed: boolean = false;
+        flowDef.nodeDefs.forEach(nd => {
+            if (nd.selected) {
+                changed = true;
+                nd.selected = false;
+            }
+            changed = deselectAllGeneric(nd.nodeDependencies) || changed;
+        });
+        changed = deselectAllGeneric(flowDef.groupDefs) || changed;
+        return changed;
+    };
     const defMutator: WorkflowDefMutator = {
         setWorkflowDef: (args) => {
             setWorkflowDef(args.flowDef);
         },
+        deselectAll: (args) => {
+            const changed = deselectAll(args.sourceDef);
+            if (changed) return args.sourceDef;
+            return undefined;
+        },
         addNode: (args) => {
+            // first deselect everything; it's better ux.
+            deselectAll(args.sourceDef);
             args.sourceDef.nodeDefs.push(args.nodeDef);
             return args.sourceDef;
         },
@@ -264,13 +293,15 @@ const MainContent = () => {
             return args.sourceDef;
         },
         addGroup: (args) => {
+            // first deselect everything; it's better ux.
+            deselectAll(args.sourceDef);
             args.sourceDef.groupDefs.push(args.groupDef);
             return args.sourceDef;
         },
         deleteGroup: (args) => {
             // delete any dependencies or references to this.
             args.sourceDef.nodeDefs.forEach(n => {
-                if (n.groupDefId === args.groupDef.id) n.groupDefId = undefined;
+                if (n.groupDefId === args.groupDef.id) n.groupDefId = null;
             });
             args.sourceDef.groupDefs = args.sourceDef.groupDefs.filter(n => n.id !== args.groupDef.id);
             return args.sourceDef;

@@ -333,8 +333,6 @@ export const Markdown = (props: MarkdownProps) => {
 
         setHtml(md.render(props.markdown));
 
-        console.log(`init unprocessed children: ${expectedComponentCount.current}`);
-
         // mount embedded react components. we have to wait for the browser to get this mounted and it's not possible to know when it will be.
         // careful also to consider multiple markdown components on the page at the same time so global flags will break.
         // how to accomplish this? we want to choose an interval carefully, polling for readiness. maybe set an expected component value somehow?

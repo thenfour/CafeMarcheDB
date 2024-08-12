@@ -1,9 +1,24 @@
 .workflowNodeGroupContainer {
-    padding: 3px;
     border: 1px solid var(--color-background);
     border-left: 6px solid var(--color-background);
     margin: 5px;
 }
+
+.workflowNodeGroupContainer .header,
+.workflowNodeGroupContainer .content {
+    padding: 3px;
+}
+
+.workflowNodeGroupContainer .header {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+}
+
+.workflowNodeGroupContainer .groupName {
+    font-weight: bold;
+    font-size: large;
+}
+
 
 .workflowNodeContainer {
     padding: 3px;
@@ -14,11 +29,24 @@
     background-color: #ddd;
 }
 
-.workflowNodeContainer .name {
-    font-weight: bold;
-    font-size: large;
+.workflowContainer .name.selectable {
+    cursor: pointer;
 }
 
+.workflowContainer .selectionHandle {
+    width: 16px;
+    height: 16px;
+    background-color: #ccc;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.workflowNodeContainer.selected .nodeName .selectionHandle,
+.workflowNodeGroupContainer.selected .groupName .selectionHandle {
+    background-color: blue;
+}
+
+/* 
 .workflowNodeContainer.Irrelevant .name {
     color: #000;
     background-color: #eee;
@@ -37,7 +65,7 @@
 .workflowNodeContainer.Completed .name {
     color: #888;
     background-color: #000;
-}
+} */
 
 
 /* ---- REACT FLOW */
@@ -113,6 +141,11 @@
 .CMFlowGroupLabel {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    opacity: 40%;
+}
+
+.react-flow__node-cmGroup.selected .CMFlowGroupLabel {
+    opacity: 100%;
 }
 
 
@@ -137,4 +170,15 @@
 /* very tired of react flow hiding my elements for no good reason. */
 .react-flow__node {
     visibility: visible !important;
+}
+
+
+
+.CMWorkflowNodeEditorContainer .alert {
+    color: #f60;
+    background-color: #ffc;
+    margin: 10px;
+    padding: 10px;
+    font-weight: bold;
+    border-radius: 8px;
 }
