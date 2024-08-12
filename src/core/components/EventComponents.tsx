@@ -28,7 +28,7 @@ import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata, CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata, EventsFilterSpec } from './EventComponentsBase';
+import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata, EventsFilterSpec } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -38,7 +38,6 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { WorkflowContainerPOC } from './WorkflowComponents';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -1039,7 +1038,7 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
         </CustomTabPanel>
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
-            <WorkflowContainerPOC />
+            <WorkflowEditorPOC />
         </CustomTabPanel>
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>

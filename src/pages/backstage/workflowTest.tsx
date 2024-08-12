@@ -6,7 +6,9 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
-import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowDefMutator, WorkflowEditorPOC, WorkflowFieldValueOperator, WorkflowNodeDef, WorkflowNodeDisplayStyle } from "src/core/components/WorkflowComponents";
+import { WorkflowDef } from "shared/workflowEngine";
+import { WorkflowDefMutator } from "src/core/components/WorkflowEditorDetail";
+import { WorkflowEditorPOC } from "src/core/components/WorkflowEditorGraph";
 
 
 
