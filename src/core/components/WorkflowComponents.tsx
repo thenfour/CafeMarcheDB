@@ -45,11 +45,11 @@ import {
 
 import '@xyflow/react/dist/style.css';
 import { nanoid } from "nanoid";
-import { getNextSequenceId, hashString, sortBy } from "shared/utils";
+import { getHashedColor, getNextSequenceId, hashString, sortBy } from "shared/utils";
 import { InspectObject } from "./CMCoreComponents";
 import { gAppColors, gGeneralPaletteList, gLightSwatchColors } from "shared/color";
 import { CMTextField, CMTextInputBase } from "./CMTextField";
-import { EnumChipSelector } from "./ChipSelector";
+import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 
 
 
@@ -787,7 +787,10 @@ const FlowNodeGroup = (props: FlowNodeNormalProps) => {
     const vars = GetStyleVariablesForColor({ color: props.data.groupDef!.color, enabled: true, fillOption: "filled", selected: false, variation: "strong" });
     return <>
         <NodeResizer minWidth={100} minHeight={30} />
-        <div className={`CMFlowGroup ${vars.cssClass}`} style={vars.style}>{props.data.groupDef!.name || ""}</div>
+        <div className={`CMFlowGroupBackground ${vars.cssClass}`} style={vars.style}></div>
+        <div className={`CMFlowGroup ${vars.cssClass}`} style={vars.style}>
+            <div className="CMFlowGroupLabel">{props.data.groupDef!.name || ""}</div>
+        </div>
     </>;
 };
 
@@ -828,7 +831,7 @@ type WorkflowDefMutator_SetNodeBasicInfoArgs = WorkflowDefMutator_Args & {
 
 type WorkflowDefMutator_SetNodeGroupArgs = WorkflowDefMutator_Args & {
     nodeDef: WorkflowNodeDef;
-    groupDefId: number;
+    groupDefId: number | undefined;
 };
 
 
@@ -925,7 +928,7 @@ interface CMReactFlowState {
     edges: Edge[];
 };
 
-const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: WorkflowDef/*, reactFlowState: CMReactFlowState*/): CMReactFlowState => {
+const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: WorkflowDef): CMReactFlowState => {
 
     const groups: CMFlowNode[] = flowDef.groupDefs.map(group => {
         const ret: CMFlowNode = {
@@ -976,14 +979,17 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
 
     const edges: Edge[] = flowDef.nodeDefs.flatMap((nodeDef: WorkflowNodeDef) =>
         nodeDef.nodeDependencies.map(dep => {
+            const id = makeConnectionId(dep.nodeDefId, nodeDef.id);
+            const sourceNodeDef = flowDef.nodeDefs.find(n => n.id === dep.nodeDefId)!;
             const ret: Edge = {
                 selected: dep.selected,
-                id: makeConnectionId(dep.nodeDefId, nodeDef.id),
+                id,
                 source: makeNormalNodeId(dep.nodeDefId),
                 target: makeNormalNodeId(nodeDef.id),
                 zIndex: 125,
                 hidden: false,
-                className: "CMEdge",
+                className: `CMEdge ${nodeDef.selected ? "CMTargetSelected" : ""} ${sourceNodeDef.selected ? "CMSourceSelected" : ""}`,
+                style: { "--hashed-color": getHashedColor(id, { alpha: (nodeDef.selected || dep.selected || sourceNodeDef.selected) ? "100%" : "33%" }) } as any,
                 markerEnd: {
                     type: MarkerType.ArrowClosed,
                     width: 20,
@@ -1321,11 +1327,7 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
     const requiredAssignees = props.nodeDef.defaultAssignees.filter(a => a.isRequired);
     const optionalAssignees = props.nodeDef.defaultAssignees.filter(a => !a.isRequired);
     return <div className="CMWorkflowNodeEditorContainer">
-        <h2>Node/step/question/task</h2>
-        <NameValuePair
-            name={"id"}
-            value={props.nodeDef.id}
-        />
+        <h2>Node/step/question/task #{props.nodeDef.id}</h2>
 
         <CMTextInputBase
             autoFocus={false}
@@ -1343,9 +1345,29 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
         />
 
         <NameValuePair
+            name={"Group"}
+            value={<>
+                <ChipSelector
+                    editable={true}
+                    onChange={(val) => {
+                        const newFlow = props.defMutator.setNodeGroup({
+                            sourceDef: { ...props.workflowDef },
+                            nodeDef: props.nodeDef,
+                            groupDefId: val || undefined,
+                        });
+                        if (newFlow) {
+                            props.defMutator.setWorkflowDef({ flowDef: newFlow });
+                        }
+                    }}
+                    options={sortBy(props.workflowDef.groupDefs, g => g.position.y).map(g => ({ value: g.id, label: g.name }))}
+                    value={props.nodeDef.groupDefId}
+                />
+            </>}
+        />
+
+        <NameValuePair
             name={"Display style"}
             value={<>
-                {props.nodeDef.displayStyle}
                 <EnumChipSelector
                     editable={true}
                     onChange={(val) => {
@@ -1362,25 +1384,6 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     value={props.nodeDef.displayStyle}
                 />
             </>}
-        />
-
-        <NameValuePair
-            name={"Default assignees"}
-            value={<>
-                <h4>Required</h4>
-                <ul>
-                    {requiredAssignees.length === 0 ? "<none>" : requiredAssignees.map(a => <span key={a.userId}>{a.userId} </span>)}
-                </ul>
-                <h4>Optional</h4>
-                <ul>
-                    {optionalAssignees.length === 0 ? "<none>" : optionalAssignees.map(a => <span key={a.userId}>{a.userId} </span>)}
-                </ul>
-            </>}
-        />
-
-        <NameValuePair
-            name={"Default due date set"}
-            value={props.nodeDef.defaultDueDateDurationMsAfterStarted || "(none)"}
         />
 
         <NameValuePair
@@ -1405,6 +1408,9 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     }}
                     enumObj={WorkflowCompletionCriteriaType}
                     value={props.nodeDef.relevanceCriteriaType}
+                    filterOption={option => {
+                        return option.value !== WorkflowCompletionCriteriaType.fieldValue; // field value not supported for relevance / activation.
+                    }}
                 />
 
                 <ul>
@@ -1435,6 +1441,9 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     }}
                     enumObj={WorkflowCompletionCriteriaType}
                     value={props.nodeDef.activationCriteriaType}
+                    filterOption={option => {
+                        return option.value !== WorkflowCompletionCriteriaType.fieldValue; // field value not supported for relevance / activation.
+                    }}
                 />
 
                 <ul>
@@ -1482,6 +1491,26 @@ const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                 </ul>
                 <div>--&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}</div>
             </>}
+        />
+
+
+        <NameValuePair
+            name={"Default assignees"}
+            value={<>
+                <h4>Required</h4>
+                <ul>
+                    {requiredAssignees.length === 0 ? "<none>" : requiredAssignees.map(a => <span key={a.userId}>{a.userId} </span>)}
+                </ul>
+                <h4>Optional</h4>
+                <ul>
+                    {optionalAssignees.length === 0 ? "<none>" : optionalAssignees.map(a => <span key={a.userId}>{a.userId} </span>)}
+                </ul>
+            </>}
+        />
+
+        <NameValuePair
+            name={"Default due date set"}
+            value={props.nodeDef.defaultDueDateDurationMsAfterStarted || "(none)"}
         />
 
     </div>;

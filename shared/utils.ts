@@ -910,6 +910,16 @@ export function hashString(inp: string) {
     return hash;
 }
 
+export const getHashedColor = (text: string, options?: { saturation?: string, luminosity?: string, alpha?: string }): string => {
+    let hash = hashString(text);
+    // for (let i = 0; i < text.length; i++) {
+    //     hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    // }
+    const color = `hsla(${hash % 360}, ${options?.saturation || '100%'}, ${options?.luminosity || "35%"}, ${options?.alpha || "100%"})`;
+    return color;
+};
+
+
 // array sort by selector
 export function sortBy<T, U>(array: T[], selector: (item: T) => U): T[] {
     return array.slice().sort((a, b) => {

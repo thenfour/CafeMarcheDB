@@ -12,7 +12,7 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { IsNullOrWhitespace, arrayToTSV, getExcelColumnName, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { IsNullOrWhitespace, arrayToTSV, getExcelColumnName, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -462,17 +462,8 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
 
     const formattedBPM = enrichedSong ? API.songs.getFormattedBPM(enrichedSong) : "";
 
-    const getColor = (text: string): string => {
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const color = `hsl(${hash % 360}, 100%, 35%)`;
-        return color;
-    };
-
     const style = {
-        "--song-hash-color": getColor(props.value.song?.name || ""),
+        "--song-hash-color": getHashedColor(props.value.song?.name || ""),
     };
 
     return <>

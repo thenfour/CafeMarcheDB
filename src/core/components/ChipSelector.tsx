@@ -44,6 +44,7 @@ export const ChipSelector = <TValue,>({
 
                     return (
                         <CMChip
+                            key={option.value as any}
                             className={`selectable option ${isSelected ? "selected" : "notSelected"}`}
                             onClick={() => handleClick(option)}
                             color={color}
@@ -77,6 +78,7 @@ interface EnumChipSelectorProps<TEnum extends object> {
     onChange: (val: TEnum[keyof TEnum] | null) => void;
     editable: boolean;
     getItemInfo?: (option: Option<TEnum[keyof TEnum]>) => { color?: string; label?: string };
+    filterOption?: (option: Option<TEnum[keyof TEnum]>) => boolean;
 }
 
 export const EnumChipSelector = <TEnum extends object,>({
@@ -85,8 +87,10 @@ export const EnumChipSelector = <TEnum extends object,>({
     onChange,
     editable,
     getItemInfo,
+    filterOption,
 }: EnumChipSelectorProps<TEnum>) => {
-    const options = enumToChipSelectorOptions(enumObj);
+    const options1 = enumToChipSelectorOptions(enumObj);
+    const options = filterOption ? options1.filter(filterOption) : options1;
 
     return (
         <ChipSelector

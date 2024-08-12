@@ -40,13 +40,22 @@
 }
 
 
+/* ---- REACT FLOW */
+
 .react-flow__node-cmNormal {
-    color: #888;
-    background-color: #fffc;
-    border: 2.5px solid #888;
+    color: #999;
+    background-color: #fff8;
+    border: 2.5px solid #999;
     border-radius: 4px;
     padding: 10px;
 }
+
+.react-flow__node-cmNormal.selected {
+    color: black;
+    border-color: blue;
+    background-color: #fff;
+}
+
 
 .react-flow__node-cmGroup {
     border: 0;
@@ -59,23 +68,73 @@
     right: 0;
     bottom: 0;
     left: 0;
-    color: var(--color-foreground);
+    outline: 4px solid var(--color-background);
+}
+
+.react-flow__node-cmGroup.selected .CMFlowGroup {
+    outline: 2px solid blue;
+}
+
+.react-flow__node-cmGroup .CMFlowGroupBackground {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border: 0;
+    /* color: var(--color-foreground); */
     background-color: var(--color-background);
-}
-
-.react-flow__node-cmNormal.selected {
-    color: black;
-    border-color: black;
-    background-color: #feec;
+    opacity: 10%;
 }
 
 
-.react-flow__edges path {
-    stroke-width: 2.5px;
+.react-flow__resize-control {
+    /* put resize handles above all */
+    z-index: 200;
 }
+
+.react-flow__resize-control.line {
+    /* too noisy to show these*/
+    border-color: transparent;
+}
+
 
 .react-flow__handle,
 .react-flow__resize-control.handle {
-    width: 8px;
-    height: 8px;
+    width: 9px;
+    height: 9px;
+    background-color: black;
+}
+
+.react-flow__node-cmGroup.selected .CMFlowGroupBackground {
+    opacity: 50%;
+}
+
+.CMFlowGroupLabel {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+}
+
+
+.react-flow__edge-path {
+    stroke: var(--hashed-color);
+    stroke-width: 1px;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+    stroke-width: 4px;
+    stroke: var(--hashed-color);
+}
+
+.react-flow__edge.CMTargetSelected .react-flow__edge-path {
+    stroke-width: 2.5px;
+}
+
+.react-flow__edge.CMSourceSelected .react-flow__edge-path {
+    stroke-width: 1.75px;
+}
+
+/* very tired of react flow hiding my elements for no good reason. */
+.react-flow__node {
+    visibility: visible !important;
 }
