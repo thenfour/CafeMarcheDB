@@ -401,9 +401,9 @@ const MainContent = () => {
             return args.sourceDef;
         },
         setEdgeInfo: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            const nd = n.nodeDependencies.find(d => d.nodeDefId === args.dependencyDef.nodeDefId);
+            const targetNodeDef = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
+            if (!targetNodeDef) throw new Error(`unknown targetNodeDef`);
+            const nd = targetNodeDef.nodeDependencies.find(d => d.nodeDefId === args.sourceNodeDef.id);
             if (!nd) throw new Error(`unknown node dependency`);
             if (args.determinesRelevance !== undefined) {
                 nd.determinesRelevance = args.determinesRelevance;

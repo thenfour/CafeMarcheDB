@@ -2,19 +2,15 @@ import React from "react";
 import { Button, FormControlLabel } from "@mui/material";
 import { WorkflowContainer } from "./WorkflowUserComponents";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { EvaluatedWorkflow, EvaluateWorkflow, GetWorkflowDefSchemaHash, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvalProvider, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, GetWorkflowDefSchemaHash, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvalProvider, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 import { getHashedColor } from "shared/utils";
-import { WorkflowDefMutator, WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
+import { WorkflowChainMutations, WorkflowDefMutator, WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { InspectObject } from "./CMCoreComponents";
 import { nanoid } from "nanoid";
 import { gLightSwatchColors } from "shared/color";
 import { CMSmallButton } from "./CMCoreComponents2";
 
-
-const makeConnectionId = (srcNodeDefId: number, targetNodeDefId: number) => {
-    return `${srcNodeDefId}:${targetNodeDefId}`;
-}
 
 const makeNormalNodeId = (nodeDefId: number) => {
     return `n:${nodeDefId}`;
@@ -31,29 +27,6 @@ const parseNodeId = (id: string): { type: "group" | "node", defId: number } => {
     const defId = parseInt(parts[1]!, 10);
     return { type, defId };
 };
-
-function chainMutations(
-    initialWorkflowDef: WorkflowDef,
-    mutators: ((workflowDef: WorkflowDef) => WorkflowDef | undefined)[]
-): { changesOccurred: boolean, flowDef: WorkflowDef } {
-    let currentWorkflowDef: WorkflowDef | undefined = initialWorkflowDef;
-    let changesOccurred: boolean = false;
-
-    for (const mutator of mutators) {
-        if (currentWorkflowDef) {
-            const mutatedWorkflowDef = mutator(currentWorkflowDef);
-            if (mutatedWorkflowDef) {
-                changesOccurred = true;
-                currentWorkflowDef = mutatedWorkflowDef;
-            }
-        }
-    }
-    return {
-        changesOccurred,
-        flowDef: currentWorkflowDef,
-    };
-}
-
 
 
 
@@ -162,7 +135,7 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
 
     const edges: Edge[] = flowDef.nodeDefs.flatMap((nodeDef: WorkflowNodeDef) =>
         nodeDef.nodeDependencies.map(dep => {
-            const id = makeConnectionId(dep.nodeDefId, nodeDef.id);
+            const id = WorkflowMakeConnectionId(dep.nodeDefId, nodeDef.id);
             const sourceNodeDef = flowDef.nodeDefs.find(n => n.id === dep.nodeDefId)!;
             const ret: Edge = {
                 selected: dep.selected,
@@ -637,7 +610,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                             drawNodeSelectionHandles={showSelectionHandles}
                             onClickToSelectNode={(args) => {
                                 const nd = props.workflowDef.nodeDefs.find(nd => nd.id === args.nodeDefId)!;
-                                const r = chainMutations({ ...props.workflowDef }, [
+                                const r = WorkflowChainMutations({ ...props.workflowDef }, [
                                     (sourceDef) => props.defMutator.deselectAll({ sourceDef }),
                                     (sourceDef) => props.defMutator.setNodeSelected({ sourceDef, selected: true, nodeDef: nd }),
                                 ]);
@@ -647,7 +620,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                             }}
                             onClickToSelectGroup={(args) => {
                                 const nd = props.workflowDef.groupDefs.find(nd => nd.id === args.groupDefId)!;
-                                const r = chainMutations({ ...props.workflowDef }, [
+                                const r = WorkflowChainMutations({ ...props.workflowDef }, [
                                     (sourceDef) => props.defMutator.deselectAll({ sourceDef }),
                                     (sourceDef) => props.defMutator.setGroupSelected({ sourceDef, selected: true, groupDef: nd }),
                                 ]);

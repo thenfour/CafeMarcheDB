@@ -1,13 +1,14 @@
 // the non-react-flow editing components of workflow. WorkflowVisualEditor depends on this.
 
 import { XYPosition } from "@xyflow/react";
-import { sortBy } from "shared/utils";
-import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { getHashedColor, sortBy } from "shared/utils";
+import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { CMTextField, CMTextInputBase } from "./CMTextField";
 import { NameValuePair } from "./CMCoreComponents2";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
 import { gGeneralPaletteList } from "shared/color";
+import { CMChip, CMChipContainer } from "./CMCoreComponents";
 
 
 interface WorkflowDefMutator_Args {
@@ -122,8 +123,9 @@ export interface WorkflowDefMutator {
     setNodeDefaultDueDateMsAfterStarted: WorkflowDefMutator_MutatorFn<{ nodeDef: WorkflowNodeDef, defaultDueDateDurationMsAfterStarted?: number | undefined }>;
 
     setEdgeInfo: WorkflowDefMutator_MutatorFn<{
-        nodeDef: WorkflowNodeDef,
-        dependencyDef: WorkflowNodeDependency,
+        sourceNodeDef: WorkflowNodeDef,
+        targetNodeDef: WorkflowNodeDef,
+        //dependencyDef: WorkflowNodeDependency,
         determinesRelevance?: boolean | undefined;
         determinesActivation?: boolean | undefined;
         determinesCompleteness?: boolean | undefined;
@@ -142,6 +144,102 @@ export interface WorkflowDefMutator {
 };
 
 
+export function WorkflowChainMutations(
+    initialWorkflowDef: WorkflowDef,
+    mutators: ((workflowDef: WorkflowDef) => WorkflowDef | undefined)[]
+): { changesOccurred: boolean, flowDef: WorkflowDef } {
+    let currentWorkflowDef: WorkflowDef | undefined = initialWorkflowDef;
+    let changesOccurred: boolean = false;
+
+    for (const mutator of mutators) {
+        if (currentWorkflowDef) {
+            const mutatedWorkflowDef = mutator(currentWorkflowDef);
+            if (mutatedWorkflowDef) {
+                changesOccurred = true;
+                currentWorkflowDef = mutatedWorkflowDef;
+            }
+        }
+    }
+    return {
+        changesOccurred,
+        flowDef: currentWorkflowDef,
+    };
+}
+
+
+
+
+interface NodeDependencyEditorProps {
+    evaluatedWorkflow: EvaluatedWorkflow;
+    workflowDef: WorkflowDef;
+    targetNodeDef: WorkflowNodeDef;
+    value: WorkflowNodeDependency;
+    defMutator: WorkflowDefMutator;
+};
+const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
+    const connId = WorkflowMakeConnectionId(props.value.nodeDefId, props.targetNodeDef.id);
+    const style = { "--hashed-color": getHashedColor(connId) };
+    const sourceNodeDef = props.workflowDef.nodeDefs.find(n => n.id === props.value.nodeDefId)!;
+    return <div style={style as any} className="NodeDependencyEditor">
+        <div className="dependencyHeader">
+            <div className="WorkflowNodeDependencyHandle"></div>
+            <div className="dependencyName">{sourceNodeDef.name}</div>
+        </div>
+        <CMChipContainer>
+            <CMChip
+                size="small"
+                variation={{ selected: props.value.determinesRelevance, enabled: true, fillOption: "filled", variation: "strong" }}
+                onClick={() => {
+                    const r = WorkflowChainMutations({ ...props.workflowDef }, [
+                        (sourceDef) => props.defMutator.setEdgeInfo({
+                            sourceDef,
+                            targetNodeDef: props.targetNodeDef,
+                            sourceNodeDef: sourceNodeDef,
+                            determinesRelevance: !props.value.determinesRelevance,
+                        }),
+                    ]);
+                    if (r.changesOccurred) {
+                        props.defMutator.setWorkflowDef({ flowDef: r.flowDef });
+                    }
+                }}
+            >Makes relevant</CMChip>
+            <CMChip
+                size="small"
+                variation={{ selected: props.value.determinesActivation, enabled: true, fillOption: "filled", variation: "strong" }}
+                onClick={() => {
+                    const r = WorkflowChainMutations({ ...props.workflowDef }, [
+                        (sourceDef) => props.defMutator.setEdgeInfo({
+                            sourceDef,
+                            targetNodeDef: props.targetNodeDef,
+                            sourceNodeDef: sourceNodeDef,
+                            determinesActivation: !props.value.determinesActivation,
+                        }),
+                    ]);
+                    if (r.changesOccurred) {
+                        props.defMutator.setWorkflowDef({ flowDef: r.flowDef });
+                    }
+                }}
+            >Makes active</CMChip>
+            <CMChip
+                size="small"
+                variation={{ selected: props.value.determinesCompleteness, enabled: true, fillOption: "filled", variation: "strong" }}
+                onClick={() => {
+                    const r = WorkflowChainMutations({ ...props.workflowDef }, [
+                        (sourceDef) => props.defMutator.setEdgeInfo({
+                            sourceDef,
+                            targetNodeDef: props.targetNodeDef,
+                            sourceNodeDef: sourceNodeDef,
+                            determinesCompleteness: !props.value.determinesCompleteness,
+                        }),
+                    ]);
+                    if (r.changesOccurred) {
+                        props.defMutator.setWorkflowDef({ flowDef: r.flowDef });
+                    }
+                }}
+            >Makes progress</CMChip>
+        </CMChipContainer>
+    </div>;
+};
 
 
 
@@ -205,6 +303,22 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     options={groupOptions}
                     value={props.nodeDef.groupDefId}
                 />
+            </>}
+        />
+
+        <NameValuePair
+            name="Dependencies"
+            value={<>
+                {
+                    props.nodeDef.nodeDependencies.map(nd => <NodeDependencyEditor
+                        key={nd.nodeDefId}
+                        value={nd}
+                        defMutator={props.defMutator}
+                        evaluatedWorkflow={props.evaluatedWorkflow}
+                        targetNodeDef={props.nodeDef}
+                        workflowDef={props.workflowDef}
+                    />)
+                }
             </>}
         />
 

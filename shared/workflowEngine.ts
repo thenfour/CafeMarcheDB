@@ -579,3 +579,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, flowInstance: WorkflowTid
     return ret;
 };
 
+
+export const WorkflowMakeConnectionId = (srcNodeDefId: number, targetNodeDefId: number) => {
+    return `${srcNodeDefId}:${targetNodeDefId}`;
+}
