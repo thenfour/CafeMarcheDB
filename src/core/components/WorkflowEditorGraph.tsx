@@ -10,6 +10,7 @@ import { InspectObject } from "./CMCoreComponents";
 import { nanoid } from "nanoid";
 import { gLightSwatchColors } from "shared/color";
 import { CMSmallButton } from "./CMCoreComponents2";
+import { SnackbarContext } from "src/core/components/SnackbarContext";
 
 
 const makeNormalNodeId = (nodeDefId: number) => {
@@ -176,6 +177,7 @@ interface WorkflowReactFlowEditorProps {
 }
 
 const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evaluatedWorkflow, ...props }) => {
+    const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const reactFlow = useReactFlow();
 
@@ -373,6 +375,11 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
         }
     };
 
+    const clipboardCopy = async (text: string) => {
+        await navigator.clipboard.writeText(text);
+        showSnackbar({ severity: "success", children: `Copied ${text.length} characters to clipboard` });
+    };
+
     return (
         <div style={{ width: '100%', height: '900px', border: '2px solid black' }}>
             <ReactFlow
@@ -407,11 +414,10 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                 }}
             >
                 <div style={{ position: "absolute", zIndex: 4 }}>
-                    <InspectObject label="reactflow state" src={{
-                        ...s,
-                        flowDef: props.flowDef
-                    }} />
                     <div>
+                        <button onClick={() => { clipboardCopy(JSON.stringify(props.flowDef, null, 2)) }}>
+                            Copy flow definition
+                        </button>
                         <button onClick={() => {
                             const n: WorkflowNodeDef = {
                                 id: props.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID

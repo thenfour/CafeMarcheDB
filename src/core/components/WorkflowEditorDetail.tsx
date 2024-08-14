@@ -3,7 +3,7 @@
 import { XYPosition } from "@xyflow/react";
 import { getHashedColor, sortBy } from "shared/utils";
 import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState } from "shared/workflowEngine";
-import { CMTextField, CMTextInputBase } from "./CMTextField";
+import { CMNumericTextField, CMTextField, CMTextInputBase } from "./CMTextField";
 import { NameValuePair } from "./CMCoreComponents2";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
@@ -495,14 +495,14 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                             return <div className="criteriaDescription">This node is complete when the field value meets criteria. Make sure you complete field configuration.</div>;
                         case WorkflowCompletionCriteriaType.someNodesComplete:
                             {
-                                if (activationDependencies.length === 0) {
+                                if (completionDependencies.length === 0) {
                                     return <div className="criteriaDescription alert">You need to configure dependencies that affect completion for this to work.</div>;
                                 }
                                 return <div className="criteriaDescription">This node will complete when any of the following dependencies are completed.</div>;
                             }
                         case WorkflowCompletionCriteriaType.allNodesComplete:
                             {
-                                if (activationDependencies.length === 0) {
+                                if (completionDependencies.length === 0) {
                                     return <div className="criteriaDescription alert">You need to configure dependencies that affect completion for this to work.</div>;
                                 }
                                 return <div className="criteriaDescription">This node will complete when all of the following dependencies are completed.</div>;
@@ -516,9 +516,25 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                 <ul>
                     {completionDependencies.map(d => {
                         const en = getEvaluatedNode(d.nodeDefId);
-                        return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} <WorkflowNodeProgressIndicator value={en.evaluation} /> {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}</li>;
+                        return <li key={d.nodeDefId}>
+                            {d.nodeDefId}: {getNodeDef(d.nodeDefId).name}
+                            <WorkflowNodeProgressIndicator value={en.evaluation} />
+                            {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}
+                            [{en.evaluation.completionWeightCompleted} / {en.evaluation.completionWeightTotal}]
+                            {/* {en.evaluation.completenessBlockedByNodes.length > 0 && <ul>
+                                {en.evaluation.completenessBlockedByNodes.map(bn => {
+                                    const bnDef = getNodeDef(bn.nodeDefId);
+                                    return <li key={bn.nodeDefId}>
+                                        {bnDef.name}: []
+                                    </li>
+                                })}
+                            </ul>} */}
+                        </li>;
                     })}
                 </ul>
+
+                [{evaluated.evaluation.completionWeightCompleted} / {evaluated.evaluation.completionWeightTotal}]
+
                 <div>--&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}</div>
             </>}
         />
@@ -565,7 +581,17 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
 
         <NameValuePair
             name={"Weight"}
-            value={props.nodeDef.thisNodeProgressWeight}
+            // value={props.nodeDef.thisNodeProgressWeight}
+            value={<CMNumericTextField autoFocus={false} value={props.nodeDef.thisNodeProgressWeight} onChange={(e, val) => {
+                const newFlow = props.defMutator.setNodeBasicInfo({
+                    sourceDef: { ...props.workflowDef },
+                    nodeDef: props.nodeDef,
+                    thisNodeProgressWeight: val,
+                });
+                if (newFlow) {
+                    props.defMutator.setWorkflowDef({ flowDef: newFlow });
+                }
+            }} />}
         />
 
     </div>;

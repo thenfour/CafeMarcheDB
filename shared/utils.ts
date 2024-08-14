@@ -401,9 +401,9 @@ export const HasFlag = <T extends number,>(myvar: T, flag: T): boolean => {
     return (myvar & flag) === flag;
 }
 
-export function lerp(a, b, alpha) {
+export function lerp(a, b, t) {
     if (Math.abs(b - a) < 0.0001) return a;
-    return a + alpha * (b - a);
+    return a + t * (b - a);
 }
 
 let gSequenceId = 0;

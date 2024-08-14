@@ -40,6 +40,18 @@ const minimalWorkflow = {
             "width": 614,
             "height": 179,
             "selected": false
+        },
+        {
+            "id": 1002,
+            "name": "G7Z7oi59cSR3PB_ZjvePA",
+            "color": "light_blue",
+            "height": 275,
+            "width": 620,
+            "position": {
+                "x": 45,
+                "y": 585
+            },
+            "selected": false
         }
     ],
     "nodeDefs": [
@@ -61,8 +73,8 @@ const minimalWorkflow = {
                 "y": 60
             },
             "selected": false,
-            "width": 108,
-            "height": 48
+            "width": 113,
+            "height": 42
         },
         {
             "id": 501,
@@ -82,8 +94,8 @@ const minimalWorkflow = {
                 "y": 60
             },
             "selected": false,
-            "width": 108,
-            "height": 48
+            "width": 113,
+            "height": 42
         },
         {
             "id": 502,
@@ -103,59 +115,59 @@ const minimalWorkflow = {
                 "y": 60
             },
             "selected": false,
-            "width": 108,
-            "height": 48
+            "width": 113,
+            "height": 42
         },
         {
             "id": 503,
-            "name": "AND When all are answered",
+            "name": "When all are answered",
             "groupDefId": 1001,
             "displayStyle": "Normal",
             "defaultAssignees": [],
             "thisNodeProgressWeight": 1,
             "completionCriteriaType": "allNodesComplete",
-            "activationCriteriaType": "someNodesComplete",
+            "activationCriteriaType": "always",
             "relevanceCriteriaType": "always",
             "position": {
-                "x": 315,
+                "x": 195,
                 "y": 75
             },
             "selected": false,
             "nodeDependencies": [
                 {
                     "nodeDefId": 500,
-                    "determinesActivation": true,
+                    "determinesActivation": false,
                     "determinesCompleteness": true,
                     "determinesRelevance": false,
                     "selected": false
                 },
                 {
                     "nodeDefId": 501,
-                    "determinesActivation": true,
+                    "determinesActivation": false,
                     "determinesCompleteness": true,
                     "determinesRelevance": false,
                     "selected": false
                 },
                 {
                     "nodeDefId": 502,
-                    "determinesActivation": true,
+                    "determinesActivation": false,
                     "determinesCompleteness": true,
                     "determinesRelevance": false,
                     "selected": false
                 }
             ],
-            "width": 230,
-            "height": 48
+            "width": 175,
+            "height": 42
         },
         {
             "id": 504,
-            "name": "OR When any are answered",
+            "name": "Any answered?",
             "groupDefId": 1001,
             "displayStyle": "Normal",
             "defaultAssignees": [],
             "thisNodeProgressWeight": 1,
-            "completionCriteriaType": "allNodesComplete",
-            "activationCriteriaType": "allNodesComplete",
+            "completionCriteriaType": "someNodesComplete",
+            "activationCriteriaType": "always",
             "relevanceCriteriaType": "always",
             "position": {
                 "x": 30,
@@ -165,28 +177,123 @@ const minimalWorkflow = {
             "nodeDependencies": [
                 {
                     "nodeDefId": 500,
-                    "determinesActivation": true,
+                    "determinesActivation": false,
                     "determinesCompleteness": true,
                     "determinesRelevance": false,
                     "selected": false
                 },
                 {
                     "nodeDefId": 501,
-                    "determinesActivation": true,
+                    "determinesActivation": false,
                     "determinesCompleteness": true,
                     "determinesRelevance": false,
                     "selected": false
                 },
                 {
                     "nodeDefId": 502,
-                    "determinesActivation": true,
+                    "determinesActivation": false,
                     "determinesCompleteness": true,
                     "determinesRelevance": false,
                     "selected": false
                 }
             ],
-            "width": 229,
-            "height": 48
+            "width": 134,
+            "height": 42
+        },
+        {
+            "id": 505,
+            "name": "should mirror \"ALL\"",
+            "groupDefId": 1002,
+            "displayStyle": "Normal",
+            "completionCriteriaType": "allNodesComplete",
+            "activationCriteriaType": "always",
+            "relevanceCriteriaType": "always",
+            "defaultAssignees": [],
+            "thisNodeProgressWeight": 1,
+            "nodeDependencies": [
+                {
+                    "selected": false,
+                    "nodeDefId": 503,
+                    "determinesRelevance": false,
+                    "determinesActivation": false,
+                    "determinesCompleteness": true
+                }
+            ],
+            "position": {
+                "x": 60,
+                "y": 90
+            },
+            "selected": false,
+            "width": 155,
+            "height": 42
+        },
+        {
+            "id": 506,
+            "name": "ANY but can be partially",
+            "groupDefId": 1002,
+            "displayStyle": "Normal",
+            "completionCriteriaType": "someNodesComplete",
+            "activationCriteriaType": "always",
+            "relevanceCriteriaType": "always",
+            "defaultAssignees": [],
+            "thisNodeProgressWeight": 1,
+            "nodeDependencies": [
+                {
+                    "selected": false,
+                    "nodeDefId": 503,
+                    "determinesRelevance": false,
+                    "determinesActivation": false,
+                    "determinesCompleteness": true
+                },
+                {
+                    "selected": false,
+                    "nodeDefId": 507,
+                    "determinesRelevance": false,
+                    "determinesActivation": false,
+                    "determinesCompleteness": true
+                }
+            ],
+            "position": {
+                "x": 210,
+                "y": 165
+            },
+            "selected": false,
+            "width": 181,
+            "height": 42
+        },
+        {
+            "id": 507,
+            "name": "when 2 are answered",
+            "groupDefId": 1002,
+            "displayStyle": "Normal",
+            "completionCriteriaType": "allNodesComplete",
+            "activationCriteriaType": "always",
+            "relevanceCriteriaType": "always",
+            "defaultAssignees": [],
+            "thisNodeProgressWeight": 1,
+            "nodeDependencies": [
+                {
+                    "selected": false,
+                    "nodeDefId": 501,
+                    "determinesRelevance": false,
+                    "determinesActivation": false,
+                    "determinesCompleteness": true
+                },
+                {
+                    "selected": false,
+                    "nodeDefId": 502,
+                    "determinesRelevance": false,
+                    "determinesActivation": false,
+                    "determinesCompleteness": true
+                }
+            ],
+            "position": {
+                "x": 345,
+                "y": 60
+            },
+            "selected": false,
+            "width": 167,
+            "height": 42
         }
     ]
 }

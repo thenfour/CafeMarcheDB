@@ -1,3 +1,6 @@
+// test assignees
+// test due date
+
 // evaluation
 // - support triggers on state change. to set default due date & assignees
 
@@ -15,9 +18,6 @@
 
 // DB hookup
 
-//import React from "react";
-//import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, KeyValueDisplay, NameValuePair } from "./CMCoreComponents2";
-//import { ColorPick, GetStyleVariablesForColor } from "./Color";
 import { isNumber } from "@mui/x-data-grid/internals";
 import {
     XYPosition
@@ -26,10 +26,6 @@ import { assert } from "blitz";
 
 import '@xyflow/react/dist/style.css';
 import { getNextSequenceId, hashString } from "shared/utils";
-//import { InspectObject } from "./CMCoreComponents";
-//import { CMTextField, CMTextInputBase } from "./CMTextField";
-//import { ChipSelector, EnumChipSelector } from "./ChipSelector";
-
 
 
 
@@ -196,11 +192,8 @@ export interface WorkflowNodeEvaluation {
     isComplete: boolean; // same as progressstate === completed
     isInProgress: boolean; // same as progressstate === activated
 
-    completenessNodesCompletedIncludingThis: number;
-    completenessNodesTotalIncludingThis: number;
-
-    completionWeightCompletedIncludingThis: number | undefined;
-    completionWeightTotalIncludingThis: number;
+    completionWeightCompleted: number | undefined;
+    completionWeightTotal: number;
 
     dependentNodes: WorkflowEvaluatedDependentNode[];
     relevanceBlockedByNodes: WorkflowEvaluatedDependentNode[];
@@ -346,7 +339,7 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
 
     const completionDependsOnChildren = [WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType);
 
-    const emptyEvaluation: WorkflowNodeEvaluation = {
+    const evaluation: WorkflowNodeEvaluation = {
         isEvaluated: true,
         activationSatisfied: false,
         completenessSatisfied: false,
@@ -358,10 +351,14 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
         dependentNodes: evaluatedChildren,
         completenessByAssigneeId: [],
         isSilent: evaluatedChildren.every(v => v.evaluation.isSilent), // parents only silenced when all children are (if there are any children with alerts, parents still see alerts)
-        completenessNodesCompletedIncludingThis: 0,// accumulated
-        completenessNodesTotalIncludingThis: 1,// accumulated
-        completionWeightCompletedIncludingThis: 0,// accumulated.
-        completionWeightTotalIncludingThis: nodeDef.thisNodeProgressWeight,// accumulated
+
+        // two cases:
+        // 1. this step requires a field to complete. this weight is used.
+        // 2. completeness depends on child fields. this weight is ignored. when depending on nodes, this weight is the sum of children.
+        // undefined weight is possible when 
+        completionWeightCompleted: undefined, // to calculate later
+        completionWeightTotal: nodeDef.thisNodeProgressWeight, // assume not dependent // completionDependsOnChildren ? comple : nodeDef.thisNodeProgressWeight,
+
         completenessDependentNodes: completionDependsOnChildren ? evaluatedChildren.filter(ch => ch.dependency.determinesCompleteness) : [],
         completenessBlockedByNodes: completionDependsOnChildren ? evaluatedChildren.filter(ch => ch.dependency.determinesCompleteness && !ch.evaluation.isComplete) : [],
         activationDependentNodes: evaluatedChildren.filter(ch => ch.dependency.determinesActivation),
@@ -370,24 +367,10 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
         relevanceBlockedByNodes: evaluatedChildren.filter(ch => ch.dependency.determinesRelevance && !ch.evaluation.isComplete),
     };
 
-    // (mul1 * mul2) + add
-    const addMulPropagatingUnknown = (mul1: number | undefined, mul2: number | undefined, add: number | undefined) => {
-        if (mul1 === undefined) return undefined;
-        if (mul2 === undefined) return undefined;
-        if (add === undefined) return undefined;
-        return (mul1 * mul2) + add;
-    };
-
-    const evaluation: WorkflowNodeEvaluation = evaluatedChildren.reduce((acc: WorkflowNodeEvaluation, n) => {
-        const ret: WorkflowNodeEvaluation = {
-            ...acc,
-            completenessNodesCompletedIncludingThis: acc.completenessNodesCompletedIncludingThis + n.evaluation.completenessNodesCompletedIncludingThis,
-            completenessNodesTotalIncludingThis: acc.completenessNodesTotalIncludingThis + n.evaluation.completenessNodesTotalIncludingThis,
-            completionWeightCompletedIncludingThis: addMulPropagatingUnknown(1, acc.completionWeightCompletedIncludingThis, n.evaluation.completionWeightCompletedIncludingThis),
-            completionWeightTotalIncludingThis: acc.completionWeightTotalIncludingThis + n.evaluation.completionWeightTotalIncludingThis,
-        };
-        return ret;
-    }, emptyEvaluation);
+    if (completionDependsOnChildren) {
+        evaluation.completionWeightTotal = evaluation.completenessDependentNodes.reduce((acc, e) => acc + e.evaluation.completionWeightTotal, 0);
+        evaluation.completionWeightCompleted = evaluation.completenessDependentNodes.reduce((acc, e) => e.evaluation.completionWeightCompleted === undefined ? undefined : (acc + e.evaluation.completionWeightCompleted), 0);
+    }
 
     switch (nodeDef.relevanceCriteriaType) {
         case WorkflowCompletionCriteriaType.never:
@@ -423,21 +406,20 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
             break;
     }
 
-    var thisNodeProgress01: undefined | number = undefined;
     switch (nodeDef.completionCriteriaType) {
         case WorkflowCompletionCriteriaType.never:
             evaluation.completenessSatisfied = false;
-            thisNodeProgress01 = 0;
+            evaluation.progress01 = 0;
             break;
         case WorkflowCompletionCriteriaType.always:
             evaluation.completenessSatisfied = true;
-            thisNodeProgress01 = 1;
+            evaluation.progress01 = 1;
             break;
         case WorkflowCompletionCriteriaType.fieldValue:
             if (node.assignees.length === 0) {
                 // no assignees = just evaluate once with no assignees considered.
                 evaluation.completenessSatisfied = api.DoesFieldValueSatisfyCompletionCriteria(node, undefined);
-                thisNodeProgress01 = evaluation.completenessSatisfied ? 1 : 0;
+                evaluation.progress01 = evaluation.completenessSatisfied ? 1 : 0;
             } else {
                 evaluation.completenessByAssigneeId = node.assignees.map(assignee => ({
                     assignee,
@@ -454,17 +436,17 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
                 if (requiredAssignees.length === 0) {
                     assert(optionalAssignees.length > 0, "0 optional + 0 required assignees wut");
                     evaluation.completenessSatisfied = satisfiedOptional > 0;
-                    thisNodeProgress01 = satisfiedOptional / optionalAssignees.length;
+                    evaluation.progress01 = satisfiedOptional / optionalAssignees.length;
                 }
                 else {
                     // there are some required
                     const requiredSatisfied = satisfiedRequired === requiredAssignees.length;
                     if (requiredSatisfied) { // don't let optional assignees block completeness when the required ones are satisfied.
-                        thisNodeProgress01 = 1;
+                        evaluation.progress01 = 1;
                         evaluation.completenessSatisfied = true;
                     } else {
                         // required ones are not done. in order for optional assignees to result in forward progress, include the total assignees in the calculation.
-                        thisNodeProgress01 = (satisfiedRequired + satisfiedOptional) / node.assignees.length;
+                        evaluation.progress01 = (satisfiedRequired + satisfiedOptional) / node.assignees.length;
                         evaluation.completenessSatisfied = false;
                     }
                 }
@@ -472,11 +454,23 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
             break;
         case WorkflowCompletionCriteriaType.allNodesComplete:
             evaluation.completenessSatisfied = evaluation.completenessBlockedByNodes.length === 0;
-            thisNodeProgress01 = evaluation.completenessSatisfied ? 1 : 0;
+            if (evaluation.completionWeightCompleted === undefined || evaluation.completionWeightTotal === 0) {
+                evaluation.progress01 = undefined;
+            } else {
+                evaluation.progress01 = evaluation.completionWeightCompleted / evaluation.completionWeightTotal;
+            }
             break;
         case WorkflowCompletionCriteriaType.someNodesComplete:
             evaluation.completenessSatisfied = evaluation.completenessDependentNodes.length === 0 || (evaluation.completenessBlockedByNodes.length !== evaluation.completenessDependentNodes.length);
-            thisNodeProgress01 = evaluation.completenessSatisfied ? 1 : 0;
+            if (evaluation.completenessSatisfied) {
+                evaluation.progress01 = 1;
+            } else {
+                if (evaluation.completionWeightCompleted === undefined || evaluation.completionWeightTotal === 0) {
+                    evaluation.progress01 = undefined;
+                } else {
+                    evaluation.progress01 = evaluation.completionWeightCompleted / evaluation.completionWeightTotal;
+                }
+            }
             break;
     }
 
@@ -493,26 +487,8 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
     };
     evaluation.progressState = progressStateTable[`${evaluation.relevanceSatisfied ? "r" : "-"}${evaluation.activationSatisfied ? "a" : "-"}${evaluation.completenessSatisfied ? "c" : "-"}`];
 
-    switch (evaluation.progressState) {
-        case WorkflowNodeProgressState.InvalidState:
-            throw new Error(`Invalid progress state`);
-        case WorkflowNodeProgressState.Irrelevant:
-        case WorkflowNodeProgressState.Relevant:
-            evaluation.progress01 = 0;
-            break;
-        case WorkflowNodeProgressState.Activated:
-            if (evaluation.completionWeightTotalIncludingThis === 0 || evaluation.completionWeightTotalIncludingThis === undefined) {
-                // if there's no weight in the progress evaluation, then basically it's just not relevant. like a node that's only an annotation or something.
-                evaluation.progress01 = undefined;
-            } else {
-                evaluation.progress01 = addMulPropagatingUnknown(evaluation.completionWeightCompletedIncludingThis, 1 / evaluation.completionWeightTotalIncludingThis, 0);
-            }
-            break;
-        case WorkflowNodeProgressState.Completed:
-            evaluation.progress01 = 1;
-            evaluation.completionWeightCompletedIncludingThis = addMulPropagatingUnknown(nodeDef.thisNodeProgressWeight, thisNodeProgress01, evaluation.completionWeightCompletedIncludingThis);
-            evaluation.completenessNodesCompletedIncludingThis++;
-            break;
+    if (evaluation.progress01 !== undefined) {
+        evaluation.completionWeightCompleted = evaluation.completionWeightTotal * evaluation.progress01;
     }
 
     evaluation.isComplete = evaluation.progressState === WorkflowNodeProgressState.Completed;

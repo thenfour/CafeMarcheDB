@@ -10,7 +10,7 @@ import {
 import CancelIcon from '@mui/icons-material/Cancel';
 import { assert } from "blitz";
 import { formatSongLength, parseSongLengthSeconds } from "shared/time";
-import { CoerceToNumberOrNull } from "shared/utils";
+import { CoerceToNumberOrNull, parseIntOrNull } from "shared/utils";
 
 
 
@@ -86,6 +86,54 @@ export function CMTextField({ validationError, label, value, onChange, autoFocus
             helperText={validationError}
             onChange={(e) => { onChange(e, e.target.value); }}
             value={value || ""}
+            margin="dense"
+            type="text"
+            fullWidth
+            className={props.className}
+            variant="filled"
+            inputProps={{
+                'data-lpignore': true, // supposedly prevent lastpass from auto-completing. doesn't work for me tho
+            }}
+        />
+    );
+};
+
+interface CMNumericTextFieldProps {
+    validationError?: string | null;
+    label?: string;
+    value: number;
+    onChange: (e, value: number) => void;
+    autoFocus: boolean;
+    readOnly?: boolean;
+    className?: string;
+};
+
+// textfield for a string field on an object.
+export function CMNumericTextField({ label, value, autoFocus, readOnly, ...props }: CMNumericTextFieldProps) {
+    const [stringValue, setStringValue] = React.useState<string>(value.toString());
+    const [validationError, setValidationError] = React.useState<string | undefined>();
+    React.useEffect(() => {
+        const x = parseIntOrNull(stringValue);
+        if (typeof x === 'number') return;
+        setValidationError(`Input must be numeric`);
+    },
+        [stringValue]);
+
+    return (
+        <TextField
+            disabled={!!readOnly}
+            autoFocus={autoFocus}
+            label={label}
+            error={!!validationError}
+            helperText={validationError}
+            onChange={(e) => {
+                setStringValue(e.target.value);
+                const x = parseIntOrNull(e.target.value);
+                if (typeof x === 'number') {
+                    props.onChange(e, x);
+                }
+            }}
+            value={stringValue}
             margin="dense"
             type="text"
             fullWidth

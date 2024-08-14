@@ -29,6 +29,11 @@
     background-color: #ddd;
 }
 
+.workflowContainer .name {
+    display: flex;
+    align-items: center;
+}
+
 .workflowContainer .name.selectable {
     cursor: pointer;
 }

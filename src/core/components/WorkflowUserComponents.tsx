@@ -1,7 +1,8 @@
+import React from "react";
 import { Tooltip } from "@mui/material";
 import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowInstanceMutator as WorkflowInstanceMutator, WorkflowEvaluatedNode, WorkflowNodeEvaluation, WorkflowNodeProgressState } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
-import { sortBy } from "shared/utils";
+import { lerp, sortBy } from "shared/utils";
 
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
@@ -9,7 +10,46 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import CancelIcon from '@mui/icons-material/Cancel';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import CircularProgress from '@mui/material/CircularProgress';
+import { InspectObject } from "./CMCoreComponents";
 
+
+
+interface AnimatedCircularProgressProps {
+    value: number;
+    duration?: number; // Duration of the animation in milliseconds
+    size?: string | number | undefined;
+}
+
+const AnimatedCircularProgress: React.FC<AnimatedCircularProgressProps> = ({ value, duration = 1000, size }) => {
+    const [progress, setProgress] = React.useState(0);
+
+    React.useEffect(() => {
+        let start: number;
+        let animationFrameId: number;
+
+        const startValue = progress;
+        const delta = value - startValue;
+
+        const animateProgress = (timestamp: number) => {
+            if (!start) start = timestamp;
+            const elapsed = timestamp - start;
+            const t = Math.min(elapsed / duration, 1); // Ensure t is between 0 and 1
+
+            const newProgress = lerp(startValue, value, t);
+            setProgress(newProgress);
+
+            if (t < 1) {
+                animationFrameId = requestAnimationFrame(animateProgress);
+            }
+        };
+
+        animationFrameId = requestAnimationFrame(animateProgress);
+
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [value, duration]);
+
+    return <CircularProgress variant="determinate" size={size} value={progress} />;
+};
 
 interface WorkflowNodeProgressIndicatorProps {
     value: WorkflowNodeEvaluation;
@@ -21,19 +61,21 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
     const progressSize = 18;
 
     const progressStateIcons = {
-        [WorkflowNodeProgressState.Irrelevant]: <RemoveCircleOutlineIcon style={{ width: iconSize, color: 'gray' }} />, // not part of the flow
-        [WorkflowNodeProgressState.Relevant]: <HourglassEmptyIcon style={{ width: iconSize, color: 'orange' }} />, // part of the flow but not active / started yet
+        [WorkflowNodeProgressState.Irrelevant]: <RemoveCircleOutlineIcon style={{ width: iconSize, color: '#bbb' }} />, // not part of the flow
+        [WorkflowNodeProgressState.Relevant]: <HourglassEmptyIcon style={{ width: iconSize, color: '#777' }} />, // part of the flow but not active / started yet
         [WorkflowNodeProgressState.Activated]: <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
         [WorkflowNodeProgressState.Completed]: <CheckCircleIcon style={{ width: iconSize, color: 'green' }} />, // all criteria satisfied / complete
         [WorkflowNodeProgressState.InvalidState]: <CancelIcon style={{ width: iconSize, color: 'red' }} />, // error condition
     };
 
     return (
-        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <div style={{ position: 'relative', display: 'inline-flex' }}>
-                <CircularProgress variant="determinate" size={progressSize} value={(props.value.progress01 || 0) * 100} />
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {progressStateIcons[props.value.progressState]}
+        <div style={{ display: 'inline-flex', alignItems: 'center', marginRight: "5px", marginLeft: "2px" }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', borderRadius: "50%", backgroundColor: "#0002" }}>
+                <div style={{ position: 'relative', display: 'inline-flex' }}>
+                    <AnimatedCircularProgress size={progressSize} value={(props.value.progress01 || 0) * 100} duration={200} />
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {progressStateIcons[props.value.progressState]}
+                    </div>
                 </div>
             </div>
         </div>
@@ -97,6 +139,7 @@ export const WorkflowNodeComponent = ({ flowDef, evaluatedNode, api, ...props }:
                     ></span>
                 </Tooltip>}
                 <WorkflowNodeProgressIndicator value={evaluatedNode.evaluation} />
+                {props.drawSelectionHandles && <InspectObject src={evaluatedNode.evaluation} />}
                 {nodeDef.name}
             </div>
             {/* {
