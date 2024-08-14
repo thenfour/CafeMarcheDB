@@ -2,15 +2,16 @@
 
 import { XYPosition } from "@xyflow/react";
 import { getHashedColor, sortBy } from "shared/utils";
-import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState } from "shared/workflowEngine";
 import { CMTextField, CMTextInputBase } from "./CMTextField";
 import { NameValuePair } from "./CMCoreComponents2";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
 import { gGeneralPaletteList } from "shared/color";
 import { CMChip, CMChipContainer } from "./CMCoreComponents";
+import { WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 
-
+/////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowDefMutator_Args {
     sourceDef: WorkflowDef;
 };
@@ -165,6 +166,16 @@ export function WorkflowChainMutations(
         flowDef: currentWorkflowDef,
     };
 }
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
 
 
 
@@ -268,21 +279,26 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
     const groupOptions = [{ value: null, label: "<none>" }, ...sortBy(props.workflowDef.groupDefs, g => g.position.y).map(g => ({ value: g.id, label: g.name, color: g.color }))];
 
     return <div className="CMWorkflowNodeEditorContainer">
-        <h2>Node/step/question/task #{props.nodeDef.id}</h2>
 
-        <CMTextInputBase
-            autoFocus={false}
-            value={props.nodeDef.name}
-            onChange={(e, v) => {
-                const newFlow = props.defMutator.setNodeBasicInfo({
-                    sourceDef: { ...props.workflowDef },
-                    nodeDef: props.nodeDef,
-                    name: v,
-                });
-                if (newFlow) {
-                    props.defMutator.setWorkflowDef({ flowDef: newFlow });
-                }
-            }}
+        <NameValuePair
+            name={`Step / node #${props.nodeDef.id}`}
+            value={
+                <CMTextField
+                    className="nodeNameInput"
+                    autoFocus={false}
+                    value={props.nodeDef.name}
+                    onChange={(e, v) => {
+                        const newFlow = props.defMutator.setNodeBasicInfo({
+                            sourceDef: { ...props.workflowDef },
+                            nodeDef: props.nodeDef,
+                            name: v,
+                        });
+                        if (newFlow) {
+                            props.defMutator.setWorkflowDef({ flowDef: newFlow });
+                        }
+                    }}
+                />
+            }
         />
 
         <NameValuePair
@@ -344,13 +360,37 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     }}
                 />
 
-                {relevanceUsesNodeDependencies && (relevanceDependencies.length === 0) && <div className="alert">You haven't defined any dependent nodes.</div>}
+                {(() => {
+                    switch (props.nodeDef.relevanceCriteriaType) {
+                        case WorkflowCompletionCriteriaType.never:
+                            return <div className="criteriaDescription alert">This node will never be relevant. Maybe an error?</div>;
+                        case WorkflowCompletionCriteriaType.always:
+                            return <div className="criteriaDescription">This node will always be a part of the flow.</div>;
+                        case WorkflowCompletionCriteriaType.fieldValue:
+                            return <div className="criteriaDescription error">Field value relevance makes no sense and is not supported.</div>;
+                        case WorkflowCompletionCriteriaType.someNodesComplete:
+                            {
+                                if (relevanceDependencies.length === 0) {
+                                    return <div className="criteriaDescription alert">You need to configure dependencies that affect relevance for this to work.</div>;
+                                }
+                                return <div className="criteriaDescription">This node will become a part of the flow when any of the following dependencies are completed.</div>;
+                            }
+                        case WorkflowCompletionCriteriaType.allNodesComplete:
+                            {
+                                if (relevanceDependencies.length === 0) {
+                                    return <div className="criteriaDescription alert">You need to configure dependencies that affect relevance for this to work.</div>;
+                                }
+                                return <div className="criteriaDescription">This node will become a part of the flow when all of the following dependencies are completed.</div>;
+                            }
+                    }
+                })()}
+
                 {!relevanceUsesNodeDependencies && (relevanceDependencies.length > 0) && <div className="alert">There are nodes configured to affect relevance, but relevance style {props.nodeDef.completionCriteriaType} will just ignore them.</div>}
 
                 <ul>
                     {relevanceDependencies.map(d => {
                         const en = getEvaluatedNode(d.nodeDefId);
-                        return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} ({en.evaluation.progressState}) {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}</li>;
+                        return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} <WorkflowNodeProgressIndicator value={en.evaluation} /> {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}</li>;
                     })}
                 </ul>
                 <div>--&gt; {evaluated.evaluation.relevanceSatisfied ? "satisfied" : "incomplete"}</div>
@@ -380,13 +420,37 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     }}
                 />
 
-                {activationUsesNodeDependencies && (activationDependencies.length === 0) && <div className="alert">You haven't defined any dependent nodes.</div>}
+                {(() => {
+                    switch (props.nodeDef.activationCriteriaType) {
+                        case WorkflowCompletionCriteriaType.never:
+                            return <div className="criteriaDescription alert">This node will never be active. Maybe an error?</div>;
+                        case WorkflowCompletionCriteriaType.always:
+                            return <div className="criteriaDescription">This node will always be actionable.</div>;
+                        case WorkflowCompletionCriteriaType.fieldValue:
+                            return <div className="criteriaDescription error">Field value activation makes no sense and is not supported.</div>;
+                        case WorkflowCompletionCriteriaType.someNodesComplete:
+                            {
+                                if (activationDependencies.length === 0) {
+                                    return <div className="criteriaDescription alert">You need to configure dependencies that affect activation for this to work.</div>;
+                                }
+                                return <div className="criteriaDescription">This node will become actionable when any of the following dependencies are completed.</div>;
+                            }
+                        case WorkflowCompletionCriteriaType.allNodesComplete:
+                            {
+                                if (activationDependencies.length === 0) {
+                                    return <div className="criteriaDescription alert">You need to configure dependencies that affect activation for this to work.</div>;
+                                }
+                                return <div className="criteriaDescription">This node will become actionable when all of the following dependencies are completed.</div>;
+                            }
+                    }
+                })()}
+
                 {!activationUsesNodeDependencies && (activationDependencies.length > 0) && <div className="alert">There are nodes configured to affect activation, but activation style {props.nodeDef.completionCriteriaType} will just ignore them.</div>}
 
                 <ul>
                     {activationDependencies.map(d => {
                         const en = getEvaluatedNode(d.nodeDefId);
-                        return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} ({en.evaluation.progressState}) {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}</li>;
+                        return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} <WorkflowNodeProgressIndicator value={en.evaluation} /> {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}</li>;
                     })}
                 </ul>
                 <div>--&gt; {evaluated.evaluation.activationSatisfied ? "satisfied" : "incomplete"}</div>
@@ -421,14 +485,38 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     </div>
                 }
 
-                {completionUsesNodeDependencies && (completionDependencies.length === 0) && <div className="alert">You haven't defined any dependent nodes.</div>}
+                {(() => {
+                    switch (props.nodeDef.completionCriteriaType) {
+                        case WorkflowCompletionCriteriaType.never:
+                            return <div className="criteriaDescription alert">This node will never be complete. Maybe an error?</div>;
+                        case WorkflowCompletionCriteriaType.always:
+                            return <div className="criteriaDescription">This node will always be completed.</div>;
+                        case WorkflowCompletionCriteriaType.fieldValue:
+                            return <div className="criteriaDescription">This node is complete when the field value meets criteria. Make sure you complete field configuration.</div>;
+                        case WorkflowCompletionCriteriaType.someNodesComplete:
+                            {
+                                if (activationDependencies.length === 0) {
+                                    return <div className="criteriaDescription alert">You need to configure dependencies that affect completion for this to work.</div>;
+                                }
+                                return <div className="criteriaDescription">This node will complete when any of the following dependencies are completed.</div>;
+                            }
+                        case WorkflowCompletionCriteriaType.allNodesComplete:
+                            {
+                                if (activationDependencies.length === 0) {
+                                    return <div className="criteriaDescription alert">You need to configure dependencies that affect completion for this to work.</div>;
+                                }
+                                return <div className="criteriaDescription">This node will complete when all of the following dependencies are completed.</div>;
+                            }
+                    }
+                })()}
+
                 {!completionUsesNodeDependencies && (completionDependencies.length > 0) && <div className="alert">There are nodes configured to affect completion, but completion style {props.nodeDef.completionCriteriaType} will just ignore them.</div>}
                 {(props.nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) && (!props.nodeDef.fieldName) && <div className="alert">! completion depends on a field value, but none is specified.</div>}
 
                 <ul>
                     {completionDependencies.map(d => {
                         const en = getEvaluatedNode(d.nodeDefId);
-                        return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} ({en.evaluation.progressState}) {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}</li>;
+                        return <li key={d.nodeDefId}>{d.nodeDefId}: {getNodeDef(d.nodeDefId).name} <WorkflowNodeProgressIndicator value={en.evaluation} /> {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}</li>;
                     })}
                 </ul>
                 <div>--&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}</div>

@@ -19,38 +19,16 @@
 //import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, KeyValueDisplay, NameValuePair } from "./CMCoreComponents2";
 //import { ColorPick, GetStyleVariablesForColor } from "./Color";
 import { isNumber } from "@mui/x-data-grid/internals";
-import { assert } from "blitz";
 import {
-    ReactFlow,
-    MiniMap,
-    Controls,
-    Background,
-    useNodesState,
-    useEdgesState,
-    addEdge,
-    Edge,
-    Node,
-    useOnSelectionChange,
-    NodeChange,
-    MarkerType,
-    Handle,
-    Position,
-    EdgeChange,
-    Connection,
-    XYPosition,
-    useReactFlow,
-    ReactFlowProvider,
-    NodeResizer,
+    XYPosition
 } from '@xyflow/react';
+import { assert } from "blitz";
 
 import '@xyflow/react/dist/style.css';
-import { nanoid } from "nanoid";
-import { getHashedColor, getNextSequenceId, hashString, sortBy } from "shared/utils";
+import { getNextSequenceId, hashString } from "shared/utils";
 //import { InspectObject } from "./CMCoreComponents";
-import { gAppColors, gGeneralPaletteList, gLightSwatchColors } from "shared/color";
 //import { CMTextField, CMTextInputBase } from "./CMTextField";
 //import { ChipSelector, EnumChipSelector } from "./ChipSelector";
-import { Button, Checkbox, FormControlLabel, Tooltip } from "@mui/material";
 
 
 
@@ -331,13 +309,13 @@ const detectCircularReferences = (nodes: WorkflowNodeDef[], visited: Set<number>
     return false;
 };
 
-export interface WorkflowEvalProvider {
+export interface WorkflowInstanceMutator {
     DoesFieldValueSatisfyCompletionCriteria: (node: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee) => boolean;
     RenderFieldEditorForNode: (node: WorkflowEvaluatedNode) => React.ReactNode;
     RegisterStateChange: (node: WorkflowEvaluatedNode, oldState: WorkflowNodeProgressState) => void; // register a change in the db as last known progress state. node.progressState will be updated already.
 };
 
-const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, flowInstance: WorkflowTidiedInstance, api: WorkflowEvalProvider, evaluatedNodes: WorkflowEvaluatedNode[]): WorkflowEvaluatedNode => {
+const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator, evaluatedNodes: WorkflowEvaluatedNode[]): WorkflowEvaluatedNode => {
     const existingEvaluation = evaluatedNodes.find(n => n.nodeDefId === node.nodeDefId);
     if (existingEvaluation) {
         return existingEvaluation;
@@ -548,7 +526,7 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
     return en;
 };
 
-export const EvaluateWorkflow = (flowDef: WorkflowDef, flowInstance: WorkflowTidiedInstance, api: WorkflowEvalProvider): EvaluatedWorkflow => {
+export const EvaluateWorkflow = (flowDef: WorkflowDef, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator): EvaluatedWorkflow => {
     const evaluatedNodes: WorkflowEvaluatedNode[] = [];
 
     for (let i = 0; i < flowInstance.nodeInstances.length; ++i) {
@@ -583,3 +561,13 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, flowInstance: WorkflowTid
 export const WorkflowMakeConnectionId = (srcNodeDefId: number, targetNodeDefId: number) => {
     return `${srcNodeDefId}:${targetNodeDefId}`;
 }
+
+export const WorkflowInitializeInstance = (workflowDef: WorkflowDef): WorkflowInstance => {
+    return {
+        nodeInstances: [],
+        log: [],
+    };
+};
+
+
+

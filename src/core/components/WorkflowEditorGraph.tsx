@@ -1,8 +1,8 @@
 import React from "react";
 import { Button, FormControlLabel } from "@mui/material";
-import { WorkflowContainer } from "./WorkflowUserComponents";
+import { WorkflowContainer, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { EvaluatedWorkflow, EvaluateWorkflow, GetWorkflowDefSchemaHash, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvalProvider, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, GetWorkflowDefSchemaHash, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowInstanceMutator, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 import { getHashedColor } from "shared/utils";
 import { WorkflowChainMutations, WorkflowDefMutator, WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
@@ -55,8 +55,9 @@ const FlowNodeNormal = (props: FlowNodeNormalProps) => {
             //style={{ background: '#555' }}
             onConnect={(params) => console.log('handle onConnect', params)}
         />
-        <div>
-            {nodeDef?.name || ""}
+        <div className="normalNodeContent">
+            {props.data.evaluatedNode?.evaluation && <WorkflowNodeProgressIndicator value={props.data.evaluatedNode.evaluation} />}
+            <div className="name">{nodeDef?.name || ""}</div>
         </div>
         <Handle
             type="source"
@@ -467,12 +468,9 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
 
 
 
-export const initializeWorkflowInstance = (workflowDef: WorkflowDef): WorkflowInstance => {
-    return {
-        nodeInstances: [],
-        log: [],
-    };
-};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 
 export interface WorkflowEditorPOCProps {
@@ -484,7 +482,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
     const [showSelectionHandles, setShowSelectionHandles] = React.useState<boolean>(true);
     const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
         //console.log(`creating NEW blank instance`);
-        return initializeWorkflowInstance(props.workflowDef);
+        return WorkflowInitializeInstance(props.workflowDef);
     });
 
     const [model, setModel] = React.useState({
@@ -505,7 +503,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
         };
     })() : undefined;
 
-    const provider: WorkflowEvalProvider = {
+    const provider: WorkflowInstanceMutator = {
         DoesFieldValueSatisfyCompletionCriteria: (node): boolean => {
             const nodeDef = props.workflowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
             const val = model[nodeDef.fieldName!]!;
@@ -598,7 +596,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                     <div style={{ width: "33%" }}>
                         <Button
                             onClick={() => {
-                                setWorkflowInstance(initializeWorkflowInstance(props.workflowDef));
+                                setWorkflowInstance(WorkflowInitializeInstance(props.workflowDef));
                                 // todo: reset model but we need an instanceMutator
                             }}
                         >Reset instance & model</Button>

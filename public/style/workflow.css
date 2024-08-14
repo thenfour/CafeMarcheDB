@@ -48,28 +48,6 @@
     background-color: blue;
 }
 
-/* 
-.workflowNodeContainer.Irrelevant .name {
-    color: #000;
-    background-color: #eee;
-}
-
-.workflowNodeContainer.Relevant .name {
-    color: #888;
-    background-color: #eee;
-}
-
-.workflowNodeContainer.Activated .name {
-    color: #fff;
-    background-color: #44c;
-}
-
-.workflowNodeContainer.Completed .name {
-    color: #888;
-    background-color: #000;
-} */
-
-
 /* ---- REACT FLOW */
 
 .react-flow__node-cmNormal {
@@ -78,6 +56,8 @@
     border: 2.5px solid #999;
     border-radius: 4px;
     padding: 10px;
+
+    max-width: 250px;
 }
 
 .react-flow__node-cmNormal.selected {
@@ -86,6 +66,19 @@
     background-color: #fff;
 }
 
+.react-flow__node-cmNormal .normalNodeContent {
+    /* vertically center caption + progress indicator */
+    display: flex;
+    align-items: center;
+}
+
+.react-flow__node-cmNormal .normalNodeContent .name {
+    white-space: nowrap;
+    /* display: inline-block; */
+    text-overflow: ellipsis;
+    overflow: hidden;
+    font-size: 12px;
+}
 
 .react-flow__node-cmGroup {
     border: 0;
@@ -189,11 +182,36 @@
     align-items: center;
 }
 
-.CMWorkflowNodeEditorContainer .alert {
-    color: #f60;
-    background-color: #ffc;
+.CMWorkflowNodeEditorContainer .criteriaDescription {
+    background-color: #0001;
+    margin: 5px;
+    padding: 5px;
+    color: #0009;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.CMWorkflowNodeEditorContainer .alert,
+.CMWorkflowNodeEditorContainer .error {
     margin: 10px;
     padding: 10px;
+    font-style: italic;
+    font-size: 12px;
     font-weight: bold;
-    border-radius: 8px;
+    border-radius: 6px;
+}
+
+.CMWorkflowNodeEditorContainer .alert {
+    color: rgb(174, 33, 255);
+    background-color: #ffc;
+}
+
+.CMWorkflowNodeEditorContainer .error {
+    color: #f40;
+    background-color: #ffc;
+}
+
+.CMWorkflowNodeEditorContainer .nodeNameInput input {
+    font-size: 20px;
+    font-weight: bold;
 }

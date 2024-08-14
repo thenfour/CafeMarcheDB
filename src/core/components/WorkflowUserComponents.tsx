@@ -1,14 +1,51 @@
 import { Tooltip } from "@mui/material";
-import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvalProvider, WorkflowEvaluatedNode } from "shared/workflowEngine";
+import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowInstanceMutator as WorkflowInstanceMutator, WorkflowEvaluatedNode, WorkflowNodeEvaluation, WorkflowNodeProgressState } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 import { sortBy } from "shared/utils";
+
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import CancelIcon from '@mui/icons-material/Cancel';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import CircularProgress from '@mui/material/CircularProgress';
+
+
+interface WorkflowNodeProgressIndicatorProps {
+    value: WorkflowNodeEvaluation;
+}
+
+export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicatorProps) => {
+
+    const iconSize = `14px`;
+    const progressSize = 18;
+
+    const progressStateIcons = {
+        [WorkflowNodeProgressState.Irrelevant]: <RemoveCircleOutlineIcon style={{ width: iconSize, color: 'gray' }} />, // not part of the flow
+        [WorkflowNodeProgressState.Relevant]: <HourglassEmptyIcon style={{ width: iconSize, color: 'orange' }} />, // part of the flow but not active / started yet
+        [WorkflowNodeProgressState.Activated]: <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
+        [WorkflowNodeProgressState.Completed]: <CheckCircleIcon style={{ width: iconSize, color: 'green' }} />, // all criteria satisfied / complete
+        [WorkflowNodeProgressState.InvalidState]: <CancelIcon style={{ width: iconSize, color: 'red' }} />, // error condition
+    };
+
+    return (
+        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+                <CircularProgress variant="determinate" size={progressSize} value={(props.value.progress01 || 0) * 100} />
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {progressStateIcons[props.value.progressState]}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowNodeProps {
     evaluatedNode: WorkflowEvaluatedNode;
-    api: WorkflowEvalProvider;
+    api: WorkflowInstanceMutator;
 };
 
 
@@ -16,7 +53,7 @@ interface WorkflowNodeProps {
 interface WorkflowNodeProps {
     flowDef: WorkflowDef;
     evaluatedNode: WorkflowEvaluatedNode;
-    api: WorkflowEvalProvider;
+    api: WorkflowInstanceMutator;
     //selected?: boolean | undefined;
     drawSelectionHandles: boolean;
     onClickToSelect?: (() => void) | undefined;
@@ -59,7 +96,8 @@ export const WorkflowNodeComponent = ({ flowDef, evaluatedNode, api, ...props }:
                     <span className={`selectionHandle`}
                     ></span>
                 </Tooltip>}
-                {nodeDef.name} - #{evaluatedNode.nodeDefId} - {evaluatedNode.evaluation.progressState} ({evaluatedNode.evaluation.dependentNodes.length} dependencies)
+                <WorkflowNodeProgressIndicator value={evaluatedNode.evaluation} />
+                {nodeDef.name}
             </div>
             {/* {
                 evaluatedNode.evaluation.dependentNodes.length > 0 && (
@@ -84,7 +122,7 @@ interface WorkflowGroupProps {
     groupDefId: number | null;
     flowDef: WorkflowDef;
     nodeInstances: WorkflowEvaluatedNode[];
-    api: WorkflowEvalProvider;
+    api: WorkflowInstanceMutator;
     drawNodeSelectionHandles: boolean;
     onClickToSelectNode?: ((args: { nodeDefId: number }) => void) | undefined;
     onClickToSelectGroup?: ((args: { groupDefId: number }) => void) | undefined;
@@ -146,7 +184,7 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
 interface WorkflowContainerProps {
     flowDef: WorkflowDef;
     flow: EvaluatedWorkflow;
-    api: WorkflowEvalProvider;
+    api: WorkflowInstanceMutator;
     drawNodeSelectionHandles: boolean;
     onClickToSelectNode?: ((args: { nodeDefId: number }) => void) | undefined;
     onClickToSelectGroup?: ((args: { groupDefId: number }) => void) | undefined;
