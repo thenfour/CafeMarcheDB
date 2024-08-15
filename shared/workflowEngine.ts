@@ -1,3 +1,4 @@
+// field configuration
 // test assignees
 // test due date
 
@@ -26,6 +27,7 @@ import { assert } from "blitz";
 
 import '@xyflow/react/dist/style.css';
 import { getNextSequenceId, hashString } from "shared/utils";
+import { gSwatchColors } from "./color";
 
 
 
@@ -303,9 +305,9 @@ const detectCircularReferences = (nodes: WorkflowNodeDef[], visited: Set<number>
 };
 
 export interface WorkflowInstanceMutator {
-    DoesFieldValueSatisfyCompletionCriteria: (node: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee) => boolean;
-    RenderFieldEditorForNode: (node: WorkflowEvaluatedNode) => React.ReactNode;
-    RegisterStateChange: (node: WorkflowEvaluatedNode, oldState: WorkflowNodeProgressState) => void; // register a change in the db as last known progress state. node.progressState will be updated already.
+    DoesFieldValueSatisfyCompletionCriteria: (args: { flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee }) => boolean;
+    RegisterStateChange: (args: { flowDef: WorkflowDef, flowInstance: WorkflowInstance, node: WorkflowEvaluatedNode, oldState: WorkflowNodeProgressState }) => void; // register a change in the db as last known progress state. node.progressState will be updated already.
+    GetModelFieldNames: (args: { flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance }) => string[];
 };
 
 const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator, evaluatedNodes: WorkflowEvaluatedNode[]): WorkflowEvaluatedNode => {
@@ -418,12 +420,12 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
         case WorkflowCompletionCriteriaType.fieldValue:
             if (node.assignees.length === 0) {
                 // no assignees = just evaluate once with no assignees considered.
-                evaluation.completenessSatisfied = api.DoesFieldValueSatisfyCompletionCriteria(node, undefined);
+                evaluation.completenessSatisfied = api.DoesFieldValueSatisfyCompletionCriteria({ flowDef, node, assignee: undefined });
                 evaluation.progress01 = evaluation.completenessSatisfied ? 1 : 0;
             } else {
                 evaluation.completenessByAssigneeId = node.assignees.map(assignee => ({
                     assignee,
-                    completenessSatisfied: api.DoesFieldValueSatisfyCompletionCriteria(node, assignee),
+                    completenessSatisfied: api.DoesFieldValueSatisfyCompletionCriteria({ flowDef, node, assignee }),
                 }));
 
                 // Calculate thisNodeProgress01.
@@ -521,7 +523,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, flowInstance: WorkflowTid
                 node.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationMsAfterStarted);
             }
 
-            api.RegisterStateChange(node, oldState);
+            api.RegisterStateChange({ flowDef, flowInstance, node, oldState });
         }
     }
 
@@ -546,4 +548,17 @@ export const WorkflowInitializeInstance = (workflowDef: WorkflowDef): WorkflowIn
 };
 
 
-
+export const MakeNewWorkflowDef = (): WorkflowDef => ({
+    id: -1,
+    groupDefs: [{
+        id: -2,
+        color: gSwatchColors.blue,
+        name: "New group",
+        position: { x: 50, y: 50 },
+        selected: false,
+        width: undefined,
+        height: undefined,
+    }],
+    name: "New workflow",
+    nodeDefs: [],
+});

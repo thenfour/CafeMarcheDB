@@ -1,5 +1,5 @@
 import React from 'react';
-import { CMChip, CMChipContainer } from './CMCoreComponents';
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from './CMCoreComponents';
 
 interface Option<TValue> {
     value: TValue;
@@ -12,6 +12,8 @@ interface ChipSelectorProps<TValue> {
     value: TValue;
     onChange: (val: TValue | null) => void;
     editable: boolean;
+    size?: CMChipSizeOptions;
+    shape?: CMChipShapeOptions;
     getItemInfo?: (option: Option<TValue>) => { color?: string; label?: string };
 }
 
@@ -21,6 +23,7 @@ export const ChipSelector = <TValue,>({
     onChange,
     editable,
     getItemInfo,
+    ...props
 }: ChipSelectorProps<TValue>) => {
 
     const handleClick = (option: Option<TValue>) => {
@@ -48,7 +51,8 @@ export const ChipSelector = <TValue,>({
                             className={`selectable option ${isSelected ? "selected" : "notSelected"}`}
                             onClick={() => handleClick(option)}
                             color={color}
-                            shape="rectangle"
+                            size={props.size}
+                            shape={props.shape}
                             variation={{
                                 selected: isSelected,
                                 fillOption: "filled",
@@ -77,6 +81,8 @@ interface EnumChipSelectorProps<TEnum extends object> {
     value: TEnum[keyof TEnum];
     onChange: (val: TEnum[keyof TEnum] | null) => void;
     editable: boolean;
+    size?: CMChipSizeOptions;
+    shape?: CMChipShapeOptions;
     getItemInfo?: (option: Option<TEnum[keyof TEnum]>) => { color?: string; label?: string };
     filterOption?: (option: Option<TEnum[keyof TEnum]>) => boolean;
 }
@@ -88,6 +94,7 @@ export const EnumChipSelector = <TEnum extends object,>({
     editable,
     getItemInfo,
     filterOption,
+    ...props
 }: EnumChipSelectorProps<TEnum>) => {
     const options1 = enumToChipSelectorOptions(enumObj);
     const options = filterOption ? options1.filter(filterOption) : options1;
@@ -96,6 +103,8 @@ export const EnumChipSelector = <TEnum extends object,>({
         <ChipSelector
             options={options}
             value={value}
+            size={props.size}
+            shape={props.shape}
             onChange={onChange}
             editable={editable}
             getItemInfo={getItemInfo}

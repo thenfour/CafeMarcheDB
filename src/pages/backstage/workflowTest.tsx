@@ -6,9 +6,10 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
-import { WorkflowDef } from "shared/workflowEngine";
-import { WorkflowDefMutator } from "src/core/components/WorkflowEditorDetail";
+import { WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator } from "shared/workflowEngine";
 import { WorkflowEditorPOC } from "src/core/components/WorkflowEditorGraph";
+import { EvaluatedWorkflowProvider, WorkflowRenderer } from "src/core/components/WorkflowUserComponents";
+import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 
 
 
@@ -304,228 +305,70 @@ const minimalWorkflow = {
 
 const MainContent = () => {
     const [workflowDef, setWorkflowDef] = React.useState<WorkflowDef>(minimalWorkflow as any);
-    const deselectAllGeneric = (items: { selected: boolean }[]): boolean => {
-        let changed: boolean = false;
-        items.forEach(d => {
-            if (d.selected) {
-                changed = true;
-                d.selected = false;
+    const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
+        //console.log(`creating NEW blank instance`);
+        return WorkflowInitializeInstance(workflowDef);
+    });
+
+    const [model, setModel] = React.useState({
+        question1: false,
+        question2: false,
+        changeSerial: 0,
+    });
+
+    const instanceMutator: WorkflowInstanceMutator = {
+        DoesFieldValueSatisfyCompletionCriteria: (args): boolean => {
+            const nodeDef = args.flowDef.nodeDefs.find(nd => nd.id === args.node.nodeDefId)!;
+            const val = model[nodeDef.fieldName!]!;
+            switch (nodeDef.fieldValueOperator) {
+                case WorkflowFieldValueOperator.Null:
+                    return val == null;
+                case WorkflowFieldValueOperator.NotNull:
+                    return val != null;
+                case WorkflowFieldValueOperator.Falsy:
+                    return !val;
+                case WorkflowFieldValueOperator.Truthy:
+                    return !!val;
+                case WorkflowFieldValueOperator.EqualsOperand2:
+                    return val === nodeDef.fieldValueOperand2;
+                case WorkflowFieldValueOperator.NotEqualsOperand2:
+                    return val !== nodeDef.fieldValueOperand2;
             }
-        });
-        return changed;
+            return false;
+        },
+        RegisterStateChange: (args) => {
+            // TODO
+        },
+        GetModelFieldNames: (args) => Object.keys(model),
     };
-    const deselectAll = (flowDef: WorkflowDef): boolean => {
-        let changed: boolean = false;
-        flowDef.nodeDefs.forEach(nd => {
-            if (nd.selected) {
-                changed = true;
-                nd.selected = false;
-            }
-            changed = deselectAllGeneric(nd.nodeDependencies) || changed;
-        });
-        changed = deselectAllGeneric(flowDef.groupDefs) || changed;
-        return changed;
-    };
-    const defMutator: WorkflowDefMutator = {
-        setWorkflowDef: (args) => {
-            setWorkflowDef(args.flowDef);
-        },
-        deselectAll: (args) => {
-            const changed = deselectAll(args.sourceDef);
-            if (changed) return args.sourceDef;
-            return undefined;
-        },
-        addNode: (args) => {
-            // first deselect everything; it's better ux.
-            deselectAll(args.sourceDef);
-            args.sourceDef.nodeDefs.push(args.nodeDef);
-            return args.sourceDef;
-        },
-        setNodePosition: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`setting position on an unknown node huh?`);
-            if (n.position.x === args.position.x && n.position.y === args.position.y) return undefined;
-            n.position = { ...args.position };
-            return args.sourceDef;
-        },
-        setNodeSize: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`setting size on an unknown node huh?`);
-            if (n.width === args.width && n.height === args.height) return;
-            n.width = args.width;
-            n.height = args.height;
-            return args.sourceDef;
-        },
-        setNodeSelected: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`setting selected on an unknown node huh?`);
-            if (n.selected === args.selected) return;
-            n.selected = args.selected;
-            return args.sourceDef;
-        },
-        connectNodes: (args) => {
-            const src = args.sourceDef.nodeDefs.find(n => n.id === args.sourceNodeDef.id);
-            if (!src) throw new Error(`connecting -> unknown source node huh?`);
-            const dest = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
-            if (!dest) throw new Error(`connecting -> unknown dest node huh?`);
-            if (dest.nodeDependencies.find(d => d.nodeDefId === src.id)) return; // already connected
-            dest.nodeDependencies.push({
-                selected: false,
-                nodeDefId: src.id,
-                determinesRelevance: false,
-                determinesActivation: false,
-                determinesCompleteness: true,
-            });
-            return args.sourceDef;
-        },
-        setEdgeSelected: (args) => {
-            const targetNode = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
-            if (!targetNode) throw new Error(`selecting an edge; unknown target`);
-            const edge = targetNode.nodeDependencies.find(d => d.nodeDefId === args.sourceNodeDef.id);
-            if (!edge) throw new Error(`selecting an edge; unknown source`);
-            if (edge.selected === args.selected) return;
-            edge.selected = args.selected;
-            return args.sourceDef;
-        },
-        deleteNode: (args) => {
-            // delete any dependencies or references to this node.
-            args.sourceDef.nodeDefs.forEach(n => {
-                n.nodeDependencies = n.nodeDependencies.filter(d => d.nodeDefId !== args.nodeDef.id);
-            });
-            args.sourceDef.nodeDefs = args.sourceDef.nodeDefs.filter(n => n.id !== args.nodeDef.id);
-            return args.sourceDef;
-        },
-        deleteConnection: (args) => {
-            const targetNode = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
-            if (!targetNode) throw new Error(`selecting an edge; unknown target`);
-            targetNode.nodeDependencies = targetNode.nodeDependencies.filter(d => d.nodeDefId !== args.sourceNodeDef.id);
-            return args.sourceDef;
-        },
-        addGroup: (args) => {
-            // first deselect everything; it's better ux.
-            deselectAll(args.sourceDef);
-            args.sourceDef.groupDefs.push(args.groupDef);
-            return args.sourceDef;
-        },
-        deleteGroup: (args) => {
-            // delete any dependencies or references to this.
-            args.sourceDef.nodeDefs.forEach(n => {
-                if (n.groupDefId === args.groupDef.id) n.groupDefId = null;
-            });
-            args.sourceDef.groupDefs = args.sourceDef.groupDefs.filter(n => n.id !== args.groupDef.id);
-            return args.sourceDef;
-        },
-        setGroupSelected: (args) => {
-            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
-            if (!n) throw new Error(`setting selected on an unknown group huh?`);
-            if (n.selected === args.selected) return;
-            n.selected = args.selected;
-            return args.sourceDef;
-        },
-        setGroupPosition: (args) => {
-            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
-            if (!n) throw new Error(`setting position on an unknown group huh?`);
-            if (n.position.x === args.position.x && n.position.y === args.position.y) return;
-            n.position = { ...args.position };
-            return args.sourceDef;
-        },
-        setGroupSize: (args) => {
-            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
-            if (!n) throw new Error(`setting size on an unknown group huh?`);
-            if (n.width === args.width && n.height === args.height) return;
-            n.width = args.width;
-            n.height = args.height;
-            return args.sourceDef;
-        },
-        setGroupParams: (args) => {
-            const n = args.sourceDef.groupDefs.find(n => n.id === args.groupDef.id);
-            if (!n) throw new Error(`setting params on an unknown group huh?`);
-            // react flow doesn't update this so there's no risk of infinite loop by always returning an object
-            if (args.color !== undefined) {
-                n.color = args.color;
-            }
-            if (args.name !== undefined) {
-                n.name = args.name;
-            }
-            return args.sourceDef;
-        },
-        setNodeBasicInfo: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            if (args.displayStyle !== undefined) {
-                n.displayStyle = args.displayStyle;
-            }
-            if (args.name !== undefined) {
-                n.name = args.name;
-            }
-            if (args.thisNodeProgressWeight !== undefined) {
-                n.thisNodeProgressWeight = args.thisNodeProgressWeight;
-            }
-            return args.sourceDef;
-        },
-        setNodeGroup: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            n.groupDefId = args.groupDefId;
-            return args.sourceDef;
-        },
-        setNodeFieldInfo: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            n.fieldName = args.fieldName;
-            n.fieldValueOperator = args.fieldValueOperator;
-            n.fieldValueOperand2 = args.fieldValueOperand2;
-            return args.sourceDef;
-        },
-        setNodeRelevanceCriteriaType: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            n.relevanceCriteriaType = args.criteriaType;
-            return args.sourceDef;
-        },
-        setNodeActivationCriteriaType: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            n.activationCriteriaType = args.criteriaType;
-            return args.sourceDef;
-        },
-        setNodeCompletionCriteriaType: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            n.completionCriteriaType = args.criteriaType;
-            return args.sourceDef;
-        },
-        setNodeDefaultAssignees: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            n.defaultAssignees = [...args.defaultAssignees];
-            return args.sourceDef;
-        },
-        setNodeDefaultDueDateMsAfterStarted: (args) => {
-            const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
-            if (!n) throw new Error(`unknown node`);
-            n.defaultDueDateDurationMsAfterStarted = args.defaultDueDateDurationMsAfterStarted;
-            return args.sourceDef;
-        },
-        setEdgeInfo: (args) => {
-            const targetNodeDef = args.sourceDef.nodeDefs.find(n => n.id === args.targetNodeDef.id);
-            if (!targetNodeDef) throw new Error(`unknown targetNodeDef`);
-            const nd = targetNodeDef.nodeDependencies.find(d => d.nodeDefId === args.sourceNodeDef.id);
-            if (!nd) throw new Error(`unknown node dependency`);
-            if (args.determinesRelevance !== undefined) {
-                nd.determinesRelevance = args.determinesRelevance;
-            }
-            if (args.determinesActivation !== undefined) {
-                nd.determinesActivation = args.determinesActivation;
-            }
-            if (args.determinesCompleteness !== undefined) {
-                nd.determinesCompleteness = args.determinesCompleteness;
-            }
-            return args.sourceDef;
+
+    const renderer: WorkflowRenderer = {
+        RenderFieldEditorForNode: (args) => {
+            const nodeDef = args.flowDef.nodeDefs.find(nd => nd.id === args.node.nodeDefId)!;
+            const fieldVal: boolean = model[nodeDef.fieldName!]!;
+            return <CMSmallButton onClick={() => {
+                const newModel = {
+                    ...model,
+                    [nodeDef.fieldName!]: !fieldVal
+                };
+                setModel(newModel);
+                setWorkflowInstance({ ...workflowInstance });
+
+            }}>{fieldVal ? "unapprove" : "approve"}</CMSmallButton>
         },
     };
+
     return <div>
-        <WorkflowEditorPOC workflowDef={workflowDef} defMutator={defMutator} />
+        <EvaluatedWorkflowProvider
+            flowDef={workflowDef}
+            flowInstance={workflowInstance}
+            instanceMutator={instanceMutator}
+            renderer={renderer}
+            setWorkflowDef={setWorkflowDef}
+            setWorkflowInstance={setWorkflowInstance}
+        >
+            <WorkflowEditorPOC />
+        </EvaluatedWorkflowProvider>
     </div>;
 };
 

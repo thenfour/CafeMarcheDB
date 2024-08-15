@@ -1,16 +1,14 @@
-import React from "react";
 import { Button, FormControlLabel } from "@mui/material";
-import { WorkflowContainer, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { EvaluatedWorkflow, EvaluateWorkflow, GetWorkflowDefSchemaHash, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowInstanceMutator, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
-import { GetStyleVariablesForColor } from "./Color";
-import { getHashedColor } from "shared/utils";
-import { WorkflowChainMutations, WorkflowDefMutator, WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
-import { InspectObject } from "./CMCoreComponents";
 import { nanoid } from "nanoid";
+import React from "react";
 import { gLightSwatchColors } from "shared/color";
-import { CMSmallButton } from "./CMCoreComponents2";
+import { getHashedColor } from "shared/utils";
+import { EvaluatedWorkflow, EvaluateWorkflow, GetWorkflowDefSchemaHash, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowInitializeInstance, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { GetStyleVariablesForColor } from "./Color";
+import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
+import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 
 
 const makeNormalNodeId = (nodeDefId: number) => {
@@ -145,6 +143,7 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
                 source: makeNormalNodeId(dep.nodeDefId),
                 target: makeNormalNodeId(nodeDef.id),
                 zIndex: 125,
+                animated: nodeDef.selected || dep.selected || sourceNodeDef.selected,
                 hidden: false,
                 className: `CMEdge ${nodeDef.selected ? "CMTargetSelected" : ""} ${sourceNodeDef.selected ? "CMSourceSelected" : ""}`,
                 style: { "--hashed-color": getHashedColor(id, { alpha: (nodeDef.selected || dep.selected || sourceNodeDef.selected) ? "100%" : "33%" }) } as any,
@@ -170,25 +169,24 @@ const gNodeTypes = {
 };
 
 interface WorkflowReactFlowEditorProps {
-    flowDef: WorkflowDef;
-    evaluatedWorkflow: EvaluatedWorkflow;
-    schemaHash: string;
-    defMutator: WorkflowDefMutator;
 }
 
-const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evaluatedWorkflow, ...props }) => {
+const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...props }) => {
+    const ctx = React.useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const reactFlow = useReactFlow();
 
-    const s = calcReactFlowObjects(evaluatedWorkflow, props.flowDef);//, props.reactFlowState);
+    const s = calcReactFlowObjects(ctx.evaluatedFlow, ctx.flowDef);//, props.reactFlowState);
 
     const getGroupDef__ = (id: number) => {
-        return props.flowDef.groupDefs.find(g => g.id === id)!;
+        return ctx.flowDef.groupDefs.find(g => g.id === id)!;
     }
 
     const getNodeDef__ = (id: number) => {
-        return props.flowDef.nodeDefs.find(g => g.id === id)!;
+        return ctx.flowDef.nodeDefs.find(g => g.id === id)!;
     }
 
     interface ParsedGroupDef {
@@ -224,8 +222,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
     };
 
     const handleNodesChange = (changes: NodeChange<CMFlowNode>[]) => {
-        //console.log(changes);
-        let mutatingDef: WorkflowDef = { ...props.flowDef };
+        let mutatingDef: WorkflowDef = { ...ctx.flowDef };
         let changesOccurred: boolean = false;
         const applyMutation = (r: WorkflowDef | undefined) => {
             if (!r) return;
@@ -238,13 +235,13 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                 if (!isNaN(change.position.x) && !isNaN(change.position.y))// why is this even a thing? but it is.
                 {
                     if (parsedDef.type === "group") {
-                        applyMutation(props.defMutator.setGroupPosition({
+                        applyMutation(ctx.flowDefMutator.setGroupPosition({
                             sourceDef: mutatingDef,
                             groupDef: parsedDef.groupDef,
                             position: change.position
                         }));
                     } else {
-                        applyMutation(props.defMutator.setNodePosition({
+                        applyMutation(ctx.flowDefMutator.setNodePosition({
                             sourceDef: mutatingDef,
                             nodeDef: parsedDef.nodeDef,
                             position: change.position
@@ -254,19 +251,18 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
             }
 
             if (change.type === 'dimensions' && change.dimensions) {
-                //console.log(`dimensions: ${JSON.stringify(change)}`);
                 const parsedDef = getDef(change.id);
                 if (!isNaN(change.dimensions.height) && !isNaN(change.dimensions.width)) // this may not be necessary
                 {
                     if (parsedDef.type === "group") {
-                        applyMutation(props.defMutator.setGroupSize({
+                        applyMutation(ctx.flowDefMutator.setGroupSize({
                             sourceDef: mutatingDef,
                             groupDef: parsedDef.groupDef,
                             height: change.dimensions.height,
                             width: change.dimensions.width,
                         }));
                     } else {
-                        applyMutation(props.defMutator.setNodeSize({
+                        applyMutation(ctx.flowDefMutator.setNodeSize({
                             sourceDef: mutatingDef,
                             nodeDef: parsedDef.nodeDef,
                             height: change.dimensions.height,
@@ -278,13 +274,13 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
             if (change.type === "select" && change.selected !== undefined) {
                 const parsedDef = getDef(change.id);
                 if (parsedDef.type === "group") {
-                    applyMutation(props.defMutator.setGroupSelected({
+                    applyMutation(ctx.flowDefMutator.setGroupSelected({
                         sourceDef: mutatingDef,
                         groupDef: parsedDef.groupDef,
                         selected: change.selected,
                     }));
                 } else {
-                    applyMutation(props.defMutator.setNodeSelected({
+                    applyMutation(ctx.flowDefMutator.setNodeSelected({
                         sourceDef: mutatingDef,
                         nodeDef: parsedDef.nodeDef,
                         selected: change.selected,
@@ -294,12 +290,12 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
             if (change.type === "remove") {
                 const parsedDef = getDef(change.id);
                 if (parsedDef.type === "group") {
-                    applyMutation(props.defMutator.deleteGroup({
+                    applyMutation(ctx.flowDefMutator.deleteGroup({
                         sourceDef: mutatingDef,
                         groupDef: parsedDef.groupDef,
                     }));
                 } else {
-                    applyMutation(props.defMutator.deleteNode({
+                    applyMutation(ctx.flowDefMutator.deleteNode({
                         sourceDef: mutatingDef,
                         nodeDef: parsedDef.nodeDef,
                     }));
@@ -307,12 +303,12 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
             }
         });
         if (changesOccurred) {
-            props.defMutator.setWorkflowDef({ flowDef: mutatingDef });
+            ctx.setWorkflowDef(mutatingDef);
         }
     };
 
     const handleEdgesChange = (changes: EdgeChange[]) => {
-        let mutatingDef: WorkflowDef = { ...props.flowDef };
+        let mutatingDef: WorkflowDef = { ...ctx.flowDef };
         let changesOccurred: boolean = false;
         const applyMutation = (r: WorkflowDef | undefined) => {
             if (!r) return;
@@ -327,7 +323,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                 case "remove":
                     {
                         const parsed = parseConnectionId(change.id);
-                        applyMutation(props.defMutator.deleteConnection({
+                        applyMutation(ctx.flowDefMutator.deleteConnection({
                             sourceDef: mutatingDef,
                             sourceNodeDef: parsed.srcNodeDef,
                             targetNodeDef: parsed.targetNodeDef,
@@ -338,7 +334,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                 case "select":
                     {
                         const parsed = parseConnectionId(change.id);
-                        applyMutation(props.defMutator.setEdgeSelected({
+                        applyMutation(ctx.flowDefMutator.setEdgeSelected({
                             sourceDef: mutatingDef,
                             selected: change.selected,
                             sourceNodeDef: parsed.srcNodeDef,
@@ -349,12 +345,12 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
             }
         });
         if (changesOccurred) {
-            props.defMutator.setWorkflowDef({ flowDef: mutatingDef });
+            ctx.setWorkflowDef(mutatingDef);
         }
     };
 
     const handleConnect = (connection: Connection) => {
-        let mutatingDef: WorkflowDef = { ...props.flowDef };
+        let mutatingDef: WorkflowDef = { ...ctx.flowDef };
         let changesOccurred: boolean = false;
         const applyMutation = (r: WorkflowDef | undefined) => {
             if (!r) return;
@@ -364,14 +360,14 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
         const parsedSource = getDef(connection.source);
         const parsedTarget = getDef(connection.target);
         if (parsedSource.type === "node" && parsedTarget.type === "node") {
-            applyMutation(props.defMutator.connectNodes({
+            applyMutation(ctx.flowDefMutator.connectNodes({
                 sourceDef: mutatingDef,
                 sourceNodeDef: parsedSource.nodeDef,
                 targetNodeDef: parsedTarget.nodeDef,
             }));
         }
         if (changesOccurred) {
-            props.defMutator.setWorkflowDef({ flowDef: mutatingDef });
+            ctx.setWorkflowDef(mutatingDef);
         }
     };
 
@@ -415,12 +411,12 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
             >
                 <div style={{ position: "absolute", zIndex: 4 }}>
                     <div>
-                        <button onClick={() => { clipboardCopy(JSON.stringify(props.flowDef, null, 2)) }}>
+                        <button onClick={() => { clipboardCopy(JSON.stringify(ctx.flowDef, null, 2)) }}>
                             Copy flow definition
                         </button>
                         <button onClick={() => {
                             const n: WorkflowNodeDef = {
-                                id: props.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
+                                id: ctx.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
                                 name: nanoid(),
                                 groupDefId: null,
                                 displayStyle: WorkflowNodeDisplayStyle.Normal,
@@ -435,19 +431,17 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                                 width: undefined,
                                 height: undefined,
                             };
-                            const r = props.defMutator.addNode({
-                                sourceDef: { ...props.flowDef },
+                            const r = ctx.flowDefMutator.addNode({
+                                sourceDef: { ...ctx.flowDef },
                                 nodeDef: n,
                             });
                             if (r) {
-                                props.defMutator.setWorkflowDef({ flowDef: r });
+                                ctx.setWorkflowDef(r);
                             }
                         }}>New node</button>
-                    </div>
-                    <div>
                         <button onClick={() => {
                             const n: WorkflowNodeGroupDef = {
-                                id: props.flowDef.groupDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
+                                id: ctx.flowDef.groupDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
                                 name: nanoid(),
                                 color: gLightSwatchColors.light_blue,
                                 height: 200,
@@ -455,12 +449,12 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
                                 position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
                                 selected: true,
                             };
-                            const r = props.defMutator.addGroup({
-                                sourceDef: { ...props.flowDef },
+                            const r = ctx.flowDefMutator.addGroup({
+                                sourceDef: { ...ctx.flowDef },
                                 groupDef: n,
                             });
                             if (r) {
-                                props.defMutator.setWorkflowDef({ flowDef: r });
+                                ctx.setWorkflowDef(r);
                             }
                         }}>new group</button>
                     </div>
@@ -480,158 +474,86 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ evalu
 
 
 export interface WorkflowEditorPOCProps {
-    workflowDef: WorkflowDef;
-    defMutator: WorkflowDefMutator;
 };
 
 export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
+    const ctx = React.useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+
     const [showSelectionHandles, setShowSelectionHandles] = React.useState<boolean>(true);
-    const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
-        //console.log(`creating NEW blank instance`);
-        return WorkflowInitializeInstance(props.workflowDef);
-    });
 
-    const [model, setModel] = React.useState({
-        question1: false,
-        question2: false,
-        changeSerial: 0,
-    });
-
-    const selectedNodeDef = props.workflowDef.nodeDefs.find(nd => !!nd.selected);
-    const selectedGroupDef = props.workflowDef.groupDefs.find(nd => !!nd.selected);
-    const selectedEdgeTargetNodeDef = props.workflowDef.nodeDefs.find(nd => nd.nodeDependencies.some(d => d.selected));
+    const selectedNodeDef = ctx.flowDef.nodeDefs.find(nd => !!nd.selected);
+    const selectedGroupDef = ctx.flowDef.groupDefs.find(nd => !!nd.selected);
+    const selectedEdgeTargetNodeDef = ctx.flowDef.nodeDefs.find(nd => nd.nodeDependencies.some(d => d.selected));
     const selectedEdge = selectedEdgeTargetNodeDef ? (() => {
         const dep = selectedEdgeTargetNodeDef.nodeDependencies.find(d => d.selected)!;
         return {
             targetNodeDef: selectedEdgeTargetNodeDef,
-            sourceNodeDef: props.workflowDef.nodeDefs.find(nd => nd.id === dep.nodeDefId)!,
+            sourceNodeDef: ctx.flowDef.nodeDefs.find(nd => nd.id === dep.nodeDefId)!,
             dependencySpec: dep,
         };
     })() : undefined;
 
-    const provider: WorkflowInstanceMutator = {
-        DoesFieldValueSatisfyCompletionCriteria: (node): boolean => {
-            const nodeDef = props.workflowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
-            const val = model[nodeDef.fieldName!]!;
-            switch (nodeDef.fieldValueOperator) {
-                case WorkflowFieldValueOperator.Null:
-                    return val == null;
-                case WorkflowFieldValueOperator.NotNull:
-                    return val != null;
-                case WorkflowFieldValueOperator.Falsy:
-                    return !val;
-                case WorkflowFieldValueOperator.Truthy:
-                    return !!val;
-                case WorkflowFieldValueOperator.EqualsOperand2:
-                    return val === nodeDef.fieldValueOperand2;
-                case WorkflowFieldValueOperator.NotEqualsOperand2:
-                    return val !== nodeDef.fieldValueOperand2;
-            }
-            return false;
-        },
-        RenderFieldEditorForNode: (node: WorkflowEvaluatedNode) => {
-            const nodeDef = props.workflowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
-            const fieldVal: boolean = model[nodeDef.fieldName!]!;
-            return <CMSmallButton onClick={() => {
-                const newModel = {
-                    ...model,
-                    [nodeDef.fieldName!]: !fieldVal
-                };
-                setModel(newModel);
-                setWorkflowInstance({ ...workflowInstance });
-
-            }}>{fieldVal ? "unapprove" : "approve"}</CMSmallButton>
-        },
-        RegisterStateChange: (node: WorkflowEvaluatedNode, oldState) => {
-            // TODO
-        }
-    };
-
-    const schemaHash = GetWorkflowDefSchemaHash(props.workflowDef);
+    const schemaHash = GetWorkflowDefSchemaHash(ctx.flowDef);
 
     // why not eval every time?
-    const tidiedInstance = TidyWorkflowInstance(workflowInstance, props.workflowDef);
-    const newEvalFlow = EvaluateWorkflow(props.workflowDef, tidiedInstance, provider);
+    const tidiedInstance = TidyWorkflowInstance(ctx.flowInstance, ctx.flowDef);
+    const newEvalFlow = EvaluateWorkflow(ctx.flowDef, tidiedInstance, ctx.instanceMutator);
     const evaluatedWorkflow = newEvalFlow;
 
     return (
         <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
             {evaluatedWorkflow && <>
-                {/* <div>Schema hash: {schemaHash}</div>
-                <div>selected node {selectedNodeDef?.id ?? "<null>"}: {evaluatedWorkflow.flowInstance.nodeInstances.find(ni => ni.nodeDefId === selectedNodeDef?.id)?.id || "<null>"}</div>
-                <div>selected group {selectedGroupDef?.id ?? "<null>"}</div>
-                <div>selected edge {selectedEdge ? `${selectedEdge.sourceNodeDef.id} -> ${selectedEdge.targetNodeDef.id}` : "<null>"}</div> */}
                 <div style={{ display: "flex", flexDirection: "row" }}>
                     <div style={{ width: "33%" }}>
                         <ReactFlowProvider>
-                            <WorkflowReactFlowEditor
-                                evaluatedWorkflow={evaluatedWorkflow}
-                                schemaHash={schemaHash}
-                                flowDef={props.workflowDef}
-                                defMutator={props.defMutator}
-                            />
+                            <WorkflowReactFlowEditor />
                         </ReactFlowProvider>
                     </div>
                     <div style={{ width: "33%" }}>
                         {selectedNodeDef &&
                             <WorkflowNodeEditor
-                                workflowDef={props.workflowDef}
-                                evaluatedWorkflow={evaluatedWorkflow}
                                 nodeDef={selectedNodeDef}
-                                defMutator={props.defMutator}
                             />
                         }
                         {selectedGroupDef &&
                             <WorkflowGroupEditor
-                                workflowDef={props.workflowDef}
-                                evaluatedWorkflow={evaluatedWorkflow}
                                 groupDef={selectedGroupDef}
-                                defMutator={props.defMutator}
                             />
                         }
                         {selectedEdge &&
                             <WorkflowNodeEditor
-                                workflowDef={props.workflowDef}
-                                evaluatedWorkflow={evaluatedWorkflow}
                                 nodeDef={selectedEdge.targetNodeDef}
                                 highlightDependencyNodeDef={selectedEdge.sourceNodeDef}
-                                defMutator={props.defMutator}
                             />
                         }
                     </div>
                     <div style={{ width: "33%" }}>
                         <Button
                             onClick={() => {
-                                setWorkflowInstance(WorkflowInitializeInstance(props.workflowDef));
+                                ctx.setWorkflowInstance(WorkflowInitializeInstance(ctx.flowDef));
                                 // todo: reset model but we need an instanceMutator
                             }}
                         >Reset instance & model</Button>
                         <FormControlLabel label={"Show selection handles"} control={<input type="checkbox" checked={showSelectionHandles} onChange={e => setShowSelectionHandles(e.target.checked)} />} />
                         <WorkflowContainer
-                            flowDef={props.workflowDef}
-                            flow={evaluatedWorkflow}
-                            api={provider}
                             drawNodeSelectionHandles={showSelectionHandles}
                             onClickToSelectNode={(args) => {
-                                const nd = props.workflowDef.nodeDefs.find(nd => nd.id === args.nodeDefId)!;
-                                const r = WorkflowChainMutations({ ...props.workflowDef }, [
-                                    (sourceDef) => props.defMutator.deselectAll({ sourceDef }),
-                                    (sourceDef) => props.defMutator.setNodeSelected({ sourceDef, selected: true, nodeDef: nd }),
+                                const nd = ctx.getNodeDef(args.nodeDefId);
+                                ctx.chainDefMutations([
+                                    (sourceDef) => ctx.flowDefMutator.deselectAll({ sourceDef }),
+                                    (sourceDef) => ctx.flowDefMutator.setNodeSelected({ sourceDef, selected: true, nodeDef: nd }),
                                 ]);
-                                if (r.changesOccurred) {
-                                    props.defMutator.setWorkflowDef({ flowDef: r.flowDef });
-                                }
                             }}
                             onClickToSelectGroup={(args) => {
-                                const nd = props.workflowDef.groupDefs.find(nd => nd.id === args.groupDefId)!;
-                                const r = WorkflowChainMutations({ ...props.workflowDef }, [
-                                    (sourceDef) => props.defMutator.deselectAll({ sourceDef }),
-                                    (sourceDef) => props.defMutator.setGroupSelected({ sourceDef, selected: true, groupDef: nd }),
+                                const nd = ctx.getGroupDef(args.groupDefId);
+                                ctx.chainDefMutations([
+                                    (sourceDef) => ctx.flowDefMutator.deselectAll({ sourceDef }),
+                                    (sourceDef) => ctx.flowDefMutator.setGroupSelected({ sourceDef, selected: true, groupDef: nd }),
                                 ]);
-                                if (r.changesOccurred) {
-                                    props.defMutator.setWorkflowDef({ flowDef: r.flowDef });
-                                }
                             }}
+                        />
+                        <WorkflowLogView
                         />
                     </div>
                 </div>

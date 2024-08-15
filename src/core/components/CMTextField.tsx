@@ -114,10 +114,16 @@ export function CMNumericTextField({ label, value, autoFocus, readOnly, ...props
     const [validationError, setValidationError] = React.useState<string | undefined>();
     React.useEffect(() => {
         const x = parseIntOrNull(stringValue);
-        if (typeof x === 'number') return;
+        if (typeof x === 'number') {
+            setValidationError(undefined);
+            return;
+        }
         setValidationError(`Input must be numeric`);
-    },
-        [stringValue]);
+    }, [stringValue]);
+
+    React.useEffect(() => {
+        setStringValue(value.toString());
+    }, [value]);
 
     return (
         <TextField

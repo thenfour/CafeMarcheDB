@@ -6,11 +6,80 @@ import React from "react";
 
 import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
-import { IsNullOrWhitespace, arraysContainSameValues } from "shared/utils";
+import { IsNullOrWhitespace, arraysContainSameValues, lerp } from "shared/utils";
 import * as db3 from "../db3/db3";
 import { gIconMap } from "../db3/components/IconMap";
 import { RouteUrlObject } from "blitz";
 import { UrlObject } from "url";
+
+
+
+
+
+type PreProps = {
+    text: string;
+    className?: string;
+    style?: React.CSSProperties;
+    wrap?: boolean;
+    //maxHeight?: string;
+};
+
+export const Pre: React.FC<PreProps> = ({ text, className, style, wrap = true }) => {
+    const preStyle = {
+        whiteSpace: wrap ? 'pre-wrap' : 'pre',
+        //overflowY: maxHeight ? 'auto' : undefined,
+        //maxHeight,
+        ...style,
+    };
+
+    return (
+        <pre className={className} style={preStyle}>{text}</pre>
+    );
+};
+
+
+
+
+
+interface AnimatedCircularProgressProps {
+    value: number;
+    duration?: number; // Duration of the animation in milliseconds
+    size?: string | number | undefined;
+}
+
+export const AnimatedCircularProgress: React.FC<AnimatedCircularProgressProps> = ({ value, duration = 1000, size }) => {
+    const [progress, setProgress] = React.useState(0);
+
+    React.useEffect(() => {
+        let start: number;
+        let animationFrameId: number;
+
+        const startValue = progress;
+        const delta = value - startValue;
+
+        const animateProgress = (timestamp: number) => {
+            if (!start) start = timestamp;
+            const elapsed = timestamp - start;
+            const t = Math.min(elapsed / duration, 1); // Ensure t is between 0 and 1
+
+            const newProgress = lerp(startValue, value, t);
+            setProgress(newProgress);
+
+            if (t < 1) {
+                animationFrameId = requestAnimationFrame(animateProgress);
+            }
+        };
+
+        animationFrameId = requestAnimationFrame(animateProgress);
+
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [value, duration]);
+
+    return <CircularProgress variant="determinate" size={size} value={progress} />;
+};
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // local versions of clientAPI fns
