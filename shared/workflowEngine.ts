@@ -60,12 +60,14 @@ export enum WorkflowCompletionCriteriaType {
 };
 
 export enum WorkflowFieldValueOperator {
-    NotNull = "Null",
-    Null = "Null",
+    IsNotNull = "IsNotNull",
+    IsNull = "IsNull",
     EqualsOperand2 = "EqualsOperand2",
     NotEqualsOperand2 = "NotEqualsOperand2",
     Truthy = "Truthy",
     Falsy = "Falsy",
+    EqualsAnyOf = "EqualsAnyOf", // support multiple operands
+    IsNotAnyOf = "IsNotAnyOf",
 };
 
 // when displaying the workflow, nodes are grouped together
@@ -218,23 +220,23 @@ export type WorkflowEvaluatedDependentNode = WorkflowEvaluatedNode & {
 
 export interface EvaluatedWorkflow {
     flowInstance: WorkflowTidiedInstance;
-    schemaHash: string;
+    //schemaHash: string;
     evaluatedNodes: WorkflowEvaluatedNode[];
 };
 
-export function GetWorkflowDefSchemaHash(flowDef: WorkflowDef) {
-    return hashString(JSON.stringify(flowDef, (key, val) => {
-        // don't put these very "live" react flow state objects in the hash.
-        switch (key) {
-            case 'position':
-            case 'selected':
-            case 'width':
-            case 'height':
-                return 0;
-        }
-        return val;
-    })).toString();
-}
+// export function GetWorkflowDefSchemaHash(flowDef: WorkflowDef) {
+//     return hashString(JSON.stringify(flowDef, (key, val) => {
+//         // don't put these very "live" react flow state objects in the hash.
+//         switch (key) {
+//             case 'position':
+//             case 'selected':
+//             case 'width':
+//             case 'height':
+//                 return 0;
+//         }
+//         return val;
+//     })).toString();
+// }
 
 
 ///////////// API /////////////////////////////////////////////////////////////////
@@ -305,9 +307,10 @@ const detectCircularReferences = (nodes: WorkflowNodeDef[], visited: Set<number>
 };
 
 export interface WorkflowInstanceMutator {
-    DoesFieldValueSatisfyCompletionCriteria: (args: { flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee }) => boolean;
+    DoesFieldValueSatisfyCompletionCriteria: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, tidiedNodeInstance: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee }) => boolean;
     RegisterStateChange: (args: { flowDef: WorkflowDef, flowInstance: WorkflowInstance, node: WorkflowEvaluatedNode, oldState: WorkflowNodeProgressState }) => void; // register a change in the db as last known progress state. node.progressState will be updated already.
     GetModelFieldNames: (args: { flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance }) => string[];
+    ResetModelAndInstance: () => void;
 };
 
 const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator, evaluatedNodes: WorkflowEvaluatedNode[]): WorkflowEvaluatedNode => {
@@ -420,12 +423,22 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
         case WorkflowCompletionCriteriaType.fieldValue:
             if (node.assignees.length === 0) {
                 // no assignees = just evaluate once with no assignees considered.
-                evaluation.completenessSatisfied = api.DoesFieldValueSatisfyCompletionCriteria({ flowDef, node, assignee: undefined });
+                evaluation.completenessSatisfied = api.DoesFieldValueSatisfyCompletionCriteria({
+                    flowDef,
+                    tidiedNodeInstance: node,
+                    nodeDef,
+                    assignee: undefined,
+                });
                 evaluation.progress01 = evaluation.completenessSatisfied ? 1 : 0;
             } else {
                 evaluation.completenessByAssigneeId = node.assignees.map(assignee => ({
                     assignee,
-                    completenessSatisfied: api.DoesFieldValueSatisfyCompletionCriteria({ flowDef, node, assignee }),
+                    completenessSatisfied: api.DoesFieldValueSatisfyCompletionCriteria({
+                        flowDef,
+                        tidiedNodeInstance: node,
+                        nodeDef,
+                        assignee,
+                    }),
                 }));
 
                 // Calculate thisNodeProgress01.
@@ -530,7 +543,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, flowInstance: WorkflowTid
     const ret: EvaluatedWorkflow = {
         evaluatedNodes,
         flowInstance,
-        schemaHash: GetWorkflowDefSchemaHash(flowDef),
+        //schemaHash: GetWorkflowDefSchemaHash(flowDef),
     };
     return ret;
 };

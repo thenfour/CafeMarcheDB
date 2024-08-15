@@ -3,13 +3,14 @@
 import { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, sortBy } from "shared/utils";
-import { WorkflowCompletionCriteriaType, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { WorkflowCompletionCriteriaType, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { CMChip, CMChipContainer } from "./CMCoreComponents";
 import { NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
 import { EvaluatedWorkflowContext, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 
 
 
@@ -298,15 +299,6 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     value={props.nodeDef.completionCriteriaType}
                 />
 
-                {props.nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue &&
-                    <div>
-                        <b>Field</b>
-                        <div>{props.nodeDef.fieldName}</div>
-                        <div>Operator: {props.nodeDef.fieldValueOperator}</div>
-                        {/* {props.nodeDef.fieldValueOperand2} */}
-                    </div>
-                }
-
                 {(() => {
                     switch (props.nodeDef.completionCriteriaType) {
                         case WorkflowCompletionCriteriaType.never:
@@ -335,6 +327,55 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                 {!completionUsesNodeDependencies && (completionDependencies.length > 0) && <div className="alert">There are nodes configured to affect completion, but completion style {props.nodeDef.completionCriteriaType} will just ignore them.</div>}
                 {(props.nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) && (!props.nodeDef.fieldName) && <div className="alert">! completion depends on a field value, but none is specified.</div>}
 
+                {props.nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue &&
+                    <div>
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                            <FormControl variant="standard">
+                                <InputLabel>Field</InputLabel>
+                                <Select variant="filled" size="small" value={props.nodeDef.fieldName} onChange={(e) => {
+                                    ctx.chainDefMutations([def => ctx.flowDefMutator.setNodeFieldInfo({
+                                        sourceDef: def,
+                                        nodeDef: props.nodeDef,
+                                        fieldName: e.target.value,
+                                        fieldValueOperator: props.nodeDef.fieldValueOperator,
+                                        fieldValueOperand2: props.nodeDef.fieldValueOperand2,
+                                    })]);
+                                }}>
+                                    {ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, node: ctx.getEvaluatedNode(props.nodeDef.id) }).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                            <FormControl variant="standard">
+                                <InputLabel>Operator</InputLabel>
+                                <Select variant="filled" size="small" value={props.nodeDef.fieldValueOperator} onChange={(e) => {
+                                    ctx.chainDefMutations([def => ctx.flowDefMutator.setNodeFieldInfo({
+                                        sourceDef: def,
+                                        nodeDef: props.nodeDef,
+                                        fieldName: props.nodeDef.fieldName,
+                                        fieldValueOperator: e.target.value as WorkflowFieldValueOperator,
+                                        fieldValueOperand2: props.nodeDef.fieldValueOperand2,
+                                    })]);
+                                }}>
+                                    {Object.values(WorkflowFieldValueOperator).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
+                                </Select>
+                            </FormControl>
+                            {ctx.renderer.RenderEditorForFieldOperand2({
+                                flowDef: ctx.flowDef,
+                                nodeDef: props.nodeDef,
+                                evaluatedNode: evaluated,
+                                setValue: (value) => {
+                                    ctx.chainDefMutations([def => ctx.flowDefMutator.setNodeFieldInfo({
+                                        sourceDef: def,
+                                        nodeDef: props.nodeDef,
+                                        fieldName: props.nodeDef.fieldName,
+                                        fieldValueOperator: props.nodeDef.fieldValueOperator,
+                                        fieldValueOperand2: value,
+                                    })]);
+                                }
+                            })}
+                        </div>
+                    </div>
+                }
+
                 {completionUsesNodeDependencies &&
                     <ul>
                         {completionDependencies.map(d => {
@@ -350,7 +391,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                 }
 
                 {completionUsesNodeDependencies &&
-                    <div>[{evaluated.evaluation.completionWeightCompleted} / {evaluated.evaluation.completionWeightTotal}] --&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}</div>
+                    <pre>Weight: [{evaluated.evaluation.completionWeightCompleted} / {evaluated.evaluation.completionWeightTotal}] = {evaluated.evaluation.progress01 === undefined ? "<undefined>" : (evaluated.evaluation.progress01 * 100).toFixed(0.000)}% --&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}</pre>
                 }
 
                 {!completionUsesNodeDependencies && <CMNumericTextField label={`Progress weight (${props.nodeDef.thisNodeProgressWeight})`} autoFocus={false} value={props.nodeDef.thisNodeProgressWeight} onChange={(e, val) => {

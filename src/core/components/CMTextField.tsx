@@ -72,6 +72,7 @@ interface CMTextFieldProps {
     autoFocus: boolean;
     readOnly?: boolean;
     className?: string;
+    style?: React.CSSProperties;
 };
 
 // textfield for a string field on an object.
@@ -89,6 +90,7 @@ export function CMTextField({ validationError, label, value, onChange, autoFocus
             margin="dense"
             type="text"
             fullWidth
+            style={props.style}
             className={props.className}
             variant="filled"
             inputProps={{
@@ -106,6 +108,7 @@ interface CMNumericTextFieldProps {
     autoFocus: boolean;
     readOnly?: boolean;
     className?: string;
+    style?: React.CSSProperties;
 };
 
 // textfield for a string field on an object.
@@ -143,6 +146,7 @@ export function CMNumericTextField({ label, value, autoFocus, readOnly, ...props
             margin="dense"
             type="text"
             fullWidth
+            style={props.style}
             className={props.className}
             variant="filled"
             inputProps={{

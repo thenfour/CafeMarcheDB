@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { BlitzPage } from "@blitzjs/next";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
@@ -6,10 +6,14 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
-import { WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator } from "shared/workflowEngine";
+import { WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { WorkflowEditorPOC } from "src/core/components/WorkflowEditorGraph";
-import { EvaluatedWorkflowProvider, WorkflowRenderer } from "src/core/components/WorkflowUserComponents";
+import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, WorkflowRenderer } from "src/core/components/WorkflowUserComponents";
 import { CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { assert } from "blitz";
+import { CoalesceBool, CoerceToString, IsNullOrWhitespace } from "shared/utils";
+import { InspectObject } from "src/core/components/CMCoreComponents";
+import { CMTextField } from "src/core/components/CMTextField";
 
 
 
@@ -58,13 +62,13 @@ const minimalWorkflow = {
     "nodeDefs": [
         {
             "id": 500,
-            "name": "question #1",
+            "name": "bool question #1",
             "groupDefId": 1000,
             "displayStyle": "Normal",
             "completionCriteriaType": "fieldValue",
             "activationCriteriaType": "always",
             "relevanceCriteriaType": "always",
-            "fieldName": "question1",
+            "fieldName": "bool:0",
             "fieldValueOperator": "Truthy",
             "defaultAssignees": [],
             "thisNodeProgressWeight": 1,
@@ -88,7 +92,7 @@ const minimalWorkflow = {
             "completionCriteriaType": "fieldValue",
             "activationCriteriaType": "always",
             "relevanceCriteriaType": "always",
-            "fieldName": "question2",
+            "fieldName": "bool:1",
             "fieldValueOperator": "Truthy",
             "position": {
                 "x": 225,
@@ -109,7 +113,7 @@ const minimalWorkflow = {
             "completionCriteriaType": "fieldValue",
             "activationCriteriaType": "always",
             "relevanceCriteriaType": "always",
-            "fieldName": "question3",
+            "fieldName": "bool:2",
             "fieldValueOperator": "Truthy",
             "position": {
                 "x": 360,
@@ -300,9 +304,214 @@ const minimalWorkflow = {
 }
     ;
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+interface WFFieldBinding<Tunderlying> {
+    flowDef: WorkflowDef;
+    nodeDef: WorkflowNodeDef,
+    tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    value: Tunderlying,
+    setValue: (val: Tunderlying) => void,
+    setOperand2: (val: Tunderlying | Tunderlying[]) => void,
+    doesFieldValueSatisfyCompletionCriteria: () => boolean;
+    FieldValueComponent: (props: WFFieldBinding<Tunderlying>) => React.ReactNode;
+    FieldOperand2Component: (props: WFFieldBinding<Tunderlying>) => React.ReactNode;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+const BoolField = (props: WFFieldBinding<boolean | null>) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    return <CMSmallButton onClick={() => {
+        console.log(`clicked small button`);
+        props.setValue(!props.value);
+    }}>{props.value ? "unapprove" : "approve"}</CMSmallButton>
+}
+
+const BoolOperand = (props: WFFieldBinding<boolean | null>) => {
+    return <div>null, true, false. todo: support multiple if "any of"</div>;
+}
+
+const MakeBoolBinding = (args: {
+    flowDef: WorkflowDef,
+    nodeDef: WorkflowNodeDef,
+    tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    value: boolean | null,
+    setValue: (val: boolean | null) => void,
+    setOperand2: (val: (boolean | null) | (boolean | null)[]) => void,
+}
+): WFFieldBinding<boolean | null> => {
+    return {
+        flowDef: args.flowDef,
+        nodeDef: args.nodeDef,
+        tidiedNodeInstance: args.tidiedNodeInstance,
+        value: args.value,
+        setValue: args.setValue,
+        setOperand2: args.setOperand2,
+        doesFieldValueSatisfyCompletionCriteria: () => {
+            switch (args.nodeDef.fieldValueOperator) {
+                case WorkflowFieldValueOperator.IsNull:
+                    return args.value == null;
+                case WorkflowFieldValueOperator.IsNotNull:
+                    return args.value != null;
+                case WorkflowFieldValueOperator.Falsy:
+                    return !args.value;
+                case WorkflowFieldValueOperator.Truthy:
+                    return !!args.value;
+                case WorkflowFieldValueOperator.EqualsOperand2:
+                    return args.value === args.nodeDef.fieldValueOperand2;
+                case WorkflowFieldValueOperator.NotEqualsOperand2:
+                    return args.value !== args.nodeDef.fieldValueOperand2;
+                case WorkflowFieldValueOperator.EqualsAnyOf:
+                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
+                    return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                case WorkflowFieldValueOperator.IsNotAnyOf:
+                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
+                    return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                default:
+                    throw new Error(`not implemented: boolean field binding, operator ${args.nodeDef.fieldValueOperator}`);
+            }
+        },
+        FieldValueComponent: BoolField,
+        FieldOperand2Component: BoolOperand,
+    };
+};
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+const TextField = (props: WFFieldBinding<string>) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    return <CMTextField
+        autoFocus={false}
+        value={props.value || ""}
+        style={{ width: "auto" }}
+        onChange={(e, v) => {
+            props.setValue(v);
+        }}
+    />
+}
 
+const TextOperand = (props: WFFieldBinding<string>) => {
+    const val = CoerceToString(props.nodeDef.fieldValueOperand2);
+    return <CMTextField
+        autoFocus={false}
+        value={val}
+        style={{ width: "auto" }}
+        label="Operand 2"
+        onChange={(e, v) => props.setOperand2(v)}
+    />;
+}
+
+const MakeTextBinding = (args: {
+    flowDef: WorkflowDef,
+    nodeDef: WorkflowNodeDef,
+    tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    value: string,
+    setValue: (val: string) => void,
+    setOperand2: (val: (string) | (string)[]) => void,
+}
+): WFFieldBinding<string> => {
+    return {
+        flowDef: args.flowDef,
+        nodeDef: args.nodeDef,
+        tidiedNodeInstance: args.tidiedNodeInstance,
+        value: args.value,
+        setValue: args.setValue,
+        setOperand2: args.setOperand2,
+        doesFieldValueSatisfyCompletionCriteria: () => {
+            const isNull = () => IsNullOrWhitespace(args.value);
+            const eq = () => args.value.trim().toLowerCase() === ((args.nodeDef.fieldValueOperand2 as string) || "").trim().toLowerCase();
+
+            switch (args.nodeDef.fieldValueOperator) {
+                case WorkflowFieldValueOperator.Falsy:
+                case WorkflowFieldValueOperator.IsNull:
+                    return isNull();
+                case WorkflowFieldValueOperator.Truthy:
+                case WorkflowFieldValueOperator.IsNotNull:
+                    return !isNull();
+                case WorkflowFieldValueOperator.EqualsOperand2:
+                    return eq();
+                case WorkflowFieldValueOperator.NotEqualsOperand2:
+                    return !eq();
+                case WorkflowFieldValueOperator.EqualsAnyOf:
+                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
+                    return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                case WorkflowFieldValueOperator.IsNotAnyOf:
+                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
+                    return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                default:
+                    throw new Error(`not implemented: boolean field binding, operator ${args.nodeDef.fieldValueOperator}`);
+            }
+        },
+        FieldValueComponent: TextField,
+        FieldOperand2Component: TextOperand,
+    };
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+type ModelType = {
+    boolQuestions: (boolean | null)[],
+    textQuestions: (string | null)[],
+    intQuestions: (number | null)[],
+    floatQuestions: (number | null)[],
+    colorQuestions: (string | null)[],
+};
+
+function getModelBinding(args: {
+    model: ModelType,
+    flowDef: WorkflowDef,
+    nodeDef: WorkflowNodeDef,
+    tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    setModel: (newModel: ModelType) => void,
+    setOperand2: (newOperand: unknown) => void,
+}): WFFieldBinding<unknown> {
+    const [name, indexStr] = (args.nodeDef.fieldName || ":").split(":");
+    const index = parseInt(indexStr!);
+    switch (name) {
+        case "bool":
+            return MakeBoolBinding({
+                tidiedNodeInstance: args.tidiedNodeInstance,
+                flowDef: args.flowDef,
+                nodeDef: args.nodeDef,
+                setValue: (val) => {
+                    const newModel = { ...args.model };
+                    newModel.boolQuestions[index] = val;
+                    args.setModel(newModel);
+                },
+                setOperand2: args.setOperand2,
+                value: args.model.boolQuestions[index] === undefined ? null : args.model.boolQuestions[index],
+            });
+        case "text":
+            return MakeTextBinding({
+                tidiedNodeInstance: args.tidiedNodeInstance,
+                flowDef: args.flowDef,
+                nodeDef: args.nodeDef,
+                setValue: (val) => {
+                    const newModel = { ...args.model };
+                    newModel.textQuestions[index] = val;
+                    args.setModel(newModel);
+                },
+                setOperand2: args.setOperand2,
+                value: args.model.textQuestions[index] || "",
+            });
+        default:
+            throw new Error(`unknown field name ${args.nodeDef.fieldName}`);
+    }
+};
+
+const MakeEmptyModel = (): ModelType => ({
+    boolQuestions: [null, null, null],
+    textQuestions: [null, null, null],
+    intQuestions: [null, null, null],
+    floatQuestions: [null, null, null],
+    colorQuestions: [null, null, null],
+});
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 const MainContent = () => {
     const [workflowDef, setWorkflowDef] = React.useState<WorkflowDef>(minimalWorkflow as any);
     const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
@@ -310,62 +519,92 @@ const MainContent = () => {
         return WorkflowInitializeInstance(workflowDef);
     });
 
-    const [model, setModel] = React.useState({
-        question1: false,
-        question2: false,
-        changeSerial: 0,
-    });
+    const [model, setModel] = React.useState<ModelType>(MakeEmptyModel);
+
+    const setOperand2 = (nodeDefId: number, newOperand: unknown) => {
+        const nd = workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
+        nd.fieldValueOperand2 = newOperand;
+        setWorkflowDef({ ...workflowDef });
+        setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
+    };
 
     const instanceMutator: WorkflowInstanceMutator = {
-        DoesFieldValueSatisfyCompletionCriteria: (args): boolean => {
-            const nodeDef = args.flowDef.nodeDefs.find(nd => nd.id === args.node.nodeDefId)!;
-            const val = model[nodeDef.fieldName!]!;
-            switch (nodeDef.fieldValueOperator) {
-                case WorkflowFieldValueOperator.Null:
-                    return val == null;
-                case WorkflowFieldValueOperator.NotNull:
-                    return val != null;
-                case WorkflowFieldValueOperator.Falsy:
-                    return !val;
-                case WorkflowFieldValueOperator.Truthy:
-                    return !!val;
-                case WorkflowFieldValueOperator.EqualsOperand2:
-                    return val === nodeDef.fieldValueOperand2;
-                case WorkflowFieldValueOperator.NotEqualsOperand2:
-                    return val !== nodeDef.fieldValueOperand2;
-            }
-            return false;
+        DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
+            const binding = getModelBinding({
+                model,
+                flowDef,
+                nodeDef,
+                tidiedNodeInstance,
+                setModel: (newModel) => {
+                    setModel(newModel);
+                    setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
+                },
+                setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+            });
+            return binding.doesFieldValueSatisfyCompletionCriteria();
         },
         RegisterStateChange: (args) => {
-            // TODO
+            console.log(`todo: RegisterStateChange`);
         },
-        GetModelFieldNames: (args) => Object.keys(model),
+        GetModelFieldNames: (args) => {
+            return [
+                `bool:0`,
+                `bool:1`,
+                `bool:2`,
+                `text:0`,
+                `text:1`,
+                `text:2`,
+            ];
+        },
+        ResetModelAndInstance: () => {
+            setModel(MakeEmptyModel());
+            setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
+        },
     };
 
     const renderer: WorkflowRenderer = {
-        RenderFieldEditorForNode: (args) => {
-            const nodeDef = args.flowDef.nodeDefs.find(nd => nd.id === args.node.nodeDefId)!;
-            const fieldVal: boolean = model[nodeDef.fieldName!]!;
-            return <CMSmallButton onClick={() => {
-                const newModel = {
-                    ...model,
-                    [nodeDef.fieldName!]: !fieldVal
-                };
-                setModel(newModel);
-                setWorkflowInstance({ ...workflowInstance });
-
-            }}>{fieldVal ? "unapprove" : "approve"}</CMSmallButton>
+        RenderFieldValueForNode: ({ flowDef, nodeDef, editable, evaluatedNode, setWorkflowInstance }) => {
+            const binding = getModelBinding({
+                model,
+                flowDef,
+                nodeDef,
+                tidiedNodeInstance: evaluatedNode,
+                setModel: (value) => {
+                    setModel(value);
+                    setWorkflowInstance({ ...workflowInstance }); // trigger reeval when the model changes. important lel
+                },
+                setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+            });
+            return binding.FieldValueComponent(binding);
         },
+        RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue }) => {
+            const binding = getModelBinding({
+                model,
+                flowDef,
+                nodeDef,
+                tidiedNodeInstance: evaluatedNode,
+                setModel: (value) => {
+                    throw new Error(`should not be called from here.`);
+                },
+                setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+            });
+            return binding.FieldOperand2Component(binding);
+        }
     };
 
     return <div>
+        <InspectObject src={model} label="Model" />
+        <InspectObject src={workflowInstance} label="Instance" />
         <EvaluatedWorkflowProvider
             flowDef={workflowDef}
             flowInstance={workflowInstance}
             instanceMutator={instanceMutator}
             renderer={renderer}
             setWorkflowDef={setWorkflowDef}
-            setWorkflowInstance={setWorkflowInstance}
+            setWorkflowInstance={(v) => {
+                console.log(`setting workflow instance`);
+                setWorkflowInstance(v);
+            }}
         >
             <WorkflowEditorPOC />
         </EvaluatedWorkflowProvider>

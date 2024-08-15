@@ -396,15 +396,27 @@ function chainMutations(
 
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////
 export interface WorkflowRenderer {
-    RenderFieldEditorForNode: (args: {
+    RenderFieldValueForNode: (args: {
         flowDef: WorkflowDef,
-        node: WorkflowEvaluatedNode,
+        editable: boolean,
+        evaluatedNode: WorkflowEvaluatedNode,
+        nodeDef: WorkflowNodeDef,
         setWorkflowInstance: (newInstance: WorkflowInstance) => void,
     }) => React.ReactNode;
+
+    RenderEditorForFieldOperand2: (args: {
+        flowDef: WorkflowDef,
+        nodeDef: WorkflowNodeDef, // use this for value
+        evaluatedNode: WorkflowEvaluatedNode,
+        setValue: (value: unknown) => void,
+    }) => React.ReactNode;
+
 };
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////
 type EvaluatedWorkflowContextType = {
     flowDef: WorkflowDef, // basically the raw def from the db
     flowInstance: WorkflowInstance; // basically raw instance from db
@@ -515,10 +527,12 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
     let activeControls: React.ReactNode = null;
     switch (nodeDef.completionCriteriaType) {
         case WorkflowCompletionCriteriaType.fieldValue:
-            activeControls = ctx.renderer.RenderFieldEditorForNode({
-                node: evaluatedNode,
+            activeControls = ctx.renderer.RenderFieldValueForNode({
+                evaluatedNode,
+                nodeDef,
                 flowDef: ctx.flowDef,
                 setWorkflowInstance: ctx.setWorkflowInstance,
+                editable: true,
             });
     }
 

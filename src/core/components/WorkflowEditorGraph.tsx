@@ -4,11 +4,12 @@ import { nanoid } from "nanoid";
 import React from "react";
 import { gLightSwatchColors } from "shared/color";
 import { getHashedColor } from "shared/utils";
-import { EvaluatedWorkflow, EvaluateWorkflow, GetWorkflowDefSchemaHash, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowInitializeInstance, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowInitializeInstance, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { GetStyleVariablesForColor } from "./Color";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
+import { InspectObject } from "./CMCoreComponents";
 
 
 const makeNormalNodeId = (nodeDefId: number) => {
@@ -411,7 +412,10 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
             >
                 <div style={{ position: "absolute", zIndex: 4 }}>
                     <div>
-                        <button onClick={() => { clipboardCopy(JSON.stringify(ctx.flowDef, null, 2)) }}>
+                        <button onClick={() => {
+                            console.log(ctx.flowDef);
+                            clipboardCopy(JSON.stringify(ctx.flowDef, null, 2))
+                        }}>
                             Copy flow definition
                         </button>
                         <button onClick={() => {
@@ -480,7 +484,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
     const ctx = React.useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
 
-    const [showSelectionHandles, setShowSelectionHandles] = React.useState<boolean>(true);
+    const [showSelectionHandles, setShowSelectionHandles] = React.useState<boolean>(false);
 
     const selectedNodeDef = ctx.flowDef.nodeDefs.find(nd => !!nd.selected);
     const selectedGroupDef = ctx.flowDef.groupDefs.find(nd => !!nd.selected);
@@ -494,7 +498,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
         };
     })() : undefined;
 
-    const schemaHash = GetWorkflowDefSchemaHash(ctx.flowDef);
+    //const schemaHash = GetWorkflowDefSchemaHash(ctx.flowDef);
 
     // why not eval every time?
     const tidiedInstance = TidyWorkflowInstance(ctx.flowInstance, ctx.flowDef);
@@ -531,8 +535,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                     <div style={{ width: "33%" }}>
                         <Button
                             onClick={() => {
-                                ctx.setWorkflowInstance(WorkflowInitializeInstance(ctx.flowDef));
-                                // todo: reset model but we need an instanceMutator
+                                ctx.instanceMutator.ResetModelAndInstance();
                             }}
                         >Reset instance & model</Button>
                         <FormControlLabel label={"Show selection handles"} control={<input type="checkbox" checked={showSelectionHandles} onChange={e => setShowSelectionHandles(e.target.checked)} />} />
