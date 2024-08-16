@@ -1,3 +1,10 @@
+// TODO: find a way to clean up / unify somehow all of these different selection dialogs.
+// - ChooseItemDialog
+// - TagsFieldInput
+// - ChipSelector
+// - DB3SelectTagsDialog
+// - CMSelect
+
 
 import {
     Box,

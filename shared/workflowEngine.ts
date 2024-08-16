@@ -1,15 +1,14 @@
-// field configuration
-// test assignees
+// assignees
 // test due date
 
 // evaluation
 // - support triggers on state change. to set default due date & assignees
+// - correct logging
 
 // display
 // - workflow tab / view / control
-// - def editor
 // - assigned to you alert
-// - workflow overview (probably on events search a new display type)
+// - overviews (probably on events search a new display type)
 
 // permissions
 // - view_workflow_instances
@@ -151,7 +150,6 @@ export interface WorkflowLogItem {
 interface WorkflowNodeInstance {
     id: number;
     nodeDefId: number;
-    //nodeDef: WorkflowNodeDef;
     activeStateFirstTriggeredAt: Date | undefined;
     lastProgressState: WorkflowNodeProgressState;
     silenceAlerts: boolean; // "pause" behavior
@@ -164,7 +162,6 @@ export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
 };
 
 export interface WorkflowInstance {
-    //flowDef: WorkflowDef;
     nodeInstances: WorkflowNodeInstance[];
     log: WorkflowLogItem[];
 };
@@ -196,8 +193,11 @@ export interface WorkflowNodeEvaluation {
     isComplete: boolean; // same as progressstate === completed
     isInProgress: boolean; // same as progressstate === activated
 
-    completionWeightCompleted: number | undefined;
-    completionWeightTotal: number;
+    childCompletionWeightCompleted: number | undefined;
+    childCompletionWeightTotal: number;
+
+    thisCompletionWeightCompleted: number | undefined;
+    thisCompletionWeightTotal: number;
 
     dependentNodes: WorkflowEvaluatedDependentNode[];
     relevanceBlockedByNodes: WorkflowEvaluatedDependentNode[];
@@ -361,8 +361,11 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
         // 1. this step requires a field to complete. this weight is used.
         // 2. completeness depends on child fields. this weight is ignored. when depending on nodes, this weight is the sum of children.
         // undefined weight is possible when 
-        completionWeightCompleted: undefined, // to calculate later
-        completionWeightTotal: nodeDef.thisNodeProgressWeight, // assume not dependent // completionDependsOnChildren ? comple : nodeDef.thisNodeProgressWeight,
+        childCompletionWeightCompleted: undefined, // to calculate later
+        childCompletionWeightTotal: nodeDef.thisNodeProgressWeight, // assume not dependent // completionDependsOnChildren ? comple : nodeDef.thisNodeProgressWeight,
+
+        thisCompletionWeightCompleted: undefined,
+        thisCompletionWeightTotal: nodeDef.thisNodeProgressWeight,
 
         completenessDependentNodes: completionDependsOnChildren ? evaluatedChildren.filter(ch => ch.dependency.determinesCompleteness) : [],
         completenessBlockedByNodes: completionDependsOnChildren ? evaluatedChildren.filter(ch => ch.dependency.determinesCompleteness && !ch.evaluation.isComplete) : [],
@@ -373,8 +376,8 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
     };
 
     if (completionDependsOnChildren) {
-        evaluation.completionWeightTotal = evaluation.completenessDependentNodes.reduce((acc, e) => acc + e.evaluation.completionWeightTotal, 0);
-        evaluation.completionWeightCompleted = evaluation.completenessDependentNodes.reduce((acc, e) => e.evaluation.completionWeightCompleted === undefined ? undefined : (acc + e.evaluation.completionWeightCompleted), 0);
+        evaluation.childCompletionWeightTotal = evaluation.completenessDependentNodes.reduce((acc, e) => acc + e.evaluation.thisCompletionWeightTotal, 0);
+        evaluation.childCompletionWeightCompleted = evaluation.completenessDependentNodes.reduce((acc, e) => e.evaluation.thisCompletionWeightCompleted === undefined ? undefined : (acc + e.evaluation.thisCompletionWeightCompleted), 0);
     }
 
     switch (nodeDef.relevanceCriteriaType) {
@@ -411,6 +414,7 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
             break;
     }
 
+    // calculate progress 01
     switch (nodeDef.completionCriteriaType) {
         case WorkflowCompletionCriteriaType.never:
             evaluation.completenessSatisfied = false;
@@ -469,10 +473,10 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
             break;
         case WorkflowCompletionCriteriaType.allNodesComplete:
             evaluation.completenessSatisfied = evaluation.completenessBlockedByNodes.length === 0;
-            if (evaluation.completionWeightCompleted === undefined || evaluation.completionWeightTotal === 0) {
+            if (evaluation.childCompletionWeightCompleted === undefined || evaluation.childCompletionWeightTotal === 0) {
                 evaluation.progress01 = undefined;
             } else {
-                evaluation.progress01 = evaluation.completionWeightCompleted / evaluation.completionWeightTotal;
+                evaluation.progress01 = evaluation.childCompletionWeightCompleted / evaluation.childCompletionWeightTotal;
             }
             break;
         case WorkflowCompletionCriteriaType.someNodesComplete:
@@ -480,10 +484,10 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
             if (evaluation.completenessSatisfied) {
                 evaluation.progress01 = 1;
             } else {
-                if (evaluation.completionWeightCompleted === undefined || evaluation.completionWeightTotal === 0) {
+                if (evaluation.childCompletionWeightCompleted === undefined || evaluation.childCompletionWeightTotal === 0) {
                     evaluation.progress01 = undefined;
                 } else {
-                    evaluation.progress01 = evaluation.completionWeightCompleted / evaluation.completionWeightTotal;
+                    evaluation.progress01 = evaluation.childCompletionWeightCompleted / evaluation.childCompletionWeightTotal;
                 }
             }
             break;
@@ -503,7 +507,7 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
     evaluation.progressState = progressStateTable[`${evaluation.relevanceSatisfied ? "r" : "-"}${evaluation.activationSatisfied ? "a" : "-"}${evaluation.completenessSatisfied ? "c" : "-"}`];
 
     if (evaluation.progress01 !== undefined) {
-        evaluation.completionWeightCompleted = evaluation.completionWeightTotal * evaluation.progress01;
+        evaluation.thisCompletionWeightCompleted = nodeDef.thisNodeProgressWeight * evaluation.progress01;
     }
 
     evaluation.isComplete = evaluation.progressState === WorkflowNodeProgressState.Completed;

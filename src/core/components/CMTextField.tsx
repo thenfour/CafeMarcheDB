@@ -10,7 +10,7 @@ import {
 import CancelIcon from '@mui/icons-material/Cancel';
 import { assert } from "blitz";
 import { formatSongLength, parseSongLengthSeconds } from "shared/time";
-import { CoerceToNumberOrNull, parseIntOrNull } from "shared/utils";
+import { CoerceToNumberOrNull, parseFloatOrNull, parseIntOrNull } from "shared/utils";
 
 
 
@@ -116,7 +116,7 @@ export function CMNumericTextField({ label, value, autoFocus, readOnly, ...props
     const [stringValue, setStringValue] = React.useState<string>(value.toString());
     const [validationError, setValidationError] = React.useState<string | undefined>();
     React.useEffect(() => {
-        const x = parseIntOrNull(stringValue);
+        const x = parseFloatOrNull(stringValue);
         if (typeof x === 'number') {
             setValidationError(undefined);
             return;
@@ -137,7 +137,7 @@ export function CMNumericTextField({ label, value, autoFocus, readOnly, ...props
             helperText={validationError}
             onChange={(e) => {
                 setStringValue(e.target.value);
-                const x = parseIntOrNull(e.target.value);
+                const x = parseFloatOrNull(e.target.value);
                 if (typeof x === 'number') {
                     props.onChange(e, x);
                 }

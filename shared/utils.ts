@@ -370,6 +370,15 @@ export const CoerceNullableNumberToNullableString = (inp: number | null): string
     return `${inp}`;
 };
 
+
+// permissively converts a string or number to integer.
+export const parseFloatOrNull = (s): (number | null) => {
+    if (typeof s === 'number') return s;
+    const i = parseFloat(s);
+    return isNaN(i) ? null : i;
+}
+
+
 // returns whether the string is completely integral.
 // parseInt("1etcetc") returns 1. we don't want that here.
 // use case: deciding whether a string is a row ID or a string.

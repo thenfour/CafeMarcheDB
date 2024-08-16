@@ -75,7 +75,7 @@ export const AnimatedCircularProgress: React.FC<AnimatedCircularProgressProps> =
         return () => cancelAnimationFrame(animationFrameId);
     }, [value, duration]);
 
-    return <CircularProgress variant="determinate" size={size} value={progress} />;
+    return <CircularProgress variant="determinate" size={size} value={progress} className="CMAnimatedCircularProgress" />;
 };
 
 

@@ -227,6 +227,21 @@ input.CMTextInputBase.titleText {
     font-style: normal;
 }
 
+.CMChip .CMChipDeleteButton {
+    display: inline-flex;
+    align-items: center;
+}
+
+.CMChip .CMChipDeleteButton .MuiSvgIcon-root {
+    width: 17px;
+    margin-right: 3px;
+}
+
+.CMChip.small .CMChipDeleteButton .MuiSvgIcon-root {
+    width: 16px;
+    margin-right: 2px;
+}
+
 .CMChip.small svg {
     height: 20px;
 }
@@ -2423,4 +2438,10 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
 
 .SongHistoryInner {
     min-height: 600px;
+}
+
+.CMAnimatedCircularProgress {
+    display: inline-flex;
+    align-items: center;
+    ;
 }

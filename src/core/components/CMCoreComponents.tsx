@@ -93,7 +93,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
         shape,
         variant.enabled ? "enabled" : "disabled",
         variant.selected ? "selected" : "notselected",
-        ((props.onClick || props.onDelete) && variant.enabled) ? "interactable" : "noninteractable",
+        ((props.onClick) && variant.enabled) ? "interactable" : "noninteractable",
     ];
     if (props.className) {
         wrapperClasses.push(props.className);
@@ -111,6 +111,7 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
     const chipNode = <div className={wrapperClasses.join(" ")} style={style.style} onClick={props.onClick} ref={props.chipRef}>
         <div className={chipClasses.join(" ")}>
             <div className='content'>
+                {props.onDelete && <span className="CMChipDeleteButton interactable" onClick={props.onDelete}>{gIconMap.Cancel()}</span>}
                 {props.children}
             </div>
         </div>
