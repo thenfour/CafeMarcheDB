@@ -5,6 +5,7 @@ import { CreatePublicData } from "types";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TAnyModel } from "../shared/apiTypes";
+import { sleep } from "shared/utils";
 
 
 
@@ -64,6 +65,10 @@ export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: db3.User
 
         // any unknown / unauthorized columns are simply discarded.
         const sanitizedItems = rowAuthResult.filter(r => r.rowIsAuthorized).map(r => r.authorizedModel);
+
+        if (input.delayMS) {
+            await sleep(input.delayMS);
+        }
 
         return {
             items: sanitizedItems,
@@ -142,6 +147,10 @@ export const DB3PaginatedQueryCore = async (input: db3.PaginatedQueryInput, ctx:
 
     // any unknown / unauthorized columns are simply discarded.
     const sanitizedItems = rowAuthResult.filter(r => r.rowIsAuthorized).map(r => r.authorizedModel);
+
+    if (input.delayMS) {
+        await sleep(input.delayMS);
+    }
 
     return {
         items: sanitizedItems,

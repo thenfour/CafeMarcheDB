@@ -96,6 +96,7 @@ export interface PaginatedQueryInput {
     filter: CMDBTableFilterModel;
     clientIntention: xTableClientUsageContext;
     cmdbQueryContext: string;
+    delayMS?: number | undefined; // for testing purposes you may want to add an artificial delay to receiving results
 };
 
 ////////////////////////////////////////////////////////////////
@@ -108,6 +109,7 @@ export interface QueryInput {
     filter: CMDBTableFilterModel;
     clientIntention: xTableClientUsageContext;
     cmdbQueryContext: string;
+    delayMS?: number | undefined; // for testing purposes you may want to add an artificial delay to receiving results
 };
 
 ////////////////////////////////////////////////////////////////

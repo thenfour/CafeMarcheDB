@@ -1,12 +1,9 @@
-import React, { Suspense } from "react";
+import React from "react";
 
-import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItemButton, Select } from "@mui/material";
-import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMCoreComponents";
+import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
-import { CMDialogContentText, CMSmallButton } from "./CMCoreComponents2";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { CoalesceBool } from "shared/utils";
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions, ReactiveInputDialog } from "./CMCoreComponents";
+import { CMDialogContentText } from "./CMCoreComponents2";
 
 type Tid = number | string;
 
@@ -22,9 +19,9 @@ export interface CMMultiSelectDialogProps<T> {
     title: React.ReactNode;
     description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
-    getOptions: (args: { quickFilter: string | undefined }) => T[];
+    getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
     getOptionInfo: (item: T) => ItemInfo;
-    getOptionById: (id: Tid) => T;
+    getOptionById: (id: Tid) => T | Promise<T>;
     renderOption: (value: T) => React.ReactNode;
 
     initialValues?: T[] | undefined;
@@ -35,85 +32,121 @@ export interface CMMultiSelectDialogProps<T> {
     chipShape?: CMChipShapeOptions | undefined;
 };
 
-export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    const [selectedObjIds, setSelectedObjIds] = React.useState<Tid[]>(() => (props.initialValues || []).map(option => props.getOptionInfo(option).id));
 
-    const items = props.getOptions({ quickFilter: undefined });
+export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
+    const [selectedObjIds, setSelectedObjIds] = React.useState<Tid[]>(() => (props.initialValues || []).map(option => props.getOptionInfo(option).id));
+    const [isLoading, setIsLoading] = React.useState<boolean>(true);
+    const [items, setItems] = React.useState<T[]>([]);
+    const [selectedOptions, setSelectedOptions] = React.useState<T[]>([]);
+
+    React.useEffect(() => {
+        const fetchItems = async () => {
+            setIsLoading(true);
+            try {
+                const options = props.getOptions({ quickFilter: undefined });
+                const resolvedOptions = options instanceof Promise ? await options : options;
+                setItems(resolvedOptions);
+            } catch (error) {
+                console.error("Error fetching options:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchItems();
+    }, [props.getOptions]);
+
+    React.useEffect(() => {
+        const fetchSelectedOptions = async () => {
+            setIsLoading(true);
+            try {
+                const resolvedOptions = await Promise.all(
+                    selectedObjIds.map(async id => {
+                        const option = props.getOptionById(id);
+                        return option instanceof Promise ? await option : option;
+                    })
+                );
+                setSelectedOptions(resolvedOptions);
+            } catch (error) {
+                console.error("Error fetching selected options:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchSelectedOptions();
+    }, [selectedObjIds, props.getOptionById]);
+
     const itemsWithInfo = items.map(v => ({
         option: v,
         info: props.getOptionInfo(v),
     }));
 
-    const selectedOptionsWithInfo = selectedObjIds.map(id => {
-        const option = props.getOptionById(id);
-        return {
-            id,
-            option,
-            info: props.getOptionInfo(option),
-        }
-    });
+    const selectedOptionsWithInfo = selectedOptions.map(option => ({
+        id: props.getOptionInfo(option).id,
+        option,
+        info: props.getOptionInfo(option),
+    }));
 
     const renderChip = (key: Tid, option: T, info: ItemInfo, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
-        return <CMChip
-            key={key}
-            onClick={onClick}
-            onDelete={onDelete}
-
-            color={info.color}
-            tooltip={info.tooltip}
-            shape={props.chipShape}
-            size={props.chipSize}
-            variation={{ ...StandardVariationSpec.Strong, selected: selectedObjIds.includes(info.id) }}
-        >
-            {props.renderOption(option)}
-        </CMChip>;
+        return (
+            <CMChip
+                key={key}
+                onClick={onClick}
+                onDelete={onDelete}
+                color={info.color}
+                tooltip={info.tooltip}
+                shape={props.chipShape}
+                size={props.chipSize}
+                variation={{ ...StandardVariationSpec.Strong, selected: selectedObjIds.includes(info.id) }}
+            >
+                {props.renderOption(option)}
+            </CMChip>
+        );
     };
 
     return (
-        <Dialog
-            open={true}
-            onClose={props.onCancel}
-            scroll="paper"
-            fullScreen={fullScreen}
-            className={`ReactiveInputDialog ${fullScreen ? "smallScreen" : "bigScreen"}`}
-            disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
-        >
+        <ReactiveInputDialog onCancel={props.onCancel}>
             <DialogTitle>
                 {props.title}
+                {isLoading && <CircularProgress />}
                 <Box sx={{ p: 0 }}>
-                    Selected: {selectedObjIds.length === 0 ? "<none>" : <CMChipContainer>
-                        {selectedOptionsWithInfo.map(optionx => renderChip(optionx.id, optionx.option, optionx.info, undefined, () => setSelectedObjIds(selectedObjIds.filter(id => id !== optionx.id))))}
-                    </CMChipContainer>}
+                    Selected: {selectedObjIds.length === 0 ? "<none>" : (
+                        <CMChipContainer>
+                            {selectedOptionsWithInfo.map(optionx =>
+                                renderChip(optionx.id, optionx.option, optionx.info, undefined, () =>
+                                    setSelectedObjIds(selectedObjIds.filter(id => id !== optionx.id))
+                                )
+                            )}
+                        </CMChipContainer>
+                    )}
                 </Box>
             </DialogTitle>
             <DialogContent dividers>
                 <CMDialogContentText>
                     {props.description}
                 </CMDialogContentText>
-                {
-                    (items.length == 0) ?
-                        <Box>Nothing here</Box>
-                        :
-                        <CMChipContainer orientation="vertical">
-                            {itemsWithInfo.map(item => renderChip(item.info.id, item.option, item.info,
-                                () => {
-                                    // toggle selection of this item.
-                                    const selectedAlready = selectedObjIds.includes(item.info.id);
-                                    if (selectedAlready) {
-                                        setSelectedObjIds(selectedObjIds.filter(id => id !== item.info.id)); // remove
-                                    } else {
-                                        setSelectedObjIds([...selectedObjIds, item.info.id]); // add
-                                    }
-                                }, undefined))}
-                        </CMChipContainer>
-                }
+                {items.length === 0 ? (
+                    <Box>Nothing here</Box>
+                ) : (
+                    <CMChipContainer orientation="vertical">
+                        {itemsWithInfo.map(item =>
+                            renderChip(item.info.id, item.option, item.info, () => {
+                                const selectedAlready = selectedObjIds.includes(item.info.id);
+                                if (selectedAlready) {
+                                    setSelectedObjIds(selectedObjIds.filter(id => id !== item.info.id)); // remove
+                                } else {
+                                    setSelectedObjIds([...selectedObjIds, item.info.id]); // add
+                                }
+                            }, undefined)
+                        )}
+                    </CMChipContainer>
+                )}
             </DialogContent>
             <DialogActions>
                 <Button onClick={props.onCancel}>Cancel</Button>
                 <Button onClick={() => { props.onOK(selectedOptionsWithInfo.map(ox => ox.option)); }}>OK</Button>
             </DialogActions>
-        </Dialog>
+        </ReactiveInputDialog>
     );
 }

@@ -1,13 +1,12 @@
 // todo: quick filter + add new
-import React, { Suspense } from "react";
+// todo: async fetching with suspense
+import React from "react";
 
-import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItemButton, Select } from "@mui/material";
-import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMCoreComponents";
+import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
-import { CMDialogContentText, CMSmallButton } from "./CMCoreComponents2";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from '@mui/material/useMediaQuery';
 import { CoalesceBool } from "shared/utils";
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions, ReactiveInputDialog } from "./CMCoreComponents";
+import { CMDialogContentText } from "./CMCoreComponents2";
 
 type Tid = number | string;
 
@@ -23,9 +22,9 @@ export interface CMSingleSelectDialogProps<T> {
     title: React.ReactNode;
     description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
-    getOptions: (args: { quickFilter: string | undefined }) => T[];
+    getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
     getOptionInfo: (item: T) => ItemInfo;
-    getOptionById: (id: Tid) => T;
+    getOptionById: (id: Tid) => T | Promise<T>;
     renderOption: (value: T) => React.ReactNode;
 
     value?: T | undefined;
@@ -38,19 +37,58 @@ export interface CMSingleSelectDialogProps<T> {
 };
 
 export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedObjId, setSelectedObjId] = React.useState<Tid | undefined>(() => props.value === undefined ? undefined : props.getOptionInfo(props.value).id);
+    const [isLoading, setIsLoading] = React.useState<boolean>(true);
+    const [items, setItems] = React.useState<T[]>([]);
+    const [selectedObj, setSelectedObj] = React.useState<T | undefined>(undefined);
 
-    const items = props.getOptions({ quickFilter: undefined });
+    React.useEffect(() => {
+        const fetchItems = async () => {
+            setIsLoading(true);
+            try {
+                const options = props.getOptions({ quickFilter: undefined });
+                const resolvedOptions = options instanceof Promise ? await options : options;
+                setItems(resolvedOptions);
+            } catch (error) {
+                console.error("Error fetching options:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchItems();
+    }, [props.getOptions]);
+
     const itemsWithInfo = items.map(v => ({
         option: v,
         info: props.getOptionInfo(v),
     }));
 
+    React.useEffect(() => {
+        const fetchSelectedObj = async () => {
+            if (selectedObjId === undefined) {
+                setSelectedObj(undefined);
+                return;
+            }
+
+            setIsLoading(true);
+            try {
+                const result = props.getOptionById(selectedObjId);
+                const resolvedResult = result instanceof Promise ? await result : result;
+                setSelectedObj(resolvedResult);
+            } catch (error) {
+                console.error("Error fetching selected option:", error);
+                setSelectedObj(undefined);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchSelectedObj();
+    }, [selectedObjId, props.getOptionById]);
+
     const closeOnSelect = CoalesceBool(props.closeOnSelect, true);
 
-    const selectedObj = selectedObjId === undefined ? undefined : props.getOptionById(selectedObjId);
     const selectedObjInfo = selectedObj === undefined ? undefined : props.getOptionInfo(selectedObj);
 
     const renderChip = (key: Tid, option: T, info: ItemInfo, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
@@ -69,41 +107,37 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
         </CMChip>;
     };
 
-    return (
-        <Dialog
-            open={true}
-            onClose={props.onCancel}
-            scroll="paper"
-            fullScreen={fullScreen}
-            className={`ReactiveInputDialog ${fullScreen ? "smallScreen" : "bigScreen"}`}
-            disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
-        >
-            <DialogTitle>
-                {props.title}
-                <Box sx={{ p: 0 }}>
-                    Selected: {selectedObj === undefined ? "<none>" : renderChip(0, selectedObj, selectedObjInfo!, undefined, () => setSelectedObjId(undefined))}
-                </Box>
-            </DialogTitle>
-            <DialogContent dividers>
-                <CMDialogContentText>
-                    {props.description}
-                </CMDialogContentText>
-                {
-                    (items.length == 0) ?
-                        <Box>Nothing here</Box>
-                        :
-                        <CMChipContainer orientation="vertical">
-                            {itemsWithInfo.map(item => renderChip(item.info.id, item.option, item.info, () => {
-                                setSelectedObjId(item.info.id);
-                                closeOnSelect && props.onOK(item.option);
-                            }, undefined))}
-                        </CMChipContainer>
-                }
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={props.onCancel}>Cancel</Button>
-                <Button onClick={() => { props.onOK(selectedObj!); }} disabled={selectedObj === undefined}>OK</Button>
-            </DialogActions>
-        </Dialog>
-    );
+    return <ReactiveInputDialog onCancel={props.onCancel}>
+        <DialogTitle>
+            {props.title}
+            {isLoading && <CircularProgress />}
+            <Box sx={{ p: 0 }}>
+                Selected: {selectedObj === undefined ? "<none>" : renderChip(0, selectedObj, selectedObjInfo!, undefined, () => setSelectedObjId(undefined))}
+            </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+            <CMDialogContentText>
+                {props.description}
+            </CMDialogContentText>
+
+            {items.length === 0 ? (
+                <Box>Nothing here</Box>
+            ) : (
+                <CMChipContainer orientation="vertical">
+                    {itemsWithInfo.map(item =>
+                        renderChip(item.info.id, item.option, item.info, () => {
+                            setSelectedObjId(item.info.id);
+                            closeOnSelect && props.onOK(item.option);
+                        }, undefined)
+                    )}
+                </CMChipContainer>
+            )}
+
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onCancel}>Cancel</Button>
+            <Button onClick={() => { props.onOK(selectedObj!); }} disabled={selectedObj === undefined}>OK</Button>
+        </DialogActions>
+
+    </ReactiveInputDialog>
 }

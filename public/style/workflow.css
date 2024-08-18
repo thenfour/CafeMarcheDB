@@ -54,6 +54,9 @@
 }
 
 /* ---- REACT FLOW */
+.react-flow {
+    --xy-background-color: white;
+}
 
 .react-flow__node-cmNormal {
     color: #999;

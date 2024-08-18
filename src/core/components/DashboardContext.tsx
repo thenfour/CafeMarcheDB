@@ -103,11 +103,13 @@ export class DashboardContextData extends db3.DashboardContextDataBase {
     getRolesForPermission(permissionId) {
         return this.rolePermission.filter(rp => rp.permissionId === permissionId).map(rp => this.role.getById(rp.roleId));
     }
-
 };
 
 
 export const DashboardContext = React.createContext(new DashboardContextData());
+
+export const useDashboardContext = () => React.useContext(DashboardContext);
+
 
 export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{}>) => {
     const valueRef = React.useRef(new DashboardContextData());
