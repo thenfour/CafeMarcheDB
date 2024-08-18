@@ -68,6 +68,7 @@ export const xChange = new db3.xTable({
     tableAuthMap: xSysadminTableAuthMap,
     naturalOrderBy: ChangeNaturalOrderBy,
     getRowInfo: (row: ChangePayload) => ({
+        pk: row.id,
         name: `${row.id}`,
         ownerUserId: null,
     }),

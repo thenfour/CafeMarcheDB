@@ -9,12 +9,12 @@ import * as db3 from "src/core/db3/db3";
 import { getAbsoluteUrl } from '../db3/clientAPILL';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { TAnyModel, gNullValue } from "../db3/shared/apiTypes";
-import { CMChip, CMChipContainer } from "./CMCoreComponents";
 import { CMSmallButton, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { DashboardContext } from "./DashboardContext";
 import { Markdown } from "./RichTextEditor";
 import { gIconMap } from "../db3/components/IconMap";
+import { CMChip, CMChipContainer } from "./CMChip";
 
 
 const gRedirectTypeColorMap: Record<keyof typeof db3.CustomLinkRedirectType, string> = {

@@ -5,7 +5,7 @@ import React, { Suspense, useRef, useState } from "react";
 import { Permission } from "shared/permissions";
 import { CalcRelativeTiming, DateTimeRange, gMillisecondsPerDay } from "shared/time";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { CMStandardDBChip, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { EventDateField, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { DashboardContext } from "src/core/components/DashboardContext";
@@ -27,6 +27,7 @@ import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { useDebounce } from "shared/useDebounce";
 import { DateTimeRangeControl } from "src/core/components/DateTimeRangeControl";
+import { CMStandardDBChip } from "src/core/components/CMChip";
 
 interface InsertResult {
     event: {

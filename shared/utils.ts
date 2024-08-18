@@ -748,6 +748,15 @@ export function CoalesceBool<T>(value: null | undefined | T, defaultValue: T) {
     if (value === undefined) return defaultValue;
     return value;
 }
+export function valueOr<T, U, V>(
+    value: T | undefined | null,
+    valueIfUndefined: U,
+    valueIfNull: V
+): T | U | V {
+    if (value === undefined) return valueIfUndefined;
+    if (value === null) return valueIfNull;
+    return value;
+}
 
 ////////////////////////////////////////////////////////////////
 // const getImageDimensions = (url: string): Promise<Size> => {

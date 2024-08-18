@@ -17,7 +17,7 @@ import { assert } from "blitz";
 import React, { Suspense } from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { Coalesce, SettingKey, SplitQuickFilter, gQueryOptions, parseIntOrNull } from "shared/utils";
-import { AdminInspectObject, CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { AdminInspectObject, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -31,6 +31,7 @@ import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { TAnyModel } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
+import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 
 
 

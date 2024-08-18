@@ -4,7 +4,6 @@ import { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, sortBy } from "shared/utils";
 import { WorkflowCompletionCriteriaType, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
-import { CMChip, CMChipContainer } from "./CMCoreComponents";
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
@@ -13,6 +12,7 @@ import { EvaluatedWorkflowContext, WorkflowNodeProgressIndicator } from "./Workf
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { ChoiceEditCell } from "./ChooseItemDialog";
 import { DB3SelectTagsDialog, TagsFieldInput } from "../db3/DB3Client";
+import { CMChip, CMChipContainer } from "./CMChip";
 
 
 

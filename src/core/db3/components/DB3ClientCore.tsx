@@ -449,59 +449,58 @@ export const useTableRenderContext = (args: xTableClientArgs) => {
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// this allows fetch-style querying where you
-// export interface FetchAsyncArgs<T> {
-//     schema: db3.xTable;
-//     clientIntention: db3.xTableClientUsageContext;
-//     sortModel?: GridSortModel,
-//     filterModel?: CMDBTableFilterModel,
-//     take?: number | undefined;
-//     queryOptions?: any; // of gQueryOptions
-//     delayMS?: number;
-// };
+export interface FetchAsyncArgs<T> {
+    schema: db3.xTable;
+    clientIntention: db3.xTableClientUsageContext;
+    sortModel?: GridSortModel,
+    filterModel?: CMDBTableFilterModel,
+    take?: number | undefined;
+    queryOptions?: any; // of gQueryOptions
+    delayMS?: number;
+};
 
-// export interface FetchAsyncResult<T> {
-//     items: T[];
-//     isLoading: boolean;
-//     refetch: () => void;
-//     queryResult: undefined | RestQueryResult<any, any>;
-// };
+export interface FetchAsyncResult<T> {
+    items: T[];
+    isLoading: boolean;
+    refetch: () => void;
+    queryResult: undefined | RestQueryResult<any, any>;
+};
 
-// // allows fetching without suspense interaction
-// export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T> {
-//     const queryInput: db3.QueryInput = {
-//         tableID: args.schema.tableID,
-//         tableName: args.schema.tableName,
-//         orderBy: CalculateOrderBy(args.sortModel),
-//         take: args.take,
-//         filter: args.filterModel || { items: [] },
-//         delayMS: args.delayMS,
-//         clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
-//         cmdbQueryContext: `fetchAsync for ${args.schema.tableName} / ${args.schema.tableID}`,
-//     };
+// allows fetching without suspense interaction
+export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T> {
+    const queryInput: db3.QueryInput = {
+        tableID: args.schema.tableID,
+        tableName: args.schema.tableName,
+        orderBy: CalculateOrderBy(args.sortModel),
+        take: args.take,
+        filter: args.filterModel || { items: [] },
+        delayMS: args.delayMS,
+        clientIntention: { ...args.clientIntention, currentUser: undefined }, // don't pass bulky user to server; redundant.
+        cmdbQueryContext: `fetchAsync for ${args.schema.tableName} / ${args.schema.tableID}`,
+    };
 
-//     const [queryRet, blitzQueryStatus] = useQuery(db3queries, queryInput, { ...(args.queryOptions || gQueryOptions.default), suspense: false });
+    const [queryRet, blitzQueryStatus] = useQuery(db3queries, queryInput, { ...(args.queryOptions || gQueryOptions.default), suspense: false });
 
-//     let dbItems: TAnyModel[] = [];
-//     let rowCount = 0;
+    let dbItems: TAnyModel[] = [];
+    let rowCount = 0;
 
-//     if (queryRet) {
-//         dbItems = queryRet.items;
-//         rowCount = queryRet.items.length;
-//     }
+    if (queryRet) {
+        dbItems = queryRet.items;
+        rowCount = queryRet.items.length;
+    }
 
-//     // convert items from a database result to a client-side object.
-//     const clientItems: T[] = dbItems.map(dbitem => {
-//         return args.schema.getClientModel(dbitem, "view", args.clientIntention) as T;
-//     });
+    // convert items from a database result to a client-side object.
+    const clientItems: T[] = dbItems.map(dbitem => {
+        return args.schema.getClientModel(dbitem, "view", args.clientIntention) as T;
+    });
 
-//     return {
-//         items: clientItems,
-//         isLoading: blitzQueryStatus.isLoading,
-//         refetch: blitzQueryStatus.refetch || (() => { }),
-//         queryResult: blitzQueryStatus,
-//     };
-// }; // ctor
+    return {
+        items: clientItems,
+        isLoading: blitzQueryStatus.isLoading,
+        refetch: blitzQueryStatus.refetch || (() => { }),
+        queryResult: blitzQueryStatus,
+    };
+}; // ctor
 
 
 

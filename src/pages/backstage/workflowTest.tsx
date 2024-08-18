@@ -11,7 +11,7 @@ import { WorkflowEditorPOC } from "src/core/components/WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, WorkflowRenderer } from "src/core/components/WorkflowUserComponents";
 import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { assert } from "blitz";
-import { CoalesceBool, CoerceToString, IsNullOrWhitespace } from "shared/utils";
+import { CoalesceBool, CoerceToString, IsNullOrWhitespace, valueOr } from "shared/utils";
 import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField } from "src/core/components/CMTextField";
 
@@ -483,7 +483,7 @@ function getModelBinding(args: {
                     args.setModel(newModel);
                 },
                 setOperand2: args.setOperand2,
-                value: args.model.boolQuestions[index] === undefined ? null : args.model.boolQuestions[index],
+                value: valueOr(args.model.boolQuestions[index], null, null),
             });
         case "text":
             return MakeTextBinding({

@@ -16,7 +16,7 @@ import React, { Suspense } from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
-import { CMChip, CMChipContainer, InspectObject } from "src/core/components/CMCoreComponents";
+import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { Markdown } from "src/core/components/RichTextEditor";
@@ -29,6 +29,7 @@ import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { TAnyModel, gNullValue } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
+import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {

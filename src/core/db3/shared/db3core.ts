@@ -480,10 +480,13 @@ export interface SortModel {
 };
 
 export interface RowInfo {
+    pk: number;
     name: string;
-    description?: string;
-    color?: ColorPaletteEntry | null;
-    iconName?: string | null;
+    tooltip?: string | undefined;
+    description?: string | undefined;
+    color?: ColorPaletteEntry | null | undefined;
+    iconName?: string | null | undefined;
+
     ownerUserId: number | null; // if the row has an "owner" set this. helps with authorization
 };
 

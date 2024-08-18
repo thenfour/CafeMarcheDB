@@ -414,7 +414,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                     <div>
                         <button onClick={() => {
                             console.log(ctx.flowDef);
-                            clipboardCopy(JSON.stringify(ctx.flowDef, null, 2))
+                            void clipboardCopy(JSON.stringify(ctx.flowDef, null, 2))
                         }}>
                             Copy flow definition
                         </button>

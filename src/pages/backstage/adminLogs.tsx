@@ -4,7 +4,7 @@ import * as React from 'react';
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsNullOrWhitespace, existsInArray, toggleValueInArray } from "shared/utils";
-import { CMChip, CMChipContainer } from "src/core/components/CMCoreComponents";
+import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
 import { DashboardContext } from "src/core/components/DashboardContext";

@@ -43,6 +43,7 @@ export const xInstrumentFunctionalGroup = new db3.xTable({
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentFunctionalGroupNaturalSortOrder,
     getRowInfo: (row: InstrumentFunctionalGroupPayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -96,6 +97,7 @@ export const xInstrumentTag = new db3.xTable({
         };
     },
     getRowInfo: (row: InstrumentTagPayload) => ({
+        pk: row.id,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -147,6 +149,7 @@ export const xInstrumentTagAssociation = new db3.xTable({
     tableAuthMap: xInstrumentTableAuthMap,
     naturalOrderBy: InstrumentTagAssociationNaturalOrderBy,
     getRowInfo: (row: InstrumentTagAssociationPayload) => ({
+        pk: row.id,
         name: row.tag?.text || "",
         description: row.tag?.description || "",
         color: gGeneralPaletteList.findEntry(row.tag?.color || ""),
@@ -177,6 +180,7 @@ export const xInstrument = new db3.xTable({
     tableName: "Instrument",
     naturalOrderBy: InstrumentNaturalOrderBy,
     getRowInfo: (row: InstrumentPayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.functionalGroup?.color || ""),

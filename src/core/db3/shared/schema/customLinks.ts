@@ -58,6 +58,7 @@ export const xCustomLink = new db3.xTable({
     tableName: "CustomLink",
     naturalOrderBy: CustomLinkNaturalOrderBy,
     getRowInfo: (row: CustomLinkPayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description,
         color: null,

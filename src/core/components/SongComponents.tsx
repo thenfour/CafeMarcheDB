@@ -13,7 +13,7 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { TAnyModel } from '../db3/shared/apiTypes';
-import { CMChipContainer, CMStandardDBChip, CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
+import { CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
 import { NameValuePair } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
@@ -27,6 +27,7 @@ import { VisibilityValue } from './VisibilityControl';
 import { SongHistory } from './SongHistory';
 import { Markdown3Editor } from './MarkdownControl3';
 import { gIconMap } from '../db3/components/IconMap';
+import { CMChipContainer, CMStandardDBChip } from './CMChip';
 
 
 export const SongClientColumns = {

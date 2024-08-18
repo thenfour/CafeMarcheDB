@@ -1,5 +1,5 @@
 import React from 'react';
-import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from './CMCoreComponents';
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from './CMChip';
 
 interface Option<TValue> {
     value: TValue;

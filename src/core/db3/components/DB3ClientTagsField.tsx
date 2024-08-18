@@ -21,7 +21,7 @@ import { SettingKey, SplitQuickFilter, gQueryOptions } from "shared/utils";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import updateSetting from 'src/auth/mutations/updateSetting';
 import getSetting from 'src/auth/queries/getSetting';
-import { CMChip, CMChipContainer, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
 import { CMSmallButton, useIsShowingAdminControls } from 'src/core/components/CMCoreComponents2';
 import { SearchInput } from 'src/core/components/CMTextField';
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from 'src/core/components/SettingMarkdown';
@@ -33,6 +33,7 @@ import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn,
 import { RenderAsChipParams } from './db3ForeignSingleFieldClient';
 import { TAnyModel } from '../shared/apiTypes';
 import { RenderMuiIcon } from './IconMap';
+import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
 
 
 const gMaxVisibleTags = 6;

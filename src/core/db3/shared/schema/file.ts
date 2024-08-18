@@ -97,6 +97,7 @@ export const xFileTag = new db3.xTable({
         };
     },
     getRowInfo: (row: FileTagPayload) => ({
+        pk: row.id,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -123,6 +124,7 @@ export const xFileTagAssignment = new db3.xTable({
     },
     getRowInfo: (row: FileTagAssignmentPayload) => {
         return {
+            pk: row.id,
             name: row.fileTag?.text || "",
             description: row.fileTag?.description || "",
             color: gGeneralPaletteList.findEntry(row.fileTag?.color || null),
@@ -173,6 +175,7 @@ export const xFileUserTag = new db3.xTable({
     },
     getRowInfo: (row: FileUserTagPayload) => {
         return {
+            pk: row.id,
             name: row.user?.name || "",
             ownerUserId: null,
         };
@@ -218,6 +221,7 @@ export const xFileSongTag = new db3.xTable({
     },
     getRowInfo: (row: FileSongTagPayload) => {
         return {
+            pk: row.id,
             name: row.song?.name || "",
             ownerUserId: null,
         };
@@ -258,6 +262,7 @@ export const xFileEventTag = new db3.xTable({
     },
     getRowInfo: (row: FileEventTagPayload) => {
         return {
+            pk: row.id,
             name: row.event?.name || "",
             ownerUserId: null,
         };
@@ -308,6 +313,7 @@ export const xFileInstrumentTag = new db3.xTable({
     },
     getRowInfo: (row: FileInstrumentTagPayload) => {
         return {
+            pk: row.id,
             name: row.instrument?.name || "",
             ownerUserId: null,
         };
@@ -379,6 +385,7 @@ export const xFile = new db3.xTable({
         return ret;
     },
     getRowInfo: (row: FilePayload) => ({
+        pk: row.id,
         name: row.fileLeafName,
         description: row.description,
         ownerUserId: row.uploadedByUserId,
@@ -623,6 +630,7 @@ export const xFrontpageGalleryItem = new db3.xTable({
     naturalOrderBy: FrontpageGalleryItemNaturalOrderBy,
     getParameterizedWhereClause: (params: any, clientIntention: db3.xTableClientUsageContext): (Prisma.FrontpageGalleryItemWhereInput[]) => [],
     getRowInfo: (row: FrontpageGalleryItemPayload) => ({
+        pk: row.id,
         name: row.caption,
         description: row.caption,
         ownerUserId: null,

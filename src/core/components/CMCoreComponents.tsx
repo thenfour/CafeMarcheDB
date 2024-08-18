@@ -20,6 +20,7 @@ import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from "./DashboardContext";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { Permission } from "shared/permissions";
+import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -31,142 +32,6 @@ export const ReactSmoothDndContainer = (props: React.PropsWithChildren<any>) => 
 export const ReactSmoothDndDraggable = (props: React.PropsWithChildren<any>) => {
     return <ReactSmoothDnd.Draggable {...props as any} />;
 }
-
-
-
-
-////////////////////////////////////////////////////////////////
-
-// a white surface elevated from the gray base background, allowing vertical content.
-// meant to be the ONLY surface
-
-// well tbh, it's hard to know whether to use this or what <EventDetail> uses...
-// .contentSection seems more developed, with 
-export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren<{ className?: string }>) => {
-    // return <Card className='singlePageSurface'>{props.children}</Card>;
-    return <div className={`contentSection ${props.className}`}>{props.children}</div>;
-};
-
-////////////////////////////////////////////////////////////////
-// rethinking "variant"... for component coloring variations, there are
-// strong / weak
-// selected / notselected
-// disabled / enabled
-// (hover)
-// (focus)
-
-// but it means having a lot of color variations:
-// - main / contrast
-// - faded main / contrast, for disabled/enabled
-// - for selected, something else? maybe we're OK as is
-
-export type CMChipShapeOptions = "rounded" | "rectangle";
-
-export type CMChipSizeOptions = "small" | "big";
-
-export type CMChipBorderOption = "default" | "border" | "noBorder";
-
-export interface CMChipProps {
-    chipRef?: React.Ref<HTMLDivElement>;
-    color?: ColorPaletteEntry | string | null;
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    shape?: CMChipShapeOptions;
-    border?: CMChipBorderOption;
-    className?: string;
-    tooltip?: string | null;
-
-    onDelete?: () => void;
-    onClick?: () => void;
-};
-
-
-export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
-    const variant = props.variation || StandardVariationSpec.Strong;
-    const shape: CMChipShapeOptions = props.shape || "rounded";
-    const style = GetStyleVariablesForColor({ color: props.color, ...variant });
-    const size = props.size || "big";
-
-    const wrapperClasses: string[] = [
-        "CMChip",
-        size,
-        shape,
-        variant.enabled ? "enabled" : "disabled",
-        variant.selected ? "selected" : "notselected",
-        ((props.onClick) && variant.enabled) ? "interactable" : "noninteractable",
-    ];
-    if (props.className) {
-        wrapperClasses.push(props.className);
-    }
-
-    const chipClasses: string[] = [
-        "chipMain applyColor",
-        props.border === "border" ? "colorForceBorder" : (props.border === "noBorder" ? "colorForceNoBorder" : "colorForceDefaultBorder"),
-        style.cssClass,
-        size,
-        variant.enabled ? "enabled" : "disabled",
-        variant.selected ? "selected" : "notselected",
-    ];
-
-    const chipNode = <div className={wrapperClasses.join(" ")} style={style.style} onClick={props.onClick} ref={props.chipRef}>
-        <div className={chipClasses.join(" ")}>
-            <div className='content'>
-                {props.onDelete && <span className="CMChipDeleteButton interactable" onClick={props.onDelete}>{gIconMap.Cancel()}</span>}
-                {props.children}
-            </div>
-        </div>
-    </div>;
-
-    if (IsNullOrWhitespace(props.tooltip)) return chipNode;
-
-    return <Tooltip title={props.tooltip} disableInteractive>{chipNode}</Tooltip>;
-}
-
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const CMChipContainer = (props: React.PropsWithChildren<{ className?: string, orientation?: "vertical" | "horizontal", margins?: "tightMargins" | "defaultMargins" }>) => {
-    return <div className={`CMChipContainer ${props.className || ""} ${props.orientation} ${props.margins}`}>{props.children}</div>
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface CMStandardDBChipModel {
-    color?: null | string | ColorPaletteEntry;
-    iconName?: string | null;
-
-    text?: string | null;
-    label?: string | null;
-
-    description?: string | null;
-}
-
-export interface CMStandardDBChipProps<T> {
-    model: T | null;
-    getText?: (value: T | null, coalescedValue: string | null) => string; // override the text getter
-    getTooltip?: (value: T | null, coalescedValue: string | null) => string | null;
-    variation?: ColorVariationSpec;
-    size?: CMChipSizeOptions;
-    shape?: CMChipShapeOptions;
-    border?: CMChipBorderOption;
-    onClick?: () => void;
-    className?: string;
-};
-
-export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
-    const dbText = props.model?.label || props.model?.text || null;
-    const tooltip: string | null | undefined = props.getTooltip ? props.getTooltip(props.model, dbText) : (props.model?.description);
-    return <CMChip
-        color={props.model?.color}
-        variation={props.variation}
-        size={props.size}
-        onClick={props.onClick}
-        className={props.className}
-        tooltip={tooltip}
-        shape={props.shape}
-        border={props.border}
-    >
-        {RenderMuiIcon(props.model?.iconName)}{props.getText ? props.getText(props.model, dbText) : dbText || "--"}
-    </CMChip>;
-};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,6 +47,7 @@ export interface RowInfoChipProps {
 };
 export const RowInfoChip = (props: RowInfoChipProps) => {
     const rowInfo1: db3.RowInfo = props.item ? props.tableSpec.getRowInfo(props.item) : {
+        pk: -1,
         name: "--",
         ownerUserId: null,
     };
@@ -196,6 +62,21 @@ export const RowInfoChip = (props: RowInfoChipProps) => {
     >
         {RenderMuiIcon(rowInfo.iconName)}{rowInfo.name}
     </CMChip>;
+};
+
+
+
+
+////////////////////////////////////////////////////////////////
+
+// a white surface elevated from the gray base background, allowing vertical content.
+// meant to be the ONLY surface
+
+// well tbh, it's hard to know whether to use this or what <EventDetail> uses...
+// .contentSection seems more developed, with 
+export const CMSinglePageSurfaceCard = (props: React.PropsWithChildren<{ className?: string }>) => {
+    // return <Card className='singlePageSurface'>{props.children}</Card>;
+    return <div className={`contentSection ${props.className}`}>{props.children}</div>;
 };
 
 

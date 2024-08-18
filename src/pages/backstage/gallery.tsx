@@ -19,12 +19,13 @@ import { AutoAssignInstrumentPartition, TAnyModel } from "src/core/db3/shared/ap
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { ChipFilterGroup, FilterControls } from "../../core/components/FilterControl";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { CMChip, CMChipContainer, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { StandardVariationSpec } from "shared/color";
 import { Timing } from "shared/time";
 import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { BigEventCalendar, BigEventCalendarMonth } from "src/core/components/EventCalendar";
 import { DateCalendar, DatePicker } from "@mui/x-date-pickers";
+import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 
 interface FilterSpec {
     qfText: string;

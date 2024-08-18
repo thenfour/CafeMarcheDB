@@ -72,6 +72,7 @@ export const xUserMinimum = new db3.xTable({
     tableName: "User",
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserMinimumPayload) => ({
+        pk: row.id,
         name: row.name,
         ownerUserId: row.id,
     }),
@@ -159,6 +160,7 @@ export const xPermissionBaseArgs: db3.TableDesc = {
     naturalOrderBy: PermissionNaturalOrderBy,
     tableAuthMap: xPermissionTableAuthMap,
     getRowInfo: (row: PermissionPayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description || "",
         color: gGeneralPaletteList.findEntry(row.color),
@@ -246,6 +248,7 @@ export const xRolePermissionAssociation = new db3.xTable({
     tableAuthMap: xPermissionTableAuthMap,
     naturalOrderBy: RolePermissionNaturalOrderBy,
     getRowInfo: (row: RolePermissionAssociationPayload) => ({
+        pk: row.id,
         name: row.permission?.name || "",
         description: row.permission?.description || "",
         ownerUserId: null,
@@ -288,6 +291,7 @@ export const xRole = new db3.xTable({
         };
     },
     getRowInfo: (row: RolePayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description || "",
         color: gGeneralPaletteList.findEntry(row.color),
@@ -363,6 +367,7 @@ export const xUserInstrument = new db3.xTable({
     naturalOrderBy: UserInstrumentNaturalOrderBy,
     getRowInfo: (row: UserInstrumentPayload) => {
         return {
+            pk: row.id,
             name: row.instrument?.name || "",
             description: row.instrument?.description || "",
             color: gGeneralPaletteList.findEntry(row.instrument?.functionalGroup?.color || null),
@@ -443,6 +448,7 @@ const userTagBaseArgs: db3.TableDesc =
         };
     },
     getRowInfo: (row: UserTagPayload) => ({
+        pk: row.id,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -523,6 +529,7 @@ export const xUserTagAssignment = new db3.xTable({
     },
     getRowInfo: (row: UserTagAssignmentPayload) => {
         return {
+            pk: row.id,
             name: row.userTag?.text || "",
             description: row.userTag?.description || "",
             color: gGeneralPaletteList.findEntry(row.userTag?.color || null),
@@ -561,6 +568,7 @@ const userBaseArgs: db3.TableDesc = {
     tableAuthMap: xUserTableAuthMap_R_EManagers,
     naturalOrderBy: UserNaturalOrderBy,
     getRowInfo: (row: UserPayload) => ({
+        pk: row.id,
         name: row.name,
         ownerUserId: row.id,
     }),

@@ -40,6 +40,7 @@ export const xSetting = new xTable({
     tableAuthMap: xSettingsTableAuthMap,
     naturalOrderBy: SettingNaturalOrderBy,
     getRowInfo: (row: SettingPayload) => ({
+        pk: row.id,
         name: row.name,
         ownerUserId: null,
     }),

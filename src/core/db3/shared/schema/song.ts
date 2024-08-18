@@ -74,6 +74,7 @@ export const xSongTag = new db3.xTable({
         };
     },
     getRowInfo: (row: SongTagPayload) => ({
+        pk: row.id,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -129,6 +130,7 @@ export const xSongTagAssociation = new db3.xTable({
     naturalOrderBy: SongTagAssociationNaturalOrderBy,
     getRowInfo: (row: SongTagAssociationPayload) => ({
         name: row.tag?.text || "",
+        pk: row.id,
         description: row.tag?.description || "",
         color: gGeneralPaletteList.findEntry(row.tag?.color || null),
         ownerUserId: null,
@@ -163,6 +165,7 @@ const xSongArgs_Base: db3.TableDesc = {
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongNaturalOrderBy,
     getRowInfo: (row: SongPayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description,
         ownerUserId: null,
@@ -321,6 +324,7 @@ export const xSongCreditType = new db3.xTable({
         };
     },
     getRowInfo: (row: SongCreditTypePayload) => ({
+        pk: row.id,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -365,6 +369,7 @@ export const xSongCredit = new db3.xTable({
     tableAuthMap: xSongTableAuthMap_R_EManagers,
     naturalOrderBy: SongCreditNaturalOrderBy,
     getRowInfo: (row: SongCreditPayload) => ({
+        pk: row.id,
         name: "<a song credit>",
         ownerUserId: row.userId, // questionable.
     }),

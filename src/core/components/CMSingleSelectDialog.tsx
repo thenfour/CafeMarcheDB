@@ -5,8 +5,9 @@ import React from "react";
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
-import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText } from "./CMCoreComponents2";
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
+import { ReactiveInputDialog } from "./CMCoreComponents";
 
 type Tid = number | string;
 
@@ -56,7 +57,7 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
             }
         };
 
-        fetchItems();
+        void fetchItems();
     }, [props.getOptions]);
 
     const itemsWithInfo = items.map(v => ({
@@ -84,7 +85,7 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
             }
         };
 
-        fetchSelectedObj();
+        void fetchSelectedObj();
     }, [selectedObjId, props.getOptionById]);
 
     const closeOnSelect = CoalesceBool(props.closeOnSelect, true);

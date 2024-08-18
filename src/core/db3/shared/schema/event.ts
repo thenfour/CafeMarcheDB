@@ -180,6 +180,7 @@ export const xEventType = new db3.xTable({
         };
     },
     getRowInfo: (row: EventTypePayload) => ({
+        pk: row.id,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -227,6 +228,7 @@ export const xEventStatus = new db3.xTable({
         };
     },
     getRowInfo: (row: EventStatusPayload) => ({
+        pk: row.id,
         name: row.label,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -275,6 +277,7 @@ export const xEventTag = new db3.xTable({
         };
     },
     getRowInfo: (row: EventTagPayload) => ({
+        pk: row.id,
         name: row.text,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -312,6 +315,7 @@ export const xEventTagAssignment = new db3.xTable({
     },
     getRowInfo: (row: EventTagAssignmentPayload) => {
         return {
+            pk: row.id,
             name: row.eventTag?.text || "",
             description: row.eventTag?.description || "",
             color: gGeneralPaletteList.findEntry(row.eventTag?.color || null),
@@ -365,6 +369,7 @@ export const xEventArgs_Base: db3.TableDesc = {
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     naturalOrderBy: EventNaturalOrderBy,
     getRowInfo: (row: EventPayloadClient) => ({
+        pk: row.id,
         name: EventAPI.getLabel(row),
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.type?.color || null),
@@ -714,6 +719,7 @@ export const xEventSegment = new db3.xTable({
     naturalOrderBy: EventSegmentNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSegmentPayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description,
         ownerUserId: null,
@@ -778,6 +784,7 @@ export const xEventAttendance = new db3.xTable({
     tableAuthMap: xEventTableAuthMap_R_EAdmins,
     naturalOrderBy: EventAttendanceNaturalOrderBy,
     getRowInfo: (row: EventAttendancePayload) => ({
+        pk: row.id,
         name: row.text,
         description: `${row.isActive ? "" : "(inactive) "}${row.description}`,
         color: gGeneralPaletteList.findEntry(row.color),
@@ -818,6 +825,7 @@ export const xEventSegmentUserResponse = new db3.xTable({
     tableAuthMap: xEventTableAuthMap_UserResponse,
     naturalOrderBy: EventSegmentUserResponseNaturalOrderBy,
     getRowInfo: (row: EventSegmentUserResponsePayload) => ({
+        pk: row.id,
         name: row.user?.name || "",
         ownerUserId: row.userId,
     }),
@@ -878,6 +886,7 @@ export const xEventUserResponse = new db3.xTable({
     naturalOrderBy: EventUserResponseNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_UserResponse,
     getRowInfo: (row: EventUserResponsePayload) => ({
+        pk: row.id,
         name: row.user?.name || "",
         ownerUserId: row.user?.id,
     }),
@@ -950,6 +959,7 @@ export const xEventSongList = new db3.xTable({
     naturalOrderBy: EventSongListNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListPayload) => ({
+        pk: row.id,
         name: row.name,
         description: row.description,
         ownerUserId: null,
@@ -1002,6 +1012,7 @@ export const xEventSongListSong = new db3.xTable({
     naturalOrderBy: EventSongListSongNaturalOrderBy,
     tableAuthMap: xEventTableAuthMap_R_EManagers,
     getRowInfo: (row: EventSongListSongPayload) => ({
+        pk: row.id,
         name: row.song?.name || "?",
         description: row.subtitle || "",
         ownerUserId: null,

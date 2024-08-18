@@ -15,13 +15,14 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { TClientFileUploadTags } from '../db3/shared/apiTypes';
 import { AudioPreviewBehindButton } from './AudioPreview';
-import { CMChip, CMChipContainer, CMStandardDBChip, EventChip, InstrumentChip, SongChip, UserChip } from "./CMCoreComponents";
+import { EventChip, InstrumentChip, SongChip, UserChip } from "./CMCoreComponents";
 import { CMDBUploadFile } from './CMDBUploadFile';
 import { SearchInput } from './CMTextField';
 import { DashboardContext } from './DashboardContext';
 import { FileDropWrapper, UploadFileComponent } from './FileDrop';
 import { Markdown } from "./RichTextEditor";
 import { VisibilityValue } from './VisibilityControl';
+import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 
 
 type EnrichedFile = db3.EnrichedFile<db3.FileWithTagsPayload>;

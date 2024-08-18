@@ -4,11 +4,11 @@ import { Button, Switch } from "@mui/material";
 import React from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec, gGeneralPaletteList, gSwatchColors } from "shared/color";
 import { toggleValueInArray } from "shared/utils";
-import { CMChip, CMChipBorderOption, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMCoreComponents";
 import { SearchInput } from "src/core/components/CMTextField";
 import { CalculateFilterQueryResult, DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsFacetOption } from '../db3/shared/apiTypes';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { OpposingSortDirection, SortDirection } from 'shared/rootroot';
+import { CMChip, CMChipBorderOption, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from './CMChip';
 
 type FilterControlsProps = {
     hasExtraFilters?: boolean; // default falsy

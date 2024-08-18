@@ -2,8 +2,9 @@ import React from "react";
 
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
-import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText } from "./CMCoreComponents2";
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
+import { ReactiveInputDialog } from "./CMCoreComponents";
 
 type Tid = number | string;
 
@@ -53,7 +54,7 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
             }
         };
 
-        fetchItems();
+        void fetchItems();
     }, [props.getOptions]);
 
     React.useEffect(() => {
@@ -74,7 +75,7 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
             }
         };
 
-        fetchSelectedOptions();
+        void fetchSelectedOptions();
     }, [selectedObjIds, props.getOptionById]);
 
     const itemsWithInfo = items.map(v => ({

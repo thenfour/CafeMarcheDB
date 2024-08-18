@@ -19,12 +19,12 @@
 
 import React from "react";
 
+import { CircularProgress } from "@mui/material";
 import { StandardVariationSpec } from "shared/color";
-import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMCoreComponents";
 import { CMSmallButton } from "./CMCoreComponents2";
 import { CMMultiSelectDialog } from "./CMMultiSelectDialog";
 import { CMSingleSelectDialog } from "./CMSingleSelectDialog";
-import { CircularProgress } from "@mui/material";
+import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
 
 // ID type
 type Tid = number | string;
@@ -69,165 +69,110 @@ interface CMMultiSelectProps<Toption> {
     dialogDescription?: React.ReactNode;
 };
 
+
 export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => {
-    const [multiEditDialogOpen, setMultiEditDialogOpen] = React.useState<boolean>(false);
-    const [allOptionsX, setAllOptionsX] = React.useState<{
+    const [multiEditDialogOpen, setMultiEditDialogOpen] = React.useState(false);
+    const [allOptions, setAllOptions] = React.useState<{
         option: Toption;
         info: ItemInfo;
         id: Tid;
         selected: boolean;
     }[]>([]);
-    const [isLoading, setIsLoading] = React.useState<boolean>(true);
+    const [isLoading, setIsLoading] = React.useState(true);
 
-    const editStyle = props.editStyle || CMSelectEditStyle.inlineWithDialog;
     const valueDisplayStyle = props.valueDisplayStyle || CMSelectValueDisplayStyle.all;
-    const chipSize = props.chipSize || "small";
-    const chipShape = props.chipShape || "rectangle";
-    const dialogTitle = props.dialogTitle || "Select";
-    const dialogDescription = props.dialogDescription || "";
-
-    type TX = {
-        option: Toption,
-        info: ItemInfo,
-        id: Tid,
-        selected: boolean,
-    };
-
-    const valuesX: TX[] = props.value.map(option => {
-        const info = props.getOptionInfo(option);
-        return {
-            id: info.id,
-            option,
-            info,
-            selected: true,
-        };
-    });
-
-    const setSelected = (optionX: TX, selected: boolean) => {
-        if (selected) {
-            props.onChange([...props.value, optionX.option]);
-        } else {
-            props.onChange(props.value.filter(s => props.getOptionInfo(s).id !== optionX.id));
-        }
-    };
+    const editStyle = props.editStyle || CMSelectEditStyle.inlineWithDialog;
 
     React.useEffect(() => {
         const fetchOptions = async () => {
             setIsLoading(true);
             try {
-                const options = props.getOptions({ quickFilter: undefined });
-                const resolvedOptions = options instanceof Promise ? await options : options;
-
-                const allOptions = resolvedOptions.map(option => {
-                    const info = props.getOptionInfo(option);
-                    return {
-                        id: info.id,
-                        info,
-                        option,
-                        selected: props.value.some(x => props.getOptionInfo(x).id === info.id),
-                    };
-                });
-                setAllOptionsX(allOptions);
+                const options = await Promise.resolve(props.getOptions({ quickFilter: undefined }));
+                const newOptions = options.map(option => ({
+                    option,
+                    info: props.getOptionInfo(option),
+                    id: props.getOptionInfo(option).id,
+                    selected: props.value.some(val => props.getOptionInfo(val).id === props.getOptionInfo(option).id)
+                }));
+                setAllOptions(newOptions);
             } catch (error) {
                 console.error("Error fetching options:", error);
             } finally {
                 setIsLoading(false);
             }
         };
-
-        fetchOptions();
+        void fetchOptions();
     }, [props.getOptions, props.value, props.getOptionInfo]);
 
-    return <div className={`CMMultiSelect`}>
-        <CMChipContainer>
-            {
-                // ALL style: show all options and variation indicates selected.
-                // INLINE-DIALOG edit style: clicking toggles selected; there's no other edit options. so ALL + INLINE is practical
-                (valueDisplayStyle === CMSelectValueDisplayStyle.all) && (editStyle === CMSelectEditStyle.inlineWithDialog) && <>{allOptionsX.map(optionX => {
-                    return <CMChip
-                        key={optionX.id}
-                        size={chipSize}
-                        color={optionX.info.color}
-                        shape={chipShape}
-                        variation={{ ...StandardVariationSpec.Strong, selected: optionX.selected }}
-                        onClick={props.readonly ? undefined : (() => setSelected(optionX, !optionX.selected))}
-                    >
-                        {props.renderOption(optionX.option)}
-                    </CMChip>
-                })}
-                    {!props.readonly && <CMSmallButton onClick={() => setMultiEditDialogOpen(true)}>Select...</CMSmallButton>}
-                </>
-            }
-            {
-                // ALL style: show all options and variation indicates selected.
-                // DIALOG edit style: just a button to edit in a dialog
-                (valueDisplayStyle === CMSelectValueDisplayStyle.all) && (editStyle === CMSelectEditStyle.dialog) && <>
-                    {allOptionsX.map(optionX => {
-                        return <CMChip
-                            key={optionX.id}
-                            size={chipSize}
-                            shape={chipShape}
-                            color={optionX.info.color}
-                            variation={{ ...StandardVariationSpec.Strong, selected: optionX.selected }}
-                        >
-                            {props.renderOption(optionX.option)}
-                        </CMChip>
-                    })}
-                    {!props.readonly && <CMSmallButton onClick={() => setMultiEditDialogOpen(true)}>Change...</CMSmallButton>}
-                </>
-            }
-            {
-                // SELECTED style: show only selected options.
-                // INLINE-DIALOG edit style gives them delete buttons and a "+ add" option to select a single item
-                (valueDisplayStyle === CMSelectValueDisplayStyle.selected) && (editStyle === CMSelectEditStyle.inlineWithDialog) && <>{valuesX.map(valueX => {
-                    return <CMChip
-                        key={valueX.info.id}
-                        size={chipSize}
-                        shape={chipShape}
-                        color={valueX.info.color}
-                        onDelete={props.readonly ? undefined : (() => setSelected(valueX, false))}
-                    >
-                        {props.renderOption(valueX.option)}
-                    </CMChip>
-                })}
-                    {!props.readonly && <CMSmallButton onClick={() => setMultiEditDialogOpen(true)}>+ add</CMSmallButton>}
-                </>
-            }
-            {
-                // SELECTED style: show only selected options.
-                // DIALOG edit style gives them delete buttons and a "+ add" option to select a single item
-                (valueDisplayStyle === CMSelectValueDisplayStyle.selected) && (editStyle === CMSelectEditStyle.dialog) && <>{valuesX.map(valueX => {
-                    return <CMChip
-                        key={valueX.info.id}
-                        size={chipSize}
-                        shape={chipShape}
-                        color={valueX.info.color}
-                    >
-                        {props.renderOption(valueX.option)}
-                    </CMChip>
-                })}
-                    {!props.readonly && <CMSmallButton onClick={() => setMultiEditDialogOpen(true)}>Edit</CMSmallButton>}
-                </>
-            }
-            {isLoading && <CircularProgress size={16} />}
-        </CMChipContainer>
-        {multiEditDialogOpen && <CMMultiSelectDialog
-            renderOption={props.renderOption}
-            onCancel={() => setMultiEditDialogOpen(false)}
-            onOK={options => {
-                props.onChange(options);
-                setMultiEditDialogOpen(false);
-            }}
-            initialValues={props.value}
-            getOptions={props.getOptions}
-            getOptionById={props.getOptionById}
-            getOptionInfo={props.getOptionInfo}
-            title={dialogTitle}
-            description={dialogDescription}
-        />}
-    </div>
-};
+    const toggleSelection = (option: typeof allOptions[0], isSelected: boolean) => {
+        if (isSelected) {
+            props.onChange([...props.value, option.option]);
+        } else {
+            props.onChange(props.value.filter(val => props.getOptionInfo(val).id !== option.id));
+        }
+    };
 
+    const renderChips = () => allOptions.map(option => (
+        <CMChip
+            key={option.id}
+            size={props.chipSize || "small"}
+            shape={props.chipShape || "rectangle"}
+            color={option.info.color}
+            variation={{ ...StandardVariationSpec.Strong, selected: option.selected }}
+            onClick={!props.readonly ? () => toggleSelection(option, !option.selected) : undefined}
+        >
+            {props.renderOption(option.option)}
+        </CMChip>
+    ));
+
+    const renderSelectedChips = () => props.value.map(val => {
+        const info = props.getOptionInfo(val);
+        return (
+            <CMChip
+                key={info.id}
+                size={props.chipSize || "small"}
+                shape={props.chipShape || "rectangle"}
+                color={info.color}
+                onDelete={!props.readonly ? () => toggleSelection({ option: val, info, id: info.id, selected: true }, false) : undefined}
+            >
+                {props.renderOption(val)}
+            </CMChip>
+        );
+    });
+
+    const handleDialog = () => setMultiEditDialogOpen(!multiEditDialogOpen);
+
+    return (
+        <div className="CMMultiSelect">
+            <CMChipContainer>
+                {(valueDisplayStyle === CMSelectValueDisplayStyle.all) && renderChips()}
+                {(valueDisplayStyle === CMSelectValueDisplayStyle.selected) && renderSelectedChips()}
+                {!props.readonly && (
+                    <CMSmallButton onClick={handleDialog}>
+                        {editStyle === CMSelectEditStyle.dialog ? "Change..." : "+ Add"}
+                    </CMSmallButton>
+                )}
+                {isLoading && <CircularProgress size={16} />}
+            </CMChipContainer>
+            {multiEditDialogOpen && (
+                <CMMultiSelectDialog
+                    renderOption={props.renderOption}
+                    onCancel={handleDialog}
+                    onOK={options => {
+                        props.onChange(options);
+                        handleDialog();
+                    }}
+                    initialValues={props.value}
+                    getOptions={props.getOptions}
+                    getOptionById={props.getOptionById}
+                    getOptionInfo={props.getOptionInfo}
+                    title={props.dialogTitle || "Select"}
+                    description={props.dialogDescription || ""}
+                />
+            )}
+        </div>
+    );
+};
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -253,47 +198,35 @@ interface CMSingleSelectProps<Toption> {
 };
 
 
+
 export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) => {
-    const [singleSelectDialogOpen, setSingleSelectDialogOpen] = React.useState<boolean>(false);
-    const [allOptionsX, setAllOptionsX] = React.useState<{
-        option: Toption;
-        info: ItemInfo;
-        id: Tid;
-        selected: boolean;
-    }[]>([]);
-    const [isLoading, setIsLoading] = React.useState<boolean>(true);
-
-    const editStyle = props.editStyle || CMSelectEditStyle.inlineWithDialog;
-    const valueDisplayStyle = props.valueDisplayStyle || CMSelectValueDisplayStyle.all;
-    const chipSize = props.chipSize || "small";
-    const chipShape = props.chipShape || "rectangle";
-    const dialogTitle = props.dialogTitle || "Select";
-    const dialogDescription = props.dialogDescription || "";
-
     type TX = {
         option: Toption;
         info: ItemInfo;
-        id: Tid;
         selected: boolean;
     };
+
+    const [singleSelectDialogOpen, setSingleSelectDialogOpen] = React.useState(false);
+    const [allOptions, setAllOptions] = React.useState<TX[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    const valueDisplayStyle = props.valueDisplayStyle || CMSelectValueDisplayStyle.all;
+    const editStyle = props.editStyle || CMSelectEditStyle.inlineWithDialog;
 
     React.useEffect(() => {
         const fetchOptions = async () => {
             setIsLoading(true);
             try {
-                const options = props.getOptions({ quickFilter: undefined });
-                const resolvedOptions = options instanceof Promise ? await options : options;
-
-                const allOptions = resolvedOptions.map(option => {
-                    const info = props.getOptionInfo(option);
-                    return {
-                        id: info.id,
-                        info,
-                        option,
-                        selected: props.getOptionInfo(props.value).id === info.id,
-                    };
-                });
-                setAllOptionsX(allOptions);
+                const options = await (props.getOptions({ quickFilter: undefined }) instanceof Promise
+                    ? props.getOptions({ quickFilter: undefined })
+                    : Promise.resolve(props.getOptions({ quickFilter: undefined })));
+                const processedOptions = options.map(option => ({
+                    option,
+                    info: props.getOptionInfo(option),
+                    //id: 
+                    selected: props.getOptionInfo(props.value).id === props.getOptionInfo(option).id
+                }));
+                setAllOptions(processedOptions);
             } catch (error) {
                 console.error("Error fetching options:", error);
             } finally {
@@ -301,81 +234,54 @@ export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) =>
             }
         };
 
-        fetchOptions();
+        void fetchOptions();
     }, [props.getOptions, props.value, props.getOptionInfo]);
 
-    const valueInfo = props.getOptionInfo(props.value);
-    const valueX: TX = {
-        id: valueInfo.id,
-        option: props.value,
-        info: valueInfo,
-        selected: true,
+    const renderChips = () => {
+        //const condition = props.valueDisplayStyle === CMSelectValueDisplayStyle.all || !props.readonly;
+        return allOptions.map(option => (
+            <CMChip
+                key={option.info.id}
+                size={props.chipSize || "small"}
+                shape={props.chipShape || "rectangle"}
+                color={option.info.color}
+                variation={{ ...StandardVariationSpec.Strong, selected: option.selected }}
+                onClick={!props.readonly ? () => props.onChange(option.option) : undefined}
+            >
+                {props.renderOption(option.option)}
+            </CMChip>
+        ));
+    };
+
+    const renderSelectedChip = () => {
+        const valueInfo = props.getOptionInfo(props.value);
+        return (
+            <CMChip
+                key={valueInfo.id}
+                size={props.chipSize || "small"}
+                shape={props.chipShape || "rectangle"}
+                color={valueInfo.color}
+            >
+                {props.renderOption(props.value)}
+            </CMChip>
+        );
     };
 
     return (
-        <div className={`CMSingleSelect`}>
+        <div className="CMSingleSelect">
             <CMChipContainer>
-
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.all) && (editStyle === CMSelectEditStyle.inlineWithDialog) && (
+                {(valueDisplayStyle === CMSelectValueDisplayStyle.all && editStyle === CMSelectEditStyle.inlineWithDialog) && (
                     <>
-                        {allOptionsX.map(optionX => (
-                            <CMChip
-                                key={optionX.id}
-                                size={chipSize}
-                                color={optionX.info.color}
-                                shape={chipShape}
-                                variation={{ ...StandardVariationSpec.Strong, selected: optionX.selected }}
-                                onClick={props.readonly ? undefined : (() => props.onChange(optionX.option))}
-                            >
-                                {props.renderOption(optionX.option)}
-                            </CMChip>
-                        ))}
+                        {renderChips()}
                         {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
                     </>
                 )}
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.all) && (editStyle === CMSelectEditStyle.dialog) && (
+                {(valueDisplayStyle === CMSelectValueDisplayStyle.selected && editStyle === CMSelectEditStyle.inlineWithDialog) && (
                     <>
-                        {allOptionsX.map(optionX => (
-                            <CMChip
-                                key={optionX.id}
-                                size={chipSize}
-                                shape={chipShape}
-                                color={optionX.info.color}
-                                variation={{ ...StandardVariationSpec.Strong, selected: optionX.selected }}
-                            >
-                                {props.renderOption(optionX.option)}
-                            </CMChip>
-                        ))}
+                        {renderSelectedChip()}
                         {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
                     </>
                 )}
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.selected) && (editStyle === CMSelectEditStyle.inlineWithDialog) && (
-                    <>
-                        <CMChip
-                            key={valueX.info.id}
-                            size={chipSize}
-                            shape={chipShape}
-                            color={valueX.info.color}
-                        >
-                            {props.renderOption(valueX.option)}
-                        </CMChip>
-                        {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
-                    </>
-                )}
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.selected) && (editStyle === CMSelectEditStyle.dialog) && (
-                    <>
-                        <CMChip
-                            key={valueX.info.id}
-                            size={chipSize}
-                            shape={chipShape}
-                            color={valueX.info.color}
-                        >
-                            {props.renderOption(valueX.option)}
-                        </CMChip>
-                        {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
-                    </>
-                )}
-
                 {isLoading && <CircularProgress size={16} />}
             </CMChipContainer>
             {singleSelectDialogOpen && (
@@ -390,13 +296,16 @@ export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) =>
                     getOptions={props.getOptions}
                     getOptionById={props.getOptionById}
                     getOptionInfo={props.getOptionInfo}
-                    title={dialogTitle}
-                    description={dialogDescription}
+                    title={props.dialogTitle || "Select"}
+                    description={props.dialogDescription || ""}
                 />
             )}
         </div>
     );
 };
+
+
+
 
 
 export const StringArrayOptionsProvider = <T extends (number | string),>(x: T[]) => ({

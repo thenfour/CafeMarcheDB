@@ -45,6 +45,7 @@ export const xWikiPage = new db3.xTable({
     tableName: "WikiPage",
     naturalOrderBy: WikiPageNaturalOrderBy,
     getRowInfo: (row: WikiPagePayload) => ({
+        pk: row.id,
         name: row.slug,
         description: undefined,
         color: gGeneralPaletteList.findEntry(row.visiblePermission?.color || null),
@@ -111,6 +112,7 @@ export const xWikiPageRevision = new db3.xTable({
     tableName: "WikiPageRevision",
     naturalOrderBy: WikiPageRevisionNaturalOrderBy,
     getRowInfo: (row: WikiPageRevisionPayload) => ({
+        pk: row.id,
         name: row.name,
         description: undefined,
         color: null,

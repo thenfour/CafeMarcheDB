@@ -1,15 +1,12 @@
-import { useAuthenticatedSession, useSession } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
 import React from "react";
 import { gGeneralPaletteList, gSwatchColors } from "shared/color";
 import { sleep } from "shared/utils";
-import { CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMCoreComponents";
+import { CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
 import { CMMultiSelect, CMSelectEditStyle, CMSelectValueDisplayStyle, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/CMSelect";
 import { ColorPick } from "src/core/components/Color";
-import { useDashboardContext } from "src/core/components/DashboardContext";
-import * as DB3Client from "src/core/db3/DB3Client";
+import { DB3MultiSelect, DB3SingleSelect } from "src/core/db3/components/db3Select";
 import * as db3 from "src/core/db3/db3";
-import db3queries from "src/core/db3/queries/db3queries";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 type Dataset = "numbers";
@@ -84,7 +81,7 @@ const MultiSelectTest = () => {
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
         <h3>Multi select</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
-        <div style={{ padding: "20px", backgroundColor: "white" }}>
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMMultiSelect
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
@@ -122,7 +119,7 @@ const SingleSelectTest = () => {
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
         <h3>Single select</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
-        <div style={{ padding: "20px", backgroundColor: "white" }}>
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<number>
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
@@ -158,7 +155,7 @@ const SingleSelectNullableTest = () => {
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
         <h3>Single select with null</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
-        <div style={{ padding: "20px", backgroundColor: "white" }}>
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<number | undefined>
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
@@ -202,7 +199,7 @@ const SingleSelectAsyncTest = () => {
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
         <h3>Single select ASYNC</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
-        <div style={{ padding: "20px", backgroundColor: "white" }}>
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<number>
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
@@ -248,7 +245,7 @@ const SelectSingleFetchTest = () => {
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
         <h3>Single user select ASYNC</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
-        <div style={{ padding: "20px", backgroundColor: "white" }}>
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<TypicodeUser | undefined>
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
@@ -270,134 +267,83 @@ const SelectSingleFetchTest = () => {
 };
 
 
+const DB3SingleSelectTest = () => {
+    const [selectedValue, setSelectedValue] = React.useState<db3.InstrumentPayloadMinimum | null>(null);
+    const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
+        color: null,
+        size: "big",
+        shape: "rectangle",
+        readonly: false,
+        editStyle: CMSelectEditStyle.inlineWithDialog,
+        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+    });
 
-// const SelectSingleDb3UsersTest = () => {
-//     const ctx = useDashboardContext();
-//     type User = db3.UserMinimumPayload;
+    return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
+        <h3>Single instrument select DB3</h3>
+        <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
+            <DB3SingleSelect<db3.InstrumentPayloadMinimum | null>
+                value={selectedValue}
+                onChange={v => setSelectedValue(v)}
+                renderOption={value => !value ? "<none>" : <>{value.name}</>}
+                schema={db3.xInstrument}
 
-//     const fetchArgs: DB3Client.FetchAsyncArgs<User> = {
-//         clientIntention: ctx.userClientIntention,
-//         schema: db3.xUser,
-//         take: 20,
-//         delayMS: 500,
-//     };
-//     const [getOptionsPromise, getOptionsStatus] = DB3Client.useFetchAsync<User>(fetchArgs);
-
-//     const [selected, setSelected] = React.useState<User>();
-//     const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
-//         color: null,
-//         size: "big",
-//         shape: "rectangle",
-//         readonly: false,
-//         editStyle: CMSelectEditStyle.inlineWithDialog,
-//         valueDisplayStyle: CMSelectValueDisplayStyle.all,
-//     });
-
-//     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
-//         <h3>Single user select ASYNC</h3>
-//         {getOptionsStatus.queryResult && <button onClick={() => getOptionsStatus.queryResult?.refetch()}>refetch</button>}
-//         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
-//         <div style={{ padding: "20px", backgroundColor: "white" }}>
-//             <CMSingleSelect<User | undefined>
-//                 valueDisplayStyle={chipOptions.valueDisplayStyle}
-//                 editStyle={chipOptions.editStyle}
-//                 readonly={chipOptions.readonly}
-//                 chipSize={chipOptions.size}
-//                 getOptions={args => getOptionsPromise().then(x => x.items)}
-//                 renderOption={opt => <>{opt?.name || "<null>"}</>}
-//                 getOptionById={(id) => DB3Client.useFetchAsync<User>(fetchArgs)[0]().then(x => x.items.find(user => user.id === id))}
-
-//                 getOptionInfo={opt => ({
-//                     id: opt?.id || -1,
-//                     color: chipOptions.color,
-//                 })}
-//                 value={selected}
-//                 onChange={v => setSelected(v)}
-//             />
-//         </div>
-//     </div>;
-// };
+                valueDisplayStyle={chipOptions.valueDisplayStyle}
+                editStyle={chipOptions.editStyle}
+                readonly={chipOptions.readonly}
+                chipSize={chipOptions.size}
+            />
+        </div>
+    </div >;
+};
 
 
-// so the problem here is about the use of useQuery(), and the arguments passed to them.
-// but actually it MUST be a useQuery() hook in order to take advantage of caching and all the RPC magic that blitz provides.
-// so basically, the Promise<X[]> options feature doesn't really give us db3 compatibility yet.
-// db3 cannot be adapted to a Promise<> because it requires a hook.
+const DB3MultiSelectTest = () => {
+    const [selectedValue, setSelectedValue] = React.useState<db3.InstrumentPayloadMinimum[]>([]);
+    const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
+        color: null,
+        size: "big",
+        shape: "rectangle",
+        readonly: false,
+        editStyle: CMSelectEditStyle.inlineWithDialog,
+        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+    });
 
+    return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
+        <h3>Multiple instrument select DB3</h3>
+        <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
+            <DB3MultiSelect<db3.InstrumentPayloadMinimum>
+                value={selectedValue}
+                onChange={v => setSelectedValue(v)}
+                renderOption={value => <>{value.name}</>}
+                schema={db3.xInstrument}
 
-
-// const MultiSingleDb3InstrumentsTest = () => {
-//     const ctx = useDashboardContext();
-//     type T = db3.InstrumentFunctionalGroupPayloadMinimum;
-
-//     const fetchArgs: DB3Client.FetchAsyncArgs<T> = {
-//         clientIntention: ctx.userClientIntention,
-//         schema: db3.xInstrumentFunctionalGroup,
-//         delayMS: 500,
-//         filterModel: {
-//             items: [],
-//             tableParams: {
-//                 nothing: Date.now(),
-//             }
-//         }
-//     };
-//     //const [getOptionsPromise, getOptionsStatus] = DB3Client.useFetchAsync<T>(fetchArgs);
-
-//     const [selected, setSelected] = React.useState<T[]>([]);
-//     const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
-//         color: null,
-//         size: "big",
-//         shape: "rectangle",
-//         readonly: false,
-//         editStyle: CMSelectEditStyle.inlineWithDialog,
-//         valueDisplayStyle: CMSelectValueDisplayStyle.all,
-//     });
-
-//     // so we must get our <*Select> components to use useQuery().
-
-//     // // Function to fetch users using the Blitz query directly
-//     // const fetchUsers = (): Promise<User[]> => {
-//     //     return db3queries(, {});
-//     // };
-
-//     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
-//         <h3>Single Functional group select ASYNC</h3>
-//         {/* {getOptionsStatus.queryResult && <button onClick={() => getOptionsStatus.queryResult?.refetch()}>refetch</button>} */}
-//         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
-//         <div style={{ padding: "20px", backgroundColor: "white" }}>
-//             <CMMultiSelect<T>
-//                 valueDisplayStyle={chipOptions.valueDisplayStyle}
-//                 editStyle={chipOptions.editStyle}
-//                 readonly={chipOptions.readonly}
-//                 chipSize={chipOptions.size}
-//                 getOptions={args => DB3Client.useFetchAsync<T>(fetchArgs)[0]().then(x => x.items)}
-//                 renderOption={opt => <>{!opt ? "<none>" : opt.name}</>}
-//                 getOptionById={(id) => DB3Client.useFetchAsync<T>(fetchArgs)[0]().then(x => x.items.find(user => user.id === id)!)}
-
-//                 getOptionInfo={opt => ({
-//                     id: opt?.id || -1,
-//                     color: opt.color,
-//                 })}
-//                 value={selected}
-//                 onChange={v => setSelected(v)}
-//             />
-//         </div>
-//     </div>;
-// };
-
+                valueDisplayStyle={chipOptions.valueDisplayStyle}
+                editStyle={chipOptions.editStyle}
+                readonly={chipOptions.readonly}
+                chipSize={chipOptions.size}
+            />
+        </div>
+    </div >;
+};
 
 
 
 const CMSelectTestPage: BlitzPage = () => {
     return (
         <DashboardLayout title="theme editor">
+
+            <DB3SingleSelectTest />
+            <DB3MultiSelectTest />
+
             <SelectSingleFetchTest />
-            {/* <SelectSingleDb3UsersTest /> */}
-            {/* <MultiSingleDb3InstrumentsTest /> */}
 
             <MultiSelectTest />
             <SingleSelectTest />
+
             <SingleSelectNullableTest />
+
             <SingleSelectAsyncTest />
         </DashboardLayout>
     )

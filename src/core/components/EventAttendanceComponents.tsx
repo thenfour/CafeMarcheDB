@@ -122,7 +122,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { AdminInspectObject, CMChip, CMChipContainer, ReactiveInputDialog } from './CMCoreComponents';
+import { AdminInspectObject, ReactiveInputDialog } from './CMCoreComponents';
 import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
@@ -134,6 +134,7 @@ import { Markdown3Editor } from "./MarkdownControl3";
 import { DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
+import { CMChip, CMChipContainer } from "./CMChip";
 
 
 const gCaptionMap = {};
