@@ -1,10 +1,12 @@
 // TODO: find a way to clean up / unify somehow all of these different selection dialogs.
 // - ChooseItemDialog
+// - ChoiceEditCell
 // - TagsFieldInput
 // - ChipSelector
 // - DB3SelectTagsDialog
-// - CMSelect
 // - ForeignSingleFieldInput
+
+// - CMSelect
 
 // This component attempts to be a low-dependency (e.g. no DB3 stuff or assumptions that options are sync / async),
 // but usable select component with all the options CMDB typically wants, like
@@ -67,6 +69,11 @@ interface CMMultiSelectProps<Toption> {
     editButtonChildren?: React.ReactNode;
     dialogTitle?: React.ReactNode;
     dialogDescription?: React.ReactNode;
+
+    allowQuickFilter?: boolean;
+    allowInsertFromString?: boolean | undefined;
+    doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
+    doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
 };
 
 
@@ -168,6 +175,11 @@ export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => {
                     getOptionInfo={props.getOptionInfo}
                     title={props.dialogTitle || "Select"}
                     description={props.dialogDescription || ""}
+
+                    allowQuickFilter={props.allowQuickFilter}
+                    allowInsertFromString={props.allowInsertFromString}
+                    doesItemExactlyMatchText={props.doesItemExactlyMatchText}
+                    doInsertFromString={props.doInsertFromString}
                 />
             )}
         </div>
@@ -195,6 +207,11 @@ interface CMSingleSelectProps<Toption> {
     editButtonChildren?: React.ReactNode;
     dialogTitle?: React.ReactNode;
     dialogDescription?: React.ReactNode;
+
+    allowQuickFilter?: boolean;
+    allowInsertFromString?: boolean | undefined;
+    doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
+    doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
 };
 
 
@@ -298,6 +315,11 @@ export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) =>
                     getOptionInfo={props.getOptionInfo}
                     title={props.dialogTitle || "Select"}
                     description={props.dialogDescription || ""}
+
+                    allowQuickFilter={props.allowQuickFilter}
+                    allowInsertFromString={props.allowInsertFromString}
+                    doesItemExactlyMatchText={props.doesItemExactlyMatchText}
+                    doInsertFromString={props.doInsertFromString}
                 />
             )}
         </div>

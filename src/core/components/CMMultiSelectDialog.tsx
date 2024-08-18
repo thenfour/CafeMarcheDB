@@ -1,3 +1,5 @@
+// todo: add new item, quick filter
+
 import React from "react";
 
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
@@ -5,6 +7,10 @@ import { StandardVariationSpec } from "shared/color";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
 import { ReactiveInputDialog } from "./CMCoreComponents";
+import { SearchInput } from "./CMTextField";
+import { gIconMap } from "../db3/components/IconMap";
+import { useSnackbar } from "./SnackbarContext";
+import { CoalesceBool } from "shared/utils";
 
 type Tid = number | string;
 
@@ -27,18 +33,27 @@ export interface CMMultiSelectDialogProps<T> {
 
     initialValues?: T[] | undefined;
 
-    allowQuickFilter?: boolean;
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
+
+    allowQuickFilter?: boolean;
+    allowInsertFromString?: boolean | undefined;
+    doesItemExactlyMatchText?: (item: T, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
+    doInsertFromString?: (userInput: string) => Promise<T>; // similar
 };
 
 
 export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
+    const snackbar = useSnackbar();
+    const [filterText, setFilterText] = React.useState("");
     const [selectedObjIds, setSelectedObjIds] = React.useState<Tid[]>(() => (props.initialValues || []).map(option => props.getOptionInfo(option).id));
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [items, setItems] = React.useState<T[]>([]);
     const [selectedOptions, setSelectedOptions] = React.useState<T[]>([]);
+
+    // if any of these are missing, allow insert from string will not be available.
+    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doesItemExactlyMatchText && props.doInsertFromString;
 
     React.useEffect(() => {
         const fetchItems = async () => {
@@ -106,6 +121,20 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
         );
     };
 
+    const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && items.some(item => props.doesItemExactlyMatchText!(item, filterText));
+
+    const onNewClicked = async () => {
+        try {
+            const newObj = await props.doInsertFromString!(filterText);
+            snackbar.showMessage({ children: "created new success", severity: 'success' });
+            const newInfo = props.getOptionInfo(newObj);
+            setSelectedObjIds([...selectedObjIds, newInfo.id]); // add
+        } catch (err) {
+            console.log(err);
+            snackbar.showMessage({ children: "create error", severity: 'error' });
+        }
+    };
+
     return (
         <ReactiveInputDialog onCancel={props.onCancel}>
             <DialogTitle>
@@ -127,6 +156,27 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
                 <CMDialogContentText>
                     {props.description}
                 </CMDialogContentText>
+
+                <Box>
+                    <SearchInput
+                        onChange={(v) => setFilterText(v)}
+                        value={filterText}
+                        autoFocus={true}
+                    />
+                </Box>
+                {
+                    !!filterText.length && !filterMatchesAnyItemsExactly && allowInsertFromString && (
+                        <Box><Button
+                            size="small"
+                            startIcon={gIconMap.Add()}
+                            onClick={onNewClicked}
+                        >
+                            add {filterText}
+                        </Button>
+                        </Box>
+                    )
+                }
+
                 {items.length === 0 ? (
                     <Box>Nothing here</Box>
                 ) : (

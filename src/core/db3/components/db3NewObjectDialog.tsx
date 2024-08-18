@@ -13,7 +13,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { TAnyModel } from "../shared/apiTypes";
-import { AdminInspectObject } from "src/core/components/CMCoreComponents";
+import { AdminInspectObject, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { gIconMap } from "./IconMap";
 
 ////////////////////////////////////////////////////////////////
@@ -28,8 +28,6 @@ type db3NewObjectDialogProps = {
 };
 
 export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...props }: db3NewObjectDialogProps) {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
     const [obj, setObj] = React.useState(table.args.table.createNew(clientIntention));
     const [oldObj, setOldObj] = React.useState(table.args.table.createNew(clientIntention)); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
@@ -72,13 +70,8 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
 
     return (
         <Suspense>
-            <Dialog
-                open={true}
-                onClose={onCancel}
-                scroll="paper"
-                className={`ReactiveInputDialog ${fullScreen ? "smallScreen" : "bigScreen"}`}
-                fullScreen={fullScreen}
-                disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
+            <ReactiveInputDialog
+                onCancel={onCancel}
             >
                 <DialogTitle>
                     {props.caption || <>New {table.args.table.tableName}</>}
@@ -122,7 +115,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                     <Button onClick={onCancel}>Cancel</Button>
                     <Button onClick={handleOK}>OK</Button>
                 </DialogActions>
-            </Dialog>
+            </ReactiveInputDialog>
         </Suspense>
     );
 };

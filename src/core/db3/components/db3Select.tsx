@@ -38,6 +38,11 @@ interface Db3SingleSelectProps<Toption extends (TAnyModel | null | undefined)> {
     editButtonChildren?: React.ReactNode;
     dialogTitle?: React.ReactNode;
     dialogDescription?: React.ReactNode;
+
+    allowQuickFilter?: boolean;
+    allowInsertFromString?: boolean | undefined;
+    doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
+    doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
 };
 
 
@@ -133,6 +138,11 @@ export const DB3SingleSelect = <Toption extends (TAnyModel | null | undefined),>
                     value={props.value}
                     title={props.dialogTitle || "Select"}
                     description={props.dialogDescription || ""}
+
+                    allowQuickFilter={props.allowQuickFilter}
+                    allowInsertFromString={props.allowInsertFromString}
+                    doesItemExactlyMatchText={props.doesItemExactlyMatchText}
+                    doInsertFromString={props.doInsertFromString}
                 />
             )}
         </div>
@@ -164,6 +174,11 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
     editButtonChildren?: React.ReactNode;
     dialogTitle?: React.ReactNode;
     dialogDescription?: React.ReactNode;
+
+    allowQuickFilter?: boolean;
+    allowInsertFromString?: boolean | undefined;
+    doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
+    doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
 };
 
 
@@ -256,6 +271,11 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
                     initialValues={props.value}
                     title={props.dialogTitle || "Select"}
                     description={props.dialogDescription || ""}
+
+                    allowQuickFilter={props.allowQuickFilter}
+                    allowInsertFromString={props.allowInsertFromString}
+                    doesItemExactlyMatchText={props.doesItemExactlyMatchText}
+                    doInsertFromString={props.doInsertFromString}
                 />
             )}
         </div>
