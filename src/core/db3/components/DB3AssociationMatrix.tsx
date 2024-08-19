@@ -32,7 +32,7 @@ export interface DB3AssMatrxiExtraActionsArgs {
     row: TAnyModel,
 };
 
-export type DB3BooleanMatrixProps<TLocal, TAssociation> = {
+export type DB3BooleanMatrixProps<TLocal extends TAnyModel, TAssociation extends TAnyModel> = {
     localTableSpec: DB3Client.xTableClientSpec,
     foreignTableSpec: DB3Client.xTableClientSpec,
     tagsField: DB3Client.TagsFieldClient<TAssociation>,
@@ -40,7 +40,7 @@ export type DB3BooleanMatrixProps<TLocal, TAssociation> = {
     filterRow?: (row: TLocal) => boolean;
 };
 
-export function DB3AssociationMatrix<TLocal, TAssociation>(props: DB3BooleanMatrixProps<TLocal, TAssociation>) {
+export function DB3AssociationMatrix<TLocal extends TAnyModel, TAssociation extends TAnyModel>(props: DB3BooleanMatrixProps<TLocal, TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     // set initial pagination values + get pagination state.

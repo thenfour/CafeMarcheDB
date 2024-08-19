@@ -516,6 +516,7 @@ export interface TableDesc {
     getInclude: (clientIntention: xTableClientUsageContext, filterModel: CMDBTableFilterModel) => TAnyModel,
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
+    doesItemExactlyMatchText?: (row: TAnyModel, filterText: string) => boolean,
     naturalOrderBy?: TAnyModel;
     getParameterizedWhereClause?: (params: TAnyModel, clientIntention: xTableClientUsageContext) => (TAnyModel[] | false); // for overall filtering the query based on parameters.
 
@@ -527,6 +528,7 @@ export interface TableDesc {
     // this allows tables to supplement search results with extra "customdata".
     SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
     SqlGetSpecialColumns?: SqlSpecialColumns;
+
 };
 
 export interface SqlSpecialColumns {
@@ -561,12 +563,23 @@ export class xTable implements TableDesc {
 
     createInsertModelFromString?: (input: string) => TAnyModel; // if omitted, then creating from string considered not allowed.
     getRowInfo: (row: TAnyModel) => RowInfo;
+    doesItemExactlyMatchText: (row: TAnyModel, filterText: string) => boolean;
     SqlGetSpecialColumns: SqlSpecialColumns;
 
     SearchCustomDataHookId?: SearchCustomDataHookId | undefined;
 
     constructor(args: TableDesc) {
         Object.assign(this, args);
+
+        // does default behavior of case-insensitive, trimmed compare.
+        const itemExactlyMatches_defaultImpl = (value: TAnyModel, filterText: string): boolean => {
+            const rowInfo = this.getRowInfo(value);
+            return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
+        }
+
+        if (!this.doesItemExactlyMatchText) {
+            this.doesItemExactlyMatchText = itemExactlyMatches_defaultImpl;
+        }
 
         this.tableID = args.tableUniqueName || args.tableName;
         gAllTables[this.tableID.toLowerCase()] = this;

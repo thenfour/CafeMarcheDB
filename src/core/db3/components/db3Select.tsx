@@ -41,8 +41,7 @@ interface Db3SingleSelectProps<Toption extends (TAnyModel | null | undefined)> {
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
-    doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
+    doInsert?: (model: NonNullable<Toption>) => Promise<NonNullable<Toption>>;
 };
 
 
@@ -141,8 +140,11 @@ export const DB3SingleSelect = <Toption extends (TAnyModel | null | undefined),>
 
                     allowQuickFilter={props.allowQuickFilter}
                     allowInsertFromString={props.allowInsertFromString}
-                    doesItemExactlyMatchText={props.doesItemExactlyMatchText}
-                    doInsertFromString={props.doInsertFromString}
+                    doInsert={props.doInsert ? (async (args) => {
+                        const r = await props.doInsert!(args);
+                        q.refetch();
+                        return r;
+                    }) : undefined}
                 />
             )}
         </div>
@@ -157,11 +159,8 @@ export const DB3SingleSelect = <Toption extends (TAnyModel | null | undefined),>
 interface DB3MultiSelectProps<Toption extends TAnyModel> {
     schema: db3.xTable,
 
-    //getOptions: (args: { quickFilter: string | undefined }) => Promise<Toption[]> | Toption[];
     value: Toption[];
     onChange: (optionIds: Toption[]) => void;
-    // getOptionInfo: (item: Toption) => ItemInfo;
-    // getOptionById: (id: Tid) => Toption | Promise<Toption>;
     renderOption: (item: Toption) => React.ReactNode;
 
     chipSize?: CMChipSizeOptions | undefined;
@@ -177,8 +176,7 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
-    doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
+    doInsert?: (model: NonNullable<Toption>) => Promise<NonNullable<Toption>>; // similar
 };
 
 
@@ -274,8 +272,11 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
 
                     allowQuickFilter={props.allowQuickFilter}
                     allowInsertFromString={props.allowInsertFromString}
-                    doesItemExactlyMatchText={props.doesItemExactlyMatchText}
-                    doInsertFromString={props.doInsertFromString}
+                    doInsert={props.doInsert ? (async (args) => {
+                        const r = await props.doInsert!(args);
+                        q.refetch();
+                        return r;
+                    }) : undefined}
                 />
             )}
         </div>

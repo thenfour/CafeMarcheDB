@@ -21,7 +21,6 @@ import { AdminInspectObject, ReactiveInputDialog } from 'src/core/components/CMC
 import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-//import { API } from "../clientAPI";
 import updateSetting from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
 import { SearchInput } from "src/core/components/CMTextField";
@@ -50,7 +49,7 @@ export interface RenderAsChipParams<T> {
 
 
 
-export interface ForeignSingleFieldInputProps<TForeign> {
+export interface ForeignSingleFieldInputProps<TForeign extends TAnyModel> {
     // stuff that could be just passing in a table spec...
     columnName: string;
     tableName: string;
@@ -67,7 +66,7 @@ export interface ForeignSingleFieldInputProps<TForeign> {
     openDialogButtonCaption?: React.ReactNode;
 };
 
-export const ForeignSingleFieldInlineValues = <TForeign,>(props: ForeignSingleFieldInputProps<TForeign>) => {
+export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(props: ForeignSingleFieldInputProps<TForeign>) => {
     //const publicData = useAuthenticatedSession();
     const db3Context = useForeignSingleFieldRenderContext({
         filterText: "",
@@ -131,7 +130,7 @@ export const ForeignSingleFieldInlineValues = <TForeign,>(props: ForeignSingleFi
 };
 
 // general use "edit cell" for foreign single values. does not show a label or validation stuff; just the value and a button to select
-export const ForeignSingleFieldInput = <TForeign,>(props: ForeignSingleFieldInputProps<TForeign>) => {
+export const ForeignSingleFieldInput = <TForeign extends TAnyModel,>(props: ForeignSingleFieldInputProps<TForeign>) => {
 
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     //const [oldValue, setOldValue] = React.useState<TForeign | null>();
@@ -221,7 +220,7 @@ export interface ForeignSingleFieldNullItemInfo {
     tooltip: string | null;
 };
 
-export interface ForeignSingleFieldClientArgs<TForeign> {
+export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     columnName: string;
     cellWidth: number;
 
@@ -241,7 +240,7 @@ export interface ForeignSingleFieldClientArgs<TForeign> {
 };
 
 // the client-side description of the field, used in xTableClient construction.
-export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
+export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColumnClient {
     typedSchemaColumn: db3.ForeignSingleField<TForeign>;
     args: ForeignSingleFieldClientArgs<TForeign>;
 
@@ -436,7 +435,7 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
                     readOnly={!!this.fixedValue}
                     clientIntention={this.foreignClientIntention}
                     validationError={validationValue}
-                    value={value}
+                    value={value as any}
                     onChange={(newValue: TForeign | null) => {
                         const foreignPkMember = this.typedSchemaColumn.getForeignTableSchema().pkMember;
                         params.api.setFieldValues({
@@ -454,14 +453,14 @@ export class ForeignSingleFieldClient<TForeign> extends IColumnClient {
 
 
 
-export interface ForeignSingleFieldRenderContextArgs<TForeign> {
+export interface ForeignSingleFieldRenderContextArgs<TForeign extends TAnyModel> {
     spec: ForeignSingleFieldClient<TForeign>;
     filterText: string;
     clientIntention: db3.xTableClientUsageContext,
 };
 
 // the "live" adapter handling server-side comms.
-export class ForeignSingleFieldRenderContext<TForeign> {
+export class ForeignSingleFieldRenderContext<TForeign extends TAnyModel> {
     args: ForeignSingleFieldRenderContextArgs<TForeign>;
     mutateFn: TMutateFn;
 
@@ -505,14 +504,14 @@ export class ForeignSingleFieldRenderContext<TForeign> {
     };
 };
 
-export const useForeignSingleFieldRenderContext = <TForeign,>(args: ForeignSingleFieldRenderContextArgs<TForeign>) => {
+export const useForeignSingleFieldRenderContext = <TForeign extends TAnyModel,>(args: ForeignSingleFieldRenderContextArgs<TForeign>) => {
     return new ForeignSingleFieldRenderContext<TForeign>(args);
 };
 
 
 
 ////////////////////////////////////////////////////////
-interface SelectSingleForeignDialogQuerierProps<TForeign> {
+interface SelectSingleForeignDialogQuerierProps<TForeign extends TAnyModel> {
     spec: ForeignSingleFieldClient<TForeign>;
     clientIntention: db3.xTableClientUsageContext,
     filterText: string;
@@ -521,7 +520,7 @@ interface SelectSingleForeignDialogQuerierProps<TForeign> {
     onResults: (items: TForeign[]) => void;
     onSelectObj: (x: TForeign) => void;
 };
-export function SelectSingleForeignDialogQuerier<TForeign>(props: SelectSingleForeignDialogQuerierProps<TForeign>) {
+export function SelectSingleForeignDialogQuerier<TForeign extends TAnyModel>(props: SelectSingleForeignDialogQuerierProps<TForeign>) {
     const db3Context = useForeignSingleFieldRenderContext({
         filterText: props.filterText,
         spec: props.spec,
@@ -563,7 +562,7 @@ export function SelectSingleForeignDialogQuerier<TForeign>(props: SelectSingleFo
 
 
 
-export interface SelectSingleForeignDialogProps<TForeign> {
+export interface SelectSingleForeignDialogProps<TForeign extends TAnyModel> {
     value: TForeign | null;
     spec: ForeignSingleFieldClient<TForeign>;
     clientIntention: db3.xTableClientUsageContext,
@@ -576,7 +575,7 @@ export interface SelectSingleForeignDialogProps<TForeign> {
     descriptionSettingName?: SettingKey;
 };
 
-export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
+export function SelectSingleForeignDialogInner<TForeign extends TAnyModel>(props: SelectSingleForeignDialogProps<TForeign>) {
     const [selectedObj, setSelectedObj] = React.useState<TForeign | null>(props.value);
     const [filterText, setFilterText] = React.useState("");
     const [items, setItems] = React.useState<TForeign[]>([]);
@@ -602,7 +601,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
         }
     };
 
-    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, filterText));
+    const filterMatchesAnyItemsExactly = items.some(item => props.spec.typedSchemaColumn.getForeignTableSchema().doesItemExactlyMatchText(item, filterText));
 
     const insertAuthorized = props.spec.schemaTable.authorizeRowBeforeInsert({
         clientIntention: props.clientIntention,
@@ -675,7 +674,7 @@ export function SelectSingleForeignDialogInner<TForeign>(props: SelectSingleFore
 };
 
 
-export function SelectSingleForeignDialog<TForeign>(props: SelectSingleForeignDialogProps<TForeign>) {
+export function SelectSingleForeignDialog<TForeign extends TAnyModel>(props: SelectSingleForeignDialogProps<TForeign>) {
     return (
         <ReactiveInputDialog
             onCancel={props.onCancel}

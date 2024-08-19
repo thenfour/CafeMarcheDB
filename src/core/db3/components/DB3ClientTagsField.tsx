@@ -39,14 +39,14 @@ import { CMChip, CMChipContainer } from 'src/core/components/CMChip';
 const gMaxVisibleTags = 6;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface DB3TagsValueComponentProps<TAssociation> {
+export interface DB3TagsValueComponentProps<TAssociation extends TAnyModel> {
     spec: TagsFieldClient<TAssociation>;//CMSelectTagsDialogSpec<AssociationModel, ForeignWhereInput>;
     value: TAssociation[],
     onDelete?: (value: TAssociation) => void;
     onItemClick?: (value: TAssociation) => void;
 
 };
-export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponentProps<TAssociation>) => {
+export const DB3TagsValueComponent = <TAssociation extends TAnyModel,>(props: DB3TagsValueComponentProps<TAssociation>) => {
     return <CMChipContainer>{props.value.map(c => <React.Fragment key={c[props.spec.associationForeignIDMember]}>
         {props.spec.args.renderAsChip!({
             value: c,
@@ -60,7 +60,7 @@ export const DB3TagsValueComponent = <TAssociation,>(props: DB3TagsValueComponen
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface DB3SelectTagsDialogListProps<TAssociation> {
+interface DB3SelectTagsDialogListProps<TAssociation extends TAnyModel> {
     value: TAssociation[];
     spec: TagsFieldClient<TAssociation>;//CMSelectTagsDialogSpec<AssociationModel, ForeignWhereInput>;
     row: TAnyModel;
@@ -68,7 +68,7 @@ interface DB3SelectTagsDialogListProps<TAssociation> {
     handleItemToggle: (value: TAssociation) => void;
 }
 
-function DB3SelectTagsDialogList<TAssociation>(props: DB3SelectTagsDialogListProps<TAssociation>) {
+function DB3SelectTagsDialogList<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogListProps<TAssociation>) {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const publicData = useAuthenticatedSession();
     const currentUser = useCurrentUser()[0]!;
@@ -85,7 +85,8 @@ function DB3SelectTagsDialogList<TAssociation>(props: DB3SelectTagsDialogListPro
     const itemIsSelected = (x: TAssociation) => {
         return props.value.some(v => v[props.spec.associationForeignIDMember] === x[props.spec.associationForeignIDMember]);
     }
-    const filterMatchesAnyItemsExactly = dbctx.options.some(item => props.spec.typedSchemaColumn.doesItemExactlyMatchText(item, props.filterText));
+
+    const filterMatchesAnyItemsExactly = dbctx.options.some(item => props.spec.typedSchemaColumn.getAssociationTableShema().doesItemExactlyMatchText(item, props.filterText));
 
     const onNewClicked = () => {
         dbctx.doInsertFromString({ row: props.row, userInput: props.filterText })
@@ -144,7 +145,7 @@ function DB3SelectTagsDialogList<TAssociation>(props: DB3SelectTagsDialogListPro
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-export interface DB3SelectTagsDialogProps<TAssociation> {
+export interface DB3SelectTagsDialogProps<TAssociation extends TAnyModel> {
     initialValue: TAssociation[];
     row: TAnyModel;
     spec: TagsFieldClient<TAssociation>;
@@ -154,7 +155,7 @@ export interface DB3SelectTagsDialogProps<TAssociation> {
     descriptionSettingName?: SettingKey;
 };
 
-function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
+function DB3SelectTagsDialogInner<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogProps<TAssociation>) {
     const [filterText, setFilterText] = React.useState("");
     const [value, setValue] = React.useState<TAssociation[]>(props.initialValue);
     //const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -230,7 +231,7 @@ function DB3SelectTagsDialogInner<TAssociation>(props: DB3SelectTagsDialogProps<
 }
 
 
-export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProps<TAssociation>) {
+export function DB3SelectTagsDialog<TAssociation extends TAnyModel>(props: DB3SelectTagsDialogProps<TAssociation>) {
     return <ReactiveInputDialog
         onCancel={props.onClose}
     ><DB3SelectTagsDialogInner {...props} /></ReactiveInputDialog>;
@@ -239,7 +240,7 @@ export function DB3SelectTagsDialog<TAssociation>(props: DB3SelectTagsDialogProp
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface TagsFieldInputProps<TAssociation> {
+export interface TagsFieldInputProps<TAssociation extends TAnyModel> {
     spec: TagsFieldClient<TAssociation>;
     value: TAssociation[];
     onChange: (value: TAssociation[]) => void;
@@ -252,7 +253,7 @@ export interface TagsFieldInputProps<TAssociation> {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const ChipsFieldInlineValues = <TAssociation,>(props: TagsFieldInputProps<TAssociation>) => {
+export const ChipsFieldInlineValues = <TAssociation extends TAnyModel,>(props: TagsFieldInputProps<TAssociation>) => {
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser };
     const dbctx = useTagsFieldRenderContext({
@@ -294,7 +295,7 @@ export const ChipsFieldInlineValues = <TAssociation,>(props: TagsFieldInputProps
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // general use "edit cell" for tags
-export const TagsFieldInput = <TAssociation,>(props: TagsFieldInputProps<TAssociation>) => {
+export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsFieldInputProps<TAssociation>) => {
     const [setSetting] = useMutation(updateSetting);
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
@@ -469,7 +470,7 @@ export interface TagsFieldClientArgs<TAssociation> {
 };
 
 // the client-side description of the field, used in xTableClient construction.
-export class TagsFieldClient<TAssociation> extends IColumnClient {
+export class TagsFieldClient<TAssociation extends TAnyModel> extends IColumnClient {
     typedSchemaColumn: db3.TagsField<TAssociation>;
     args: TagsFieldClientArgs<TAssociation>;
 
@@ -601,7 +602,7 @@ export class TagsFieldClient<TAssociation> extends IColumnClient {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface TagsFieldRenderContextArgs<TAssociation> {
+export interface TagsFieldRenderContextArgs<TAssociation extends TAnyModel> {
     row: TAnyModel;
     spec: TagsFieldClient<TAssociation>;
     filterText: string;
@@ -614,7 +615,7 @@ export interface TagsCreateFromStringArgs {
 };
 
 // the "live" adapter handling server-side comms.
-export class TagsFieldRenderContext<TAssociation> {
+export class TagsFieldRenderContext<TAssociation extends TAnyModel> {
     args: TagsFieldRenderContextArgs<TAssociation>;
     mutateFn: TMutateFn;
 
@@ -666,7 +667,7 @@ export class TagsFieldRenderContext<TAssociation> {
     };
 };
 
-export const useTagsFieldRenderContext = <TAssociation,>(args: TagsFieldRenderContextArgs<TAssociation>) => {
+export const useTagsFieldRenderContext = <TAssociation extends TAnyModel,>(args: TagsFieldRenderContextArgs<TAssociation>) => {
     return new TagsFieldRenderContext<TAssociation>(args);
 };
 

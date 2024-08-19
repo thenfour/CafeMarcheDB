@@ -20,6 +20,7 @@ import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { Markdown } from "src/core/components/RichTextEditor";
+import * as db3 from "../db3";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell } from "./IconSelectDialog";
@@ -30,6 +31,7 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { TAnyModel, gNullValue } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
+import { useDashboardContext } from "src/core/components/DashboardContext";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {
@@ -1125,3 +1127,49 @@ export class DateTimeColumn extends DB3ClientCore.IColumnClient {
         // return <>{!!value ? value.toTimeString() : "--"} {ageStr}</>; // todo
     };
 };
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// for generic non-UI support for any column type
+export interface AnyColumnArgs {
+    columnName: string;
+};
+
+export class AnyColumnClient extends DB3ClientCore.IColumnClient {
+    constructor(args: AnyColumnArgs) {
+        super({
+            fieldCaption: args.columnName,
+            fieldDescriptionSettingName: undefined,
+            columnName: args.columnName,
+            editable: true,
+            headerName: args.columnName,
+            className: undefined,
+            isAutoFocusable: false,
+            width: 100,
+            visible: true,
+        });
+    }
+
+    ApplyClientToPostClient = undefined;
+    onSchemaConnected() { };
+    renderViewer = (params: DB3ClientCore.RenderViewerArgs<ColorPaletteEntry | null>) => <></>
+    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => <></>
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const useInsertMutationClient = (schema: db3.xTable) => {
+    const ctx = useDashboardContext();
+    const mutationCtx = DB3ClientCore.useTableRenderContext({
+        clientIntention: ctx.userClientIntention,
+        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
+        tableSpec: new DB3ClientCore.xTableClientSpec({
+            table: schema,
+            columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
+        }),
+    });
+    return mutationCtx;
+}
+

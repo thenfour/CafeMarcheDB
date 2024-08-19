@@ -1,6 +1,6 @@
 import { ClientSession, useSession } from '@blitzjs/auth';
 import { useMutation, useQuery } from '@blitzjs/rpc';
-import { Prisma } from "db";
+//import { Prisma } from "db";
 import React from 'react';
 import { Permission, gPublicPermissions } from 'shared/permissions';
 import { TableAccessor } from 'shared/rootroot';

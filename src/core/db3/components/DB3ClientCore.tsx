@@ -25,7 +25,6 @@ import db3mutations from "../mutations/db3mutations";
 import db3paginatedQueries from "../queries/db3paginatedQueries";
 import db3queries from "../queries/db3queries";
 import { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
-import { formatFileSize } from "shared/rootroot";
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -501,27 +500,6 @@ export function fetchUnsuspended<T>(args: FetchAsyncArgs<T>): FetchAsyncResult<T
         queryResult: blitzQueryStatus,
     };
 }; // ctor
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // returns a promise, and the immediate results
-// export function useFetchAsync<T>(args: FetchAsyncArgs<T>): [(() => Promise<FetchAsyncResult<T>>), FetchAsyncResult<T>] {
-//     const unsus = fetchUnsuspended(args);
-//     const fn = () => new Promise<FetchAsyncResult<T>>((resolve, reject) => {
-//         if (unsus.queryResult?.isError) {
-//             reject("Error fetching users");
-//         }
-//         if (unsus.queryResult?.isFetched) {
-//             resolve(unsus);
-//         }
-//     });
-//     return [fn, unsus];
-// };
-
-
 
 
 

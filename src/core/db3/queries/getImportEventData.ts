@@ -274,8 +274,6 @@ export default resolver.pipe(
             ret.log.push(`peter: ${peter?.id}`);
             ret.log.push(`guido: ${guido?.id}`);
 
-            //await sleep(500);
-
             const yesId = (await db.eventAttendance.findFirst({
                 where: {
                     strength: 100,

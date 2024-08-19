@@ -1,3 +1,5 @@
+// todo: when inserted in dialog, the parent needs to refetch
+
 import { BlitzPage } from "@blitzjs/next";
 import React from "react";
 import { gGeneralPaletteList, gSwatchColors } from "shared/color";
@@ -7,6 +9,7 @@ import { CMMultiSelect, CMSelectEditStyle, CMSelectValueDisplayStyle, CMSingleSe
 import { ColorPick } from "src/core/components/Color";
 import { DB3MultiSelect, DB3SingleSelect } from "src/core/db3/components/db3Select";
 import * as db3 from "src/core/db3/db3";
+import { useInsertMutationClient, useTableRenderContext, xTableClientCaps, xTableClientSpec } from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 type Dataset = "numbers";
@@ -124,6 +127,7 @@ const SingleSelectTest = () => {
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
+                chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => [1, 2, 4, 6, 8, 0]}
                 renderOption={opt => <>{opt}</>}
@@ -160,6 +164,7 @@ const SingleSelectNullableTest = () => {
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
+                chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => [1, 2, 4, 6, 8, 0]}
                 renderOption={opt => <>{opt || "<null>"}</>}
@@ -204,6 +209,7 @@ const SingleSelectAsyncTest = () => {
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
+                chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => getOptionsAsync()}
                 renderOption={opt => <>{opt || "<null>"}</>}
@@ -250,6 +256,7 @@ const SelectSingleFetchTest = () => {
                 valueDisplayStyle={chipOptions.valueDisplayStyle}
                 editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
+                chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => fetchUsers()}
                 renderOption={opt => <>{opt?.name || "<null>"}</>}
@@ -292,6 +299,7 @@ const DB3SingleSelectTest = () => {
                 editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
+                chipShape={chipOptions.shape}
             />
         </div>
     </div >;
@@ -323,6 +331,45 @@ const DB3MultiSelectTest = () => {
                 editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
+                chipShape={chipOptions.shape}
+            />
+        </div>
+    </div >;
+};
+
+const DB3SingleSelectTestWithAddNew = () => {
+    const [selectedValue, setSelectedValue] = React.useState<db3.InstrumentFunctionalGroupPayloadMinimum | null>(null);
+    const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
+        color: null,
+        size: "big",
+        shape: "rectangle",
+        readonly: false,
+        editStyle: CMSelectEditStyle.inlineWithDialog,
+        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+    });
+
+    const insMutation = useInsertMutationClient(db3.xInstrumentFunctionalGroup);
+
+    return <div style={{ border: "2px solid blue", margin: "10px 0", maxWidth: "600px" }}>
+        <h3>Single instrument select DB3, insert support</h3>
+        <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
+        <div style={{ padding: "20px", backgroundColor: "white" }}>
+            <DB3SingleSelect<db3.InstrumentFunctionalGroupPayloadMinimum | null>
+                value={selectedValue}
+                onChange={v => setSelectedValue(v)}
+                renderOption={value => !value ? "<none>" : <>{value.name}</>}
+                schema={db3.xInstrumentFunctionalGroup}
+
+                valueDisplayStyle={chipOptions.valueDisplayStyle}
+                editStyle={chipOptions.editStyle}
+                readonly={chipOptions.readonly}
+                chipSize={chipOptions.size}
+                chipShape={chipOptions.shape}
+
+                allowInsertFromString={true}
+                allowQuickFilter={true}
+
+                doInsert={async (model) => await insMutation.doInsertMutation(model) as db3.InstrumentFunctionalGroupPayloadMinimum}
             />
         </div>
     </div >;
@@ -330,9 +377,12 @@ const DB3MultiSelectTest = () => {
 
 
 
+
 const CMSelectTestPage: BlitzPage = () => {
     return (
         <DashboardLayout title="theme editor">
+
+            <DB3SingleSelectTestWithAddNew />
 
             <DB3SingleSelectTest />
             <DB3MultiSelectTest />

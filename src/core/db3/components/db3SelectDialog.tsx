@@ -37,8 +37,7 @@ export interface DB3SingleSelectDialogProps<T extends (TAnyModel | null | undefi
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    doesItemExactlyMatchText?: (item: T, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
-    doInsertFromString?: (userInput: string) => Promise<T>; // similar
+    doInsert?: (model: NonNullable<T>) => Promise<NonNullable<T>>; // similar
 };
 
 export function DB3SingleSelectDialog<T extends (TAnyModel | null | undefined)>(props: DB3SingleSelectDialogProps<T>) {
@@ -49,7 +48,7 @@ export function DB3SingleSelectDialog<T extends (TAnyModel | null | undefined)>(
     const value = props.value || null;
 
     // if any of these are missing, allow insert from string will not be available.
-    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doesItemExactlyMatchText && props.doInsertFromString;
+    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doInsert && props.schema.createInsertModelFromString;
     const allowQuickFilter = CoalesceBool(props.allowQuickFilter, true);
 
     const [filterText, setFilterText] = React.useState("");
@@ -86,11 +85,14 @@ export function DB3SingleSelectDialog<T extends (TAnyModel | null | undefined)>(
         </CMChip>;
     };
 
-    const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && q.items.some(item => props.doesItemExactlyMatchText!(item, filterText));
+    const filterMatchesAnyItemsExactly = q.items.some(item => props.schema.doesItemExactlyMatchText(item!, filterText));
 
     const onNewClicked = async () => {
         try {
-            const newObj = await props.doInsertFromString!(filterText);
+            console.log(`on new clicked`);
+            const model = props.schema.createInsertModelFromString!(filterText) as T;
+            if (!model) throw new Error(`model couldn't be created`);
+            const newObj = await props.doInsert!(model);
             snackbar.showMessage({ children: "created new success", severity: 'success' });
             q.refetch();
             setSelectedObj(newObj);
@@ -181,8 +183,8 @@ export interface DB3MultiSelectDialogProps<T extends TAnyModel> {
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    doesItemExactlyMatchText?: (item: T, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
-    doInsertFromString?: (userInput: string) => Promise<T>; // similar
+    //doesItemExactlyMatchText?: (item: T, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
+    doInsert?: (model: NonNullable<T>) => Promise<NonNullable<T>>; // similar
 };
 
 
@@ -193,7 +195,7 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
     const snackbar = useSnackbar();
 
     // if any of these are missing, allow insert from string will not be available.
-    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doesItemExactlyMatchText && props.doInsertFromString;
+    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doInsert && props.schema.createInsertModelFromString;
     const allowQuickFilter = CoalesceBool(props.allowQuickFilter, true);
 
     const [filterText, setFilterText] = React.useState("");
@@ -241,11 +243,14 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
 
     const toggleSelected = (x: T) => isSelected(x) ? deselectOption(x) : selectOption(x);
 
-    const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && q.items.some(item => props.doesItemExactlyMatchText!(item, filterText));
+    const filterMatchesAnyItemsExactly = q.items.some(item => props.schema.doesItemExactlyMatchText(item, filterText));
 
     const onNewClicked = async () => {
         try {
-            const newObj = await props.doInsertFromString!(filterText);
+            const model = props.schema.createInsertModelFromString!(filterText) as T;
+            if (!model) throw new Error(`model couldn't be created`);
+            const newObj = await props.doInsert!(model);
+
             snackbar.showMessage({ children: "created new success", severity: 'success' });
             q.refetch();
             selectOption(newObj);

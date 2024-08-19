@@ -814,7 +814,7 @@ export type ForeignSingleFieldArgs<TForeign> = {
     allowNull: boolean;
     defaultValue?: TForeign | null;
     getQuickFilterWhereClause: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    doesItemExactlyMatchText?: (item: TForeign, filterText: string) => boolean,
+    // doesItemExactlyMatchText?: (item: TForeign, filterText: string) => boolean,
 } & DB3AuthSpec;
 
 export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
@@ -824,7 +824,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
     allowNull: boolean;
     defaultValue: TForeign | null;
     getQuickFilterWhereClause__: (query: string) => TAnyModel | boolean; // basically this prevents the need to subclass and implement.
-    doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean;
+    // doesItemExactlyMatchText: (item: TForeign, filterText: string) => boolean;
 
     getForeignTableSchema = () => {
         return GetTableById(this.foreignTableID);
@@ -843,16 +843,16 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
             },
         });
 
-        // does default behavior of case-insensitive, trimmed compare.
-        const itemExactlyMatches_defaultImpl = (value: TForeign, filterText: string): boolean => {
-            //console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
-            // if (!this.getChipCaption) {
-            //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleField ${args.columnName}`);
-            // }
-            //return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
-            const rowInfo = this.getForeignTableSchema().getRowInfo(value as TAnyModel);
-            return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
-        }
+        // // does default behavior of case-insensitive, trimmed compare.
+        // const itemExactlyMatches_defaultImpl = (value: TForeign, filterText: string): boolean => {
+        //     //console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
+        //     // if (!this.getChipCaption) {
+        //     //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On ForeignSingleField ${args.columnName}`);
+        //     // }
+        //     //return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+        //     const rowInfo = this.getForeignTableSchema().getRowInfo(value as TAnyModel);
+        //     return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
+        // }
 
         this.fkMember = args.fkMember;
         this.allowNull = args.allowNull;
@@ -860,7 +860,7 @@ export class ForeignSingleField<TForeign> extends FieldBase<TForeign> {
         this.foreignTableID = args.foreignTableID;
         this.getQuickFilterWhereClause__ = args.getQuickFilterWhereClause;
         //this.getForeignQuickFilterWhereClause = args.getForeignQuickFilterWhereClause;
-        this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
+        //this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
     }
 
     get allowInsertFromString() {
@@ -1127,7 +1127,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
     getCustomFilterWhereClause__: (query: CMDBTableFilterModel) => TAnyModel | boolean;
 
     createMockAssociation: (row: TAnyModel, foreignObject: TAnyModel) => TAssociation;
-    doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
+    //doesItemExactlyMatchText: (item: TAssociation, filterText: string) => boolean;
     // getChipCaption?: (value: TAssociation) => string; // chips can be automatically rendered if you set this (and omit renderAsChip / et al)
     // getChipColor?: (value: TAssociation) => ColorPaletteEntry;
     // getChipDescription?: (value: TAssociation) => string;
@@ -1157,16 +1157,16 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
             _customAuth: (args as any)._customAuth || null,
         });
 
-        // does default behavior of case-insensitive, trimmed compare.
-        const itemExactlyMatches_defaultImpl = (value: TAssociation, filterText: string): boolean => {
-            // console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
-            // if (!this.getChipCaption) {
-            //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On TagsField ${args.columnName}`);
-            // }
-            // return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
-            const rowInfo = this.getAssociationTableShema().getRowInfo(value as TAnyModel);
-            return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
-        }
+        // // does default behavior of case-insensitive, trimmed compare.
+        // const itemExactlyMatches_defaultImpl = (value: TAssociation, filterText: string): boolean => {
+        //     // console.assert(!!this.getChipCaption); // this relies on caller specifying a chip caption.
+        //     // if (!this.getChipCaption) {
+        //     //     throw new Error(`If you don't provide an implementation of 'doesItemExactlyMatchText', then you must provide an implementation of 'getChipCaption'. On TagsField ${args.columnName}`);
+        //     // }
+        //     // return this.getChipCaption!(value).trim().toLowerCase() === filterText.trim().toLowerCase();
+        //     const rowInfo = this.getAssociationTableShema().getRowInfo(value as TAnyModel);
+        //     return rowInfo.name.trim().toLowerCase() === filterText.trim().toLowerCase();
+        // }
 
         this.associationTableID = args.associationTableID;
         this.foreignTableID = args.foreignTableID;
@@ -1177,7 +1177,7 @@ export class TagsField<TAssociation> extends FieldBase<TAssociation[]> {
         this.associationLocalIDMember = args.associationLocalIDMember;
         this.associationLocalObjectMember = args.associationLocalObjectMember;
         this.associationForeignObjectMember = args.associationForeignObjectMember;
-        this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
+        //this.doesItemExactlyMatchText = args.doesItemExactlyMatchText || itemExactlyMatches_defaultImpl;
     }
 
     connectToTable = (table: xTable) => {
