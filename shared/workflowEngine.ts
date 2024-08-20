@@ -153,7 +153,7 @@ export interface WorkflowLogItem {
     at: Date;
 };
 
-interface WorkflowNodeInstance {
+export interface WorkflowNodeInstance {
     id: number;
     nodeDefId: number;
     activeStateFirstTriggeredAt: Date | undefined;
@@ -277,7 +277,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
                 activeStateFirstTriggeredAt: undefined,
                 nodeDefId: nodeDef.id,
                 lastProgressState: WorkflowNodeProgressState.InvalidState,
-                assignees: nodeDef.defaultAssignees,
+                assignees: JSON.parse(JSON.stringify(nodeDef.defaultAssignees)),
                 isTidy: true,
             };
             return ret;
@@ -319,6 +319,10 @@ export interface WorkflowInstanceMutator {
     RegisterStateChange: (args: { flowDef: WorkflowDef, flowInstance: WorkflowInstance, node: WorkflowEvaluatedNode, oldState: WorkflowNodeProgressState }) => void; // register a change in the db as last known progress state. node.progressState will be updated already.
     GetModelFieldNames: (args: { flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance }) => string[];
     ResetModelAndInstance: () => void;
+    //InitNodeInstance: (nodeDef: WorkflowNodeDef) => WorkflowNodeInstance;
+
+    // mutator should set the assignees for the given node instance.
+    SetAssigneesForNode: (args: { flowDef: WorkflowDef, flowInstance: WorkflowInstance, evaluatedFlow: EvaluatedWorkflow, evaluatedNode: WorkflowEvaluatedNode, nodeDef: WorkflowNodeDef, assignees: WorkflowNodeAssignee[] }) => void;
 };
 
 const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator, evaluatedNodes: WorkflowEvaluatedNode[]): WorkflowEvaluatedNode => {

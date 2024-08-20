@@ -60,7 +60,7 @@ const FlowNodeNormal = (props: FlowNodeNormalProps) => {
         <div className="normalNodeContent">
             {props.data.evaluatedNode?.evaluation && <WorkflowNodeProgressIndicator value={props.data.evaluatedNode.evaluation} />}
             <div className="name">{nodeDef?.name || ""}</div>
-            {(nodeDef.defaultAssignees.length > 0) && <div>{nodeDef.defaultAssignees.map(_ => gCharMap.BustInSilhouette())}</div>}
+            {(nodeDef.defaultAssignees.length > 0) && <div>{nodeDef.defaultAssignees.map(_ => <span key={_.userId}>{gCharMap.BustInSilhouette()}</span>)}</div>}
         </div>
         <Handle
             type="source"

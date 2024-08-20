@@ -660,7 +660,14 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     value={evaluatedNode.assignees}
                     showPictogram={true}
                     onChange={val => {
-                        //ctx.instanceMutator.
+                        ctx.instanceMutator.SetAssigneesForNode({
+                            assignees: val,
+                            evaluatedNode: evaluatedNode,
+                            flowDef: ctx.flowDef,
+                            evaluatedFlow: ctx.evaluatedFlow,
+                            flowInstance: ctx.flowInstance,
+                            nodeDef,
+                        });
                     }}
                     evaluatedNode={evaluatedNode}
                 />

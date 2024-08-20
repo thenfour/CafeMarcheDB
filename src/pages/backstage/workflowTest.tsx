@@ -6,12 +6,12 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
-import { WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowNodeInstance, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { WorkflowEditorPOC } from "src/core/components/WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, WorkflowRenderer } from "src/core/components/WorkflowUserComponents";
 import { CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { assert } from "blitz";
-import { CoalesceBool, CoerceToString, IsNullOrWhitespace, valueOr } from "shared/utils";
+import { CoalesceBool, CoerceToString, getNextSequenceId, IsNullOrWhitespace, valueOr } from "shared/utils";
 import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField } from "src/core/components/CMTextField";
 
@@ -559,6 +559,21 @@ const MainContent = () => {
         ResetModelAndInstance: () => {
             setModel(MakeEmptyModel());
             setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
+        },
+
+        SetAssigneesForNode: (args) => {
+            const wi = { ...workflowInstance };
+
+            let ni = wi.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+            if (!ni) {
+                // evaluated nodes are instances, so this works and adds unused fields
+                ni = { ...args.evaluatedNode };
+                wi.nodeInstances.push(ni);
+            }
+
+            ni.assignees = JSON.parse(JSON.stringify(args.assignees));
+
+            setWorkflowInstance(wi);
         },
     };
 
