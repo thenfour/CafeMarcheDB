@@ -27,7 +27,7 @@ interface Db3SingleSelectBaseProps<Toption extends TAnyModel> {
     value: Toption | Tnull;
     onChange: (optionIds: Toption | Tnull) => void;
 
-    renderOption: (item: Toption) => React.ReactNode;
+    renderOption?: ((item: Toption) => React.ReactNode) | undefined;
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
@@ -92,6 +92,13 @@ export const DB3SingleSelect = <Toption extends TAnyModel,>(props: Db3SingleSele
         return () => props.onChange(optionX.option);
     };
 
+    const renderOption = (x: TX) => {
+        if (props.renderOption) {
+            return props.renderOption(x.option);
+        }
+        return x.info.name;
+    };
+
     const renderChips = (chips: TX[],
         onClick: (optionX: TX) => (() => void) | undefined) => {
         return chips.map(optionx => (
@@ -103,7 +110,7 @@ export const DB3SingleSelect = <Toption extends TAnyModel,>(props: Db3SingleSele
                 variation={{ ...StandardVariationSpec.Strong, selected: ssl.isSelected(optionx.info) }}
                 onClick={onClick(optionx)}
             >
-                {props.renderOption(optionx.option)}
+                {renderOption(optionx)}
             </CMChip>
         ));
     };
@@ -175,7 +182,7 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
 
     value: Toption[];
     onChange: (optionIds: Toption[]) => void;
-    renderOption: (item: Toption) => React.ReactNode;
+    renderOption?: ((item: Toption) => React.ReactNode) | undefined;
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
@@ -200,6 +207,13 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
     const msl = useDB3MultiSelectLogic(props, props.value, "", displayStyle === CMSelectDisplayStyle.SelectedWithDialog ? "selected" : "all");
     type TX = typeof msl.allOptionsX[0];
 
+    const renderOption = (x: TX) => {
+        if (props.renderOption) {
+            return props.renderOption(x.option);
+        }
+        return x.info.name;
+    };
+
     const renderChips = (optionsX: TX[]) => optionsX.map(optionX => {
         let clickHandler: any = undefined;
         if (!props.readonly) {
@@ -217,7 +231,7 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
             variation={{ ...StandardVariationSpec.Strong, selected: msl.isSelected(optionX.info) }}
             onClick={clickHandler}
         >
-            {props.renderOption(optionX.option)}
+            {renderOption(optionX)}
         </CMChip>
     });
 

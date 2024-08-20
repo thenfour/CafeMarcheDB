@@ -160,7 +160,7 @@ export interface DB3SingleSelectDialogBaseProps<T extends TAnyModel> {
     title: React.ReactNode;
     description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
-    renderOption: (value: T) => React.ReactNode;
+    renderOption?: ((value: T) => React.ReactNode) | undefined;
 
     closeOnSelect?: boolean;
 
@@ -207,6 +207,13 @@ export function DB3SingleSelectDialog<T extends TAnyModel>(props: Db3SingleSelec
 
     const allowQuickFilter = CoalesceBool(props.allowQuickFilter, true);
 
+    const renderOption = (x: TX) => {
+        if (props.renderOption) {
+            return props.renderOption(x.option);
+        }
+        return x.info.name;
+    };
+
     const renderChip = (x: TX, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
         return <CMChip
             key={x.info.pk}
@@ -218,7 +225,7 @@ export function DB3SingleSelectDialog<T extends TAnyModel>(props: Db3SingleSelec
             size={props.chipSize}
             variation={{ ...StandardVariationSpec.Strong, selected: ssl.isSelected(x.info) }}
         >
-            {props.renderOption(x.option)}
+            {renderOption(x)}
         </CMChip>;
     };
 
@@ -404,7 +411,7 @@ export interface DB3MultiSelectDialogProps<T extends TAnyModel> {
     title: React.ReactNode;
     description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
-    renderOption: (value: T) => React.ReactNode;
+    renderOption?: ((value: T) => React.ReactNode) | undefined;
 
     initialValues?: T[] | undefined;
 
@@ -430,6 +437,12 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
     }, selectedOptions, filterText, "all");
     type TX = typeof msl.allOptionsX[0];
 
+    const renderOption = (x: TX) => {
+        if (props.renderOption) {
+            return props.renderOption(x.option);
+        }
+        return x.info.name;
+    };
 
     const renderChip = (x: TX) => {
         return (
@@ -442,7 +455,7 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
                 size={props.chipSize}
                 variation={{ ...StandardVariationSpec.Strong, selected: msl.isSelected(x.info) }}
             >
-                {props.renderOption(x.option)}
+                {renderOption(x)}
             </CMChip>
         );
     };

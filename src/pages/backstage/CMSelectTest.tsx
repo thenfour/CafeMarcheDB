@@ -382,6 +382,22 @@ const DB3SingleSelectTestWithAddNew = () => {
 
 
 
+const MinimalUserSelect = () => {
+    const [selectedValue, setSelectedValue] = React.useState<db3.UserMinimumPayload | null>(null);
+    return <div style={{ border: "2px solid blue", margin: "10px 0", maxWidth: "600px" }}>
+        <h3>Minimal user selection</h3>
+        <div style={{ padding: "20px", backgroundColor: "white" }}>
+            <DB3SingleSelect<db3.UserMinimumPayload>
+                value={selectedValue}
+                schema={db3.xUser}
+                nullBehavior={CMSelectNullBehavior.AllowNull}
+                onChange={v => setSelectedValue(v)}
+            />
+        </div>
+    </div >;
+};
+
+
 const CMSelectTestPage: BlitzPage = () => {
     return (
         <DashboardLayout title="theme editor">
@@ -396,6 +412,8 @@ const CMSelectTestPage: BlitzPage = () => {
             <DB3SingleSelectTestWithAddNew />
             <DB3MultiSelectTest />
             <DB3MultiSelectTestWithNew />
+
+            <MinimalUserSelect />
         </DashboardLayout>
     )
 }
