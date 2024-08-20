@@ -86,6 +86,12 @@ export enum WorkflowNodeDisplayStyle {
 };
 
 export interface WorkflowNodeAssignee {
+    // this is subtle, but basically, the provider will determine whether an assignee has satisfied the completion of the node.
+    // so this determines:
+    // 1. how it's to be displayed to the assignee
+    // 2. how completeness is calculated. if there are required assignees, then all of them must be satisfied for the node to be complete.
+    //    if there are no required, then any optionals will complete
+    // however because UI is cluttered as it is, everyone is currently optional.
     isRequired: boolean;
     userId: number;
 }
@@ -182,6 +188,8 @@ export enum WorkflowNodeProgressState {
 };
 
 export interface WorkflowNodeEvaluation {
+    nodeDefId: number;
+
     isEvaluated: boolean;
     relevanceSatisfied: boolean; // does relevance criteria pass?
     activationSatisfied: boolean; // 
@@ -345,6 +353,7 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
     const completionDependsOnChildren = [WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType);
 
     const evaluation: WorkflowNodeEvaluation = {
+        nodeDefId: nodeDef.id,
         isEvaluated: true,
         activationSatisfied: false,
         completenessSatisfied: false,

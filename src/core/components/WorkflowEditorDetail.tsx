@@ -2,19 +2,20 @@
 
 import { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
-import { getHashedColor, sortBy } from "shared/utils";
-import { WorkflowCompletionCriteriaType, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { getHashedColor, sortBy, SplitQuickFilter } from "shared/utils";
+import { WorkflowCompletionCriteriaType, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
-import { EvaluatedWorkflowContext, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
+import { WorkflowAssigneesSelection, EvaluatedWorkflowContext, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { ChoiceEditCell } from "./ChooseItemDialog";
-import { DB3SelectTagsDialog, TagsFieldInput } from "../db3/DB3Client";
+import { DB3SelectTagsDialog, TagsFieldInput, useDb3Query, useInsertMutationClient } from "../db3/DB3Client";
 import { CMChip, CMChipContainer } from "./CMChip";
-
-
+import { DB3MultiSelect } from "../db3/components/db3Select";
+import * as db3 from "../db3/db3";
+import { CMMultiSelect, CMSelectDisplayStyle } from "./CMSelect";
 
 
 
@@ -397,25 +398,18 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
         <NameValuePair
             name={"Default assignees"}
             value={<>
-                <CMChipContainer>
-                    {props.nodeDef.defaultAssignees.map((a, i) =>
-                        <CMChip
-                            key={a.userId}
-                            onDelete={() => {
-                                console.log(`on delete`);
-                            }}
-                            onClick={() => {
-                                console.log(`on click`);
-                            }}
-                        >
-                            {a.userId}
-                            <button>make required</button>
-                        </CMChip>
-                    )}
-                    <CMSmallButton onClick={() => {
-                        console.log(`add new assignee`);
-                    }}>add...</CMSmallButton>
-                </CMChipContainer>
+                <WorkflowAssigneesSelection
+                    value={props.nodeDef.defaultAssignees}
+                    showPictogram={true}
+                    evaluatedNode={evaluated}
+                    onChange={value => ctx.chainDefMutations([
+                        sourceDef => ctx.flowDefMutator.setNodeDefaultAssignees({
+                            sourceDef,
+                            nodeDef: props.nodeDef,
+                            defaultAssignees: value,
+                        })
+                    ])}
+                />
             </>}
         />
 

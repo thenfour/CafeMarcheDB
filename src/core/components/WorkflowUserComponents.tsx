@@ -1,7 +1,7 @@
 import { Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { lerp, sortBy } from "shared/utils";
-import { EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -11,12 +11,71 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { InspectObject } from "./CMCoreComponents";
 import { AnimatedCircularProgress, Pre } from "./CMCoreComponents2";
+import * as DB3Client from "../db3/DB3Client";
+import * as db3 from "../db3/db3";
+import { DB3MultiSelect } from "../db3/components/db3Select";
+import { CMSelectDisplayStyle } from "./CMSelect";
+import { gCharMap } from "../db3/components/IconMap";
 
 type CMXYPosition = {
     x: number;
     y: number;
 };
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+interface WorkflowAssigneesSelectionProps {
+    value: WorkflowNodeAssignee[];
+    evaluatedNode: WorkflowEvaluatedNode;
+    showPictogram: boolean;
+    onChange: (val: WorkflowNodeAssignee[]) => void;
+};
+
+export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProps) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+
+    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>(db3.xUser);
+    const getUserById = (id: number) => {
+        const ret = queryStatus.items.find(u => u.id === id);
+        if (!ret) throw new Error(`user not found ${id}`);
+        return ret;
+    };
+    const getAssignee = (u: db3.UserMinimumPayload): WorkflowNodeAssignee => {
+        const ret = props.value.find(a => a.userId === u.id);
+        if (!ret) {
+            return {
+                isRequired: false,
+                userId: u.id,
+            };
+        }
+        return ret;
+    };
+
+    return <DB3MultiSelect<db3.UserMinimumPayload>
+        schema={db3.xUser}
+        displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+        value={props.value.map(x => getUserById(x.userId))}
+        chipShape="rounded"
+        chipSize="small"
+        onChange={items => props.onChange(items.map(u => ({
+            isRequired: false,
+            userId: u.id,
+        })))}
+        renderOption={u => {
+            const assignee = getAssignee(u);
+            const evaluated = props.evaluatedNode.evaluation.completenessByAssigneeId.find(ea => ea.assignee.userId === u.id);
+            // [WorkflowNodeProgressState.Relevant]: <HourglassEmptyIcon style={{ width: iconSize, color: '#777' }} />, // part of the flow but not active / started yet
+            // [WorkflowNodeProgressState.Activated]: <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
+            // [WorkflowNodeProgressState.Completed]: <CheckCircleIcon style={{ width: iconSize, color: 'green' }} />, // all criteria satisfied / complete
+            const iconSize = 10;
+
+            const indicator = evaluated ? evaluated.completenessSatisfied ? <CheckCircleIcon style={{ width: iconSize, color: 'green' }} /> : <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} /> : undefined;
+            return <>{props.showPictogram && gCharMap.BustInSilhouette()} {u.name} {assignee.isRequired ? "*" : ""} {indicator}</>;
+        }}
+    />
+};
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -484,6 +543,8 @@ interface WorkflowNodeProgressIndicatorProps {
 }
 
 export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicatorProps) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
 
     const iconSize = `14px`;
     const progressSize = 18;
@@ -496,17 +557,61 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
         [WorkflowNodeProgressState.InvalidState]: <CancelIcon style={{ width: iconSize, color: 'red' }} />, // error condition
     };
 
+    const dependentNodesDesc = (dependencies: WorkflowEvaluatedDependentNode[]): React.ReactNode => {
+        return dependencies.length > 0 &&
+            <div>
+                <div>Unmet criteria:</div>
+                <ul>
+                    {dependencies.map(dn => {
+                        const dndef = ctx.getNodeDef(dn.nodeDefId);
+                        return <li key={dn.nodeDefId}>{dndef.name}</li>
+                    })}
+                </ul>
+            </div>;
+    };
+
+    // completeness state.
+    let tooltip: React.ReactNode = null;
+    const nodeDef = ctx.getNodeDef(props.value.nodeDefId);
+    switch (props.value.progressState) {
+        case WorkflowNodeProgressState.Irrelevant:
+            tooltip = <div>
+                <div>Irrelevant ({nodeDef.relevanceCriteriaType})</div>
+                {dependentNodesDesc(props.value.relevanceBlockedByNodes)}
+            </div>;
+            break;
+        case WorkflowNodeProgressState.Relevant:
+            tooltip = <div>
+                <div>Blocked ({nodeDef.activationCriteriaType})</div>
+                {dependentNodesDesc(props.value.activationBlockedByNodes)}
+            </div>;
+            break;
+        case WorkflowNodeProgressState.Activated:
+            tooltip = <div>
+                <div>In progress ({nodeDef.completionCriteriaType}) {props.value.progress01 === undefined ? "" : `${(props.value.progress01 * 100).toFixed(2)}%`}</div>
+                {dependentNodesDesc(props.value.completenessBlockedByNodes)}
+            </div>;
+            break;
+        case WorkflowNodeProgressState.Completed:
+            tooltip = <div>
+                <div>Complete</div>
+            </div>;
+            break;
+    }
+
     return (
-        <div style={{ display: 'inline-flex', alignItems: 'center', marginRight: "5px", marginLeft: "2px" }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', borderRadius: "50%", backgroundColor: "#0002" }}>
-                <div style={{ position: 'relative', display: 'inline-flex' }}>
-                    <AnimatedCircularProgress size={progressSize} value={(props.value.progress01 || 0) * 100} duration={200} />
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {progressStateIcons[props.value.progressState]}
+        <Tooltip title={tooltip} disableInteractive={true}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', marginRight: "5px", marginLeft: "2px" }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', borderRadius: "50%", backgroundColor: "#0002" }}>
+                    <div style={{ position: 'relative', display: 'inline-flex' }}>
+                        <AnimatedCircularProgress size={progressSize} value={(props.value.progress01 || 0) * 100} duration={200} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {progressStateIcons[props.value.progressState]}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </Tooltip>
     );
 };
 
@@ -551,6 +656,14 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                 <WorkflowNodeProgressIndicator value={evaluatedNode.evaluation} />
                 {props.drawSelectionHandles && <InspectObject src={evaluatedNode.evaluation} />}
                 {nodeDef.name}
+                <WorkflowAssigneesSelection
+                    value={evaluatedNode.assignees}
+                    showPictogram={true}
+                    onChange={val => {
+                        //ctx.instanceMutator.
+                    }}
+                    evaluatedNode={evaluatedNode}
+                />
             </div>
             {activeControls}
 

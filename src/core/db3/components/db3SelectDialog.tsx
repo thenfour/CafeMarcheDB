@@ -100,11 +100,11 @@ export const useDB3SingleSelectLogic = <T extends TAnyModel,>(
     if (allowInsertFromString) {
         if (!insertAuthorized) {
             allowInsertFromString = false;
-            console.warn(`You want to insert from string, but not authorized to do so.`);
+            //console.warn(`You want to insert from string, but not authorized to do so.`);
         }
         if (!props.schema.createInsertModelFromString) {
             allowInsertFromString = false;
-            console.warn(`You want to insert from string, but the schema '${props.schema.tableID}' does not implement createInsertModelFromString.`);
+            //console.warn(`You want to insert from string, but the schema '${props.schema.tableID}' does not implement createInsertModelFromString.`);
         }
     }
 

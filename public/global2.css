@@ -225,6 +225,8 @@ input.CMTextInputBase.titleText {
     /* override parent styles*/
     font-weight: normal;
     font-style: normal;
+    /* many things are called 'content' and can sometimes leak into this class */
+    padding: 0;
 }
 
 .CMChip .CMChipDeleteButton {

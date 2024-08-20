@@ -62,7 +62,7 @@ export enum CMSelectDisplayStyle {
 interface CMMultiSelectProps<Toption> {
     getOptions: (args: { quickFilter: string | undefined }) => Promise<Toption[]> | Toption[];
     value: Toption[];
-    onChange: (optionIds: Toption[]) => void;
+    onChange: (options: Toption[]) => void;
     getOptionInfo: (item: Toption) => ItemInfo;
     renderOption: (item: Toption) => React.ReactNode;
 

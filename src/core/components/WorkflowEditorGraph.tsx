@@ -10,6 +10,8 @@ import { GetStyleVariablesForColor } from "./Color";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 import { InspectObject } from "./CMCoreComponents";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
+import PersonIcon from '@mui/icons-material/Person';
 
 
 const makeNormalNodeId = (nodeDefId: number) => {
@@ -58,6 +60,7 @@ const FlowNodeNormal = (props: FlowNodeNormalProps) => {
         <div className="normalNodeContent">
             {props.data.evaluatedNode?.evaluation && <WorkflowNodeProgressIndicator value={props.data.evaluatedNode.evaluation} />}
             <div className="name">{nodeDef?.name || ""}</div>
+            {(nodeDef.defaultAssignees.length > 0) && <div>{nodeDef.defaultAssignees.map(_ => gCharMap.BustInSilhouette())}</div>}
         </div>
         <Handle
             type="source"

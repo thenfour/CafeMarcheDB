@@ -28,7 +28,7 @@ import { IconEditCell } from "./IconSelectDialog";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import { TAnyModel, gNullValue } from "../shared/apiTypes";
+import { CMDBTableFilterModel, TAnyModel, gNullValue } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useDashboardContext } from "src/core/components/DashboardContext";
@@ -1169,6 +1169,22 @@ export const useInsertMutationClient = (schema: db3.xTable) => {
             table: schema,
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
         }),
+    });
+    return mutationCtx;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const useDb3Query = <Trow extends TAnyModel,>(schema: db3.xTable, filterSpec?: CMDBTableFilterModel | undefined) => {
+    const ctx = useDashboardContext();
+    const mutationCtx = DB3ClientCore.useTableRenderContext<Trow>({
+        clientIntention: ctx.userClientIntention,
+        requestedCaps: DB3ClientCore.xTableClientCaps.Query,
+        tableSpec: new DB3ClientCore.xTableClientSpec({
+            table: schema,
+            columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
+        }),
+        filterModel: filterSpec,
     });
     return mutationCtx;
 }

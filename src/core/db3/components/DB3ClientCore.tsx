@@ -85,7 +85,7 @@ export abstract class IColumnClient {
     abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
     abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactElement; // will render as a child of <FormControl>
     abstract ApplyClientToPostClient?: (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => void; // applies the values from the client object to a db-compatible object.
-    abstract onSchemaConnected(tableClient: xTableRenderClient): void;
+    abstract onSchemaConnected(tableClient: xTableRenderClient<any>): void;
 
     schemaTable: db3.xTable;
     schemaColumn: db3.FieldBase<unknown>;
@@ -98,7 +98,7 @@ export abstract class IColumnClient {
     }
 
     // called when the table client is initialized to make sure this column object knows about its sibling column in the schema.
-    connectColumn = (schemaTable: db3.xTable, tableClient: xTableRenderClient) => {
+    connectColumn = (schemaTable: db3.xTable, tableClient: xTableRenderClient<any>) => {
         console.assert(this.columnName.length > 0);
         this.schemaTable = schemaTable;
         this.schemaColumn = schemaTable.columns.find(c => c.member === this.columnName)!;
@@ -206,12 +206,12 @@ export interface xTableClientArgs {
     queryOptions?: any; // of gQueryOptions
 };
 
-export class xTableRenderClient {
+export class xTableRenderClient<Trow extends TAnyModel = TAnyModel> {
     tableSpec: xTableClientSpec;
     args: xTableClientArgs;
     mutateFn: TMutateFn;
 
-    items: TAnyModel[];
+    items: Trow[];
     rowCount: number;
     remainingQueryResults: any;
     remainingQueryStatus: RestQueryResult<unknown, unknown>;
@@ -264,7 +264,7 @@ export class xTableRenderClient {
             this.clientColumns[i]?.connectColumn(args.tableSpec.args.table, this);
         }
 
-        let items_: TAnyModel[] = [];
+        let items_: Trow[] = [];
 
         const filter: CMDBTableFilterModel = args.filterModel || { items: [] };
 
@@ -289,7 +289,7 @@ export class xTableRenderClient {
                 items_ = [];
                 this.rowCount = 0;
             } else {
-                items_ = queryResult[0].items as TAnyModel[];
+                items_ = queryResult[0].items as Trow[];
                 this.rowCount = queryResult[0].count;//queryResult[0].items.length;
                 this.remainingQueryResults = { ...queryResult[0] };
                 this.queryResultInfo = {
@@ -326,7 +326,7 @@ export class xTableRenderClient {
                 items_ = [];
                 this.rowCount = 0;
             } else {
-                items_ = queryResult[0].items as TAnyModel[];
+                items_ = queryResult[0].items as Trow[];
                 this.rowCount = queryResult[0].items.length;
                 this.remainingQueryResults = { ...queryResult[0] };
             }
@@ -341,7 +341,7 @@ export class xTableRenderClient {
 
         // convert items from a database result to a client-side object.
         this.items = items_.map(dbitem => {
-            return this.schema.getClientModel(dbitem as TAnyModel, "view", args.clientIntention);
+            return this.schema.getClientModel(dbitem, "view", args.clientIntention) as Trow;
         });
 
         this.refetch = this.refetch || (() => { });
@@ -443,8 +443,8 @@ export class xTableRenderClient {
 };
 
 
-export const useTableRenderContext = (args: xTableClientArgs) => {
-    return new xTableRenderClient(args);
+export const useTableRenderContext = <Trow extends TAnyModel,>(args: xTableClientArgs) => {
+    return new xTableRenderClient<Trow>(args);
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

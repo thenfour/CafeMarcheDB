@@ -148,4 +148,5 @@ export const gCharMap = {
     Checkmark: () => '✓',
     RightTriangle: () => '▶',
     LeftTriangle: () => '◀',
+    BustInSilhouette: () => <>&#x1F464;</>,
 } as const;

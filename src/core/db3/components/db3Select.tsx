@@ -1,3 +1,5 @@
+// todo: generic rendering (not all chip)
+
 // for immediate & promise options fetching,
 // <SingleSelect> + <SingleSelectDialog>
 // <MultiSelect> + <MultiSelectDialog>
@@ -214,6 +216,8 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
         return x.info.name;
     };
 
+    const selectedIndicator = displayStyle !== CMSelectDisplayStyle.SelectedWithDialog;
+
     const renderChips = (optionsX: TX[]) => optionsX.map(optionX => {
         let clickHandler: any = undefined;
         if (!props.readonly) {
@@ -223,12 +227,15 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
                 clickHandler = () => setMultiEditDialogOpen(true);
             }
         }
+
+        // only display the selection border if we're displaying ALL
+
         return <CMChip
             key={optionX.info.pk}
             size={props.chipSize || "small"}
             shape={props.chipShape || "rectangle"}
             color={optionX.info.color}
-            variation={{ ...StandardVariationSpec.Strong, selected: msl.isSelected(optionX.info) }}
+            variation={{ ...StandardVariationSpec.Strong, selected: selectedIndicator && msl.isSelected(optionX.info) }}
             onClick={clickHandler}
         >
             {renderOption(optionX)}
