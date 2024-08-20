@@ -1,4 +1,3 @@
-// todo: quick filter + add new
 import React from "react";
 
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
@@ -27,6 +26,94 @@ interface ItemInfo {
     tooltip?: string | undefined;
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+export const useSingleSelectLogic = <T,>(
+    props: {
+        nullBehavior?: CMSelectNullBehavior | undefined,
+        getOptionInfo: (item: T) => ItemInfo,
+        getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
+    },
+    selectedValue: T | undefined | null,
+    filterText: string | undefined,
+) => {
+
+    type TX = {
+        option: T;
+        info: ItemInfo;
+    };
+
+    const [allOptions, setAllOptions] = React.useState<TX[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    const { allowNull, nullValue } = {
+        [CMSelectNullBehavior.NonNullable]: {
+            allowNull: false,
+            nullValue: undefined,
+        },
+        [CMSelectNullBehavior.AllowNull]: {
+            allowNull: true,
+            nullValue: null,
+        },
+        [CMSelectNullBehavior.AllowUndefined]: {
+            allowNull: true,
+            nullValue: undefined,
+        }
+    }[props.nullBehavior || CMSelectNullBehavior.NonNullable];
+
+    const isNullSelected = (allowNull && !selectedValue); // not necessary to strictly check null vs undefined. allow it.
+    const selectedItemInfo = isNullSelected ? undefined : props.getOptionInfo(selectedValue!);
+
+    const isSelected = (optionInfo: ItemInfo): boolean => {
+        return !isNullSelected && optionInfo.id === selectedItemInfo!.id;
+    };
+
+    const makeTX = (option: T): TX => {
+        const info = props.getOptionInfo(option);
+        return {
+            option,
+            info,
+            //selected: isSelected(info),
+        };
+    };
+
+    React.useEffect(() => {
+        const fetchOptions = async () => {
+            setIsLoading(true);
+            try {
+                const options = await (props.getOptions({ quickFilter: filterText }) instanceof Promise
+                    ? props.getOptions({ quickFilter: undefined })
+                    : Promise.resolve(props.getOptions({ quickFilter: undefined })));
+                const processedOptions: TX[] = options.map(option => makeTX(option));
+                setAllOptions(processedOptions);
+            } catch (error) {
+                console.error("Error fetching options:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        void fetchOptions();
+    }, [props.getOptions, selectedValue, props.getOptionInfo, filterText]); // selectedValue here because it changes the `selected` property of TX
+
+    return {
+        allowNull,
+        nullValue,
+        isNullSelected,
+        selectedItemInfo,
+        isSelected,
+        makeTX,
+        isLoading,
+        allOptions,
+        selectedOptionX: isNullSelected ? undefined : {
+            option: selectedValue!,
+            info: selectedItemInfo!,
+        },
+    };
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMSingleSelectDialogBaseProps<T> {
     value?: T | Tnull;
     onOK: (value: T | Tnull) => void;
@@ -36,7 +123,6 @@ export interface CMSingleSelectDialogBaseProps<T> {
 
     getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
     getOptionInfo: (item: T) => ItemInfo;
-    getOptionById: (id: Tid) => T | Promise<T>;
     renderOption: (value: T) => React.ReactNode;
 
     closeOnSelect?: boolean;
@@ -73,88 +159,6 @@ type CMSingleSelectDialogProps<Toption> =
     | CMSingleSelectDialogBasePropsAllowingNull<Toption>
     | CMSingleSelectDialogBasePropsAllowingUndefined<Toption>;
 
-export const useSingleSelectLogic = <T,>(props: {
-    nullBehavior?: CMSelectNullBehavior | undefined,
-    getOptionInfo: (item: T) => ItemInfo
-    getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
-}, selectedValue: T | undefined | null) => {
-    const [allOptions, setAllOptions] = React.useState<TX[]>([]);
-    const [isLoading, setIsLoading] = React.useState(true);
-
-    const { allowNull, nullValue } = {
-        [CMSelectNullBehavior.NonNullable]: {
-            allowNull: false,
-            nullValue: undefined,
-        },
-        [CMSelectNullBehavior.AllowNull]: {
-            allowNull: true,
-            nullValue: null,
-        },
-        [CMSelectNullBehavior.AllowUndefined]: {
-            allowNull: true,
-            nullValue: undefined,
-        }
-    }[props.nullBehavior || CMSelectNullBehavior.NonNullable];
-
-    const isNullSelected = (allowNull && !selectedValue); // not necessary to strictly check null vs undefined. allow it.
-    const selectedItemInfo = isNullSelected ? undefined : props.getOptionInfo(selectedValue!);
-
-    const isSelected = (optionInfo: ItemInfo): boolean => {
-        return !isNullSelected && optionInfo.id === selectedItemInfo!.id;
-    };
-
-    type TX = {
-        option: T;
-        info: ItemInfo;
-        selected: boolean;
-    };
-
-    const makeTX = (option: T): TX => {
-        const info = props.getOptionInfo(option);
-        return {
-            option,
-            info,
-            selected: isSelected(info),
-        };
-    };
-
-    React.useEffect(() => {
-        const fetchOptions = async () => {
-            setIsLoading(true);
-            try {
-                const options = await (props.getOptions({ quickFilter: undefined }) instanceof Promise
-                    ? props.getOptions({ quickFilter: undefined })
-                    : Promise.resolve(props.getOptions({ quickFilter: undefined })));
-                const processedOptions: TX[] = options.map(option => makeTX(option));
-                setAllOptions(processedOptions);
-            } catch (error) {
-                console.error("Error fetching options:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        void fetchOptions();
-    }, [props.getOptions, selectedValue, props.getOptionInfo]);
-
-    return {
-        allowNull,
-        nullValue,
-        isNullSelected,
-        selectedItemInfo,
-        isSelected,
-        makeTX,
-        isLoading,
-        allOptions,
-        selectedOptionX: isNullSelected ? undefined : {
-            option: selectedValue!,
-            info: selectedItemInfo!,
-            selected: true,
-        },
-    };
-};
-
-
 export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
     const snackbar = useSnackbar();
     const [filterText, setFilterText] = React.useState("");
@@ -165,7 +169,7 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
 
     const closeOnSelect = CoalesceBool(props.closeOnSelect, true);
 
-    const ssl = useSingleSelectLogic(props, selectedOption);
+    const ssl = useSingleSelectLogic(props, selectedOption, filterText);
 
     const renderChip = (key: Tid, option: T, info: ItemInfo, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
         return <CMChip
@@ -209,13 +213,13 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
                 {props.description}
             </CMDialogContentText>
 
-            <Box>
+            {props.allowQuickFilter && <Box>
                 <SearchInput
                     onChange={(v) => setFilterText(v)}
                     value={filterText}
                     autoFocus={true}
                 />
-            </Box>
+            </Box>}
 
             {
                 !!filterText.length && !filterMatchesAnyItemsExactly && allowInsertFromString && (

@@ -186,6 +186,7 @@ export const xInstrument = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.functionalGroup?.color || ""),
         ownerUserId: null,
     }),
+    createInsertModelFromString: undefined, // because you must set things like functional group. don't allow simple create.
     tableAuthMap: xInstrumentTableAuthMap,
     columns: [
         new PKField({ columnName: "id" }),

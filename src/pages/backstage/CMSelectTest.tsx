@@ -5,7 +5,7 @@ import React from "react";
 import { gGeneralPaletteList, gSwatchColors } from "shared/color";
 import { sleep } from "shared/utils";
 import { CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
-import { CMMultiSelect, CMSelectDisplayStyle, CMSelectEditStyle, CMSelectValueDisplayStyle, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/CMSelect";
+import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { ColorPick } from "src/core/components/Color";
 import { DB3MultiSelect, DB3SingleSelect } from "src/core/db3/components/db3Select";
@@ -17,8 +17,6 @@ type Dataset = "numbers";
 
 interface ChipOptions {
     readonly: boolean;
-    //editStyle: CMSelectEditStyle;
-    //valueDisplayStyle: CMSelectValueDisplayStyle;
     displayStyle: CMSelectDisplayStyle;
 
     size: CMChipSizeOptions;
@@ -59,16 +57,6 @@ const ChipOptionMgr = (props: ChipOptionMgrProps) => {
             onChange={(x) => props.setValue({ ...props.value, displayStyle: x })}
             {...StringArrayOptionsProvider<CMSelectDisplayStyle>([CMSelectDisplayStyle.SelectedWithDialog, CMSelectDisplayStyle.AllWithDialog, CMSelectDisplayStyle.AllWithInlineEditing])}
         />
-        {/* <CMSingleSelect<CMSelectEditStyle>
-            value={props.value.editStyle}
-            onChange={(x) => props.setValue({ ...props.value, editStyle: x })}
-            {...StringArrayOptionsProvider<CMSelectEditStyle>([CMSelectEditStyle.dialog, CMSelectEditStyle.inlineWithDialog])}
-        />
-        <CMSingleSelect<CMSelectValueDisplayStyle>
-            value={props.value.valueDisplayStyle}
-            onChange={(x) => props.setValue({ ...props.value, valueDisplayStyle: x })}
-            {...StringArrayOptionsProvider([CMSelectValueDisplayStyle.all, CMSelectValueDisplayStyle.selected])}
-        /> */}
     </div>
 };
 
@@ -79,8 +67,6 @@ const MultiSelectTest = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        //editStyle: CMSelectEditStyle.inlineWithDialog,
-        //valueDisplayStyle: CMSelectValueDisplayStyle.all,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
     });
 
@@ -94,15 +80,13 @@ const MultiSelectTest = () => {
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMMultiSelect
-                //valueDisplayStyle={chipOptions.valueDisplayStyle}
-                //editStyle={chipOptions.editStyle}
+                displayStyle={chipOptions.displayStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}
                 getOptions={(args) => [1, 2, 4, 6, 8, 0]}
                 renderOption={opt => <>{opt}</>}
                 value={selected}
-                getOptionById={opt => options.find(x => x === opt)!}
                 getOptionInfo={opt => ({
                     id: opt,
                     color: chipOptions.color,
@@ -124,8 +108,6 @@ const SingleSelectTest = () => {
         shape: "rectangle",
         readonly: false,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
-        // editStyle: CMSelectEditStyle.inlineWithDialog,
-        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
@@ -134,14 +116,11 @@ const SingleSelectTest = () => {
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<number>
                 displayStyle={chipOptions.displayStyle}
-                //valueDisplayStyle={chipOptions.valueDisplayStyle}
-                //editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => [1, 2, 4, 6, 8, 0]}
                 renderOption={opt => opt}
-                getOptionById={opt => options.find(x => x === opt)!}
                 getOptionInfo={opt => ({
                     id: opt,
                     color: chipOptions.color,
@@ -162,8 +141,6 @@ const SingleSelectNullableTest = () => {
         shape: "rectangle",
         readonly: false,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
-        // editStyle: CMSelectEditStyle.inlineWithDialog,
-        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
 
@@ -174,14 +151,11 @@ const SingleSelectNullableTest = () => {
             <CMSingleSelect<number>
                 nullBehavior={CMSelectNullBehavior.AllowNull}
                 displayStyle={chipOptions.displayStyle}
-                // valueDisplayStyle={chipOptions.valueDisplayStyle}
-                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => [1, 2, 4, 6, 8, 0]}
                 renderOption={opt => opt}
-                getOptionById={opt => options.find(x => x === opt)!}
                 getOptionInfo={opt => ({
                     id: opt,
                     color: chipOptions.color,
@@ -202,11 +176,6 @@ const getOptionsAsync = async (): Promise<number[]> => {
     return [1, 2, 3, 4, 5, 6, 0, 10000];
 };
 
-const getOptionByIdAsync = async (id: number): Promise<number> => {
-    await sleep(500);
-    return id;
-};
-
 const SingleSelectAsyncTest = () => {
     const [selected, setSelected] = React.useState<number>(1);
     const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
@@ -215,24 +184,19 @@ const SingleSelectAsyncTest = () => {
         shape: "rectangle",
         readonly: false,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
-        // editStyle: CMSelectEditStyle.inlineWithDialog,
-        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
-        <h3>Single select ASYNC</h3>
+        <h3>Single select ASYNC (sleep)</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<number>
                 displayStyle={chipOptions.displayStyle}
-                // valueDisplayStyle={chipOptions.valueDisplayStyle}
-                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => getOptionsAsync()}
                 renderOption={opt => opt}
-                getOptionById={getOptionByIdAsync}// opt => options.find(x => x === opt)!}
                 getOptionInfo={opt => ({
                     id: opt,
                     color: chipOptions.color,
@@ -264,24 +228,19 @@ const SelectSingleFetchTest = () => {
         shape: "rectangle",
         readonly: false,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
-        // editStyle: CMSelectEditStyle.inlineWithDialog,
-        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
-        <h3>Single user select ASYNC</h3>
+        <h3>Single user select (typicode) ASYNC</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<TypicodeUser | undefined>
                 displayStyle={chipOptions.displayStyle}
-                // valueDisplayStyle={chipOptions.valueDisplayStyle}
-                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => fetchUsers()}
                 renderOption={opt => <>{opt?.name || "<null>"}</>}
-                getOptionById={(id) => fetchUsers().then(users => users.find(user => user.id === id))}
 
                 getOptionInfo={opt => ({
                     id: opt?.id || -1,
@@ -303,22 +262,20 @@ const DB3SingleSelectTest = () => {
         shape: "rectangle",
         readonly: false,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
-        // editStyle: CMSelectEditStyle.inlineWithDialog,
-        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
         <h3>Single instrument select DB3</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
-            <DB3SingleSelect<db3.InstrumentPayloadMinimum | null>
+            <DB3SingleSelect<db3.InstrumentPayloadMinimum>
                 value={selectedValue}
+                nullBehavior={CMSelectNullBehavior.AllowNull}
+                displayStyle={chipOptions.displayStyle}
                 onChange={v => setSelectedValue(v)}
                 renderOption={value => !value ? "<none>" : <>{value.name}</>}
                 schema={db3.xInstrument}
 
-                // valueDisplayStyle={chipOptions.valueDisplayStyle}
-                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}
@@ -336,8 +293,6 @@ const DB3MultiSelectTest = () => {
         shape: "rectangle",
         readonly: false,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
-        // editStyle: CMSelectEditStyle.inlineWithDialog,
-        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
@@ -346,12 +301,11 @@ const DB3MultiSelectTest = () => {
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <DB3MultiSelect<db3.InstrumentPayloadMinimum>
                 value={selectedValue}
+                displayStyle={chipOptions.displayStyle}
                 onChange={v => setSelectedValue(v)}
                 renderOption={value => <>{value.name}</>}
                 schema={db3.xInstrument}
 
-                // valueDisplayStyle={chipOptions.valueDisplayStyle}
-                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}
@@ -359,6 +313,38 @@ const DB3MultiSelectTest = () => {
         </div>
     </div >;
 };
+
+
+const DB3MultiSelectTestWithNew = () => {
+    const [selectedValue, setSelectedValue] = React.useState<db3.InstrumentTagPayload[]>([]);
+    const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
+        color: null,
+        size: "big",
+        shape: "rectangle",
+        readonly: false,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+    });
+
+    return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
+        <h3>Multiple instrument select DB3 + add new support</h3>
+        <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
+        <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
+            <DB3MultiSelect<db3.InstrumentTagPayload>
+                value={selectedValue}
+                displayStyle={chipOptions.displayStyle}
+                onChange={v => setSelectedValue(v)}
+                renderOption={value => <>{value.text}</>}
+                schema={db3.xInstrumentTag}
+
+                readonly={chipOptions.readonly}
+                chipSize={chipOptions.size}
+                chipShape={chipOptions.shape}
+                allowInsertFromString={true}
+            />
+        </div>
+    </div >;
+};
+
 
 const DB3SingleSelectTestWithAddNew = () => {
     const [selectedValue, setSelectedValue] = React.useState<db3.InstrumentFunctionalGroupPayloadMinimum | null>(null);
@@ -368,32 +354,26 @@ const DB3SingleSelectTestWithAddNew = () => {
         shape: "rectangle",
         readonly: false,
         displayStyle: CMSelectDisplayStyle.AllWithDialog,
-        // editStyle: CMSelectEditStyle.inlineWithDialog,
-        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
-
-    const insMutation = useInsertMutationClient(db3.xInstrumentFunctionalGroup);
 
     return <div style={{ border: "2px solid blue", margin: "10px 0", maxWidth: "600px" }}>
         <h3>Single instrument select DB3, insert support</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white" }}>
-            <DB3SingleSelect<db3.InstrumentFunctionalGroupPayloadMinimum | null>
+            <DB3SingleSelect<db3.InstrumentFunctionalGroupPayloadMinimum>
                 value={selectedValue}
+                nullBehavior={CMSelectNullBehavior.AllowNull}
                 onChange={v => setSelectedValue(v)}
                 renderOption={value => !value ? "<none>" : <>{value.name}</>}
                 schema={db3.xInstrumentFunctionalGroup}
+                displayStyle={chipOptions.displayStyle}
 
-                // valueDisplayStyle={chipOptions.valueDisplayStyle}
-                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}
 
                 allowInsertFromString={true}
                 allowQuickFilter={true}
-
-                doInsert={async (model) => await insMutation.doInsertMutation(model) as db3.InstrumentFunctionalGroupPayloadMinimum}
             />
         </div>
     </div >;
@@ -406,19 +386,16 @@ const CMSelectTestPage: BlitzPage = () => {
     return (
         <DashboardLayout title="theme editor">
 
-            <DB3SingleSelectTestWithAddNew />
+            <SingleSelectTest />
+            <SingleSelectNullableTest />
+            <SelectSingleFetchTest />
+            <SingleSelectAsyncTest />
+            <MultiSelectTest />
 
             <DB3SingleSelectTest />
+            <DB3SingleSelectTestWithAddNew />
             <DB3MultiSelectTest />
-
-            <SelectSingleFetchTest />
-
-            <MultiSelectTest />
-            <SingleSelectTest />
-
-            <SingleSelectNullableTest />
-
-            <SingleSelectAsyncTest />
+            <DB3MultiSelectTestWithNew />
         </DashboardLayout>
     )
 }

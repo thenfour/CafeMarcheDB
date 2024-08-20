@@ -1,5 +1,3 @@
-// todo: add new item, quick filter
-
 import React from "react";
 
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
@@ -20,6 +18,77 @@ interface ItemInfo {
     tooltip?: string | undefined;
 };
 
+export const useMultiSelectLogic = <T,>(
+    props: {
+        getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
+        getOptionInfo: (item: T) => ItemInfo;
+    },
+    selectedOptions: T[],
+    filterText: string | undefined,
+) => {
+
+    type TX = {
+        option: T;
+        info: ItemInfo;
+    };
+
+    const [allOptionsX, setAllOptionsX] = React.useState<TX[]>([]);
+    const [selectedOptionsX, setSelectedOptionsX] = React.useState<TX[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    const isSelected = (info: ItemInfo) => {
+        return selectedOptionsX.some(x => x.info.id === info.id);
+    }
+
+    const makeTX = (option: T): TX => {
+        const info = props.getOptionInfo(option);
+        return {
+            info,
+            option,
+        };
+    };
+
+    React.useEffect(() => {
+        const fetchOptions = async () => {
+            setIsLoading(true);
+            try {
+                const options = await Promise.resolve(props.getOptions({ quickFilter: filterText }));
+                setAllOptionsX(options.map(o => makeTX(o)));
+            } catch (error) {
+                console.error("Error fetching options:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        void fetchOptions();
+    }, [props.getOptions, selectedOptions, props.getOptionInfo, filterText]);
+
+    React.useEffect(() => {
+        setSelectedOptionsX(selectedOptions.map(o => makeTX(o)));
+    }, [props.getOptions, selectedOptions, props.getOptionInfo, allOptionsX]);
+
+    const toggleSelection = (x: TX): T[] => {
+        if (isSelected(x.info)) {
+            const ret = selectedOptions.filter(alreadySelected => props.getOptionInfo(alreadySelected).id !== x.info.id);
+            return ret;
+        }
+        const ret = [...selectedOptions, x.option];
+        return ret;
+    };
+
+    return {
+        isLoading,
+        allOptionsX,
+        selectedOptionsX,
+        makeTX,
+        isSelected,
+        toggleSelection,
+    };
+};
+
+
+
+
 export interface CMMultiSelectDialogProps<T> {
     onOK: (value: T[]) => void;
     onCancel: () => void;
@@ -28,11 +97,9 @@ export interface CMMultiSelectDialogProps<T> {
 
     getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
     getOptionInfo: (item: T) => ItemInfo;
-    getOptionById: (id: Tid) => T | Promise<T>;
     renderOption: (value: T) => React.ReactNode;
 
     initialValues?: T[] | undefined;
-
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
@@ -47,88 +114,37 @@ export interface CMMultiSelectDialogProps<T> {
 export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
     const snackbar = useSnackbar();
     const [filterText, setFilterText] = React.useState("");
-    const [selectedObjIds, setSelectedObjIds] = React.useState<Tid[]>(() => (props.initialValues || []).map(option => props.getOptionInfo(option).id));
-    const [isLoading, setIsLoading] = React.useState<boolean>(true);
-    const [items, setItems] = React.useState<T[]>([]);
     const [selectedOptions, setSelectedOptions] = React.useState<T[]>([]);
 
     // if any of these are missing, allow insert from string will not be available.
     const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doesItemExactlyMatchText && props.doInsertFromString;
 
-    React.useEffect(() => {
-        const fetchItems = async () => {
-            setIsLoading(true);
-            try {
-                const options = props.getOptions({ quickFilter: undefined });
-                const resolvedOptions = options instanceof Promise ? await options : options;
-                setItems(resolvedOptions);
-            } catch (error) {
-                console.error("Error fetching options:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+    const msl = useMultiSelectLogic(props, selectedOptions, filterText);
+    type TX = typeof msl.allOptionsX[0];
 
-        void fetchItems();
-    }, [props.getOptions]);
-
-    React.useEffect(() => {
-        const fetchSelectedOptions = async () => {
-            setIsLoading(true);
-            try {
-                const resolvedOptions = await Promise.all(
-                    selectedObjIds.map(async id => {
-                        const option = props.getOptionById(id);
-                        return option instanceof Promise ? await option : option;
-                    })
-                );
-                setSelectedOptions(resolvedOptions);
-            } catch (error) {
-                console.error("Error fetching selected options:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        void fetchSelectedOptions();
-    }, [selectedObjIds, props.getOptionById]);
-
-    const itemsWithInfo = items.map(v => ({
-        option: v,
-        info: props.getOptionInfo(v),
-    }));
-
-    const selectedOptionsWithInfo = selectedOptions.map(option => ({
-        id: props.getOptionInfo(option).id,
-        option,
-        info: props.getOptionInfo(option),
-    }));
-
-    const renderChip = (key: Tid, option: T, info: ItemInfo, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
+    const renderChip = (x: TX) => {
         return (
             <CMChip
-                key={key}
-                onClick={onClick}
-                onDelete={onDelete}
-                color={info.color}
-                tooltip={info.tooltip}
+                key={x.info.id}
+                onClick={() => setSelectedOptions(msl.toggleSelection(x))}
+                color={x.info.color}
+                tooltip={x.info.tooltip}
                 shape={props.chipShape}
                 size={props.chipSize}
-                variation={{ ...StandardVariationSpec.Strong, selected: selectedObjIds.includes(info.id) }}
+                variation={{ ...StandardVariationSpec.Strong, selected: msl.isSelected(x.info) }}
             >
-                {props.renderOption(option)}
+                {props.renderOption(x.option)}
             </CMChip>
         );
     };
 
-    const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && items.some(item => props.doesItemExactlyMatchText!(item, filterText));
+    const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && msl.allOptionsX.some(item => props.doesItemExactlyMatchText!(item.option, filterText));
 
     const onNewClicked = async () => {
         try {
             const newObj = await props.doInsertFromString!(filterText);
             snackbar.showMessage({ children: "created new success", severity: 'success' });
-            const newInfo = props.getOptionInfo(newObj);
-            setSelectedObjIds([...selectedObjIds, newInfo.id]); // add
+            setSelectedOptions([...selectedOptions, newObj]); // add
         } catch (err) {
             console.log(err);
             snackbar.showMessage({ children: "create error", severity: 'error' });
@@ -139,15 +155,11 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
         <ReactiveInputDialog onCancel={props.onCancel}>
             <DialogTitle>
                 {props.title}
-                {isLoading && <CircularProgress />}
+                {msl.isLoading && <CircularProgress />}
                 <Box sx={{ p: 0 }}>
-                    Selected: {selectedObjIds.length === 0 ? "<none>" : (
+                    Selected: {msl.selectedOptionsX.length === 0 ? "<none>" : (
                         <CMChipContainer>
-                            {selectedOptionsWithInfo.map(optionx =>
-                                renderChip(optionx.id, optionx.option, optionx.info, undefined, () =>
-                                    setSelectedObjIds(selectedObjIds.filter(id => id !== optionx.id))
-                                )
-                            )}
+                            {msl.selectedOptionsX.map(optionx => renderChip(optionx))}
                         </CMChipContainer>
                     )}
                 </Box>
@@ -177,26 +189,17 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
                     )
                 }
 
-                {items.length === 0 ? (
+                {msl.allOptionsX.length === 0 ? (
                     <Box>Nothing here</Box>
                 ) : (
                     <CMChipContainer orientation="vertical">
-                        {itemsWithInfo.map(item =>
-                            renderChip(item.info.id, item.option, item.info, () => {
-                                const selectedAlready = selectedObjIds.includes(item.info.id);
-                                if (selectedAlready) {
-                                    setSelectedObjIds(selectedObjIds.filter(id => id !== item.info.id)); // remove
-                                } else {
-                                    setSelectedObjIds([...selectedObjIds, item.info.id]); // add
-                                }
-                            }, undefined)
-                        )}
+                        {msl.allOptionsX.map(x => renderChip(x))}
                     </CMChipContainer>
                 )}
             </DialogContent>
             <DialogActions>
                 <Button onClick={props.onCancel}>Cancel</Button>
-                <Button onClick={() => { props.onOK(selectedOptionsWithInfo.map(ox => ox.option)); }}>OK</Button>
+                <Button onClick={() => { props.onOK(selectedOptions); }}>OK</Button>
             </DialogActions>
         </ReactiveInputDialog>
     );

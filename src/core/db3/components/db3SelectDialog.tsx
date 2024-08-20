@@ -1,4 +1,3 @@
-// todo: quick filter + add new
 import React from "react";
 
 import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
@@ -10,20 +9,153 @@ import { CMDialogContentText } from "src/core/components/CMCoreComponents2";
 import * as db3 from "src/core/db3/db3";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import * as DB3Client from "src/core/db3/DB3Client";
-import { TAnyModel } from "../shared/apiTypes";
+import { CMDBTableFilterModel, TAnyModel } from "../shared/apiTypes";
 import { SearchInput } from "src/core/components/CMTextField";
 import { gIconMap } from "./IconMap";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useSnackbar } from "src/core/components/SnackbarContext";
+import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 
-type Tid = number;
+type Tnull = undefined | null;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface DB3SingleSelectDialogProps<T extends (TAnyModel | null | undefined)> {
+export const useDB3SingleSelectLogic = <T extends TAnyModel,>(
+    props: {
+        nullBehavior?: CMSelectNullBehavior | undefined,
+        schema: db3.xTable,
+        allowInsertFromString?: boolean | undefined;
+        onInsert?: undefined | ((newObj: T) => void);
+    },
+    selectedValue: T | Tnull, // support null no matter what
+    filterText: string,
+    fetchSet: "all" | "selected",
+) => {
+
+    type TX = {
+        option: T;
+        info: db3.RowInfo;
+    };
+
+    const ctx = useDashboardContext();
+    const snackbar = useSnackbar();
+    const publicData = useAuthenticatedSession();
+
+    const [allOptionsX, setAllOptionsX] = React.useState<TX[]>([]);
+
+    const { allowNull, nullValue } = {
+        [CMSelectNullBehavior.NonNullable]: {
+            allowNull: false,
+            nullValue: undefined,
+        },
+        [CMSelectNullBehavior.AllowNull]: {
+            allowNull: true,
+            nullValue: null,
+        },
+        [CMSelectNullBehavior.AllowUndefined]: {
+            allowNull: true,
+            nullValue: undefined,
+        }
+    }[props.nullBehavior || CMSelectNullBehavior.NonNullable];
+
+    const isNullSelected = (allowNull && !selectedValue); // not necessary to strictly check null vs undefined. allow it.
+    const selectedItemInfo = isNullSelected ? undefined : props.schema.getRowInfo(selectedValue!);
+
+    const isSelected = (optionInfo: db3.RowInfo): boolean => {
+        return !isNullSelected && optionInfo.pk === selectedItemInfo!.pk;
+    };
+
+    const makeTX = (option: T): TX => {
+        const info = props.schema.getRowInfo(option);
+        return {
+            option,
+            info,
+        };
+    };
+
+    const filterModel: CMDBTableFilterModel = {
+        items: [],
+        quickFilterValues: SplitQuickFilter(filterText || ""),
+    };
+
+    const selectedInfo = selectedValue ? props.schema.getRowInfo(selectedValue) : undefined;
+
+    if (fetchSet === "selected" && selectedValue) {
+        filterModel.pks = [selectedInfo!.pk];
+    }
+
+    const queryStatus = DB3Client.fetchUnsuspended<T>({
+        clientIntention: ctx.userClientIntention,
+        schema: props.schema,
+        filterModel,
+        delayMS: 500, // TODO: remove.
+    });
+
+    React.useEffect(() => {
+        setAllOptionsX(queryStatus.items.map(option => makeTX(option))); // this line causes an infinite refresh
+    }, [queryStatus.queryResult?.dataUpdatedAt]);
+
+    const insMutation = DB3Client.useInsertMutationClient(props.schema);
+    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ clientIntention: ctx.userClientIntention, publicData });
+    let allowInsertFromString = CoalesceBool(props.allowInsertFromString, true);
+    if (allowInsertFromString) {
+        if (!insertAuthorized) {
+            allowInsertFromString = false;
+            console.warn(`You want to insert from string, but not authorized to do so.`);
+        }
+        if (!props.schema.createInsertModelFromString) {
+            allowInsertFromString = false;
+            console.warn(`You want to insert from string, but the schema '${props.schema.tableID}' does not implement createInsertModelFromString.`);
+        }
+    }
+
+    const doInsert = async () => {
+        try {
+            const model = props.schema.createInsertModelFromString!(filterText || "") as T;
+            if (!model) throw new Error(`model couldn't be created`);
+            const newObj = await insMutation.doInsertMutation(model) as T;
+            snackbar.showMessage({ children: "created new success", severity: 'success' });
+            props.onInsert && props.onInsert(newObj);
+            return newObj;
+        } catch (err) {
+            console.log(err);
+            snackbar.showMessage({ children: "create error", severity: 'error' });
+        } finally {
+            queryStatus.refetch();
+        }
+    };
+
+    const filterMatchesAnyItemsExactly = allOptionsX.some(item => props.schema.doesItemExactlyMatchText(item.option, filterText));
+
+    return {
+        allowNull,
+        nullValue,
+        isNullSelected,
+        selectedItemInfo,
+
+        isSelected,
+        makeTX,
+        isLoading: queryStatus.isLoading,
+
+        allOptionsX,
+        selectedOptionX: isNullSelected ? undefined : {
+            option: selectedValue!,
+            info: selectedInfo!,
+        },
+        queryStatus,
+        doInsert,
+        allowInsertFromString,
+        filterMatchesAnyItemsExactly,
+    };
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export interface DB3SingleSelectDialogBaseProps<T extends TAnyModel> {
+    //    nullBehavior?: CMSelectNullBehavior | undefined;
     schema: db3.xTable,
 
-    value?: T | null;
-    onOK: (value: T) => void;
+    value?: T | null | undefined;
+    onOK: (value: T | Tnull) => void;
     onCancel: () => void;
     title: React.ReactNode;
     description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
@@ -37,80 +169,65 @@ export interface DB3SingleSelectDialogProps<T extends (TAnyModel | null | undefi
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    doInsert?: (model: NonNullable<T>) => Promise<NonNullable<T>>; // similar
+    onInsert?: undefined | ((newObj: T) => void);
 };
 
-export function DB3SingleSelectDialog<T extends (TAnyModel | null | undefined)>(props: DB3SingleSelectDialogProps<T>) {
-    const ctx = useDashboardContext();
-    const publicData = useAuthenticatedSession();
-    const snackbar = useSnackbar();
-    const closeOnSelect = CoalesceBool(props.closeOnSelect, true);
-    const value = props.value || null;
+interface Db3SingleSelectDialogPropsNotAllowingNull<Toption extends TAnyModel> extends DB3SingleSelectDialogBaseProps<Toption> {
+    nullBehavior?: CMSelectNullBehavior.NonNullable | undefined;
+    onOK: (option: Toption) => void;
+}
 
-    // if any of these are missing, allow insert from string will not be available.
-    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doInsert && props.schema.createInsertModelFromString;
-    const allowQuickFilter = CoalesceBool(props.allowQuickFilter, true);
+interface Db3SingleSelectDialogPropsAllowingNull<Toption extends TAnyModel> extends DB3SingleSelectDialogBaseProps<Toption> {
+    nullBehavior: CMSelectNullBehavior.AllowNull;
+    onOK: (option: Toption | null) => void;
+}
+
+interface Db3SingleSelectDialogPropsAllowingUndefined<Toption extends TAnyModel> extends DB3SingleSelectDialogBaseProps<Toption> {
+    nullBehavior: CMSelectNullBehavior.AllowUndefined;
+    onOK: (option: Toption | undefined) => void;
+}
+
+type Db3SingleSelectDialogProps<Toption extends TAnyModel> =
+    | Db3SingleSelectDialogPropsNotAllowingNull<Toption>
+    | Db3SingleSelectDialogPropsAllowingNull<Toption>
+    | Db3SingleSelectDialogPropsAllowingUndefined<Toption>;
+
+export function DB3SingleSelectDialog<T extends TAnyModel>(props: Db3SingleSelectDialogProps<T>) {
+    const closeOnSelect = CoalesceBool(props.closeOnSelect, true);
+    const [selectedOption, setSelectedOption] = React.useState<T | Tnull>(props.value); // this is a modal dialog to select an item so on first open, even without nullable behavior, nulls can be specified.
 
     const [filterText, setFilterText] = React.useState("");
-    const [selectedObj, setSelectedObj] = React.useState<T | null>(value);
-    const selectedPk = props.value ? (props.value[props.schema.pkMember] as Tid) : undefined;
-
-    const q = DB3Client.fetchUnsuspended<T>({
-        clientIntention: ctx.userClientIntention,
-        schema: props.schema,
-        delayMS: 500,
-        filterModel: {
-            quickFilterValues: SplitQuickFilter(filterText),
-            items: [],
-        },
-    });
-
-    const renderChip = (option: T | null, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
-        if (!option) {
-            return <div key={-1}>(none)</div>;
+    const ssl = useDB3SingleSelectLogic({
+        ...props, onInsert: (newObj) => {
+            setSelectedOption(newObj);
+            props.onInsert && props.onInsert(newObj);
         }
-        const info = props.schema.getRowInfo(option);
+    }, selectedOption, filterText, "all");
+    type TX = typeof ssl.allOptionsX[0];
 
+    const allowQuickFilter = CoalesceBool(props.allowQuickFilter, true);
+
+    const renderChip = (x: TX, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
         return <CMChip
-            key={info.pk}
+            key={x.info.pk}
             onClick={onClick}
             onDelete={onDelete}
 
-            color={info.color}
+            color={x.info.color}
             shape={props.chipShape}
             size={props.chipSize}
-            variation={{ ...StandardVariationSpec.Strong, selected: selectedPk === info.pk }}
+            variation={{ ...StandardVariationSpec.Strong, selected: ssl.isSelected(x.info) }}
         >
-            {props.renderOption(option)}
+            {props.renderOption(x.option)}
         </CMChip>;
     };
-
-    const filterMatchesAnyItemsExactly = q.items.some(item => props.schema.doesItemExactlyMatchText(item!, filterText));
-
-    const onNewClicked = async () => {
-        try {
-            console.log(`on new clicked`);
-            const model = props.schema.createInsertModelFromString!(filterText) as T;
-            if (!model) throw new Error(`model couldn't be created`);
-            const newObj = await props.doInsert!(model);
-            snackbar.showMessage({ children: "created new success", severity: 'success' });
-            q.refetch();
-            setSelectedObj(newObj);
-        } catch (err) {
-            console.log(err);
-            snackbar.showMessage({ children: "create error", severity: 'error' });
-            q.refetch();
-        }
-    };
-
-    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ clientIntention: ctx.userClientIntention, publicData });
 
     return <ReactiveInputDialog onCancel={props.onCancel}>
         <DialogTitle>
             {props.title}
-            {q.isLoading && <CircularProgress />}
+            {ssl.isLoading && <CircularProgress />}
             <Box sx={{ p: 0 }}>
-                Selected: {selectedObj === undefined ? "<none>" : renderChip(selectedObj, undefined, () => setSelectedObj(null))}
+                Selected: {ssl.isNullSelected ? "<none>" : renderChip(ssl.selectedOptionX!, undefined, () => setSelectedOption(ssl.nullValue))}
             </Box>
         </DialogTitle>
         <DialogContent dividers>
@@ -118,22 +235,20 @@ export function DB3SingleSelectDialog<T extends (TAnyModel | null | undefined)>(
                 {props.description}
             </CMDialogContentText>
 
-            {allowQuickFilter &&
-                <Box>
-                    <SearchInput
-                        onChange={(v) => setFilterText(v)}
-                        value={filterText}
-                        autoFocus={true}
-                    />
-                </Box>
-            }
+            {allowQuickFilter && <Box>
+                <SearchInput
+                    onChange={(v) => setFilterText(v)}
+                    value={filterText}
+                    autoFocus={true}
+                />
+            </Box>}
 
             {
-                !!filterText.length && !filterMatchesAnyItemsExactly && allowInsertFromString && insertAuthorized && (
+                !!filterText.length && !ssl.filterMatchesAnyItemsExactly && ssl.allowInsertFromString && (
                     <Box><Button
                         size="small"
                         startIcon={gIconMap.Add()}
-                        onClick={onNewClicked}
+                        onClick={ssl.doInsert}
                     >
                         add {filterText}
                     </Button>
@@ -141,14 +256,15 @@ export function DB3SingleSelectDialog<T extends (TAnyModel | null | undefined)>(
                 )
             }
 
-            {q.items.length === 0 ? (
+            {ssl.allOptionsX.length === 0 ? (
                 <Box>Nothing here</Box>
             ) : (
                 <CMChipContainer orientation="vertical">
-                    {q.items.map(item => renderChip(item, () => {
-                        setSelectedObj(item);
-                        closeOnSelect && props.onOK(item);
-                    }, undefined)
+                    {ssl.allOptionsX.map(item =>
+                        renderChip(item, () => {
+                            setSelectedOption(item.option);
+                            closeOnSelect && props.onOK(item.option);
+                        }, undefined)
                     )}
                 </CMChipContainer>
             )}
@@ -156,12 +272,126 @@ export function DB3SingleSelectDialog<T extends (TAnyModel | null | undefined)>(
         </DialogContent>
         <DialogActions>
             <Button onClick={props.onCancel}>Cancel</Button>
-            <Button onClick={() => { props.onOK(selectedObj!); }} disabled={selectedObj === undefined}>OK</Button>
+            <Button onClick={() => { props.onOK(selectedOption as any); }} disabled={!ssl.allowNull && !selectedOption}>OK</Button>
         </DialogActions>
 
     </ReactiveInputDialog>
 }
 
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const useDB3MultiSelectLogic = <T extends TAnyModel,>(
+    props: {
+        schema: db3.xTable,
+        onInsert?: undefined | ((newObj: T) => void),
+        allowInsertFromString?: boolean | undefined;
+    },
+    selectedOptions: T[],
+    filterText: string,
+    fetchSet: "all" | "selected",
+) => {
+
+    type TX = {
+        option: T;
+        info: db3.RowInfo;
+    };
+
+    const ctx = useDashboardContext();
+    const snackbar = useSnackbar();
+    const publicData = useAuthenticatedSession();
+
+    const [allOptionsX, setAllOptionsX] = React.useState<TX[]>([]);
+
+    const makeTX = (option: T): TX => {
+        const info = props.schema.getRowInfo(option);
+        return {
+            option,
+            info,
+        };
+    };
+
+    const filterModel: CMDBTableFilterModel = {
+        items: [],
+        quickFilterValues: SplitQuickFilter(filterText || ""),
+    };
+
+    if (fetchSet === "selected") {
+        filterModel.pks = selectedOptions.map(o => o[props.schema.pkMember]);
+    }
+
+    const queryStatus = DB3Client.fetchUnsuspended<T>({
+        clientIntention: ctx.userClientIntention,
+        schema: props.schema,
+        filterModel,
+        delayMS: 500, // TODO: remove.
+    });
+
+    const [selectedOptionsX, setSelectedOptionsX] = React.useState<TX[]>([]);
+
+    React.useEffect(() => {
+        setAllOptionsX(queryStatus.items.map(option => makeTX(option)));
+        setSelectedOptionsX(selectedOptions.map(s => makeTX(s)));
+    }, [queryStatus.queryResult?.dataUpdatedAt, selectedOptions]);
+
+    const isSelected = (optionInfo: db3.RowInfo): boolean => {
+        return selectedOptionsX.some(sx => sx.info.pk === optionInfo.pk);
+    };
+
+    const toggleSelection = (x: TX): T[] => {
+        if (isSelected(x.info)) {
+            const ret = selectedOptionsX.filter(alreadySelected => alreadySelected.info.pk !== x.info.pk);
+            return ret.map(o => o.option);
+        }
+        const ret = [...selectedOptions, x.option];
+        return ret;
+    };
+
+    const insMutation = DB3Client.useInsertMutationClient(props.schema);
+    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ clientIntention: ctx.userClientIntention, publicData });
+    let allowInsertFromString = CoalesceBool(props.allowInsertFromString, true);
+    if (allowInsertFromString) {
+        if (!insertAuthorized) {
+            allowInsertFromString = false;
+            console.warn(`You want to insert from string, but not authorized to do so.`);
+        }
+        if (!props.schema.createInsertModelFromString) {
+            allowInsertFromString = false;
+            console.warn(`You want to insert from string, but the schema '${props.schema.tableID}' does not implement createInsertModelFromString.`);
+        }
+    }
+    const filterMatchesAnyItemsExactly = allOptionsX.some(item => props.schema.doesItemExactlyMatchText(item.option, filterText));
+
+    const doInsert = async () => {
+        try {
+            const model = props.schema.createInsertModelFromString!(filterText || "") as T;
+            if (!model) throw new Error(`model couldn't be created`);
+            const newObj = await insMutation.doInsertMutation(model) as T;
+            snackbar.showMessage({ children: "created new success", severity: 'success' });
+            props.onInsert && props.onInsert(newObj);
+            return newObj;
+        } catch (err) {
+            console.log(err);
+            snackbar.showMessage({ children: "create error", severity: 'error' });
+        } finally {
+            queryStatus.refetch();
+        }
+    };
+
+    return {
+        isSelected,
+        makeTX,
+        isLoading: queryStatus.isLoading,
+
+        allOptionsX,
+        selectedOptionsX,
+        queryStatus,
+        toggleSelection,
+        allowInsertFromString,
+        filterMatchesAnyItemsExactly,
+        doInsert,
+    };
+};
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -183,97 +413,49 @@ export interface DB3MultiSelectDialogProps<T extends TAnyModel> {
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    //doesItemExactlyMatchText?: (item: T, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
-    doInsert?: (model: NonNullable<T>) => Promise<NonNullable<T>>; // similar
+    onInsert?: undefined | ((newObj: T) => void);
 };
 
 
 export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectDialogProps<T>) {
-    const ctx = useDashboardContext();
-    const publicData = useAuthenticatedSession();
-    const getPk = (o: T): number => o[props.schema.pkMember] as number;
-    const snackbar = useSnackbar();
-
-    // if any of these are missing, allow insert from string will not be available.
-    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doInsert && props.schema.createInsertModelFromString;
-    const allowQuickFilter = CoalesceBool(props.allowQuickFilter, true);
 
     const [filterText, setFilterText] = React.useState("");
     const [selectedOptions, setSelectedOptions] = React.useState<T[]>(props.initialValues || []);
-    const selectedOptionIds = selectedOptions.map(o => getPk(o));
 
-    const q = DB3Client.fetchUnsuspended<T>({
-        clientIntention: ctx.userClientIntention,
-        schema: props.schema,
-        delayMS: 500,
-        filterModel: {
-            quickFilterValues: SplitQuickFilter(filterText),
-            items: [],
-        },
-    });
+    const msl = useDB3MultiSelectLogic({
+        ...props, onInsert: (newObj) => {
+            setSelectedOptions([...selectedOptions, newObj]);
+            props.onInsert && props.onInsert(newObj);
+        }
+    }, selectedOptions, filterText, "all");
+    type TX = typeof msl.allOptionsX[0];
 
-    const renderChip = (option: T, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
-        const info = props.schema.getRowInfo(option);
+
+    const renderChip = (x: TX) => {
         return (
             <CMChip
-                key={info.pk}
-                onClick={onClick}
-                onDelete={onDelete}
-                color={info.color}
-                tooltip={info.tooltip}
+                key={x.info.pk}
+                onClick={() => setSelectedOptions(msl.toggleSelection(x))}
+                color={x.info.color}
+                tooltip={x.info.tooltip}
                 shape={props.chipShape}
                 size={props.chipSize}
-                variation={{ ...StandardVariationSpec.Strong, selected: selectedOptionIds.includes(info.pk) }}
+                variation={{ ...StandardVariationSpec.Strong, selected: msl.isSelected(x.info) }}
             >
-                {props.renderOption(option)}
+                {props.renderOption(x.option)}
             </CMChip>
         );
     };
-
-    const isSelected = (x: T) => selectedOptionIds.includes(getPk(x));
-
-    const selectOption = (x: T) => {
-        setSelectedOptions([...selectedOptions, x]);
-    }
-
-    const deselectOption = (x: T) => {
-        const id = getPk(x);
-        setSelectedOptions(selectedOptions.filter(selOption => getPk(selOption) != id));
-    };
-
-    const toggleSelected = (x: T) => isSelected(x) ? deselectOption(x) : selectOption(x);
-
-    const filterMatchesAnyItemsExactly = q.items.some(item => props.schema.doesItemExactlyMatchText(item, filterText));
-
-    const onNewClicked = async () => {
-        try {
-            const model = props.schema.createInsertModelFromString!(filterText) as T;
-            if (!model) throw new Error(`model couldn't be created`);
-            const newObj = await props.doInsert!(model);
-
-            snackbar.showMessage({ children: "created new success", severity: 'success' });
-            q.refetch();
-            selectOption(newObj);
-        } catch (err) {
-            console.log(err);
-            snackbar.showMessage({ children: "create error", severity: 'error' });
-            q.refetch();
-        }
-    };
-
-    const insertAuthorized = props.schema.authorizeRowBeforeInsert({ clientIntention: ctx.userClientIntention, publicData });
 
     return (
         <ReactiveInputDialog onCancel={props.onCancel}>
             <DialogTitle>
                 {props.title}
-                {q.isLoading && <CircularProgress />}
+                {msl.isLoading && <CircularProgress />}
                 <Box sx={{ p: 0 }}>
-                    Selected: {selectedOptions.length === 0 ? "<none>" : (
+                    Selected: {msl.selectedOptionsX.length === 0 ? "<none>" : (
                         <CMChipContainer>
-                            {selectedOptions.map(option =>
-                                renderChip(option, undefined, () => deselectOption(option))
-                            )}
+                            {msl.selectedOptionsX.map(optionx => renderChip(optionx))}
                         </CMChipContainer>
                     )}
                 </Box>
@@ -283,22 +465,19 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
                     {props.description}
                 </CMDialogContentText>
 
-                {allowQuickFilter &&
-                    <Box>
-                        <SearchInput
-                            onChange={(v) => setFilterText(v)}
-                            value={filterText}
-                            autoFocus={true}
-                        />
-                    </Box>
-                }
-
+                <Box>
+                    <SearchInput
+                        onChange={(v) => setFilterText(v)}
+                        value={filterText}
+                        autoFocus={true}
+                    />
+                </Box>
                 {
-                    !!filterText.length && !filterMatchesAnyItemsExactly && allowInsertFromString && insertAuthorized && (
+                    !!filterText.length && !msl.filterMatchesAnyItemsExactly && msl.allowInsertFromString && (
                         <Box><Button
                             size="small"
                             startIcon={gIconMap.Add()}
-                            onClick={onNewClicked}
+                            onClick={msl.doInsert}
                         >
                             add {filterText}
                         </Button>
@@ -306,13 +485,11 @@ export function DB3MultiSelectDialog<T extends TAnyModel>(props: DB3MultiSelectD
                     )
                 }
 
-                {q.items.length === 0 ? (
+                {msl.allOptionsX.length === 0 ? (
                     <Box>Nothing here</Box>
                 ) : (
                     <CMChipContainer orientation="vertical">
-                        {q.items.map(item =>
-                            renderChip(item, () => toggleSelected(item), undefined)
-                        )}
+                        {msl.allOptionsX.map(x => renderChip(x))}
                     </CMChipContainer>
                 )}
             </DialogContent>

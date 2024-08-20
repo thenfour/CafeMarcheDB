@@ -7,33 +7,33 @@
 // <DB3MultiSelect> + <DB3MultiSelectDialog>
 import React from "react";
 
-import { StandardVariationSpec } from "shared/color";
 import { CircularProgress } from "@mui/material";
-import * as db3 from "src/core/db3/db3";
-import { useDashboardContext } from "src/core/components/DashboardContext";
-import * as DB3Client from "src/core/db3/DB3Client";
+import { StandardVariationSpec } from "shared/color";
+import { CoalesceBool } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
-import { CMSelectEditStyle, CMSelectValueDisplayStyle } from "src/core/components/CMSelect";
 import { CMSmallButton } from "src/core/components/CMCoreComponents2";
+import { CMSelectDisplayStyle } from "src/core/components/CMSelect";
+import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import * as db3 from "src/core/db3/db3";
 import { TAnyModel } from "../shared/apiTypes";
-import { DB3MultiSelectDialog, DB3SingleSelectDialog } from "./db3SelectDialog";
+import { DB3MultiSelectDialog, DB3SingleSelectDialog, useDB3MultiSelectLogic, useDB3SingleSelectLogic } from "./db3SelectDialog";
 
-
+type Tnull = undefined | null;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface Db3SingleSelectProps<Toption extends (TAnyModel | null | undefined)> {
+interface Db3SingleSelectBaseProps<Toption extends TAnyModel> {
     schema: db3.xTable,
 
-    value: Toption;
-    onChange: (optionIds: Toption) => void;
+    value: Toption | Tnull;
+    onChange: (optionIds: Toption | Tnull) => void;
+
     renderOption: (item: Toption) => React.ReactNode;
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
 
-    valueDisplayStyle?: CMSelectValueDisplayStyle;
-    editStyle?: CMSelectEditStyle; // another possibility would be inline-autocomplete vs. inline-dialog
     readonly?: boolean;
+    displayStyle?: CMSelectDisplayStyle | undefined;
 
     editButtonChildren?: React.ReactNode;
     dialogTitle?: React.ReactNode;
@@ -41,96 +41,113 @@ interface Db3SingleSelectProps<Toption extends (TAnyModel | null | undefined)> {
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    doInsert?: (model: NonNullable<Toption>) => Promise<NonNullable<Toption>>;
+    onInsert?: undefined | ((newObj: Toption) => void);
 };
 
+interface Db3SingleSelectPropsNotAllowingNull<Toption extends TAnyModel> extends Db3SingleSelectBaseProps<Toption> {
+    nullBehavior?: CMSelectNullBehavior.NonNullable | undefined;
+    value: Toption;
+    onChange: (option: Toption) => void;
+}
+
+interface Db3SingleSelectPropsAllowingNull<Toption extends TAnyModel> extends Db3SingleSelectBaseProps<Toption> {
+    nullBehavior: CMSelectNullBehavior.AllowNull;
+    value: Toption | null;
+    onChange: (option: Toption | null) => void;
+}
+
+interface Db3SingleSelectPropsAllowingUndefined<Toption extends TAnyModel> extends Db3SingleSelectBaseProps<Toption> {
+    nullBehavior: CMSelectNullBehavior.AllowUndefined;
+    value: Toption | undefined;
+    onChange: (option: Toption | undefined) => void;
+}
+
+type Db3SingleSelectProps<Toption extends TAnyModel> =
+    | Db3SingleSelectPropsNotAllowingNull<Toption>
+    | Db3SingleSelectPropsAllowingNull<Toption>
+    | Db3SingleSelectPropsAllowingUndefined<Toption>;
 
 // the other <SingleSelect> operates on immediate, or Promise options.
 // Blitz queries require the use of a hook (useQuery), which can't be adapted to that usage.
 // - adaptation is not possible because the hook must be called at the function level, while promises would be called from arbitrary locations.
 // - hook is required because 1) that's just how blitz is designed, 2) makes sense for query caching etc.
 // so here we will use the db3 query system via the hook
-export const DB3SingleSelect = <Toption extends (TAnyModel | null | undefined),>(props: Db3SingleSelectProps<Toption>) => {
-    const valueDisplayStyle = props.valueDisplayStyle || CMSelectValueDisplayStyle.all;
-    const editStyle = props.editStyle || CMSelectEditStyle.inlineWithDialog;
-    const ctx = useDashboardContext();
+export const DB3SingleSelect = <Toption extends TAnyModel,>(props: Db3SingleSelectProps<Toption>) => {
+    const displayStyle = props.displayStyle || CMSelectDisplayStyle.AllWithInlineEditing;
+    const allowQuickFilter = CoalesceBool(props.allowQuickFilter, true);
+    const nullBehavior = CoalesceBool(props.nullBehavior, CMSelectNullBehavior.NonNullable);
+
+    const ssl = useDB3SingleSelectLogic(props, props.value, "", displayStyle === CMSelectDisplayStyle.SelectedWithDialog ? "selected" : "all");
+    type TX = typeof ssl.allOptionsX[0];
 
     const [singleSelectDialogOpen, setSingleSelectDialogOpen] = React.useState(false);
-    const hasSelection = !!props.value;
-    const selectedInfo = hasSelection ? props.schema.getRowInfo(props.value!) : undefined;
 
-    //                  hasselection  noselection
-    // view all         all             all
-    // view selected    selected         none
-    const q = DB3Client.fetchUnsuspended<Toption>({
-        clientIntention: ctx.userClientIntention,
-        schema: props.schema,
-        filterModel: valueDisplayStyle === CMSelectValueDisplayStyle.all ? undefined : {
-            items: [],
-            pks: hasSelection ? [selectedInfo!.pk] : undefined,
-        },
-        delayMS: 500,
-    });
-
-    const renderChips = () => {
-        return q.items.map(option => {
-            if (!option) {
-                return <>(none)</>;
-            }
-            const valueInfo = props.schema.getRowInfo(option);
-            return <CMChip
-                key={valueInfo.pk}
-                size={props.chipSize || "small"}
-                shape={props.chipShape || "rectangle"}
-                color={valueInfo.color}
-                variation={{ ...StandardVariationSpec.Strong, selected: valueInfo.pk === selectedInfo?.pk }}
-                onClick={!props.readonly ? () => props.onChange(option) : undefined}
-            >
-                {props.renderOption(option)}
-            </CMChip>
-        });
+    const editable = !props.readonly;
+    const openDialog = () => (editable ? () => setSingleSelectDialogOpen(true) : undefined);
+    const toggleSelect = (optionX: TX) => {
+        if (!editable) return undefined;
+        if (ssl.isSelected(optionX.info) && ssl.allowNull) {
+            return () => props.onChange(ssl.nullValue as any);
+        }
+        return () => props.onChange(optionX.option);
     };
 
-    const renderSelectedChip = () => {
-        if (!props.value) {
-            return "<none>";
-        }
-        const valueInfo = props.schema.getRowInfo(props.value);
-        return (
+    const renderChips = (chips: TX[],
+        onClick: (optionX: TX) => (() => void) | undefined) => {
+        return chips.map(optionx => (
             <CMChip
-                key={valueInfo.pk}
+                key={optionx.info.pk}
                 size={props.chipSize || "small"}
                 shape={props.chipShape || "rectangle"}
-                color={valueInfo.color}
+                color={optionx.info.color}
+                variation={{ ...StandardVariationSpec.Strong, selected: ssl.isSelected(optionx.info) }}
+                onClick={onClick(optionx)}
             >
-                {props.renderOption(props.value)}
+                {props.renderOption(optionx.option)}
             </CMChip>
-        );
+        ));
+    };
+
+    const renderNull = (onClick: () => (() => void) | undefined) => {
+        return <CMChip
+            size={props.chipSize || "small"}
+            shape={props.chipShape || "rectangle"}
+            variation={{ ...StandardVariationSpec.Strong, selected: ssl.isNullSelected }}
+            onClick={onClick()}
+        >
+            {"<null>"}
+        </CMChip>
     };
 
     return (
         <div className="CMSingleSelect">
             <CMChipContainer>
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.all && editStyle === CMSelectEditStyle.inlineWithDialog) && (
+                {(displayStyle === CMSelectDisplayStyle.AllWithInlineEditing) && (
                     <>
-                        {renderChips()}
+                        {renderChips(ssl.allOptionsX, toggleSelect)}
                         {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
                     </>
                 )}
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.selected && editStyle === CMSelectEditStyle.inlineWithDialog) && (
+                {(displayStyle === CMSelectDisplayStyle.AllWithDialog) && (
                     <>
-                        {renderSelectedChip()}
-                        {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
+                        {renderChips(ssl.allOptionsX, openDialog)}
                     </>
                 )}
-                {q.queryResult?.isLoading && <CircularProgress size={16} />}
+                {(displayStyle === CMSelectDisplayStyle.SelectedWithDialog) && (
+                    <>
+                        {ssl.isNullSelected ? renderNull(openDialog) : renderChips([ssl.selectedOptionX!], openDialog)}
+                    </>
+                )}
+                {ssl.isLoading && <CircularProgress size={16} />}
+
             </CMChipContainer>
             {singleSelectDialogOpen && (
                 <DB3SingleSelectDialog
+                    nullBehavior={nullBehavior}
                     schema={props.schema}
                     renderOption={props.renderOption}
                     onCancel={() => setSingleSelectDialogOpen(false)}
-                    onOK={option => {
+                    onOK={(option) => {
                         props.onChange(option);
                         setSingleSelectDialogOpen(false);
                     }}
@@ -138,20 +155,17 @@ export const DB3SingleSelect = <Toption extends (TAnyModel | null | undefined),>
                     title={props.dialogTitle || "Select"}
                     description={props.dialogDescription || ""}
 
-                    allowQuickFilter={props.allowQuickFilter}
+                    allowQuickFilter={allowQuickFilter}
                     allowInsertFromString={props.allowInsertFromString}
-                    doInsert={props.doInsert ? (async (args) => {
-                        const r = await props.doInsert!(args);
-                        q.refetch();
-                        return r;
-                    }) : undefined}
+                    onInsert={(obj: Toption) => {
+                        ssl.queryStatus.refetch();
+                        props.onInsert && props.onInsert(obj);
+                    }}
                 />
             )}
         </div>
     );
 };
-
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // "dialog" style shows the selected options, and a button to open a dialog
@@ -166,9 +180,8 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
 
-    valueDisplayStyle?: CMSelectValueDisplayStyle;
-    editStyle?: CMSelectEditStyle; // another possibility would be inline-autocomplete vs. inline-dialog
     readonly?: boolean;
+    displayStyle?: CMSelectDisplayStyle | undefined;
 
     editButtonChildren?: React.ReactNode;
     dialogTitle?: React.ReactNode;
@@ -176,86 +189,58 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
 
     allowQuickFilter?: boolean;
     allowInsertFromString?: boolean | undefined;
-    doInsert?: (model: NonNullable<Toption>) => Promise<NonNullable<Toption>>; // similar
+    onInsert?: undefined | ((newObj: Toption) => void);
 };
 
 
 export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelectProps<Toption>) => {
+    const displayStyle = props.displayStyle || CMSelectDisplayStyle.AllWithInlineEditing;
     const [multiEditDialogOpen, setMultiEditDialogOpen] = React.useState(false);
-    const valueDisplayStyle = props.valueDisplayStyle || CMSelectValueDisplayStyle.all;
-    const editStyle = props.editStyle || CMSelectEditStyle.inlineWithDialog;
-    const ctx = useDashboardContext();
 
-    const getPk = (o: Toption): number => o[props.schema.pkMember] as number;
-    const selectedOptionIds = props.value.map(o => getPk(o));
-    const isSelected = (x: Toption) => selectedOptionIds.includes(getPk(x));
+    const msl = useDB3MultiSelectLogic(props, props.value, "", displayStyle === CMSelectDisplayStyle.SelectedWithDialog ? "selected" : "all");
+    type TX = typeof msl.allOptionsX[0];
 
-    const toggleSelection = (option: Toption) => {
-        if (isSelected(option)) {
-            // remove it.
-            const id = getPk(option);
-            props.onChange(props.value.filter(selOpt => getPk(selOpt) !== id));
-        } else {
-            props.onChange([...props.value, option]);
+    const renderChips = (optionsX: TX[]) => optionsX.map(optionX => {
+        let clickHandler: any = undefined;
+        if (!props.readonly) {
+            if (displayStyle === CMSelectDisplayStyle.AllWithInlineEditing) {
+                clickHandler = () => props.onChange(msl.toggleSelection(optionX));
+            } else {
+                clickHandler = () => setMultiEditDialogOpen(true);
+            }
         }
-    };
-
-    // view all         all         
-    // view selected    selected    
-    const q = DB3Client.fetchUnsuspended<Toption>({
-        clientIntention: ctx.userClientIntention,
-        schema: props.schema,
-        filterModel: valueDisplayStyle === CMSelectValueDisplayStyle.all ? undefined : {
-            items: [],
-            pks: props.value.map(v => getPk(v)),
-        },
-        delayMS: 500,
-    });
-
-    const renderChips = () => q.items.map(option => {
-        const info = props.schema.getRowInfo(option);
         return <CMChip
-            key={info.pk}
+            key={optionX.info.pk}
             size={props.chipSize || "small"}
             shape={props.chipShape || "rectangle"}
-            color={info.color}
-            tooltip={info.tooltip}
-            variation={{ ...StandardVariationSpec.Strong, selected: isSelected(option) }}
-            onClick={!props.readonly ? () => toggleSelection(option) : undefined}
+            color={optionX.info.color}
+            variation={{ ...StandardVariationSpec.Strong, selected: msl.isSelected(optionX.info) }}
+            onClick={clickHandler}
         >
-            {props.renderOption(option)}
+            {props.renderOption(optionX.option)}
         </CMChip>
     });
 
-    const renderSelectedChips = () => props.value.map(option => {
-        const info = props.schema.getRowInfo(option);
-        return (
-            <CMChip
-                key={info.pk}
-                size={props.chipSize || "small"}
-                shape={props.chipShape || "rectangle"}
-                color={info.color}
-                tooltip={info.tooltip}
-                onDelete={!props.readonly ? () => toggleSelection(option) : undefined}
-            >
-                {props.renderOption(option)}
-            </CMChip>
-        );
-    });
-
     const handleDialog = () => setMultiEditDialogOpen(!multiEditDialogOpen);
+    const noneSelected = msl.selectedOptionsX.length === 0;
 
     return (
         <div className="CMMultiSelect">
             <CMChipContainer>
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.all) && renderChips()}
-                {(valueDisplayStyle === CMSelectValueDisplayStyle.selected) && renderSelectedChips()}
-                {!props.readonly && (
-                    <CMSmallButton onClick={handleDialog}>
-                        {editStyle === CMSelectEditStyle.dialog ? "Change..." : "+ Add"}
-                    </CMSmallButton>
-                )}
-                {q.isLoading && <CircularProgress size={16} />}
+
+                {displayStyle === CMSelectDisplayStyle.SelectedWithDialog && <>
+                    {renderChips(msl.selectedOptionsX)}
+                    {!props.readonly && noneSelected && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                </>}
+                {displayStyle === CMSelectDisplayStyle.AllWithDialog && <>
+                    {renderChips(msl.allOptionsX)}
+                    {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                </>}
+                {displayStyle === CMSelectDisplayStyle.AllWithInlineEditing && <>
+                    {renderChips(msl.allOptionsX)}
+                    {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                </>}
+                {msl.isLoading && <CircularProgress size={16} />}
             </CMChipContainer>
             {multiEditDialogOpen && (
                 <DB3MultiSelectDialog
@@ -272,14 +257,12 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
 
                     allowQuickFilter={props.allowQuickFilter}
                     allowInsertFromString={props.allowInsertFromString}
-                    doInsert={props.doInsert ? (async (args) => {
-                        const r = await props.doInsert!(args);
-                        q.refetch();
-                        return r;
-                    }) : undefined}
+                    onInsert={(obj: Toption) => {
+                        msl.queryStatus.refetch();
+                        props.onInsert && props.onInsert(obj);
+                    }}
                 />
             )}
         </div>
     );
 };
-
