@@ -5,7 +5,8 @@ import React from "react";
 import { gGeneralPaletteList, gSwatchColors } from "shared/color";
 import { sleep } from "shared/utils";
 import { CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
-import { CMMultiSelect, CMSelectEditStyle, CMSelectValueDisplayStyle, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/CMSelect";
+import { CMMultiSelect, CMSelectDisplayStyle, CMSelectEditStyle, CMSelectValueDisplayStyle, CMSingleSelect, StringArrayOptionsProvider } from "src/core/components/CMSelect";
+import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { ColorPick } from "src/core/components/Color";
 import { DB3MultiSelect, DB3SingleSelect } from "src/core/db3/components/db3Select";
 import * as db3 from "src/core/db3/db3";
@@ -16,8 +17,9 @@ type Dataset = "numbers";
 
 interface ChipOptions {
     readonly: boolean;
-    editStyle: CMSelectEditStyle;
-    valueDisplayStyle: CMSelectValueDisplayStyle;
+    //editStyle: CMSelectEditStyle;
+    //valueDisplayStyle: CMSelectValueDisplayStyle;
+    displayStyle: CMSelectDisplayStyle;
 
     size: CMChipSizeOptions;
     shape: CMChipShapeOptions;
@@ -52,7 +54,12 @@ const ChipOptionMgr = (props: ChipOptionMgrProps) => {
             onChange={(x) => props.setValue({ ...props.value, readonly: x === "Readonly" })}
             {...StringArrayOptionsProvider(["Readonly", "Editable"])}
         />
-        <CMSingleSelect<CMSelectEditStyle>
+        <CMSingleSelect<CMSelectDisplayStyle>
+            value={props.value.displayStyle}
+            onChange={(x) => props.setValue({ ...props.value, displayStyle: x })}
+            {...StringArrayOptionsProvider<CMSelectDisplayStyle>([CMSelectDisplayStyle.SelectedWithDialog, CMSelectDisplayStyle.AllWithDialog, CMSelectDisplayStyle.AllWithInlineEditing])}
+        />
+        {/* <CMSingleSelect<CMSelectEditStyle>
             value={props.value.editStyle}
             onChange={(x) => props.setValue({ ...props.value, editStyle: x })}
             {...StringArrayOptionsProvider<CMSelectEditStyle>([CMSelectEditStyle.dialog, CMSelectEditStyle.inlineWithDialog])}
@@ -61,7 +68,7 @@ const ChipOptionMgr = (props: ChipOptionMgrProps) => {
             value={props.value.valueDisplayStyle}
             onChange={(x) => props.setValue({ ...props.value, valueDisplayStyle: x })}
             {...StringArrayOptionsProvider([CMSelectValueDisplayStyle.all, CMSelectValueDisplayStyle.selected])}
-        />
+        /> */}
     </div>
 };
 
@@ -72,8 +79,9 @@ const MultiSelectTest = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        //editStyle: CMSelectEditStyle.inlineWithDialog,
+        //valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
     });
 
     // if optionCount changes, or dataSet changes, make a new `options`
@@ -86,8 +94,8 @@ const MultiSelectTest = () => {
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMMultiSelect
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+                //valueDisplayStyle={chipOptions.valueDisplayStyle}
+                //editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}
@@ -115,8 +123,9 @@ const SingleSelectTest = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+        // editStyle: CMSelectEditStyle.inlineWithDialog,
+        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
@@ -124,17 +133,18 @@ const SingleSelectTest = () => {
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<number>
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+                displayStyle={chipOptions.displayStyle}
+                //valueDisplayStyle={chipOptions.valueDisplayStyle}
+                //editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => [1, 2, 4, 6, 8, 0]}
-                renderOption={opt => <>{opt}</>}
+                renderOption={opt => opt}
                 getOptionById={opt => options.find(x => x === opt)!}
                 getOptionInfo={opt => ({
                     id: opt,
-                    color: gSwatchColors.blue,
+                    color: chipOptions.color,
                 })}
                 value={selected}
                 onChange={v => setSelected(v)}
@@ -144,15 +154,16 @@ const SingleSelectTest = () => {
 };
 
 const SingleSelectNullableTest = () => {
-    const [selected, setSelected] = React.useState<number | undefined>();
-    const [options, setOptions] = React.useState<(number | undefined)[]>([undefined, 1, 2, 4, 6, 8, 0]);
+    const [selected, setSelected] = React.useState<number | null>(null);
+    const [options, setOptions] = React.useState<(number | null)[]>([null, 1, 2, 4, 6, 8, 0]);
     const [chipOptions, setChipOptions] = React.useState<ChipOptions>({
         color: null,
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+        // editStyle: CMSelectEditStyle.inlineWithDialog,
+        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
 
@@ -160,21 +171,27 @@ const SingleSelectNullableTest = () => {
         <h3>Single select with null</h3>
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
-            <CMSingleSelect<number | undefined>
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+            <CMSingleSelect<number>
+                nullBehavior={CMSelectNullBehavior.AllowNull}
+                displayStyle={chipOptions.displayStyle}
+                // valueDisplayStyle={chipOptions.valueDisplayStyle}
+                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => [1, 2, 4, 6, 8, 0]}
-                renderOption={opt => <>{opt || "<null>"}</>}
+                renderOption={opt => opt}
                 getOptionById={opt => options.find(x => x === opt)!}
                 getOptionInfo={opt => ({
-                    id: opt || -1,
-                    color: gSwatchColors.blue,
+                    id: opt,
+                    color: chipOptions.color,
                 })}
                 value={selected}
-                onChange={v => setSelected(v)}
+                onChange={v => {
+                    setSelected(v);
+                    console.log(`set selectionto `);
+                    console.log(v);
+                }}
             />
         </div>
     </div>;
@@ -197,8 +214,9 @@ const SingleSelectAsyncTest = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+        // editStyle: CMSelectEditStyle.inlineWithDialog,
+        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
@@ -206,23 +224,24 @@ const SingleSelectAsyncTest = () => {
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<number>
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+                displayStyle={chipOptions.displayStyle}
+                // valueDisplayStyle={chipOptions.valueDisplayStyle}
+                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
                 getOptions={(args) => getOptionsAsync()}
-                renderOption={opt => <>{opt || "<null>"}</>}
+                renderOption={opt => opt}
                 getOptionById={getOptionByIdAsync}// opt => options.find(x => x === opt)!}
                 getOptionInfo={opt => ({
-                    id: opt || -1,
-                    color: gSwatchColors.blue,
+                    id: opt,
+                    color: chipOptions.color,
                 })}
                 value={selected}
                 onChange={v => setSelected(v)}
             />
         </div>
-    </div>;
+    </div >;
 };
 
 
@@ -244,8 +263,9 @@ const SelectSingleFetchTest = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+        // editStyle: CMSelectEditStyle.inlineWithDialog,
+        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
@@ -253,8 +273,9 @@ const SelectSingleFetchTest = () => {
         <ChipOptionMgr value={chipOptions} setValue={x => setChipOptions(x)} />
         <div style={{ padding: "20px", backgroundColor: "white", maxWidth: "600px" }}>
             <CMSingleSelect<TypicodeUser | undefined>
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+                displayStyle={chipOptions.displayStyle}
+                // valueDisplayStyle={chipOptions.valueDisplayStyle}
+                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipShape={chipOptions.shape}
                 chipSize={chipOptions.size}
@@ -281,8 +302,9 @@ const DB3SingleSelectTest = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+        // editStyle: CMSelectEditStyle.inlineWithDialog,
+        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
@@ -295,8 +317,8 @@ const DB3SingleSelectTest = () => {
                 renderOption={value => !value ? "<none>" : <>{value.name}</>}
                 schema={db3.xInstrument}
 
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+                // valueDisplayStyle={chipOptions.valueDisplayStyle}
+                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}
@@ -313,8 +335,9 @@ const DB3MultiSelectTest = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+        // editStyle: CMSelectEditStyle.inlineWithDialog,
+        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     return <div style={{ border: "2px solid blue", margin: "10px 0" }}>
@@ -327,8 +350,8 @@ const DB3MultiSelectTest = () => {
                 renderOption={value => <>{value.name}</>}
                 schema={db3.xInstrument}
 
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+                // valueDisplayStyle={chipOptions.valueDisplayStyle}
+                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}
@@ -344,8 +367,9 @@ const DB3SingleSelectTestWithAddNew = () => {
         size: "big",
         shape: "rectangle",
         readonly: false,
-        editStyle: CMSelectEditStyle.inlineWithDialog,
-        valueDisplayStyle: CMSelectValueDisplayStyle.all,
+        displayStyle: CMSelectDisplayStyle.AllWithDialog,
+        // editStyle: CMSelectEditStyle.inlineWithDialog,
+        // valueDisplayStyle: CMSelectValueDisplayStyle.all,
     });
 
     const insMutation = useInsertMutationClient(db3.xInstrumentFunctionalGroup);
@@ -360,8 +384,8 @@ const DB3SingleSelectTestWithAddNew = () => {
                 renderOption={value => !value ? "<none>" : <>{value.name}</>}
                 schema={db3.xInstrumentFunctionalGroup}
 
-                valueDisplayStyle={chipOptions.valueDisplayStyle}
-                editStyle={chipOptions.editStyle}
+                // valueDisplayStyle={chipOptions.valueDisplayStyle}
+                // editStyle={chipOptions.editStyle}
                 readonly={chipOptions.readonly}
                 chipSize={chipOptions.size}
                 chipShape={chipOptions.shape}

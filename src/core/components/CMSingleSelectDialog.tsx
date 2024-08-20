@@ -11,6 +11,14 @@ import { SearchInput } from "./CMTextField";
 import { useSnackbar } from "./SnackbarContext";
 import { gIconMap } from "../db3/components/IconMap";
 
+export enum CMSelectNullBehavior {
+    NonNullable = "NonNullable",
+    AllowNull = "AllowNull",
+    AllowUndefined = "AllowUndefined",
+};
+
+type Tnull = undefined | null;
+
 type Tid = number | string;
 
 interface ItemInfo {
@@ -19,8 +27,9 @@ interface ItemInfo {
     tooltip?: string | undefined;
 };
 
-export interface CMSingleSelectDialogProps<T> {
-    onOK: (value: T) => void;
+export interface CMSingleSelectDialogBaseProps<T> {
+    value?: T | Tnull;
+    onOK: (value: T | Tnull) => void;
     onCancel: () => void;
     title: React.ReactNode;
     description: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
@@ -29,8 +38,6 @@ export interface CMSingleSelectDialogProps<T> {
     getOptionInfo: (item: T) => ItemInfo;
     getOptionById: (id: Tid) => T | Promise<T>;
     renderOption: (value: T) => React.ReactNode;
-
-    value?: T | undefined;
 
     closeOnSelect?: boolean;
 
@@ -43,24 +50,83 @@ export interface CMSingleSelectDialogProps<T> {
     doInsertFromString?: (userInput: string) => Promise<T>; // similar
 };
 
-export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
-    const snackbar = useSnackbar();
-    const [filterText, setFilterText] = React.useState("");
-    const [selectedObjId, setSelectedObjId] = React.useState<Tid | undefined>(() => props.value === undefined ? undefined : props.getOptionInfo(props.value).id);
-    const [isLoading, setIsLoading] = React.useState<boolean>(true);
-    const [items, setItems] = React.useState<T[]>([]);
-    const [selectedObj, setSelectedObj] = React.useState<T | undefined>(undefined);
+interface CMSingleSelectDialogBasePropsNotAllowingNull<Toption> extends CMSingleSelectDialogBaseProps<Toption> {
+    nullBehavior?: CMSelectNullBehavior.NonNullable | undefined;
+    value?: Toption;
+    onOK: (value: Toption) => void;
+}
 
-    // if any of these are missing, allow insert from string will not be available.
-    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doesItemExactlyMatchText && props.doInsertFromString;
+interface CMSingleSelectDialogBasePropsAllowingNull<Toption> extends CMSingleSelectDialogBaseProps<Toption> {
+    nullBehavior: CMSelectNullBehavior.AllowNull;
+    value?: Toption | null;
+    onOK: (value: Toption | null) => void;
+}
+
+interface CMSingleSelectDialogBasePropsAllowingUndefined<Toption> extends CMSingleSelectDialogBaseProps<Toption> {
+    nullBehavior: CMSelectNullBehavior.AllowUndefined;
+    value?: Toption | undefined;
+    onOK: (value: Toption | undefined) => void;
+}
+
+type CMSingleSelectDialogProps<Toption> =
+    | CMSingleSelectDialogBasePropsNotAllowingNull<Toption>
+    | CMSingleSelectDialogBasePropsAllowingNull<Toption>
+    | CMSingleSelectDialogBasePropsAllowingUndefined<Toption>;
+
+export const useSingleSelectLogic = <T,>(props: {
+    nullBehavior?: CMSelectNullBehavior | undefined,
+    getOptionInfo: (item: T) => ItemInfo
+    getOptions: (args: { quickFilter: string | undefined }) => Promise<T[]> | T[];
+}, selectedValue: T | undefined | null) => {
+    const [allOptions, setAllOptions] = React.useState<TX[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    const { allowNull, nullValue } = {
+        [CMSelectNullBehavior.NonNullable]: {
+            allowNull: false,
+            nullValue: undefined,
+        },
+        [CMSelectNullBehavior.AllowNull]: {
+            allowNull: true,
+            nullValue: null,
+        },
+        [CMSelectNullBehavior.AllowUndefined]: {
+            allowNull: true,
+            nullValue: undefined,
+        }
+    }[props.nullBehavior || CMSelectNullBehavior.NonNullable];
+
+    const isNullSelected = (allowNull && !selectedValue); // not necessary to strictly check null vs undefined. allow it.
+    const selectedItemInfo = isNullSelected ? undefined : props.getOptionInfo(selectedValue!);
+
+    const isSelected = (optionInfo: ItemInfo): boolean => {
+        return !isNullSelected && optionInfo.id === selectedItemInfo!.id;
+    };
+
+    type TX = {
+        option: T;
+        info: ItemInfo;
+        selected: boolean;
+    };
+
+    const makeTX = (option: T): TX => {
+        const info = props.getOptionInfo(option);
+        return {
+            option,
+            info,
+            selected: isSelected(info),
+        };
+    };
 
     React.useEffect(() => {
-        const fetchItems = async () => {
+        const fetchOptions = async () => {
             setIsLoading(true);
             try {
-                const options = props.getOptions({ quickFilter: undefined });
-                const resolvedOptions = options instanceof Promise ? await options : options;
-                setItems(resolvedOptions);
+                const options = await (props.getOptions({ quickFilter: undefined }) instanceof Promise
+                    ? props.getOptions({ quickFilter: undefined })
+                    : Promise.resolve(props.getOptions({ quickFilter: undefined })));
+                const processedOptions: TX[] = options.map(option => makeTX(option));
+                setAllOptions(processedOptions);
             } catch (error) {
                 console.error("Error fetching options:", error);
             } finally {
@@ -68,40 +134,38 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
             }
         };
 
-        void fetchItems();
-    }, [props.getOptions]);
+        void fetchOptions();
+    }, [props.getOptions, selectedValue, props.getOptionInfo]);
 
-    const itemsWithInfo = items.map(v => ({
-        option: v,
-        info: props.getOptionInfo(v),
-    }));
+    return {
+        allowNull,
+        nullValue,
+        isNullSelected,
+        selectedItemInfo,
+        isSelected,
+        makeTX,
+        isLoading,
+        allOptions,
+        selectedOptionX: isNullSelected ? undefined : {
+            option: selectedValue!,
+            info: selectedItemInfo!,
+            selected: true,
+        },
+    };
+};
 
-    React.useEffect(() => {
-        const fetchSelectedObj = async () => {
-            if (selectedObjId === undefined) {
-                setSelectedObj(undefined);
-                return;
-            }
 
-            setIsLoading(true);
-            try {
-                const result = props.getOptionById(selectedObjId);
-                const resolvedResult = result instanceof Promise ? await result : result;
-                setSelectedObj(resolvedResult);
-            } catch (error) {
-                console.error("Error fetching selected option:", error);
-                setSelectedObj(undefined);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
+    const snackbar = useSnackbar();
+    const [filterText, setFilterText] = React.useState("");
+    const [selectedOption, setSelectedOption] = React.useState<T | Tnull>(props.value); // this is a modal dialog to select an item so on first open, even without nullable behavior, nulls can be specified.
 
-        void fetchSelectedObj();
-    }, [selectedObjId, props.getOptionById]);
+    // if any of these are missing, allow insert from string will not be available.
+    const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doesItemExactlyMatchText && props.doInsertFromString;
 
     const closeOnSelect = CoalesceBool(props.closeOnSelect, true);
 
-    const selectedObjInfo = selectedObj === undefined ? undefined : props.getOptionInfo(selectedObj);
+    const ssl = useSingleSelectLogic(props, selectedOption);
 
     const renderChip = (key: Tid, option: T, info: ItemInfo, onClick: (() => void) | undefined, onDelete: (() => void) | undefined) => {
         return <CMChip
@@ -113,19 +177,19 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
             tooltip={info.tooltip}
             shape={props.chipShape}
             size={props.chipSize}
-            variation={{ ...StandardVariationSpec.Strong, selected: selectedObjId === info.id }}
+            variation={{ ...StandardVariationSpec.Strong, selected: ssl.isSelected(info) }}
         >
             {props.renderOption(option)}
         </CMChip>;
     };
 
-    const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && items.some(item => props.doesItemExactlyMatchText!(item, filterText));
+    const filterMatchesAnyItemsExactly = props.doesItemExactlyMatchText && ssl.allOptions.some(item => props.doesItemExactlyMatchText!(item.option, filterText));
 
     const onNewClicked = async () => {
         try {
             const newObj = await props.doInsertFromString!(filterText);
             snackbar.showMessage({ children: "created new success", severity: 'success' });
-            setSelectedObj(newObj);
+            setSelectedOption(newObj);
         } catch (err) {
             console.log(err);
             snackbar.showMessage({ children: "create error", severity: 'error' });
@@ -135,9 +199,9 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
     return <ReactiveInputDialog onCancel={props.onCancel}>
         <DialogTitle>
             {props.title}
-            {isLoading && <CircularProgress />}
+            {ssl.isLoading && <CircularProgress />}
             <Box sx={{ p: 0 }}>
-                Selected: {selectedObj === undefined ? "<none>" : renderChip(0, selectedObj, selectedObjInfo!, undefined, () => setSelectedObjId(undefined))}
+                Selected: {ssl.isNullSelected ? "<none>" : renderChip(0, selectedOption!, ssl.selectedItemInfo!, undefined, () => setSelectedOption(ssl.nullValue))}
             </Box>
         </DialogTitle>
         <DialogContent dividers>
@@ -166,13 +230,13 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
                 )
             }
 
-            {items.length === 0 ? (
+            {ssl.allOptions.length === 0 ? (
                 <Box>Nothing here</Box>
             ) : (
                 <CMChipContainer orientation="vertical">
-                    {itemsWithInfo.map(item =>
+                    {ssl.allOptions.map(item =>
                         renderChip(item.info.id, item.option, item.info, () => {
-                            setSelectedObjId(item.info.id);
+                            setSelectedOption(item.option);
                             closeOnSelect && props.onOK(item.option);
                         }, undefined)
                     )}
@@ -182,7 +246,7 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
         </DialogContent>
         <DialogActions>
             <Button onClick={props.onCancel}>Cancel</Button>
-            <Button onClick={() => { props.onOK(selectedObj!); }} disabled={selectedObj === undefined}>OK</Button>
+            <Button onClick={() => { props.onOK(selectedOption as any); }} disabled={!ssl.allowNull && !selectedOption}>OK</Button>
         </DialogActions>
 
     </ReactiveInputDialog>
