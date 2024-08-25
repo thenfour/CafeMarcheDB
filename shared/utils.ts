@@ -228,6 +228,7 @@ export enum Setting {
     GlobalWikiPage_Markdown = "GlobalWikiPage_Markdown",
     SongHistoryTabDescription = "SongHistoryTabDescription",
     StatsPage_markdown = "StatsPage_markdown",
+    Workflow_SelectAssigneesDialogDescription = "Workflow_SelectAssigneesDialogDescription",
 
     // not markdown....
 

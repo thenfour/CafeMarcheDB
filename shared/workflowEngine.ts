@@ -1,14 +1,17 @@
-// assignees
-// test due date
-
-// evaluation
+// todo: 
+// - due date
 // - support triggers on state change. to set default due date & assignees
 // - correct logging
+// - permissions
+// - detect circular references in graph
 
 // display
 // - workflow tab / view / control
-// - assigned to you alert
-// - overviews (probably on events search a new display type)
+// - assigned to you alerts
+//   - badge on profile badge
+//   - homepage message
+// - general indicators / overviews
+//   - event view some alert
 
 // permissions
 // - view_workflow_instances
@@ -137,17 +140,17 @@ export interface WorkflowDef {
 
 ///////////// INSTANCE /////////////////////////////////////////////////////////////////
 export enum WorkflowLogItemType {
-    FieldUpdated,// field updated
-    AssigneesChanged,// assignee changed
-    DueDateChanged,// duedate changed
+    FieldUpdated = "FieldUpdated",// field updated
+    AssigneesChanged = "AssigneesChanged",// assignee changed
+    DueDateChanged = "DueDateChanged",// duedate changed
+    StatusChanged = "StatusChanged",
 };
 
 export interface WorkflowLogItem {
-    workflowInstanceId: number;
     nodeDefId: number;
-    userId: number;
+    userId: number | undefined;
     type: WorkflowLogItemType;
-    fieldName: string;
+    fieldName: string | undefined;
     oldValue: unknown;
     newValue: unknown;
     at: Date;
@@ -314,16 +317,55 @@ const detectCircularReferences = (nodes: WorkflowNodeDef[], visited: Set<number>
     return false;
 };
 
+interface WorkflowInstanceMutator_Args {
+    sourceWorkflowInstance: WorkflowInstance;
+};
+
+type WorkflowInstanceMutatorFn<TextraArgs> = (args: WorkflowInstanceMutator_Args & TextraArgs) => WorkflowInstance | undefined;
+
 export interface WorkflowInstanceMutator {
     DoesFieldValueSatisfyCompletionCriteria: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, tidiedNodeInstance: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee }) => boolean;
-    RegisterStateChange: (args: { flowDef: WorkflowDef, flowInstance: WorkflowInstance, node: WorkflowEvaluatedNode, oldState: WorkflowNodeProgressState }) => void; // register a change in the db as last known progress state. node.progressState will be updated already.
     GetModelFieldNames: (args: { flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance }) => string[];
     ResetModelAndInstance: () => void;
-    //InitNodeInstance: (nodeDef: WorkflowNodeDef) => WorkflowNodeInstance;
 
-    // mutator should set the assignees for the given node instance.
-    SetAssigneesForNode: (args: { flowDef: WorkflowDef, flowInstance: WorkflowInstance, evaluatedFlow: EvaluatedWorkflow, evaluatedNode: WorkflowEvaluatedNode, nodeDef: WorkflowNodeDef, assignees: WorkflowNodeAssignee[] }) => void;
+    SetAssigneesForNode: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, assignees: WorkflowNodeAssignee[], }>;
+    SetNodeStatusData: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, previousProgressState: WorkflowNodeProgressState, lastProgressState: WorkflowNodeProgressState, dueDate: Date | undefined, activeStateFirstTriggeredAt: Date | undefined }>;
+    AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>;
+
+    // commit the instance after chaining mutations.
+    onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance) => void
 };
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+export function chainWorkflowInstanceMutations(
+    initialWorkflowInstance: WorkflowInstance, // we will make a copy of this
+    mutators: ((workflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[],
+    onChangesOccurred: (newInstance: WorkflowInstance) => void,
+) {
+    let current: WorkflowInstance | undefined = { ...initialWorkflowInstance };
+    let changesOccurred: boolean = false;
+
+    for (const mutator of mutators) {
+        if (current) {
+            const mutatedInstance = mutator(current);
+            if (mutatedInstance) {
+                changesOccurred = true;
+                current = mutatedInstance;
+            }
+        }
+    }
+    if (changesOccurred) onChangesOccurred(current);
+}
+
+
+
+
+
+
+
+
 
 const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node: WorkflowTidiedNodeInstance, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator, evaluatedNodes: WorkflowEvaluatedNode[]): WorkflowEvaluatedNode => {
     const existingEvaluation = evaluatedNodes.find(n => n.nodeDefId === node.nodeDefId);
@@ -534,36 +576,130 @@ const EvaluateTree = (parentPathNodeDefIds: number[], flowDef: WorkflowDef, node
     return en;
 };
 
-export const EvaluateWorkflow = (flowDef: WorkflowDef, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator): EvaluatedWorkflow => {
+// // if workflow data changes based on evaluation (state updates, default assignees, ...), then we also need a way to set the new instance. it will trigger a re-eval eventually.
+// // so careful not to eval in a way that causes endless loop.
+// //
+// // actually i'm skeptical to update too much state in an evaluation function ... feels out of character.
+// export const EvaluateWorkflow2 = (flowDef: WorkflowDef, flowInstance: WorkflowTidiedInstance, api: WorkflowInstanceMutator, setWorkflowInstance: (newInstance: WorkflowInstance) => void): EvaluatedWorkflow => {
+//     const evaluatedNodes: WorkflowEvaluatedNode[] = [];
+
+//     for (let i = 0; i < flowInstance.nodeInstances.length; ++i) {
+//         EvaluateTree([], flowDef, flowInstance.nodeInstances[i]!, flowInstance, api, evaluatedNodes);
+//     }
+
+//     // trigger state change hooks
+//     const mutations: ((workflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[] = [];
+//     for (let i = 0; i < flowInstance.nodeInstances.length; ++i) {
+//         const node = evaluatedNodes.find(en => en.nodeDefId === flowInstance.nodeInstances[i]!.nodeDefId)!;
+//         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
+//         if (node.evaluation.progressState !== node.lastProgressState) {
+//             const oldState = node.lastProgressState;
+//             let newValues = {
+//                 lastProgressState: node.evaluation.progressState,
+//                 dueDate: node.dueDate,
+//                 activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt,
+//             };
+
+//             if ((node.activeStateFirstTriggeredAt === undefined) && node.evaluation.isInProgress) {
+//                 newValues.activeStateFirstTriggeredAt = new Date();
+//                 if (isNumber(nodeDef.defaultDueDateDurationMsAfterStarted)) {
+//                     newValues.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationMsAfterStarted);
+//                 }
+//             }
+
+//             mutations.push(
+//                 sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }),
+//                 sourceWorkflowInstance => api.AddLogItem({
+//                     sourceWorkflowInstance, msg: {
+//                         type: WorkflowLogItemType.StatusChanged,
+//                         at: new Date(),
+//                         nodeDefId: node.nodeDefId,
+//                         fieldName: undefined,
+//                         newValue: node.evaluation.progressState,
+//                         oldValue: oldState,
+//                     }
+//                 }),
+//             );
+//         }
+//     }
+
+//     if (mutations.length) {
+//         console.log(`adding ${mutations.length} mutations`);
+//         //chainWorkflowInstanceMutations({ ...flowInstance }, mutations, setWorkflowInstance);
+//     }
+//     const ret: EvaluatedWorkflow = {
+//         evaluatedNodes,
+//         flowInstance,
+//         //schemaHash: GetWorkflowDefSchemaHash(flowDef),
+//     };
+//     return ret;
+// };
+
+
+// if workflow data changes based on evaluation (state updates, default assignees, ...), then we also need a way to set the new instance. it will trigger a re-eval eventually.
+// so careful not to eval in a way that causes endless loop.
+//
+// actually i'm skeptical to update too much state in an evaluation function ... feels out of character.
+export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: WorkflowInstance, api: WorkflowInstanceMutator, reason: string): EvaluatedWorkflow => {
+
+    console.log(`Evaluating the workflow... reason: ${reason}`);
+
     const evaluatedNodes: WorkflowEvaluatedNode[] = [];
 
-    for (let i = 0; i < flowInstance.nodeInstances.length; ++i) {
-        EvaluateTree([], flowDef, flowInstance.nodeInstances[i]!, flowInstance, api, evaluatedNodes);
+    const tidiedInstance = TidyWorkflowInstance(workflowInstance, flowDef);
+
+    for (let i = 0; i < tidiedInstance.nodeInstances.length; ++i) {
+        EvaluateTree([], flowDef, tidiedInstance.nodeInstances[i]!, tidiedInstance, api, evaluatedNodes);
     }
 
     // trigger state change hooks
-    for (let i = 0; i < flowInstance.nodeInstances.length; ++i) {
-        const node = evaluatedNodes.find(en => en.nodeDefId === flowInstance.nodeInstances[i]!.nodeDefId)!;
+    const mutations: ((workflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[] = [];
+    for (let i = 0; i < tidiedInstance.nodeInstances.length; ++i) {
+        const node = evaluatedNodes.find(en => en.nodeDefId === tidiedInstance.nodeInstances[i]!.nodeDefId)!;
         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
-        if ((node.evaluation.progressState === WorkflowNodeProgressState.InvalidState) || (node.evaluation.progressState !== node.lastProgressState)) {
+        if (node.evaluation.progressState !== node.lastProgressState) {
             const oldState = node.lastProgressState;
-            node.lastProgressState = node.evaluation.progressState;
+            let newValues = {
+                lastProgressState: node.evaluation.progressState,
+                dueDate: node.dueDate,
+                activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt,
+            };
 
-            if ((node.activeStateFirstTriggeredAt === undefined) && node.evaluation.isInProgress && isNumber(nodeDef.defaultDueDateDurationMsAfterStarted)) {
-                node.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationMsAfterStarted);
+            if ((node.activeStateFirstTriggeredAt === undefined) && node.evaluation.isInProgress) {
+                newValues.activeStateFirstTriggeredAt = new Date();
+                if (isNumber(nodeDef.defaultDueDateDurationMsAfterStarted)) {
+                    newValues.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationMsAfterStarted);
+                }
             }
 
-            api.RegisterStateChange({ flowDef, flowInstance, node, oldState });
+            mutations.push(
+                sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }),
+                sourceWorkflowInstance => api.AddLogItem({
+                    sourceWorkflowInstance, msg: {
+                        type: WorkflowLogItemType.StatusChanged,
+                        at: new Date(),
+                        nodeDefId: node.nodeDefId,
+                        fieldName: undefined,
+                        newValue: node.evaluation.progressState,
+                        oldValue: oldState,
+                    }
+                }),
+            );
         }
     }
 
+    if (mutations.length) {
+        console.log(`adding ${mutations.length} mutations`);
+        //chainWorkflowInstanceMutations({ ...flowInstance }, mutations, setWorkflowInstance);
+    }
     const ret: EvaluatedWorkflow = {
         evaluatedNodes,
-        flowInstance,
+        flowInstance: tidiedInstance,
         //schemaHash: GetWorkflowDefSchemaHash(flowDef),
     };
     return ret;
 };
+
 
 
 export const WorkflowMakeConnectionId = (srcNodeDefId: number, targetNodeDefId: number) => {

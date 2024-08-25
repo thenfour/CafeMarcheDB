@@ -15,8 +15,9 @@
 }
 
 .workflowNodeGroupContainer .groupName {
-    font-weight: bold;
-    font-size: large;
+    /* font-weight: bold; */
+    /* font-size: large; */
+    opacity: 50%;
 }
 
 
@@ -27,6 +28,11 @@
 
 .workflowNodeContainer:hover {
     background-color: #ddd;
+}
+
+.workflowContainer {
+    background-color: white;
+    padding: 3px;
 }
 
 .workflowContainer .name {
@@ -176,6 +182,10 @@
 }
 
 
+.CMWorkflowNodeEditorContainer {
+    padding: 3px;
+    background-color: white;
+}
 
 .CMWorkflowNodeEditorContainer .WorkflowNodeDependencyHandle {
     width: 12px;

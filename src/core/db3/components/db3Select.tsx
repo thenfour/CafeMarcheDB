@@ -192,7 +192,7 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
     readonly?: boolean;
     displayStyle?: CMSelectDisplayStyle | undefined;
 
-    editButtonChildren?: React.ReactNode;
+    editButtonChildren?: React.ReactNode | undefined;
     dialogTitle?: React.ReactNode;
     dialogDescription?: React.ReactNode;
 
@@ -205,6 +205,7 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
 export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelectProps<Toption>) => {
     const displayStyle = props.displayStyle || CMSelectDisplayStyle.AllWithInlineEditing;
     const [multiEditDialogOpen, setMultiEditDialogOpen] = React.useState(false);
+    const editButtonChildren = props.editButtonChildren || "Select";
 
     const msl = useDB3MultiSelectLogic(props, props.value, "", displayStyle === CMSelectDisplayStyle.SelectedWithDialog ? "selected" : "all");
     type TX = typeof msl.allOptionsX[0];
@@ -251,15 +252,15 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
 
                 {displayStyle === CMSelectDisplayStyle.SelectedWithDialog && <>
                     {renderChips(msl.selectedOptionsX)}
-                    {!props.readonly && noneSelected && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                    {!props.readonly && noneSelected && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
                 </>}
                 {displayStyle === CMSelectDisplayStyle.AllWithDialog && <>
                     {renderChips(msl.allOptionsX)}
-                    {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                    {!props.readonly && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
                 </>}
                 {displayStyle === CMSelectDisplayStyle.AllWithInlineEditing && <>
                     {renderChips(msl.allOptionsX)}
-                    {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                    {!props.readonly && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
                 </>}
                 {msl.isLoading && <CircularProgress size={16} />}
             </CMChipContainer>

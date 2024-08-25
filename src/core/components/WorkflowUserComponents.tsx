@@ -1,7 +1,7 @@
 import { Tooltip } from "@mui/material";
 import React, { useContext } from "react";
-import { lerp, sortBy } from "shared/utils";
-import { EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
+import { lerp, Setting, sortBy } from "shared/utils";
+import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -16,6 +16,8 @@ import * as db3 from "../db3/db3";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import { CMSelectDisplayStyle } from "./CMSelect";
 import { gCharMap } from "../db3/components/IconMap";
+import { SettingMarkdown } from "./SettingMarkdown";
+import { DateToYYYYMMDDHHMMSS } from "shared/time";
 
 type CMXYPosition = {
     x: number;
@@ -29,12 +31,14 @@ interface WorkflowAssigneesSelectionProps {
     value: WorkflowNodeAssignee[];
     evaluatedNode: WorkflowEvaluatedNode;
     showPictogram: boolean;
+    readonly: boolean;
     onChange: (val: WorkflowNodeAssignee[]) => void;
 };
 
 export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
 
     const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>(db3.xUser);
     const getUserById = (id: number) => {
@@ -59,20 +63,28 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
         value={props.value.map(x => getUserById(x.userId))}
         chipShape="rounded"
         chipSize="small"
+        readonly={props.readonly}
+        dialogTitle={`Select assignees for "${nodeDef.name}"`}
+        dialogDescription={<SettingMarkdown setting={Setting.Workflow_SelectAssigneesDialogDescription} />}
         onChange={items => props.onChange(items.map(u => ({
             isRequired: false,
             userId: u.id,
         })))}
+        editButtonChildren={"Assign..."}
         renderOption={u => {
             const assignee = getAssignee(u);
             const evaluated = props.evaluatedNode.evaluation.completenessByAssigneeId.find(ea => ea.assignee.userId === u.id);
             // [WorkflowNodeProgressState.Relevant]: <HourglassEmptyIcon style={{ width: iconSize, color: '#777' }} />, // part of the flow but not active / started yet
             // [WorkflowNodeProgressState.Activated]: <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
             // [WorkflowNodeProgressState.Completed]: <CheckCircleIcon style={{ width: iconSize, color: 'green' }} />, // all criteria satisfied / complete
-            const iconSize = 10;
+            const iconSize = 13;
 
             const indicator = evaluated ? evaluated.completenessSatisfied ? <CheckCircleIcon style={{ width: iconSize, color: 'green' }} /> : <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} /> : undefined;
-            return <>{props.showPictogram && gCharMap.BustInSilhouette()} {u.name} {assignee.isRequired ? "*" : ""} {indicator}</>;
+            return <Tooltip disableInteractive={true} title={`Assigned to ${u.name} (${assignee.isRequired ? "Required" : "Optional"}) - ${evaluated?.completenessSatisfied ? "Complete" : "Incomplete"}`}>
+                <div style={{ display: "flex" }}>
+                    {props.showPictogram && gCharMap.BustInSilhouette()} {u.name} {assignee.isRequired ? "*" : ""} {indicator}
+                </div>
+            </Tooltip>;
         }}
     />
 };
@@ -161,10 +173,20 @@ type WorkflowDefMutator_SetEdgeSelectedArgs = WorkflowDefMutator_Args & {
     selected: boolean;
 };
 
-type WorkflowDefMutator_MutatorFn<T> = (args: WorkflowDefMutator_Args & T) => WorkflowDef | undefined;
+
+// // when a mutation occurs, what needs to happen?
+// // - nothing (no changes or no side-effects)
+// // - re-evaluation should happen
+// export enum WorkflowMutatorResult {
+//     NoEffect = "NoEffect", // no changes / no side-effects; act as if noop
+//     Modified = "Modified", // the def was changed / updated
+//     //NeedsEvaluation = "NeedsEvaluation", // the def was changed, and a re-evaluation is necessary to propagate the changes to 
+// };
+
+export type WorkflowDefMutatorFn<T = {}> = (args: WorkflowDefMutator_Args & T) => WorkflowDef | undefined; // for the mutator class declaration
 
 export interface WorkflowDefMutator {
-    deselectAll: WorkflowDefMutator_MutatorFn<{}>;
+    deselectAll: WorkflowDefMutatorFn<{}>;
 
     // take the incoming source workflow def and output a mutated version. if no mutation, return undefined. that's important to avoid endless state loop
     addNode: (args: WorkflowDefMutator_AddNodeArgs) => WorkflowDef | undefined;
@@ -175,19 +197,19 @@ export interface WorkflowDefMutator {
 
     setNodeBasicInfo: (args: WorkflowDefMutator_SetNodeBasicInfoArgs) => WorkflowDef | undefined;
     setNodeGroup: (args: WorkflowDefMutator_SetNodeGroupArgs) => WorkflowDef | undefined;
-    setNodeFieldInfo: WorkflowDefMutator_MutatorFn<{
+    setNodeFieldInfo: WorkflowDefMutatorFn<{
         nodeDef: WorkflowNodeDef,
         fieldName: string | undefined;
         fieldValueOperator: WorkflowFieldValueOperator | undefined;
         fieldValueOperand2: unknown; // for things like less than, equals, whatever.
     }>;
-    setNodeRelevanceCriteriaType: WorkflowDefMutator_MutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
-    setNodeActivationCriteriaType: WorkflowDefMutator_MutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
-    setNodeCompletionCriteriaType: WorkflowDefMutator_MutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
-    setNodeDefaultAssignees: WorkflowDefMutator_MutatorFn<{ nodeDef: WorkflowNodeDef, defaultAssignees: WorkflowNodeAssignee[] }>;
-    setNodeDefaultDueDateMsAfterStarted: WorkflowDefMutator_MutatorFn<{ nodeDef: WorkflowNodeDef, defaultDueDateDurationMsAfterStarted?: number | undefined }>;
+    setNodeRelevanceCriteriaType: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
+    setNodeActivationCriteriaType: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
+    setNodeCompletionCriteriaType: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
+    setNodeDefaultAssignees: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, defaultAssignees: WorkflowNodeAssignee[] }>;
+    setNodeDefaultDueDateMsAfterStarted: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, defaultDueDateDurationMsAfterStarted?: number | undefined }>;
 
-    setEdgeInfo: WorkflowDefMutator_MutatorFn<{
+    setEdgeInfo: WorkflowDefMutatorFn<{
         sourceNodeDef: WorkflowNodeDef,
         targetNodeDef: WorkflowNodeDef,
         determinesRelevance?: boolean | undefined;
@@ -432,24 +454,29 @@ export const MakeWorkflowDefMutator = (): WorkflowDefMutator => {
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////
+export type WorkflowDefMutatorProc = (workflowDef: WorkflowDef) => WorkflowDef | undefined; // for chaining
+export type WorkflowDefMutatorFnChainSpec = { fn: WorkflowDefMutatorProc, wantsReevaluation: boolean };
+
 function chainMutations(
     initialWorkflowDef: WorkflowDef, // we will make a copy of this
-    mutators: ((workflowDef: WorkflowDef) => WorkflowDef | undefined)[],
-    onChangesOccurred: (newDef: WorkflowDef) => void,
+    mutators: WorkflowDefMutatorFnChainSpec[],
+    onChangesOccurred: (newDef: WorkflowDef, reEvaluationNeeded: boolean) => void,
 ) {
     let currentWorkflowDef: WorkflowDef | undefined = { ...initialWorkflowDef };
     let changesOccurred: boolean = false;
+    let reEvaluationNeeded: boolean = false;
 
     for (const mutator of mutators) {
         if (currentWorkflowDef) {
-            const mutatedWorkflowDef = mutator(currentWorkflowDef);
+            const mutatedWorkflowDef = mutator.fn(currentWorkflowDef);
             if (mutatedWorkflowDef) {
                 changesOccurred = true;
+                reEvaluationNeeded = reEvaluationNeeded || mutator.wantsReevaluation;
                 currentWorkflowDef = mutatedWorkflowDef;
             }
         }
     }
-    if (changesOccurred) onChangesOccurred(currentWorkflowDef);
+    if (changesOccurred) onChangesOccurred(currentWorkflowDef, reEvaluationNeeded);
 }
 
 
@@ -462,7 +489,7 @@ export interface WorkflowRenderer {
         editable: boolean,
         evaluatedNode: WorkflowEvaluatedNode,
         nodeDef: WorkflowNodeDef,
-        setWorkflowInstance: (newInstance: WorkflowInstance) => void,
+        //setWorkflowInstance: (newInstance: WorkflowInstance) => void,
     }) => React.ReactNode;
 
     RenderEditorForFieldOperand2: (args: {
@@ -482,8 +509,8 @@ type EvaluatedWorkflowContextType = {
     flowDefMutator: WorkflowDefMutator;
     instanceMutator: WorkflowInstanceMutator;
     renderer: WorkflowRenderer;
-    setWorkflowDef: (newFlowDef: WorkflowDef) => void,
-    setWorkflowInstance: (newInstance: WorkflowInstance) => void,
+    //setWorkflowDef: (newFlowDef: WorkflowDef) => void,
+    //setWorkflowInstance: (newInstance: WorkflowInstance) => void,
 
     evaluatedFlow: EvaluatedWorkflow; // tidied and evaluated
 
@@ -492,16 +519,20 @@ type EvaluatedWorkflowContextType = {
     getEvaluatedNode: (nodeDefId: number) => WorkflowEvaluatedNode;
     getGroupDef: (groupDefId: number) => WorkflowNodeGroupDef;
 
-    chainDefMutations: (mutators: ((workflowDef: WorkflowDef) => WorkflowDef | undefined)[]) => void,
+    chainDefMutations: (mutators: WorkflowDefMutatorFnChainSpec[], reason: string) => void,
+    chainInstanceMutations: (mutators: ((sourceWorkflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[], reason: string) => void,
 };
+
+//type WorkflowInstanceMutatorFnChainSpec = { fn: WorkflowDefMutatorFn, wantsReevaluation: boolean };
 
 type EvaluatedWorkflowProviderProps = {
     flowDef: WorkflowDef, // basically the raw def from the db
     flowInstance: WorkflowInstance; // basically raw instance from db
+    evaluatedFlow: EvaluatedWorkflow;
     instanceMutator: WorkflowInstanceMutator;
     renderer: WorkflowRenderer;
-    setWorkflowDef: (newFlowDef: WorkflowDef) => void,
-    setWorkflowInstance: (newInstance: WorkflowInstance) => void,
+    onWorkflowDefMutationChainComplete: (newFlowDef: WorkflowDef, reEvalRequested: boolean, reason: string) => void,
+    //reEvaluate: () => void;
 };
 
 export const EvaluatedWorkflowContext = React.createContext<EvaluatedWorkflowContextType | undefined>(undefined);
@@ -510,22 +541,30 @@ export const EvaluatedWorkflowProvider = ({ children, ...props }: React.PropsWit
 
     // TODO: OR USE SCHEMA HASH?
     const ctx: EvaluatedWorkflowContextType = React.useMemo(() => {
-        const tidiedInstance = TidyWorkflowInstance(props.flowInstance, props.flowDef);
-        const newEvalFlow = EvaluateWorkflow(props.flowDef, tidiedInstance, props.instanceMutator);
+        // const tidiedInstance = TidyWorkflowInstance(props.flowInstance, props.flowDef);
+        // const newEvalFlow = EvaluateWorkflow(props.flowDef, tidiedInstance, props.instanceMutator, props.setWorkflowInstance);
+        console.log(`Making new context`);
         return {
             ...props,
             flowDefMutator: MakeWorkflowDefMutator(),
-            evaluatedFlow: newEvalFlow,
+            evaluatedFlow: props.evaluatedFlow,
             getNodeDef: (nodeDefId: number) => props.flowDef.nodeDefs.find(nd => nd.id === nodeDefId)!,
             getGroupDef: (groupDefId: number) => props.flowDef.groupDefs.find(g => g.id === groupDefId)!,
-            getEvaluatedNode: (nodeDefId: number) => newEvalFlow.evaluatedNodes.find(en => en.nodeDefId === nodeDefId)!,
-            chainDefMutations: (mutators: ((workflowDef: WorkflowDef) => WorkflowDef | undefined)[]) => {
-                chainMutations(props.flowDef, mutators, (newDef: WorkflowDef) => {
-                    props.setWorkflowDef(newDef);
-                });
+            getEvaluatedNode: (nodeDefId: number) => props.evaluatedFlow.evaluatedNodes.find(en => en.nodeDefId === nodeDefId)!,
+            chainDefMutations: (mutators: WorkflowDefMutatorFnChainSpec[], reason: string) => {
+                chainMutations(props.flowDef, mutators,
+                    (newDef: WorkflowDef, reEvaluationNeeded) => {
+                        props.onWorkflowDefMutationChainComplete(newDef, reEvaluationNeeded, reason);
+                    },
+                );
             },
+            chainInstanceMutations: (mutators: ((workflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[]) => {
+                chainWorkflowInstanceMutations(props.flowInstance, mutators, (newInstance: WorkflowInstance) => {
+                    props.instanceMutator.onWorkflowInstanceMutationChainComplete(newInstance);
+                });
+            }
         };
-    }, [props.flowDef, props.flowInstance]);
+    }, [props.flowDef, props.flowInstance, props.evaluatedFlow, props.instanceMutator, props.renderer, props.onWorkflowDefMutationChainComplete]);
 
     return (
         <EvaluatedWorkflowContext.Provider value={ctx}>
@@ -560,7 +599,7 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
     const dependentNodesDesc = (dependencies: WorkflowEvaluatedDependentNode[]): React.ReactNode => {
         return dependencies.length > 0 &&
             <div>
-                <div>Unmet criteria:</div>
+                <div>Waiting on:</div>
                 <ul>
                     {dependencies.map(dn => {
                         const dndef = ctx.getNodeDef(dn.nodeDefId);
@@ -636,7 +675,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                 evaluatedNode,
                 nodeDef,
                 flowDef: ctx.flowDef,
-                setWorkflowInstance: ctx.setWorkflowInstance,
+                //setWorkflowInstance: ctx.setWorkflowInstance,
                 editable: true,
             });
     }
@@ -659,15 +698,15 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                 <WorkflowAssigneesSelection
                     value={evaluatedNode.assignees}
                     showPictogram={true}
+                    readonly={true}
                     onChange={val => {
-                        ctx.instanceMutator.SetAssigneesForNode({
-                            assignees: val,
-                            evaluatedNode: evaluatedNode,
-                            flowDef: ctx.flowDef,
-                            evaluatedFlow: ctx.evaluatedFlow,
-                            flowInstance: ctx.flowInstance,
-                            nodeDef,
-                        });
+                        ctx.chainInstanceMutations([
+                            sourceWorkflowInstance => ctx.instanceMutator.SetAssigneesForNode({
+                                sourceWorkflowInstance,
+                                evaluatedNode,
+                                assignees: val,
+                            }),
+                        ], `User NodeComponent, assignees change`);
                     }}
                     evaluatedNode={evaluatedNode}
                 />
@@ -701,12 +740,16 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
         height: 100,
         width: 150,
     };
-    const vars = GetStyleVariablesForColor({ color: groupDef.color, enabled: true, fillOption: "filled", selected: false, variation: "strong" });
+    const vars = GetStyleVariablesForColor({ color: groupDef.color, enabled: true, fillOption: "filled", selected: false, variation: !!props.groupDefId ? "strong" : "weak" });
     const getNodeDef = (nodeDefId: number) => ctx.flowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
     const filteredNodes = ctx.evaluatedFlow.evaluatedNodes.filter(ni => {
         const nodeDef = ctx.flowDef.nodeDefs.find(n => n.id === ni.nodeDefId)!;
-        return nodeDef.groupDefId === props.groupDefId;
+        return nodeDef.groupDefId == props.groupDefId; // fuzzy so null & undefined are both matching each other
     });
+
+    // don't display empty groups (or maybe this needs to be configurable?)
+    if (filteredNodes.length < 1) return null;
+
     const sortedNodes = sortBy(filteredNodes, n => getNodeDef(n.nodeDefId).position.y);
     return (
         <div className={`workflowNodeGroupContainer ${(props.drawNodeSelectionHandles && groupDef.selected) ? "selected" : "notSelected"}`} style={vars.style}
@@ -756,7 +799,7 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
     const ungroupedNodes = ctx.evaluatedFlow.evaluatedNodes.filter(node => {
         const nodeDef = ctx.flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId);
         if (!nodeDef) return false;
-        return nodeDef.groupDefId === undefined;
+        return !nodeDef.groupDefId;
     });
 
     return (
@@ -797,7 +840,7 @@ export const WorkflowLogView = (props: WorkflowLogViewProps) => {
         <div className="workflowLogContainer">
             <div className="header">Activity Log...</div>
             <div className="content">
-                <Pre text={sortedLog.map((m, i) => `[${i}] ${m.at}`).join('\n')} />
+                <Pre text={sortedLog.map((m, i) => `[${i}] ${DateToYYYYMMDDHHMMSS(m.at)} ${m.type} from ${m.oldValue} -> ${m.newValue} on node ${m.nodeDefId}`).join('\n')} />
             </div>
         </div>
     );

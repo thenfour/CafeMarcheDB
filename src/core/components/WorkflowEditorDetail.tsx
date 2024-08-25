@@ -3,7 +3,7 @@
 import { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, sortBy, SplitQuickFilter } from "shared/utils";
-import { WorkflowCompletionCriteriaType, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
@@ -56,27 +56,35 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
                 variation={{ selected: props.value.determinesRelevance, enabled: true, fillOption: "filled", variation: "strong" }}
                 onClick={() => {
                     ctx.chainDefMutations([
-                        (sourceDef) => ctx.flowDefMutator.setEdgeInfo({
-                            sourceDef,
-                            targetNodeDef: props.targetNodeDef,
-                            sourceNodeDef: sourceNodeDef,
-                            determinesRelevance: !props.value.determinesRelevance,
-                        }),
-                    ]);
+                        {
+                            fn: (sourceDef: WorkflowDef) => ctx.flowDefMutator.setEdgeInfo({
+                                sourceDef,
+                                targetNodeDef: props.targetNodeDef,
+                                sourceNodeDef: sourceNodeDef,
+                                determinesRelevance: !props.value.determinesRelevance,
+                            }),
+                            wantsReevaluation: true,
+                        }
+                    ], "clicking chip - makes relevance");
                 }}
-            >{props.value.determinesRelevance ? <WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} /> : null}Makes relevant</CMChip>
+            >
+                {props.value.determinesRelevance ? <WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} /> : null}Makes relevant
+            </CMChip>
             <CMChip
                 size="small"
                 variation={{ selected: props.value.determinesActivation, enabled: true, fillOption: "filled", variation: "strong" }}
                 onClick={() => {
                     ctx.chainDefMutations([
-                        (sourceDef) => ctx.flowDefMutator.setEdgeInfo({
-                            sourceDef,
-                            targetNodeDef: props.targetNodeDef,
-                            sourceNodeDef: sourceNodeDef,
-                            determinesActivation: !props.value.determinesActivation,
-                        }),
-                    ]);
+                        {
+                            fn: (sourceDef) => ctx.flowDefMutator.setEdgeInfo({
+                                sourceDef,
+                                targetNodeDef: props.targetNodeDef,
+                                sourceNodeDef: sourceNodeDef,
+                                determinesActivation: !props.value.determinesActivation,
+                            }),
+                            wantsReevaluation: true,
+                        }
+                    ], "clicking chip - makes active");
                 }}
             >{props.value.determinesActivation ? <WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} /> : null}Makes active</CMChip>
             <CMChip
@@ -84,17 +92,20 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
                 variation={{ selected: props.value.determinesCompleteness, enabled: true, fillOption: "filled", variation: "strong" }}
                 onClick={() => {
                     ctx.chainDefMutations([
-                        (sourceDef) => ctx.flowDefMutator.setEdgeInfo({
-                            sourceDef,
-                            targetNodeDef: props.targetNodeDef,
-                            sourceNodeDef: sourceNodeDef,
-                            determinesCompleteness: !props.value.determinesCompleteness,
-                        }),
-                    ]);
+                        {
+                            fn: (sourceDef) => ctx.flowDefMutator.setEdgeInfo({
+                                sourceDef,
+                                targetNodeDef: props.targetNodeDef,
+                                sourceNodeDef: sourceNodeDef,
+                                determinesCompleteness: !props.value.determinesCompleteness,
+                            }),
+                            wantsReevaluation: true,
+                        },
+                    ], "clicking chip - makes progress");
                 }}
             >{props.value.determinesCompleteness ? <WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} /> : null}Makes progress</CMChip>
         </CMChipContainer>
-    </div>;
+    </div >;
 };
 
 
@@ -130,12 +141,15 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     value={props.nodeDef.name}
                     onChange={(e, v) => {
                         ctx.chainDefMutations([
-                            (def) => ctx.flowDefMutator.setNodeBasicInfo({
-                                sourceDef: def,
-                                nodeDef: props.nodeDef,
-                                name: v,
-                            })
-                        ]);
+                            {
+                                fn: (def) => ctx.flowDefMutator.setNodeBasicInfo({
+                                    sourceDef: def,
+                                    nodeDef: props.nodeDef,
+                                    name: v,
+                                }),
+                                wantsReevaluation: false,
+                            }
+                        ], "changing node name");
                     }}
                 />
             }
@@ -148,12 +162,15 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     editable={true}
                     onChange={(val) => {
                         ctx.chainDefMutations([
-                            (def) => ctx.flowDefMutator.setNodeGroup({
-                                sourceDef: def,
-                                nodeDef: props.nodeDef,
-                                groupDefId: val || null,
-                            })
-                        ]);
+                            {
+                                fn: (def) => ctx.flowDefMutator.setNodeGroup({
+                                    sourceDef: def,
+                                    nodeDef: props.nodeDef,
+                                    groupDefId: val || null,
+                                }),
+                                wantsReevaluation: false,
+                            }
+                        ], "set node group");
                     }}
                     options={groupOptions}
                     value={props.nodeDef.groupDefId}
@@ -183,12 +200,15 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     shape="rectangle"
                     onChange={(val) => {
                         ctx.chainDefMutations([
-                            (def) => ctx.flowDefMutator.setNodeRelevanceCriteriaType({
-                                sourceDef: def,
-                                nodeDef: props.nodeDef,
-                                criteriaType: val || WorkflowCompletionCriteriaType.always,
-                            })
-                        ]);
+                            {
+                                fn: (def) => ctx.flowDefMutator.setNodeRelevanceCriteriaType({
+                                    sourceDef: def,
+                                    nodeDef: props.nodeDef,
+                                    criteriaType: val || WorkflowCompletionCriteriaType.always,
+                                }),
+                                wantsReevaluation: true,
+                            }
+                        ], "click chip - relevance style select");
                     }}
                     enumObj={WorkflowCompletionCriteriaType}
                     value={props.nodeDef.relevanceCriteriaType}
@@ -235,14 +255,16 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     size="small"
                     shape="rectangle"
                     onChange={(val) => {
-                        const newFlow = ctx.flowDefMutator.setNodeActivationCriteriaType({
-                            sourceDef: { ...ctx.flowDef },
-                            nodeDef: props.nodeDef,
-                            criteriaType: val || WorkflowCompletionCriteriaType.always,
-                        });
-                        if (newFlow) {
-                            ctx.setWorkflowDef(newFlow);
-                        }
+                        ctx.chainDefMutations([
+                            {
+                                fn: sourceDef => ctx.flowDefMutator.setNodeActivationCriteriaType({
+                                    sourceDef,
+                                    nodeDef: props.nodeDef,
+                                    criteriaType: val || WorkflowCompletionCriteriaType.always,
+                                }),
+                                wantsReevaluation: true,
+                            }
+                        ], "click chip - aCTIVAtion style select");
                     }}
                     enumObj={WorkflowCompletionCriteriaType}
                     value={props.nodeDef.activationCriteriaType}
@@ -288,14 +310,16 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     size="small"
                     shape="rectangle"
                     onChange={(val) => {
-                        const newFlow = ctx.flowDefMutator.setNodeCompletionCriteriaType({
-                            sourceDef: { ...ctx.flowDef },
-                            nodeDef: props.nodeDef,
-                            criteriaType: val || WorkflowCompletionCriteriaType.always,
-                        });
-                        if (newFlow) {
-                            ctx.setWorkflowDef(newFlow);
-                        }
+                        ctx.chainDefMutations([
+                            {
+                                fn: sourceDef => ctx.flowDefMutator.setNodeCompletionCriteriaType({
+                                    sourceDef,
+                                    nodeDef: props.nodeDef,
+                                    criteriaType: val || WorkflowCompletionCriteriaType.always,
+                                }),
+                                wantsReevaluation: true,
+                            }
+                        ], "click chip - completion style select");
                     }}
                     enumObj={WorkflowCompletionCriteriaType}
                     value={props.nodeDef.completionCriteriaType}
@@ -334,28 +358,38 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         <div style={{ display: "flex", alignItems: "center" }}>
                             <FormControl variant="standard">
                                 <InputLabel>Field</InputLabel>
-                                <Select variant="filled" size="small" value={props.nodeDef.fieldName} onChange={(e) => {
-                                    ctx.chainDefMutations([def => ctx.flowDefMutator.setNodeFieldInfo({
-                                        sourceDef: def,
-                                        nodeDef: props.nodeDef,
-                                        fieldName: e.target.value,
-                                        fieldValueOperator: props.nodeDef.fieldValueOperator,
-                                        fieldValueOperand2: props.nodeDef.fieldValueOperand2,
-                                    })]);
+                                <Select variant="filled" size="small" value={props.nodeDef.fieldName || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */} onChange={(e) => {
+                                    ctx.chainDefMutations([
+                                        {
+                                            fn: def => ctx.flowDefMutator.setNodeFieldInfo({
+                                                sourceDef: def,
+                                                nodeDef: props.nodeDef,
+                                                fieldName: e.target.value,
+                                                fieldValueOperator: props.nodeDef.fieldValueOperator,
+                                                fieldValueOperand2: props.nodeDef.fieldValueOperand2,
+                                            }),
+                                            wantsReevaluation: true,
+                                        }
+                                    ], `setting which field`);
                                 }}>
                                     {ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, node: ctx.getEvaluatedNode(props.nodeDef.id) }).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                                 </Select>
                             </FormControl>
                             <FormControl variant="standard">
                                 <InputLabel>Operator</InputLabel>
-                                <Select variant="filled" size="small" value={props.nodeDef.fieldValueOperator} onChange={(e) => {
-                                    ctx.chainDefMutations([def => ctx.flowDefMutator.setNodeFieldInfo({
-                                        sourceDef: def,
-                                        nodeDef: props.nodeDef,
-                                        fieldName: props.nodeDef.fieldName,
-                                        fieldValueOperator: e.target.value as WorkflowFieldValueOperator,
-                                        fieldValueOperand2: props.nodeDef.fieldValueOperand2,
-                                    })]);
+                                <Select variant="filled" size="small" value={props.nodeDef.fieldValueOperator || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */} onChange={(e) => {
+                                    ctx.chainDefMutations([
+                                        {
+                                            fn: def => ctx.flowDefMutator.setNodeFieldInfo({
+                                                sourceDef: def,
+                                                nodeDef: props.nodeDef,
+                                                fieldName: props.nodeDef.fieldName,
+                                                fieldValueOperator: e.target.value as WorkflowFieldValueOperator,
+                                                fieldValueOperand2: props.nodeDef.fieldValueOperand2,
+                                            }),
+                                            wantsReevaluation: true,
+                                        }
+                                    ], `setting field operator`);
                                 }}>
                                     {Object.values(WorkflowFieldValueOperator).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                                 </Select>
@@ -365,13 +399,18 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                                 nodeDef: props.nodeDef,
                                 evaluatedNode: evaluated,
                                 setValue: (value) => {
-                                    ctx.chainDefMutations([def => ctx.flowDefMutator.setNodeFieldInfo({
-                                        sourceDef: def,
-                                        nodeDef: props.nodeDef,
-                                        fieldName: props.nodeDef.fieldName,
-                                        fieldValueOperator: props.nodeDef.fieldValueOperator,
-                                        fieldValueOperand2: value,
-                                    })]);
+                                    ctx.chainDefMutations([
+                                        {
+                                            fn: def => ctx.flowDefMutator.setNodeFieldInfo({
+                                                sourceDef: def,
+                                                nodeDef: props.nodeDef,
+                                                fieldName: props.nodeDef.fieldName,
+                                                fieldValueOperator: props.nodeDef.fieldValueOperator,
+                                                fieldValueOperand2: value,
+                                            }),
+                                            wantsReevaluation: true,
+                                        }
+                                    ], `setting operand2`);
                                 }
                             })}
                         </div>
@@ -379,14 +418,16 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                 }
 
                 <CMNumericTextField label={`Progress weight (${props.nodeDef.thisNodeProgressWeight})`} autoFocus={false} value={props.nodeDef.thisNodeProgressWeight} onChange={(e, val) => {
-                    const newFlow = ctx.flowDefMutator.setNodeBasicInfo({
-                        sourceDef: { ...ctx.flowDef },
-                        nodeDef: props.nodeDef,
-                        thisNodeProgressWeight: val,
-                    });
-                    if (newFlow) {
-                        ctx.setWorkflowDef(newFlow);
-                    }
+                    ctx.chainDefMutations([
+                        {
+                            fn: sourceDef => ctx.flowDefMutator.setNodeBasicInfo({
+                                sourceDef,
+                                nodeDef: props.nodeDef,
+                                thisNodeProgressWeight: val,
+                            }),
+                            wantsReevaluation: true,
+                        }
+                    ], `setting node progress weight`);
                 }} />
 
                 {completionUsesNodeDependencies &&
@@ -402,13 +443,17 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     value={props.nodeDef.defaultAssignees}
                     showPictogram={true}
                     evaluatedNode={evaluated}
+                    readonly={false}
                     onChange={value => ctx.chainDefMutations([
-                        sourceDef => ctx.flowDefMutator.setNodeDefaultAssignees({
-                            sourceDef,
-                            nodeDef: props.nodeDef,
-                            defaultAssignees: value,
-                        })
-                    ])}
+                        {
+                            fn: sourceDef => ctx.flowDefMutator.setNodeDefaultAssignees({
+                                sourceDef,
+                                nodeDef: props.nodeDef,
+                                defaultAssignees: value,
+                            }),
+                            wantsReevaluation: true,
+                        }
+                    ], `setting default assignees`)}
                 />
             </>}
         />
@@ -425,12 +470,15 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     editable={true}
                     onChange={(val) => {
                         ctx.chainDefMutations([
-                            (def) => ctx.flowDefMutator.setNodeBasicInfo({
-                                sourceDef: def,
-                                nodeDef: props.nodeDef,
-                                displayStyle: val || WorkflowNodeDisplayStyle.Normal,
-                            })
-                        ]);
+                            {
+                                fn: (def) => ctx.flowDefMutator.setNodeBasicInfo({
+                                    sourceDef: def,
+                                    nodeDef: props.nodeDef,
+                                    displayStyle: val || WorkflowNodeDisplayStyle.Normal,
+                                }),
+                                wantsReevaluation: false,
+                            }
+                        ], `setting node display style`);
                     }}
                     enumObj={WorkflowNodeDisplayStyle}
                     value={props.nodeDef.displayStyle}
@@ -463,12 +511,15 @@ export const WorkflowGroupEditor = (props: WorkflowGroupEditorProps) => {
                 value={props.groupDef.name}
                 onChange={(e, v) => {
                     ctx.chainDefMutations([
-                        (def) => ctx.flowDefMutator.setGroupParams({
-                            sourceDef: def,
-                            groupDef: props.groupDef,
-                            name: v,
-                        })
-                    ]);
+                        {
+                            fn: (def) => ctx.flowDefMutator.setGroupParams({
+                                sourceDef: def,
+                                groupDef: props.groupDef,
+                                name: v,
+                            }),
+                            wantsReevaluation: false,
+                        }
+                    ], `setting GROUP name`);
                 }}
             />}
         />
@@ -480,12 +531,15 @@ export const WorkflowGroupEditor = (props: WorkflowGroupEditorProps) => {
                 value={props.groupDef.color || null}
                 onChange={v => {
                     ctx.chainDefMutations([
-                        (def) => ctx.flowDefMutator.setGroupParams({
-                            sourceDef: def,
-                            groupDef: props.groupDef,
-                            color: v?.id,
-                        })
-                    ]);
+                        {
+                            fn: (def) => ctx.flowDefMutator.setGroupParams({
+                                sourceDef: def,
+                                groupDef: props.groupDef,
+                                color: v?.id,
+                            }),
+                            wantsReevaluation: false,
+                        }
+                    ], `setting GROUP color`);
                 }}
             />}
         />
