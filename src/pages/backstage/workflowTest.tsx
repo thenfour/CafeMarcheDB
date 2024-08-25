@@ -638,6 +638,9 @@ const MainContent = () => {
         setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
     };
 
+    const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
+    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
+
     const instanceMutator: WorkflowInstanceMutator = {
         DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
             const binding = getModelBinding({
@@ -694,17 +697,16 @@ const MainContent = () => {
             ni.lastProgressState = args.lastProgressState;
             return args.sourceWorkflowInstance;
         },
-        onWorkflowInstanceMutationChainComplete: setWorkflowInstance,
+        onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
+            setWorkflowInstance(newInstance);
+            if (reEvaluationNeeded) {
+                setEvaluationReason("instance mutator requested");
+                setEvaluationTrigger(evaluationTrigger + 1);
+            }
+        }
     };
 
-    // const reEvaluate = () => {
-
-    // };
-
-    const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
-    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
-
-    // re-evaluate.
+    // re-evaluate when requested
     React.useEffect(() => {
         const x = EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
         console.log(`Evaluated result: `);
@@ -725,9 +727,6 @@ const MainContent = () => {
 
                     setEvaluationReason("model changed");
                     setEvaluationTrigger(evaluationTrigger + 1);
-
-
-                    // EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, "model changed");
                 },
                 setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
@@ -751,8 +750,6 @@ const MainContent = () => {
     const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
         return EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
     });
-
-    // TODO: when to re-evaluate?
 
     return <div>
         <InspectObject src={workflowDef} label="FlowDef" />

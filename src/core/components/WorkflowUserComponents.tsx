@@ -1,7 +1,7 @@
 import { Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { lerp, Setting, sortBy } from "shared/utils";
-import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
+import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -520,7 +520,7 @@ type EvaluatedWorkflowContextType = {
     getGroupDef: (groupDefId: number) => WorkflowNodeGroupDef;
 
     chainDefMutations: (mutators: WorkflowDefMutatorFnChainSpec[], reason: string) => void,
-    chainInstanceMutations: (mutators: ((sourceWorkflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[], reason: string) => void,
+    chainInstanceMutations: (mutators: WorkflowInstanceMutatorFnChainSpec[], reason: string) => void,
 };
 
 //type WorkflowInstanceMutatorFnChainSpec = { fn: WorkflowDefMutatorFn, wantsReevaluation: boolean };
@@ -558,9 +558,9 @@ export const EvaluatedWorkflowProvider = ({ children, ...props }: React.PropsWit
                     },
                 );
             },
-            chainInstanceMutations: (mutators: ((workflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[]) => {
-                chainWorkflowInstanceMutations(props.flowInstance, mutators, (newInstance: WorkflowInstance) => {
-                    props.instanceMutator.onWorkflowInstanceMutationChainComplete(newInstance);
+            chainInstanceMutations: (mutators: WorkflowInstanceMutatorFnChainSpec[]) => {
+                chainWorkflowInstanceMutations(props.flowInstance, mutators, (newInstance: WorkflowInstance, reEvaluationNeeded) => {
+                    props.instanceMutator.onWorkflowInstanceMutationChainComplete(newInstance, reEvaluationNeeded);
                 });
             }
         };
@@ -701,11 +701,13 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     readonly={true}
                     onChange={val => {
                         ctx.chainInstanceMutations([
-                            sourceWorkflowInstance => ctx.instanceMutator.SetAssigneesForNode({
-                                sourceWorkflowInstance,
-                                evaluatedNode,
-                                assignees: val,
-                            }),
+                            {
+                                fn: sourceWorkflowInstance => ctx.instanceMutator.SetAssigneesForNode({
+                                    sourceWorkflowInstance,
+                                    evaluatedNode,
+                                    assignees: val,
+                                }), wantsReevaluation: true
+                            },
                         ], `User NodeComponent, assignees change`);
                     }}
                     evaluatedNode={evaluatedNode}

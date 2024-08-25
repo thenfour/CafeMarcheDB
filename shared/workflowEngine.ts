@@ -333,30 +333,35 @@ export interface WorkflowInstanceMutator {
     AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>;
 
     // commit the instance after chaining mutations.
-    onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance) => void
+    onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => void
 };
 
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
+type WorkflowInstanceMutatorProc = (workflowInstance: WorkflowInstance) => WorkflowInstance | undefined; // for chaining
+export type WorkflowInstanceMutatorFnChainSpec = { fn: WorkflowInstanceMutatorProc, wantsReevaluation: boolean };
+
 export function chainWorkflowInstanceMutations(
     initialWorkflowInstance: WorkflowInstance, // we will make a copy of this
-    mutators: ((workflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[],
-    onChangesOccurred: (newInstance: WorkflowInstance) => void,
+    mutators: WorkflowInstanceMutatorFnChainSpec[],
+    onChangesOccurred: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => void,
 ) {
     let current: WorkflowInstance | undefined = { ...initialWorkflowInstance };
     let changesOccurred: boolean = false;
+    let reEvaluationNeeded: boolean = false;
 
     for (const mutator of mutators) {
         if (current) {
-            const mutatedInstance = mutator(current);
+            const mutatedInstance = mutator.fn(current);
             if (mutatedInstance) {
                 changesOccurred = true;
                 current = mutatedInstance;
+                reEvaluationNeeded = reEvaluationNeeded || mutator.wantsReevaluation;
             }
         }
     }
-    if (changesOccurred) onChangesOccurred(current);
+    if (changesOccurred) onChangesOccurred(current, reEvaluationNeeded);
 }
 
 
@@ -653,7 +658,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
     }
 
     // trigger state change hooks
-    const mutations: ((workflowInstance: WorkflowInstance) => WorkflowInstance | undefined)[] = [];
+    const mutations: WorkflowInstanceMutatorFnChainSpec[] = [];
     for (let i = 0; i < tidiedInstance.nodeInstances.length; ++i) {
         const node = evaluatedNodes.find(en => en.nodeDefId === tidiedInstance.nodeInstances[i]!.nodeDefId)!;
         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
@@ -673,24 +678,26 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
             }
 
             mutations.push(
-                sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }),
-                sourceWorkflowInstance => api.AddLogItem({
-                    sourceWorkflowInstance, msg: {
-                        type: WorkflowLogItemType.StatusChanged,
-                        at: new Date(),
-                        nodeDefId: node.nodeDefId,
-                        fieldName: undefined,
-                        newValue: node.evaluation.progressState,
-                        oldValue: oldState,
-                    }
-                }),
+                { fn: sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }), wantsReevaluation: false },
+                {
+                    fn: sourceWorkflowInstance => api.AddLogItem({
+                        sourceWorkflowInstance, msg: {
+                            type: WorkflowLogItemType.StatusChanged,
+                            at: new Date(),
+                            nodeDefId: node.nodeDefId,
+                            fieldName: undefined,
+                            newValue: node.evaluation.progressState,
+                            oldValue: oldState,
+                        }
+                    }), wantsReevaluation: false
+                },
             );
         }
     }
 
     if (mutations.length) {
-        console.log(`adding ${mutations.length} mutations`);
-        //chainWorkflowInstanceMutations({ ...flowInstance }, mutations, setWorkflowInstance);
+        console.log(`post evaluation adding ${mutations.length} instance mutations`);
+        chainWorkflowInstanceMutations({ ...workflowInstance }, mutations, api.onWorkflowInstanceMutationChainComplete);
     }
     const ret: EvaluatedWorkflow = {
         evaluatedNodes,
