@@ -245,37 +245,6 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
 };
 
 
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// // a view/edit control for the comment only (including mutation)
-// interface EventAttendanceCommentControlProps {
-//   userResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>,
-//   onRefetch: () => void,
-//   readonly: boolean,
-// };
-
-// const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
-//   const token = API.events.updateUserEventAttendance.useToken();
-//   const val = props.userResponse.response.userComment || "";
-//   return <CompactMutationMarkdownControl
-//     initialValue={props.userResponse.response.userComment}
-//     editButtonMessage={val === "" ? "Add a comment" : "Edit comment"}
-//     editButtonVariant={val === "" ? "default" : "framed"}
-//     refetch={props.onRefetch}
-//     readonly={props.readonly}
-//     className="compact"
-//     onChange={async (value) => {
-//       return await token.invoke({
-//         userId: props.userResponse.user.id,
-//         eventId: props.userResponse.event.id,
-//         comment: value,
-//       });
-//     }} />;
-// };
-
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventAttendanceCommentEditorProps {
   userResponse: db3.EventUserResponse<db3.EventResponses_MinimalEvent, db3.EventResponses_MinimalEventUserResponse>,
@@ -429,17 +398,6 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
   const selectedAttendanceId: number | null = props.segmentUserResponse.response.attendanceId;
   const dashboardContext = React.useContext(DashboardContext);
 
-  // const optionsClient = DB3Client.useTableRenderContext({
-  //   requestedCaps: DB3Client.xTableClientCaps.Query,
-  //   clientIntention: { intention: 'user', mode: 'primary' },
-  //   tableSpec: new DB3Client.xTableClientSpec({
-  //     table: db3.xEventAttendance,
-  //     columns: [
-  //       new DB3Client.PKColumnClient({ columnName: "id" }),
-  //     ],
-  //   }),
-  // });
-
   const handleReadonlyClick = () => {
     props.onReadonlyClick();
     setExplicitEdit(true);
@@ -466,24 +424,20 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     });
   };
 
-  const attendance = dashboardContext.eventAttendance.getById(selectedResponse.attendanceId);
-
-  const optionDesc = attendance ? (`${attendance.text} : ${attendance.description}`) : `no answer`;
-  const tooltip = `${props.segmentUserResponse.segment.name}: ${optionDesc}`;
+  const selectedAttendance = dashboardContext.eventAttendance.getById(selectedResponse.attendanceId);
 
   return <>
     {editMode ? (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
           {dashboardContext.eventAttendance.filter(o => o.isActive).map(option =>
-            <EventAttendanceAnswerButton key={option.id} noItemSelected={selectedAttendanceId === null} selected={option.id === selectedAttendanceId} value={option} onSelect={() => handleChange(option)} tooltip={tooltip} />)}
-          <EventAttendanceAnswerButton noItemSelected={selectedAttendanceId === null} selected={null === selectedAttendanceId} value={null} onSelect={() => handleChange(null)} tooltip={tooltip} />
+            <EventAttendanceAnswerButton key={option.id} noItemSelected={selectedAttendanceId === null} selected={option.id === selectedAttendanceId} value={option} onSelect={() => handleChange(option)} tooltip={option.description} />)}
+          <EventAttendanceAnswerButton noItemSelected={selectedAttendanceId === null} selected={null === selectedAttendanceId} value={null} onSelect={() => handleChange(null)} tooltip={"Don't leave an answer now"} />
         </CMChipContainer>
       </>) : (
       <>
         <CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={attendance} onSelect={handleReadonlyClick} tooltip={tooltip} />
-          {/* <CMSmallButton onClick={handleClick}>change</CMSmallButton> */}
+          <EventAttendanceAnswerButton noItemSelected={false} selected={true} value={selectedAttendance} onSelect={handleReadonlyClick} tooltip={selectedAttendance?.description || "Not answered yet"} />
         </CMChipContainer>
       </>
     )}
