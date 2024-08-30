@@ -24,6 +24,7 @@ interface NewEventDialogProps {
 
 const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
+    const [grayed, setGrayed] = React.useState<boolean>(false);
     const mut = API.events.newEventMutation.useToken();
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
@@ -104,6 +105,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),
         };
+        setGrayed(true);
         mut.invoke(payload).then(async (ret) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
@@ -147,8 +149,8 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             </div>
         </DialogContent>
         <DialogActions>
-            <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
-            <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+            <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
+            <Button onClick={handleSaveClick} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
         </DialogActions>
 
     </ReactiveInputDialog>;

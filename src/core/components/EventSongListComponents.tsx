@@ -521,6 +521,7 @@ interface EventSongListValueEditorProps {
 // state managed internally.
 export const EventSongListValueEditor = (props: EventSongListValueEditorProps) => {
     const snackbarContext = React.useContext(SnackbarContext);
+    const [grayed, setGrayed] = React.useState<boolean>(false);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
@@ -766,8 +767,11 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                 </div>
             </DialogContent>
             <DialogActions>
-                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()}>Cancel</Button>
-                <Button onClick={() => { props.onSave(value) }} startIcon={gIconMap.Save()}>OK</Button>
+                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
+                <Button onClick={() => {
+                    setGrayed(true);
+                    props.onSave(value);
+                }} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
             </DialogActions>
 
         </ReactiveInputDialog>

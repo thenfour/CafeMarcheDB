@@ -7,7 +7,7 @@ import {
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, { Suspense } from "react";
-import { SettingKey } from "shared/utils";
+import { SettingKey, sleep } from "shared/utils";
 import { CMDialogContentText, CMSmallButton } from "src/core/components/CMCoreComponents2";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
@@ -32,6 +32,7 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
     const [oldObj, setOldObj] = React.useState(table.args.table.createNew(clientIntention)); // needed for tracking changes
     const [validationResult, setValidationResult] = React.useState<db3.ValidateAndComputeDiffResult>(db3.EmptyValidateAndComputeDiffResult); // don't allow null for syntax simplicity
     const publicData = useAuthenticatedSession();
+    const [grayed, setGrayed] = React.useState<boolean>(false);
 
     const tableClient = DB3ClientCore.useTableRenderContext({
         requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
@@ -46,13 +47,14 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
         setOldObj(obj);
     }, [obj]);
 
-    const handleOK = () => {
+    const handleOK = async () => {
         // check validation and disallow
         if (!validationResult.success) {
             console.log(`DB3NewObjectDialog handleOK validation error`);
             console.log(validationResult);
             return;
         }
+        setGrayed(true);
         onOK(obj, tableClient);
     };
 
@@ -112,8 +114,8 @@ export function DB3NewObjectDialog({ onOK, onCancel, table, clientIntention, ...
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={onCancel}>Cancel</Button>
-                    <Button onClick={handleOK}>OK</Button>
+                    <Button onClick={onCancel} disabled={grayed}>Cancel</Button>
+                    <Button onClick={handleOK} disabled={grayed}>OK</Button>
                 </DialogActions>
             </ReactiveInputDialog>
         </Suspense>
