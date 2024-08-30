@@ -1211,15 +1211,16 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                     </div>
                 </div>}
 
-            <CMChipContainer>
-                {event.tags.map(tag => <CMStandardDBChip
-                    key={tag.id}
-                    model={tag.eventTag}
-                    size='small'
-                    variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
-                    getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
-                />)}
-            </CMChipContainer>
+            {event.status?.significance !== db3.EventStatusSignificance.Cancelled &&
+                <CMChipContainer>
+                    {event.tags.map(tag => <CMStandardDBChip
+                        key={tag.id}
+                        model={tag.eventTag}
+                        size='small'
+                        variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
+                        getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
+                    />)}
+                </CMChipContainer>}
 
             {props.children}
 

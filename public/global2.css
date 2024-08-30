@@ -2250,6 +2250,16 @@ pre.serverStartInfo {
     /* font-weight: bold; */
 }
 
+/* canceled events back off */
+.status_Cancelled .EventDateField.container .RelativeIndicator {
+    --chip-color: #888;
+}
+
+/* canceled events back off */
+.status_Cancelled.contentSection .smallInfoBox {
+    font-weight: normal;
+}
+
 /* for dupe songs in the song list*/
 .songAutocompleteLI.faded {
     color: #ccc;
