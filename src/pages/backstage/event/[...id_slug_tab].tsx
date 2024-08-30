@@ -37,7 +37,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
             columns: [
                 EventTableClientColumns.id,
                 EventTableClientColumns.name,
-                EventTableClientColumns.slug,
+                //EventTableClientColumns.slug,
                 EventTableClientColumns.locationDescription,
                 EventTableClientColumns.locationURL,
                 //EventTableClientColumns.segmentBehavior,

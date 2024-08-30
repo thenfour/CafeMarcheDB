@@ -160,6 +160,7 @@ export interface TinsertEventArgs {
     event: {
         name: string,
         description: string,
+        locationDescription: string | null,
         slug: string,
         typeId: number | null,
         statusId: number | null,

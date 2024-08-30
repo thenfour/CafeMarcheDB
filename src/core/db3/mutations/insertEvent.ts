@@ -23,6 +23,7 @@ export default resolver.pipe(
                 createdAt: new Date(), // this is automatic though right?
                 createdByUserId: currentUser.id,
                 name: args.event.name,
+                locationDescription: args.event.locationDescription || "",
                 description: args.event.description || "",
                 slug: args.event.slug,
                 typeId: args.event.typeId,

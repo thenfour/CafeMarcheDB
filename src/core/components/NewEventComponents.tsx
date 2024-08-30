@@ -36,6 +36,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             EventTableClientColumns.id,
             EventTableClientColumns.name,
             EventTableClientColumns.slug,
+            EventTableClientColumns.locationDescription,
             EventTableClientColumns.type,
             EventTableClientColumns.status,
             EventTableClientColumns.tags,
@@ -134,7 +135,8 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                 }} />
 
                 {renderColumn(eventTableSpec, "name", eventValue, eventValidationResult, eventAPI, true)}
-                {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI, false)}
+                {renderColumn(eventTableSpec, "locationDescription", eventValue, eventValidationResult, eventAPI, false)}
+                {/* {renderColumn(eventTableSpec, "slug", eventValue, eventValidationResult, eventAPI, false)} */}
                 {renderColumn(eventTableSpec, "type", eventValue, eventValidationResult, eventAPI, false)}
                 {renderColumn(eventTableSpec, "status", eventValue, eventValidationResult, eventAPI, false)}
                 {renderColumn(eventTableSpec, "tags", eventValue, eventValidationResult, eventAPI, false)}
