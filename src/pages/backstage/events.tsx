@@ -134,7 +134,7 @@ const EventsList = ({ filterSpec, results, events, refetch, ...props }: EventsLi
 
 const gStaticFilters: EventsFilterSpecStatic[] = [
     {
-        label: "All",
+        label: "Everything",
         helpText: "Searching all events",
         orderByColumn: EventOrderByColumnOptions.startsAt,
         orderByDirection: "asc",
@@ -179,7 +179,7 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         label: "Rehearsals since 60 days",
         helpText: "Searching rehearsals more recent than 60 days",
         "orderByColumn": "startsAt",
-        "orderByDirection": "asc",
+        "orderByDirection": "desc",
         "statusFilterEnabled": false,
         "statusFilterBehavior": "hasNone" as any,
         "statusFilterOptions": [
@@ -197,6 +197,30 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         "dateFilterBehavior": "hasAllOf" as any,
         "dateFilterOptions": [
             10003
+        ]
+    },
+    {
+        "label": "Past concerts",
+        "helpText": "",
+        "orderByColumn": "startsAt",
+        "orderByDirection": "desc",
+        "statusFilterEnabled": true,
+        "statusFilterBehavior": "hasSomeOf" as any,
+        "statusFilterOptions": [
+            4
+        ],
+        "typeFilterEnabled": true,
+        "typeFilterBehavior": "hasSomeOf" as any,
+        "typeFilterOptions": [
+            1
+        ],
+        "tagFilterEnabled": false,
+        "tagFilterBehavior": "hasAllOf" as any,
+        "tagFilterOptions": [],
+        "dateFilterEnabled": true,
+        "dateFilterBehavior": "hasAllOf" as any,
+        "dateFilterOptions": [
+            10000
         ]
     },
 ];
@@ -347,6 +371,7 @@ const EventListOuter = () => {
             dateFilterOptions: dateFilterOptionsWhenEnabled,
         }
         const txt = JSON.stringify(o, null, 2);
+        console.log(o);
         navigator.clipboard.writeText(txt).then(() => {
             snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
         }).catch(() => {
