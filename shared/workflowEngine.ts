@@ -1,12 +1,10 @@
 // todo: 
-// - due date
-// - support triggers on state change. to set default due date & assignees
-// - correct logging
 // - permissions
 // - detect circular references in graph
 
 // display
 // - workflow tab / view / control
+// - minimal indicator-only view
 // - assigned to you alerts
 //   - badge on profile badge
 //   - homepage message
@@ -141,6 +139,8 @@ export interface WorkflowDef {
 
 ///////////// INSTANCE /////////////////////////////////////////////////////////////////
 export enum WorkflowLogItemType {
+    Comment = "Comment", // dev comments or other custom stuff you can pollute the log with.
+    InstanceStarted = "InstanceStarted",
     FieldUpdated = "FieldUpdated",// field updated
     AssigneesChanged = "AssigneesChanged",// assignee changed
     DueDateChanged = "DueDateChanged",// duedate changed
@@ -148,13 +148,14 @@ export enum WorkflowLogItemType {
 };
 
 export interface WorkflowLogItem {
-    nodeDefId: number;
-    userId: number | undefined;
-    type: WorkflowLogItemType;
-    fieldName: string | undefined;
-    oldValue: unknown;
-    newValue: unknown;
     at: Date;
+    type: WorkflowLogItemType;
+    nodeDefId?: number | undefined;
+    userId?: number | undefined;
+    fieldName?: string | undefined;
+    oldValue?: unknown;
+    newValue?: unknown;
+    comment?: string | undefined;
 };
 
 export interface WorkflowNodeInstance {
@@ -180,6 +181,7 @@ export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
 
 export interface WorkflowInstance {
     nodeInstances: WorkflowNodeInstance[];
+    hasBeenEvaluated: boolean; // for logging 1st evaluation
     log: WorkflowLogItem[];
 };
 
@@ -302,6 +304,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
     return {
         //flowDef,
         nodeInstances: tidiedNodes,
+        hasBeenEvaluated: flowInstance.hasBeenEvaluated,
         log: flowInstance.log,
         isTidy: true,
     };
@@ -345,11 +348,12 @@ export interface WorkflowInstanceMutator {
 
     SetAssigneesForNode: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, assignees: WorkflowNodeAssignee[], }>;
     SetDueDateForNode: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, dueDate: Date | undefined, }>;
-    SetNodeStatusData: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, previousProgressState: WorkflowNodeProgressState, lastProgressState: WorkflowNodeProgressState, dueDate: Date | undefined, activeStateFirstTriggeredAt: Date | undefined }>;
+    SetNodeStatusData: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, previousProgressState: WorkflowNodeProgressState, lastProgressState: WorkflowNodeProgressState, activeStateFirstTriggeredAt: Date | undefined }>;
     AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>; // userId should be added by handler
     SetLastFieldValue: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, fieldName: string | undefined, fieldValueAsString: string | undefined }>;
     SetLastAssignees: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: WorkflowNodeAssignee[] }>;
     SetLastDueDate: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: Date | undefined }>;
+    SetHasBeenEvaluated: WorkflowInstanceMutatorFn<{}>;
 
     // commit the instance after chaining mutations.
     onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => void
@@ -625,6 +629,96 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
         EvaluateTree([], flowDef, tidiedInstance.nodeInstances[i]!, tidiedInstance, api, evaluatedNodes, mutations);
     }
 
+    if (!workflowInstance.hasBeenEvaluated) {
+        mutations.push({
+            fn: sourceWorkflowInstance => api.AddLogItem({
+                sourceWorkflowInstance,
+                msg: {
+                    at: new Date(),
+                    nodeDefId: undefined,
+                    fieldName: undefined,
+                    type: WorkflowLogItemType.InstanceStarted,
+                    oldValue: undefined,
+                    newValue: undefined,
+                }
+            }), wantsReevaluation: false
+        }, {
+            fn: sourceWorkflowInstance => api.SetHasBeenEvaluated({
+                sourceWorkflowInstance,
+            }), wantsReevaluation: false,
+        });
+    }
+
+    // trigger state change hooks and set due date if needed.
+    for (let i = 0; i < tidiedInstance.nodeInstances.length; ++i) {
+        const node = evaluatedNodes.find(en => en.nodeDefId === tidiedInstance.nodeInstances[i]!.nodeDefId)!;
+        const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
+        if (node.evaluation.progressState !== node.lastProgressState) {
+            const oldState = node.lastProgressState;
+            let newValues = {
+                lastProgressState: node.evaluation.progressState,
+                dueDate: node.dueDate,
+                activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt,
+            };
+
+            if ((node.activeStateFirstTriggeredAt === undefined) && node.evaluation.isInProgress) {
+                newValues.activeStateFirstTriggeredAt = new Date();
+                if (isNumber(nodeDef.defaultDueDateDurationDaysAfterStarted)) {
+                    newValues.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationDaysAfterStarted * gMillisecondsPerDay);
+                }
+            }
+
+            if (newValues.dueDate) {
+                mutations.push({
+                    fn: sourceWorkflowInstance => api.AddLogItem({
+                        sourceWorkflowInstance,
+                        msg: {
+                            at: new Date(),
+                            nodeDefId: nodeDef.id,
+                            fieldName: undefined,
+                            type: WorkflowLogItemType.DueDateChanged,
+                            newValue: newValues.dueDate,
+                        }
+                    }), wantsReevaluation: false
+                },
+                    {
+                        fn: sourceWorkflowInstance => api.SetLastDueDate({
+                            sourceWorkflowInstance,
+                            evaluatedNode: node,
+                            value: newValues.dueDate,
+                        }), wantsReevaluation: false,
+                    },
+                    {
+                        fn: sourceWorkflowInstance => api.SetDueDateForNode({
+                            sourceWorkflowInstance,
+                            evaluatedNode: node,
+                            dueDate: newValues.dueDate,
+                            // wantsReevaluation: true is necessary to makes sure dependencies are picked up in these kind of properties.
+                            // to illustrate the problem, click "reset model & instance" with nodes which have due dates; they'll not appear to have due dates unless you re-evaluate.
+                        }), wantsReevaluation: true,
+                    },
+                );
+            }
+
+            mutations.push(
+                { fn: sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }), wantsReevaluation: false },
+                {
+                    // it's tempting to want to include things like whether this was a user-induced change or derivative. but that can be known by looking at the node defs so don't put it directly in the log.
+                    fn: sourceWorkflowInstance => api.AddLogItem({
+                        sourceWorkflowInstance, msg: {
+                            type: WorkflowLogItemType.StatusChanged,
+                            at: new Date(),
+                            nodeDefId: node.nodeDefId,
+                            fieldName: undefined,
+                            newValue: node.evaluation.progressState,
+                            oldValue: oldState,
+                        }
+                    }), wantsReevaluation: false
+                },
+            );
+        }
+    }
+
     // for field values, register value changes.
     for (let i = 0; i < tidiedInstance.nodeInstances.length; ++i) {
         const node = evaluatedNodes.find(en => en.nodeDefId === tidiedInstance.nodeInstances[i]!.nodeDefId)!;
@@ -656,27 +750,27 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
         }
 
         // detect due date changes
-        if (node.dueDate !== node.lastDueDate) {
-            mutations.push({
-                fn: sourceWorkflowInstance => api.AddLogItem({
-                    sourceWorkflowInstance,
-                    msg: {
-                        at: new Date(),
-                        nodeDefId: nodeDef.id,
-                        fieldName: undefined,
-                        type: WorkflowLogItemType.DueDateChanged,
-                        oldValue: node.lastDueDate,
-                        newValue: node.dueDate,
-                    }
-                }), wantsReevaluation: false
-            }, {
-                fn: sourceWorkflowInstance => api.SetLastDueDate({
-                    sourceWorkflowInstance,
-                    evaluatedNode: node,
-                    value: node.dueDate,
-                }), wantsReevaluation: false,
-            });
-        }
+        // if (node.dueDate !== node.lastDueDate) {
+        //     mutations.push({
+        //         fn: sourceWorkflowInstance => api.AddLogItem({
+        //             sourceWorkflowInstance,
+        //             msg: {
+        //                 at: new Date(),
+        //                 nodeDefId: nodeDef.id,
+        //                 fieldName: undefined,
+        //                 type: WorkflowLogItemType.DueDateChanged,
+        //                 oldValue: node.lastDueDate,
+        //                 newValue: node.dueDate,
+        //             }
+        //         }), wantsReevaluation: false
+        //     }, {
+        //         fn: sourceWorkflowInstance => api.SetLastDueDate({
+        //             sourceWorkflowInstance,
+        //             evaluatedNode: node,
+        //             value: node.dueDate,
+        //         }), wantsReevaluation: false,
+        //     });
+        // }
 
 
         if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
@@ -712,44 +806,6 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
         }
     }
 
-    // trigger state change hooks
-    for (let i = 0; i < tidiedInstance.nodeInstances.length; ++i) {
-        const node = evaluatedNodes.find(en => en.nodeDefId === tidiedInstance.nodeInstances[i]!.nodeDefId)!;
-        const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
-        if (node.evaluation.progressState !== node.lastProgressState) {
-            const oldState = node.lastProgressState;
-            let newValues = {
-                lastProgressState: node.evaluation.progressState,
-                dueDate: node.dueDate,
-                activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt,
-            };
-
-            if ((node.activeStateFirstTriggeredAt === undefined) && node.evaluation.isInProgress) {
-                newValues.activeStateFirstTriggeredAt = new Date();
-                if (isNumber(nodeDef.defaultDueDateDurationDaysAfterStarted)) {
-                    newValues.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationDaysAfterStarted * gMillisecondsPerDay);
-                }
-            }
-
-            mutations.push(
-                { fn: sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }), wantsReevaluation: false },
-                {
-                    // it's tempting to want to include things like whether this was a user-induced change or derivative. but that can be known by looking at the node defs so don't put it directly in the log.
-                    fn: sourceWorkflowInstance => api.AddLogItem({
-                        sourceWorkflowInstance, msg: {
-                            type: WorkflowLogItemType.StatusChanged,
-                            at: new Date(),
-                            nodeDefId: node.nodeDefId,
-                            fieldName: undefined,
-                            newValue: node.evaluation.progressState,
-                            oldValue: oldState,
-                        }
-                    }), wantsReevaluation: false
-                },
-            );
-        }
-    }
-
     if (mutations.length) {
         chainWorkflowInstanceMutations({ ...workflowInstance }, mutations, api.onWorkflowInstanceMutationChainComplete);
     }
@@ -770,6 +826,7 @@ export const WorkflowMakeConnectionId = (srcNodeDefId: number, targetNodeDefId: 
 export const WorkflowInitializeInstance = (workflowDef: WorkflowDef): WorkflowInstance => {
     return {
         nodeInstances: [],
+        hasBeenEvaluated: false,
         log: [],
     };
 };

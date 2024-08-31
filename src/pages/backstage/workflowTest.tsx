@@ -6,7 +6,7 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { Permission } from "shared/permissions";
-import { EvaluatedWorkflow, EvaluateWorkflow, TidyWorkflowInstance, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowNodeInstance, WorkflowNodeProgressState, WorkflowTidiedInstance, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, TidyWorkflowInstance, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowLogItemType, WorkflowNodeDef, WorkflowNodeInstance, WorkflowNodeProgressState, WorkflowTidiedInstance, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { WorkflowEditorPOC } from "src/core/components/WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, WorkflowRenderer } from "src/core/components/WorkflowUserComponents";
 import { CMSmallButton } from "src/core/components/CMCoreComponents2";
@@ -46,10 +46,11 @@ const singleNode = {
                 "y": 100
             },
             "selected": true,
-            "width": 207,
-            "height": 42,
+            "width": 229,
+            "height": 48,
             "fieldName": "bool:0",
-            "fieldValueOperator": "Truthy"
+            "fieldValueOperator": "Truthy",
+            "defaultDueDateDurationDaysAfterStarted": 2
         }
     ]
 };
@@ -187,9 +188,10 @@ const biggerWorkflow = {
                 "x": 405,
                 "y": 135
             },
-            "selected": true,
-            "width": 135,
-            "height": 48
+            "selected": false,
+            "width": 157,
+            "height": 48,
+            "defaultDueDateDurationDaysAfterStarted": 3
         },
         {
             "id": 503,
@@ -205,7 +207,7 @@ const biggerWorkflow = {
                 "x": 195,
                 "y": 75
             },
-            "selected": false,
+            "selected": true,
             "nodeDependencies": [
                 {
                     "nodeDefId": 500,
@@ -229,8 +231,9 @@ const biggerWorkflow = {
                     "selected": false
                 }
             ],
-            "width": 175,
-            "height": 42
+            "width": 197,
+            "height": 48,
+            "defaultDueDateDurationDaysAfterStarted": 0
         },
         {
             "id": 504,
@@ -270,8 +273,9 @@ const biggerWorkflow = {
                     "selected": false
                 }
             ],
-            "width": 134,
-            "height": 42
+            "width": 156,
+            "height": 48,
+            "defaultDueDateDurationDaysAfterStarted": 4
         },
         {
             "id": 505,
@@ -374,7 +378,7 @@ const biggerWorkflow = {
 
 
 
-const minimalWorkflow: WorkflowDef = biggerWorkflow as any;
+const minimalWorkflow: WorkflowDef = singleNode as any;
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -683,6 +687,7 @@ const MainContent = () => {
         ResetModelAndInstance: () => {
             setModel(MakeEmptyModel());
             setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
+            setEvaluationReason("ResetModelAndInstance");
             setEvaluationTrigger(evaluationTrigger + 1);
         },
         SetAssigneesForNode: (args) => {
@@ -696,6 +701,11 @@ const MainContent = () => {
             ni.assignees = JSON.parse(JSON.stringify(args.assignees));
             return args.sourceWorkflowInstance;
         },
+        SetHasBeenEvaluated: args => {
+            if (args.sourceWorkflowInstance.hasBeenEvaluated) return undefined;
+            args.sourceWorkflowInstance.hasBeenEvaluated = true;
+            return args.sourceWorkflowInstance;
+        },
         SetDueDateForNode: (args) => {
             let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
             if (!ni) {
@@ -704,6 +714,7 @@ const MainContent = () => {
                 args.sourceWorkflowInstance.nodeInstances.push(ni);
             }
 
+            if (ni.dueDate === args.dueDate) return undefined;
             ni.dueDate = args.dueDate;
             return args.sourceWorkflowInstance;
         },
@@ -719,7 +730,7 @@ const MainContent = () => {
                 args.sourceWorkflowInstance.nodeInstances.push(ni);
             }
             ni.activeStateFirstTriggeredAt = args.activeStateFirstTriggeredAt;
-            ni.dueDate = args.dueDate;
+            //ni.dueDate = args.dueDate;
             ni.lastProgressState = args.lastProgressState;
             return args.sourceWorkflowInstance;
         },
@@ -765,6 +776,12 @@ const MainContent = () => {
 
     // re-evaluate when requested
     React.useEffect(() => {
+        workflowInstance.log.push({
+            type: WorkflowLogItemType.Comment,
+            at: new Date(),
+            comment: "Evaluating due to React.useEffect[evaluationTrigger]",
+        });
+
         const x = EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
         setEvaluatedInstance(x);
     }, [evaluationTrigger]);
@@ -803,6 +820,11 @@ const MainContent = () => {
     };
 
     const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
+        workflowInstance.log.push({
+            type: WorkflowLogItemType.Comment,
+            at: new Date(),
+            comment: "initial setup in React.useState<EvaluatedWorkflow>",
+        });
         return EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
     });
 

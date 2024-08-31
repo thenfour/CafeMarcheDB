@@ -1062,7 +1062,7 @@ export const WorkflowLogView = () => {
 
     // filter out unhelpful messages
     const filteredLog = ctx.evaluatedFlow.flowInstance.log.filter(l => {
-        if (l.type === WorkflowLogItemType.StatusChanged && l.oldValue === WorkflowNodeProgressState.InvalidState) return false;
+        //if (l.type === WorkflowLogItemType.StatusChanged && l.oldValue === WorkflowNodeProgressState.InvalidState) return false;
         return true;
     });
     const sortedLog = sortBy(filteredLog, l => l.at);
@@ -1073,14 +1073,17 @@ export const WorkflowLogView = () => {
                 <Pre text={sortedLog.map((m, i) => {
                     // for nodes which are user-facing (fields), show the user
                     // for nodes which are downstream of user-facing, show the chain to user
-                    const nodeDef = ctx.getNodeDef(m.nodeDefId);
                     let how = ``;
-                    if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
-                        how = `Field '${nodeDef.fieldName || "<undefined>"}' / '${m.fieldName}' from '${m.oldValue}' by user ${m.userId}`;
-                    } else if ([WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType)) {
-                        how = `due to dependencies`;
+                    if (m.nodeDefId == null) {
+                    } else {
+                        const nodeDef = ctx.getNodeDef(m.nodeDefId);
+                        if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
+                            how = `Field '${nodeDef.fieldName || "<undefined>"}' / '${m.fieldName}' from '${m.oldValue}' by user ${m.userId}`;
+                        } else if ([WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType)) {
+                            how = `due to dependencies`;
+                        }
                     }
-                    return `[${i}] ${DateToYYYYMMDDHHMMSS(m.at)} ${m.type} from ${m.oldValue} -> ${m.newValue} on node ${m.nodeDefId} ${how}`;
+                    return `[${i}] ${DateToYYYYMMDDHHMMSS(m.at)} ${m.type} from ${m.oldValue} -> ${m.newValue} on node ${m.nodeDefId} ${how}${m.comment !== undefined ? ` [${m.comment}]` : ""}`;
                 }).join('\n')} />
             </div>
         </div>
