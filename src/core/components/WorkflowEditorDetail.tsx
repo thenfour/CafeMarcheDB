@@ -372,7 +372,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                                         }
                                     ], `setting which field`);
                                 }}>
-                                    {ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, node: ctx.getEvaluatedNode(props.nodeDef.id) }).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
+                                    {ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) }).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                                 </Select>
                             </FormControl>
                             <FormControl variant="standard">

@@ -320,13 +320,6 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
     };
 
     const handleEdgesChange = (changes: EdgeChange[]) => {
-        //let mutatingDef: WorkflowDef = { ...ctx.flowDef };
-        //let changesOccurred: boolean = false;
-        // const applyMutation = (r: WorkflowDef | undefined) => {
-        //     if (!r) return;
-        //     mutatingDef = r;
-        //     changesOccurred = true;
-        // };
         const mutators: WorkflowDefMutatorFnChainSpec[] = [];
         changes.forEach(change => {
             switch (change.type) {
@@ -365,13 +358,6 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
     };
 
     const handleConnect = (connection: Connection) => {
-        //let mutatingDef: WorkflowDef = { ...ctx.flowDef };
-        //let changesOccurred: boolean = false;
-        // const applyMutation = (r: WorkflowDef | undefined) => {
-        //     if (!r) return;
-        //     mutatingDef = r;
-        //     changesOccurred = true;
-        // };
         const mutators: WorkflowDefMutatorFnChainSpec[] = [];
         const parsedSource = getDef(connection.source);
         const parsedTarget = getDef(connection.target);
@@ -515,28 +501,6 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
             dependencySpec: dep,
         };
     })() : undefined;
-
-    //const schemaHash = GetWorkflowDefSchemaHash(ctx.flowDef);
-
-    // const nonMutatingInstanceMut: WorkflowInstanceMutator = {
-    //     DoesFieldValueSatisfyCompletionCriteria: ctx.instanceMutator.DoesFieldValueSatisfyCompletionCriteria,
-    //     GetModelFieldNames: ctx.instanceMutator.GetModelFieldNames,
-    //     ResetModelAndInstance: () => {
-    //     },
-    //     SetAssigneesForNode: (args) => {
-    //         return undefined;
-    //     },
-    //     AddLogItem: (args) => {
-    //         return undefined;
-    //     },
-    //     SetNodeStatusData: (args) => {
-    //         return undefined;
-    //     },
-    // };
-
-    //const tidiedInstance = TidyWorkflowInstance(ctx.flowInstance, ctx.flowDef);
-    //const newEvalFlow = EvaluateWorkflow(ctx.flowDef, tidiedInstance, nonMutatingInstanceMut, () => { } /* do not let the instance change because of graph evaluation */);
-    //const evaluatedWorkflow = newEvalFlow;
 
     return (
         <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>

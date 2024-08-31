@@ -1,7 +1,7 @@
 import { Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { lerp, Setting, sortBy } from "shared/utils";
-import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
+import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowLogItemType, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -830,19 +830,32 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-interface WorkflowLogViewProps {
-};
-
-export const WorkflowLogView = (props: WorkflowLogViewProps) => {
+export const WorkflowLogView = () => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
 
-    const sortedLog = sortBy(ctx.evaluatedFlow.flowInstance.log, l => l.at);
+    // filter out unhelpful messages
+    const filteredLog = ctx.evaluatedFlow.flowInstance.log.filter(l => {
+        if (l.type === WorkflowLogItemType.StatusChanged && l.oldValue === WorkflowNodeProgressState.InvalidState) return false;
+        return true;
+    });
+    const sortedLog = sortBy(filteredLog, l => l.at);
     return (
         <div className="workflowLogContainer">
             <div className="header">Activity Log...</div>
             <div className="content">
-                <Pre text={sortedLog.map((m, i) => `[${i}] ${DateToYYYYMMDDHHMMSS(m.at)} ${m.type} from ${m.oldValue} -> ${m.newValue} on node ${m.nodeDefId}`).join('\n')} />
+                <Pre text={sortedLog.map((m, i) => {
+                    // for nodes which are user-facing (fields), show the user
+                    // for nodes which are downstream of user-facing, show the chain to user
+                    const nodeDef = ctx.getNodeDef(m.nodeDefId);
+                    let how = ``;
+                    if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
+                        how = `Field '${nodeDef.fieldName || "<undefined>"}' / '${m.fieldName}' from '${m.oldValue}' by user ${m.userId}`;
+                    } else if ([WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType)) {
+                        how = `due to dependencies`;
+                    }
+                    return `[${i}] ${DateToYYYYMMDDHHMMSS(m.at)} ${m.type} from ${m.oldValue} -> ${m.newValue} on node ${m.nodeDefId} ${how}`;
+                }).join('\n')} />
             </div>
         </div>
     );

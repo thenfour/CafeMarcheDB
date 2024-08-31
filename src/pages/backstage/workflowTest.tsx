@@ -384,6 +384,7 @@ interface WFFieldBinding<Tunderlying> {
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
     value: Tunderlying,
+    valueAsString: string; // equality-comparable and db-serializable
     setValue: (val: Tunderlying) => void,
     setOperand2: (val: Tunderlying | Tunderlying[]) => void,
     doesFieldValueSatisfyCompletionCriteria: () => boolean;
@@ -403,15 +404,15 @@ const BoolField = (props: WFFieldBinding<boolean | null>) => {
 
 const BoolOperand = (props: WFFieldBinding<boolean | null>) => {
     return <div>null, true, false. todo: support multiple if "any of"</div>;
-}
+};
 
 const MakeBoolBinding = (args: {
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
     value: boolean | null,
-    setValue: (val: boolean | null) => void,
-    setOperand2: (val: (boolean | null) | (boolean | null)[]) => void,
+    setValue?: (val: boolean | null) => void,
+    setOperand2?: (val: (boolean | null) | (boolean | null)[]) => void,
 }
 ): WFFieldBinding<boolean | null> => {
     return {
@@ -419,8 +420,9 @@ const MakeBoolBinding = (args: {
         nodeDef: args.nodeDef,
         tidiedNodeInstance: args.tidiedNodeInstance,
         value: args.value,
-        setValue: args.setValue,
-        setOperand2: args.setOperand2,
+        valueAsString: JSON.stringify(args.value),
+        setValue: args.setValue || (() => { }),
+        setOperand2: args.setOperand2 || (() => { }),
         doesFieldValueSatisfyCompletionCriteria: () => {
             switch (args.nodeDef.fieldValueOperator) {
                 case WorkflowFieldValueOperator.IsNull:
@@ -483,8 +485,8 @@ const MakeTextBinding = (args: {
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
     value: string,
-    setValue: (val: string) => void,
-    setOperand2: (val: (string) | (string)[]) => void,
+    setValue?: (val: string) => void,
+    setOperand2?: (val: (string) | (string)[]) => void,
 }
 ): WFFieldBinding<string> => {
     return {
@@ -492,8 +494,9 @@ const MakeTextBinding = (args: {
         nodeDef: args.nodeDef,
         tidiedNodeInstance: args.tidiedNodeInstance,
         value: args.value,
-        setValue: args.setValue,
-        setOperand2: args.setOperand2,
+        valueAsString: JSON.stringify(args.value),
+        setValue: args.setValue || (() => { }),
+        setOperand2: args.setOperand2 || (() => { }),
         doesFieldValueSatisfyCompletionCriteria: () => {
             const isNull = () => IsNullOrWhitespace(args.value);
             const eq = () => args.value.trim().toLowerCase() === ((args.nodeDef.fieldValueOperand2 as string) || "").trim().toLowerCase();
@@ -538,6 +541,7 @@ const MakeAlwaysBinding = <T,>(args: {
         nodeDef: args.nodeDef,
         tidiedNodeInstance: args.tidiedNodeInstance,
         value: args.value,
+        valueAsString: JSON.stringify(args.value),
         setValue: () => { },
         setOperand2: () => { },
         doesFieldValueSatisfyCompletionCriteria: () => {
@@ -565,8 +569,8 @@ function getModelBinding(args: {
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
-    setModel: (newModel: ModelType) => void,
-    setOperand2: (newOperand: unknown) => void,
+    setModel?: (newModel: ModelType) => void,
+    setOperand2?: (newOperand: unknown) => void,
 }): WFFieldBinding<unknown> {
     const [name, indexStr] = (args.nodeDef.fieldName || ":").split(":");
     const index = parseInt(indexStr!);
@@ -579,7 +583,7 @@ function getModelBinding(args: {
                 setValue: (val) => {
                     const newModel = { ...args.model };
                     newModel.boolQuestions[index] = val;
-                    args.setModel(newModel);
+                    args.setModel && args.setModel(newModel);
                 },
                 setOperand2: args.setOperand2,
                 value: valueOr(args.model.boolQuestions[index], null, null),
@@ -592,7 +596,7 @@ function getModelBinding(args: {
                 setValue: (val) => {
                     const newModel = { ...args.model };
                     newModel.textQuestions[index] = val;
-                    args.setModel(newModel);
+                    args.setModel && args.setModel(newModel);
                 },
                 setOperand2: args.setOperand2,
                 value: args.model.textQuestions[index] || "",
@@ -666,6 +670,16 @@ const MainContent = () => {
                 `text:2`,
             ];
         },
+        // result should be equality-comparable and database-serializable
+        GetFieldValueAsString: ({ flowDef, nodeDef, node }) => {
+            const binding = getModelBinding({
+                model,
+                flowDef,
+                nodeDef,
+                tidiedNodeInstance: node,
+            });
+            return binding.valueAsString;
+        },
         ResetModelAndInstance: () => {
             setModel(MakeEmptyModel());
             setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
@@ -697,13 +711,24 @@ const MainContent = () => {
             ni.lastProgressState = args.lastProgressState;
             return args.sourceWorkflowInstance;
         },
+        SetLastFieldValue: (args) => {
+            let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+            if (!ni) {
+                // evaluated nodes are instances, so this works and adds unused fields
+                ni = { ...args.evaluatedNode };
+                args.sourceWorkflowInstance.nodeInstances.push(ni);
+            }
+            ni.lastFieldName = args.fieldName;
+            ni.lastFieldValueAsString = args.fieldValueAsString;
+            return args.sourceWorkflowInstance;
+        },
         onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
             setWorkflowInstance(newInstance);
             if (reEvaluationNeeded) {
                 setEvaluationReason("instance mutator requested");
                 setEvaluationTrigger(evaluationTrigger + 1);
             }
-        }
+        },
     };
 
     // re-evaluate when requested
