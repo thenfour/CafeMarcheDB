@@ -30,6 +30,7 @@ interface Db3SingleSelectBaseProps<Toption extends TAnyModel> {
     onChange: (optionIds: Toption | Tnull) => void;
 
     renderOption?: ((item: Toption) => React.ReactNode) | undefined;
+    customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
@@ -130,26 +131,27 @@ export const DB3SingleSelect = <Toption extends TAnyModel,>(props: Db3SingleSele
 
     return (
         <div className="CMSingleSelect">
-            <CMChipContainer>
-                {(displayStyle === CMSelectDisplayStyle.AllWithInlineEditing) && (
-                    <>
-                        {renderChips(ssl.allOptionsX, toggleSelect)}
-                        {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
-                    </>
-                )}
-                {(displayStyle === CMSelectDisplayStyle.AllWithDialog) && (
-                    <>
-                        {renderChips(ssl.allOptionsX, openDialog)}
-                    </>
-                )}
-                {(displayStyle === CMSelectDisplayStyle.SelectedWithDialog) && (
-                    <>
-                        {ssl.isNullSelected ? renderNull(openDialog) : renderChips([ssl.selectedOptionX!], openDialog)}
-                    </>
-                )}
-                {ssl.isLoading && <CircularProgress size={16} />}
+            {displayStyle === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender!(() => setSingleSelectDialogOpen(true)) :
+                <CMChipContainer>
+                    {(displayStyle === CMSelectDisplayStyle.AllWithInlineEditing) && (
+                        <>
+                            {renderChips(ssl.allOptionsX, toggleSelect)}
+                            {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
+                        </>
+                    )}
+                    {(displayStyle === CMSelectDisplayStyle.AllWithDialog) && (
+                        <>
+                            {renderChips(ssl.allOptionsX, openDialog)}
+                        </>
+                    )}
+                    {(displayStyle === CMSelectDisplayStyle.SelectedWithDialog) && (
+                        <>
+                            {ssl.isNullSelected ? renderNull(openDialog) : renderChips([ssl.selectedOptionX!], openDialog)}
+                        </>
+                    )}
+                    {ssl.isLoading && <CircularProgress size={16} />}
 
-            </CMChipContainer>
+                </CMChipContainer>}
             {singleSelectDialogOpen && (
                 <DB3SingleSelectDialog
                     nullBehavior={nullBehavior}
@@ -185,6 +187,7 @@ interface DB3MultiSelectProps<Toption extends TAnyModel> {
     value: Toption[];
     onChange: (optionIds: Toption[]) => void;
     renderOption?: ((item: Toption) => React.ReactNode) | undefined;
+    customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
@@ -248,22 +251,23 @@ export const DB3MultiSelect = <Toption extends TAnyModel,>(props: DB3MultiSelect
 
     return (
         <div className="CMMultiSelect">
-            <CMChipContainer>
+            {displayStyle === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender!(handleDialog) :
+                <CMChipContainer>
 
-                {displayStyle === CMSelectDisplayStyle.SelectedWithDialog && <>
-                    {renderChips(msl.selectedOptionsX)}
-                    {!props.readonly && noneSelected && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
-                </>}
-                {displayStyle === CMSelectDisplayStyle.AllWithDialog && <>
-                    {renderChips(msl.allOptionsX)}
-                    {!props.readonly && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
-                </>}
-                {displayStyle === CMSelectDisplayStyle.AllWithInlineEditing && <>
-                    {renderChips(msl.allOptionsX)}
-                    {!props.readonly && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
-                </>}
-                {msl.isLoading && <CircularProgress size={16} />}
-            </CMChipContainer>
+                    {displayStyle === CMSelectDisplayStyle.SelectedWithDialog && <>
+                        {renderChips(msl.selectedOptionsX)}
+                        {!props.readonly && noneSelected && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
+                    </>}
+                    {displayStyle === CMSelectDisplayStyle.AllWithDialog && <>
+                        {renderChips(msl.allOptionsX)}
+                        {!props.readonly && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
+                    </>}
+                    {displayStyle === CMSelectDisplayStyle.AllWithInlineEditing && <>
+                        {renderChips(msl.allOptionsX)}
+                        {!props.readonly && <CMSmallButton onClick={handleDialog}>{editButtonChildren}</CMSmallButton>}
+                    </>}
+                    {msl.isLoading && <CircularProgress size={16} />}
+                </CMChipContainer>}
             {multiEditDialogOpen && (
                 <DB3MultiSelectDialog
                     schema={props.schema}

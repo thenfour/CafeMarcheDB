@@ -51,6 +51,7 @@ interface ItemInfo {
 // };
 
 export enum CMSelectDisplayStyle {
+    CustomButtonWithDialog = "CustomButtonWithDialog", // NO items, caller renders a button to open a dialog
     SelectedWithDialog = "SelectedWithDialog", // selected items only + dialog only edit
     AllWithDialog = "AllWithDialog", // all items inline + dialog only edit
     AllWithInlineEditing = "AllWithInlineEditing",// all items inline + inline editing
@@ -65,6 +66,7 @@ interface CMMultiSelectProps<Toption> {
     onChange: (options: Toption[]) => void;
     getOptionInfo: (item: Toption) => ItemInfo;
     renderOption: (item: Toption) => React.ReactNode;
+    customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
 
     chipSize?: CMChipSizeOptions | undefined;
     chipShape?: CMChipShapeOptions | undefined;
@@ -121,22 +123,24 @@ export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => {
 
     return (
         <div className="CMMultiSelect">
-            <CMChipContainer>
+            {displayStyle === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender!(handleDialog) :
+                <CMChipContainer>
 
-                {displayStyle === CMSelectDisplayStyle.SelectedWithDialog && <>
-                    {renderChips(msl.selectedOptionsX)}
-                    {!props.readonly && noneSelected && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
-                </>}
-                {displayStyle === CMSelectDisplayStyle.AllWithDialog && <>
-                    {renderChips(msl.allOptionsX)}
-                    {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
-                </>}
-                {displayStyle === CMSelectDisplayStyle.AllWithInlineEditing && <>
-                    {renderChips(msl.allOptionsX)}
-                    {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
-                </>}
-                {msl.isLoading && <CircularProgress size={16} />}
-            </CMChipContainer>
+                    {displayStyle === CMSelectDisplayStyle.SelectedWithDialog && <>
+                        {renderChips(msl.selectedOptionsX)}
+                        {!props.readonly && noneSelected && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                    </>}
+                    {displayStyle === CMSelectDisplayStyle.AllWithDialog && <>
+                        {renderChips(msl.allOptionsX)}
+                        {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                    </>}
+                    {displayStyle === CMSelectDisplayStyle.AllWithInlineEditing && <>
+                        {renderChips(msl.allOptionsX)}
+                        {!props.readonly && <CMSmallButton onClick={handleDialog}>Select</CMSmallButton>}
+                    </>}
+                    {msl.isLoading && <CircularProgress size={16} />}
+                </CMChipContainer>
+            }
             {multiEditDialogOpen && (
                 <CMMultiSelectDialog
                     renderOption={props.renderOption}
@@ -168,6 +172,7 @@ interface CMSingleSelectBaseProps<Toption> {
     value: Toption | Tnull;
     onChange: (option: Toption | Tnull) => void;
     renderOption: (item: Toption) => React.ReactNode;
+    customRender?: (onClick: () => void) => React.ReactNode; // for display style custom
     getOptionInfo: (item: Toption) => ItemInfo;
 
     chipSize?: CMChipSizeOptions | undefined;
@@ -255,25 +260,26 @@ export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) =>
 
     return (
         <div className="CMSingleSelect">
-            <CMChipContainer>
-                {(displayStyle === CMSelectDisplayStyle.AllWithInlineEditing) && (
-                    <>
-                        {renderChips(ssl.allOptions, toggleSelect)}
-                        {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
-                    </>
-                )}
-                {(displayStyle === CMSelectDisplayStyle.AllWithDialog) && (
-                    <>
-                        {renderChips(ssl.allOptions, openDialog)}
-                    </>
-                )}
-                {(displayStyle === CMSelectDisplayStyle.SelectedWithDialog) && (
-                    <>
-                        {ssl.isNullSelected ? renderNull(openDialog) : renderChips([ssl.selectedOptionX!], openDialog)}
-                    </>
-                )}
-                {ssl.isLoading && <CircularProgress size={16} />}
-            </CMChipContainer>
+            {displayStyle === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender!(() => setSingleSelectDialogOpen(true)) :
+                <CMChipContainer>
+                    {(displayStyle === CMSelectDisplayStyle.AllWithInlineEditing) && (
+                        <>
+                            {renderChips(ssl.allOptions, toggleSelect)}
+                            {!props.readonly && <CMSmallButton onClick={() => setSingleSelectDialogOpen(true)}>Select</CMSmallButton>}
+                        </>
+                    )}
+                    {(displayStyle === CMSelectDisplayStyle.AllWithDialog) && (
+                        <>
+                            {renderChips(ssl.allOptions, openDialog)}
+                        </>
+                    )}
+                    {(displayStyle === CMSelectDisplayStyle.SelectedWithDialog) && (
+                        <>
+                            {ssl.isNullSelected ? renderNull(openDialog) : renderChips([ssl.selectedOptionX!], openDialog)}
+                        </>
+                    )}
+                    {ssl.isLoading && <CircularProgress size={16} />}
+                </CMChipContainer>}
             {singleSelectDialogOpen && (
                 <CMSingleSelectDialog
                     nullBehavior={props.nullBehavior}

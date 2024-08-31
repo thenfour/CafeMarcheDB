@@ -151,10 +151,11 @@ export interface CMSmallButtonProps {
     onClick?: (e: React.MouseEvent<HTMLElement>) => void;
     variant?: "framed" | "default";
     className?: string;
+    style?: React.CSSProperties;
 };
 
 export const CMSmallButton = (props: React.PropsWithChildren<CMSmallButtonProps>) => {
-    return <div className={`variant_${props.variant || "default"} interactable freeButton CMSmallButton ${props.className}`} onClick={(e) => { props.onClick && props.onClick(e) }}>
+    return <div style={props.style} className={`variant_${props.variant || "default"} interactable freeButton CMSmallButton ${props.className}`} onClick={(e) => { props.onClick && props.onClick(e) }}>
         {props.children}
     </div>;
 };

@@ -1,4 +1,4 @@
-import { Tooltip } from "@mui/material";
+import { Divider, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { lerp, Setting, sortBy } from "shared/utils";
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowLogItemType, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
@@ -9,13 +9,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { InspectObject } from "./CMCoreComponents";
-import { AnimatedCircularProgress, Pre } from "./CMCoreComponents2";
+import { AdminInspectObject, InspectObject } from "./CMCoreComponents";
+import { AnimatedCircularProgress, CMSmallButton, Pre } from "./CMCoreComponents2";
 import * as DB3Client from "../db3/DB3Client";
 import * as db3 from "../db3/db3";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import { CMSelectDisplayStyle } from "./CMSelect";
-import { gCharMap } from "../db3/components/IconMap";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { DateToYYYYMMDDHHMMSS } from "shared/time";
 
@@ -88,6 +88,54 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
         }}
     />
 };
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+interface WorkflowAssigneesMenuItemProps {
+    value: WorkflowNodeAssignee[];
+    evaluatedNode: WorkflowEvaluatedNode;
+    onJustAfterClicked?: () => void;
+    onChange: (val: WorkflowNodeAssignee[]) => void;
+};
+
+export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
+
+    const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>(db3.xUser);
+    const getUserById = (id: number) => {
+        const ret = queryStatus.items.find(u => u.id === id);
+        if (!ret) throw new Error(`user not found ${id}`);
+        return ret;
+    };
+
+    return <DB3MultiSelect<db3.UserMinimumPayload>
+        schema={db3.xUser}
+        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
+        value={props.value.map(x => getUserById(x.userId))}
+        chipShape="rounded"
+        chipSize="small"
+        dialogTitle={`Select assignees for "${nodeDef.name}"`}
+        dialogDescription={<SettingMarkdown setting={Setting.Workflow_SelectAssigneesDialogDescription} />}
+        onChange={items => props.onChange(items.map(u => ({
+            isRequired: false,
+            userId: u.id,
+        })))}
+        editButtonChildren={"Assign..."}
+        customRender={(onClick) => <MenuItem onClick={(e) => {
+            props.onJustAfterClicked && props.onJustAfterClicked();
+            onClick();
+        }}>
+            <ListItemIcon>{gIconMap.Person()}</ListItemIcon>
+            Assign to...
+        </MenuItem>}
+    />
+};
+
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -656,6 +704,65 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+interface WorkflowNodeDotMenuProps {
+    evaluatedNode: WorkflowEvaluatedNode;
+};
+
+const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    let k = 0;
+
+    const menuItems: React.ReactNode[] = [
+        // <Divider key={++k} />,
+        <WorkflowAssigneesMenuItem
+            value={props.evaluatedNode.assignees}
+            evaluatedNode={props.evaluatedNode}
+            onJustAfterClicked={() => setAnchorEl(null)}
+            //onChange={(val) => ctx.chainInstanceMutations()}
+            onChange={val => {
+                ctx.chainInstanceMutations([
+                    {
+                        fn: sourceWorkflowInstance => ctx.instanceMutator.SetAssigneesForNode({
+                            sourceWorkflowInstance,
+                            evaluatedNode: props.evaluatedNode,
+                            assignees: val,
+                        }), wantsReevaluation: true
+                    },
+                ], `User NodeComponent, assignees change`);
+            }}
+        />,
+        <MenuItem
+            key={++k}
+            onClick={async () => {
+                setAnchorEl(null);
+            }}
+        >
+            <ListItemIcon>{gIconMap.HourglassBottom()}</ListItemIcon>
+            Set due date...
+        </MenuItem>,
+    ];
+
+    return <>
+        <CMSmallButton className='DotMenu' style={{ fontSize: "14px" }} onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>
+            {gCharMap.VerticalEllipses()}
+        </CMSmallButton>
+        <Menu
+            id="menu-songlist"
+            anchorEl={anchorEl}
+            keepMounted={true}
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+        >
+            {menuItems}
+        </Menu >
+    </>;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowNodeProps {
     evaluatedNode: WorkflowEvaluatedNode;
     drawSelectionHandles: boolean;
@@ -681,40 +788,46 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
     }
 
     return (
-        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState} ${(props.drawSelectionHandles && nodeDef.selected) ? "selected" : "not-selected"}`}>
-
-            <div className={`nodeName name ${props.onClickToSelect ? "selectable" : "notSelectable"}`}
-                onClick={props.onClickToSelect ? (() => {
-                    props.onClickToSelect!();
-                }) : undefined}
-            >
-                {props.drawSelectionHandles && <Tooltip title="Select this node" disableInteractive>
-                    <span className={`selectionHandle`}
-                    ></span>
-                </Tooltip>}
+        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState} ${(props.drawSelectionHandles && nodeDef.selected) ? "selected" : "not-selected"}`} style={{ display: "flex" }}>
+            <div className="indicator">
                 <WorkflowNodeProgressIndicator value={evaluatedNode.evaluation} />
-                {props.drawSelectionHandles && <InspectObject src={evaluatedNode.evaluation} />}
-                {nodeDef.name}
-                <WorkflowAssigneesSelection
-                    value={evaluatedNode.assignees}
-                    showPictogram={true}
-                    readonly={true}
-                    onChange={val => {
-                        ctx.chainInstanceMutations([
-                            {
-                                fn: sourceWorkflowInstance => ctx.instanceMutator.SetAssigneesForNode({
-                                    sourceWorkflowInstance,
-                                    evaluatedNode,
-                                    assignees: val,
-                                }), wantsReevaluation: true
-                            },
-                        ], `User NodeComponent, assignees change`);
-                    }}
-                    evaluatedNode={evaluatedNode}
-                />
             </div>
-            {activeControls}
-
+            <div className="body" style={{ flexGrow: 1 }}>
+                <div style={{ display: "flex" }}>
+                    <div
+                        style={{ flexGrow: 1 }}
+                        className="nameLabel"
+                        onClick={props.onClickToSelect ? (() => {
+                            props.onClickToSelect!();
+                        }) : undefined}
+                    >
+                        {nodeDef.name}
+                    </div>
+                    <WorkflowNodeDotMenu evaluatedNode={evaluatedNode} />
+                </div>
+                <div className="assigneesRow">
+                    {!evaluatedNode.evaluation.isComplete && <WorkflowAssigneesSelection
+                        value={evaluatedNode.assignees}
+                        showPictogram={true}
+                        readonly={true}
+                        onChange={val => {
+                            ctx.chainInstanceMutations([
+                                {
+                                    fn: sourceWorkflowInstance => ctx.instanceMutator.SetAssigneesForNode({
+                                        sourceWorkflowInstance,
+                                        evaluatedNode,
+                                        assignees: val,
+                                    }), wantsReevaluation: true
+                                },
+                            ], `User NodeComponent, assignees change`);
+                        }}
+                        evaluatedNode={evaluatedNode}
+                    />}
+                </div>
+                <div className="activeControlsContainer">
+                    {activeControls}
+                </div>
+            </div>
         </div>
     );
 };
