@@ -95,7 +95,7 @@ export interface WorkflowNodeAssignee {
     // 2. how completeness is calculated. if there are required assignees, then all of them must be satisfied for the node to be complete.
     //    if there are no required, then any optionals will complete
     // however because UI is cluttered as it is, everyone is currently optional.
-    isRequired: boolean;
+    //isRequired: boolean;
     userId: number;
 }
 
@@ -526,29 +526,29 @@ const EvaluateTree = (
                 }));
 
                 // Calculate thisNodeProgress01.
-                const requiredAssignees = evaluation.completenessByAssigneeId.filter(c => c.assignee.isRequired);
-                const optionalAssignees = evaluation.completenessByAssigneeId.filter(c => !c.assignee.isRequired);
-                const satisfiedRequired = requiredAssignees.filter(c => c.completenessSatisfied).length;
+                //const requiredAssignees = evaluation.completenessByAssigneeId.filter(c => c.assignee.isRequired);
+                const optionalAssignees = evaluation.completenessByAssigneeId;//.filter(c => !c.assignee.isRequired);
+                //const satisfiedRequired = requiredAssignees.filter(c => c.completenessSatisfied).length;
                 const satisfiedOptional = optionalAssignees.filter(c => c.completenessSatisfied).length;
 
                 // if all are optional, then ANY satisfied will complete the node.
-                if (requiredAssignees.length === 0) {
-                    assert(optionalAssignees.length > 0, "0 optional + 0 required assignees wut");
-                    evaluation.completenessSatisfied = satisfiedOptional > 0;
-                    evaluation.progress01 = satisfiedOptional / optionalAssignees.length;
-                }
-                else {
-                    // there are some required
-                    const requiredSatisfied = satisfiedRequired === requiredAssignees.length;
-                    if (requiredSatisfied) { // don't let optional assignees block completeness when the required ones are satisfied.
-                        evaluation.progress01 = 1;
-                        evaluation.completenessSatisfied = true;
-                    } else {
-                        // required ones are not done. in order for optional assignees to result in forward progress, include the total assignees in the calculation.
-                        evaluation.progress01 = (satisfiedRequired + satisfiedOptional) / node.assignees.length;
-                        evaluation.completenessSatisfied = false;
-                    }
-                }
+                //if (requiredAssignees.length === 0) {
+                assert(optionalAssignees.length > 0, "0 optional + 0 required assignees wut");
+                evaluation.completenessSatisfied = satisfiedOptional > 0;
+                evaluation.progress01 = satisfiedOptional / optionalAssignees.length;
+                // }
+                // else {
+                //     // there are some required
+                //     const requiredSatisfied = satisfiedRequired === requiredAssignees.length;
+                //     if (requiredSatisfied) { // don't let optional assignees block completeness when the required ones are satisfied.
+                //         evaluation.progress01 = 1;
+                //         evaluation.completenessSatisfied = true;
+                //     } else {
+                //         // required ones are not done. in order for optional assignees to result in forward progress, include the total assignees in the calculation.
+                //         evaluation.progress01 = (satisfiedRequired + satisfiedOptional) / node.assignees.length;
+                //         evaluation.completenessSatisfied = false;
+                //     }
+                // }
             }
             break;
         case WorkflowCompletionCriteriaType.allNodesComplete:

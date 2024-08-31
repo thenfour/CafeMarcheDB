@@ -50,7 +50,7 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
         const ret = props.value.find(a => a.userId === u.id);
         if (!ret) {
             return {
-                isRequired: false,
+                //isRequired: false,
                 userId: u.id,
             };
         }
@@ -80,9 +80,9 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
             const iconSize = 13;
 
             const indicator = evaluated ? evaluated.completenessSatisfied ? <CheckCircleIcon style={{ width: iconSize, color: 'green' }} /> : <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} /> : undefined;
-            return <Tooltip disableInteractive={true} title={`Assigned to ${u.name} (${assignee.isRequired ? "Required" : "Optional"}) - ${evaluated?.completenessSatisfied ? "Complete" : "Incomplete"}`}>
-                <div style={{ display: "flex" }}>
-                    {props.showPictogram && gCharMap.BustInSilhouette()} {u.name} {assignee.isRequired ? "*" : ""} {indicator}
+            return <Tooltip disableInteractive={true} title={`Assigned to ${u.name} - ${evaluated?.completenessSatisfied ? "Complete" : "Incomplete"}`}>
+                <div style={{ display: "flex" }} className="assigneeCaption">
+                    {props.showPictogram && gCharMap.BustInSilhouette()} {u.name} {indicator}
                 </div>
             </Tooltip>;
         }}

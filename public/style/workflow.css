@@ -233,3 +233,8 @@
     font-size: 20px;
     font-weight: bold;
 }
+
+.assigneeCaption svg {
+    /* for assignees this is a little status icon; give it space from the name next */
+    margin-left: 2px;
+}
