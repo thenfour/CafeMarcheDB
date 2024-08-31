@@ -169,6 +169,7 @@ export interface WorkflowNodeInstance {
     // and it's necessary to keep field name as well because if you change the workflow def to a different field name. sure you could just clear it out, but it can be common to change the field name and change it back like "nah i didn't mean to" and it would be dumb to clear out statuses invoking a bunch of log messages that are just noise.
     lastFieldName: unknown;
     lastFieldValueAsString: string | unknown;
+    lastAssignees: WorkflowNodeAssignee[];
 };
 
 export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
@@ -289,6 +290,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
                 isTidy: true,
                 lastFieldName: undefined,
                 lastFieldValueAsString: undefined,
+                lastAssignees: [],
             };
             return ret;
         }
@@ -342,6 +344,7 @@ export interface WorkflowInstanceMutator {
     SetNodeStatusData: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, previousProgressState: WorkflowNodeProgressState, lastProgressState: WorkflowNodeProgressState, dueDate: Date | undefined, activeStateFirstTriggeredAt: Date | undefined }>;
     AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>; // userId should be added by handler
     SetLastFieldValue: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, fieldName: string | undefined, fieldValueAsString: string | undefined }>;
+    SetLastAssignees: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: WorkflowNodeAssignee[] }>;
 
     // commit the instance after chaining mutations.
     onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => void
@@ -624,6 +627,31 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
     for (let i = 0; i < tidiedInstance.nodeInstances.length; ++i) {
         const node = evaluatedNodes.find(en => en.nodeDefId === tidiedInstance.nodeInstances[i]!.nodeDefId)!;
         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
+
+        const sanitizedLastKnownAssignees = JSON.stringify(node.lastAssignees.map(v => v.userId).toSorted());
+        const sanitizedCurrentAssignees = JSON.stringify(node.assignees.map(a => a.userId).toSorted());
+        if (sanitizedCurrentAssignees !== sanitizedLastKnownAssignees) {
+            mutations.push({
+                fn: sourceWorkflowInstance => api.AddLogItem({
+                    sourceWorkflowInstance,
+                    msg: {
+                        at: new Date(),
+                        nodeDefId: nodeDef.id,
+                        fieldName: undefined,
+                        type: WorkflowLogItemType.AssigneesChanged,
+                        oldValue: sanitizedLastKnownAssignees,
+                        newValue: sanitizedCurrentAssignees,
+                    }
+                }), wantsReevaluation: false
+            }, {
+                fn: sourceWorkflowInstance => api.SetLastAssignees({
+                    sourceWorkflowInstance,
+                    evaluatedNode: node,
+                    value: node.assignees,
+                }), wantsReevaluation: false,
+            });
+        }
+
         if (nodeDef.completionCriteriaType !== WorkflowCompletionCriteriaType.fieldValue) {
             continue;
         }

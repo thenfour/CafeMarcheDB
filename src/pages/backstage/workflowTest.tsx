@@ -722,6 +722,16 @@ const MainContent = () => {
             ni.lastFieldValueAsString = args.fieldValueAsString;
             return args.sourceWorkflowInstance;
         },
+        SetLastAssignees: (args) => {
+            let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+            if (!ni) {
+                // evaluated nodes are instances, so this works and adds unused fields
+                ni = { ...args.evaluatedNode };
+                args.sourceWorkflowInstance.nodeInstances.push(ni);
+            }
+            ni.lastAssignees = args.value;
+            return args.sourceWorkflowInstance;
+        },
         onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
             setWorkflowInstance(newInstance);
             if (reEvaluationNeeded) {
