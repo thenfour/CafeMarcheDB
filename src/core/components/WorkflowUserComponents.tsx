@@ -961,7 +961,7 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
 
     const groupDef = ctx.flowDef.groupDefs.find(g => g.id === props.groupDefId) || {
         color: "gray",
-        name: "ungrouped",
+        name: "",
         id: -1334,
         selected: false,
         position: { x: 0, y: 0 },

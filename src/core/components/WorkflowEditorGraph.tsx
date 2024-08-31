@@ -120,7 +120,7 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
             selected: nodeDef?.selected || false,
             zIndex: 150,
 
-            extent: (nodeDef?.groupDefId) === undefined ? undefined : "parent",
+            extent: !(nodeDef?.groupDefId) ? undefined : "parent",
             parentId: !(nodeDef?.groupDefId) ? undefined : makeGroupNodeId(nodeDef.groupDefId),
 
             // and new data
@@ -379,6 +379,35 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
         showSnackbar({ severity: "success", children: `Copied ${text.length} characters to clipboard` });
     };
 
+    // follows source->target connections and collects all downstream nodes.
+    const collectDownstreamSources = (nodeDef: WorkflowNodeDef, collection: WorkflowNodeDef[]) => {
+        const focusedNodeDefId = nodeDef.id;
+        // find nodes depending on this
+        const newNodes = ctx.flowDef.nodeDefs.filter(nd => nd.nodeDependencies.some(x => x.nodeDefId === focusedNodeDefId));
+        collection.push(...newNodes);
+        // descend (ascend?)
+        newNodes.forEach(n => {
+            collectDownstreamSources(n, collection);
+        });
+    };
+
+    const isValidConnection = (connection: Connection): boolean => {
+        const parsedSource = getDef(connection.source);
+        if (parsedSource.type !== "node") return false; // only nodes can be connected.
+        const parsedTarget = getDef(connection.target);
+        if (parsedTarget.type !== "node") return false;
+        if (parsedTarget.defId === parsedSource.defId) return false; // connecting a node to itself.
+
+        // there is a cycle if the new target is a downstream source
+        const downstreamNodes: WorkflowNodeDef[] = [];
+        collectDownstreamSources(getNodeDef__(parsedTarget.defId), downstreamNodes);
+        if (downstreamNodes.some(n => n.id === parsedSource.defId)) {
+            return false;
+        }
+
+        return true;
+    };
+
     return (
         <div style={{ width: '100%', height: '900px', border: '2px solid black' }}>
             <ReactFlow
@@ -390,6 +419,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                 onConnect={handleConnect}
                 nodeTypes={gNodeTypes}
                 onlyRenderVisibleElements={true} // not sure but this may contribute to nodes disappearing randomly?
+                isValidConnection={isValidConnection}
 
                 onBeforeDelete={async (args: { nodes: CMFlowNode[], edges: Edge[] }) => {
                     console.log(args);

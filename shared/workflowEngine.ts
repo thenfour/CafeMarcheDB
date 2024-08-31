@@ -172,7 +172,7 @@ export interface WorkflowNodeInstance {
     lastAssignees: WorkflowNodeAssignee[];
     activeStateFirstTriggeredAt: Date | undefined;
     lastProgressState: WorkflowNodeProgressState;
-    lastDueDate: Date | undefined;
+    //lastDueDate: Date | undefined;
 };
 
 export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
@@ -295,7 +295,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
                 lastFieldName: undefined,
                 lastFieldValueAsString: undefined,
                 lastAssignees: [],
-                lastDueDate: undefined,
+                //lastDueDate: undefined,
             };
             return ret;
         }
@@ -352,7 +352,7 @@ export interface WorkflowInstanceMutator {
     AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>; // userId should be added by handler
     SetLastFieldValue: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, fieldName: string | undefined, fieldValueAsString: string | undefined }>;
     SetLastAssignees: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: WorkflowNodeAssignee[] }>;
-    SetLastDueDate: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: Date | undefined }>;
+    //SetLastDueDate: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: Date | undefined }>;
     SetHasBeenEvaluated: WorkflowInstanceMutatorFn<{}>;
 
     // commit the instance after chaining mutations.
@@ -681,13 +681,13 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                         }
                     }), wantsReevaluation: false
                 },
-                    {
-                        fn: sourceWorkflowInstance => api.SetLastDueDate({
-                            sourceWorkflowInstance,
-                            evaluatedNode: node,
-                            value: newValues.dueDate,
-                        }), wantsReevaluation: false,
-                    },
+                    // {
+                    //     fn: sourceWorkflowInstance => api.SetLastDueDate({
+                    //         sourceWorkflowInstance,
+                    //         evaluatedNode: node,
+                    //         value: newValues.dueDate,
+                    //     }), wantsReevaluation: false,
+                    // },
                     {
                         fn: sourceWorkflowInstance => api.SetDueDateForNode({
                             sourceWorkflowInstance,

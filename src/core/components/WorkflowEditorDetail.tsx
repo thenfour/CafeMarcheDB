@@ -185,6 +185,9 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
     const activationUsesNodeDependencies = usesNodeDependencies(props.nodeDef.activationCriteriaType);
     const completionUsesNodeDependencies = usesNodeDependencies(props.nodeDef.completionCriteriaType);
     const evaluated = ctx.getEvaluatedNode(props.nodeDef.id);
+    if (!evaluated) {
+        return null;
+    }
 
     const groupOptions = [{ value: null, label: "<none>" }, ...sortBy(ctx.flowDef.groupDefs, g => g.position.y).map(g => ({ value: g.id, label: g.name, color: g.color }))];
 

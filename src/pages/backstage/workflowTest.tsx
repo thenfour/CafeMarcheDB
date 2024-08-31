@@ -755,16 +755,16 @@ const MainContent = () => {
             ni.lastAssignees = args.value;
             return args.sourceWorkflowInstance;
         },
-        SetLastDueDate: (args) => {
-            let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
-            if (!ni) {
-                // evaluated nodes are instances, so this works and adds unused fields
-                ni = { ...args.evaluatedNode };
-                args.sourceWorkflowInstance.nodeInstances.push(ni);
-            }
-            ni.lastDueDate = args.value;
-            return args.sourceWorkflowInstance;
-        },
+        // SetLastDueDate: (args) => {
+        //     let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+        //     if (!ni) {
+        //         // evaluated nodes are instances, so this works and adds unused fields
+        //         ni = { ...args.evaluatedNode };
+        //         args.sourceWorkflowInstance.nodeInstances.push(ni);
+        //     }
+        //     ni.lastDueDate = args.value;
+        //     return args.sourceWorkflowInstance;
+        // },
         onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
             setWorkflowInstance(newInstance);
             if (reEvaluationNeeded) {
