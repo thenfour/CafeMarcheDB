@@ -1,23 +1,16 @@
 // the non-react-flow editing components of workflow. WorkflowVisualEditor depends on this.
 
-import { useContext } from "react";
-import React from "react";
+import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import React, { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
-import { getHashedColor, sortBy, SplitQuickFilter } from "shared/utils";
-import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
-import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
+import { getHashedColor, sortBy } from "shared/utils";
+import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { CMChip, CMChipContainer } from "./CMChip";
+import { NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
-import { WorkflowAssigneesSelection, EvaluatedWorkflowContext, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
-import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
-import { ChoiceEditCell } from "./ChooseItemDialog";
-import { DB3SelectTagsDialog, TagsFieldInput, useDb3Query, useInsertMutationClient } from "../db3/DB3Client";
-import { CMChip, CMChipContainer } from "./CMChip";
-import { DB3MultiSelect } from "../db3/components/db3Select";
-import * as db3 from "../db3/db3";
-import { CMMultiSelect, CMSelectDisplayStyle } from "./CMSelect";
-import { gMillisecondsPerDay } from "shared/time";
+import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 
 
 interface DueDateDefControlProps {

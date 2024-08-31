@@ -1,7 +1,7 @@
-import { Button, DialogActions, DialogContent, DialogTitle, Divider, ListItemIcon, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
+import { Button, DialogActions, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
 import React, { useContext } from "react";
-import { lerp, Setting, sortBy } from "shared/utils";
-import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowLogItemType, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
+import { Setting, sortBy } from "shared/utils";
+import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
 
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -9,15 +9,15 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { AdminInspectObject, InspectObject, ReactiveInputDialog } from "./CMCoreComponents";
-import { AnimatedCircularProgress, CMDialogContentText, CMSmallButton, EventDateField, NameValuePair, Pre } from "./CMCoreComponents2";
+import { DateTimeRange, DateToYYYYMMDDHHMMSS } from "shared/time";
 import * as DB3Client from "../db3/DB3Client";
-import * as db3 from "../db3/db3";
-import { DB3MultiSelect } from "../db3/components/db3Select";
-import { CMSelectDisplayStyle } from "./CMSelect";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
+import { DB3MultiSelect } from "../db3/components/db3Select";
+import * as db3 from "../db3/db3";
+import { ReactiveInputDialog } from "./CMCoreComponents";
+import { AnimatedCircularProgress, CMSmallButton, EventDateField, Pre } from "./CMCoreComponents2";
+import { CMSelectDisplayStyle } from "./CMSelect";
 import { SettingMarkdown } from "./SettingMarkdown";
-import { CalcRelativeTiming, DateTimeRange, DateToYYYYMMDDHHMMSS, gMillisecondsPerDay, RelativeTimingBucket } from "shared/time";
 
 type CMXYPosition = {
     x: number;
@@ -874,7 +874,7 @@ const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowNodeProps {
     evaluatedNode: WorkflowEvaluatedNode;
-    drawSelectionHandles: boolean;
+    //drawSelectionHandles: boolean;
     onClickToSelect?: (() => void) | undefined;
 };
 
@@ -897,7 +897,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
     }
 
     return (
-        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState} ${(props.drawSelectionHandles && nodeDef.selected) ? "selected" : "not-selected"}`} style={{ display: "flex" }}>
+        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState}`} style={{ display: "flex" }}>
             <div className="indicator">
                 <WorkflowNodeProgressIndicator evaluatedNode={evaluatedNode} />
             </div>
@@ -950,7 +950,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowGroupProps {
     groupDefId: number | null;
-    drawNodeSelectionHandles: boolean;
+    //drawNodeSelectionHandles: boolean;
     onClickToSelectNode?: ((args: { nodeDefId: number }) => void) | undefined;
     onClickToSelectGroup?: ((args: { groupDefId: number }) => void) | undefined;
 };
@@ -980,18 +980,12 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
 
     const sortedNodes = sortBy(filteredNodes, n => getNodeDef(n.nodeDefId).position.y);
     return (
-        <div className={`workflowNodeGroupContainer ${(props.drawNodeSelectionHandles && groupDef.selected) ? "selected" : "notSelected"}`} style={vars.style}
+        <div className={`workflowNodeGroupContainer`} style={vars.style}
         >
             <div className="header">
                 <div className={`groupName name ${props.onClickToSelectGroup ? "selectable" : "notSelectable"}`}
                     onClick={props.onClickToSelectGroup ? (() => props.onClickToSelectGroup!({ groupDefId: props.groupDefId! })) : undefined}
                 >
-                    {
-                        // don't allow selecting the null group
-                        props.drawNodeSelectionHandles && props.groupDefId &&
-                        <Tooltip title="Select this group" disableInteractive>
-                            <span className={`selectionHandle ${groupDef.selected ? "selected" : "not-selected"}`}>
-                            </span></Tooltip>}
                     {groupDef.name}
                 </div>
             </div>
@@ -999,7 +993,6 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
                 {sortedNodes.map(x => <WorkflowNodeComponent
                     key={x.nodeDefId}
                     evaluatedNode={x}
-                    drawSelectionHandles={props.drawNodeSelectionHandles}
                     onClickToSelect={props.onClickToSelectNode ? () => {
                         props.onClickToSelectNode!({
                             nodeDefId: x.nodeDefId,
@@ -1014,7 +1007,7 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowContainerProps {
-    drawNodeSelectionHandles: boolean;
+    //drawNodeSelectionHandles: boolean;
     onClickToSelectNode?: ((args: { nodeDefId: number }) => void) | undefined;
     onClickToSelectGroup?: ((args: { groupDefId: number }) => void) | undefined;
 };
@@ -1035,7 +1028,6 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
             {
                 (ungroupedNodes.length > 0) && <WorkflowGroupComponent
                     groupDefId={null}
-                    drawNodeSelectionHandles={props.drawNodeSelectionHandles}
                     onClickToSelectNode={props.onClickToSelectNode}
                 />
             }
@@ -1044,7 +1036,6 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
                     <WorkflowGroupComponent
                         key={groupDef.id}
                         groupDefId={groupDef.id}
-                        drawNodeSelectionHandles={props.drawNodeSelectionHandles}
                         onClickToSelectGroup={props.onClickToSelectGroup}
                         onClickToSelectNode={props.onClickToSelectNode}
                     />

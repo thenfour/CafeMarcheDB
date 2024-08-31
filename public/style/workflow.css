@@ -178,7 +178,6 @@
 .react-flow__resize-control.handle {
     width: 9px;
     height: 9px;
-    background-color: black;
 }
 
 .react-flow__node-cmGroup.selected .CMFlowGroupBackground {

@@ -650,6 +650,19 @@ const MainContent = () => {
     const [evaluationReason, setEvaluationReason] = React.useState<string>("");
 
     const instanceMutator: WorkflowInstanceMutator = {
+        CanCurrentUserViewInstances: () => {
+            return dashboardCtx.isAuthorized(Permission.view_workflow_instances);
+        },
+        CanCurrentUserEditInstances: () => {
+            return dashboardCtx.isAuthorized(Permission.edit_workflow_instances);
+        },
+        CanCurrentUserViewDefs: () => {
+            return dashboardCtx.isAuthorized(Permission.view_workflow_defs);
+        },
+        CanCurrentUserEditDefs: () => {
+            return dashboardCtx.isAuthorized(Permission.edit_workflow_defs);
+        },
+
         DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
             const binding = getModelBinding({
                 model,

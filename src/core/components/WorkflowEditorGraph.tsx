@@ -4,14 +4,12 @@ import { nanoid } from "nanoid";
 import React from "react";
 import { gLightSwatchColors } from "shared/color";
 import { getHashedColor } from "shared/utils";
-import { EvaluatedWorkflow, EvaluateWorkflow, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowInitializeInstance, WorkflowInstanceMutator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { gCharMap } from "../db3/components/IconMap";
 import { GetStyleVariablesForColor } from "./Color";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
-import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowDefMutatorProc, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
-import { InspectObject } from "./CMCoreComponents";
-import { gCharMap, gIconMap } from "../db3/components/IconMap";
-import PersonIcon from '@mui/icons-material/Person';
+import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 
 
 const makeNormalNodeId = (nodeDefId: number) => {
@@ -519,8 +517,6 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
     const ctx = React.useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
 
-    const [showSelectionHandles, setShowSelectionHandles] = React.useState<boolean>(false);
-
     const selectedNodeDef = ctx.flowDef.nodeDefs.find(nd => !!nd.selected);
     const selectedGroupDef = ctx.flowDef.groupDefs.find(nd => !!nd.selected);
     const selectedEdgeTargetNodeDef = ctx.flowDef.nodeDefs.find(nd => nd.nodeDependencies.some(d => d.selected));
@@ -566,9 +562,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                                 ctx.instanceMutator.ResetModelAndInstance();
                             }}
                         >Reset instance & model</Button>
-                        <FormControlLabel label={"Show selection handles"} control={<input type="checkbox" checked={showSelectionHandles} onChange={e => setShowSelectionHandles(e.target.checked)} />} />
                         <WorkflowContainer
-                            drawNodeSelectionHandles={showSelectionHandles}
                             onClickToSelectNode={(args) => {
                                 const nd = ctx.getNodeDef(args.nodeDefId);
                                 ctx.chainDefMutations([

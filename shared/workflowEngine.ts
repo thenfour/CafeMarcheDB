@@ -1,21 +1,15 @@
 // todo: 
 // - permissions
-// - detect circular references in graph
+//   x field mutations are built into the db model
+//   - changing due dates / assignees is a edit_workflow_instances
 
 // display
-// - workflow tab / view / control
 // - minimal indicator-only view
 // - assigned to you alerts
 //   - badge on profile badge
 //   - homepage message
 // - general indicators / overviews
 //   - event view some alert
-
-// permissions
-// - view_workflow_instances
-// - edit_workflow_instances
-// - manage_workflow_defs
-// - admin_workflow_defs
 
 // DB hookup
 
@@ -172,7 +166,6 @@ export interface WorkflowNodeInstance {
     lastAssignees: WorkflowNodeAssignee[];
     activeStateFirstTriggeredAt: Date | undefined;
     lastProgressState: WorkflowNodeProgressState;
-    //lastDueDate: Date | undefined;
 };
 
 export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
@@ -241,24 +234,8 @@ export type WorkflowEvaluatedDependentNode = WorkflowEvaluatedNode & {
 
 export interface EvaluatedWorkflow {
     flowInstance: WorkflowTidiedInstance;
-    //schemaHash: string;
     evaluatedNodes: WorkflowEvaluatedNode[];
 };
-
-// export function GetWorkflowDefSchemaHash(flowDef: WorkflowDef) {
-//     return hashString(JSON.stringify(flowDef, (key, val) => {
-//         // don't put these very "live" react flow state objects in the hash.
-//         switch (key) {
-//             case 'position':
-//             case 'selected':
-//             case 'width':
-//             case 'height':
-//                 return 0;
-//         }
-//         return val;
-//     })).toString();
-// }
-
 
 ///////////// API /////////////////////////////////////////////////////////////////
 // ensures all nodes are represented in the flow.
@@ -339,6 +316,11 @@ interface WorkflowInstanceMutator_Args {
 type WorkflowInstanceMutatorFn<TextraArgs> = (args: WorkflowInstanceMutator_Args & TextraArgs) => WorkflowInstance | undefined;
 
 export interface WorkflowInstanceMutator {
+    CanCurrentUserViewInstances: () => boolean,
+    CanCurrentUserEditInstances: () => boolean,
+    CanCurrentUserViewDefs: () => boolean,
+    CanCurrentUserEditDefs: () => boolean,
+
     DoesFieldValueSatisfyCompletionCriteria: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, tidiedNodeInstance: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee }) => boolean;
     GetModelFieldNames: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, node: WorkflowTidiedNodeInstance }) => string[];
 
@@ -352,7 +334,6 @@ export interface WorkflowInstanceMutator {
     AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>; // userId should be added by handler
     SetLastFieldValue: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, fieldName: string | undefined, fieldValueAsString: string | undefined }>;
     SetLastAssignees: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: WorkflowNodeAssignee[] }>;
-    //SetLastDueDate: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: Date | undefined }>;
     SetHasBeenEvaluated: WorkflowInstanceMutatorFn<{}>;
 
     // commit the instance after chaining mutations.
@@ -538,29 +519,13 @@ const EvaluateTree = (
                 }));
 
                 // Calculate thisNodeProgress01.
-                //const requiredAssignees = evaluation.completenessByAssigneeId.filter(c => c.assignee.isRequired);
                 const optionalAssignees = evaluation.completenessByAssigneeId;//.filter(c => !c.assignee.isRequired);
-                //const satisfiedRequired = requiredAssignees.filter(c => c.completenessSatisfied).length;
                 const satisfiedOptional = optionalAssignees.filter(c => c.completenessSatisfied).length;
 
                 // if all are optional, then ANY satisfied will complete the node.
-                //if (requiredAssignees.length === 0) {
                 assert(optionalAssignees.length > 0, "0 optional + 0 required assignees wut");
                 evaluation.completenessSatisfied = satisfiedOptional > 0;
                 evaluation.progress01 = satisfiedOptional / optionalAssignees.length;
-                // }
-                // else {
-                //     // there are some required
-                //     const requiredSatisfied = satisfiedRequired === requiredAssignees.length;
-                //     if (requiredSatisfied) { // don't let optional assignees block completeness when the required ones are satisfied.
-                //         evaluation.progress01 = 1;
-                //         evaluation.completenessSatisfied = true;
-                //     } else {
-                //         // required ones are not done. in order for optional assignees to result in forward progress, include the total assignees in the calculation.
-                //         evaluation.progress01 = (satisfiedRequired + satisfiedOptional) / node.assignees.length;
-                //         evaluation.completenessSatisfied = false;
-                //     }
-                // }
             }
             break;
         case WorkflowCompletionCriteriaType.allNodesComplete:
@@ -681,13 +646,6 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                         }
                     }), wantsReevaluation: false
                 },
-                    // {
-                    //     fn: sourceWorkflowInstance => api.SetLastDueDate({
-                    //         sourceWorkflowInstance,
-                    //         evaluatedNode: node,
-                    //         value: newValues.dueDate,
-                    //     }), wantsReevaluation: false,
-                    // },
                     {
                         fn: sourceWorkflowInstance => api.SetDueDateForNode({
                             sourceWorkflowInstance,
@@ -749,30 +707,6 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
             });
         }
 
-        // detect due date changes
-        // if (node.dueDate !== node.lastDueDate) {
-        //     mutations.push({
-        //         fn: sourceWorkflowInstance => api.AddLogItem({
-        //             sourceWorkflowInstance,
-        //             msg: {
-        //                 at: new Date(),
-        //                 nodeDefId: nodeDef.id,
-        //                 fieldName: undefined,
-        //                 type: WorkflowLogItemType.DueDateChanged,
-        //                 oldValue: node.lastDueDate,
-        //                 newValue: node.dueDate,
-        //             }
-        //         }), wantsReevaluation: false
-        //     }, {
-        //         fn: sourceWorkflowInstance => api.SetLastDueDate({
-        //             sourceWorkflowInstance,
-        //             evaluatedNode: node,
-        //             value: node.dueDate,
-        //         }), wantsReevaluation: false,
-        //     });
-        // }
-
-
         if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
             // detect field value changes
             const currentValueAsString = api.GetFieldValueAsString({
@@ -812,7 +746,6 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
     const ret: EvaluatedWorkflow = {
         evaluatedNodes,
         flowInstance: tidiedInstance,
-        //schemaHash: GetWorkflowDefSchemaHash(flowDef),
     };
     return ret;
 };

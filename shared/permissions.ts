@@ -79,7 +79,8 @@ export enum Permission {
     // ******************** workflow
     view_workflow_instances = "view_workflow_instances", // you can view the workflows tab
     edit_workflow_instances = "edit_workflow_instances", // you can control things like assignees & due dates
-    manage_workflow_defs = "manage_workflow_defs", // can you create or edit workflow definitions / graphs?
+    view_workflow_defs = "view_workflow_defs", // can you view workflow definitions / graphs?
+    edit_workflow_defs = "edit_workflow_defs", // can you create or edit workflow definitions / graphs?
     admin_workflow_defs = "admin_workflow_defs", // technical admin operations
 
     // ******************** menu customization
