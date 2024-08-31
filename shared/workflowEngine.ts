@@ -30,6 +30,7 @@ import { assert } from "blitz";
 import '@xyflow/react/dist/style.css';
 import { getNextSequenceId, hashString } from "shared/utils";
 import { gSwatchColors } from "./color";
+import { gMillisecondsPerDay } from "./time";
 
 
 
@@ -122,7 +123,7 @@ export interface WorkflowNodeDef {
 
     // defaults
     defaultAssignees: WorkflowNodeAssignee[]; // user ids that this node is assigned to by default
-    defaultDueDateDurationMsAfterStarted?: number | undefined; // if not set, no due date is specified
+    defaultDueDateDurationDaysAfterStarted?: number | undefined; // if not set, no due date is specified
 
     position: XYPosition, // for React Flow
     selected: boolean;
@@ -159,17 +160,18 @@ export interface WorkflowLogItem {
 export interface WorkflowNodeInstance {
     id: number;
     nodeDefId: number;
-    activeStateFirstTriggeredAt: Date | undefined;
-    lastProgressState: WorkflowNodeProgressState;
     silenceAlerts: boolean; // "pause" behavior
     assignees: WorkflowNodeAssignee[];
-    dueDate?: Date;
+    dueDate?: Date | undefined;
 
     // for logging field value changes, this is necessary.
     // and it's necessary to keep field name as well because if you change the workflow def to a different field name. sure you could just clear it out, but it can be common to change the field name and change it back like "nah i didn't mean to" and it would be dumb to clear out statuses invoking a bunch of log messages that are just noise.
     lastFieldName: unknown;
     lastFieldValueAsString: string | unknown;
     lastAssignees: WorkflowNodeAssignee[];
+    activeStateFirstTriggeredAt: Date | undefined;
+    lastProgressState: WorkflowNodeProgressState;
+    lastDueDate: Date | undefined;
 };
 
 export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
@@ -291,6 +293,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
                 lastFieldName: undefined,
                 lastFieldValueAsString: undefined,
                 lastAssignees: [],
+                lastDueDate: undefined,
             };
             return ret;
         }
@@ -341,10 +344,12 @@ export interface WorkflowInstanceMutator {
     ResetModelAndInstance: () => void;
 
     SetAssigneesForNode: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, assignees: WorkflowNodeAssignee[], }>;
+    SetDueDateForNode: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, dueDate: Date | undefined, }>;
     SetNodeStatusData: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, previousProgressState: WorkflowNodeProgressState, lastProgressState: WorkflowNodeProgressState, dueDate: Date | undefined, activeStateFirstTriggeredAt: Date | undefined }>;
     AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>; // userId should be added by handler
     SetLastFieldValue: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, fieldName: string | undefined, fieldValueAsString: string | undefined }>;
     SetLastAssignees: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: WorkflowNodeAssignee[] }>;
+    SetLastDueDate: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: Date | undefined }>;
 
     // commit the instance after chaining mutations.
     onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => void
@@ -610,9 +615,6 @@ const EvaluateTree = (
 //
 // actually i'm skeptical to update too much state in an evaluation function ... feels out of character.
 export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: WorkflowInstance, api: WorkflowInstanceMutator, reason: string): EvaluatedWorkflow => {
-
-    console.log(`Evaluating the workflow... reason: ${reason}`);
-
     const evaluatedNodes: WorkflowEvaluatedNode[] = [];
 
     const tidiedInstance = TidyWorkflowInstance(workflowInstance, flowDef);
@@ -628,6 +630,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
         const node = evaluatedNodes.find(en => en.nodeDefId === tidiedInstance.nodeInstances[i]!.nodeDefId)!;
         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
 
+        // detect assignees changed
         const sanitizedLastKnownAssignees = JSON.stringify(node.lastAssignees.map(v => v.userId).toSorted());
         const sanitizedCurrentAssignees = JSON.stringify(node.assignees.map(a => a.userId).toSorted());
         if (sanitizedCurrentAssignees !== sanitizedLastKnownAssignees) {
@@ -652,38 +655,60 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
             });
         }
 
-        if (nodeDef.completionCriteriaType !== WorkflowCompletionCriteriaType.fieldValue) {
-            continue;
-        }
-
-        // detect field value changes
-        const currentValueAsString = api.GetFieldValueAsString({
-            flowDef,
-            node,
-            nodeDef,
-        });
-        if (node.lastFieldName !== nodeDef.fieldName || currentValueAsString !== node.lastFieldValueAsString) {
-            // field value has changed.
+        // detect due date changes
+        if (node.dueDate !== node.lastDueDate) {
             mutations.push({
                 fn: sourceWorkflowInstance => api.AddLogItem({
                     sourceWorkflowInstance,
                     msg: {
                         at: new Date(),
-                        fieldName: nodeDef.fieldName,
                         nodeDefId: nodeDef.id,
-                        type: WorkflowLogItemType.FieldUpdated,
-                        oldValue: node.lastFieldValueAsString,
-                        newValue: currentValueAsString,
+                        fieldName: undefined,
+                        type: WorkflowLogItemType.DueDateChanged,
+                        oldValue: node.lastDueDate,
+                        newValue: node.dueDate,
                     }
                 }), wantsReevaluation: false
             }, {
-                fn: sourceWorkflowInstance => api.SetLastFieldValue({
+                fn: sourceWorkflowInstance => api.SetLastDueDate({
                     sourceWorkflowInstance,
                     evaluatedNode: node,
-                    fieldName: nodeDef.fieldName,
-                    fieldValueAsString: currentValueAsString,
+                    value: node.dueDate,
                 }), wantsReevaluation: false,
             });
+        }
+
+
+        if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
+            // detect field value changes
+            const currentValueAsString = api.GetFieldValueAsString({
+                flowDef,
+                node,
+                nodeDef,
+            });
+            if (node.lastFieldName !== nodeDef.fieldName || currentValueAsString !== node.lastFieldValueAsString) {
+                // field value has changed.
+                mutations.push({
+                    fn: sourceWorkflowInstance => api.AddLogItem({
+                        sourceWorkflowInstance,
+                        msg: {
+                            at: new Date(),
+                            fieldName: nodeDef.fieldName,
+                            nodeDefId: nodeDef.id,
+                            type: WorkflowLogItemType.FieldUpdated,
+                            oldValue: node.lastFieldValueAsString,
+                            newValue: currentValueAsString,
+                        }
+                    }), wantsReevaluation: false
+                }, {
+                    fn: sourceWorkflowInstance => api.SetLastFieldValue({
+                        sourceWorkflowInstance,
+                        evaluatedNode: node,
+                        fieldName: nodeDef.fieldName,
+                        fieldValueAsString: currentValueAsString,
+                    }), wantsReevaluation: false,
+                });
+            }
         }
     }
 
@@ -701,8 +726,8 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
 
             if ((node.activeStateFirstTriggeredAt === undefined) && node.evaluation.isInProgress) {
                 newValues.activeStateFirstTriggeredAt = new Date();
-                if (isNumber(nodeDef.defaultDueDateDurationMsAfterStarted)) {
-                    newValues.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationMsAfterStarted);
+                if (isNumber(nodeDef.defaultDueDateDurationDaysAfterStarted)) {
+                    newValues.dueDate = new Date(new Date().getTime() + nodeDef.defaultDueDateDurationDaysAfterStarted * gMillisecondsPerDay);
                 }
             }
 
@@ -726,7 +751,6 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
     }
 
     if (mutations.length) {
-        console.log(`post evaluation adding ${mutations.length} instance mutations`);
         chainWorkflowInstanceMutations({ ...workflowInstance }, mutations, api.onWorkflowInstanceMutationChainComplete);
     }
     const ret: EvaluatedWorkflow = {

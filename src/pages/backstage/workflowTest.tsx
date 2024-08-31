@@ -683,6 +683,7 @@ const MainContent = () => {
         ResetModelAndInstance: () => {
             setModel(MakeEmptyModel());
             setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
+            setEvaluationTrigger(evaluationTrigger + 1);
         },
         SetAssigneesForNode: (args) => {
             let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
@@ -693,6 +694,17 @@ const MainContent = () => {
             }
 
             ni.assignees = JSON.parse(JSON.stringify(args.assignees));
+            return args.sourceWorkflowInstance;
+        },
+        SetDueDateForNode: (args) => {
+            let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+            if (!ni) {
+                // evaluated nodes are instances, so this works and adds unused fields
+                ni = { ...args.evaluatedNode };
+                args.sourceWorkflowInstance.nodeInstances.push(ni);
+            }
+
+            ni.dueDate = args.dueDate;
             return args.sourceWorkflowInstance;
         },
         AddLogItem: (args) => {
@@ -732,6 +744,16 @@ const MainContent = () => {
             ni.lastAssignees = args.value;
             return args.sourceWorkflowInstance;
         },
+        SetLastDueDate: (args) => {
+            let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+            if (!ni) {
+                // evaluated nodes are instances, so this works and adds unused fields
+                ni = { ...args.evaluatedNode };
+                args.sourceWorkflowInstance.nodeInstances.push(ni);
+            }
+            ni.lastDueDate = args.value;
+            return args.sourceWorkflowInstance;
+        },
         onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
             setWorkflowInstance(newInstance);
             if (reEvaluationNeeded) {
@@ -744,8 +766,6 @@ const MainContent = () => {
     // re-evaluate when requested
     React.useEffect(() => {
         const x = EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
-        console.log(`Evaluated result: `);
-        console.log(x);
         setEvaluatedInstance(x);
     }, [evaluationTrigger]);
 

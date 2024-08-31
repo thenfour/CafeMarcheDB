@@ -60,7 +60,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import React from "react";
 import { TIconOptions } from "shared/utils";
-import { VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
+import { Alarm, Notifications, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -69,6 +69,7 @@ import { VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
 // keep in sync with export const gIconOptions = 
 export const gIconMap /*: IIconMap*/ = {
     Add: () => <AddIcon />,
+    Alarm: () => <Alarm />,
     AttachFile: () => <AttachFileIcon />,
     AddCircleOutline: () => <AddCircleOutlineIcon />,
     AutoAwesome: () => <AutoAwesomeIcon />,
@@ -106,6 +107,7 @@ export const gIconMap /*: IIconMap*/ = {
     More: () => <MoreIcon />,
     MusicNote: () => <MusicNoteIcon />,
     Nightlife: () => <NightlifeIcon />,
+    Notifications: () => <Notifications />,
     PauseCircleOutline: () => <PauseCircleOutlineIcon />,
     Person: () => <PersonIcon />,
     PersonSearch: () => <PersonSearchIcon />,

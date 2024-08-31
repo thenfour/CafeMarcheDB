@@ -437,6 +437,7 @@ export const Clamp = (x, low, hi) => {
 export const gIconOptions = {
     Add: "Add",
     AddCircleOutline: "AddCircleOutline",
+    Alarm: "Alarm",
     AttachFile: "AttachFile",
     AutoAwesome: "AutoAwesome",
     CalendarMonth: "CalendarMonth",
@@ -474,6 +475,7 @@ export const gIconOptions = {
     More: "More",
     MusicNote: "MusicNote",
     Nightlife: "Nightlife",
+    Notifications: "Notifications",
     PauseCircleOutline: "PauseCircleOutline",
     Person: "Person",
     PersonSearch: "PersonSearch",

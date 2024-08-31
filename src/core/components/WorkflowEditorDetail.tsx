@@ -1,6 +1,7 @@
 // the non-react-flow editing components of workflow. WorkflowVisualEditor depends on this.
 
 import { useContext } from "react";
+import React from "react";
 import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, sortBy, SplitQuickFilter } from "shared/utils";
 import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
@@ -16,7 +17,64 @@ import { CMChip, CMChipContainer } from "./CMChip";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import * as db3 from "../db3/db3";
 import { CMMultiSelect, CMSelectDisplayStyle } from "./CMSelect";
+import { gMillisecondsPerDay } from "shared/time";
 
+
+interface DueDateDefControlProps {
+    valueDays: number | undefined;
+    onChange: (val: number | undefined) => void;
+};
+
+const DueDateDefControl = (props: DueDateDefControlProps) => {
+    const [customDays, setCustomDays] = React.useState<number>(1);
+
+    type TOption = {
+        label: string;
+        value: number | undefined;
+    };
+
+    let noneValue = -2;
+    let noneOption = { label: "<no due date>", value: noneValue, custom: false };
+
+    const options: TOption[] = [
+        noneOption,
+        { label: "Immediate", value: 0 },
+        { label: "1 day", value: 1 },
+        { label: "2 days", value: 2 },
+        { label: "3 days", value: 3 },
+        { label: "4 days", value: 4 },
+        { label: "5 days", value: 5 },
+        { label: "7 days", value: 7 },
+        { label: "10 days", value: 10 },
+        { label: "14 days", value: 14 },
+        { label: "21 days", value: 21 },
+        { label: "30 days", value: 30 },
+    ];
+
+    let selectedOption: TOption = noneOption;
+    if (props.valueDays !== undefined) {
+        let found = options.find(x => x.value === props.valueDays);
+        if (found) {
+            selectedOption = found;
+        }
+    }
+
+    return <div className="DueDateDefControl">
+        <ChipSelector<number | undefined>
+            options={options}
+            editable={true}
+            value={selectedOption.value}
+            size="small"
+            onChange={(val) => {
+                if (val == null || (val === noneValue)) {
+                    props.onChange(undefined);
+                    return;
+                }
+                props.onChange(val);
+            }}
+        />
+    </div>;
+};
 
 
 interface NodeDependencyEditorProps {
@@ -68,7 +126,7 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
                     ], "clicking chip - makes relevance");
                 }}
             >
-                {props.value.determinesRelevance ? <WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} /> : null}Makes relevant
+                {props.value.determinesRelevance ? <WorkflowNodeProgressIndicator evaluatedNode={evaluatedSourceNode} /> : null}Makes relevant
             </CMChip>
             <CMChip
                 size="small"
@@ -86,7 +144,7 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
                         }
                     ], "clicking chip - makes active");
                 }}
-            >{props.value.determinesActivation ? <WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} /> : null}Makes active</CMChip>
+            >{props.value.determinesActivation ? <WorkflowNodeProgressIndicator evaluatedNode={evaluatedSourceNode} /> : null}Makes active</CMChip>
             <CMChip
                 size="small"
                 variation={{ selected: props.value.determinesCompleteness, enabled: true, fillOption: "filled", variation: "strong" }}
@@ -103,7 +161,7 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
                         },
                     ], "clicking chip - makes progress");
                 }}
-            >{props.value.determinesCompleteness ? <WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} /> : null}Makes progress</CMChip>
+            >{props.value.determinesCompleteness ? <WorkflowNodeProgressIndicator evaluatedNode={evaluatedSourceNode} /> : null}Makes progress</CMChip>
         </CMChipContainer>
     </div >;
 };
@@ -459,8 +517,25 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
         />
 
         <NameValuePair
-            name={"Default due date set"}
-            value={props.nodeDef.defaultDueDateDurationMsAfterStarted || "(none)"}
+            name={`Default due date`}
+            value={
+                <>
+                    {props.nodeDef.defaultDueDateDurationDaysAfterStarted === undefined ? "<no due date>" : `${props.nodeDef.defaultDueDateDurationDaysAfterStarted} days`}
+                    <DueDateDefControl
+                        valueDays={props.nodeDef.defaultDueDateDurationDaysAfterStarted}
+                        onChange={value => ctx.chainDefMutations([
+                            {
+                                fn: sourceDef => ctx.flowDefMutator.setNodeDefaultDueDateDaysAfterStarted({
+                                    sourceDef,
+                                    nodeDef: props.nodeDef,
+                                    defaultDueDateDurationDaysAfterStarted: value,
+                                }),
+                                wantsReevaluation: true,
+                            }
+                        ], `setting default assignees`)}
+                    />
+                </>
+            }
         />
 
         <NameValuePair

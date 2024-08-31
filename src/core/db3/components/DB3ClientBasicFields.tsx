@@ -862,11 +862,11 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface CMDatePickerProps {
-    autoFocus: boolean,
-    label: string,
+    autoFocus?: boolean,
+    label?: string,
     value: Date | null,
     onChange: (value: Date | null) => void,
-    allowNull: boolean,
+    allowNull?: boolean, // default falsy
 };
 
 export const CMDatePicker = (props: CMDatePickerProps) => {
@@ -921,15 +921,15 @@ export const CMDatePicker = (props: CMDatePickerProps) => {
         />
         {props.allowNull &&
             <FormControlLabel className='CMFormControlLabel' control={<Checkbox
-                checked={noDateChecked}
+                checked={!noDateChecked}
                 onChange={(e) => {
-                    setNoDateChecked(e.target.checked);
-                    if (!e.target.checked) {
+                    setNoDateChecked(!e.target.checked);
+                    if (e.target.checked) {
                         setQueueFocus(true);
                     }
                     //invokeOnChange();
                 }}
-            />} label="Don't specify a date" />
+            />} label="Specify a date" />
 
         }
     </>

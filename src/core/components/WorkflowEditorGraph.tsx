@@ -1,4 +1,4 @@
-import { Button, FormControlLabel } from "@mui/material";
+import { Button, FormControlLabel, Tooltip } from "@mui/material";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { nanoid } from "nanoid";
 import React from "react";
@@ -58,9 +58,10 @@ const FlowNodeNormal = (props: FlowNodeNormalProps) => {
             onConnect={(params) => console.log('handle onConnect', params)}
         />
         <div className="normalNodeContent">
-            {props.data.evaluatedNode?.evaluation && <WorkflowNodeProgressIndicator value={props.data.evaluatedNode.evaluation} />}
+            {props.data.evaluatedNode?.evaluation && <WorkflowNodeProgressIndicator evaluatedNode={props.data.evaluatedNode} />}
             <div className="name">{nodeDef?.name || ""}</div>
-            {(nodeDef.defaultAssignees.length > 0) && <div>{nodeDef.defaultAssignees.map(_ => <span key={_.userId}>{gCharMap.BustInSilhouette()}</span>)}</div>}
+            {(nodeDef.defaultAssignees.length > 0) && <Tooltip title={"This node has default assignees"} disableInteractive><div>{nodeDef.defaultAssignees.map(_ => <span key={_.userId}>{gCharMap.BustInSilhouette()}</span>)}</div></Tooltip>}
+            {nodeDef.defaultDueDateDurationDaysAfterStarted !== undefined && <Tooltip title={"This node has a due date"} disableInteractive><div>🔔</div></Tooltip>}
         </div>
         <Handle
             type="source"

@@ -9,14 +9,14 @@ import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOpti
 import { NameValuePair } from './CMCoreComponents2';
 import { gIconMap } from '../db3/components/IconMap';
 
-export interface CalendarEventSpec {
+interface CalendarEventSpec {
     id: string;
     dateRange: DateTimeRange;
     title: string;
     color: string;
 }
 
-export interface DaySlotProps extends PickersDayProps<Dayjs> {
+interface DaySlotProps extends PickersDayProps<Dayjs> {
     otherDay: Dayjs | null;
     range: DateTimeRange;
     selectedDay: Dayjs;
@@ -24,7 +24,7 @@ export interface DaySlotProps extends PickersDayProps<Dayjs> {
     //tooltipRef: HTMLDivElement | null;
 };
 
-export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlotProps) {
+function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: DaySlotProps) {
     const now = dayjs();
     const classes: string[] = [
         "day",
@@ -98,7 +98,7 @@ export function DaySlot({ day, selectedDay, range, items, otherDay, ...other }: 
     </div>
 }
 
-export interface EventCalendarMonthProps {
+interface EventCalendarMonthProps {
     value: Date;
     onChange: (value: Date) => void;
     otherDay: Date | null;
@@ -106,7 +106,7 @@ export interface EventCalendarMonthProps {
     items: CalendarEventSpec[];
 };
 
-export const EventCalendarMonth = (props: EventCalendarMonthProps) => {
+const EventCalendarMonth = (props: EventCalendarMonthProps) => {
     const djs = dayjs(props.value);
     const otherDjs = props.otherDay === null ? null : dayjs(props.otherDay);
     const [view, setView] = React.useState<DateView>("day");
@@ -140,7 +140,7 @@ export const EventCalendarMonth = (props: EventCalendarMonthProps) => {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface DayControlProps {
+interface DayControlProps {
     value: Date | null;
     otherValue: Date | null;
     coalescedFallbackValue: Date;
@@ -152,7 +152,7 @@ export interface DayControlProps {
     className?: string;
 };
 
-export const DayControl = (props: DayControlProps) => {
+const DayControl = (props: DayControlProps) => {
 
     const inputDate: Date | null = props.value;
     const isTBD = inputDate === null;

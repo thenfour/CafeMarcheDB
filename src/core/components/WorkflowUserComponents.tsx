@@ -1,4 +1,4 @@
-import { Divider, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Button, DialogActions, DialogContent, DialogTitle, Divider, ListItemIcon, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { lerp, Setting, sortBy } from "shared/utils";
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, EvaluateWorkflow, MakeNewWorkflowDef, TidyWorkflowInstance, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowLogItemType, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeEvaluation, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedInstance } from "shared/workflowEngine";
@@ -9,21 +9,49 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { AdminInspectObject, InspectObject } from "./CMCoreComponents";
-import { AnimatedCircularProgress, CMSmallButton, Pre } from "./CMCoreComponents2";
+import { AdminInspectObject, InspectObject, ReactiveInputDialog } from "./CMCoreComponents";
+import { AnimatedCircularProgress, CMDialogContentText, CMSmallButton, EventDateField, NameValuePair, Pre } from "./CMCoreComponents2";
 import * as DB3Client from "../db3/DB3Client";
 import * as db3 from "../db3/db3";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import { CMSelectDisplayStyle } from "./CMSelect";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { SettingMarkdown } from "./SettingMarkdown";
-import { DateToYYYYMMDDHHMMSS } from "shared/time";
+import { CalcRelativeTiming, DateTimeRange, DateToYYYYMMDDHHMMSS, gMillisecondsPerDay, RelativeTimingBucket } from "shared/time";
 
 type CMXYPosition = {
     x: number;
     y: number;
 };
 
+
+////////////////////////////////////////////////////////////////
+// for viewing a live workflow instance, this operates on a real Date value.
+// for the editor, it would be operating on a duration from the theoretical activation moment.
+interface WorkflowDueDateValueProps {
+    dueDate: Date | undefined;
+};
+
+export const WorkflowDueDateValue = (props: WorkflowDueDateValueProps) => {
+    if (props.dueDate === undefined) return null;
+
+    const range = new DateTimeRange({
+        durationMillis: 0,
+        isAllDay: true,
+        startsAtDateTime: props.dueDate || null,
+    });
+
+    const isOverdue = (props.dueDate <= new Date());
+
+    return <div className={`dueDateContainer ${isOverdue ? "overdue" : ""}`} style={{ display: "flex" }}>
+        {isOverdue && <>⚠️</>}
+        <div>Due date</div>
+        <EventDateField
+            dateRange={range}
+            className={`WorkflowNodeDueDateValue ${isOverdue ? "overdue" : ""}`}
+        />
+    </div>;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -98,6 +126,7 @@ interface WorkflowAssigneesMenuItemProps {
     evaluatedNode: WorkflowEvaluatedNode;
     onJustAfterClicked?: () => void;
     onChange: (val: WorkflowNodeAssignee[]) => void;
+    onCancel: () => void;
 };
 
 export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps) => {
@@ -133,6 +162,65 @@ export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps)
             Assign to...
         </MenuItem>}
     />
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+interface WorkflowDueDateMenuItemProps {
+    value: Date | undefined;
+    evaluatedNode: WorkflowEvaluatedNode;
+    onJustAfterClicked?: () => void;
+    onChange: (val: Date | undefined) => void;
+    onCancel: () => void;
+};
+
+export const WorkflowDueDateMenuItem = (props: WorkflowDueDateMenuItemProps) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    const [chosenValue, setChosenValue] = React.useState<Date | undefined>(() => props.value);
+
+    const handleSaveClick = () => {
+        props.onJustAfterClicked && props.onJustAfterClicked();
+        props.onChange(chosenValue);
+        setOpen(false);
+    };
+
+    return <>
+        {open && <ReactiveInputDialog
+            onCancel={() => setOpen(false)}
+        >
+            <DialogTitle>
+                Set due date
+            </DialogTitle>
+            <DialogContent dividers>
+
+                <DB3Client.CMDatePicker
+                    value={chosenValue || null}
+                    allowNull={true}
+                    onChange={(v) => setChosenValue(v || undefined)}
+                />
+
+                <WorkflowDueDateValue dueDate={chosenValue} />
+
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setOpen(false)} startIcon={gIconMap.Cancel()}>Cancel</Button>
+                <Button onClick={handleSaveClick} startIcon={gIconMap.Save()}>OK</Button>
+            </DialogActions>
+
+
+        </ReactiveInputDialog >}
+        <MenuItem
+            onClick={() => {
+                props.onJustAfterClicked && props.onJustAfterClicked();
+                setChosenValue(props.value);
+                setOpen(true);
+            }}
+        >
+            <ListItemIcon>{gIconMap.HourglassBottom()}</ListItemIcon>
+            Set due date...
+        </MenuItem>
+    </>;
 };
 
 
@@ -255,7 +343,7 @@ export interface WorkflowDefMutator {
     setNodeActivationCriteriaType: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
     setNodeCompletionCriteriaType: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
     setNodeDefaultAssignees: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, defaultAssignees: WorkflowNodeAssignee[] }>;
-    setNodeDefaultDueDateMsAfterStarted: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, defaultDueDateDurationMsAfterStarted?: number | undefined }>;
+    setNodeDefaultDueDateDaysAfterStarted: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, defaultDueDateDurationDaysAfterStarted?: number | undefined }>;
 
     setEdgeInfo: WorkflowDefMutatorFn<{
         sourceNodeDef: WorkflowNodeDef,
@@ -476,10 +564,10 @@ export const MakeWorkflowDefMutator = (): WorkflowDefMutator => {
             n.defaultAssignees = [...args.defaultAssignees];
             return args.sourceDef;
         },
-        setNodeDefaultDueDateMsAfterStarted: (args) => {
+        setNodeDefaultDueDateDaysAfterStarted: (args) => {
             const n = args.sourceDef.nodeDefs.find(n => n.id === args.nodeDef.id);
             if (!n) throw new Error(`unknown node`);
-            n.defaultDueDateDurationMsAfterStarted = args.defaultDueDateDurationMsAfterStarted;
+            n.defaultDueDateDurationDaysAfterStarted = args.defaultDueDateDurationDaysAfterStarted;
             return args.sourceDef;
         },
         setEdgeInfo: (args) => {
@@ -591,7 +679,6 @@ export const EvaluatedWorkflowProvider = ({ children, ...props }: React.PropsWit
     const ctx: EvaluatedWorkflowContextType = React.useMemo(() => {
         // const tidiedInstance = TidyWorkflowInstance(props.flowInstance, props.flowDef);
         // const newEvalFlow = EvaluateWorkflow(props.flowDef, tidiedInstance, props.instanceMutator, props.setWorkflowInstance);
-        console.log(`Making new context`);
         return {
             ...props,
             flowDefMutator: MakeWorkflowDefMutator(),
@@ -626,7 +713,9 @@ export const EvaluatedWorkflowProvider = ({ children, ...props }: React.PropsWit
 
 
 interface WorkflowNodeProgressIndicatorProps {
-    value: WorkflowNodeEvaluation;
+    evaluatedNode: WorkflowEvaluatedNode;
+    //value: WorkflowNodeEvaluation;
+    //isOverdue: boolean;
 }
 
 export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicatorProps) => {
@@ -635,6 +724,13 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
 
     const iconSize = `14px`;
     const progressSize = 18;
+
+    let isOverdue: boolean = false;
+    if (props.evaluatedNode.evaluation.isInProgress) {
+        if (!!props.evaluatedNode.dueDate) {
+            isOverdue = props.evaluatedNode.dueDate < new Date();
+        }
+    }
 
     const progressStateIcons = {
         [WorkflowNodeProgressState.Irrelevant]: <RemoveCircleOutlineIcon style={{ width: iconSize, color: '#bbb' }} />, // not part of the flow
@@ -659,24 +755,25 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
 
     // completeness state.
     let tooltip: React.ReactNode = null;
-    const nodeDef = ctx.getNodeDef(props.value.nodeDefId);
-    switch (props.value.progressState) {
+    const nodeDef = ctx.getNodeDef(props.evaluatedNode.evaluation.nodeDefId);
+    switch (props.evaluatedNode.evaluation.progressState) {
         case WorkflowNodeProgressState.Irrelevant:
             tooltip = <div>
                 <div>Irrelevant ({nodeDef.relevanceCriteriaType})</div>
-                {dependentNodesDesc(props.value.relevanceBlockedByNodes)}
+                {dependentNodesDesc(props.evaluatedNode.evaluation.relevanceBlockedByNodes)}
             </div>;
             break;
         case WorkflowNodeProgressState.Relevant:
             tooltip = <div>
                 <div>Blocked ({nodeDef.activationCriteriaType})</div>
-                {dependentNodesDesc(props.value.activationBlockedByNodes)}
+                {dependentNodesDesc(props.evaluatedNode.evaluation.activationBlockedByNodes)}
             </div>;
             break;
         case WorkflowNodeProgressState.Activated:
             tooltip = <div>
-                <div>In progress ({nodeDef.completionCriteriaType}) {props.value.progress01 === undefined ? "" : `${(props.value.progress01 * 100).toFixed(2)}%`}</div>
-                {dependentNodesDesc(props.value.completenessBlockedByNodes)}
+                <div>In progress ({nodeDef.completionCriteriaType}) {props.evaluatedNode.evaluation.progress01 === undefined ? "" : `${(props.evaluatedNode.evaluation.progress01 * 100).toFixed(2)}%`}</div>
+                {!!props.evaluatedNode.dueDate && <WorkflowDueDateValue dueDate={props.evaluatedNode.dueDate} />}
+                {dependentNodesDesc(props.evaluatedNode.evaluation.completenessBlockedByNodes)}
             </div>;
             break;
         case WorkflowNodeProgressState.Completed:
@@ -689,11 +786,11 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
     return (
         <Tooltip title={tooltip} disableInteractive={true}>
             <div style={{ display: 'inline-flex', alignItems: 'center', marginRight: "5px", marginLeft: "2px" }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', borderRadius: "50%", backgroundColor: "#0002" }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', borderRadius: "50%", backgroundColor: isOverdue ? "#fc0" : "#0001" }}>
                     <div style={{ position: 'relative', display: 'inline-flex' }}>
-                        <AnimatedCircularProgress size={progressSize} value={(props.value.progress01 || 0) * 100} duration={200} />
+                        <AnimatedCircularProgress size={progressSize} value={(props.evaluatedNode.evaluation.progress01 || 0) * 100} duration={200} />
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {progressStateIcons[props.value.progressState]}
+                            {progressStateIcons[props.evaluatedNode.evaluation.progressState]}
                         </div>
                     </div>
                 </div>
@@ -718,9 +815,11 @@ const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
     const menuItems: React.ReactNode[] = [
         // <Divider key={++k} />,
         <WorkflowAssigneesMenuItem
+            key={++k}
             value={props.evaluatedNode.assignees}
             evaluatedNode={props.evaluatedNode}
             onJustAfterClicked={() => setAnchorEl(null)}
+            onCancel={() => setAnchorEl(null)}
             //onChange={(val) => ctx.chainInstanceMutations()}
             onChange={val => {
                 ctx.chainInstanceMutations([
@@ -734,15 +833,25 @@ const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
                 ], `User NodeComponent, assignees change`);
             }}
         />,
-        <MenuItem
+        <WorkflowDueDateMenuItem
             key={++k}
-            onClick={async () => {
-                setAnchorEl(null);
+            value={props.evaluatedNode.dueDate}
+            evaluatedNode={props.evaluatedNode}
+            onJustAfterClicked={() => setAnchorEl(null)}
+            onCancel={() => setAnchorEl(null)}
+            //onChange={(val) => ctx.chainInstanceMutations()}
+            onChange={val => {
+                ctx.chainInstanceMutations([
+                    {
+                        fn: sourceWorkflowInstance => ctx.instanceMutator.SetDueDateForNode({
+                            sourceWorkflowInstance,
+                            evaluatedNode: props.evaluatedNode,
+                            dueDate: val,
+                        }), wantsReevaluation: true
+                    },
+                ], `User NodeComponent, assignees change`);
             }}
-        >
-            <ListItemIcon>{gIconMap.HourglassBottom()}</ListItemIcon>
-            Set due date...
-        </MenuItem>,
+        />,
     ];
 
     return <>
@@ -790,7 +899,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
     return (
         <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState} ${(props.drawSelectionHandles && nodeDef.selected) ? "selected" : "not-selected"}`} style={{ display: "flex" }}>
             <div className="indicator">
-                <WorkflowNodeProgressIndicator value={evaluatedNode.evaluation} />
+                <WorkflowNodeProgressIndicator evaluatedNode={evaluatedNode} />
             </div>
             <div className="body" style={{ flexGrow: 1 }}>
                 <div style={{ display: "flex" }}>
@@ -805,6 +914,10 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     </div>
                     <WorkflowNodeDotMenu evaluatedNode={evaluatedNode} />
                 </div>
+                {evaluatedNode.evaluation.isInProgress &&
+                    <div className="dueDateRow">
+                        <WorkflowDueDateValue dueDate={evaluatedNode.dueDate} />
+                    </div>}
                 <div className="assigneesRow">
                     {!evaluatedNode.evaluation.isComplete && <WorkflowAssigneesSelection
                         value={evaluatedNode.assignees}

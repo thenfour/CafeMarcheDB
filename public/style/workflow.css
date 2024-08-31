@@ -37,6 +37,35 @@
     cursor: pointer;
 }
 
+.workflowNodeContainer .nameLabel {
+    letter-spacing: -.5px;
+    font-weight: bold;
+}
+
+
+.WorkflowNodeDueDateValue {
+    display: flex;
+    align-items: center;
+}
+
+.dueDateContainer {
+    display: flex;
+    align-items: center;
+
+    opacity: 80%;
+    padding: 4px;
+    margin: 4px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    font-size: 14px;
+}
+
+
+.dueDateContainer.overdue {
+    color: #f60;
+    background-color: #ff8;
+    border: 1px solid #f80;
+}
 
 
 .workflowContainer {
