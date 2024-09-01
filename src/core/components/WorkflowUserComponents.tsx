@@ -60,12 +60,15 @@ interface WorkflowAssigneesSelectionProps {
     evaluatedNode: WorkflowEvaluatedNode;
     showPictogram: boolean;
     readonly: boolean;
-    onChange: (val: WorkflowNodeAssignee[]) => void;
+    onChange?: ((val: WorkflowNodeAssignee[]) => void) | undefined;
 };
 
 export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
+    const readonly = props.readonly || !ctx.instanceMutator.CanCurrentUserEditDefs();
+
     const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
 
     const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>(db3.xUser);
@@ -91,13 +94,13 @@ export const WorkflowAssigneesSelection = (props: WorkflowAssigneesSelectionProp
         value={props.value.map(x => getUserById(x.userId))}
         chipShape="rounded"
         chipSize="small"
-        readonly={props.readonly}
+        readonly={readonly}
         dialogTitle={`Select assignees for "${nodeDef.name}"`}
         dialogDescription={<SettingMarkdown setting={Setting.Workflow_SelectAssigneesDialogDescription} />}
-        onChange={items => props.onChange(items.map(u => ({
+        onChange={props.onChange ? ((items) => props.onChange!(items.map(u => ({
             isRequired: false,
             userId: u.id,
-        })))}
+        })))) : () => { }}
         editButtonChildren={"Assign..."}
         renderOption={u => {
             const assignee = getAssignee(u);
@@ -132,6 +135,9 @@ interface WorkflowAssigneesMenuItemProps {
 export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    if (!ctx.instanceMutator.CanCurrentUserViewInstances()) return <div>Unauthorized to view workflow instance</div>;
+    const readonly = !ctx.instanceMutator.CanCurrentUserEditInstances();
+
     const nodeDef = ctx.getNodeDef(props.evaluatedNode.nodeDefId);
 
     const queryStatus = DB3Client.useDb3Query<db3.UserMinimumPayload>(db3.xUser);
@@ -146,6 +152,7 @@ export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps)
         displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
         value={props.value.map(x => getUserById(x.userId))}
         chipShape="rounded"
+        readonly={readonly}
         chipSize="small"
         dialogTitle={`Select assignees for "${nodeDef.name}"`}
         dialogDescription={<SettingMarkdown setting={Setting.Workflow_SelectAssigneesDialogDescription} />}
@@ -154,10 +161,12 @@ export const WorkflowAssigneesMenuItem = (props: WorkflowAssigneesMenuItemProps)
             userId: u.id,
         })))}
         editButtonChildren={"Assign..."}
-        customRender={(onClick) => <MenuItem onClick={(e) => {
-            props.onJustAfterClicked && props.onJustAfterClicked();
-            onClick();
-        }}>
+        customRender={(onClick) => <MenuItem
+            disabled={readonly}
+            onClick={readonly ? undefined : ((e) => {
+                props.onJustAfterClicked && props.onJustAfterClicked();
+                onClick();
+            })}>
             <ListItemIcon>{gIconMap.Person()}</ListItemIcon>
             Assign to...
         </MenuItem>}
@@ -176,6 +185,11 @@ interface WorkflowDueDateMenuItemProps {
 };
 
 export const WorkflowDueDateMenuItem = (props: WorkflowDueDateMenuItemProps) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    if (!ctx.instanceMutator.CanCurrentUserViewInstances()) return <div>Unauthorized to view workflow instance</div>;
+    const readonly = !ctx.instanceMutator.CanCurrentUserEditInstances();
+
     const [open, setOpen] = React.useState<boolean>(false);
     const [chosenValue, setChosenValue] = React.useState<Date | undefined>(() => props.value);
 
@@ -211,11 +225,12 @@ export const WorkflowDueDateMenuItem = (props: WorkflowDueDateMenuItemProps) => 
 
         </ReactiveInputDialog >}
         <MenuItem
-            onClick={() => {
+            disabled={readonly}
+            onClick={readonly ? undefined : (() => {
                 props.onJustAfterClicked && props.onJustAfterClicked();
                 setChosenValue(props.value);
                 setOpen(true);
-            }}
+            })}
         >
             <ListItemIcon>{gIconMap.HourglassBottom()}</ListItemIcon>
             Set due date...
@@ -622,7 +637,7 @@ function chainMutations(
 export interface WorkflowRenderer {
     RenderFieldValueForNode: (args: {
         flowDef: WorkflowDef,
-        editable: boolean,
+        readonly: boolean,
         evaluatedNode: WorkflowEvaluatedNode,
         nodeDef: WorkflowNodeDef,
         //setWorkflowInstance: (newInstance: WorkflowInstance) => void,
@@ -631,6 +646,7 @@ export interface WorkflowRenderer {
     RenderEditorForFieldOperand2: (args: {
         flowDef: WorkflowDef,
         nodeDef: WorkflowNodeDef, // use this for value
+        readonly: boolean,
         evaluatedNode: WorkflowEvaluatedNode,
         setValue: (value: unknown) => void,
     }) => React.ReactNode;
@@ -756,6 +772,7 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
     // completeness state.
     let tooltip: React.ReactNode = null;
     const nodeDef = ctx.getNodeDef(props.evaluatedNode.evaluation.nodeDefId);
+    if (!nodeDef) return null;
     switch (props.evaluatedNode.evaluation.progressState) {
         case WorkflowNodeProgressState.Irrelevant:
             tooltip = <div>
@@ -874,13 +891,15 @@ const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowNodeProps {
     evaluatedNode: WorkflowEvaluatedNode;
-    //drawSelectionHandles: boolean;
     onClickToSelect?: (() => void) | undefined;
 };
 
 export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    if (!ctx.instanceMutator.CanCurrentUserViewInstances()) return <div>Unauthorized to view workflow instance</div>;
+    const editAuthorized = ctx.instanceMutator.CanCurrentUserEditInstances();
+    const readonly = !editAuthorized;
 
     const nodeDef = ctx.getNodeDef(evaluatedNode.nodeDefId);
 
@@ -891,8 +910,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                 evaluatedNode,
                 nodeDef,
                 flowDef: ctx.flowDef,
-                //setWorkflowInstance: ctx.setWorkflowInstance,
-                editable: true,
+                readonly,
             });
     }
 
@@ -914,7 +932,10 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     </div>
                     <WorkflowNodeDotMenu evaluatedNode={evaluatedNode} />
                 </div>
-                {evaluatedNode.evaluation.isInProgress &&
+                {/* i was tempted to remove due dates if you're not authorized to edit instances. but most of the time it will be
+                a model field change due, not the instance itself. so better just leave it.
+                 */}
+                {evaluatedNode.evaluation.isInProgress && editAuthorized &&
                     <div className="dueDateRow">
                         <WorkflowDueDateValue dueDate={evaluatedNode.dueDate} />
                     </div>}
@@ -922,18 +943,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     {!evaluatedNode.evaluation.isComplete && <WorkflowAssigneesSelection
                         value={evaluatedNode.assignees}
                         showPictogram={true}
-                        readonly={true}
-                        onChange={val => {
-                            ctx.chainInstanceMutations([
-                                {
-                                    fn: sourceWorkflowInstance => ctx.instanceMutator.SetAssigneesForNode({
-                                        sourceWorkflowInstance,
-                                        evaluatedNode,
-                                        assignees: val,
-                                    }), wantsReevaluation: true
-                                },
-                            ], `User NodeComponent, assignees change`);
-                        }}
+                        readonly={true} // always readonly; editing is via the dot menu
                         evaluatedNode={evaluatedNode}
                     />}
                 </div>
@@ -972,6 +982,7 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
     const getNodeDef = (nodeDefId: number) => ctx.flowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
     const filteredNodes = ctx.evaluatedFlow.evaluatedNodes.filter(ni => {
         const nodeDef = ctx.flowDef.nodeDefs.find(n => n.id === ni.nodeDefId)!;
+        if (!nodeDef) return false;
         return nodeDef.groupDefId == props.groupDefId; // fuzzy so null & undefined are both matching each other
     });
 
@@ -1050,6 +1061,7 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
 export const WorkflowLogView = () => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    if (!ctx.instanceMutator.CanCurrentUserViewInstances()) return <div>Unauthorized to view workflow instance</div>;
 
     // filter out unhelpful messages
     const filteredLog = ctx.evaluatedFlow.flowInstance.log.filter(l => {
@@ -1068,10 +1080,12 @@ export const WorkflowLogView = () => {
                     if (m.nodeDefId == null) {
                     } else {
                         const nodeDef = ctx.getNodeDef(m.nodeDefId);
-                        if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
-                            how = `Field '${nodeDef.fieldName || "<undefined>"}' / '${m.fieldName}' from '${m.oldValue}' by user ${m.userId}`;
-                        } else if ([WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType)) {
-                            how = `due to dependencies`;
+                        if (nodeDef) {
+                            if (nodeDef.completionCriteriaType === WorkflowCompletionCriteriaType.fieldValue) {
+                                how = `Field '${nodeDef.fieldName || "<undefined>"}' / '${m.fieldName}' from '${m.oldValue}' by user ${m.userId}`;
+                            } else if ([WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType)) {
+                                how = `due to dependencies`;
+                            }
                         }
                     }
                     return `[${i}] ${DateToYYYYMMDDHHMMSS(m.at)} ${m.type} from ${m.oldValue} -> ${m.newValue} on node ${m.nodeDefId} ${how}${m.comment !== undefined ? ` [${m.comment}]` : ""}`;

@@ -383,6 +383,11 @@ const minimalWorkflow: WorkflowDef = singleNode as any;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+interface FieldComponentProps<Tunderlying> {
+    binding: WFFieldBinding<Tunderlying>,
+    readonly?: boolean;
+};
+
 interface WFFieldBinding<Tunderlying> {
     flowDef: WorkflowDef;
     nodeDef: WorkflowNodeDef,
@@ -392,22 +397,24 @@ interface WFFieldBinding<Tunderlying> {
     setValue: (val: Tunderlying) => void,
     setOperand2: (val: Tunderlying | Tunderlying[]) => void,
     doesFieldValueSatisfyCompletionCriteria: () => boolean;
-    FieldValueComponent: (props: WFFieldBinding<Tunderlying>) => React.ReactNode;
-    FieldOperand2Component: (props: WFFieldBinding<Tunderlying>) => React.ReactNode;
+    FieldValueComponent: (props: FieldComponentProps<Tunderlying>) => React.ReactNode;
+    FieldOperand2Component: (props: FieldComponentProps<Tunderlying>) => React.ReactNode;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-const BoolField = (props: WFFieldBinding<boolean | null>) => {
+const BoolField = (props: FieldComponentProps<boolean | null>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    if (props.readonly) {
+        return props.binding.value ? "Approved" : "Not approved yet";
+    }
     return <CMSmallButton onClick={() => {
-        console.log(`clicked small button`);
-        props.setValue(!props.value);
-    }}>{props.value ? "unapprove" : "approve"}</CMSmallButton>
+        props.binding.setValue(!props.binding.value);
+    }}>{props.binding.value ? "unapprove" : "approve"}</CMSmallButton>
 }
 
-const BoolOperand = (props: WFFieldBinding<boolean | null>) => {
-    return <div>null, true, false. todo: support multiple if "any of"</div>;
+const BoolOperand = (props: FieldComponentProps<boolean | null>) => {
+    return <div>bool operand not really necessary</div>;
 };
 
 const MakeBoolBinding = (args: {
@@ -460,27 +467,29 @@ const MakeBoolBinding = (args: {
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-const TextField = (props: WFFieldBinding<string>) => {
+const TextField = (props: FieldComponentProps<string>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
     return <CMTextField
         autoFocus={false}
-        value={props.value || ""}
+        readOnly={props.readonly}
+        value={props.binding.value || ""}
         style={{ width: "auto" }}
         onChange={(e, v) => {
-            props.setValue(v);
+            props.binding.setValue(v);
         }}
     />
 }
 
-const TextOperand = (props: WFFieldBinding<string>) => {
-    const val = CoerceToString(props.nodeDef.fieldValueOperand2);
+const TextOperand = (props: FieldComponentProps<string>) => {
+    const val = CoerceToString(props.binding.nodeDef.fieldValueOperand2);
     return <CMTextField
         autoFocus={false}
         value={val}
+        readOnly={props.readonly}
         style={{ width: "auto" }}
         label="Operand 2"
-        onChange={(e, v) => props.setOperand2(v)}
+        onChange={(e, v) => props.binding.setOperand2(v)}
     />;
 }
 
@@ -649,18 +658,27 @@ const MainContent = () => {
     const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
     const [evaluationReason, setEvaluationReason] = React.useState<string>("");
 
+    const [canViewInstances, setCanViewInstances] = React.useState<boolean>(true);
+    const [canEditInstances, setCanEditInstances] = React.useState<boolean>(true);
+    const [canViewDefs, setCanViewDefs] = React.useState<boolean>(true);
+    const [canEditDefs, setCanEditDefs] = React.useState<boolean>(true);
+
     const instanceMutator: WorkflowInstanceMutator = {
         CanCurrentUserViewInstances: () => {
-            return dashboardCtx.isAuthorized(Permission.view_workflow_instances);
+            return canViewInstances;
+            //return dashboardCtx.isAuthorized(Permission.view_workflow_instances);
         },
         CanCurrentUserEditInstances: () => {
-            return dashboardCtx.isAuthorized(Permission.edit_workflow_instances);
+            return canEditInstances;
+            //return dashboardCtx.isAuthorized(Permission.edit_workflow_instances);
         },
         CanCurrentUserViewDefs: () => {
-            return dashboardCtx.isAuthorized(Permission.view_workflow_defs);
+            return canViewDefs;
+            //return dashboardCtx.isAuthorized(Permission.view_workflow_defs);
         },
         CanCurrentUserEditDefs: () => {
-            return dashboardCtx.isAuthorized(Permission.edit_workflow_defs);
+            return canEditDefs;
+            //return dashboardCtx.isAuthorized(Permission.edit_workflow_defs);
         },
 
         DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
@@ -768,16 +786,6 @@ const MainContent = () => {
             ni.lastAssignees = args.value;
             return args.sourceWorkflowInstance;
         },
-        // SetLastDueDate: (args) => {
-        //     let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
-        //     if (!ni) {
-        //         // evaluated nodes are instances, so this works and adds unused fields
-        //         ni = { ...args.evaluatedNode };
-        //         args.sourceWorkflowInstance.nodeInstances.push(ni);
-        //     }
-        //     ni.lastDueDate = args.value;
-        //     return args.sourceWorkflowInstance;
-        // },
         onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
             setWorkflowInstance(newInstance);
             if (reEvaluationNeeded) {
@@ -800,7 +808,7 @@ const MainContent = () => {
     }, [evaluationTrigger]);
 
     const renderer: WorkflowRenderer = {
-        RenderFieldValueForNode: ({ flowDef, nodeDef, editable, evaluatedNode }) => {
+        RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => {
             const binding = getModelBinding({
                 model,
                 flowDef,
@@ -815,9 +823,9 @@ const MainContent = () => {
                 },
                 setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
-            return binding.FieldValueComponent(binding);
+            return binding.FieldValueComponent({ binding, readonly });
         },
-        RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue }) => {
+        RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => {
             const binding = getModelBinding({
                 model,
                 flowDef,
@@ -828,7 +836,7 @@ const MainContent = () => {
                 },
                 setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
-            return binding.FieldOperand2Component(binding);
+            return binding.FieldOperand2Component({ binding, readonly });
         }
     };
 
@@ -849,6 +857,14 @@ const MainContent = () => {
         <InspectObject src={workflowInstance} label="Instance" />
         =
         <InspectObject src={evaluatedInstance} label="Evaluated" />
+        <input id="canViewInstances" type="checkbox" onChange={(e) => setCanViewInstances(e.target.checked)} checked={canViewInstances} />
+        <label htmlFor="canViewInstances">Can view instances</label>
+        <input id="canEditInstances" type="checkbox" onChange={(e) => setCanEditInstances(e.target.checked)} checked={canEditInstances} />
+        <label htmlFor="canEditInstances">Can edit instances</label>
+        <input id="canViewDefs" type="checkbox" onChange={(e) => setCanViewDefs(e.target.checked)} checked={canViewDefs} />
+        <label htmlFor="canViewDefs">Can view defs</label>
+        <input id="canEditDefs" type="checkbox" onChange={(e) => setCanEditDefs(e.target.checked)} checked={canEditDefs} />
+        <label htmlFor="canEditDefs">Can edit defs</label>
         <EvaluatedWorkflowProvider
             flowDef={workflowDef}
             flowInstance={workflowInstance}
@@ -856,7 +872,6 @@ const MainContent = () => {
             instanceMutator={instanceMutator}
             renderer={renderer}
             onWorkflowDefMutationChainComplete={(newFlowDef: WorkflowDef, reEvalRequested: boolean, reason: string) => {
-                //console.log(`onWorkflowDefMutationChainComplete : ${reason}`);
                 setWorkflowDef(newFlowDef);
                 if (reEvalRequested) {
                     // can't evaluate right now because state is immutable and eval depends on things that have just changed.
@@ -864,11 +879,6 @@ const MainContent = () => {
                     setEvaluationTrigger(evaluationTrigger + 1);
                 }
             }}
-        //setWorkflowDef={setWorkflowDef}
-        // setWorkflowInstance={(v) => {
-        //     console.log(`setting workflow instance`);
-        //     setWorkflowInstance(v);
-        // }}
         >
             <WorkflowEditorPOC />
         </EvaluatedWorkflowProvider>

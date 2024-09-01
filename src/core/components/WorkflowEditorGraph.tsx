@@ -48,6 +48,7 @@ interface FlowNodeNormalProps {
 
 const FlowNodeNormal = (props: FlowNodeNormalProps) => {
     const nodeDef = props.data.flowDef.nodeDefs.find(nd => nd.id === props.data.evaluatedNode!.nodeDefId)!;
+    if (!nodeDef) return <div>x</div>;
     return <>
         <Handle
             type="target"
@@ -178,6 +179,8 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
     const ctx = React.useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
 
+    if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
+
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const reactFlow = useReactFlow();
@@ -227,7 +230,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
     const handleNodesChange = (changes: NodeChange<CMFlowNode>[]) => {
         const mutators: WorkflowDefMutatorFnChainSpec[] = [];
         changes.forEach(change => {
-            if (change.type === 'position' && change.position) {
+            if (change.type === 'position' && change.position && ctx.instanceMutator.CanCurrentUserEditDefs()) {
                 const parsedDef = getDef(change.id);
                 if (!isNaN(change.position.x) && !isNaN(change.position.y))// why is this even a thing? but it is.
                 {
@@ -251,20 +254,22 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                 }
             }
 
-            if (change.type === 'dimensions' && change.dimensions) {
+            if (change.type === 'dimensions' && change.dimensions && ctx.instanceMutator.CanCurrentUserEditDefs()) {
                 const parsedDef = getDef(change.id);
                 if (!isNaN(change.dimensions.height) && !isNaN(change.dimensions.width)) // this may not be necessary
                 {
                     if (parsedDef.type === "group") {
-                        mutators.push({
-                            fn: sourceDef => ctx.flowDefMutator.setGroupSize({
-                                sourceDef,
-                                groupDef: parsedDef.groupDef,
-                                height: change.dimensions!.height,
-                                width: change.dimensions!.width,
-                            }), wantsReevaluation: false
-                        });
-                    } else {
+                        if (parsedDef.groupDef) {
+                            mutators.push({
+                                fn: sourceDef => ctx.flowDefMutator.setGroupSize({
+                                    sourceDef,
+                                    groupDef: parsedDef.groupDef,
+                                    height: change.dimensions!.height,
+                                    width: change.dimensions!.width,
+                                }), wantsReevaluation: false
+                            });
+                        }
+                    } else if (parsedDef.nodeDef) {
                         mutators.push({
                             fn: sourceDef => ctx.flowDefMutator.setNodeSize({
                                 sourceDef,
@@ -279,14 +284,16 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
             if (change.type === "select" && change.selected !== undefined) {
                 const parsedDef = getDef(change.id);
                 if (parsedDef.type === "group") {
-                    mutators.push({
-                        fn: sourceDef => ctx.flowDefMutator.setGroupSelected({
-                            sourceDef,
-                            groupDef: parsedDef.groupDef,
-                            selected: change.selected,
-                        }), wantsReevaluation: false
-                    });
-                } else {
+                    if (parsedDef.groupDef) {
+                        mutators.push({
+                            fn: sourceDef => ctx.flowDefMutator.setGroupSelected({
+                                sourceDef,
+                                groupDef: parsedDef.groupDef,
+                                selected: change.selected,
+                            }), wantsReevaluation: false
+                        });
+                    }
+                } else if (parsedDef.nodeDef) {
                     mutators.push({
                         fn: sourceDef => ctx.flowDefMutator.setNodeSelected({
                             sourceDef,
@@ -296,16 +303,18 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                     });
                 }
             }
-            if (change.type === "remove") {
+            if (change.type === "remove" && ctx.instanceMutator.CanCurrentUserEditDefs()) {
                 const parsedDef = getDef(change.id);
                 if (parsedDef.type === "group") {
-                    mutators.push({
-                        fn: sourceDef => ctx.flowDefMutator.deleteGroup({
-                            sourceDef,
-                            groupDef: parsedDef.groupDef,
-                        }), wantsReevaluation: false
-                    });
-                } else {
+                    if (parsedDef.groupDef) {
+                        mutators.push({
+                            fn: sourceDef => ctx.flowDefMutator.deleteGroup({
+                                sourceDef,
+                                groupDef: parsedDef.groupDef,
+                            }), wantsReevaluation: false
+                        });
+                    }
+                } else if (parsedDef.nodeDef) {
                     mutators.push({
                         fn: sourceDef => ctx.flowDefMutator.deleteNode({
                             sourceDef,
@@ -319,6 +328,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
     };
 
     const handleEdgesChange = (changes: EdgeChange[]) => {
+        if (!ctx.instanceMutator.CanCurrentUserEditDefs()) return;
         const mutators: WorkflowDefMutatorFnChainSpec[] = [];
         changes.forEach(change => {
             switch (change.type) {
@@ -357,6 +367,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
     };
 
     const handleConnect = (connection: Connection) => {
+        if (!ctx.instanceMutator.CanCurrentUserEditDefs()) return;
         const mutators: WorkflowDefMutatorFnChainSpec[] = [];
         const parsedSource = getDef(connection.source);
         const parsedTarget = getDef(connection.target);
@@ -406,6 +417,8 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
         return true;
     };
 
+    const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
+
     return (
         <div style={{ width: '100%', height: '900px', border: '2px solid black' }}>
             <ReactFlow
@@ -419,8 +432,14 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                 onlyRenderVisibleElements={true} // not sure but this may contribute to nodes disappearing randomly?
                 isValidConnection={isValidConnection}
 
+                edgesReconnectable={!readonly}
+                edgesFocusable={!readonly}
+                nodesDraggable={!readonly}
+                nodesConnectable={!readonly}
+                nodesFocusable={!readonly}
+
                 onBeforeDelete={async (args: { nodes: CMFlowNode[], edges: Edge[] }) => {
-                    console.log(args);
+                    //console.log(args);
                     // basically, anything that's not EXPLICITLY selected do not delete.
                     // this is to make sure deleting a group does not delete all nodes inside it.
                     const ret: {
@@ -448,52 +467,54 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                         }}>
                             Copy flow definition
                         </button>
-                        <button onClick={() => {
-                            const n: WorkflowNodeDef = {
-                                id: ctx.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
-                                name: nanoid(),
-                                groupDefId: null,
-                                displayStyle: WorkflowNodeDisplayStyle.Normal,
-                                completionCriteriaType: WorkflowCompletionCriteriaType.always,
-                                activationCriteriaType: WorkflowCompletionCriteriaType.always,
-                                relevanceCriteriaType: WorkflowCompletionCriteriaType.always,
-                                defaultAssignees: [],
-                                thisNodeProgressWeight: 1,
-                                nodeDependencies: [],
-                                position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
-                                selected: true,
-                                width: undefined,
-                                height: undefined,
-                            };
+                        {!readonly && <>
+                            <button onClick={() => {
+                                const n: WorkflowNodeDef = {
+                                    id: ctx.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
+                                    name: nanoid(),
+                                    groupDefId: null,
+                                    displayStyle: WorkflowNodeDisplayStyle.Normal,
+                                    completionCriteriaType: WorkflowCompletionCriteriaType.always,
+                                    activationCriteriaType: WorkflowCompletionCriteriaType.always,
+                                    relevanceCriteriaType: WorkflowCompletionCriteriaType.always,
+                                    defaultAssignees: [],
+                                    thisNodeProgressWeight: 1,
+                                    nodeDependencies: [],
+                                    position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
+                                    selected: true,
+                                    width: undefined,
+                                    height: undefined,
+                                };
 
-                            ctx.chainDefMutations([
-                                {
-                                    fn: sourceDef => ctx.flowDefMutator.addNode({
-                                        sourceDef,
-                                        nodeDef: n,
-                                    }),
-                                    wantsReevaluation: true,
-                                }
-                            ], "Add node via graph button");
-                        }}>New node</button>
-                        <button onClick={() => {
-                            const n: WorkflowNodeGroupDef = {
-                                id: ctx.flowDef.groupDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
-                                name: nanoid(),
-                                color: gLightSwatchColors.light_blue,
-                                height: 200,
-                                width: 200,
-                                position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
-                                selected: true,
-                            };
-                            ctx.chainDefMutations([
-                                {
-                                    fn: sourceDef => ctx.flowDefMutator.addGroup({
-                                        sourceDef,
-                                        groupDef: n,
-                                    }), wantsReevaluation: false
-                                }], "add group via graph button");
-                        }}>new group</button>
+                                ctx.chainDefMutations([
+                                    {
+                                        fn: sourceDef => ctx.flowDefMutator.addNode({
+                                            sourceDef,
+                                            nodeDef: n,
+                                        }),
+                                        wantsReevaluation: true,
+                                    }
+                                ], "Add node via graph button");
+                            }}>+ New node</button>
+                            <button onClick={() => {
+                                const n: WorkflowNodeGroupDef = {
+                                    id: ctx.flowDef.groupDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
+                                    name: nanoid(),
+                                    color: gLightSwatchColors.light_blue,
+                                    height: 200,
+                                    width: 200,
+                                    position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
+                                    selected: true,
+                                };
+                                ctx.chainDefMutations([
+                                    {
+                                        fn: sourceDef => ctx.flowDefMutator.addGroup({
+                                            sourceDef,
+                                            groupDef: n,
+                                        }), wantsReevaluation: false
+                                    }], "add group via graph button");
+                            }}>+ New group</button>
+                        </>}
                     </div>
                 </div>
                 {/* <Controls /> */}

@@ -49,7 +49,7 @@ export const ChipSelector = <TValue,>({
                         <CMChip
                             key={option.value as any}
                             className={`selectable option ${isSelected ? "selected" : "notSelected"}`}
-                            onClick={() => handleClick(option)}
+                            onClick={editable ? () => handleClick(option) : undefined}
                             color={color}
                             size={props.size}
                             shape={props.shape}

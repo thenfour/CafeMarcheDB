@@ -1,7 +1,9 @@
 // todo: 
 // - permissions
 //   x field mutations are built into the db model
-//   - changing due dates / assignees is a edit_workflow_instances
+// - hook this up to the rest of the app finally.
+// - display style
+// - "suppress alerts"
 
 // display
 // - minimal indicator-only view
@@ -155,7 +157,6 @@ export interface WorkflowLogItem {
 export interface WorkflowNodeInstance {
     id: number;
     nodeDefId: number;
-    silenceAlerts: boolean; // "pause" behavior
     assignees: WorkflowNodeAssignee[];
     dueDate?: Date | undefined;
 
@@ -202,7 +203,6 @@ export interface WorkflowNodeEvaluation {
     completenessSatisfied: boolean;
     progressState: WorkflowNodeProgressState;
     progress01: number | undefined; // progress taking into account dependent nodes. or if this is a field node, then will be 0 or 1, unlessy ou have multiple assignees.
-    isSilent: boolean; // propagation of silenceAlerts
 
     isComplete: boolean; // same as progressstate === completed
     isInProgress: boolean; // same as progressstate === activated
@@ -263,7 +263,6 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
             // create a default instance node
             const ret: WorkflowTidiedNodeInstance = {
                 id: -getNextSequenceId(),
-                silenceAlerts: false,
                 activeStateFirstTriggeredAt: undefined,
                 nodeDefId: nodeDef.id,
                 lastProgressState: WorkflowNodeProgressState.InvalidState,
@@ -272,7 +271,6 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
                 lastFieldName: undefined,
                 lastFieldValueAsString: undefined,
                 lastAssignees: [],
-                //lastDueDate: undefined,
             };
             return ret;
         }
@@ -428,7 +426,6 @@ const EvaluateTree = (
         progressState: WorkflowNodeProgressState.InvalidState,
         dependentNodes: evaluatedChildren,
         completenessByAssigneeId: [],
-        isSilent: evaluatedChildren.every(v => v.evaluation.isSilent), // parents only silenced when all children are (if there are any children with alerts, parents still see alerts)
 
         // two cases:
         // 1. this step requires a field to complete. this weight is used.

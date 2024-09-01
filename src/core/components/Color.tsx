@@ -271,6 +271,7 @@ export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps)
 
 export interface ColorPickProps {
     value: ColorPaletteEntry | null | string;
+    readonly?: boolean;
     allowNull: boolean;
     palettes: ColorPaletteList;
     onChange: (value: ColorPaletteEntry | null) => void;
@@ -296,6 +297,7 @@ export const ColorPick = (props: ColorPickProps) => {
             onClose={() => setAnchorEl(null)}
         >
             <ColorPaletteListComponent allowNull={props.allowNull} palettes={props.palettes} onClick={(e: ColorPaletteEntry | null) => {
+                if (props.readonly) return;
                 props.onChange(e);
                 setAnchorEl(null);
             }}

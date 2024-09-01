@@ -19,7 +19,10 @@ interface DueDateDefControlProps {
 };
 
 const DueDateDefControl = (props: DueDateDefControlProps) => {
-    const [customDays, setCustomDays] = React.useState<number>(1);
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
+    //const [customDays, setCustomDays] = React.useState<number>(1);
 
     type TOption = {
         label: string;
@@ -55,7 +58,7 @@ const DueDateDefControl = (props: DueDateDefControlProps) => {
     return <div className="DueDateDefControl">
         <ChipSelector<number | undefined>
             options={options}
-            editable={true}
+            editable={!readonly}
             value={selectedOption.value}
             size="small"
             onChange={(val) => {
@@ -78,19 +81,8 @@ interface NodeDependencyEditorProps {
 const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
-
-
-    // const renderDependencyLI = (d: WorkflowNodeDependency) => {
-    //     const en = ctx.getEvaluatedNode(d.nodeDefId);
-    //     return <li key={d.nodeDefId}>
-    //         <WorkflowNodeProgressIndicator value={en.evaluation} />
-    //         [{en.evaluation.thisCompletionWeightCompleted} / {en.evaluation.thisCompletionWeightTotal}]
-    //         {ctx.getNodeDef(d.nodeDefId).name}
-    //         {d.nodeDefId === props.highlightDependencyNodeDef?.id && <div>!highlighted!</div>}
-    //     </li>;
-    // }
-
-    //<WorkflowNodeProgressIndicator value={evaluatedSourceNode.evaluation} />
+    if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
+    const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
 
     const connId = WorkflowMakeConnectionId(props.value.nodeDefId, props.targetNodeDef.id);
     const style = { "--hashed-color": getHashedColor(connId) };
@@ -105,7 +97,7 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
             <CMChip
                 size="small"
                 variation={{ selected: props.value.determinesRelevance, enabled: true, fillOption: "filled", variation: "strong" }}
-                onClick={() => {
+                onClick={readonly ? undefined : () => {
                     ctx.chainDefMutations([
                         {
                             fn: (sourceDef: WorkflowDef) => ctx.flowDefMutator.setEdgeInfo({
@@ -124,7 +116,7 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
             <CMChip
                 size="small"
                 variation={{ selected: props.value.determinesActivation, enabled: true, fillOption: "filled", variation: "strong" }}
-                onClick={() => {
+                onClick={readonly ? undefined : () => {
                     ctx.chainDefMutations([
                         {
                             fn: (sourceDef) => ctx.flowDefMutator.setEdgeInfo({
@@ -141,7 +133,7 @@ const NodeDependencyEditor = (props: NodeDependencyEditorProps) => {
             <CMChip
                 size="small"
                 variation={{ selected: props.value.determinesCompleteness, enabled: true, fillOption: "filled", variation: "strong" }}
-                onClick={() => {
+                onClick={readonly ? undefined : () => {
                     ctx.chainDefMutations([
                         {
                             fn: (sourceDef) => ctx.flowDefMutator.setEdgeInfo({
@@ -169,6 +161,8 @@ interface WorkflowNodeEditorProps {
 export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
+    const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
 
     const relevanceDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesRelevance);
     const activationDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesActivation);
@@ -192,6 +186,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                 <CMTextField
                     className="nodeNameInput"
                     autoFocus={false}
+                    readOnly={readonly}
                     value={props.nodeDef.name}
                     onChange={(e, v) => {
                         ctx.chainDefMutations([
@@ -213,7 +208,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
             name={"Group"}
             value={<>
                 <ChipSelector
-                    editable={true}
+                    editable={!readonly}
                     onChange={(val) => {
                         ctx.chainDefMutations([
                             {
@@ -249,7 +244,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
             name={`Relevance (${evaluated.evaluation.relevanceSatisfied ? "satisfied" : "incomplete"})`}
             value={<>
                 <EnumChipSelector
-                    editable={true}
+                    editable={!readonly}
                     size="small"
                     shape="rectangle"
                     onChange={(val) => {
@@ -305,7 +300,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
             name={`Activation (${evaluated.evaluation.activationSatisfied ? "satisfied" : "incomplete"})`}
             value={<>
                 <EnumChipSelector
-                    editable={true}
+                    editable={!readonly}
                     size="small"
                     shape="rectangle"
                     onChange={(val) => {
@@ -360,7 +355,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
             name={`Completion (${evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"})`}
             value={<>
                 <EnumChipSelector
-                    editable={true}
+                    editable={!readonly}
                     size="small"
                     shape="rectangle"
                     onChange={(val) => {
@@ -412,44 +407,47 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         <div style={{ display: "flex", alignItems: "center" }}>
                             <FormControl variant="standard">
                                 <InputLabel>Field</InputLabel>
-                                <Select variant="filled" size="small" value={props.nodeDef.fieldName || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */} onChange={(e) => {
-                                    ctx.chainDefMutations([
-                                        {
-                                            fn: def => ctx.flowDefMutator.setNodeFieldInfo({
-                                                sourceDef: def,
-                                                nodeDef: props.nodeDef,
-                                                fieldName: e.target.value,
-                                                fieldValueOperator: props.nodeDef.fieldValueOperator,
-                                                fieldValueOperand2: props.nodeDef.fieldValueOperand2,
-                                            }),
-                                            wantsReevaluation: true,
-                                        }
-                                    ], `setting which field`);
-                                }}>
+                                <Select variant="filled" readOnly={readonly} size="small" value={props.nodeDef.fieldName || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
+                                    onChange={readonly ? undefined : (e) => {
+                                        ctx.chainDefMutations([
+                                            {
+                                                fn: def => ctx.flowDefMutator.setNodeFieldInfo({
+                                                    sourceDef: def,
+                                                    nodeDef: props.nodeDef,
+                                                    fieldName: e.target.value,
+                                                    fieldValueOperator: props.nodeDef.fieldValueOperator,
+                                                    fieldValueOperand2: props.nodeDef.fieldValueOperand2,
+                                                }),
+                                                wantsReevaluation: true,
+                                            }
+                                        ], `setting which field`);
+                                    }}>
                                     {ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) }).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                                 </Select>
                             </FormControl>
                             <FormControl variant="standard">
                                 <InputLabel>Operator</InputLabel>
-                                <Select variant="filled" size="small" value={props.nodeDef.fieldValueOperator || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */} onChange={(e) => {
-                                    ctx.chainDefMutations([
-                                        {
-                                            fn: def => ctx.flowDefMutator.setNodeFieldInfo({
-                                                sourceDef: def,
-                                                nodeDef: props.nodeDef,
-                                                fieldName: props.nodeDef.fieldName,
-                                                fieldValueOperator: e.target.value as WorkflowFieldValueOperator,
-                                                fieldValueOperand2: props.nodeDef.fieldValueOperand2,
-                                            }),
-                                            wantsReevaluation: true,
-                                        }
-                                    ], `setting field operator`);
-                                }}>
+                                <Select variant="filled" size="small" readOnly={readonly} value={props.nodeDef.fieldValueOperator || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
+                                    onChange={readonly ? undefined : (e) => {
+                                        ctx.chainDefMutations([
+                                            {
+                                                fn: def => ctx.flowDefMutator.setNodeFieldInfo({
+                                                    sourceDef: def,
+                                                    nodeDef: props.nodeDef,
+                                                    fieldName: props.nodeDef.fieldName,
+                                                    fieldValueOperator: e.target.value as WorkflowFieldValueOperator,
+                                                    fieldValueOperand2: props.nodeDef.fieldValueOperand2,
+                                                }),
+                                                wantsReevaluation: true,
+                                            }
+                                        ], `setting field operator`);
+                                    }}>
                                     {Object.values(WorkflowFieldValueOperator).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                                 </Select>
                             </FormControl>
                             {ctx.renderer.RenderEditorForFieldOperand2({
                                 flowDef: ctx.flowDef,
+                                readonly,
                                 nodeDef: props.nodeDef,
                                 evaluatedNode: evaluated,
                                 setValue: (value) => {
@@ -471,18 +469,23 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                     </div>
                 }
 
-                <CMNumericTextField label={`Progress weight (${props.nodeDef.thisNodeProgressWeight})`} autoFocus={false} value={props.nodeDef.thisNodeProgressWeight} onChange={(e, val) => {
-                    ctx.chainDefMutations([
-                        {
-                            fn: sourceDef => ctx.flowDefMutator.setNodeBasicInfo({
-                                sourceDef,
-                                nodeDef: props.nodeDef,
-                                thisNodeProgressWeight: val,
-                            }),
-                            wantsReevaluation: true,
-                        }
-                    ], `setting node progress weight`);
-                }} />
+                <CMNumericTextField
+                    label={`Progress weight (${props.nodeDef.thisNodeProgressWeight})`}
+                    autoFocus={false}
+                    value={props.nodeDef.thisNodeProgressWeight}
+                    readOnly={readonly}
+                    onChange={(e, val) => {
+                        ctx.chainDefMutations([
+                            {
+                                fn: sourceDef => ctx.flowDefMutator.setNodeBasicInfo({
+                                    sourceDef,
+                                    nodeDef: props.nodeDef,
+                                    thisNodeProgressWeight: val,
+                                }),
+                                wantsReevaluation: true,
+                            }
+                        ], `setting node progress weight`);
+                    }} />
 
                 {completionUsesNodeDependencies &&
                     <pre>Weight: [{evaluated.evaluation.thisCompletionWeightCompleted?.toFixed(2)} / {evaluated.evaluation.thisCompletionWeightTotal.toFixed(2)}] = {evaluated.evaluation.progress01 === undefined ? "<undefined>" : (evaluated.evaluation.progress01 * 100).toFixed(0.000)}% --&gt; {evaluated.evaluation.completenessSatisfied ? "satisfied" : "incomplete"}</pre>
@@ -538,7 +541,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
             name={"Display style"}
             value={<>
                 <EnumChipSelector
-                    editable={true}
+                    editable={!readonly}
                     onChange={(val) => {
                         ctx.chainDefMutations([
                             {
@@ -568,6 +571,9 @@ interface WorkflowGroupEditorProps {
 export const WorkflowGroupEditor = (props: WorkflowGroupEditorProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
+
+    const readonly = ctx.instanceMutator.CanCurrentUserEditDefs();
 
     return <div className="CMWorkflowNodeEditorContainer">
         <h2>Group</h2>
@@ -580,6 +586,7 @@ export const WorkflowGroupEditor = (props: WorkflowGroupEditorProps) => {
             value={<CMTextField
                 autoFocus={false}
                 value={props.groupDef.name}
+                readOnly={readonly}
                 onChange={(e, v) => {
                     ctx.chainDefMutations([
                         {
@@ -600,6 +607,7 @@ export const WorkflowGroupEditor = (props: WorkflowGroupEditorProps) => {
                 allowNull={true}
                 palettes={gGeneralPaletteList}
                 value={props.groupDef.color || null}
+                readonly={readonly}
                 onChange={v => {
                     ctx.chainDefMutations([
                         {
