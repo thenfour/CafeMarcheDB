@@ -123,6 +123,12 @@ export const gPermissionOrdered: (keyof typeof Permission)[] = [
     Permission.view_wiki_pages,
     Permission.edit_wiki_pages,
     Permission.customize_menu,
+
+    Permission.view_workflow_instances,
+    Permission.edit_workflow_instances,
+    Permission.view_workflow_defs,
+    Permission.edit_workflow_defs,
+    Permission.admin_workflow_defs,
 ];
 
 // these are granted automatically to public.

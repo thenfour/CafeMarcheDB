@@ -1,9 +1,8 @@
 // todo: 
-// - permissions
+// x permissions
 //   x field mutations are built into the db model
 // - hook this up to the rest of the app finally.
 // - display style
-// - "suppress alerts"
 
 // display
 // - minimal indicator-only view

@@ -21,6 +21,7 @@ import '../../public/style/bigCalendar.css';
 import '../../public/style/metronome.css';
 import '../../public/style/ImportEvents.css';
 import '../../public/style/workflow.css';
+import '../../public/style/customFieldEditor.css';
 import React from "react";
 import { useTheme } from "@mui/material/styles";
 import { SnackbarProvider } from "src/core/components/SnackbarContext";

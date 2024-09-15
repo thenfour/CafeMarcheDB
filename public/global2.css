@@ -72,6 +72,10 @@ html,
     color: black;
     opacity: 50%;
     padding: 6px 0 0 10px;
+
+    /* see this in action on event custom fields with icons; this vertically-aligns the icons */
+    display: flex;
+    align-items: center;
 }
 
 .BasicNameValuePairContainer>.value {
@@ -2456,4 +2460,10 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
     display: inline-flex;
     align-items: center;
     ;
+}
+
+
+.editCustomFieldsButtonContainer {
+    padding-top: 10px;
+    padding-bottom: 10px;
 }

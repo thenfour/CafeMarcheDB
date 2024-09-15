@@ -15,7 +15,7 @@ import dayjs, { Dayjs } from "dayjs";
 import React, { Suspense } from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
-import { CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
+import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
 import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
@@ -687,11 +687,13 @@ export interface ConstEnumStringFieldClientArgs {
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
     className?: string;
+    allowNull?: boolean;
     getItemInfo?: (option: { value: string, label: string }) => ConstEnumStringFieldClientItemInfo;
 };
 
 export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
     gridOptions: { value: string, label: string }[];
+    allowNull: boolean;
     enumSchemaColumn: db3fields.ConstEnumStringField;
     getItemInfo?: (option: { value: string, label: string }) => ConstEnumStringFieldClientItemInfo;
 
@@ -708,6 +710,7 @@ export class ConstEnumStringFieldClient extends DB3ClientCore.IColumnClient {
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
         this.getItemInfo = args.getItemInfo;
+        this.allowNull = CoalesceBool(args.allowNull, true);
     }
     ApplyClientToPostClient = undefined;
 
@@ -820,7 +823,7 @@ export class IconFieldClient extends ConstEnumStringFieldClient {
             return <IconEditCell
                 validationError={vr.result === "success" ? null : (vr.errorMessage || null)}
                 value={params.value}
-                //allowNull={true}
+                allowNull={this.allowNull}
                 readonly={false}
                 onOK={(value) => {
                     void params.api.setEditCellValue({ id: params.id, field: this.schemaColumn.member, value });
@@ -1185,6 +1188,21 @@ export const useDb3Query = <Trow extends TAnyModel,>(schema: db3.xTable, filterS
             columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
         }),
         filterModel: filterSpec,
+    });
+    return mutationCtx;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const useDb3Update = <Trow extends TAnyModel,>(schema: db3.xTable) => {
+    const ctx = useDashboardContext();
+    const mutationCtx = DB3ClientCore.useTableRenderContext<Trow>({
+        clientIntention: ctx.userClientIntention,
+        requestedCaps: DB3ClientCore.xTableClientCaps.Mutation,
+        tableSpec: new DB3ClientCore.xTableClientSpec({
+            table: schema,
+            columns: schema.columns.map(c => new AnyColumnClient({ columnName: c.member })),
+        }),
     });
     return mutationCtx;
 }

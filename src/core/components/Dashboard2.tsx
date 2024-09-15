@@ -355,6 +355,7 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         items: [
             { type: "link", path: "/backstage/menuLinks", linkCaption: "Manage Menu Links", renderIcon: gIconMap.Settings, permission: Permission.customize_menu },
             { type: "link", path: "/backstage/customLinks", linkCaption: "Custom Links", renderIcon: gIconMap.Link, permission: Permission.view_custom_links },
+            { type: "link", path: "/backstage/workflows", linkCaption: "Workflows", renderIcon: gIconMap.AccountTree, permission: Permission.view_workflow_defs },
         ],
     },
 
@@ -454,6 +455,7 @@ const gMenuItemGroup2: MenuItemGroup[] = [
             { type: "link", path: "/backstage/editEventStatuses", linkCaption: "Event Statuses", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventTags", linkCaption: "Event Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.sysadmin },
             { type: "link", path: "/backstage/editEventAttendances", linkCaption: "Attendance Options", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/editEventCustomFields", linkCaption: "CustomFields", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
 
         ],
     },

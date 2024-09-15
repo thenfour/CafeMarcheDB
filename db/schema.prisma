@@ -159,6 +159,10 @@ model User {
   creatorForEventSongLists       EventSongList[]
   creatorForFrontpageGalleryItem FrontpageGalleryItem[]
 
+  workflowNodeDefaultAssignees  WorkflowDefNodeDefaultAssignee[]
+  workflowNodeInstanceAssignees WorkflowInstanceNodeAssignee[]
+  workflowLogItems              WorkflowInstanceLogItem[]
+
   @@unique([accessToken])
   @@index([name])
   @@index([isDeleted])
@@ -513,12 +517,17 @@ model Event {
   frontpageLocationURI String? @db.VarChar(768) // null = use normal
   frontpageTags        String? @db.VarChar(768) // null, use normal
 
+  workflowInstanceId Int?
+  workflowInstance   WorkflowInstance? @relation(fields: [workflowInstanceId], references: [id], onDelete: SetNull)
+
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
   comments  EventComment[]
   segments  EventSegment[]
   songLists EventSongList[]
   responses EventUserResponse[]
+
+  customFieldValues EventCustomFieldValue[]
 
   @@unique([uid])
   @@index([name])
@@ -530,6 +539,48 @@ model Event {
   @@index([endDateTime])
   @@index([visiblePermissionId])
   @@index([frontpageVisible])
+}
+
+model EventCustomField {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(768)
+  description String  @db.MediumText // markdown
+  dataType    String  @db.MediumText // enum EventCustomFieldDataType
+  optionsJson String? @db.MediumText // the options for the option data type of type db3.EventCustomFieldOption[] e.g., "[{ label: 'option 1', color: 'red'}, { label: 'option 2', color: 'blue'}, ]"
+
+  color        String?
+  sortOrder    Int     @default(0)
+  significance String?
+  iconName     String?
+
+  // this is a kind of soft delete; the idea is that eventually you may replace a field or make it obsolete.
+  // if !isVisible, then the field will only be visible
+  //isVisible Boolean
+
+  eventCustomFieldValues EventCustomFieldValue[]
+  //@@index([isVisible])
+
+  @@index([name])
+  @@index([sortOrder])
+  @@index([significance])
+}
+
+model EventCustomFieldValue {
+  id            Int              @id @default(autoincrement())
+  eventId       Int
+  event         Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  customFieldId Int
+  customField   EventCustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+
+  jsonValue String @db.MediumText
+
+  // in case the field def changes, old values can still reference this.
+  dataType String @db.MediumText // enum EventCustomFieldDataType
+
+  //isVisible Boolean
+
+  @@index([eventId])
+  @@index([customFieldId])
 }
 
 // events have multiple segments, for example the CM weekend can be broken into saturday, sunday, monday
@@ -929,6 +980,7 @@ model WikiPageRevision {
   createdAt       DateTime @default(now())
 
   @@index([name])
+  @@index([wikiPageId])
 }
 
 model MenuLink {
@@ -959,4 +1011,175 @@ model MenuLink {
   createdByUserId Int?
   createdByUser   User?    @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
+
+  @@index([caption])
+  @@index([realm])
+  @@index([visiblePermissionId])
+}
+
+model WorkflowDef {
+  id                 Int     @id @default(autoincrement())
+  sortOrder          Int     @default(0)
+  name               String  @db.VarChar(768)
+  description        String  @db.MediumText
+  color              String? @db.VarChar(768)
+  isDefaultForEvents Boolean
+
+  groups    WorkflowDefGroup[]
+  instances WorkflowInstance[]
+
+  @@index([name])
+}
+
+model WorkflowDefGroup {
+  id            Int     @id @default(autoincrement())
+  workflowDefId Int
+  name          String  @db.VarChar(768)
+  description   String  @db.MediumText
+  color         String? @db.VarChar(768)
+
+  positionX Float?
+  positionY Float?
+  width     Float?
+  height    Float?
+  selected  Boolean
+
+  workflowDef WorkflowDef       @relation(fields: [workflowDefId], references: [id], onDelete: Cascade)
+  nodes       WorkflowDefNode[]
+
+  @@index([name])
+  @@index([selected])
+}
+
+model WorkflowDefNode {
+  id          Int    @id @default(autoincrement())
+  name        String @db.VarChar(768)
+  description String @db.MediumText
+
+  groupId Int?
+  group   WorkflowDefGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  displayStyle           String @db.VarChar(768)
+  thisNodeProgressWeight Int
+
+  relevanceCriteriaType  String @db.VarChar(768) // WorkflowCompletionCriteriaType;
+  activationCriteriaType String @db.VarChar(768) // WorkflowCompletionCriteriaType;
+  completionCriteriaType String @db.VarChar(768) // WorkflowCompletionCriteriaType;
+
+  fieldName          String? @db.VarChar(768)
+  fieldValueOperator String? @db.VarChar(768)
+  fieldValueOperand2 String  @db.MediumText // JSON ? not sure how this will be serialized.
+
+  defaultDueDateDurationDaysAfterStarted Int?
+  positionX                              Float?
+  positionY                              Float?
+  width                                  Float?
+  height                                 Float?
+  selected                               Boolean
+
+  dependencies     WorkflowDefNodeDependency[]
+  logItems         WorkflowInstanceLogItem[]
+  instances        WorkflowInstanceNode[]
+  defaultAssignees WorkflowDefNodeDefaultAssignee[]
+
+  @@index([name])
+  @@index([groupId])
+  @@index([displayStyle])
+}
+
+model WorkflowDefNodeDefaultAssignee {
+  id        Int             @id @default(autoincrement())
+  nodeDefId Int
+  nodeDef   WorkflowDefNode @relation(fields: [nodeDefId], references: [id], onDelete: Cascade)
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([nodeDefId])
+  @@index([userId])
+}
+
+model WorkflowDefNodeDependency {
+  id                     Int     @id @default(autoincrement())
+  selected               Boolean
+  determinesRelevance    Boolean
+  determinesActivation   Boolean
+  determinesCompleteness Boolean
+
+  nodeDefId Int
+  nodeDef   WorkflowDefNode @relation(fields: [nodeDefId], references: [id], onDelete: Cascade)
+
+  @@index([selected])
+  @@index([nodeDefId])
+}
+
+model WorkflowInstance {
+  id            Int         @id @default(autoincrement())
+  workflowDefId Int
+  workflowDef   WorkflowDef @relation(fields: [workflowDefId], references: [id], onDelete: Cascade)
+
+  hasBeenEvaluated Boolean
+  logItems         WorkflowInstanceLogItem[]
+  nodes            WorkflowInstanceNode[]
+
+  events Event[]
+
+  @@index([workflowDefId])
+}
+
+model WorkflowInstanceLogItem {
+  id         Int              @id @default(autoincrement())
+  instanceId Int
+  instance   WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+
+  at   DateTime
+  type String   @db.VarChar(768)
+
+  nodeDefId Int
+  nodeDef   WorkflowDefNode @relation(fields: [nodeDefId], references: [id], onDelete: Cascade)
+
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  fieldName String? @db.VarChar(768)
+
+  oldValue String? @db.MediumText // JSON 
+  newValue String? @db.MediumText // JSON
+  comment  String? @db.MediumText // JSON
+
+  @@index([instanceId])
+  @@index([nodeDefId])
+  @@index([userId])
+}
+
+model WorkflowInstanceNode {
+  id         Int              @id @default(autoincrement())
+  instanceId Int
+  instance   WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  nodeDefId  Int
+  nodeDef    WorkflowDefNode  @relation(fields: [nodeDefId], references: [id], onDelete: Cascade)
+
+  dueDate                     DateTime?
+  activeStateFirstTriggeredAt DateTime?
+
+  lastFieldName          String? @db.VarChar(768)
+  lastFieldValueAsString String? @db.MediumText
+  lastAssignees          String? @db.MediumText // JSON array of user IDs
+  lastProgressState      String? @db.VarChar(768) // WorkflowNodeProgressState
+
+  assignees WorkflowInstanceNodeAssignee[]
+
+  @@index([instanceId])
+  @@index([nodeDefId])
+}
+
+model WorkflowInstanceNodeAssignee {
+  id             Int                  @id @default(autoincrement())
+  userId         Int
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instanceNodeId Int
+  instanceNode   WorkflowInstanceNode @relation(fields: [instanceNodeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([instanceNodeId])
 }

@@ -229,6 +229,9 @@ export enum Setting {
     SongHistoryTabDescription = "SongHistoryTabDescription",
     StatsPage_markdown = "StatsPage_markdown",
     Workflow_SelectAssigneesDialogDescription = "Workflow_SelectAssigneesDialogDescription",
+    EditEventCustomFieldsPage_markdown = "EditEventCustomFieldsPage_markdown",
+    EventEditCustomFieldValuesDialog_TitleMarkdown = "EventEditCustomFieldValuesDialog_TitleMarkdown",
+    EventEditCustomFieldValuesDialog_DescriptionMarkdown = "EventEditCustomFieldValuesDialog_DescriptionMarkdown",
 
     // not markdown....
 
@@ -435,6 +438,7 @@ export const Clamp = (x, low, hi) => {
 
 // this should be synchronized with export const gIconMap.
 export const gIconOptions = {
+    AccountTree: "AccountTree",
     Add: "Add",
     AddCircleOutline: "AddCircleOutline",
     Alarm: "Alarm",

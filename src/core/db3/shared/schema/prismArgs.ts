@@ -1,3 +1,4 @@
+import { z } from "zod";
 import db, { Prisma } from "db";
 //import * as db3 from "../db3core"; // circular
 import { CMDBTableFilterModel, ImageEditParams, MakeDefaultImageEditParams, TAnyModel, parsePayloadJSON } from "../apiTypes";
@@ -587,6 +588,62 @@ export const EventTagAssignmentNaturalOrderBy: Prisma.EventTagAssignmentOrderByW
 
 
 ////////////////////////////////////////////////////////////////
+
+export const EventCustomFieldArgs = Prisma.validator<Prisma.EventCustomFieldDefaultArgs>()({
+    include: {}
+});
+export type EventCustomFieldPayload = Prisma.EventCustomFieldGetPayload<typeof EventCustomFieldArgs>;
+
+
+export const EventCustomFieldNaturalOrderBy: Prisma.EventCustomFieldOrderByWithRelationInput[] = [
+    { sortOrder: 'asc' },
+    { id: 'asc' },
+];
+
+export enum EventCustomFieldSignificance {
+};
+
+export enum EventCustomFieldDataType {
+    Checkbox = "Checkbox",
+    Options = "Options",
+    RichText = "RichText",
+    SimpleText = "SimpleText",
+};
+
+export type EventCustomFieldOption = {
+    label: string,
+    id: string,
+    color?: string,
+};
+
+const EventCustomFieldOptionSchema = z.object({
+    label: z.string(),
+    id: z.string(),
+    color: z.string().optional(), // Optional field
+});
+
+// Define the schema for an array of EventCustomFieldOption objects
+export const EventCustomFieldOptionArraySchema = z.array(EventCustomFieldOptionSchema);
+
+
+////////////////////////////////////////////////////////////////
+
+export const EventCustomFieldValueArgs = Prisma.validator<Prisma.EventCustomFieldValueDefaultArgs>()({
+    include: {
+        customField: true,
+    }
+});
+export type EventCustomFieldValuePayload = Prisma.EventCustomFieldValueGetPayload<typeof EventCustomFieldValueArgs>;
+
+
+export const EventCustomFieldValueNaturalOrderBy: Prisma.EventCustomFieldValueOrderByWithRelationInput[] = [
+    { customField: { sortOrder: 'asc' } },
+    { id: 'asc' },
+];
+
+
+
+////////////////////////////////////////////////////////////////
 export type EventPayloadMinimum = Prisma.EventGetPayload<{}>;
 export type EventPayloadWithVisiblePermission = Prisma.EventGetPayload<{
     include: {
@@ -781,6 +838,15 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         //     include: EventUserResponseArgs.include,
         // }
         responses: true,
+        customFieldValues: {
+            // include: {
+            //     customField: true,
+            // },
+            // include: {
+
+            // }
+            // orderBy: EventCustomFieldNaturalOrderBy,
+        }
     }
 });
 
@@ -1279,6 +1345,7 @@ export class DashboardContextDataBase {
     songTag: TableAccessor<Prisma.SongTagGetPayload<{}>>;
     songCreditType: TableAccessor<Prisma.SongCreditTypeGetPayload<{}>>;
     instrumentTag: TableAccessor<Prisma.InstrumentTagGetPayload<{}>>;
+    eventCustomField: TableAccessor<Prisma.EventCustomFieldGetPayload<{}>>;
 
     dynMenuLinks: TableAccessor<Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>>;
 

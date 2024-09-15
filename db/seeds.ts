@@ -631,12 +631,25 @@ const main = async () => {
 
   const rolePermissionAssignments =
     [
+      ["Admin", "admin_workflow_defs"],
       ["Public", "always_grant"],
       ["Limited Users", "always_grant"],
       ["Normal Users", "always_grant"],
       ["Editors", "always_grant"],
       ["Moderators", "always_grant"],
       ["Admin", "always_grant"],
+      ["Moderators", "edit_workflow_defs"],
+      ["Admin", "edit_workflow_defs"],
+      ["Editors", "edit_workflow_instances"],
+      ["Moderators", "edit_workflow_instances"],
+      ["Admin", "edit_workflow_instances"],
+      ["Editors", "view_workflow_defs"],
+      ["Moderators", "view_workflow_defs"],
+      ["Admin", "view_workflow_defs"],
+      ["Normal Users", "view_workflow_instances"],
+      ["Editors", "view_workflow_instances"],
+      ["Moderators", "view_workflow_instances"],
+      ["Admin", "view_workflow_instances"],
       ["Public", "public"],
       ["Limited Users", "public"],
       ["Normal Users", "public"],
@@ -746,6 +759,7 @@ const main = async () => {
       ["Moderators", "customize_menu"],
       ["Admin", "customize_menu"]
     ]
+
     ;
 
   console.log(`Seeding role-permission assignments`);
@@ -982,6 +996,7 @@ const main = async () => {
 
   } // for each create user
 
+
   // create random songs
   gState.gAllUsers = await gState.prisma.user.findMany();
   gState.gAllSongTags = await gState.prisma.songTag.findMany();
@@ -1041,6 +1056,50 @@ const main = async () => {
     }
 
   }// } create random songs
+
+  // custom fields
+  await SeedTable("eventCustomField", gState.prisma.eventCustomField, [
+    {
+      "name": "Band is aware?",
+      "description": "",
+      "color": null,
+      "sortOrder": 5,
+      "significance": null,
+      "iconName": null,
+      "dataType": "Checkbox",
+      "optionsJson": null
+    },
+    {
+      "name": "Contact name",
+      "description": "",
+      "color": "orange",
+      "sortOrder": 10,
+      "significance": null,
+      "iconName": "Person",
+      "dataType": "SimpleText",
+      "optionsJson": null
+    },
+    {
+      "name": "carpool info",
+      "description": "rchrch",
+      "color": "blue",
+      "sortOrder": 40,
+      "significance": null,
+      "iconName": null,
+      "dataType": "RichText",
+      "optionsJson": ""
+    },
+    {
+      "name": "how did they find us?",
+      "description": "",
+      "color": null,
+      "sortOrder": 80,
+      "significance": null,
+      "iconName": "Search",
+      "dataType": "Options",
+      "optionsJson": "[{\"id\":\"2nMBEW7lud8zawNhGbeoY\",\"label\":\"via mail\"},{\"id\":\"mqHJ11910q19JZXHfST4B\",\"label\":\"instagram\"},{\"id\":\"r1KSPRpJ5I4ocFFJa0NE5\",\"label\":\"word of mouth\"}]"
+    }
+  ]);
 
   // create random events
   gState.gAllEventTypes = await gState.prisma.eventType.findMany();

@@ -371,7 +371,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         <div className="header">
 
             <div className={`columnName-name ${editAuthorized && "draggable dragHandle"}`}>
-                {editAuthorized && <div className="dragHandleIcon ">☰</div>}
+                {editAuthorized && <div className="dragHandleIcon ">{gCharMap.Hamburger()}</div>}
                 {props.value.name}
             </div>
             {!props.readonly && editAuthorized && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
@@ -474,7 +474,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             <div className="td songIndex">{props.index + 1}
                 {/* id:{props.value.id} so:{props.value.sortOrder} */}
             </div>
-            <div className="td dragHandle draggable">☰
+            <div className="td dragHandle draggable">{gCharMap.Hamburger()}
                 {/* <InspectObject src={props.value} tooltip="snth" /> */}
             </div>
             <div className="td songName">

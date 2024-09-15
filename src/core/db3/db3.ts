@@ -13,5 +13,6 @@ export * from "./shared/schema/customLinks"
 export * from "./shared/schema/admin"
 export * from "./shared/schema/wiki"
 export * from "./shared/schema/menuLink"
+export * from "./shared/schema/workflow"
 
 

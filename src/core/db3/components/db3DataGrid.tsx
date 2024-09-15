@@ -87,6 +87,7 @@ function CustomToolbar({ onNewClicked, tableSpec }: { onNewClicked: any, tableSp
 
 export interface DB3EditGridExtraActionsArgs {
     row: TAnyModel,
+    refetch: () => void;
 };
 
 export type DB3EditGridProps = {
@@ -376,6 +377,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
                     <React.Fragment key="extra">
                         {props.renderExtraActions && props.renderExtraActions({
                             row: args.row,
+                            refetch: tableClient.refetch
                         })}
                     </React.Fragment>,
                 ];

@@ -341,8 +341,8 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
                 <div>
                     <span className="helpText">
                         <a href="/backstage/wiki/markdown-help" target="_blank">{gIconMap.Launch()} Markdown formatting help</a>
-                        |
-                        <a href="/backstage/wiki/abc-help" target="_blank">{gIconMap.Launch()} ABC formatting help</a>
+                        {/* |
+                        <a href="/backstage/wiki/abc-help" target="_blank">{gIconMap.Launch()} ABC formatting help</a> */}
                     </span>
 
                 </div>

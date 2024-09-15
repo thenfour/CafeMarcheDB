@@ -121,6 +121,7 @@ export default resolver.pipe(
                 db.songTag.findMany(),
                 db.songCreditType.findMany(),
                 menuItemsCall,
+                db.eventCustomField.findMany(),
             ]);
 
             const rsp = await RefreshSessionPermissions(ctx);
@@ -141,6 +142,7 @@ export default resolver.pipe(
                 songTag,
                 songCreditType,
                 dynMenuLinks,
+                eventCustomField,
             ] = results;
             const ret = {
                 userTag,
@@ -158,6 +160,7 @@ export default resolver.pipe(
                 songTag,
                 songCreditType,
                 dynMenuLinks: dynMenuLinks.items as Prisma.MenuLinkGetPayload<{ include: { createdByUser } }>[],
+                eventCustomField,
                 sessionPermissionsChanged: rsp,
                 serverStartupState: getServerStartState(),
             };

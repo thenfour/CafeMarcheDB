@@ -109,6 +109,10 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
         ...event.segments.map(seg => seg.responses.map(r => r.userId)).flat(),
         ...invitees,
     ]);
+    if (dashboardContext.currentUser?.id) {
+        // if current user is viewing, we should be able to generate event response data for them even if not responded or even invited.
+        userIdMap.add(dashboardContext.currentUser.id);
+    }
 
     const tableParams: db3.UserTablParams = {
         userIds: [...userIdMap]

@@ -5,7 +5,7 @@
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Breadcrumbs, Button, DialogActions, DialogContent, DialogTitle, Link, Tab, Tabs, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Link, MenuItem, Select, Tab, Tabs, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
@@ -19,13 +19,13 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { gCharMap, gIconMap } from '../db3/components/IconMap';
-import { GetICalRelativeURIForUserAndEvent, SearchResultsRet } from '../db3/shared/apiTypes';
+import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
+import { GetICalRelativeURIForUserAndEvent, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { AdminInspectObject, AttendanceChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps } from './CMCoreComponents';
 import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
-import { DashboardContext } from './DashboardContext';
+import { DashboardContext, useDashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata, EventsFilterSpec } from './EventComponentsBase';
@@ -39,6 +39,7 @@ import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
+import { CMTextInputBase } from './CMTextField';
 
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
@@ -67,6 +68,260 @@ type VerboseEventWithMetadata = EventWithMetadata<
     db3.EventVerbose_EventSegment,
     db3.EventVerbose_EventSegmentUserResponse
 >;
+
+
+////////////////////////////////////////////////////////////////
+type EventCustomFieldValuePayload = Prisma.EventCustomFieldValueGetPayload<{}>;
+
+////////////////////////////////////////////////////////////////
+interface EventCustomFieldValueControlProps {
+    value: EventCustomFieldValuePayload;
+    readonly?: boolean;
+    mode: "edit" | "view";
+    onChange?: (x: EventCustomFieldValuePayload) => void;
+};
+
+type EventCustomFieldValueControlPropsWithDeserializedValueView<T> = Omit<EventCustomFieldValueControlProps, "onChange"> & {
+    deserializedValue: T;
+}
+
+type EventCustomFieldValueControlPropsWithDeserializedValue<T> = EventCustomFieldValueControlPropsWithDeserializedValueView<T> & {
+    deserializedValue: T;
+    onChange: (val: T) => void;
+}
+
+// checkbox json data is just a boolish value null/true/false. checkbox types do not need to care about tri-state; if you want tristate use an options type.
+const EventCustomFieldValueValueView_Checkbox = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<boolean>) => {
+    return <div>{props.deserializedValue ? "YES" : "NO"}</div>
+}
+
+const EventCustomFieldValueValueEdit_Checkbox = (props: EventCustomFieldValueControlPropsWithDeserializedValue<boolean>) => {
+    //return <div>{props.deserializedValue ? "YES" : "NO"}</div>
+    return <Checkbox
+        checked={props.deserializedValue || false}
+        onChange={props.onChange == null ? undefined : ((e) => props.onChange!(e.target.checked))}
+    />;
+}
+
+const EventCustomFieldValueValueView_Options = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<null | string>) => {
+    const dashboardContext = useDashboardContext();
+    const fieldSpec = dashboardContext.eventCustomField.getById(props.value.customFieldId);
+    assert(!!fieldSpec, `fieldspec not found for id ${props.value.customFieldId}`);
+    let options: db3.EventCustomFieldOption[] = JSON.parse(fieldSpec.optionsJson || "[]");
+    let selectedOption = options.find(o => o.id === props.deserializedValue);
+    return <div>{selectedOption ? selectedOption.label : "<none>"}</div>;
+}
+
+const EventCustomFieldValueValueEdit_Options = (props: EventCustomFieldValueControlPropsWithDeserializedValue<null | string>) => {
+    const dashboardContext = useDashboardContext();
+    const fieldSpec = dashboardContext.eventCustomField.getById(props.value.customFieldId);
+    assert(!!fieldSpec, `fieldspec not found for id ${props.value.customFieldId}`);
+    let options: db3.EventCustomFieldOption[] = JSON.parse(fieldSpec.optionsJson || "[]");
+    return <Select value={props.deserializedValue || gNullValue} onChange={e => props.onChange(e.target.value)}>
+        <MenuItem value={gNullValue}>--</MenuItem>
+        {options.map(o => {
+            return <MenuItem key={o.id} value={o.id}>{o.label}</MenuItem>
+        })}
+    </Select>;
+}
+
+const EventCustomFieldValueValueView_RichText = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<string | null>) => {
+    return <div><Markdown markdown={props.deserializedValue} /></div>;
+}
+
+const EventCustomFieldValueValueEdit_RichText = (props: EventCustomFieldValueControlPropsWithDeserializedValue<string | null>) => {
+    return <div><Markdown3Editor
+        value={props.deserializedValue || ""}
+        onChange={(v) => props.onChange(v)}
+        minHeight={100}
+    /></div>
+}
+
+const EventCustomFieldValueValueView_SimpleText = (props: EventCustomFieldValueControlPropsWithDeserializedValueView<string | null>) => {
+    return <div>{props.deserializedValue}</div>
+}
+
+const EventCustomFieldValueValueEdit_SimpleText = (props: EventCustomFieldValueControlPropsWithDeserializedValue<string | null>) => {
+    return <div><CMTextInputBase onChange={(e, v) => props.onChange(v)} value={props.deserializedValue} /></div>
+}
+
+const parseCustomFieldValueJson = (json: string | null) => {
+    if (json == null) return null;
+    try {
+        return JSON.parse(json);
+    } catch (e) {
+        return null;
+    }
+}
+
+const stringifyCustomFieldValueJson = <T,>(dataType: db3.EventCustomFieldDataType, value: T): string => {
+    // all datatypes currently are a straight serialize
+    return JSON.stringify(value);
+}
+
+const EventCustomFieldValueValueView = (props: EventCustomFieldValueControlProps) => {
+    const dataType = props.value.dataType as db3.EventCustomFieldDataType;
+    const deserializedValue = parseCustomFieldValueJson(props.value.jsonValue);
+    switch (dataType) {
+        case db3.EventCustomFieldDataType.Checkbox:
+            return <EventCustomFieldValueValueView_Checkbox {...props} deserializedValue={deserializedValue} />;
+        case db3.EventCustomFieldDataType.Options:
+            return <EventCustomFieldValueValueView_Options {...props} deserializedValue={deserializedValue} />;
+        case db3.EventCustomFieldDataType.RichText:
+            return <EventCustomFieldValueValueView_RichText {...props} deserializedValue={deserializedValue} />;
+        case db3.EventCustomFieldDataType.SimpleText:
+            return <EventCustomFieldValueValueView_SimpleText {...props} deserializedValue={deserializedValue} />;
+        default:
+            return <div>Unknown datatype {dataType}</div>;
+    }
+};
+
+const EventCustomFieldValueValueEdit = (props: EventCustomFieldValueControlProps) => {
+    const dataType = props.value.dataType as db3.EventCustomFieldDataType;
+    const deserializedValue = parseCustomFieldValueJson(props.value.jsonValue);
+    const handleChange = (val: unknown) => {
+        if (props.onChange) {
+            const newVal: EventCustomFieldValuePayload = { ...props.value };
+            newVal.jsonValue = stringifyCustomFieldValueJson(dataType, val);
+            props.onChange(newVal);
+        }
+    };
+    switch (dataType) {
+        case db3.EventCustomFieldDataType.Checkbox:
+            return <EventCustomFieldValueValueEdit_Checkbox {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
+        case db3.EventCustomFieldDataType.Options:
+            return <EventCustomFieldValueValueEdit_Options {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
+        case db3.EventCustomFieldDataType.RichText:
+            return <EventCustomFieldValueValueEdit_RichText {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
+        case db3.EventCustomFieldDataType.SimpleText:
+            return <EventCustomFieldValueValueEdit_SimpleText {...props} deserializedValue={deserializedValue} onChange={handleChange} />;
+        default:
+            return <div>Unknown datatype {dataType}</div>;
+    }
+}
+
+////////////////////////////////////////////////////////////////
+const EventCustomFieldValueControl = (props: EventCustomFieldValueControlProps) => {
+    const dashboardContext = useDashboardContext();
+    const field = dashboardContext.eventCustomField.getById(props.value.customFieldId);
+    if (!field) return <div>field not found</div>;
+
+    const usingViewer = (props.readonly || props.mode === 'view');
+
+    return <NameValuePair
+        name={<>
+            {RenderMuiIcon(field.iconName)}
+            <span>{field.name}</span>
+        </>}
+        description={field.description}
+        isReadOnly={props.readonly}
+        value={usingViewer ? <EventCustomFieldValueValueView {...props} /> : <EventCustomFieldValueValueEdit {...props} />}
+    />;
+};
+
+////////////////////////////////////////////////////////////////
+interface EventCustomFieldEditDialogProps {
+    onClose: () => void,
+    onOK: (value: EventCustomFieldValuePayload[]) => void,
+    initialValue: EventCustomFieldValuePayload[];
+};
+const EventCustomFieldEditDialog = (props: EventCustomFieldEditDialogProps) => {
+    const dashboardContext = useDashboardContext();
+    const [currentValue, setCurrentValue] = React.useState<EventCustomFieldValuePayload[]>(() => {
+        return props.initialValue.toSorted((a, b) => {
+            const sorta = dashboardContext.eventCustomField.getById(a.customFieldId)?.sortOrder || 0;
+            const sortb = dashboardContext.eventCustomField.getById(b.customFieldId)?.sortOrder || 0;
+            return sortb - sorta;
+        });
+    });
+
+    return <ReactiveInputDialog onCancel={props.onClose}>
+
+        <DialogTitle>
+            <SettingMarkdown setting="EventEditCustomFieldValuesDialog_TitleMarkdown" />
+            <AdminInspectObject src={props.initialValue} label="initialValue" />
+            <AdminInspectObject src={currentValue} label="currentValue" />
+        </DialogTitle>
+        <DialogContent dividers>
+            <CMDialogContentText>
+                <SettingMarkdown setting="EventEditCustomFieldValuesDialog_DescriptionMarkdown" />
+            </CMDialogContentText>
+
+            {
+                currentValue.map(f => <EventCustomFieldValueControl
+                    key={f.customFieldId}
+                    value={f}
+                    mode='edit'
+                    readonly={false}
+                    onChange={(val) => {
+                        const newArray = [...currentValue]; // create new array which excludes this
+                        const changedVal = newArray.find(x => x.customFieldId === val.customFieldId)!;
+                        // todo: assert all other fields are the same.
+                        changedVal.jsonValue = val.jsonValue;
+                        setCurrentValue(newArray);
+                        // const newVal = [...currentValue.filter(x => x.customFieldId !== val.customFieldId)]; // create new array which excludes this
+                        // newVal.push(val);
+                        // const sorted = newVal.toSorted((a, b) => {
+                        //     const adef = dashboardContext.eventCustomField.getById(a.customFieldId)!;
+                        //     const bdef = dashboardContext.eventCustomField.getById(b.customFieldId)!;
+                        //     return adef.sortOrder - bdef.sortOrder;
+                        // });
+                        //setCurrentValue(sorted);
+                    }}
+                />)
+            }
+
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
+            <Button onClick={() => props.onOK(currentValue)} startIcon={gIconMap.Save()}>OK</Button>
+        </DialogActions>
+
+    </ReactiveInputDialog>;
+}
+
+////////////////////////////////////////////////////////////////
+interface EventCustomFieldsControlProps {
+    event: Prisma.EventGetPayload<{ include: { customFieldValues: true } }>;
+    readonly?: boolean;
+};
+
+export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    const dashboardContext = React.useContext(DashboardContext);
+
+    const authToEdit = dashboardContext.isAuthorized(Permission.manage_events);
+    const readonly = !authToEdit || props.readonly;
+
+    const potentialValues = dashboardContext.eventCustomField.map(ecf => {
+        const existing = props.event.customFieldValues.find(e => e.customFieldId === ecf.id);
+        if (existing) return existing;
+        const n = db3.xEventCustomFieldValue.createNew({ mode: 'primary', intention: "user" }) as db3.EventCustomFieldValuePayload;
+        n.customField = ecf;
+        n.customFieldId = ecf.id;
+        n.eventId = props.event.id;
+        n.dataType = ecf.dataType;
+        //n.isVisible = true;
+        return n;
+    });
+
+    // if there are no custom fields defined at all, don't show anything.
+    if (dashboardContext.eventCustomField.items.length < 1) return null;
+
+    return <div className='editCustomFieldsButtonContainer'>
+        {!readonly && <Button onClick={() => setOpen(true)}>{gIconMap.Edit()}Edit custom fields</Button>}
+        {props.event.customFieldValues.map(v => <EventCustomFieldValueControl key={v.id} value={v} mode='view' />)}
+        {open && !readonly && <EventCustomFieldEditDialog onClose={() => setOpen(false)} onOK={async (val) => {
+            // update event custom fields.
+            console.log(`EventCustomFieldEditDialog should serialize custom fields here.`);
+            setOpen(false);
+        }} initialValue={potentialValues} />}
+    </div>;
+};
+
+
+
+
 
 ////////////////////////////////////////////////////////////////
 export interface EventBreadcrumbProps {
@@ -1034,6 +1289,9 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
 
         <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
             <div className='descriptionLine'>
+                <Suspense>
+                    <EventCustomFieldsControl event={event} readonly={props.readonly} />
+                </Suspense>
                 <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
             </div>
         </CustomTabPanel>
@@ -1256,7 +1514,6 @@ export const EventListItem = ({ event, ...props }: EventListItemProps) => {
         />
     </EventSearchItemContainer>;
 };
-
 
 
 export const EventTableClientColumns = {

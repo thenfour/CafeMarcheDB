@@ -63,7 +63,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
     const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
-    const event = db3.enrichSearchResultEvent(eventRaw, dashboardContext);
+    const event = eventRaw ? db3.enrichSearchResultEvent(eventRaw, dashboardContext) : null;
 
     return <div className="eventDetailComponent">
         <NewEventButton />

@@ -1,0 +1,22 @@
+.CustomFieldEditor {
+    border: 2px solid #0008;
+    background-color: white;
+    padding: 10px;
+}
+
+.CustomFieldEditor .header {
+    font-size: 18px;
+    font-family: monospace;
+}
+
+.CustomFieldEditor .expandedBody {
+    margin-top: 10px;
+}
+
+.CustomFieldEditor .jsonPreview {
+    font-family: monospace;
+}
+
+.CustomFieldEditor .CustomFieldValueEditor {
+    display: flex;
+}

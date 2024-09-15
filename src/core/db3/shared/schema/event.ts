@@ -14,6 +14,14 @@ import * as db3 from "../db3core";
 import {
     DashboardContextDataBase,
     EventArgs, EventArgs_Verbose, EventAttendanceArgs, EventAttendanceNaturalOrderBy, EventAttendancePayload,
+    EventCustomFieldArgs,
+    EventCustomFieldDataType,
+    EventCustomFieldNaturalOrderBy,
+    EventCustomFieldPayload,
+    EventCustomFieldSignificance,
+    EventCustomFieldValueArgs,
+    EventCustomFieldValueNaturalOrderBy,
+    EventCustomFieldValuePayload,
     EventNaturalOrderBy, EventPayload, EventPayloadClient,
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
@@ -335,6 +343,95 @@ export const xEventTagAssignment = new db3.xTable({
     ]
 });
 
+
+
+
+////////////////////////////////////////////////////////////////
+
+export const xEventCustomField = new db3.xTable({
+    tableName: "EventCustomField",
+    naturalOrderBy: EventCustomFieldNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldInclude => {
+        return EventCustomFieldArgs.include;
+    },
+    getRowInfo: (row: EventCustomFieldPayload) => {
+        return {
+            pk: row.id,
+            name: row.name,
+            description: row.description,
+            color: gGeneralPaletteList.findEntry(row.color || null),
+            iconName: row.iconName,
+            ownerUserId: null,
+        };
+    },
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+
+        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSignificanceField("significance", EventCustomFieldSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+
+        new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "dataType", defaultValue: EventCustomFieldDataType.SimpleText, options: EventCustomFieldDataType }),
+
+        //new BoolField({ columnName: "isVisible", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        new GenericStringField({
+            columnName: "optionsJson",
+            allowNull: true,
+            format: "raw",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
+    ]
+});
+
+
+////////////////////////////////////////////////////////////////
+
+export const xEventCustomFieldValue = new db3.xTable({
+    tableName: "EventCustomFieldValue",
+    naturalOrderBy: EventCustomFieldValueNaturalOrderBy,
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventCustomFieldValueInclude => {
+        return EventCustomFieldValueArgs.include;
+    },
+    getRowInfo: (row: EventCustomFieldValuePayload) => {
+        return xEventCustomField.getRowInfo(row.customField);
+    },
+    columns: [
+        new PKField({ columnName: "id" }),
+        new GenericStringField({
+            columnName: "jsonValue",
+            allowNull: false,
+            format: "raw",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+        }),
+        new ForeignSingleField<EventCustomFieldPayload>({
+            columnName: "customField",
+            fkMember: "customFieldId",
+            allowNull: false,
+            foreignTableID: "EventCustomField",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+        new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "dataType", defaultValue: EventCustomFieldDataType.SimpleText, options: EventCustomFieldDataType }),
+        //new GhostField({memberName:"event"})
+        // new ForeignSingleField<Prisma.EventGetPayload<{}>>({
+        //     columnName: "event",
+        //     fkMember: "eventId",
+        //     allowNull: false,
+        //     foreignTableID: "Event",
+        //     authMap: xEventAuthMap_R_EOwn_EManagers,
+        //     getQuickFilterWhereClause: (query: string) => false,
+        // }),
+    ]
+});
+
+
+////////////////////////////////////////////////////////////////
+
 export interface EventTableParams {
     eventId?: number;
     eventIds?: number[];
@@ -351,7 +448,6 @@ export interface EventTableParams {
 export interface EventSearchCustomData {
     userTags: unknown[],
 };
-
 
 export const EventAPI = {
     getLabel: (e: Prisma.EventGetPayload<{ select: { startsAt: true, name: true } }>) => {
@@ -602,6 +698,9 @@ export const xEventArgs_Base: db3.TableDesc = {
         new GhostField({ memberName: "songLists", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "updatedAt", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
+        new GhostField({ memberName: "workflowInstanceId", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "customFieldValues", authMap: xEventAuthMap_R_EOwn_EManagers }),
+
         // because this is used for generating icals
         new GhostField({ memberName: "uid", authMap: xEventAuthMap_Homepage }),
         new GhostField({ memberName: "calendarInputHash", authMap: xEventAuthMap_R_EAdmin }),
@@ -639,8 +738,6 @@ const xEventArgs_Verbose: db3.TableDesc = {
 };
 
 export const xEventVerbose = new db3.xTable(xEventArgs_Verbose);
-
-
 
 
 
@@ -1075,6 +1172,9 @@ export function enrichSearchResultEvent<T extends EnrichEventInput>(
     // original payload type,
     // removing items we're replacing,
     // + stuff we're adding/changing.
+    if (!event) {
+        console.log(`wut`);
+    }
     return {
         ...event,
         status: data.eventStatus.getById(event.statusId),
