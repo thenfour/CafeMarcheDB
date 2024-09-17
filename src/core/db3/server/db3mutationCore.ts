@@ -11,7 +11,7 @@ import { DateTimeRange } from "shared/time";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, getIntersectingFields } from "shared/utils";
 import sharp from "sharp";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, getFileCustomData } from "../shared/apiTypes";
+import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { assert } from "blitz";
@@ -119,7 +119,6 @@ export const CallMutateEventHooks = async (args: { tableName: string, model: TAn
             break;
         case "eventsonglist":
             eventIdToUpdate = (args.model as Prisma.EventSongListGetPayload<{ select: { id: true, eventId: true } }>).eventId;
-
             if (!eventIdToUpdate) {
                 const sl = await db.eventSongList.findFirst({
                     where: {
@@ -131,21 +130,6 @@ export const CallMutateEventHooks = async (args: { tableName: string, model: TAn
                 });
                 eventIdToUpdate = sl?.eventId;
             }
-
-            // console.log(`eventsonglist ${args.model.id} updated; it's pointing at event ${eventIdToUpdate}`);
-            // const sl = await db.eventSongList.findFirst({
-            //     where: {
-            //         id: args.model.id,
-            //     },
-            //     select: {
-            //         songs: {
-            //             select: {
-            //                 songId: true,
-            //             }
-            //         }
-            //     }
-            // });
-            // console.log(sl);
             break;
         case "eventsonglistsong":
             {
@@ -159,6 +143,11 @@ export const CallMutateEventHooks = async (args: { tableName: string, model: TAn
                     }
                 });
                 eventIdToUpdate = eventIdRet?.eventId;
+            }
+            break;
+        case "event:eventCustomFieldValue":
+            {
+                eventIdToUpdate = args.model.id;
             }
             break;
         default:
@@ -1038,4 +1027,109 @@ export const PostProcessFile = async ({ file }: { file: Prisma.FileGetPayload<{}
     }
 };
 
+
+
+
+// assumes all tables are using "id" as pk column.
+export const UpdateEventCustomFieldValues = async (changeContext: ChangeContext, ctx: AuthenticatedCtx, args: TupdateEventCustomFieldValuesArgs) => {
+    // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
+    const desiredValues: TupdateEventCustomFieldValue[] = args.values.map((a, index) => ({
+        id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
+        customFieldId: a.customFieldId,
+        dataType: a.dataType,
+        eventId: a.eventId,
+        jsonValue: a.jsonValue,
+    }));
+
+    // get current associations to the local / parent item (eventsonglistid)
+    const currentValuesRaw = await db.eventCustomFieldValue.findMany({
+        where: { eventId: args.eventId },
+    });
+
+    // in order to make the change plan, unify the types into the kind that's passed in args
+    const currentValues: TupdateEventCustomFieldValue[] = currentValuesRaw.map(a => ({
+        id: a.id,
+        customFieldId: a.customFieldId,
+        dataType: a.dataType,
+        eventId: a.eventId,
+        jsonValue: a.jsonValue,
+    }));
+
+    // computes which values need to be created, deleted, and which may need to be updated
+    const cp = ComputeChangePlan(
+        currentValues,
+        desiredValues, // ORDER matters; we assume 'b' is the desired.
+        (a, b) => a.id === b.id, // all should have unique numeric IDs. could assert that.
+    );
+
+    // execute the plan:
+
+    // do deletes
+    await db.eventCustomFieldValue.deleteMany({
+        where: {
+            id: {
+                in: cp.delete.map(x => x.id!),
+            }
+        },
+    });
+
+    // create new
+    for (let i = 0; i < cp.create.length; ++i) {
+        const a = cp.create[i]!;
+        const newAssoc = await db.eventCustomFieldValue.create({
+            data: {
+                eventId: args.eventId,
+                customFieldId: a.customFieldId,
+                dataType: a.dataType,
+                jsonValue: a.jsonValue,
+            },
+        });
+    }
+
+    // updates
+    for (let i = 0; i < cp.potentiallyUpdate.length; ++i) {
+        const item = cp.potentiallyUpdate[i]!;
+        const data = {};
+
+        const checkChangedColumn = (columnName: keyof Prisma.EventCustomFieldValueGetPayload<{}>) => {
+            if (item.a[columnName] === item.b[columnName]) return;
+            data[columnName] = item.b[columnName];
+        };
+
+        checkChangedColumn("customFieldId");
+        checkChangedColumn("dataType");
+        checkChangedColumn("jsonValue");
+
+        if (Object.entries(data).length < 1) {
+            // nothing to update.
+            continue;
+        }
+
+        const newAssoc = await db.eventCustomFieldValue.update({
+            where: {
+                id: item.a.id!,
+            },
+            data,
+        });
+
+    }
+
+    // make a custom change obj. let's not bother with "old state"; this just gets too verbose and that's not helpful.
+    await RegisterChange({
+        action: ChangeAction.update,
+        changeContext,
+        table: "event:eventCustomFieldValue",
+        pkid: args.eventId,
+        oldValues: {},
+        newValues: cp.desiredState,
+        ctx,
+        options: { dontCalculateChanges: true },
+    });
+
+    await CallMutateEventHooks({
+        tableName: "event:eventCustomFieldValue",
+        model: { id: args.eventId }
+    });
+
+};
 

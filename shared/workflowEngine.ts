@@ -93,6 +93,13 @@ export interface WorkflowNodeAssignee {
     userId: number;
 }
 
+export enum WorkflowManualCompletionStyle {
+    DontAllowManualCompletion = "DontAllowManualCompletion",
+    AllowManualCompletionWithRequiredComment = "AllowManualCompletionWithRequiredComment",
+    AllowManualCompletionWithOptionalComment = "AllowManualCompletionWithOptionalComment",
+    AllowManualCompletionWithoutComment = "AllowManualCompletionWithoutComment",
+}
+
 export interface WorkflowNodeDef {
     id: number;
 
@@ -101,6 +108,7 @@ export interface WorkflowNodeDef {
 
     // UI display & basic behaviors
     displayStyle: WorkflowNodeDisplayStyle;
+    manualCompletionStyle: WorkflowManualCompletionStyle;
 
     // relevance + activation dependencies must ALL be complete to be considered satisfied.
     // if there are no relevance dependencies, or no activation dependencies, then considered "always" satisfied.
@@ -158,6 +166,9 @@ export interface WorkflowNodeInstance {
     nodeDefId: number;
     assignees: WorkflowNodeAssignee[];
     dueDate?: Date | undefined;
+
+    manuallyCompleted: boolean;
+    manualCompletionComment: string | undefined;
 
     // for logging field value changes, this is necessary.
     // and it's necessary to keep field name as well because if you change the workflow def to a different field name. sure you could just clear it out, but it can be common to change the field name and change it back like "nah i didn't mean to" and it would be dumb to clear out statuses invoking a bunch of log messages that are just noise.
@@ -266,6 +277,8 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
                 nodeDefId: nodeDef.id,
                 lastProgressState: WorkflowNodeProgressState.InvalidState,
                 assignees: JSON.parse(JSON.stringify(nodeDef.defaultAssignees)),
+                manuallyCompleted: false,
+                manualCompletionComment: undefined,
                 isTidy: true,
                 lastFieldName: undefined,
                 lastFieldValueAsString: undefined,

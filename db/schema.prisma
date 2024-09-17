@@ -553,9 +553,8 @@ model EventCustomField {
   significance String?
   iconName     String?
 
-  // this is a kind of soft delete; the idea is that eventually you may replace a field or make it obsolete.
-  // if !isVisible, then the field will only be visible
-  //isVisible Boolean
+  // show this on the user event page (for non-mgrs). for some more technical or verbose values maybe you don't want to show them.
+  isVisibleOnEventPage Boolean @default(true)
 
   eventCustomFieldValues EventCustomFieldValue[]
   //@@index([isVisible])
@@ -576,8 +575,6 @@ model EventCustomFieldValue {
 
   // in case the field def changes, old values can still reference this.
   dataType String @db.MediumText // enum EventCustomFieldDataType
-
-  //isVisible Boolean
 
   @@index([eventId])
   @@index([customFieldId])
@@ -1060,6 +1057,7 @@ model WorkflowDefNode {
   group   WorkflowDefGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   displayStyle           String @db.VarChar(768)
+  manualCompletionStyle  String @db.VarChar(768) // WorkflowManualCompletionStyle
   thisNodeProgressWeight Int
 
   relevanceCriteriaType  String @db.VarChar(768) // WorkflowCompletionCriteriaType;
@@ -1161,6 +1159,9 @@ model WorkflowInstanceNode {
 
   dueDate                     DateTime?
   activeStateFirstTriggeredAt DateTime?
+
+  manuallyCompleted       Boolean
+  manualCompletionComment String? @db.MediumText
 
   lastFieldName          String? @db.VarChar(768)
   lastFieldValueAsString String? @db.MediumText

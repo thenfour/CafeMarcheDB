@@ -1,26 +1,23 @@
-import React from 'react';
 import { BlitzPage } from "@blitzjs/next";
+import { Button, ButtonGroup } from '@mui/material';
+import { nanoid } from 'nanoid';
+import React from 'react';
+import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
+import { gGeneralPaletteList } from 'shared/color';
 import { Permission } from "shared/permissions";
+import { moveItemInArray } from 'shared/utils';
+import { ReactSmoothDndContainer, ReactSmoothDndDraggable } from 'src/core/components/CMCoreComponents';
+import { CMTextInputBase } from 'src/core/components/CMTextField';
+import { ColorPick } from 'src/core/components/Color';
+import { useDashboardContext } from 'src/core/components/DashboardContext';
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
+import { useSnackbar } from 'src/core/components/SnackbarContext';
 import * as DB3Client from "src/core/db3/DB3Client";
+import { gCharMap, gIconMap } from 'src/core/db3/components/IconMap';
 import { DB3EditGrid, DB3EditGridExtraActionsArgs } from "src/core/db3/components/db3DataGrid";
+import { DB3EditObjectDialog } from 'src/core/db3/components/db3NewObjectDialog';
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { gCharMap, gIconMap } from 'src/core/db3/components/IconMap';
-import { Button, ButtonGroup, DialogActions, DialogContent, DialogTitle } from '@mui/material';
-import { nanoid } from 'nanoid';
-import { useSnackbar } from 'src/core/components/SnackbarContext';
-import { Prisma } from '@prisma/client'
-import { ReactiveInputDialog, ReactSmoothDndContainer, ReactSmoothDndDraggable } from 'src/core/components/CMCoreComponents';
-import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { moveItemInArray } from 'shared/utils';
-import { ColorPick } from 'src/core/components/Color';
-import { gGeneralPaletteList } from 'shared/color';
-import { CMTextInputBase } from 'src/core/components/CMTextField';
-import { CMDialogContentText } from 'src/core/components/CMCoreComponents2';
-import { Markdown3Editor } from 'src/core/components/MarkdownControl3';
-import { DB3EditObject2Dialog, DB3EditObjectDialog } from 'src/core/db3/components/db3NewObjectDialog';
-import { useDashboardContext } from 'src/core/components/DashboardContext';
 
 // export type EventCustomFieldOption = {
 //     label: string,
@@ -146,7 +143,7 @@ const makeEventCustomFieldClientColumns = () => [
     new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
     new DB3Client.IconFieldClient({ columnName: "iconName", cellWidth: 120, allowNull: true }),
     new DB3Client.ColorColumnClient({ columnName: "color", cellWidth: 300 }),
-    //new DB3Client.BoolColumnClient({ columnName: "isVisible" }),
+    new DB3Client.BoolColumnClient({ columnName: "isVisibleOnEventPage" }),
     new DB3Client.GenericStringColumnClient({ columnName: "optionsJson", cellWidth: 180 }),
 ];
 

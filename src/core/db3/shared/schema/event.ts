@@ -377,7 +377,7 @@ export const xEventCustomField = new db3.xTable({
 
         new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "dataType", defaultValue: EventCustomFieldDataType.SimpleText, options: EventCustomFieldDataType }),
 
-        //new BoolField({ columnName: "isVisible", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        new BoolField({ columnName: "isVisibleOnEventPage", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         new GenericStringField({
             columnName: "optionsJson",
             allowNull: true,

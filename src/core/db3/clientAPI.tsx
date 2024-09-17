@@ -24,6 +24,7 @@ import updateSongBasicFields from "./mutations/updateSongBasicFields";
 import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttendanceMutation";
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, TAnyModel, getFileCustomData } from "./shared/apiTypes";
+import updateEventCustomFieldValuesMutation from "./mutations/updateEventCustomFieldValuesMutation";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -284,6 +285,8 @@ class EventsAPI {
     insertEventSongListx = CreateAPIMutationFunction(insertEventSongListMutation);
     deleteEventSongListx = CreateAPIMutationFunction(deleteEventSongList);
     updateEventSongListx = CreateAPIMutationFunction(updateEventSongListMutation);
+
+    updateEventCustomFieldValues = CreateAPIMutationFunction(updateEventCustomFieldValuesMutation);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

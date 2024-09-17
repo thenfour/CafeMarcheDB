@@ -816,3 +816,10 @@ export const ZGetSearchResultsInput = z.object({
     quickFilter: z.string(),
     discreteCriteria: z.array(ZDiscreteCriterion),
 });
+
+export type TupdateEventCustomFieldValue = Prisma.EventCustomFieldValueGetPayload<{}>;
+
+export interface TupdateEventCustomFieldValuesArgs {
+    eventId: number;
+    values: TupdateEventCustomFieldValue[];
+};

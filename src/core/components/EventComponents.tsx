@@ -13,9 +13,9 @@ import React, { Suspense } from "react";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
-import { IsNullOrWhitespace } from 'shared/utils';
+import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
-import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
@@ -289,9 +289,12 @@ interface EventCustomFieldsControlProps {
 export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) => {
     const [open, setOpen] = React.useState<boolean>(false);
     const dashboardContext = React.useContext(DashboardContext);
+    const snackbar = useSnackbar();
 
     const authToEdit = dashboardContext.isAuthorized(Permission.manage_events);
     const readonly = !authToEdit || props.readonly;
+
+    const updateMutation = API.events.updateEventCustomFieldValues.useToken();
 
     const potentialValues = dashboardContext.eventCustomField.map(ecf => {
         const existing = props.event.customFieldValues.find(e => e.customFieldId === ecf.id);
@@ -308,12 +311,33 @@ export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) =
     // if there are no custom fields defined at all, don't show anything.
     if (dashboardContext.eventCustomField.items.length < 1) return null;
 
+    const isJsonNotNullish = (s: string): boolean => {
+        try {
+            const x = JSON.parse(s);
+            return x != null;
+        } catch (e) {
+            return false;
+        }
+    };
+
     return <div className='editCustomFieldsButtonContainer'>
         {!readonly && <Button onClick={() => setOpen(true)}>{gIconMap.Edit()}Edit custom fields</Button>}
-        {props.event.customFieldValues.map(v => <EventCustomFieldValueControl key={v.id} value={v} mode='view' />)}
+        {props.event.customFieldValues
+            .filter(v => CoalesceBool(dashboardContext.eventCustomField.getById(v.customFieldId)?.isVisibleOnEventPage, true) && isJsonNotNullish(v.jsonValue))
+            .map(v => <EventCustomFieldValueControl key={v.id} value={v} mode='view' />)
+        }
         {open && !readonly && <EventCustomFieldEditDialog onClose={() => setOpen(false)} onOK={async (val) => {
-            // update event custom fields.
-            console.log(`EventCustomFieldEditDialog should serialize custom fields here.`);
+            try {
+                await updateMutation.invoke({
+                    eventId: props.event.id,
+                    values: val,
+                });
+                snackbar.showMessage({ severity: "success", children: "Updated successfully" });
+            }
+            catch (e) {
+                console.log(e);
+                snackbar.showMessage({ severity: "error", children: "Error; see console" });
+            }
             setOpen(false);
         }} initialValue={potentialValues} />}
     </div>;
