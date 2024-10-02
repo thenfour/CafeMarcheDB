@@ -985,7 +985,7 @@ export const xEventUserResponse = new db3.xTable({
     getRowInfo: (row: EventUserResponsePayload) => ({
         pk: row.id,
         name: row.user?.name || "",
-        ownerUserId: row.user?.id,
+        ownerUserId: row.userId || row.user?.id,
     }),
     getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext) => {
         const ret: Prisma.EventUserResponseWhereInput[] = [];
