@@ -1285,7 +1285,7 @@ export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event,
             return acc + ((((att?.strength || 0) > 50) ? 1 : 0))
         }, 0);
     });
-    const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${Math.min(...segmentResponseCounts)})` : "";
+    const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${segmentResponseCounts.join(",")})` : "";
 
     const enrichedFiles = eventData.event.fileTags.map(ft => {
         return {
