@@ -39,7 +39,7 @@ const MainContent = () => {
         table: db3.xChange,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 80, }),
+            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, size: "small" }),
 
             new DB3Client.GenericStringColumnClient({ columnName: "action", cellWidth: 80 }),
             new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),

@@ -30,7 +30,7 @@ import db3queries from "../queries/db3queries";
 import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn, xTableRenderClient } from "./DB3ClientCore";
 import { TAnyModel } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
-import { CMChip, CMChipContainer } from "src/core/components/CMChip";
+import { CMChip, CMChipContainer, CMChipSizeOptions } from "src/core/components/CMChip";
 
 
 
@@ -237,6 +237,7 @@ export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     selectStyle?: "inline" | "dialog";
     inlineSelectMoreButtonText?: React.ReactNode;
     nullItemInfo?: ForeignSingleFieldNullItemInfo; // for displaying a null item, which of course has no db info... especially useful for visiblePermissionId where a null value represents "private visibility" so displaying "NULL" or "--" is especially bad.
+    size?: CMChipSizeOptions;
 };
 
 // the client-side description of the field, used in xTableClient construction.
@@ -248,6 +249,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
     foreignClientIntention: db3.xTableClientUsageContext;
 
     selectStyle: "inline" | "dialog";
+    size: CMChipSizeOptions;
 
     constructor(args: ForeignSingleFieldClientArgs<TForeign>) {
         super({
@@ -263,6 +265,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         });
 
         this.args = args;
+        this.size = args.size || "big";
         this.fixedValue = undefined; // for the moment it's not known.
         this.selectStyle = args.selectStyle || "dialog";
     }
@@ -284,6 +287,7 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
                 onClick={args.onClick}
                 variation={args.colorVariant}
                 shape="rectangle" // because tags are round
+                size={this.size}
             >
                 {caption}
             </CMChip>;
@@ -294,11 +298,12 @@ export class ForeignSingleFieldClient<TForeign extends TAnyModel> extends IColum
         return <CMChip
             className={"foreignSingleValue"}
             color={rowInfo.color}
-            tooltip={rowInfo.description}
+            tooltip={Coalesce(rowInfo.description, rowInfo.name)}
             onClick={args.onClick}
             onDelete={args.onDelete}
             variation={args.colorVariant}
             shape="rectangle" // because tags are round
+            size={this.size}
         >
             {rowInfo.name}
             {RenderMuiIcon(rowInfo.iconName)}
