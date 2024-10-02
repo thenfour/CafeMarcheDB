@@ -459,7 +459,7 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                     size='small'
                     model={tag.tag}
                     variation={{ ...StandardVariationSpec.Weak, selected: highlightedTagIds.includes(tag.tagId) }}
-                    getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
+                    getTooltip={(_) => tag.tag.description}
                 />)}
             </CMChipContainer>
 

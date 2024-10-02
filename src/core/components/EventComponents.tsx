@@ -1140,7 +1140,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     border='border'
                     shape="rectangle"
                     model={eventData.event.status}
-                    getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
+                    getTooltip={_ => eventData.event.status?.description || null}
                 />}
 
             </CMChipContainer>
@@ -1153,7 +1153,8 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                         className='eventTypeChip'
                         size='small'
                         model={eventData.event.type}
-                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        getTooltip={_ => eventData.event.type?.description || null}
+                        //getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
                         variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(eventData.event.typeId!) }}
                     />
                 }
@@ -1253,7 +1254,7 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
                     model={tag.eventTag}
                     size='small'
                     variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
-                    getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
+                    getTooltip={(_) => tag.eventTag.description}
                 />)}
             </CMChipContainer>
 
@@ -1440,7 +1441,8 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                     border='border'
                     shape="rectangle"
                     model={event.status}
-                    getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
+                    //getTooltip={(status, c) => `Status ${c}: ${status?.description}`}
+                    getTooltip={_ => event.status?.description || null}
                 />}
             </CMChipContainer>
 
@@ -1450,7 +1452,8 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                 {event.type &&
                     <CMStandardDBChip
                         model={event.type}
-                        getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        //getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
+                        getTooltip={_ => event.type?.description || ""}
                         variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(event.typeId!) }}
                         className='eventTypeChip'
                     />
@@ -1508,7 +1511,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
                         model={tag.eventTag}
                         size='small'
                         variation={{ ...StandardVariationSpec.Weak, selected: highlightTagIds.includes(tag.eventTagId) }}
-                        getTooltip={(_, c) => !!c ? `Tag: ${c}` : `Tag`}
+                        getTooltip={(_) => tag.eventTag.description}
                     />)}
                 </CMChipContainer>}
 
