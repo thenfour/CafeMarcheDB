@@ -882,7 +882,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
         currentUser: currentUser!,
     };
     const initialValue = db3.xEventSongList.createNew(clientIntention) as db3.EventSongListPayload;
-    initialValue.name = `Set ${getExcelColumnName(props.event.songLists.length + 1)}`;
+    initialValue.name = `Set ${props.event.songLists.length + 1}`;
 
     const handleSave = (value: db3.EventSongListPayload) => {
         insertMutation.invoke({
