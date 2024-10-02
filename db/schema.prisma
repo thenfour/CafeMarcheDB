@@ -1023,6 +1023,7 @@ model WorkflowDef {
   isDefaultForEvents Boolean
 
   groups    WorkflowDefGroup[]
+  nodeDefs  WorkflowDefNode[]
   instances WorkflowInstance[]
 
   @@index([name])
@@ -1056,6 +1057,9 @@ model WorkflowDefNode {
   groupId Int?
   group   WorkflowDefGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
+  workflowDefId Int?
+  workflowDef   WorkflowDef? @relation(fields: [workflowDefId], references: [id], onDelete: Cascade)
+
   displayStyle           String @db.VarChar(768)
   manualCompletionStyle  String @db.VarChar(768) // WorkflowManualCompletionStyle
   thisNodeProgressWeight Int
@@ -1081,6 +1085,7 @@ model WorkflowDefNode {
   defaultAssignees WorkflowDefNodeDefaultAssignee[]
 
   @@index([name])
+  @@index([workflowDefId])
   @@index([groupId])
   @@index([displayStyle])
 }

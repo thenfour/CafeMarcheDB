@@ -284,6 +284,7 @@ export const ColorPick = (props: ColorPickProps) => {
     const entry = props.palettes.findEntry(props.value);
 
     const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+        if (props.readonly) return;
         setAnchorEl(event.currentTarget);
     };
 

@@ -189,6 +189,8 @@ interface CMSingleSelectBaseProps<Toption> {
     allowInsertFromString?: boolean | undefined;
     doesItemExactlyMatchText?: (item: Toption, filterText: string) => boolean; // if this is a tags or foreign single field, the db3client column implements this
     doInsertFromString?: (userInput: string) => Promise<Toption>; // similar
+
+    className?: string | undefined;
 };
 
 interface CMSingleSelectPropsNotAllowingNull<Toption> extends CMSingleSelectBaseProps<Toption> {
@@ -259,7 +261,7 @@ export const CMSingleSelect = <Toption,>(props: CMSingleSelectProps<Toption>) =>
     };
 
     return (
-        <div className="CMSingleSelect">
+        <div className={`CMSingleSelect ${props.className || ""}`}>
             {displayStyle === CMSelectDisplayStyle.CustomButtonWithDialog ? props.customRender!(() => setSingleSelectDialogOpen(true)) :
                 <CMChipContainer>
                     {(displayStyle === CMSelectDisplayStyle.AllWithInlineEditing) && (

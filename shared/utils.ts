@@ -960,3 +960,7 @@ export function sortBy<T, U>(array: T[], selector: (item: T) => U): T[] {
     });
 }
 
+// https://stackoverflow.com/questions/39419170/how-do-i-check-that-a-switch-block-is-exhaustive-in-typescript
+export function assertUnreachable(x: never, msg?: string | undefined): never {
+    throw new Error(msg || "Didn't expect to get here");
+}

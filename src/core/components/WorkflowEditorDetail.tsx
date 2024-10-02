@@ -573,9 +573,9 @@ export const WorkflowGroupEditor = (props: WorkflowGroupEditorProps) => {
     if (!ctx) throw new Error(`Workflow context is required`);
     if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
 
-    const readonly = ctx.instanceMutator.CanCurrentUserEditDefs();
+    const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
 
-    return <div className="CMWorkflowNodeEditorContainer">
+    return <div className="CMWorkflowNodeEditorContainer WorkflowGroupEditor">
         <h2>Group</h2>
         <NameValuePair
             name={"id"}

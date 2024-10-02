@@ -1,14 +1,10 @@
 
-import { assert } from "blitz";
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { DateTimeRange } from "shared/time";
-import { assertIsNumberArray, assertIsStringArray, gIconOptions } from "shared/utils";
-import { CMDBTableFilterModel, SearchCustomDataHookId, TAnyModel } from "../apiTypes";
-import { BoolField, ConstEnumStringField, EventStartsAtField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeColorField, MakeCreatedAtField, MakeIconField, MakeIntegerField, MakeMarkdownTextField, MakeNullableRawTextField, MakePlainTextField, MakeRawTextField, MakeSignificanceField, MakeSlugField, MakeSortOrderField, MakeTitleField, PKField, RevisionField, TagsField } from "../db3basicFields";
+import { TAnyModel } from "../apiTypes";
+import { BoolField, MakeColorField, MakeMarkdownTextField, MakeSortOrderField, MakeTitleField, PKField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { CreatedByUserField, EventResponses_ExpectedUserTag, VisiblePermissionField } from "./user";
 
 // (todo: refine these)
 const xColumnAuthMap: db3.DB3AuthContextPermissionMap = {
@@ -33,8 +29,21 @@ const WorkflowDefArgs_Search = Prisma.validator<Prisma.WorkflowDefDefaultArgs>()
     },
 });
 
+const WorkflowDefArgs_Verbose = Prisma.validator<Prisma.WorkflowDefDefaultArgs>()({
+    include: {
+        groups: true,
+        nodeDefs: {
+            include: {
+                defaultAssignees: true,
+                dependencies: true,
+            }
+        }
+    },
+});
+
 export type WorkflowDef_Minimum = Prisma.WorkflowDefGetPayload<{}>;
 export type WorkflowDef_SearchPayload = Prisma.WorkflowDefGetPayload<typeof WorkflowDefArgs_Search>;
+export type WorkflowDef_Verbose = Prisma.WorkflowDefGetPayload<typeof WorkflowDefArgs_Verbose>;
 
 export const WorkflowDefNaturalOrderBy: Prisma.WorkflowDefOrderByWithRelationInput[] = [
     { sortOrder: 'asc' },
@@ -67,6 +76,8 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
         MakeColorField("color", { authMap: xColumnAuthMap, }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),
 
+        new BoolField({ columnName: "isDefaultForEvents", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),
+
         // groups    WorkflowDefGroup[]
         // instances WorkflowInstance[]      
     ]
@@ -76,5 +87,12 @@ export const xWorkflowDef_Search = new db3.xTable({
     ...xWorkflowDefArgs,
     getInclude: (clientIntention, filterModel): Prisma.EventInclude => {
         return WorkflowDefArgs_Search.include;
+    },
+});
+
+export const xWorkflowDef_Verbose = new db3.xTable({
+    ...xWorkflowDefArgs,
+    getInclude: (clientIntention, filterModel): Prisma.WorkflowDefInclude => {
+        return WorkflowDefArgs_Verbose.include;
     },
 });

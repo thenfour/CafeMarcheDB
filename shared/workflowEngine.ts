@@ -135,6 +135,12 @@ export interface WorkflowNodeDef {
 export interface WorkflowDef {
     id: number;
     name: string;
+
+    sortOrder: number;
+    description: string | null;
+    color: string | null;
+    isDefaultForEvents: boolean;
+
     groupDefs: WorkflowNodeGroupDef[];
     nodeDefs: WorkflowNodeDef[];
 };
@@ -667,22 +673,29 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                 );
             }
 
-            mutations.push(
-                { fn: sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }), wantsReevaluation: false },
-                {
-                    // it's tempting to want to include things like whether this was a user-induced change or derivative. but that can be known by looking at the node defs so don't put it directly in the log.
-                    fn: sourceWorkflowInstance => api.AddLogItem({
-                        sourceWorkflowInstance, msg: {
-                            type: WorkflowLogItemType.StatusChanged,
-                            at: new Date(),
-                            nodeDefId: node.nodeDefId,
-                            fieldName: undefined,
-                            newValue: node.evaluation.progressState,
-                            oldValue: oldState,
-                        }
-                    }), wantsReevaluation: false
-                },
-            );
+            if (oldState === WorkflowNodeProgressState.InvalidState) {
+                mutations.push(
+                    { fn: sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }), wantsReevaluation: false },
+                );
+            } else {
+                mutations.push(
+                    { fn: sourceWorkflowInstance => api.SetNodeStatusData({ sourceWorkflowInstance, evaluatedNode: node, previousProgressState: oldState, ...newValues }), wantsReevaluation: false },
+                    {
+                        // it's tempting to want to include things like whether this was a user-induced change or derivative. but that can be known by looking at the node defs so don't put it directly in the log.
+                        fn: sourceWorkflowInstance => api.AddLogItem({
+                            sourceWorkflowInstance, msg: {
+                                type: WorkflowLogItemType.StatusChanged,
+                                at: new Date(),
+                                nodeDefId: node.nodeDefId,
+                                fieldName: undefined,
+                                newValue: node.evaluation.progressState,
+                                oldValue: oldState,
+                            }
+                        }), wantsReevaluation: false
+                    },
+                );
+            }
+
         }
     }
 
@@ -782,9 +795,13 @@ export const MakeNewWorkflowDef = (): WorkflowDef => ({
         name: "New group",
         position: { x: 50, y: 50 },
         selected: false,
-        width: undefined,
-        height: undefined,
+        width: 250,
+        height: 150,
     }],
     name: "New workflow",
+    color: null,
+    description: null,
+    isDefaultForEvents: false,
+    sortOrder: 0,
     nodeDefs: [],
 });

@@ -250,6 +250,16 @@ export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
 };
 
 
+export const AdminContainer = (props: React.PropsWithChildren<{}>) => {
+    const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request
+    const show = sess.isSysAdmin && sess.showAdminControls;
+    if (!show) return null;
+    return <>{props.children}</>;
+};
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export const InspectObject = (props: { src: any, tooltip?: string, label?: string }) => {

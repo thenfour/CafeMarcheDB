@@ -2,9 +2,9 @@ import { Button, FormControlLabel, Tooltip } from "@mui/material";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { nanoid } from "nanoid";
 import React from "react";
-import { gLightSwatchColors } from "shared/color";
+import { gGeneralPaletteList, gLightSwatchColors } from "shared/color";
 import { getHashedColor } from "shared/utils";
-import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gCharMap } from "../db3/components/IconMap";
 import { GetStyleVariablesForColor } from "./Color";
@@ -333,7 +333,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
         changes.forEach(change => {
             switch (change.type) {
                 case "add":
-                    console.log(`todo: edge add`);
+                    console.error(`looks like we need to support edge add ??`);
                     break;
                 case "remove":
                     {
@@ -420,7 +420,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
     const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
 
     return (
-        <div style={{ width: '100%', height: '900px', border: '2px solid black' }}>
+        <div style={{ width: '100%', height: '900px', border: '2px solid #0002' }}>
             <ReactFlow
                 nodes={s.nodes}
                 edges={s.edges}
@@ -471,7 +471,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                             <button onClick={() => {
                                 const n: WorkflowNodeDef = {
                                     id: ctx.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
-                                    name: nanoid(),
+                                    name: `New node #${ctx.flowDef.nodeDefs.length + 1}`,//nanoid(),
                                     groupDefId: null,
                                     displayStyle: WorkflowNodeDisplayStyle.Normal,
                                     completionCriteriaType: WorkflowCompletionCriteriaType.always,
@@ -480,6 +480,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                                     defaultAssignees: [],
                                     thisNodeProgressWeight: 1,
                                     nodeDependencies: [],
+                                    manualCompletionStyle: WorkflowManualCompletionStyle.AllowManualCompletionWithRequiredComment,
                                     position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
                                     selected: true,
                                     width: undefined,
@@ -495,12 +496,12 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                                         wantsReevaluation: true,
                                     }
                                 ], "Add node via graph button");
-                            }}>+ New node</button>
+                            }}>+ New node ({ctx.flowDef.nodeDefs.length})</button>
                             <button onClick={() => {
                                 const n: WorkflowNodeGroupDef = {
                                     id: ctx.flowDef.groupDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
-                                    name: nanoid(),
-                                    color: gLightSwatchColors.light_blue,
+                                    name: `New group #${ctx.flowDef.groupDefs.length + 1}`,//nanoid(),
+                                    color: gGeneralPaletteList.getOrdinalEntry((Math.random() * 10000) | 0).id,
                                     height: 200,
                                     width: 200,
                                     position: { x: -reactFlow.getViewport().x + 100, y: -reactFlow.getViewport().y + 100 },
@@ -513,7 +514,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                                             groupDef: n,
                                         }), wantsReevaluation: false
                                     }], "add group via graph button");
-                            }}>+ New group</button>
+                            }}>+ New group ({ctx.flowDef.groupDefs.length})</button>
                         </>}
                     </div>
                 </div>
@@ -551,7 +552,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
     })() : undefined;
 
     return (
-        <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
+        <div style={{ width: "100%", display: "flex", flexDirection: "column" }} className="WorkflowEditorPOC">
             {ctx.evaluatedFlow && <>
                 <div style={{ display: "flex", flexDirection: "row" }}>
                     <div style={{ width: "33%" }}>

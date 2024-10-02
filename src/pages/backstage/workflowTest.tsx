@@ -15,6 +15,10 @@ const emptyWorkflow: WorkflowDef = {
     id: -1,
     name: "a workflow",
     nodeDefs: [],
+    color: null,
+    description: null,
+    isDefaultForEvents: false,
+    sortOrder: 0,
 };
 
 const singleNode = {
@@ -604,11 +608,11 @@ const MainContent = () => {
 
     // re-evaluate when requested
     React.useEffect(() => {
-        workflowInstance.log.push({
-            type: WorkflowLogItemType.Comment,
-            at: new Date(),
-            comment: "Evaluating due to React.useEffect[evaluationTrigger]",
-        });
+        // workflowInstance.log.push({
+        //     type: WorkflowLogItemType.Comment,
+        //     at: new Date(),
+        //     comment: "Evaluating due to React.useEffect[evaluationTrigger]",
+        // });
 
         const x = EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
         setEvaluatedInstance(x);
@@ -648,11 +652,11 @@ const MainContent = () => {
     };
 
     const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
-        workflowInstance.log.push({
-            type: WorkflowLogItemType.Comment,
-            at: new Date(),
-            comment: "initial setup in React.useState<EvaluatedWorkflow>",
-        });
+        // workflowInstance.log.push({
+        //     type: WorkflowLogItemType.Comment,
+        //     at: new Date(),
+        //     comment: "initial setup in React.useState<EvaluatedWorkflow>",
+        // });
         return EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
     });
 

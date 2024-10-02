@@ -612,6 +612,31 @@ export class ColorPaletteList {
         }
         return null;
     }
+
+    getTotalEntryCount(): number {
+        return this.palettes.reduce((sum, palette) => sum + palette.entries.length, 0);
+    }
+
+    getOrdinalEntry(i: number): ColorPaletteEntry {
+        const totalEntries = this.getTotalEntryCount();
+
+        // Wrap the index within the range of total entries
+        const wrappedIndex = i % totalEntries;
+        const adjustedIndex = wrappedIndex < 0 ? wrappedIndex + totalEntries : wrappedIndex;
+
+        let currentIndex = 0;
+
+        for (const palette of this.palettes) {
+            for (const entry of palette.entries) {
+                if (currentIndex === adjustedIndex) {
+                    return entry;
+                }
+                currentIndex++;
+            }
+        }
+
+        throw new Error('Index out of range, which should be impossible');
+    }
 };
 
 
