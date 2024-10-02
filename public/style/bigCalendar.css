@@ -28,7 +28,12 @@
 }
 
 .CMBigCalendar .CMCustomEventWrapper.statusSignificance_Cancelled {
-    opacity: 40%;
+    opacity: 60%;
+}
+
+.CMBigCalendar .CMCustomEventWrapper.statusSignificance_Cancelled .rbc-event {
+    text-decoration: line-through;
+    text-decoration-color: var(--foreground-color);
 }
 
 .CMBigCalendar .CMCustomEventWrapper.attendanceAlert {
