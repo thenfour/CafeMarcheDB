@@ -124,7 +124,8 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
 
     const table = db3.xEventVerbose;
     const minDate = floorLocalToLocalDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
-    minDate.setDate(minDate.getDate() - 1);
+    //minDate.setDate(minDate.getDate() - 1);
+    minDate.setMonth(minDate.getMonth() - 12); // #226 this is a default calendar export and it should not make events disappear immediately.
 
     const eventsTableParams: db3.EventTableParams = {
         minDate: type === "upcoming" ? minDate : undefined,
