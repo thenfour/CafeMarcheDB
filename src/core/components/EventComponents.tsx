@@ -687,7 +687,15 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
             assert(br, "br - usermap incomplete")
             if (!ar.instrument) return -1;
             if (!br.instrument) return 1;
-            return ar.instrument.functionalGroup.sortOrder < br.instrument.functionalGroup.sortOrder ? -1 : 1;
+
+            // sort first by functional group            
+            if (ar.instrument.functionalGroup.sortOrder !== br.instrument.functionalGroup.sortOrder) {
+                return ar.instrument.functionalGroup.sortOrder < br.instrument.functionalGroup.sortOrder ? -1 : 1;
+            }
+
+            // and then by instrument
+            return Math.sign(ar.instrument.sortOrder - br.instrument.sortOrder);
+
         }
         if (sortField === 'response' && !!sortSegment) {
             const ar = responseInfo.getResponseForUserAndSegment({ user: a, segment: sortSegment });
