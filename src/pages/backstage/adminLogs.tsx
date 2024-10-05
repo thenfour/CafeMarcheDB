@@ -42,7 +42,7 @@ const MainContent = () => {
             new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, size: "small" }),
 
             new DB3Client.GenericStringColumnClient({ columnName: "action", cellWidth: 80 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
+            //new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "table", cellWidth: 150 }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 70 }),
