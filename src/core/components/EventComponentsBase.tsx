@@ -183,7 +183,7 @@ export interface CalcEventAttendanceArgs {
         db3.EventResponses_MinimalEventSegmentUserResponse
     >;
     userMap: db3.UserInstrumentList,
-    alertOnly?: boolean; // when true, the control hides unless it's an alert.
+    //alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };
 
 export interface EventAttendanceResult {
@@ -208,7 +208,7 @@ export interface EventAttendanceResult {
     allNegative: boolean;
 
     alertFlag: boolean;
-    hideBecauseNotAlert: boolean;
+    minimalBecauseNotAlert: boolean;
     visible: boolean;
 
     allowViewMode: boolean;
@@ -224,7 +224,7 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
     const dashboardContext = React.useContext(DashboardContext);
     const user = dashboardContext.currentUser!;
 
-    const alertOnly = CoalesceBool(props.alertOnly, false);
+    //const alertOnly = CoalesceBool(props.alertOnly, false);
     if (!props.eventData.responseInfo) throw new Error("no response info");
 
     const ret: EventAttendanceResult = {
@@ -248,7 +248,7 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
         allNegative: false,
 
         alertFlag: false,
-        hideBecauseNotAlert: false,
+        minimalBecauseNotAlert: false,
         visible: false,
 
         allowViewMode: false,
@@ -277,8 +277,8 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
     ret.allNegative = ret.allAttendances.every(r => !!r && r.strength <= 50);
 
     ret.alertFlag = ret.isInvited && !ret.allAnswered && !ret.eventIsPast && !ret.eventIsCancelled;
-    ret.hideBecauseNotAlert = !ret.alertFlag && alertOnly;
-    ret.visible = !ret.eventIsCancelled && !ret.noSegments && !ret.hideBecauseNotAlert && (ret.anyAnswered || ret.isInvited);// hide the control entirely if you're not invited, but still show if you already responded.
+    //ret.hideBecauseNotAlert = !ret.alertFlag && alertOnly;
+    ret.visible = !ret.eventIsCancelled && !ret.noSegments /*&& !ret.hideBecauseNotAlert*/ && (ret.anyAnswered || ret.isInvited);// hide the control entirely if you're not invited, but still show if you already responded.
 
     // there are really just 2 modes here for simplicity
     // view (compact, instrument & segments on same line)

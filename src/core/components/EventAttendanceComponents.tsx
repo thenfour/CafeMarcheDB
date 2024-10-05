@@ -122,11 +122,11 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { AdminInspectObject, ReactiveInputDialog } from './CMCoreComponents';
+import { AdminInspectObject, AttendanceChip, ReactiveInputDialog } from './CMCoreComponents';
 import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
-import { DashboardContext } from "./DashboardContext";
+import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { ArrayElement, CoalesceBool } from "shared/utils";
 import { Prisma } from "db";
 import { Markdown } from "./RichTextEditor";
@@ -500,16 +500,19 @@ export interface EventAttendanceControlProps {
   >;
   onRefetch: () => void,
   userMap: db3.UserInstrumentList,
-  alertOnly?: boolean; // when true, the control hides unless it's an alert.
+  minimalWhenNotAlert: boolean,
+  //alertOnly?: boolean; // when true, the control hides unless it's an alert.
 };
 
 
 export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
+  const dashboardContext = useDashboardContext();
 
   const y = CalcEventAttendance({
     eventData: props.eventData,
     userMap: props.userMap,
-    alertOnly: props.alertOnly,
+    //minimalWhenNotAlert: props.minimalWhenNotAlert,
+    //alertOnly: props.alertOnly,
   });
 
   // never show attendance alert control for cancelled events
@@ -526,6 +529,15 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
   if (!y.visible) return debugView;
 
   const mapIndex = !y.allAnswered ? 0 : (y.allAffirmative ? 1 : (y.allNegative ? 2 : 3));
+
+  if (y.visible && !y.alertFlag && props.minimalWhenNotAlert) {
+    return <div className={`eventAttendanceControl minimalView`}>
+      <CMChipContainer>
+        <div>You responded:</div>
+        {y.segmentUserResponses.map((r, i) => <AttendanceChip key={r.segment.id} value={dashboardContext.eventAttendance.getById(r.response.attendanceId)} />)}
+      </CMChipContainer>
+    </div>;
+  }
 
   return <div className={`eventAttendanceControl ${y.alertFlag && "alert"}`}>
     {debugView}

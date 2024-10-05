@@ -1379,7 +1379,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
             eventData={eventData}
             onRefetch={tableClient.refetch}
             userMap={userMap}
-            alertOnly={false} // show this always, allow users to respond always.
+            minimalWhenNotAlert={false} // show full always, allow users to respond always.
         />
 
         <SegmentList
@@ -1545,7 +1545,7 @@ export const EventListItem = ({ event, ...props }: EventListItemProps) => {
             eventData={eventData}
             onRefetch={props.refetch}
             userMap={userMap}
-            alertOnly={true}
+            minimalWhenNotAlert={true}
         />
     </EventSearchItemContainer>;
 };
