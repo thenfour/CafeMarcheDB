@@ -614,7 +614,7 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
                 <td className='responseCell'>
                     <div className='responseCellContents'>
                         {iseg === 0 && <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch, userMap }} />}</div>}
-                        {!!attendance ? <AttendanceChip value={attendance} variation={attendanceVariant} shape="rectangle" /> : "--"}
+                        {!!attendance ? <AttendanceChip value={attendance} variation={attendanceVariant} /> : "--"}
                     </div>
                 </td>
             </React.Fragment>;

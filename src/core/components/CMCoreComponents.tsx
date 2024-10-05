@@ -456,7 +456,7 @@ export interface AttendanceChipProps {
     size?: CMChipSizeOptions;
     onClick?: () => void;
     className?: string;
-    shape?: CMChipShapeOptions;
+    //shape?: CMChipShapeOptions;
 };
 
 export const AttendanceChip = (props: AttendanceChipProps) => {
@@ -467,7 +467,8 @@ export const AttendanceChip = (props: AttendanceChipProps) => {
         onClick={props.onClick}
         className={`${props.className} AttendanceChip`}
         color={props.value?.color || null}
-        shape={props.shape}
+        //shape={props.shape}
+        shape="rectangle"
         tooltip={props.value?.description}
     >
         {RenderMuiIcon(props.value?.iconName)}

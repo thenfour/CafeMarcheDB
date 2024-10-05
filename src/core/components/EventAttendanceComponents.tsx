@@ -530,10 +530,11 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   const mapIndex = !y.allAnswered ? 0 : (y.allAffirmative ? 1 : (y.allNegative ? 2 : 3));
 
-  if (y.visible && !y.alertFlag && props.minimalWhenNotAlert) {
+  // require any answered otherwise you get "you responded: no response".
+  if (y.visible && !y.alertFlag && y.anyAnswered && props.minimalWhenNotAlert) {
     return <div className={`eventAttendanceControl minimalView`}>
       <CMChipContainer>
-        <div>You responded:</div>
+        <div className="caption">You responded</div>
         {y.segmentUserResponses.map((r, i) => <AttendanceChip key={r.segment.id} value={dashboardContext.eventAttendance.getById(r.response.attendanceId)} />)}
       </CMChipContainer>
     </div>;
