@@ -964,3 +964,36 @@ export function sortBy<T, U>(array: T[], selector: (item: T) => U): T[] {
 export function assertUnreachable(x: never, msg?: string | undefined): never {
     throw new Error(msg || "Didn't expect to get here");
 }
+
+
+export type EnNlFr = "en" | "nl" | "fr";
+
+
+export function LangSelectString<
+    T extends string | null | undefined
+>(
+    preferredLang: EnNlFr,
+    value_en: T,
+    value_nl: T,
+    value_fr: T
+): T extends string ? string : string | null | undefined {
+    switch (preferredLang) {
+        case "en":
+            if (!IsNullOrWhitespace(value_en)) return value_en as any;
+            break;
+        case "nl":
+            if (!IsNullOrWhitespace(value_nl)) return value_nl as any;
+            break;
+        case "fr":
+            if (!IsNullOrWhitespace(value_fr)) return value_fr as any;
+            break;
+    }
+
+    // Fallback to any available value
+    if (!IsNullOrWhitespace(value_en)) return value_en as any;
+    if (!IsNullOrWhitespace(value_nl)) return value_nl as any;
+    if (!IsNullOrWhitespace(value_fr)) return value_fr as any;
+
+    // If all values are null or undefined, return null
+    return null as any;
+}

@@ -893,12 +893,16 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     margin: 10px;
 }
 
-.frontpageAgendaPreviewContainer .previewCaption {
+.frontpageAgendaPreviewContainer .previewCaptionRow {
+    display: flex;
+}
+
+.frontpageAgendaPreviewContainer .previewCaptionRow .title {
     color: #edee7d;
     text-transform: uppercase;
     font-weight: bold;
+    margin-right: 20px;
 }
-
 
 
 .EventFrontpageTabContent .fieldContainer {
@@ -916,9 +920,8 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
 .EventFrontpageTabContent .fieldContainer .label .text {
     text-overflow: ellipsis;
     overflow: hidden;
-    text-align: right;
+    /* text-align: right; */
     flex-grow: 1;
-    ;
 }
 
 .EventFrontpageTabContent .fieldContainer .label .icon {
@@ -2473,4 +2476,21 @@ table.activityVis tr.aggMonthRow .totalFilledPart {
 .editCustomFieldsButtonContainer {
     padding-top: 10px;
     padding-bottom: 10px;
+}
+
+
+
+.frontpageGalleryCaptionEditorContainer {
+    border: 2px solid #ccc;
+    background-color: #ffe;
+    margin: 0;
+    padding: 0 10px;
+    border-radius: 5px;
+
+}
+
+
+i.placeholder {
+    opacity: 50%;
+    font-size: small;
 }

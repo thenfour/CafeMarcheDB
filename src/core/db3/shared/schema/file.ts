@@ -645,6 +645,18 @@ export const xFrontpageGalleryItem = new db3.xTable({
             format: "markdown",
             authMap: xFrontpageAuthMap_Basic,
         }),
+        new GenericStringField({
+            columnName: "caption_nl",
+            allowNull: false,
+            format: "markdown",
+            authMap: xFrontpageAuthMap_Basic,
+        }),
+        new GenericStringField({
+            columnName: "caption_fr",
+            allowNull: false,
+            format: "markdown",
+            authMap: xFrontpageAuthMap_Basic,
+        }),
         MakeSortOrderField("sortOrder", { authMap: xFrontpageAuthMap_Basic }),
         new GenericStringField({
             columnName: "displayParams",

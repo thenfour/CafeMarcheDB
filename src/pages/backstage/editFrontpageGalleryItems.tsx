@@ -17,6 +17,8 @@ const MainContent = () => {
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption", cellWidth: 120 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "caption_nl", cellWidth: 120 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "caption_fr", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120, }),

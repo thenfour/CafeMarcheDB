@@ -34,6 +34,22 @@ export default resolver.pipe(
             frontpageLocation: args.frontpageLocation,
             frontpageLocationURI: args.frontpageLocationURI,
             frontpageTags: args.frontpageTags,
+
+            frontpageDate_nl: args.frontpageDate_nl,
+            frontpageTime_nl: args.frontpageTime_nl,
+            frontpageTitle_nl: args.frontpageTitle_nl,
+            frontpageDetails_nl: args.frontpageDetails_nl,
+            frontpageLocation_nl: args.frontpageLocation_nl,
+            frontpageLocationURI_nl: args.frontpageLocationURI_nl,
+            frontpageTags_nl: args.frontpageTags_nl,
+
+            frontpageDate_fr: args.frontpageDate_fr,
+            frontpageTime_fr: args.frontpageTime_fr,
+            frontpageTitle_fr: args.frontpageTitle_fr,
+            frontpageDetails_fr: args.frontpageDetails_fr,
+            frontpageLocation_fr: args.frontpageLocation_fr,
+            frontpageLocationURI_fr: args.frontpageLocationURI_fr,
+            frontpageTags_fr: args.frontpageTags_fr,
         };
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);

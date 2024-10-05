@@ -1,10 +1,10 @@
 
-import { FormControlLabel, Switch } from "@mui/material";
+import { Button, DialogActions, DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
 import React from "react";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
+import { Prisma } from "db";
 import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
-import { EditTextDialogButton } from "./CMCoreComponents";
 import { AgendaItem } from './homepageComponents';
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { useAuthenticatedSession } from "@blitzjs/auth";
@@ -12,10 +12,164 @@ import { SettingMarkdown } from "./SettingMarkdown";
 import { DashboardContext } from "./DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 import { gIconMap } from "../db3/components/IconMap";
+import { CMDialogContentText, CMSmallButton, KeyValueTable } from "./CMCoreComponents2";
+import { CMChip, CMChipContainer } from "./CMChip";
+import { EnNlFr } from "shared/utils";
+import { EditTextField, ReactiveInputDialog } from "./CMCoreComponents";
 
 
+
+
+////////////////////////////////////////////////////////////////
+// similar to ChooseItemDialog, we want little text fields to be editable
+// on profile.tsx, values are editable inline.
+// this one pops up a dialog, the point is
+// 1. debouncing not necessary
+// 2. on a very busy screen (edit details), a popup is more focused.
+//
+// this is just the dialog
+export interface EditTextDialogProps {
+    title: string;
+    onOK: (valueEn: string, valueNl: string, valueFr: string) => void;
+    onCancel: () => void;
+    description: React.ReactNode;
+    clientIntention: db3.xTableClientUsageContext
+
+    valueEn: string;
+    columnSpecEn: db3.FieldBase<string>;
+    valueNl: string;
+    columnSpecNl: db3.FieldBase<string>;
+    valueFr: string;
+    columnSpecFr: db3.FieldBase<string>;
+};
+export const EditTextDialog = (props: EditTextDialogProps) => {
+    const [valueEn, setValueEn] = React.useState<string>(props.valueEn);
+    const [valueNl, setValueNl] = React.useState<string>(props.valueNl);
+    const [valueFr, setValueFr] = React.useState<string>(props.valueFr);
+    return <ReactiveInputDialog
+        onCancel={props.onCancel}
+    >
+        <DialogTitle>
+            {props.title}
+        </DialogTitle>
+        <DialogContent dividers>
+            <CMDialogContentText>
+                {props.description}
+            </CMDialogContentText>
+            <h3>EN</h3>
+            <EditTextField
+                columnSpec={props.columnSpecEn}
+                clientIntention={props.clientIntention}
+                onChange={(newValue) => { setValueEn(newValue) }}
+                value={valueEn}
+            />
+            <h3>NL</h3>
+            <EditTextField
+                columnSpec={props.columnSpecNl}
+                clientIntention={props.clientIntention}
+                onChange={(newValue) => { setValueNl(newValue) }}
+                value={valueNl}
+            />
+            <h3>FR</h3>
+            <EditTextField
+                columnSpec={props.columnSpecFr}
+                clientIntention={props.clientIntention}
+                onChange={(newValue) => { setValueFr(newValue) }}
+                value={valueFr}
+            />
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={props.onCancel}>Cancel</Button>
+            <Button onClick={() => { props.onOK(valueEn, valueNl, valueFr) }}>OK</Button>
+        </DialogActions>
+    </ReactiveInputDialog>;
+};
+
+
+
+////////////////////////////////////////////////////////////////
+// this control is a button which pops up a dialog.
+// by default JUST displays the button (not the text)
+export interface EditTextDialogButtonProps {
+    valueEn: string;
+    columnSpecEn: db3.FieldBase<string>;
+    valueNl: string;
+    columnSpecNl: db3.FieldBase<string>;
+    valueFr: string;
+    columnSpecFr: db3.FieldBase<string>;
+
+    readOnly: boolean;
+    selectButtonLabel: string;
+    onChange: (valueEn: string, valueNl: string, valueFr: string) => void;
+    dialogTitle: string;
+    dialogDescription: React.ReactNode;
+    clientIntention: db3.xTableClientUsageContext
+};
+export const EditTextDialogButton = (props: EditTextDialogButtonProps) => {
+    const [isOpen, setIsOpen] = React.useState<boolean>(false);
+
+    return <>
+        <Button disabled={props.readOnly} onClick={() => { setIsOpen(!isOpen) }} disableRipple>{props.selectButtonLabel}</Button>
+        {isOpen && !props.readOnly && <EditTextDialog
+            valueEn={props.valueEn}
+            columnSpecEn={props.columnSpecEn}
+            valueNl={props.valueNl}
+            columnSpecNl={props.columnSpecNl}
+            valueFr={props.valueFr}
+            columnSpecFr={props.columnSpecFr}
+            clientIntention={props.clientIntention}
+            title={props.dialogTitle}
+            description={props.dialogDescription}
+            onOK={(valueEn: string, valueNl: string, valueFr: string) => {
+                props.onChange(valueEn, valueNl, valueFr);
+                setIsOpen(false);
+            }}
+            onCancel={() => {
+                setIsOpen(false);
+            }}
+        />
+        }
+    </>;
+};
+
+
+
+
+////////////////////////////////////////////////////////////////
 interface FrontpageControlSpec {
-    fieldName: string;
+    fieldNameEn: keyof Prisma.EventGetPayload<{
+        select: {
+            frontpageDate: true,
+            frontpageTime: true,
+            frontpageDetails: true,
+            frontpageTitle: true,
+            frontpageLocation: true,
+            frontpageLocationURI: true,
+            frontpageTags: true,
+        }
+    }>;
+    fieldNameNl: keyof Prisma.EventGetPayload<{
+        select: {
+            frontpageDate_nl: true,
+            frontpageTime_nl: true,
+            frontpageDetails_nl: true,
+            frontpageTitle_nl: true,
+            frontpageLocation_nl: true,
+            frontpageLocationURI_nl: true,
+            frontpageTags_nl: true,
+        }
+    }>;
+    fieldNameFr: keyof Prisma.EventGetPayload<{
+        select: {
+            frontpageDate_fr: true,
+            frontpageTime_fr: true,
+            frontpageDetails_fr: true,
+            frontpageTitle_fr: true,
+            frontpageLocation_fr: true,
+            frontpageLocationURI_fr: true,
+            frontpageTags_fr: true,
+        }
+    }>;
     nullable: boolean;
     fieldLabel: string;
     renderIcon: () => JSX.Element;
@@ -37,10 +191,12 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
-    const handleChange = (newValue: string | null) => {
+    const handleChange = (valueEn: string | null, valueNl: string | null, valueFr: string | null) => {
         mutationToken.invoke({
             eventId: props.event.id,
-            [props.fieldSpec.fieldName]: newValue,
+            [props.fieldSpec.fieldNameEn]: valueEn,
+            [props.fieldSpec.fieldNameNl]: valueNl,
+            [props.fieldSpec.fieldNameFr]: valueFr,
         }).then(() => {
             showSnackbar({ severity: "success", children: `Successfully updated ${props.fieldSpec.fieldLabel}` });
         }).catch(e => {
@@ -52,29 +208,31 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     };
 
     const defaultValue = props.fallbackValue;
-    const value = props.event[props.fieldSpec.fieldName];
-    const isNull = value === null;
+    const valueEn = props.event[props.fieldSpec.fieldNameEn];
+    const valueNl = props.event[props.fieldSpec.fieldNameNl];
+    const valueFr = props.event[props.fieldSpec.fieldNameFr];
+    const isNull = valueEn === null;
 
     const handleNullChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.checked) {
             // switching from null to not null.
-            handleChange(defaultValue);
+            handleChange(defaultValue, defaultValue, defaultValue);
             return;
         }
-        handleChange(null);
+        handleChange(null, null, null);
     }
 
     const canEdit = db3.xEvent.authorizeColumnForEdit({
         clientIntention,
         publicData,
         model: props.event,
-        columnName: props.fieldSpec.fieldName,
+        columnName: props.fieldSpec.fieldNameEn, // assume same perms for all languages
         fallbackOwnerId: null,
     });
 
     const readonly = props.readonly || !canEdit;
 
-    return <div className={`fieldContainer ${props.fieldSpec.fieldName} ${props.event.frontpageVisible ? "" : "faded"}`}>
+    return <div className={`fieldContainer ${props.fieldSpec.fieldNameEn /* assumes this is the "plain" fieldname with out lang suffix */} ${props.event.frontpageVisible ? "" : "faded"}`}>
 
         <div className='label'>
             <div className='text'>{props.fieldSpec.fieldLabel}</div>
@@ -90,16 +248,24 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         <div className='editButtonContainer'>
             {!readonly && <EditTextDialogButton
                 clientIntention={clientIntention}
-                columnSpec={db3.xEvent.getColumn(props.fieldSpec.fieldName)! as db3.FieldBase<string>}
+                columnSpecEn={db3.xEvent.getColumn(props.fieldSpec.fieldNameEn)! as db3.FieldBase<string>}
+                valueEn={valueEn || defaultValue}
+                columnSpecNl={db3.xEvent.getColumn(props.fieldSpec.fieldNameNl)! as db3.FieldBase<string>}
+                valueNl={valueEn || defaultValue}
+                columnSpecFr={db3.xEvent.getColumn(props.fieldSpec.fieldNameFr)! as db3.FieldBase<string>}
+                valueFr={valueEn || defaultValue}
                 dialogTitle={props.fieldSpec.fieldLabel}
                 readOnly={readonly}
                 dialogDescription={<SettingMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
                 selectButtonLabel='edit'
-                value={value || defaultValue}
                 onChange={handleChange}
             />}
         </div>
-        <div className={`value ${isNull ? "faded" : ""}`}>{value || defaultValue}</div>
+        <KeyValueTable className={`value ${isNull ? "faded" : ""}`} data={{
+            EN: valueEn || defaultValue,
+            NL: valueNl || defaultValue,
+            FR: valueFr || defaultValue,
+        }} />
     </div>;
 };
 
@@ -117,6 +283,7 @@ export interface EventFrontpageTabContentProps {
 
 export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
+    const [previewLang, setPreviewLang] = React.useState<EnNlFr>("en");
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const user = useCurrentUser()[0]!;
     const publicData = useAuthenticatedSession();
@@ -137,8 +304,8 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         });
     }
 
-    const agendaItem: HomepageAgendaItemSpec = API.events.getAgendaItem(props.event);
-    const fallbackValues = API.events.getAgendaItemFallbackValues(props.event);
+    const agendaItem: HomepageAgendaItemSpec = API.events.getAgendaItem(props.event, previewLang);
+    const fallbackValues = API.events.getAgendaItemFallbackValues(props.event, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
         clientIntention,
@@ -175,7 +342,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             fallbackValue={fallbackValues.date || ""}
             fieldSpec={{
                 fieldLabel: "Date",
-                fieldName: "frontpageDate",
+                fieldNameEn: "frontpageDate",
+                fieldNameFr: "frontpageDate_fr",
+                fieldNameNl: "frontpageDate_nl",
                 nullable: false,
                 renderIcon: gIconMap.CalendarMonth,
             }} />
@@ -184,7 +353,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             fallbackValue={fallbackValues.time || ""}
             fieldSpec={{
                 fieldLabel: "Time",
-                fieldName: "frontpageTime",
+                fieldNameEn: "frontpageTime",
+                fieldNameFr: "frontpageTime_fr",
+                fieldNameNl: "frontpageTime_nl",
                 nullable: false,
                 renderIcon: gIconMap.Schedule,
             }} />
@@ -193,7 +364,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             fallbackValue={fallbackValues.title || ""}
             fieldSpec={{
                 fieldLabel: "Title",
-                fieldName: "frontpageTitle",
+                fieldNameEn: "frontpageTitle",
+                fieldNameFr: "frontpageTitle_fr",
+                fieldNameNl: "frontpageTitle_nl",
                 nullable: true,
                 renderIcon: gIconMap.Comment,
             }} />
@@ -203,7 +376,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             fallbackValue={fallbackValues.detailsMarkdown || ""}
             fieldSpec={{
                 fieldLabel: "Details",
-                fieldName: "frontpageDetails",
+                fieldNameEn: "frontpageDetails",
+                fieldNameFr: "frontpageDetails_fr",
+                fieldNameNl: "frontpageDetails_nl",
                 nullable: false,
                 renderIcon: gIconMap.Comment,
             }} />
@@ -213,7 +388,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             fallbackValue={fallbackValues.location || ""}
             fieldSpec={{
                 fieldLabel: "Location",
-                fieldName: "frontpageLocation",
+                fieldNameEn: "frontpageLocation",
+                fieldNameFr: "frontpageLocation_fr",
+                fieldNameNl: "frontpageLocation_nl",
                 nullable: true,
                 renderIcon: gIconMap.Place,
             }} />
@@ -223,7 +400,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             fallbackValue={fallbackValues.locationURI || ""}
             fieldSpec={{
                 fieldLabel: "Location URI",
-                fieldName: "frontpageLocationURI",
+                fieldNameEn: "frontpageLocationURI",
+                fieldNameFr: "frontpageLocationURI_fr",
+                fieldNameNl: "frontpageLocationURI_nl",
                 nullable: true,
                 renderIcon: gIconMap.Link,
             }} />
@@ -233,7 +412,9 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             fallbackValue={fallbackValues.tags || ""}
             fieldSpec={{
                 fieldLabel: "Tags",
-                fieldName: "frontpageTags",
+                fieldNameEn: "frontpageTags",
+                fieldNameFr: "frontpageTags_fr",
+                fieldNameNl: "frontpageTags_nl",
                 nullable: true,
                 renderIcon: gIconMap.Tag,
             }} />
@@ -241,7 +422,14 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
         {props.event.frontpageVisible &&
             <div className='frontpageAgendaPreviewContainer'>
-                <div className='previewCaption'>Preview</div>
+                <div className='previewCaptionRow'>
+                    <CMChipContainer className="langToolbar">
+                        <div className="title">Preview</div>
+                        <CMChip onClick={() => setPreviewLang("en")} size="small" shape="rectangle" variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: previewLang === "en" }}>EN</CMChip>
+                        <CMChip onClick={() => setPreviewLang("nl")} size="small" shape="rectangle" variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: previewLang === "nl" }}>NL</CMChip>
+                        <CMChip onClick={() => setPreviewLang("fr")} size="small" shape="rectangle" variation={{ enabled: true, fillOption: "filled", variation: "strong", selected: previewLang === "fr" }}>FR</CMChip>
+                    </CMChipContainer>
+                </div>
                 <div className="frontpageAgendaContent backstagePreview">
                     <AgendaItem item={agendaItem} />
                 </div>

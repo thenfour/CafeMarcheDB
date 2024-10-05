@@ -238,6 +238,42 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data, classNam
     );
 };
 
+////////////////////////////////////////////////////////////////
+// table instead of <pre>
+
+export const KeyValueTable: React.FC<KeyValueDisplayProps> = ({ data, className }) => {
+    // Render the key-value pairs in table rows
+    const renderKeyValueRows = (data: Record<string, KeyValueDisplayValueType>): JSX.Element[] => {
+        return Object.entries(data).map(([key, value], index) => {
+            let displayValue: React.ReactNode;
+            if (value === null || value === undefined) {
+                displayValue = value === null ? "<null>" : "";
+            } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                displayValue = value.toString();
+            } else if (value instanceof Date) {
+                displayValue = value.toISOString();
+            } else if (React.isValidElement(value)) {
+                displayValue = value; // Directly use the React node
+            } else {
+                displayValue = "unknown datatype";
+            }
+            return (
+                <tr key={index}>
+                    <td>{key}</td>
+                    <td>{displayValue}</td>
+                </tr>
+            );
+        });
+    };
+
+    return (
+        <table className={className}>
+            <tbody>
+                {renderKeyValueRows(data)}
+            </tbody>
+        </table>
+    );
+};
 
 ////////////////////////////////////////////////////////////////
 export function CircularProgressWithLabel(props: CircularProgressProps & { value: number, size?: number }) {

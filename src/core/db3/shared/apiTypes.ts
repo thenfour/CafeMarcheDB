@@ -119,6 +119,22 @@ export interface TupdateEventBasicFieldsArgs {
     frontpageLocation?: string | null; // null = use normal
     frontpageLocationURI?: string | null; // null = use normal
     frontpageTags?: string | null; // null, use normal
+
+    frontpageDate_nl?: string;  // e.g. "Zaterdag 11 november"
+    frontpageTime_nl?: string; // e.g. 14u
+    frontpageTitle_nl?: string | null; // null = use normal one
+    frontpageDetails_nl?: string;
+    frontpageLocation_nl?: string | null; // null = use normal
+    frontpageLocationURI_nl?: string | null; // null = use normal
+    frontpageTags_nl?: string | null; // null, use normal
+
+    frontpageDate_fr?: string;  // e.g. "Zaterdag 11 november"
+    frontpageTime_fr?: string; // e.g. 14u
+    frontpageTitle_fr?: string | null; // null = use normal one
+    frontpageDetails_fr?: string;
+    frontpageLocation_fr?: string | null; // null = use normal
+    frontpageLocationURI_fr?: string | null; // null = use normal
+    frontpageTags_fr?: string | null; // null, use normal
 }
 
 

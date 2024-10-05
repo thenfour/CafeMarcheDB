@@ -509,13 +509,29 @@ model Event {
   expectedAttendanceUserTag   UserTag? @relation(fields: [expectedAttendanceUserTagId], references: [id], onDelete: SetNull)
 
   frontpageVisible     Boolean @default(false)
-  frontpageDate        String  @default("") @db.VarChar(768) // e.g. "Zaterdag 11 november"
-  frontpageTime        String  @default("") @db.VarChar(768) // e.g. 14u
-  frontpageDetails     String  @default("") @db.VarChar(768)
-  frontpageTitle       String? @db.VarChar(768) // null = use normal one
-  frontpageLocation    String? @db.VarChar(768) // null = use normal
-  frontpageLocationURI String? @db.VarChar(768) // null = use normal
-  frontpageTags        String? @db.VarChar(768) // null, use normal
+  frontpageDate        String  @default("") @db.VarChar(300) // e.g. "Zaterdag 11 november"
+  frontpageTime        String  @default("") @db.VarChar(300) // e.g. 14u
+  frontpageDetails     String  @default("") @db.VarChar(300)
+  frontpageTitle       String? @db.VarChar(300) // null = use normal one
+  frontpageLocation    String? @db.VarChar(300) // null = use normal
+  frontpageLocationURI String? @db.VarChar(300) // null = use normal
+  frontpageTags        String? @db.VarChar(300) // null, use normal
+
+  frontpageDate_fr        String? @db.VarChar(300) // e.g. "Zaterdag 11 november"
+  frontpageTime_fr        String? @db.VarChar(300) // e.g. 14u
+  frontpageDetails_fr     String? @db.VarChar(300)
+  frontpageTitle_fr       String? @db.VarChar(300) // null = use normal one
+  frontpageLocation_fr    String? @db.VarChar(300) // null = use normal
+  frontpageLocationURI_fr String? @db.VarChar(300) // null = use normal
+  frontpageTags_fr        String? @db.VarChar(300) // null, use normal
+
+  frontpageDate_nl        String? @db.VarChar(300) // e.g. "Zaterdag 11 november"
+  frontpageTime_nl        String? @db.VarChar(300) // e.g. 14u
+  frontpageDetails_nl     String? @db.VarChar(300)
+  frontpageTitle_nl       String? @db.VarChar(300) // null = use normal one
+  frontpageLocation_nl    String? @db.VarChar(300) // null = use normal
+  frontpageLocationURI_nl String? @db.VarChar(300) // null = use normal
+  frontpageTags_nl        String? @db.VarChar(300) // null, use normal
 
   workflowInstanceId Int?
   workflowInstance   WorkflowInstance? @relation(fields: [workflowInstanceId], references: [id], onDelete: SetNull)
@@ -902,6 +918,8 @@ model FrontpageGalleryItem {
   id            Int     @id @default(autoincrement())
   isDeleted     Boolean @default(false) //  soft delete. when hidden, users won't see them.
   caption       String  @db.MediumText // markdown
+  caption_nl    String? @db.MediumText // markdown
+  caption_fr    String? @db.MediumText // markdown
   sortOrder     Int     @default(0)
   fileId        Int
   file          File    @relation(fields: [fileId], references: [id], onDelete: Cascade)

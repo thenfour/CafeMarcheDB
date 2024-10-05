@@ -7,7 +7,7 @@ import { MutationFunction, useMutation, useQuery } from "@blitzjs/rpc";
 import { GridFilterModel, GridSortModel } from "@mui/x-data-grid";
 import { Prisma } from "db";
 import { DateTimeRange } from "shared/time";
-import { Clamp, CoerceToNumberOr, SettingKey, gMinImageDimension, gQueryOptions } from "shared/utils";
+import { Clamp, CoerceToNumberOr, EnNlFr, LangSelectString, SettingKey, gMinImageDimension, gQueryOptions } from "shared/utils";
 import setShowingAdminControls from "src/auth/mutations/setShowingAdminControls";
 import updateSettingMutation from "src/auth/mutations/updateSetting";
 import getSetting from "src/auth/queries/getSetting";
@@ -208,21 +208,21 @@ class EventsAPI {
         return ret;
     }
 
-    getAgendaItem(event: db3.EventWithTagsPayload): HomepageAgendaItemSpec {
-        const fallbacks = this.getAgendaItemFallbackValues(event);
+    getAgendaItem(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
+        const fallbacks = this.getAgendaItemFallbackValues(event, lang);
         const ret: HomepageAgendaItemSpec = {
-            date: event.frontpageDate || fallbacks.date || "",
-            time: event.frontpageTime || fallbacks.time || "",
-            detailsMarkdown: event.frontpageDetails || fallbacks.detailsMarkdown || "",
-            location: event.frontpageLocation || fallbacks.location || "",
-            locationURI: event.frontpageLocationURI || fallbacks.locationURI || "",
-            tags: event.frontpageTags || fallbacks.tags || "",
-            title: event.frontpageTitle || fallbacks.title || "",
+            date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || fallbacks.date || "",
+            time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || fallbacks.time || "",
+            detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || fallbacks.detailsMarkdown || "",
+            location: LangSelectString(lang, event.frontpageLocation, event.frontpageLocation_nl, event.frontpageLocation_fr) || fallbacks.location || "",
+            locationURI: LangSelectString(lang, event.frontpageLocationURI, event.frontpageLocationURI_nl, event.frontpageLocationURI_fr) || fallbacks.locationURI || "",
+            tags: LangSelectString(lang, event.frontpageTags, event.frontpageTags_nl, event.frontpageTags_fr) || fallbacks.tags || "",
+            title: LangSelectString(lang, event.frontpageTitle, event.frontpageTitle_nl, event.frontpageTitle_fr) || fallbacks.title || "",
         }
         return ret;
     }
 
-    getAgendaItemFallbackValues(event: db3.EventWithTagsPayload): HomepageAgendaItemSpec {
+    getAgendaItemFallbackValues(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
         const ret: HomepageAgendaItemSpec = {
             date: "",
             time: "",

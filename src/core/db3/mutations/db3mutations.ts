@@ -24,6 +24,7 @@ export default resolver.pipe(
         }
         if (input.mutationType === "update") {
             // return new object
+            //debugger;
             return await mutationCore.updateImpl(table, input.updateId!, input.updateModel, ctx, input.clientIntention);
         }
         return false;

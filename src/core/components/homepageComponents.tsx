@@ -1,9 +1,8 @@
 import { nanoid } from 'nanoid';
 import React from "react";
-import { Clamp, IsNullOrWhitespace, getNextSequenceId, modulo } from "shared/utils";
+import { Clamp, EnNlFr, IsNullOrWhitespace, LangSelectString, getNextSequenceId, modulo } from "shared/utils";
 import { API, HomepageAgendaItemSpec, HomepageContentSpec } from "../db3/clientAPI";
 import * as db3 from "../db3/db3";
-import { AddCoord2DSize, Coord2D, Size } from "../db3/shared/apiTypes";
 import { Markdown } from "./RichTextEditor";
 import { gIconMap } from '../db3/components/IconMap';
 
@@ -260,6 +259,7 @@ export class AgendaItem extends React.Component<AgendaItemProps> {
 
     render() {
         const post = this.props.item;
+
         return (<div className="agendaPost">
             {!IsNullOrWhitespace(post.date) && <div className="agendaDate">{post.date}</div>}
             {!IsNullOrWhitespace(post.title) && <div className="agendaTitle">{post.title}</div>}
@@ -316,6 +316,8 @@ export interface MainSVGComponentProps {
     editable?: boolean;
     //rotate?: number;
     onRefsChanged: (refs: MainSVGRefs) => void;
+    lang: EnNlFr;
+    onLangChange: (newLang: EnNlFr) => void;
 };
 export const MainSVGComponent = (props: MainSVGComponentProps) => {
 
@@ -352,6 +354,17 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
 
     const svgParams = (window.innerHeight < window.innerWidth) ? bothSvgParams.landscape : bothSvgParams.portrait;
 
+    const getSubtitle = () => {
+        switch (props.lang) {
+            case 'nl':
+                return <>BOEK&nbsp;ONS! SPEEL&nbsp;MET&nbsp;ONS! KOM&nbsp;ONS&nbsp;ZIEN!</>;
+            case 'fr':
+                return <>RÉSERVEZ&nbsp;! JOUEZ&nbsp;! VENEZ&nbsp;!</>;
+            default:
+                return <>BOOK&nbsp;US! PLAY&nbsp;WITH&nbsp;US! COME&nbsp;SEE&nbsp;US!</>;
+        }
+    };
+
     return <div className="galleryContainer">
         <svg viewBox={svgParams.svgViewBox} preserveAspectRatio="xMinYMin meet">
             <defs>
@@ -387,11 +400,14 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                     <image width="330" height="330" href="/homepage/CMlogo.png" preserveAspectRatio="xMinYMin slice"></image>
 
                     <text x="2050" y="74" className='subtitle1SVG subtitleSVG portrait' textAnchor='end'>
-                        NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL
+                        {LangSelectString(props.lang, "NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL",
+                            "NO-NONSENSE ALLE STIJL ORKEST UIT BRUXL",
+                            "ORCHESTRE TOUS STYLES NO CHICHIS DE BRUXL"
+                        )}
                     </text>
 
                     <text x="1840" y="140" className='subtitle2SVG subtitleSVG portrait' textAnchor='end'>
-                        BOOK&nbsp;US! PLAY&nbsp;WITH&nbsp;US! COME&nbsp;SEE&nbsp;US!
+                        {getSubtitle()}
                     </text>
 
                     <a title="Instagram" href="https://www.instagram.com/cafemarche_bxl/" target="_blank" rel="noreferrer" className='socmedLinkSVG'>
@@ -417,10 +433,11 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                         </foreignObject>
                     </a>
 
-
-
-
-
+                    <text x="2020" y="200" className='subtitleSVG portrait langSelect' textAnchor='end'>
+                        <tspan dx="21" onClick={() => props.onLangChange('en')} className={`interactable ${props.lang === "en" ? "selected" : "notselected"}`}>EN</tspan>
+                        <tspan dx="21" onClick={() => props.onLangChange('nl')} className={`interactable ${props.lang === "nl" ? "selected" : "notselected"}`}>NL</tspan>
+                        <tspan dx="21" onClick={() => props.onLangChange('fr')} className={`interactable ${props.lang === "fr" ? "selected" : "notselected"}`}>FR</tspan>
+                    </text>
 
                     <foreignObject x="0" y="1136" width="541" height="262" className="photoCaptionRef" ref={photoCaptionRef}>
                     </foreignObject>
@@ -440,11 +457,14 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                     <image width="330" height="330" href="/homepage/CMlogo.png" preserveAspectRatio="xMinYMin slice"></image>
 
                     <text x="1065" y="65" className='subtitle1SVG subtitleSVG portrait' textAnchor='end'>
-                        NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL
+                        {LangSelectString(props.lang, "NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL",
+                            "NO-NONSENSE ALLE STIJL ORKEST UIT BRUXL",
+                            "ORCHESTRE TOUS STYLES NO CHICHIS DE BRUXL"
+                        )}
                     </text>
 
                     <text x="860" y="127" className='subtitle2SVG subtitleSVG portrait' textAnchor='end'>
-                        BOOK&nbsp;US! PLAY&nbsp;WITH&nbsp;US! COME&nbsp;SEE&nbsp;US!
+                        {getSubtitle()}
                     </text>
 
                     <a title="Instagram" href="https://www.instagram.com/cafemarche_bxl/" target="_blank" rel="noreferrer" className='socmedLinkSVG'>
@@ -470,6 +490,11 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
                         </foreignObject>
                     </a>
 
+                    <text x="1040" y="190" className='subtitleSVG portrait langSelect' textAnchor='end'>
+                        <tspan dx="21" onClick={() => props.onLangChange('en')} className={`interactable ${props.lang === "en" ? "selected" : "notselected"}`}>EN</tspan>
+                        <tspan dx="21" onClick={() => props.onLangChange('nl')} className={`interactable ${props.lang === "nl" ? "selected" : "notselected"}`}>NL</tspan>
+                        <tspan dx="21" onClick={() => props.onLangChange('fr')} className={`interactable ${props.lang === "fr" ? "selected" : "notselected"}`}>FR</tspan>
+                    </text>
 
                     <foreignObject x="0" y="1136" width="541" height="262" className="photoCaptionRef" ref={photoCaptionRef}>
                     </foreignObject>
@@ -509,10 +534,11 @@ export interface HomepageMainProps {
     fullPage: boolean; //
     editable?: boolean;
     additionalAgendaChildren?: React.ReactNode;
+    lang: EnNlFr;
+    onLangChange: (newLang: EnNlFr) => void;
 };
 
-//export class HomepageMain extends React.Component<HomepageMainProps> {
-export const HomepageMain = ({ content, className, fullPage, editable, ...props }: HomepageMainProps) => {
+export const HomepageMain = ({ content, className, fullPage, editable, lang, onLangChange, ...props }: HomepageMainProps) => {
     const [gallery, setGallery] = React.useState<Gallery>(() => new Gallery());
     gallery.setContent(content);
 
@@ -634,7 +660,9 @@ export const HomepageMain = ({ content, className, fullPage, editable, ...props 
         <div className="middleContent" ref={middleContentRef}>
             <MainSVGComponent
                 content={content}
+                lang={lang}
                 editable={editable}
+                onLangChange={onLangChange}
                 //rotate={rotate}
                 onRefsChanged={(val) => {
                     svgRefs.current = val;

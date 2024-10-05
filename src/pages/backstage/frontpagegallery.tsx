@@ -11,9 +11,10 @@ import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { Permission } from "shared/permissions";
 import { formatFileSize } from "shared/rootroot";
-import { calculateNewDimensions, gDefaultImageArea } from "shared/utils";
+import { calculateNewDimensions, gDefaultImageArea, IsNullOrWhitespace } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, JoystickDiv, ReactSmoothDndContainer, ReactSmoothDndDraggable, } from "src/core/components/CMCoreComponents";
+import { KeyValueDisplay, KeyValueTable } from "src/core/components/CMCoreComponents2";
 import { CMDBUploadFile } from "src/core/components/CMDBUploadFile";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { CollapsableUploadFileComponent, FileDropWrapper } from "src/core/components/FileDrop";
@@ -121,7 +122,7 @@ const NewGalleryItemComponent = (props: NewGalleryItemComponentProps) => {
 };
 
 interface GalleryItemDescriptionEditorProps {
-    initialValue: string;
+    //initialValue: string;
     refetch: () => void;
     onClose: () => void;
     galleryItem: db3.FrontpageGalleryItemPayload;
@@ -129,13 +130,21 @@ interface GalleryItemDescriptionEditorProps {
 };
 
 export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditorProps) => {
-    const [value, setValue] = React.useState<string>(props.initialValue);
+    const [valueEn, setValueEn] = React.useState<string>(props.galleryItem.caption);
+    const [valueFr, setValueFr] = React.useState<string>(props.galleryItem.caption_fr || "");
+    const [valueNl, setValueNl] = React.useState<string>(props.galleryItem.caption_nl || "");
 
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
 
     const handleSave = async (): Promise<boolean> => {
         try {
-            const newrow: db3.FrontpageGalleryItemPayload = { ...props.galleryItem, caption: value || "" };
+            console.log(`yo ?`);
+            const newrow: db3.FrontpageGalleryItemPayload = {
+                ...props.galleryItem,
+                caption: valueEn || "",
+                caption_fr: valueFr || "",
+                caption_nl: valueNl || "",
+            };
             await props.client.doUpdateMutation(newrow);
             showSnackbar({ severity: "success", children: "Success" });
             props.client.refetch();
@@ -153,18 +162,34 @@ export const GalleryItemDescriptionEditor = (props: GalleryItemDescriptionEditor
         return r;
     };
 
-    return <>
+    return <div className="frontpageGalleryCaptionEditorContainer">
+        <h3>English</h3>
         <Markdown3Editor
-            onChange={(v) => setValue(v)}
-            value={value}
+            onChange={(v) => setValueEn(v)}
+            value={valueEn}
             onSave={() => { void handleSave() }}
+            minHeight={80}
+        />
+        <h3>Nederlands</h3>
+        <Markdown3Editor
+            onChange={(v) => setValueNl(v)}
+            value={valueNl}
+            onSave={() => { void handleSave() }}
+            minHeight={80}
+        />
+        <h3>Français</h3>
+        <Markdown3Editor
+            onChange={(v) => setValueFr(v)}
+            value={valueFr}
+            onSave={() => { void handleSave() }}
+            minHeight={80}
         />
 
         <div className="actionButtonsRow">
             <div className={`freeButton cancelButton`} onClick={props.onClose}>Close</div>
             <div className={`saveButton saveAndCloseButton freeButton changed`} onClick={handleSaveAndClose}>{gIconMap.CheckCircleOutline()}Save & close</div>
         </div>
-    </>;
+    </div>;
 };
 
 
@@ -176,13 +201,18 @@ export const GalleryItemDescriptionControl = (props: GalleryItemDescriptionContr
     const [editing, setEditing] = React.useState<boolean>(false);
     return <div className='descriptionContainer'>
         {!editing && <Button onClick={() => setEditing(true)}>Edit description</Button>}
-        {editing ? <GalleryItemDescriptionEditor
+        {editing && <GalleryItemDescriptionEditor
             onClose={() => setEditing(false)}
             client={props.client}
             galleryItem={props.value}
-            initialValue={props.value.caption}
+            //initialValue={props.value.caption}
             refetch={props.client.refetch}
-        /> : <Markdown markdown={props.value.caption} />}
+        />}
+        <KeyValueTable data={{
+            English: IsNullOrWhitespace(props.value.caption) ? <i className="placeholder">none</i> : <Markdown markdown={props.value.caption} />,
+            Nederlands: IsNullOrWhitespace(props.value.caption_nl) ? <i className="placeholder">none</i> : <Markdown markdown={props.value.caption_nl} />,
+            Français: IsNullOrWhitespace(props.value.caption_fr) ? <i className="placeholder">none</i> : <Markdown markdown={props.value.caption_fr} />,
+        }} />
     </div>;
 };
 
@@ -394,6 +424,8 @@ export const GalleryItemImageEditControl = (props: GalleryItemImageEditControlPr
                 content={content}
                 fullPage={false}
                 className="embeddedPreview"
+                lang="en"
+                onLangChange={() => { }}
                 editable={true}
                 additionalAgendaChildren={
                     <>
@@ -531,6 +563,8 @@ const MainContent = () => {
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),
             new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "caption", cellWidth: 120 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "caption_nl", cellWidth: 120 }),
+            new DB3Client.MarkdownStringColumnClient({ columnName: "caption_fr", cellWidth: 120 }),
             new DB3Client.GenericStringColumnClient({ columnName: "displayParams", cellWidth: 120 }),
             //new DB3Client.ForeignSingleFieldClient({ columnName: "createdByUser", cellWidth: 120, clientIntention: { intention: "admin", mode: "primary" } }),
             new DB3Client.ForeignSingleFieldClient({ columnName: "visiblePermission", cellWidth: 120 }),

@@ -633,14 +633,30 @@ export const xEventArgs_Base: db3.TableDesc = {
         }),
 
         new BoolField({ columnName: "frontpageVisible", defaultValue: false, authMap: xEventAuthMap_Homepage, allowNull: false }),
+
         MakeRawTextField("frontpageDate", { authMap: xEventAuthMap_Homepage, }),
         MakeRawTextField("frontpageTime", { authMap: xEventAuthMap_Homepage, }),
         MakeMarkdownTextField("frontpageDetails", { authMap: xEventAuthMap_Homepage, }),
-
         MakeNullableRawTextField("frontpageTitle", { authMap: xEventAuthMap_Homepage, }),
         MakeNullableRawTextField("frontpageLocation", { authMap: xEventAuthMap_Homepage, }),
         MakeNullableRawTextField("frontpageLocationURI", { authMap: xEventAuthMap_Homepage, }),
         MakeNullableRawTextField("frontpageTags", { authMap: xEventAuthMap_Homepage, }),
+
+        MakeRawTextField("frontpageDate_nl", { authMap: xEventAuthMap_Homepage, }),
+        MakeRawTextField("frontpageTime_nl", { authMap: xEventAuthMap_Homepage, }),
+        MakeMarkdownTextField("frontpageDetails_nl", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageTitle_nl", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageLocation_nl", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageLocationURI_nl", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageTags_nl", { authMap: xEventAuthMap_Homepage, }),
+
+        MakeRawTextField("frontpageDate_fr", { authMap: xEventAuthMap_Homepage, }),
+        MakeRawTextField("frontpageTime_fr", { authMap: xEventAuthMap_Homepage, }),
+        MakeMarkdownTextField("frontpageDetails_fr", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageTitle_fr", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageLocation_fr", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageLocationURI_fr", { authMap: xEventAuthMap_Homepage, }),
+        MakeNullableRawTextField("frontpageTags_fr", { authMap: xEventAuthMap_Homepage, }),
 
         new TagsField<EventTagAssignmentPayload>({
             columnName: "tags",
