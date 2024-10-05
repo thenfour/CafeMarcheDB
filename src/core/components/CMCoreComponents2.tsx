@@ -198,8 +198,7 @@ export const NameValuePair = (props: NameValuePairProps) => {
     </div>;
 }
 
-// Define TypeScript type for the props
-type KeyValueDisplayValueType = string | null | undefined | number | Date | boolean;
+type KeyValueDisplayValueType = string | null | undefined | number | Date | boolean | React.ReactNode;
 type KeyValueDisplayProps = {
     data: Record<string, KeyValueDisplayValueType>;
     className?: string;
@@ -215,28 +214,23 @@ export const KeyValueDisplay: React.FC<KeyValueDisplayProps> = ({ data, classNam
     const renderKeyValuePairs = (data: Record<string, KeyValueDisplayValueType>): JSX.Element[] => {
         const maxKeyLength = getMaxKeyLength(data);
         return Object.entries(data).map(([key, value], index) => {
-            let valueStr = "";
-            if (value === null) valueStr = "<null>";
-            else if (value === undefined) {
-                return <React.Fragment key={index} />;
-            }
-            else if (typeof value === 'string') {
-                valueStr = value;
-            } else if (typeof value === 'number') {
-                valueStr = value.toString();
-            } else if (typeof value === 'boolean') {
-                valueStr = value.toString();
-            } else if (value.toISOString) {
-                valueStr = value.toISOString();
+            let displayValue: React.ReactNode;
+            if (value === null || value === undefined) {
+                displayValue = value === null ? "<null>" : "";
+            } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                displayValue = value.toString();
+            } else if (value instanceof Date) {
+                displayValue = value.toISOString();
+            } else if (React.isValidElement(value)) {
+                displayValue = value; // Directly use the React node
             } else {
-                valueStr = "unknown datatype";
+                displayValue = "unknown datatype";
             }
-            return <div key={index}>
-                {key.padEnd(maxKeyLength, ' ')} : {valueStr}
+            return <div key={index} style={{ whiteSpace: 'pre' }}>
+                {`${key}:`.padEnd(maxKeyLength + 2, ' ')}{displayValue}
             </div>
         });
     };
-
     return (
         <pre className={className}>
             {renderKeyValuePairs(data)}

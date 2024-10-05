@@ -14,12 +14,22 @@ import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
 import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { Prisma } from "db";
 
-interface AdHocUser {
-    name: string,
-    id: number,
-    email: string,
-};
+type AdHocUser = Prisma.UserGetPayload<{
+    select: {
+        name: true,
+        id: true,
+        email: true,
+    }
+}>;
+
+//type ActivityLogCacheData = ReturnType<typeof useQuery<typeof getDistinctChangeFilterValues>>;
+
+//type QueryResult<T> = { data: T, isLoading: boolean, error: Error | null };
+
+// Then use it like so
+type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 
 const AdHocUsersEqual = (a: AdHocUser, b: AdHocUser): boolean => {
     return a.id === b.id;
@@ -45,10 +55,10 @@ const MainContent = () => {
             //new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "table", cellWidth: 150 }),
-            new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 70 }),
+            new DB3Client.AdminLogPkColumnClient({ columnName: "recordId", cellWidth: 110, cacheData: filterSourceData }),
             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
-            new DB3Client.JSONStringColumnClient({ columnName: "newValues" }),
-            new DB3Client.JSONStringColumnClient({ columnName: "oldValues" }),
+            new DB3Client.JSONStringColumnClient({ columnName: "oldValues", cacheData: filterSourceData, }),
+            new DB3Client.JSONStringColumnClient({ columnName: "newValues", cacheData: filterSourceData, }),
             new DB3Client.DateTimeColumn({ columnName: "changedAt" }),
         ],
     });
@@ -66,8 +76,6 @@ const MainContent = () => {
             {otherTableName}
         </CMChip>;
     };
-
-
 
     const userButton = (user: AdHocUser) => {
         const selected = existsInArray(users, user, AdHocUsersEqual);// (tableNames.indexOf(otherTableName) !== -1);

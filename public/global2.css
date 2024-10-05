@@ -2171,14 +2171,17 @@ can't use flex-spacer here because that expanded area should also be clickable. 
 
 
 .JSONStringColumnClient.viewer {
-    /* border: 1px solid black; */
-    /* width: 150px; */
+    background-color: white;
+    padding: 0 5px;
+    margin: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     position: relative;
+    font-family: monospace;
+    flex-direction: column;
 }
 
 .JSONStringColumnClient .debugInspectorOpen {

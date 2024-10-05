@@ -32,7 +32,7 @@ export interface CMChipProps {
     shape?: CMChipShapeOptions;
     border?: CMChipBorderOption;
     className?: string;
-    tooltip?: string | null;
+    tooltip?: React.ReactNode;
 
     onDelete?: () => void;
     onClick?: () => void;
@@ -82,8 +82,16 @@ export const CMChip = (props: React.PropsWithChildren<CMChipProps>) => {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const CMChipContainer = (props: React.PropsWithChildren<{ className?: string, orientation?: "vertical" | "horizontal", margins?: "tightMargins" | "defaultMargins" }>) => {
-    return <div className={`CMChipContainer ${props.className || ""} ${props.orientation} ${props.margins}`}>{props.children}</div>
+interface CMChipContainerProps {
+    className?: string,
+    orientation?: "vertical" | "horizontal",
+    margins?: "tightMargins" | "defaultMargins",
+    style?: React.CSSProperties | undefined,
+};
+export const CMChipContainer = (props: React.PropsWithChildren<CMChipContainerProps>) => {
+    return <div className={`CMChipContainer ${props.className || ""} ${props.orientation} ${props.margins}`} style={props.style}>
+        {props.children}
+    </div>
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////

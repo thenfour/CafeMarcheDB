@@ -73,6 +73,7 @@ interface CMTextFieldProps {
     readOnly?: boolean;
     className?: string;
     style?: React.CSSProperties;
+    multiline?: boolean | undefined;
 };
 
 // textfield for a string field on an object.
@@ -93,6 +94,7 @@ export function CMTextField({ validationError, label, value, onChange, autoFocus
             style={props.style}
             className={props.className}
             variant="filled"
+            multiline={props.multiline}
             inputProps={{
                 'data-lpignore': true, // supposedly prevent lastpass from auto-completing. doesn't work for me tho
             }}

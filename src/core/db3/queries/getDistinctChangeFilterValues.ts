@@ -7,6 +7,8 @@ export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
     async (input: {}, ctx: AuthenticatedCtx) => {
         try {
+
+
             const tableNames: { tableName: string }[] = await db.$queryRaw`
     SELECT DISTINCT \`table\` as tableName
     FROM \`Change\`;
@@ -20,10 +22,46 @@ export default resolver.pipe(
                     email: true,
                 }
             });
+
+            const songs = await db.song.findMany({
+                select: {
+                    id: true,
+                    name: true,
+                }
+            });
+
+            const events = await db.event.findMany({
+                select: {
+                    id: true,
+                    name: true,
+                }
+            });
+
+            const eventSegments = await db.eventSegment.findMany({
+                select: {
+                    id: true,
+                    eventId: true,
+                    name: true,
+                }
+            });
+
+            const eventSonglists = await db.eventSongList.findMany({
+                select: {
+                    id: true,
+                    eventId: true,
+                    name: true,
+                }
+            });
+
             return {
                 tableNames,
                 users,
+                songs,
+                events,
+                eventSegments,
+                eventSonglists,
             };
+
         } catch (e) {
             console.error(e);
             throw (e);

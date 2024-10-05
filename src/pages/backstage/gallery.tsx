@@ -1,5 +1,5 @@
 import { BlitzPage } from "@blitzjs/next";
-import { Divider } from "@mui/material";
+import { Divider, MenuItem, Select } from "@mui/material";
 import { Prisma } from "db";
 import * as mime from 'mime';
 import React from "react";
@@ -8,7 +8,7 @@ import { slugify, unslugify } from "shared/rootroot";
 import { IsNullOrWhitespace, arraysContainSameValues, getEnumValues, parseMimeType } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { CMTextInputBase } from "src/core/components/CMTextField";
+import { CMTextField, CMTextInputBase } from "src/core/components/CMTextField";
 import { DateTimeRangeControlExample } from "src/core/components/DateTimeRangeControl";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SongAutocomplete } from "src/core/components/SongAutocomplete";
@@ -26,6 +26,8 @@ import { RenderMuiIcon } from "src/core/db3/components/IconMap";
 import { BigEventCalendar, BigEventCalendarMonth } from "src/core/components/EventCalendar";
 import { DateCalendar, DatePicker } from "@mui/x-date-pickers";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
+import { useQuery } from "@blitzjs/rpc";
+import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 
 interface FilterSpec {
     qfText: string;
@@ -264,6 +266,26 @@ const EventCalendarTester = () => {
     return <BigEventCalendar />
 };
 
+
+const ActivityLogValueViewerTester = () => {
+    const [value, setValue] = React.useState<string>("");
+    const [tableName, setTableName] = React.useState<string>("");
+    const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
+
+    let obj: any = undefined;
+    try {
+        obj = JSON.parse(value);
+    } catch (e) { }
+
+    return <div>
+        <CMTextField value={tableName} onChange={(e, v) => setTableName(v)} autoFocus={false} label="Table name" />
+        <CMTextField value={value} onChange={(e, v) => setValue(v)} autoFocus={false} label="Value" multiline={true} />
+        <div style={{ width: 350, border: "2px solid #0004" }}>
+            <DB3Client.ActivityLogValueViewer tableName={tableName} value={obj} cacheData={filterSourceData} />
+        </div>
+    </div>;
+};
+
 const MainContent = () => {
     const [leaf, setLeaf] = React.useState<string>("");
     const [slugOrNot, setSlugOrNot] = React.useState<string>("");
@@ -273,6 +295,8 @@ const MainContent = () => {
     const mimeType = (mime as any).getType(leaf); // requires a leaf only, for some reason explicitly fails on a full path.
 
     return <>
+
+        <ActivityLogValueViewerTester />
 
         <EventCalendarTester />
 
@@ -369,7 +393,7 @@ const MainContent = () => {
 
         <h3>Icons</h3>
         <div>
-            <IconEditCell validationError={null} onOK={() => { }} value={null} readonly={false} />
+            <IconEditCell validationError={null} onOK={() => { }} value={null} readonly={false} allowNull={true} />
         </div>
 
 
