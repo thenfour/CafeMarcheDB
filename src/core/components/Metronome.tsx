@@ -269,7 +269,7 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
 };
 
 
-export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSyncClick }: { bpm: number, mountPlaying?: boolean, tapTrigger: number, isTapping: boolean, onSyncClick: () => void }) => {
+export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSyncClick, variant }: { bpm: number, mountPlaying?: boolean, tapTrigger: number, isTapping: boolean, onSyncClick: () => void, variant: "normal" | "tiny" }) => {
     const [playing, setPlaying] = React.useState<boolean>(mountPlaying || false);
     const dashboardContext = React.useContext(DashboardContext);
     const [beatSyncTrigger, setBeatSyncTrigger] = React.useState<number>(0);
@@ -297,12 +297,12 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
     // - ONLY play on sync triggers
     // - ONLY flash.
 
-    return <div className="metronomeButtonContainer">
+    return <div className={`metronomeButtonContainer ${variant}`}>
         <div onClick={() => setPlaying(!playing)} className={`freeButton metronomeButton ${playing ? "playing" : "notPlaying"}`}>
-            {playing ? gIconMap.VolumeUp() : gIconMap.VolumeOff()}
+            {playing ? (variant === "normal" && gIconMap.VolumeUp()) : gIconMap.VolumeOff()}
             {playing && <MetronomePlayer bpm={bpm} syncTrigger={tapTrigger + beatSyncTrigger} mute={isTapping} running={!isTapping} />}
         </div>
-        {playing && <div className="metronomeSyncButton freeButton" onClick={(e) => {
+        {playing && (variant === "normal") && <div className="metronomeSyncButton freeButton" onClick={(e) => {
             setBeatSyncTrigger(beatSyncTrigger + 1);
             onSyncClick();
             e.stopPropagation();
@@ -314,6 +314,7 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
 
     </div>;
 };
+
 
 
 // // filters outliers, takes equal average of all tap intervals
@@ -488,7 +489,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
             Metronome
         </DialogTitle>
         <DialogContent dividers>
-            <MetronomeButton bpm={bpm} mountPlaying={true} isTapping={isTapping} tapTrigger={tapTrigger} onSyncClick={handleSync} />
+            <MetronomeButton bpm={bpm} mountPlaying={true} isTapping={isTapping} tapTrigger={tapTrigger} onSyncClick={handleSync} variant="normal" />
             <div className="bpmAndTapRow">
                 <CMTextInputBase
                     onChange={(e, v) => {

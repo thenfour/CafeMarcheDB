@@ -126,6 +126,7 @@
     justify-content: flex-start;
     font-weight: bold;
     color: var(--song-hash-color);
+    letter-spacing: -.3px;
 }
 
 .songListSongTable .td.songName input {

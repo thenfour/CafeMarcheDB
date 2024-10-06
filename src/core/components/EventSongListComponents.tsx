@@ -27,6 +27,7 @@ import { SongAutocomplete } from './SongAutocomplete';
 import { DashboardContext } from './DashboardContext';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
+import { MetronomeButton } from './Metronome';
 
 // make song nullable for "add new item" support
 type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
@@ -81,7 +82,8 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song.id, props.value.song.slug)}>{props.value.song.name}</a>
         </div>
         <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
-        <div className="td tempo">{formattedBPM}</div>
+        <div className="td tempo">{enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}</div>
+
         <div className="td comment">
             <div className="comment">{props.value.subtitle}</div>
             {/* <div className="CMChipContainer comment2"></div> */}
@@ -386,8 +388,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                     <div className="tr">
                         <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
                         <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
-                        <div className="th length">Length</div>
-                        <div className="th tempo">Tempo</div>
+                        <div className="th length">Len</div>
+                        <div className="th tempo">Bpm</div>
                         <div className="th comment">
                             Comment
                             <EventSongListDotMenu
@@ -478,10 +480,12 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                 {/* <InspectObject src={props.value} tooltip="snth" /> */}
             </div>
             <div className="td songName">
-                <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} index={props.index} fadedSongIds={props.songList.songs.map(s => s.songId)} />
+                {props.value.song ? <div>{props.value.song.name}</div> :
+                    <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} index={props.index} fadedSongIds={props.songList.songs.map(s => s.songId)} />
+                }
             </div>
             <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
-            <div className="td tempo">{formattedBPM}</div>
+            <div className="td tempo">{enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}</div>
             {/* </div>
         <div className="tr"> */}
             <div className="td comment">
@@ -718,8 +722,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                 <div className="th songIndex">#</div>
                                 <div className="th icon"></div>
                                 <div className="th songName">Song</div>
-                                <div className="th length">Length</div>
-                                <div className="th tempo">Tempo</div>
+                                <div className="th length">Len</div>
+                                <div className="th tempo">bpm</div>
                                 <div className="th comment">
                                     Comment
                                     <EventSongListDotMenu

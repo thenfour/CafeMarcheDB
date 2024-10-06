@@ -1863,6 +1863,16 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 
 
+.metronomeButtonContainer.tiny .metronomeButton {
+    padding: 0;
+    border: 0;
+    background-color: transparent;
+    margin: 0;
+    margin-right: 10px;
+}
+
+
+
 .metronomeButton.playing {
     opacity: 100%;
 
@@ -1873,6 +1883,9 @@ table.songMetadata tr:hover td .CMSmallButton {
     /* color: #84f; */
     /* background-color: #f0f2; */
 }
+
+
+
 
 
 .metronomeIndicator {
