@@ -1908,6 +1908,14 @@ table.songMetadata tr:hover td .CMSmallButton {
 }
 
 
+
+.metronomeButtonContainer.tiny .metronomeIndicator {
+    padding: 0;
+    border: 0;
+    margin: 0;
+}
+
+
 @keyframes MetronomeFlash1 {
     0% {
         background-color: var(--color1);
