@@ -8,7 +8,7 @@ import { DashboardContext } from './DashboardContext';
 import { useURLState } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
 
-const gTickSampleFilePath = "/Metronome.mp3";
+const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 30;
 const gMaxBPM = 240;
 

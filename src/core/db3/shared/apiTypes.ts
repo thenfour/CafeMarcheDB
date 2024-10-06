@@ -227,7 +227,8 @@ export interface TinsertOrUpdateEventSongListArgs {
     id?: number; // for insertion, this is not used / specified.
     name: string;
     description: string;
-    //visiblePermissionId: number | null;
+    isActuallyPlayed: boolean;
+    isOrdered: boolean;
     eventId: number;
     sortOrder: number;
     songs: TinsertOrUpdateEventSongListSong[];

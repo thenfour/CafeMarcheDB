@@ -29,14 +29,12 @@ export default resolver.pipe(
 
         // verbose on purpose in order to validate args type against UncheckedUpdateInput
         const fields: Prisma.EventSongListUncheckedUpdateInput = {
-            //eventId: args.eventId, do not move a setlist from 1 to another
             name: args.name,
-            //createdByUserId: currentUser.id,
             userId: currentUser.id,
-            //permissionId: args.,
-            //visiblePermissionId: args.visiblePermissionId,
             description: args.description,
             sortOrder: args.sortOrder,
+            isActuallyPlayed: args.isActuallyPlayed,
+            isOrdered: args.isOrdered,
         };
 
         const changeContext = CreateChangeContext(`updateEventSongList`);

@@ -1091,6 +1091,10 @@ export const xEventSongList = new db3.xTable({
         MakeTitleField("name", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+
+        new BoolField({ columnName: "isOrdered", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        new BoolField({ columnName: "isActuallyPlayed", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
             fkMember: "eventId",

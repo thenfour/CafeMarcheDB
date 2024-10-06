@@ -707,6 +707,9 @@ model EventSongList {
 
   songs EventSongListSong[]
 
+  isOrdered        Boolean @default(true)
+  isActuallyPlayed Boolean @default(true)
+
   // this is really not necessary but it's here so ...
   User   User? @relation(fields: [userId], references: [id])
   userId Int?

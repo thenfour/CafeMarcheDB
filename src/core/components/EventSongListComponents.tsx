@@ -5,12 +5,12 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { StandardVariationSpec } from 'shared/color';
+import { gAppColors, gSwatchColors, StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
 import { IsNullOrWhitespace, arrayToTSV, getExcelColumnName, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -26,7 +26,7 @@ import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { DashboardContext } from './DashboardContext';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
-import { CMChipContainer, CMStandardDBChip } from './CMChip';
+import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { MetronomeButton } from './Metronome';
 
 // make song nullable for "add new item" support
@@ -75,8 +75,9 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
     const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
 
     return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
-        <div className="td songIndex">{props.index}
-            {/* id:{props.value.id} so:{props.value.sortOrder} */}
+
+        <div className="td songIndex">
+            {props.songList.isOrdered && props.index}
         </div>
         <div className="td songName">
             <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song.id, props.value.song.slug)}>{props.value.song.name}</a>
@@ -250,15 +251,15 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
 
     if (!props.readonly) {
         menuItems.push(
-            <Divider />,
+            <Divider key={++k} />,
 
-            <MenuItem onClick={async () => { await props.handlePasteReplace(); setAnchorEl(null); }}>
+            <MenuItem key={++k} onClick={async () => { await props.handlePasteReplace(); setAnchorEl(null); }}>
                 <ListItemIcon>
                     {gIconMap.ContentPaste()}
                 </ListItemIcon>
                 Replace with clipboard contents
             </MenuItem>,
-            <MenuItem onClick={async () => { await props.handlePasteAppend(); setAnchorEl(null); }}>
+            <MenuItem key={++k} onClick={async () => { await props.handlePasteAppend(); setAnchorEl(null); }}>
                 <ListItemIcon>
                     {gIconMap.ContentPaste()}
                 </ListItemIcon>
@@ -380,6 +381,11 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
         </div>
         <div className="content">
+
+            <CMChipContainer>
+                {props.value.isActuallyPlayed && <CMChip tooltip={"This setlist will be/was actually played; it's complete and in order"} size='small' color={gSwatchColors.green}>Final setlist</CMChip>}
+                {!props.value.isOrdered && <CMChip tooltip={"This setlist is not in order; just a list of songs"} size='small'>Order not important</CMChip>}
+            </CMChipContainer>
 
             <Markdown markdown={props.value.description} />
 
@@ -677,7 +683,6 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
             </DialogTitle>
             <DialogContent dividers>
                 <CMDialogContentText>
-
                     <SettingMarkdown setting='EditEventSongListDialogDescription' />
                     <AdminInspectObject src={props.initialValue} label="initial value" />
                     <AdminInspectObject src={value} label="value" />
@@ -697,6 +702,30 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     </div>)}
 
                     {nameField}
+
+
+                    <FormControlLabel
+                        control={
+                            <Switch checked={value.isOrdered} onChange={e => {
+                                const nv = { ...value };
+                                nv.isOrdered = e.target.checked;
+                                setValue(nv);
+                            }} />
+                        }
+                        label="Does order matter?"
+                    />
+
+                    <FormControlLabel
+                        control={
+                            <Switch checked={value.isActuallyPlayed} onChange={e => {
+                                const nv = { ...value };
+                                nv.isActuallyPlayed = e.target.checked;
+                                setValue(nv);
+                            }} />
+                        }
+                        label="Was this songlist actually played?"
+                    />
+
                     {/* {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })} */}
 
                     {/*
@@ -818,6 +847,8 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
             //visiblePermissionId: newValue.visiblePermissionId,
             eventId: newValue.eventId,
             description: newValue.description,
+            isActuallyPlayed: newValue.isActuallyPlayed,
+            isOrdered: newValue.isOrdered,
             name: newValue.name,
             sortOrder: newValue.sortOrder,
             songs: newValue.songs.filter(s => !!s.song).map(s => ({ // new (blank) items might be in the list; filter them.
@@ -894,6 +925,8 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
             eventId: props.event.id,
             description: value.description,
             name: value.name,
+            isActuallyPlayed: value.isActuallyPlayed,
+            isOrdered: value.isOrdered,
             sortOrder: value.sortOrder,
             songs: value.songs.filter(s => !!s.song).map(s => ({ // new (blank) items might be in the list; filter them.
                 songId: s.songId,
