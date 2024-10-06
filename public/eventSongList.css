@@ -111,6 +111,12 @@
     border-bottom: 1px dotted #0002;
 }
 
+.songListSongTable .tr.item.type_divider {
+    /* border-bottom: 1px solid #0003;
+    margin-bottom: 3px; */
+    background-color: #0001;
+}
+
 .songListSongTable .td.icon {
     color: #0005;
 }
@@ -127,6 +133,11 @@
     font-weight: bold;
     color: var(--song-hash-color);
     letter-spacing: -.3px;
+}
+
+.songListSongTable .td.songName .divider {
+    font-family: monospace;
+    color: #888;
 }
 
 .songListSongTable .td.songName input {
@@ -148,6 +159,23 @@
     font-family: monospace;
     justify-content: flex-end;
 }
+
+
+
+.songListSongTable .td.runningLength,
+.songListSongTable .th.runningLength {
+    width: 60px;
+}
+
+.songListSongTable .td.runningLength {
+    font-family: monospace;
+    color: #0004;
+    font-size: 14px;
+    justify-content: flex-end;
+}
+
+
+
 
 .songListSongTable .td.tempo,
 .songListSongTable .th.tempo {

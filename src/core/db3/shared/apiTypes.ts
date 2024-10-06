@@ -223,6 +223,13 @@ export interface TinsertOrUpdateEventSongListSong {
     subtitle: string;
 };
 
+export interface TinsertOrUpdateEventSongListDivider {
+    id?: number;
+    // don't rely on array ordering because it's shuffled etc during the change plan computation
+    sortOrder: number;
+    subtitle: string;
+};
+
 export interface TinsertOrUpdateEventSongListArgs {
     id?: number; // for insertion, this is not used / specified.
     name: string;
@@ -232,6 +239,7 @@ export interface TinsertOrUpdateEventSongListArgs {
     eventId: number;
     sortOrder: number;
     songs: TinsertOrUpdateEventSongListSong[];
+    dividers: TinsertOrUpdateEventSongListDivider[];
 };
 
 export interface TClientFileUploadTags {

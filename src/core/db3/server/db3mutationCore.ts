@@ -11,7 +11,7 @@ import { DateTimeRange } from "shared/time";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, getIntersectingFields } from "shared/utils";
 import sharp from "sharp";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, getFileCustomData } from "../shared/apiTypes";
+import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { assert } from "blitz";
@@ -491,7 +491,8 @@ model EventSongListSong {
 export interface UpdateEventSongListSongsArgs {
     ctx: AuthenticatedCtx;
     changeContext: ChangeContext;
-    desiredValues: TinsertOrUpdateEventSongListSong[];
+    desiredSongs: TinsertOrUpdateEventSongListSong[];
+    desiredDividers: TinsertOrUpdateEventSongListDivider[];
     songListID: number;
 };
 
@@ -502,9 +503,10 @@ export interface UpdateEventSongListSongsArgs {
 //   it means we cannot rely on fk for computing change request.
 // - we have additional info in the association table.
 export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: UpdateEventSongListSongsArgs) => {
+    // SONGS:
 
     // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
-    const desiredValues: TinsertOrUpdateEventSongListSong[] = args.desiredValues.map((a, index) => ({
+    const desiredSongs: TinsertOrUpdateEventSongListSong[] = args.desiredSongs.map((a, index) => ({
         id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
         songId: a.songId,
         sortOrder: a.sortOrder,
@@ -527,7 +529,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     // computes which associations need to be created, deleted, and which may need to be updated
     const cp = ComputeChangePlan(
         currentAssociations,
-        desiredValues, // ORDER matters; we assume 'b' is the desired.
+        desiredSongs, // ORDER matters; we assume 'b' is the desired.
         (a, b) => a.id === b.id, // all should have unique numeric IDs. could assert that.
     );
 
@@ -542,19 +544,6 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         },
     });
 
-    // register those deletions
-    // for (let i = 0; i < cp.delete.length; ++i) {
-    //     const oldValues = cp.delete[i];
-    //     await RegisterChange({
-    //         action: ChangeAction.delete,
-    //         changeContext,
-    //         table: "eventSongListSong",
-    //         pkid: oldValues!.id!,
-    //         oldValues,
-    //         ctx,
-    //     });
-    // }
-
     // create new associations
     for (let i = 0; i < cp.create.length; ++i) {
         const item = cp.create[i]!;
@@ -567,15 +556,6 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
                 subtitle: item.subtitle,
             },
         });
-
-        // await RegisterChange({
-        //     action: ChangeAction.insert,
-        //     changeContext,
-        //     table: "eventSongListSong",
-        //     pkid: newAssoc.id,
-        //     newValues: item,
-        //     ctx,
-        // });
     }
 
     // update the rest.
@@ -603,16 +583,85 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
             },
             data,
         });
+    }
 
-        // await RegisterChange({
-        //     action: ChangeAction.update,
-        //     changeContext,
-        //     table: "eventSongListSong",
-        //     pkid: newAssoc.id,
-        //     oldValues: item.a,
-        //     newValues: item.b,
-        //     ctx,
-        // });
+
+    // DIVIDERS:
+
+    // give all incoming items a temporary unique ID, in order to compute change request. negative values are considered new items
+    const desiredDividers: TinsertOrUpdateEventSongListDivider[] = args.desiredDividers.map((a, index) => ({
+        id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
+        sortOrder: a.sortOrder,
+        subtitle: a.subtitle || "",
+    }));
+
+    // get current associations to the local / parent item (eventsonglistid)
+    const currentDivAssociationsRaw: Prisma.EventSongListDividerGetPayload<{}>[] = await db.eventSongListDivider.findMany({
+        where: { eventSongListId: args.songListID },
+    });
+
+    // in order to make the change plan, unify the types into the kind that's passed in args
+    const currentDivAssociations: TinsertOrUpdateEventSongListDivider[] = currentDivAssociationsRaw.map(a => ({
+        id: a.id,
+        sortOrder: a.sortOrder,
+        subtitle: a.subtitle || "",
+    }));
+
+    // computes which associations need to be created, deleted, and which may need to be updated
+    const cpDiv = ComputeChangePlan(
+        currentDivAssociations,
+        desiredDividers, // ORDER matters; we assume 'b' is the desired.
+        (a, b) => a.id === b.id, // all should have unique numeric IDs. could assert that.
+    );
+
+    // execute the plan:
+
+    // do deletes
+    await db.eventSongListDivider.deleteMany({
+        where: {
+            id: {
+                in: cpDiv.delete.map(x => x.id!),
+            }
+        },
+    });
+
+    // create new associations
+    for (let i = 0; i < cpDiv.create.length; ++i) {
+        const item = cpDiv.create[i]!;
+        const newAssoc = await db.eventSongListDivider.create({
+            data: {
+                eventSongListId: args.songListID,
+
+                sortOrder: item.sortOrder,
+                subtitle: item.subtitle,
+            },
+        });
+    }
+
+    // update the rest.
+    for (let i = 0; i < cpDiv.potentiallyUpdate.length; ++i) {
+        const item = cpDiv.potentiallyUpdate[i]!;
+        const data = {};
+
+        const checkChangedColumn = (columnName: string) => {
+            if (item.a[columnName] === item.b[columnName]) return;
+            data[columnName] = item.b[columnName];
+        };
+
+        checkChangedColumn("sortOrder");
+        checkChangedColumn("subtitle");
+
+        if (Object.entries(data).length < 1) {
+            // nothing to update.
+            continue;
+        }
+
+        const newAssoc = await db.eventSongListDivider.update({
+            where: {
+                id: item.a.id!,
+            },
+            data,
+        });
     }
 
     // make a custom change obj. let's not bother with "old state"; this just gets too verbose and that's not helpful.
@@ -622,7 +671,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         table: "eventSongList:Songs",
         pkid: args.songListID,
         oldValues: {},
-        newValues: cp.desiredState,
+        newValues: { songs: cp.desiredState, dividers: cpDiv.desiredState },
         ctx,
         options: { dontCalculateChanges: true },
     });

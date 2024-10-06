@@ -15,12 +15,12 @@ import { GetFilteredSongsItemSongPayload } from '../db3/shared/apiTypes';
 
 export interface SongAutocompleteProps {
     value: db3.SongPayload | null;
-    index: number;
+    //index: number;
     onChange: (value: GetFilteredSongsItemSongPayload | null) => void;
     fadedSongIds?: number[];
 };
 
-export const SongAutocomplete = ({ value, onChange, index, fadedSongIds }: SongAutocompleteProps) => {
+export const SongAutocomplete = ({ value, onChange, fadedSongIds }: SongAutocompleteProps) => {
     const [inputValue, setInputValue] = React.useState(''); // value of the input
     const [debouncedValue, setDebouncedValue] = React.useState(''); // debounced input value
     const [hasChanged, setHasChanged] = React.useState(false);
@@ -53,6 +53,7 @@ export const SongAutocomplete = ({ value, onChange, index, fadedSongIds }: SongA
             return;
         }
         setHasChanged(true);
+        setInputValue(""); // assuming the caller will use this value and then wants the autocomplete to be reset
         onChange(newValue);
     };
 

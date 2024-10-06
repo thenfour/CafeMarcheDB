@@ -705,7 +705,8 @@ model EventSongList {
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade) // when event is deleted, song lists go too.
 
-  songs EventSongListSong[]
+  songs    EventSongListSong[]
+  dividers EventSongListDivider[]
 
   isOrdered        Boolean @default(true)
   isActuallyPlayed Boolean @default(true)
@@ -731,6 +732,19 @@ model EventSongListSong {
   eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
 
   @@index([songId])
+  @@index([sortOrder])
+  @@index([eventSongListId])
+}
+
+model EventSongListDivider {
+  id        Int     @id @default(autoincrement())
+  subtitle  String? @db.MediumText // could be a small comment like "15 min break"
+  sortOrder Int     @default(0)
+
+  eventSongListId Int
+  eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.
+
+  @@index([sortOrder])
   @@index([eventSongListId])
 }
 

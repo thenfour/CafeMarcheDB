@@ -225,10 +225,59 @@ const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: numb
 };
 
 
+type ActivityLogSongListSongPayload = { id: number, songId: number, sortOrder: number, subtitle: string, type: "song" };
+type ActivityLogSongListDividerPayload = { id: number, sortOrder: number, subtitle: string, type: "div" };
+type ActivityLogSongListV1 = { id: number, songId: number, sortOrder: number, subtitle: string }[];
+type ActivityLogSongListV2 = { songs: ActivityLogSongListV1, dividers: { id: number, sortOrder: number, subtitle: string }[] };
 
-type ActivityLogSongList = { id: number, songId: number, sortOrder: number, subtitle: string }[];
+const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogSongListV2, cacheData: ActivityLogCacheData }) => {
 
-const ActivityLogSongListViewer = ({ value, cacheData }: { value: ActivityLogSongList, cacheData: ActivityLogCacheData }) => {
+    const items: (ActivityLogSongListSongPayload | ActivityLogSongListDividerPayload)[] = [];
+    items.push(...value.songs.map(s => {
+        const ret: ActivityLogSongListSongPayload = { ...s, type: "song" };
+        return ret;
+    }));
+    items.push(...value.dividers.map(s => {
+        const ret: ActivityLogSongListDividerPayload = { ...s, type: "div" };
+        return ret;
+    }));
+    items.sort((a, b) => {
+        return a.sortOrder - b.sortOrder;
+    });
+
+    return <table>
+        <thead>
+            <tr>
+                <th>
+                    id
+                </th>
+                <th>
+                    ord
+                </th>
+                <th>
+                    song
+                </th>
+                <th>
+                    comment
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {items.map((s, i) => <tr key={i}>
+                <td>{s.id}</td>
+                <td>{s.sortOrder}</td>
+                <td>
+                    {s.type === "song" && <ActivityLogSong songId={s.songId} cacheData={cacheData} />}
+                    {s.type === "div" && "-----"}
+                </td>
+                <td>{s.subtitle}</td>
+            </tr>)}
+        </tbody>
+    </table>
+}
+
+
+const ActivityLogSongListViewerV1 = ({ value, cacheData }: { value: ActivityLogSongListV1, cacheData: ActivityLogCacheData }) => {
     return <table>
         <thead>
             <tr>
@@ -255,6 +304,13 @@ const ActivityLogSongListViewer = ({ value, cacheData }: { value: ActivityLogSon
             </tr>)}
         </tbody>
     </table>
+}
+
+const ActivityLogSongListViewer = ({ value, cacheData }: { value: ActivityLogSongListV1 | ActivityLogSongListV2, cacheData: ActivityLogCacheData }) => {
+    //console.log(`rendering ??`);
+    //console.log(value)
+    if (Array.isArray(value)) return <ActivityLogSongListViewerV1 value={value} cacheData={cacheData} />;
+    return <ActivityLogSongListViewerV2 value={value} cacheData={cacheData} />;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

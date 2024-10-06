@@ -771,6 +771,9 @@ export const EventSongListNaturalOrderBy: Prisma.EventSongListOrderByWithRelatio
 export const EventSongListArgs = Prisma.validator<Prisma.EventSongListArgs>()({
     include: {
         event: true,
+        dividers: {
+            include: {}
+        },
         songs: {
             include: {
                 song: SongArgs,
@@ -897,6 +900,15 @@ export const EventSongListSongArgs = Prisma.validator<Prisma.EventSongListSongAr
 });
 
 export type EventSongListSongPayload = Prisma.EventSongListSongGetPayload<typeof EventSongListSongArgs>;
+
+
+////////////////////////////////////////////////////////////////
+export const EventSongListDividerArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
+    include: {
+    }
+});
+
+export type EventSongListDividerPayload = Prisma.EventSongListDividerGetPayload<typeof EventSongListDividerArgs>;
 
 
 ////////////////////////////////////////////////////////////////

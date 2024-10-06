@@ -7,12 +7,12 @@
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
-import { Prisma } from "db";
+import { EventSongListSong, Prisma } from "db";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
 import { gAppColors, gSwatchColors, StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { IsNullOrWhitespace, arrayToTSV, getExcelColumnName, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { CoalesceBool, IsNullOrWhitespace, arrayToTSV, getExcelColumnName, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -29,8 +29,12 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
 import { MetronomeButton } from './Metronome';
 
+const gDividerText = <>&nbsp;</>;
+
+type LocalSongPayload = Prisma.SongGetPayload<{}>;
+
 // make song nullable for "add new item" support
-type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
+type EventSongListSongItem = Prisma.EventSongListSongGetPayload<{
     select: {
         eventSongListId: true,
         subtitle: true,
@@ -38,9 +42,78 @@ type EventSongListNullableSong = Prisma.EventSongListSongGetPayload<{
         sortOrder: true,
     }
 }> & {
-    songId: null | number;
-    song: null | db3.SongPayload;
+    songId: number;
+    song: LocalSongPayload;
+    type: "song";
+    index: number;
+    runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
+    songsWithUnknownLength: number;
 };
+
+type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{}> & { type: "divider" };
+
+type EventSongListNewItem = {
+    eventSongListId: number,
+    id: number,
+    sortOrder: number,
+    type: "new";
+};
+
+type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
+
+
+function GetRowItems(songList: db3.EventSongListPayload): EventSongListItem[] {
+    // row items are a combination of songs + dividers, with a new blank row at the end
+    const rowItems: EventSongListItem[] = songList.songs.toSorted((a, b) => a.sortOrder - b.sortOrder).map((s, index) => ({
+        ...s,
+        type: "song",
+        index,
+        runningTimeSeconds: null, // populated later
+        songsWithUnknownLength: 0,
+    }));
+    rowItems.push(...songList.dividers.map(s => {
+        const x: EventSongListDividerItem = {
+            ...s,
+            type: 'divider',
+        };
+        return x;
+    }));
+
+    // by some theory this shouldn't be necessary because sortorder is there, but it is.
+    rowItems.sort((a, b) => a.sortOrder - b.sortOrder);
+
+    // set indices and runningTime
+    let songIndex: number = 0;
+    let runningTimeSeconds: number | null = null;
+    let songsWithUnknownLength: number = 0;
+    for (let i = 0; i < rowItems.length; ++i) {
+        const item = rowItems[i]!;
+        if (item.type === 'divider') {
+            // reset!
+            songIndex = 0;
+            runningTimeSeconds = null;
+            songsWithUnknownLength = 0;
+            continue;
+        }
+        if (item.type !== 'song') throw new Error(`unknown type at this moment`);
+
+        item.index = songIndex;
+
+        if (item.song.lengthSeconds) {
+            runningTimeSeconds = item.song.lengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
+        } else {
+            // don't inc runtime
+            songsWithUnknownLength++;
+        }
+
+        item.runningTimeSeconds = runningTimeSeconds;
+        item.songsWithUnknownLength = songsWithUnknownLength;
+
+        songIndex++;
+    }
+
+    return rowItems;
+}
 
 /*
 similar to other tab contents structures (see also EventSegmentComponents, EventCommentComponents...)
@@ -64,33 +137,35 @@ it will just be updateSetList(song list etc.)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerRowProps {
-    index: number;
-    value: db3.EventSongListSongPayload;
+    //index: number;
+    value: EventSongListItem;
     showTags: boolean;
     songList: db3.EventSongListPayload;
 };
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
     const dashboardContext = React.useContext(DashboardContext);
-    const enrichedSong = db3.enrichSong(props.value.song, dashboardContext);
-    const formattedBPM = props.value.song ? API.songs.getFormattedBPM(props.value.song) : "";
+    const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
+    const formattedBPM = props.value.type === 'song' ? API.songs.getFormattedBPM(props.value.song) : "";
 
-    return <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.songId === null ? 'invalidItem' : 'validItem'}`}>
+    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === 'new' ? 'invalidItem' : 'validItem'} type_${props.value.type}`}>
 
         <div className="td songIndex">
-            {props.songList.isOrdered && props.index}
+            {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
         </div>
         <div className="td songName">
-            <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song.id, props.value.song.slug)}>{props.value.song.name}</a>
+            {props.value.type === 'song' && <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song.id, props.value.song.slug)}>{props.value.song.name}</a>}
+            {props.value.type === 'divider' && <div className='divider'>{gDividerText}</div>}
         </div>
-        <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
+        <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
+        <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
         <div className="td tempo">{enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}</div>
 
         <div className="td comment">
-            <div className="comment">{props.value.subtitle}</div>
+            <div className="comment">{props.value.type !== 'new' && props.value.subtitle}</div>
             {/* <div className="CMChipContainer comment2"></div> */}
-            {props.showTags && (props.value.song.tags.length > 0) && (
+            {props.value.type === 'song' && props.showTags && ((props.value.song as any).tags.length > 0) && (
                 <CMChipContainer>
-                    {enrichedSong.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variation={StandardVariationSpec.Weak} />)}
+                    {enrichedSong!.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variation={StandardVariationSpec.Weak} />)}
                 </CMChipContainer>
             )}
         </div>
@@ -116,16 +191,36 @@ type PortableSongListSong = {
     sortOrder: number;
     comment: string;
     song: db3.SongPayload;
+    type: 'song';
 };
 
-type PortableSongList = PortableSongListSong[];
+type PortableSongListDivider = {
+    sortOrder: number;
+    comment: string;
+    type: 'divider';
+};
+
+type PortableSongList = (PortableSongListSong | PortableSongListDivider)[];
 
 async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const obj: PortableSongList = value.songs.filter(s => !!s.song).map((s, i): PortableSongListSong => ({
+    const obj: PortableSongList = value.songs.map((s, i): PortableSongListSong => ({
         sortOrder: s.sortOrder,
         song: s.song,
         comment: s.subtitle || "",
+        type: 'song'
     }));
+
+    obj.push(...value.dividers.map(d => {
+        const x: PortableSongListDivider = {
+            type: 'divider',
+            sortOrder: d.sortOrder,
+            comment: d.subtitle || "",
+        };
+        return x;
+    }));
+
+    obj.sort((a, b) => a.sortOrder - b.sortOrder);
+
     const txt = JSON.stringify(obj, null, 2);
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
@@ -310,6 +405,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         model: props.value,
     });
 
+    const rowItems = GetRowItems(props.value);
+
     const stats = API.events.getSongListStats(props.value);
 
     const handleClickSortOrderTH = () => {
@@ -383,7 +480,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         <div className="content">
 
             <CMChipContainer>
-                {props.value.isActuallyPlayed && <CMChip tooltip={"This setlist will be/was actually played; it's complete and in order"} size='small' color={gSwatchColors.green}>Final setlist</CMChip>}
+                {props.value.isActuallyPlayed && <CMChip tooltip={"This setlist will be/was actually played; it's complete and in order"} size='small' color={gSwatchColors.green}>As performed</CMChip>}
                 {!props.value.isOrdered && <CMChip tooltip={"This setlist is not in order; just a list of songs"} size='small'>Order not important</CMChip>}
             </CMChipContainer>
 
@@ -395,6 +492,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                         <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
                         <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
                         <div className="th length">Len</div>
+                        <div className="th runningLength">∑T</div>
                         <div className="th tempo">Bpm</div>
                         <div className="th comment">
                             Comment
@@ -423,7 +521,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
                 <div className="tbody">
                     {
-                        sortedSongs.map((s, index) => <EventSongListValueViewerRow key={s.id} index={indexMap.get(s.id)!} value={s} songList={props.value} showTags={showTags} />)
+                        rowItems.map((s, index) => <EventSongListValueViewerRow key={s.id} value={s} songList={props.value} showTags={showTags} />)
                     }
 
                 </div>
@@ -443,71 +541,106 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueEditorRowProps {
-    index: number;
-    value: EventSongListNullableSong;
+    //index: number;
+    value: EventSongListItem;
     songList: db3.EventSongListPayload;
-    showTags: boolean;
-    onChange: (newValue: EventSongListNullableSong) => void;
-    onDelete: () => void;
+    showTags?: boolean;
+    showDragHandle?: boolean;
+    onChange: (newValue: EventSongListItem) => void;
+    onDelete?: () => void;
 };
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
     const dashboardContext = React.useContext(DashboardContext);
-    const enrichedSong = (props.value.song === null) ? null : db3.enrichSong(props.value.song, dashboardContext);
+    const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
+    const showTags = CoalesceBool(props.showTags, false);
+    const showDragHandle = CoalesceBool(props.showDragHandle, true);
 
     const handleAutocompleteChange = (song: db3.SongPayload | null) => {
-        props.value.songId = song?.id || null;
-        // if we were passing around enriched songs, this is where it would need to be enriched.
-        props.value.song = song;
-        props.onChange(props.value);
+        if (!song) return;
+        const { id, eventSongListId, sortOrder } = props.value;
+        const item: EventSongListSongItem = {
+            type: "song",
+            eventSongListId,
+            id,
+            sortOrder,
+            subtitle: "",
+            songId: song.id,
+            song: song,
+            index: 0, // will be set later
+            runningTimeSeconds: null, // populated later
+            songsWithUnknownLength: 0, // populated later
+        }
+        props.onChange(item);
     }
 
     const handleCommentChange = (newText: string) => {
-        props.value.subtitle = newText;
-        props.onChange(props.value);
+        if (props.value.type === 'new') return;
+        const item = { ...props.value, subtitle: newText };
+        props.onChange(item);
     };
 
-    const occurrences = !props.value.songId ? 0 : props.songList.songs.reduce((acc, val) => acc + (val.songId === props.value.songId ? 1 : 0), 0);
+    let occurrences = 0;
+    if (props.value.type === 'song') {
+        const songId = props.value.songId;
+        occurrences = props.songList.songs.reduce((acc, val) => acc + (val.songId === songId ? 1 : 0), 0);
+    }
     const isDupeWarning = occurrences > 1;
 
     const formattedBPM = enrichedSong ? API.songs.getFormattedBPM(enrichedSong) : "";
 
     const style = {
-        "--song-hash-color": getHashedColor(props.value.song?.name || ""),
+        "--song-hash-color": getHashedColor(props.value.type === "song" ? props.value.song.name : "" || ""),
     };
 
+    const handleNewDivider = () => {
+        props.onChange({
+            type: 'divider',
+            eventSongListId: props.value.eventSongListId,
+            id: props.value.id,
+            sortOrder: props.value.sortOrder,
+            subtitle: "",
+        });
+    }
+
     return <>
-        <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.songId === null ? 'invalidItem' : 'validItem'}`} style={style as any}>
-            <div className="td icon"><div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div></div>
+        <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type}`} style={style as any}>
+            <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
             {/* <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div> */}
-            <div className="td songIndex">{props.index + 1}
+            <div className="td songIndex">{props.value.type === 'song' && (props.value.index + 1)}
                 {/* id:{props.value.id} so:{props.value.sortOrder} */}
             </div>
-            <div className="td dragHandle draggable">{gCharMap.Hamburger()}
+            <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
                 {/* <InspectObject src={props.value} tooltip="snth" /> */}
             </div>
             <div className="td songName">
-                {props.value.song ? <div>{props.value.song.name}</div> :
-                    <SongAutocomplete onChange={handleAutocompleteChange} value={props.value.song || null} index={props.index} fadedSongIds={props.songList.songs.map(s => s.songId)} />
-                }
+                {props.value.type === 'song' && <div>{props.value.song.name}</div>}
+                {/* value used to be props.value.song || null */}
+                {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
+                {props.value.type === 'divider' && <div className='divider'>{gDividerText}</div>}
+
             </div>
-            <div className="td length">{props.value.song?.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
-            <div className="td tempo">{enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}</div>
+            <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
+            <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>            <div className="td tempo">
+                {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}
+                {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
+            </div>
             {/* </div>
         <div className="tr"> */}
             <div className="td comment">
                 <div className="comment">
-                    {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>⚠</div></Tooltip>}
-                    <InputBase
-                        className="cmdbSimpleInput"
-                        placeholder="Comment"
-                        // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                        // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
-                        onMouseDownCapture={(e) => e.stopPropagation()}
-                        value={props.value.subtitle || ""}
-                        onChange={(e) => handleCommentChange(e.target.value)}
-                    />
+                    {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>⚠{occurrences}</div></Tooltip>}
+                    {props.value.type !== 'new' &&
+                        <InputBase
+                            className="cmdbSimpleInput"
+                            placeholder="Comment"
+                            // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
+                            // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
+                            onMouseDownCapture={(e) => e.stopPropagation()}
+                            value={props.value.subtitle || ""}
+                            onChange={(e) => handleCommentChange(e.target.value)}
+                        />}
                 </div>
-                {props.showTags && enrichedSong && enrichedSong.tags.length > 0 && (
+                {showTags && enrichedSong && enrichedSong.tags.length > 0 && (
                     <CMChipContainer>
                         {enrichedSong.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variation={StandardVariationSpec.Weak} size="small" />)}
                     </CMChipContainer>
@@ -535,31 +668,33 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
+    const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
 
-    const ensureHasNewRow = (list: EventSongListNullableSong[]) => {
-        // make sure there is at least 1 "new" item.
-        if (!list.some(s => !s.songId)) {
-            const id = getUniqueNegativeID(); // make sure all objects have IDs, for tracking changes
-            const sortOrders = list.map(song => song.sortOrder);
-            const newSortOrder = 1 + Math.max(0, ...sortOrders);
-            list.push({
-                // create a new association model
-                eventSongListId: props.initialValue.id,
-                id,
-                song: null,
-                songId: null,
-                sortOrder: newSortOrder,
-                subtitle: "",
-            });
-        }
-    };
+    // const ensureHasNewRow = (list: EventSongListItem[]) => {
+    //     // make sure there is at least 1 "new" item.
+    //     if (!list.some(s => s.type === 'new')) {
+    //         const id = newRowId;// getUniqueNegativeID(); // make sure all objects have IDs, for tracking changes
+    //         const sortOrders = list.map(song => song.sortOrder);
+    //         const newSortOrder = 1 + Math.max(0, ...sortOrders);
+    //         list.push({
+    //             eventSongListId: props.initialValue.id,
+    //             id,
+    //             sortOrder: newSortOrder,
+    //             type: "new",
+    //         });
+    //     }
+    // };
     const [showTags, setShowTags] = React.useState<boolean>(false);
 
     // make sure the caller's object doesn't get modified. esp. create a copy of the songs array so we can manipulate it. any refs we modify should not leak outside of this component.
-    const initialValueCopy = { ...props.initialValue, songs: [...props.initialValue.songs.map(s => ({ ...s }))] };
-    ensureHasNewRow(initialValueCopy.songs);
+    //const initialValueCopy: db3.EventSongListPayload = { ...props.initialValue, songs: [...props.initialValue.songs.map(s => ({ ...s }))], dividers: [...props.initialValue.dividers.map(d => ({ ...d }))] };
 
-    const [value, setValue] = React.useState<db3.EventSongListPayload>(initialValueCopy);
+    //const [value, setValue] = React.useState<db3.EventSongListPayload>(() => JSON.parse(JSON.stringify(props.initialValue)));
+    const [value, setValue] = React.useState<db3.EventSongListPayload>(JSON.parse(JSON.stringify(props.initialValue)));
+
+    // row items are a combination of songs + dividers, with a new blank row at the end
+    const rowItems = GetRowItems(value);
+    //ensureHasNewRow(rowItems);
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSongList,
@@ -567,7 +702,6 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 180 }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
-            //new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 200 }),
         ],
     });
 
@@ -589,32 +723,70 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
     const stats = API.events.getSongListStats(value);
 
-    const handleRowChange = (newValue: db3.EventSongListSongPayload) => {
-        // replace existing with this.
-        const n = { ...value };
-        const index = n.songs.findIndex(s => s.id === newValue.id);
-        if (index === -1) throw new Error(`id should alread be populated`);
-        n.songs[index] = newValue;
-        ensureHasNewRow(n.songs);
-        setValue(n);
+    const itemToEventSongListSong = (x: EventSongListSongItem) => {
+        const a: EventSongListSongItem = x;
+        const { type, songId, song, ...rest } = x;
+        if (!songId) throw new Error(`expected songId here`);
+        if (!song) throw new Error(`expected song here`);
+        const id = x.id === newRowId ? getUniqueNegativeID() : x.id;
+        const p: Prisma.EventSongListSongGetPayload<{ include: { song: true } }> = { ...rest, songId, song, id };
+        return p;
     };
 
-    const handleRowDelete = (row: db3.EventSongListSongPayload) => {
-        // replace existing with this.
-        const n = { ...value };
-        const index = n.songs.findIndex(s => s.id === row.id);
-        if (index === -1) throw new Error(`id should alread be populated`);
-        n.songs.splice(index, 1);
-        ensureHasNewRow(n.songs);
-        setValue(n);
+    // after you mutate rowItems (ordering, data, whatever), call this to apply to the setlist object
+    const handleRowsUpdated = (rows: EventSongListItem[]) => {
+        const newValue = JSON.parse(JSON.stringify(value));
+        newValue.songs = rows.filter(r => r.type === 'song').map(item => itemToEventSongListSong(item)) as any;
+        newValue.dividers = rows.filter(r => r.type === "divider");
+        setValue(newValue);
+    };
+
+    const handleRowChange = (newValue: EventSongListItem) => {
+        handleRowsUpdated([...rowItems.filter(row => row.id !== newValue.id), newValue]);
+        // // replace existing with this.
+        // const n = { ...value };
+        // n.songs = n.songs.filter(s => s.id !== newValue.id);
+        // n.dividers = n.dividers.filter(s => s.id !== newValue.id);
+        // switch (newValue.type) {
+        //     case 'divider':
+        //         {
+        //             n.dividers.push(newValue);
+        //             break;
+        //         }
+        //     case 'song':
+        //         {
+        //             n.songs.push(itemToEventSongListSong(newValue) as any); // payloads are slightly different.
+        //         }
+        //     default:
+        //         return; // noop on new or whatever
+        // }
+        // //if (index === -1) throw new Error(`id should alread be populated`);
+        // //n.songs[index] = newValue;
+        // //ensureHasNewRow();
+        // setValue(n);
+    };
+
+    const handleRowDelete = (row: EventSongListItem) => {
+        handleRowsUpdated(rowItems.filter(existing => existing.id !== row.id));
+
+        // const n = { ...value };
+        // n.songs = n.songs.filter(s => s.id !== row.id);
+        // n.dividers = n.dividers.filter(s => s.id !== row.id);
+        // const index = n.songs.findIndex(s => s.id === row.id);
+        // if (index === -1) throw new Error(`id should alread be populated`);
+        // n.songs.splice(index, 1);
+        // ensureHasNewRow(n.songs);
+        //setValue(n);
     };
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
-        value.songs = moveItemInArray(value.songs, args.removedIndex, args.addedIndex).map((song, index) => ({ ...song, sortOrder: index }));
-        setValue({ ...value });
+        //value.songs = moveItemInArray(value.songs, args.removedIndex, args.addedIndex).map((song, index) => ({ ...song, sortOrder: index }));
+        const newItems = moveItemInArray(rowItems, args.removedIndex, args.addedIndex).map((item, index) => ({ ...item, sortOrder: index }));
+        handleRowsUpdated(newItems);
+        //setValue({ ...value });
     };
 
     const getClipboardSongList = async (): Promise<PortableSongList | null> => {
@@ -628,8 +800,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                 snackbarContext.showMessage({ severity: 'error', children: "Empty setlist; ignoring." });
                 return null;
             }
-            if (!Number.isInteger(obj[0]!.song.id)) throw "no songId";
-            if (typeof (obj[0]!.song.name) !== 'string') throw "no song name";
+            if (!Number.isInteger(obj[0]!.sortOrder)) throw "no sort order";
+            if (typeof (obj[0]!.type) !== 'string') throw "no type";
             return obj;
         } catch (e) {
             console.log(e);
@@ -639,21 +811,53 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
     };
 
     const appendPortableSongList = (list: db3.EventSongListPayload, obj: PortableSongList) => {
-        console.log(obj);
-        const items = obj.map((s): db3.EventSongListSongPayload => ({
-            eventSongListId: list.id,
-            id: getUniqueNegativeID(),
-            songId: s.song.id,
-            song: s.song,
-            subtitle: s.comment,
-            sortOrder: s.sortOrder,
+        const newItems: EventSongListItem[] = [...rowItems.filter(item => item.type !== 'new')];
+        const highestSortOrder = 1 + newItems.reduce((acc, val) => Math.max(acc, val.sortOrder), 0);
+
+        newItems.push(...obj.map(p => {
+            switch (p.type) {
+                case 'divider':
+                    const div: EventSongListDividerItem = {
+                        type: 'divider',
+                        id: getUniqueNegativeID(),
+                        eventSongListId: list.id,
+                        sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
+                        subtitle: p.comment,
+                    };
+                    return div;
+                case 'song':
+                    const song: EventSongListSongItem = {
+                        type: 'song',
+                        id: getUniqueNegativeID(),
+                        eventSongListId: list.id,
+                        sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
+                        subtitle: p.comment,
+                        songId: p.song.id,
+                        song: p.song,
+                        index: 0, // it doesn't matter; it will get populated later
+                        runningTimeSeconds: null, // populated later
+                        songsWithUnknownLength: 0, // populated later
+                    }
+                    return song;
+            }
+            throw new Error(`unknown type?`);
         }));
+
+        // const items = obj.map((s): db3.EventSongListSongPayload => ({
+        //     eventSongListId: list.id,
+        //     id: getUniqueNegativeID(),
+        //     songId: s.song.id,
+        //     song: s.song,
+        //     subtitle: s.comment,
+        //     sortOrder: s.sortOrder,
+        // }));
         // remove the dummy row, merge the lists
-        list.songs = [...list.songs.filter(s => !!s.song), ...items];
+        //list.songs = [...list.songs.filter(s => !!s.song), ...items];
         // and set sort orders
-        list.songs.forEach((item, index) => item.sortOrder = index);
+        //list.songs.forEach((item, index) => item.sortOrder = index);
         // and ensure it has a dummy row.
-        ensureHasNewRow(list.songs);
+        //ensureHasNewRow(list.songs);
+        handleRowsUpdated(newItems);
     };
 
     const handlePasteAppend = async () => {
@@ -661,7 +865,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         if (!obj) return;
         const newList = { ...value };
         appendPortableSongList(newList, obj);
-        setValue(newList);
+        //setValue(newList);
     };
 
     const handlePasteReplace = async () => {
@@ -669,7 +873,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
         if (!obj) return;
         const newList = { ...value };
         appendPortableSongList(newList, obj);
-        setValue(newList);
+        //setValue(newList);
     };
 
     const nameColumn = tableSpec.getColumn("name");
@@ -687,6 +891,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     <AdminInspectObject src={props.initialValue} label="initial value" />
                     <AdminInspectObject src={value} label="value" />
                     <AdminInspectObject src={stats} label="stats" />
+                    <AdminInspectObject src={rowItems} label="rowitems" />
                 </CMDialogContentText>
 
                 <div className="EventSongListValue">
@@ -723,7 +928,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                 setValue(nv);
                             }} />
                         }
-                        label="Was this songlist actually played?"
+                        label="As performed / actually played live?"
                     />
 
                     {/* {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })} */}
@@ -752,6 +957,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                 <div className="th icon"></div>
                                 <div className="th songName">Song</div>
                                 <div className="th length">Len</div>
+                                <div className="th runningLength">∑T</div>
                                 <div className="th tempo">bpm</div>
                                 <div className="th comment">
                                     Comment
@@ -783,11 +989,23 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                             onDrop={onDrop}
                         >
                             {
-                                value.songs.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
-                                    <EventSongListValueEditorRow key={s.id} index={index} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} showTags={showTags} />
+                                rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
+                                    <EventSongListValueEditorRow key={s.id} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} showTags={showTags} />
                                 </ReactSmoothDndDraggable>
                                 )
                             }
+                            <EventSongListValueEditorRow
+                                key={"newRow"}
+                                //index={rowItems.length}
+                                showDragHandle={false}
+                                value={{
+                                    type: 'new',
+                                    id: newRowId,
+                                    eventSongListId: value.id,
+                                    sortOrder: rowItems.length,
+                                }}
+                                onChange={handleRowChange}
+                                songList={value} />
                         </ReactSmoothDndContainer>
                     </div>
 
@@ -855,7 +1073,11 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
                 songId: s.songId,
                 sortOrder: s.sortOrder,
                 subtitle: s.subtitle || "",
-            }))
+            })),
+            dividers: newValue.dividers.map(d => ({
+                sortOrder: d.sortOrder,
+                subtitle: d.subtitle || "",
+            })),
         }).then(() => {
             showSnackbar({ severity: "success", children: "song list edit successful" });
             props.refetch();
@@ -901,7 +1123,6 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
 // for new song lists. different from the other editor because this doesn't save automatically, it only saves after you click "save"
 interface EventSongListNewEditorProps {
     event: db3.EventClientPayload_Verbose;
-    //tableClient: DB3Client.xTableRenderClient;
     onCancel: () => void;
     onSuccess: () => void;
 };
@@ -917,11 +1138,11 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
         currentUser: currentUser!,
     };
     const initialValue = db3.xEventSongList.createNew(clientIntention) as db3.EventSongListPayload;
+    initialValue.dividers = []; // because it's just not created (i would need to create like a db3.ArrayColumnType or something)
     initialValue.name = `Set ${props.event.songLists.length + 1}`;
 
     const handleSave = (value: db3.EventSongListPayload) => {
         insertMutation.invoke({
-            //visiblePermissionId: value.visiblePermissionId,
             eventId: props.event.id,
             description: value.description,
             name: value.name,
@@ -932,7 +1153,11 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
                 songId: s.songId,
                 sortOrder: s.sortOrder,
                 subtitle: s.subtitle || "",
-            }))
+            })),
+            dividers: value.dividers.map(d => ({
+                sortOrder: d.sortOrder,
+                subtitle: d.subtitle || "",
+            })),
         }).then(() => {
             showSnackbar({ severity: "success", children: "added new song list" });
             props.onSuccess();

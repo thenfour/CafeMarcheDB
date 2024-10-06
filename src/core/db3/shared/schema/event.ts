@@ -25,7 +25,7 @@ import {
     EventNaturalOrderBy, EventPayload, EventPayloadClient,
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
-    EventSegmentUserResponsePayload, EventSongListArgs, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
+    EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, EventSongListDividerPayload, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
     EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
     EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload,
     EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
@@ -1115,6 +1115,7 @@ export const xEventSongList = new db3.xTable({
             getQuickFilterWhereClause: (query: string): Prisma.EventSongListWhereInput | boolean => false,
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventSongListWhereInput | boolean => false,
         }),
+        new GhostField({ memberName: "dividers", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "userId", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
@@ -1155,6 +1156,45 @@ export const xEventSongListSong = new db3.xTable({
             authMap: xEventAuthMap_R_EOwn_EManagers,
             getQuickFilterWhereClause: (query: string) => false,
         }),
+        new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
+            columnName: "eventSongList",
+            fkMember: "eventSongListId",
+            allowNull: false,
+            foreignTableID: "EventSongList",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+    ]
+});
+
+
+
+export const xEventSongListDivider = new db3.xTable({
+    getInclude: (clientIntention: db3.xTableClientUsageContext): Prisma.EventSongListDividerInclude => {
+        return EventSongListDividerArgs.include;
+    },
+    tableName: "EventSongListDivider",
+    naturalOrderBy: EventSongListSongNaturalOrderBy, // yea i can borrow this.
+    tableAuthMap: xEventTableAuthMap_R_EManagers,
+    getRowInfo: (row: EventSongListDividerPayload) => ({
+        pk: row.id,
+        name: "divider",
+        description: row.subtitle || "",
+        ownerUserId: null,
+    }),
+    getParameterizedWhereClause: (params: TAnyModel, clientIntention: db3.xTableClientUsageContext): (Prisma.EventSongListDividerWhereInput[] | false) => {
+        const ret: Prisma.EventSongListDividerWhereInput[] = [];
+        if (params.eventSongListId != null) {
+            ret.push({
+                eventSongListId: { equals: params.eventSongListId }
+            });
+        }
+        return ret;
+    },
+    columns: [
+        new PKField({ columnName: "id" }),
+        MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "eventSongList",
             fkMember: "eventSongListId",
