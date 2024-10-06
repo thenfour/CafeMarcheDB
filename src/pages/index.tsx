@@ -1,16 +1,14 @@
 import { BlitzPage } from "@blitzjs/next";
 import { NoSsr } from "@mui/material";
 import Head from "next/head";
-import { Suspense } from "react";
+import { useRouter } from "next/router";
+import React, { Suspense } from "react";
+import { EnNlFr, LangSelectString } from "shared/utils";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { CMDBTableFilterModel } from "src/core/db3/shared/apiTypes";
-import React from "react";
-import { EnNlFr, LangSelectString } from "shared/utils";
-import { GetServerSideProps } from "next";
-import { cookies } from "next/headers";
 
 const MainContent = ({ lang, onLangChange }: { lang: EnNlFr, onLangChange: (newLang: EnNlFr) => void }) => {
     const eventsTableSpec = new DB3Client.xTableClientSpec({
@@ -68,60 +66,29 @@ const MainContent = ({ lang, onLangChange }: { lang: EnNlFr, onLangChange: (newL
 
 
 
-type PublicIndexProps = {
-    browserLang: EnNlFr;
+
+const toEnNlFr = (s): EnNlFr | undefined => {
+    if (!s) return undefined;
+    if (s.startsWith("nl")) {
+        return "nl";
+    } else if (s.startsWith("fr")) {
+        return "fr";
+    }
+    return "en";
 };
 
+const PublicIndex: BlitzPage = () => {
+    const router = useRouter();
+    const { locale } = router;
 
-export const getServerSideProps: GetServerSideProps = async ({ req, ...ctx }) => {
-    const acceptLanguage = req.headers['accept-language'];
-    const cookieLang = req.cookies.lang; //cookie.parse(req.headers.cookie || '');
-
-    const toEnNlFr = (s): EnNlFr | undefined => {
-        if (!s) return undefined;
-        if (s.startsWith("nl")) {
-            return "nl";
-        } else if (s.startsWith("fr")) {
-            return "fr";
-        }
-        return "en";
-    };
-
-    const acceptLangAsEnNlFr = toEnNlFr(acceptLanguage);
-    const cookieLangAsEnNlFr = toEnNlFr(cookieLang);
-
-    const browserLang: EnNlFr = cookieLangAsEnNlFr || acceptLangAsEnNlFr || "en";
-
-    const props: PublicIndexProps = {
-        browserLang,
-    };
-
-    // Pass the detected language as a prop
-    return {
-        props,
-    };
-};
-
-
-const PageRoot = ({ browserLang }: PublicIndexProps) => {
-};
-
-
-const PublicIndex: BlitzPage = (props: PublicIndexProps) => {
     const [userSelectedLang, setUserSelectedLang] = React.useState<EnNlFr | null>(null);
 
     const handleManualLangChange = (newLang: EnNlFr) => {
+        router.push(router.pathname, router.asPath, { locale: newLang });
         setUserSelectedLang(newLang);
     };
 
-    // you can't use window.* because this is run on the server.
-    //const storedLang = window.localStorage.getItem("lang") as EnNlFr | null;
-
-    const lang = userSelectedLang || props.browserLang;
-
-    // React.useEffect(() => {
-    //     window.localStorage.setItem("lang", lang);
-    // }, [lang]);
+    const lang = userSelectedLang || toEnNlFr(locale) || "en";
 
     return <>
         <Head>
@@ -152,6 +119,7 @@ const PublicIndex: BlitzPage = (props: PublicIndexProps) => {
         <link href="/homepage/public.css" rel="stylesheet" type="text/css" />
         <Suspense>
             <MainContent lang={lang} onLangChange={handleManualLangChange} />
+            <div></div>
         </Suspense>
 
     </>;

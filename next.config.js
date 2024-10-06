@@ -26,6 +26,10 @@ const config = {
   reactStrictMode: true,
   swcMinify: true,
   experimental: { instrumentationHook: true },
+  i18n: {
+    locales: ['en', 'nl', 'fr'],
+    defaultLocale: 'en',
+  },
   modularizeImports: {
     "@mui/material": {
       transform: "@mui/material/{{member}}",
