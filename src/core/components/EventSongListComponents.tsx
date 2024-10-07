@@ -596,7 +596,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         props.onChange({
             type: 'divider',
             eventSongListId: props.value.eventSongListId,
-            id: props.value.id,
+            id: getUniqueNegativeID(),
             sortOrder: props.value.sortOrder,
             subtitle: "",
         });
