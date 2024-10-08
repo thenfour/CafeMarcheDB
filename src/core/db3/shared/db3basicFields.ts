@@ -19,7 +19,7 @@
 
 import { ColorPaletteEntry, ColorPaletteList, gGeneralPaletteList, gLightSwatchColors, gSwatchColors } from "shared/color";
 import { slugify } from "shared/rootroot";
-import { CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, MysqlEscape, assertIsNumberArray, getNextSequenceId, isValidURL } from "shared/utils";
+import { CoalesceBool, CoerceToBoolean, CoerceToNullableBoolean, CoerceToNumberOrNull, MysqlEscape, assertIsNumberArray, getNextSequenceId, isValidURL } from "shared/utils";
 import { CMDBTableFilterModel, CriterionQueryElements, DiscreteCriterion, DiscreteCriterionFilterType, EventFutureFilterExpression, EventPast60DaysFilterExpression, EventPastFilterExpression, EventRelevantFilterExpression, SearchResultsFacetOption, SearchResultsFacetQuery, SortQueryElements, TAnyModel } from "./apiTypes";
 import { ApplyIncludeFilteringToRelation, DB3AuthContextPermissionMap, DB3AuthorizeAndSanitizeInput, DB3RowMode, ErrorValidateAndParseResult, FieldBase, GetTableById, SqlGetSortableQueryElementsAPI, SuccessfulValidateAndParseResult, UndefinedValidateAndParseResult, UserWithRolesPayload, ValidateAndParseArgs, ValidateAndParseResult, createAuthContextMap_GrantAll, createAuthContextMap_PK, xTable, xTableClientUsageContext } from "./db3core";
 import { assert } from "blitz";
@@ -2095,18 +2095,18 @@ export const MakeNullableRawTextField = (columnName: string, authSpec: DB3AuthSp
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeRawTextField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakeRawTextField = (columnName: string, authSpec: DB3AuthSpec, allowNull?: boolean) => (
     new GenericStringField({
         columnName: columnName,
-        allowNull: false,
+        allowNull: CoalesceBool(allowNull, false),
         format: "raw",
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     }));
-export const MakeMarkdownTextField = (columnName: string, authSpec: DB3AuthSpec) => (
+export const MakeMarkdownTextField = (columnName: string, authSpec: DB3AuthSpec, allowNull?: boolean) => (
     new GenericStringField({
         columnName,
-        allowNull: false,
+        allowNull: CoalesceBool(allowNull, false),
         allowQuickFilter: false,
         format: "markdown",
         authMap: (authSpec as any).authMap || null,

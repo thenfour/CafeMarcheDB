@@ -848,3 +848,83 @@ export interface TupdateEventCustomFieldValuesArgs {
     eventId: number;
     values: TupdateEventCustomFieldValue[];
 };
+
+
+
+
+
+
+export interface TinsertOrUpdateWorkflowDefNodeDefaultAssignee {
+    id?: number; // for insertion, this is not used / specified.
+    userId: number;
+    // nodeDefId
+};
+
+export interface TinsertOrUpdateWorkflowDefNodeDependency {
+    id?: number; // for insertion, this is not used / specified.
+
+    selected: boolean;
+    determinesRelevance: boolean;
+    determinesActivation: boolean;
+    determinesCompleteness: boolean;
+    nodeDefId: number; // the other (child) node
+};
+
+export interface TinsertOrUpdateWorkflowDefNode {
+    id?: number; // for insertion, this is not used / specified.
+    dependencies: TinsertOrUpdateWorkflowDefNodeDependency[];
+    defaultAssignees: TinsertOrUpdateWorkflowDefNodeDefaultAssignee[];
+
+    name: string;
+    description: string;
+
+    groupId: number | null;
+    //     workflowDefId Int?
+
+    displayStyle: string;
+    manualCompletionStyle: string;
+    thisNodeProgressWeight: number;
+
+    relevanceCriteriaType: string;
+    activationCriteriaType: string;
+    completionCriteriaType: string;
+
+    fieldName?: string | undefined;
+    fieldValueOperator?: string | undefined;
+    fieldValueOperand2?: string | undefined;
+
+    defaultDueDateDurationDaysAfterStarted?: number | undefined;
+    positionX?: number | undefined;
+    positionY?: number | undefined;
+    width?: number | undefined;
+    height?: number | undefined;
+    selected: boolean;
+};
+
+export interface TinsertOrUpdateWorkflowDefGroup {
+    id?: number; // for insertion, this is not used / specified.
+    // workflowDefId
+    name: string;
+    description: string;
+    color?: string | null | undefined;
+
+    positionX?: number | undefined;
+    positionY?: number | undefined;
+    width?: number | undefined;
+    height?: number | undefined;
+    selected: boolean;
+};
+
+export interface TinsertOrUpdateWorkflowDefArgs {
+    id?: number; // for insertion, this is not used / specified.
+    sortOrder: number;
+    name: string;
+    description: string;
+    color?: string | null | undefined;
+    isDefaultForEvents: boolean;
+    groups: TinsertOrUpdateWorkflowDefGroup[];
+    nodes: TinsertOrUpdateWorkflowDefNode[];
+};
+
+
+

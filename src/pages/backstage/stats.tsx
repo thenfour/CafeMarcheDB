@@ -182,11 +182,11 @@ const StatsPageInner = () => {
 
     const defaultFilterSpec: GetGlobalStatsFilterSpec = {
         // primary
-        timing: "All past",
+        timing: "All",
 
         // extra
-        eventStatusIds: dashboardContext.eventStatus.filter(s => s.significance !== EventStatusSignificance.Cancelled).map(s => s.id), // everything except cancelled
-        eventTypeIds: dashboardContext.eventType.filter(t => [EventTypeSignificance.Concert, EventTypeSignificance.Rehearsal, EventTypeSignificance.Weekend].includes(t.significance as any)).map(t => t.id), // concerts & rehearsals & weekend are the only thing that matter for songs
+        eventStatusIds: dashboardContext.eventStatus.filter(s => s.significance === EventStatusSignificance.FinalConfirmation).map(s => s.id),// dashboardContext.eventStatus.filter(s => s.significance !== EventStatusSignificance.Cancelled).map(s => s.id), // everything
+        eventTypeIds: dashboardContext.eventType.filter(t => [EventTypeSignificance.Concert].includes(t.significance as any)).map(t => t.id), // concerts & rehearsals & weekend are the only thing that matter for songs
         eventTagIds: [],
         songTagIds: [],
     };

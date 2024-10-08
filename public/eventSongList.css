@@ -114,7 +114,9 @@
 .songListSongTable .tr.item.type_divider {
     /* border-bottom: 1px solid #0003;
     margin-bottom: 3px; */
-    background-color: #0001;
+    /* background-color: #0001; */
+    /* slope of 4/5 is nice and pretty, close enough to 45 deg. in fact 45 deg looks kinda terrible because it tries to be perfect but doesn't render so.*/
+    background-image: repeating-linear-gradient(-38.66deg, #0001 0 1.5px, transparent 1.5px 7.5px);
 }
 
 .songListSongTable .td.icon {
@@ -235,14 +237,19 @@
 
 .songListSongTable .warnIndicator {
     font-style: normal;
-    background-color: #fd0;
-    color: black;
+    background-color: var(--song-hash-color);
+    color: #f99;
     padding: 0 5px;
     display: flex;
     align-items: center;
-    border-radius: 2px;
+    border-radius: 6px;
     margin: 0 3px;
+    /* border: 2px solid #f80; */
+    white-space: nowrap;
+    font-weight: bold;
+    /* font-size: 12px; */
 }
+
 
 .songListSongTable .td.comment .CMChipContainer {
     flex-wrap: wrap;

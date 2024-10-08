@@ -14,6 +14,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ContentCutIcon from '@mui/icons-material/ContentCut';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import DoneIcon from '@mui/icons-material/Done';
 import EditIcon from '@mui/icons-material/Edit';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -53,6 +54,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ShareIcon from '@mui/icons-material/Share';
 import StarsIcon from '@mui/icons-material/Stars';
 import TagIcon from '@mui/icons-material/Tag';
+import TerminalIcon from '@mui/icons-material/Terminal';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -85,6 +87,7 @@ export const gIconMap /*: IIconMap*/ = {
     ContentCut: () => <ContentCutIcon />,
     ContentPaste: () => <ContentPasteIcon />,
     Delete: () => <DeleteIcon />,
+    DirectionsCar: () => <DirectionsCarIcon />,
     Done: () => <DoneIcon />,
     Edit: () => <EditIcon />,
     EditNote: () => <EditNoteIcon />,
@@ -125,6 +128,7 @@ export const gIconMap /*: IIconMap*/ = {
     Share: () => <ShareIcon />,
     Stars: () => <StarsIcon />,
     Tag: () => <TagIcon />,
+    Terminal: () => <TerminalIcon />,
     ThumbDown: () => <ThumbDownIcon />,
     ThumbUp: () => <ThumbUpIcon />,
     Tune: () => <TuneIcon />,
@@ -153,4 +157,5 @@ export const gCharMap = {
     LeftTriangle: () => '◀',
     BustInSilhouette: () => <>&#x1F464;</>,
     Hamburger: () => `☰`,
+    Alert: () => `⚠`,
 } as const;

@@ -11,7 +11,7 @@ import { DateTimeRange } from "shared/time";
 import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, getIntersectingFields } from "shared/utils";
 import sharp from "sharp";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, getFileCustomData } from "../shared/apiTypes";
+import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { assert } from "blitz";
@@ -664,6 +664,11 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         });
     }
 
+    const newValues: Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'> = {
+        songs: cp.desiredState,
+        dividers: cpDiv.desiredState,
+    }
+
     // make a custom change obj. let's not bother with "old state"; this just gets too verbose and that's not helpful.
     await RegisterChange({
         action: ChangeAction.update,
@@ -671,7 +676,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         table: "eventSongList:Songs",
         pkid: args.songListID,
         oldValues: {},
-        newValues: { songs: cp.desiredState, dividers: cpDiv.desiredState },
+        newValues,
         ctx,
         options: { dontCalculateChanges: true },
     });

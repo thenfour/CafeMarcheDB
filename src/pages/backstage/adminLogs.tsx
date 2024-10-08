@@ -55,7 +55,7 @@ const MainContent = () => {
             //new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
             new DB3Client.GenericStringColumnClient({ columnName: "table", cellWidth: 150 }),
-            new DB3Client.AdminLogPkColumnClient({ columnName: "recordId", cellWidth: 110, cacheData: filterSourceData }),
+            new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 80, }),
             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
             new DB3Client.JSONStringColumnClient({ columnName: "oldValues", cacheData: filterSourceData, }),
             new DB3Client.JSONStringColumnClient({ columnName: "newValues", cacheData: filterSourceData, }),

@@ -581,11 +581,11 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
       ) : (
 
         <CMChipContainer>
-          <EventAttendanceInstrumentButton key={"__"}
+          {y.allowInstrumentSelect && <EventAttendanceInstrumentButton key={"__"}
             selected={false}
             value={y.eventUserResponse.instrument}
             onSelect={() => setUserSelectedEdit(true)}
-          />
+          />}
           {y.segmentUserResponses.map(segment => {
             return <EventAttendanceAnswerControl
               forceEditMode={false} // compact mode never has edit by default

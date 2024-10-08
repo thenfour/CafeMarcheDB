@@ -50,7 +50,7 @@ export function formatMillisecondsToDHMS(milliseconds: number): string {
         parts.push(`${minutes}m`);
     }
     if (seconds > 0) {
-        parts.push(`${seconds.toFixed(3)}s`);
+        parts.push(`${seconds.toFixed(0)}s`);
     }
 
     return parts.join(' ');

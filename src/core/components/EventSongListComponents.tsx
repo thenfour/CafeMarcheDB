@@ -628,7 +628,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         <div className="tr"> */}
             <div className="td comment">
                 <div className="comment">
-                    {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>⚠{occurrences}</div></Tooltip>}
+                    {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>!{occurrences}</div></Tooltip>}
                     {props.value.type !== 'new' &&
                         <InputBase
                             className="cmdbSimpleInput"

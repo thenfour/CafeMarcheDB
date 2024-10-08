@@ -1,19 +1,24 @@
 // specifically for the activity log viewer.
+import { useQuery } from "@blitzjs/rpc";
+import { DialogContent, Tooltip } from "@mui/material";
 import { GridRenderCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
-import { AttendanceChip, InspectObject, UserChip } from "src/core/components/CMCoreComponents";
+import { Prisma } from "db";
+import React, { Suspense } from "react";
+import { CMChip, CMChipContainer } from "src/core/components/CMChip";
+import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { useDashboardContext } from "src/core/components/DashboardContext";
+import { Markdown } from "src/core/components/RichTextEditor";
+import { useSnackbar } from "src/core/components/SnackbarContext";
+import { getURIForEvent } from "../clientAPILL";
+import { EventAPI } from "../db3";
+import getAdminLogItemInfo from "../queries/getAdminLogItemInfo";
+import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
+import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
-import { KeyValueDisplay, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { Prisma } from "db";
-import * as z from "zod"
-import getDistinctChangeFilterValues from "../queries/getDistinctChangeFilterValues";
-import { useQuery } from "@blitzjs/rpc";
-import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { useDashboardContext } from "src/core/components/DashboardContext";
 import { gIconMap } from "./IconMap";
-import { Tooltip } from "@mui/material";
-import { useSnackbar } from "src/core/components/SnackbarContext";
+import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -47,17 +52,25 @@ interface ActivityLogValueViewerProps<T> {
 interface ActivityLogChipProps {
     maxWidthPx?: number;
     color?: string | null;
+    uri?: string | undefined;
 };
 
 const ActivityLogChip = (props: React.PropsWithChildren<ActivityLogChipProps>) => {
+    const inner = <div style={{ textOverflow: "ellipsis", maxWidth: `${props.maxWidthPx || 200}px`, overflow: "hidden", whiteSpace: "nowrap", display: "block" }}>
+        {props.children}
+    </div>;
+    let linkOrNot: React.ReactNode;
+    if (props.uri) {
+        linkOrNot = <a href={props.uri} target="_blank" rel="noreferrer">{inner}</a>
+    } else {
+        linkOrNot = inner;
+    }
     return <CMChip
         tooltip={props.children}
         size="small"
         color={props.color}
     >
-        <div style={{ textOverflow: "ellipsis", maxWidth: `${props.maxWidthPx || 200}px`, overflow: "hidden", whiteSpace: "nowrap", display: "block" }}>
-            {props.children}
-        </div>
+        {linkOrNot}
     </CMChip>;
 };
 
@@ -94,7 +107,8 @@ const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | und
     if (!foundEvent) {
         return <ActivityLogChip><Id value={eventId} /></ActivityLogChip>;
     }
-    return <ActivityLogChip>{foundEvent.name}#{foundEvent.id}</ActivityLogChip>;
+
+    return <ActivityLogChip uri={getURIForEvent(foundEvent.id)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
 };
 
 const ActivityLogEventTag = ({ eventTagId, cacheData }: { eventTagId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
@@ -200,6 +214,15 @@ const ActivityLogSong = ({ songId, cacheData }: { songId: number | null | undefi
     </ActivityLogChip>;
 };
 
+const ActivityLogSongListEventChip = ({ songListId, cacheData }: { songListId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+    const dashboardContext = useDashboardContext();
+    const found = cacheData.eventSonglists.find(s => s.id === songListId);
+    if (!found) {
+        return <ActivityLogChip><Id value={songListId} /></ActivityLogChip>;
+    }
+    return <ActivityLogEvent eventId={found.eventId} cacheData={cacheData} />
+};
+
 const ActivityLogSongTag = ({ songTagId, cacheData }: { songTagId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
     const dashboardContext = useDashboardContext();
     const found = dashboardContext.songTag.find(s => s.id === songTagId);
@@ -225,12 +248,15 @@ const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: numb
 };
 
 
-type ActivityLogSongListSongPayload = { id: number, songId: number, sortOrder: number, subtitle: string, type: "song" };
-type ActivityLogSongListDividerPayload = { id: number, sortOrder: number, subtitle: string, type: "div" };
+type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number, sortOrder: number, subtitle: string, type: "song" };
+type ActivityLogSongListDividerPayload = { id?: number | undefined, sortOrder: number, subtitle: string, type: "div" };
 type ActivityLogSongListV1 = { id: number, songId: number, sortOrder: number, subtitle: string }[];
-type ActivityLogSongListV2 = { songs: ActivityLogSongListV1, dividers: { id: number, sortOrder: number, subtitle: string }[] };
+type ActivityLogSongListV2 = Partial<TinsertOrUpdateEventSongListArgs> & Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'>;
 
 const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogSongListV2, cacheData: ActivityLogCacheData }) => {
+    if (!value.songs) {
+        return <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={value} />;
+    }
 
     const items: (ActivityLogSongListSongPayload | ActivityLogSongListDividerPayload)[] = [];
     items.push(...value.songs.map(s => {
@@ -245,35 +271,40 @@ const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogS
         return a.sortOrder - b.sortOrder;
     });
 
-    return <table>
-        <thead>
-            <tr>
-                <th>
-                    id
-                </th>
-                <th>
-                    ord
-                </th>
-                <th>
-                    song
-                </th>
-                <th>
-                    comment
-                </th>
-            </tr>
-        </thead>
-        <tbody>
-            {items.map((s, i) => <tr key={i}>
-                <td>{s.id}</td>
-                <td>{s.sortOrder}</td>
-                <td>
-                    {s.type === "song" && <ActivityLogSong songId={s.songId} cacheData={cacheData} />}
-                    {s.type === "div" && "-----"}
-                </td>
-                <td>{s.subtitle}</td>
-            </tr>)}
-        </tbody>
-    </table>
+    const { songs, dividers, ...otherFields } = value;
+
+    return <>
+        <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={otherFields} />
+        <table>
+            <thead>
+                <tr>
+                    <th>
+                        id
+                    </th>
+                    <th>
+                        ord
+                    </th>
+                    <th>
+                        song
+                    </th>
+                    <th>
+                        comment
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {items.map((s, i) => <tr key={i}>
+                    <td>{s.id}</td>
+                    <td>{s.sortOrder}</td>
+                    <td>
+                        {s.type === "song" && <ActivityLogSong songId={s.songId} cacheData={cacheData} />}
+                        {s.type === "div" && "-----"}
+                    </td>
+                    <td>{s.subtitle}</td>
+                </tr>)}
+            </tbody>
+        </table>
+    </>;
 }
 
 
@@ -314,7 +345,7 @@ const ActivityLogSongListViewer = ({ value, cacheData }: { value: ActivityLogSon
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const Toolbar = (props: { value: any }) => {
+const Toolbar = (props: { value: any, onExpand: () => void }) => {
     const snackbar = useSnackbar();
     const handleCopy = async () => {
         const str = JSON.stringify(props.value, null, 2);
@@ -325,14 +356,81 @@ const Toolbar = (props: { value: any }) => {
         console.log(props.value);
         snackbar.showMessage({ severity: "success", children: `Done. See console` });
     };
-    return <div className="toolbar" style={{ position: "absolute", right: 0, display: "flex", opacity: "15%" }}>
+    return <div className="toolbar" style={{ position: "absolute", right: 0, display: "flex" }}>
         <Tooltip title={"copy"}><div className="interactable" onClick={handleCopy}>{gIconMap.ContentCopy()}</div></Tooltip>
-        <Tooltip title={"dump to console"}><div className="interactable" onClick={handleDump}>{gIconMap.Visibility()}</div></Tooltip>
+        <Tooltip title={"dump to console"}><div className="interactable" onClick={handleDump}>{gIconMap.Terminal()}</div></Tooltip>
+        <Tooltip title={"expand"}><div className="interactable" onClick={() => props.onExpand()}>{gIconMap.Launch()}</div></Tooltip>
     </div>;
 };
 
+
+const AdminLogAsyncInfoChip = ({ pk, tableName, cacheData }: { pk: number, tableName: string, cacheData: ActivityLogCacheData }) => {
+    const [result] = useQuery(getAdminLogItemInfo, { pk, tableName });
+
+    if (result.eventId) {
+        return <ActivityLogEvent cacheData={cacheData} eventId={result.eventId} />;
+    }
+    return null;
+};
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const ActivityLogValueViewer = ({ value, cacheData, tableName }: ActivityLogValueViewerProps<any>) => {
+const AdminLogPkValue = ({ tableName, pk, cacheData }: { tableName: string, pk: number, cacheData: ActivityLogCacheData }) => {
+    switch (tableName.toLowerCase()) {
+        case 'event':
+            return <ActivityLogEvent cacheData={cacheData} eventId={pk} />;
+        case 'song':
+            return <ActivityLogSong cacheData={cacheData} songId={pk} />;
+        case 'eventtype':
+            return <ActivityLogEventType cacheData={cacheData} eventTypeId={pk} />;
+        case 'eventtag':
+            return <ActivityLogEventTag cacheData={cacheData} eventTagId={pk} />;
+        case 'eventstatus':
+            return <ActivityLogEventStatus cacheData={cacheData} eventStatusId={pk} />;
+        case 'user':
+            return <ActivityLogUserChip cacheData={cacheData} userId={pk} />;
+        case 'eventsonglist:songs':
+        case 'eventsonglist':
+            return <ActivityLogSongListEventChip cacheData={cacheData} songListId={pk} />
+        case 'eventsegmentuserresponse':
+        case 'eventuserresponse':
+            return <Suspense fallback={<div className="lds-dual-ring"></div>}>
+                <AdminLogAsyncInfoChip pk={pk} tableName={tableName} cacheData={cacheData} />
+            </Suspense>
+        //return JSON.stringify <ActivityLogEventSegment cacheData={cacheData} userId={pk} />;
+
+    }
+    return pk;
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const ActivityLogMarkdownViewerDialog = ({ value, onClose }: { value: string, onClose: () => void }) => {
+    return <ReactiveInputDialog onCancel={onClose}>
+        <DialogContent>
+            <Markdown markdown={value} />
+        </DialogContent>
+    </ReactiveInputDialog>;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const ActivityLogMarkdownValue = ({ value }: { value: string }) => {
+    const [open, setOpen] = React.useState<boolean>();
+    return <div className="ActivityLogMarkdownValue">
+        <Tooltip title={<Markdown markdown={value} />} followCursor>
+            <div>
+                <CMSmallButton onClick={() => setOpen(true)}>{value}</CMSmallButton>
+            </div>
+        </Tooltip>
+        {open && <ActivityLogMarkdownViewerDialog value={value} onClose={() => setOpen(false)} />}
+    </div>;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const ActivityLogKeyValueTable = ({ value, cacheData, tableName }: ActivityLogValueViewerProps<any>) => {
+    const IsMarkdownField = (key: string, value: any) => {
+        return (typeof (value) === "string") && /comment|description|markdown/i.test(key);
+    };
 
     // Helper function to render value or component based on key
     const renderValue = (key: string, value: any) => {
@@ -375,31 +473,27 @@ export const ActivityLogValueViewer = ({ value, cacheData, tableName }: Activity
                             return <span>{JSON.stringify(value, null, 2)}</span>;
                     }
                 }
-            default:
-                return <span>{JSON.stringify(value, null, 2)}</span>;
         }
+        if (IsMarkdownField(key, value)) {
+            return <ActivityLogMarkdownValue value={value} />
+        }
+        return <span>{JSON.stringify(value, null, 2)}</span>;
     };
 
-    if (value === null) return "null";
-    if (value === undefined) return "undefined";
-    if (JSON.stringify(value) === "{}") return "{}";
+    if (value === null) return <div className="ActivityLogKeyValueTable">null</div>;
+    if (value === undefined) return <div className="ActivityLogKeyValueTable">undefined</div>;
+
+    // a simple scalar value?
     if (typeof value !== "object") {
-        return <div className="JSONStringColumnClient viewer">
-            <Toolbar value={value} />
+        return <div className="ActivityLogKeyValueTable">
+            {/* <Toolbar value={value} /> */}
             <pre>{JSON.stringify(value, null, 2)}</pre>
         </div>;
     }
 
-    if (tableName.toLowerCase() === "eventsonglist:songs") {
-        return <div className="JSONStringColumnClient viewer">
-            <Toolbar value={value} />
-            <ActivityLogSongListViewer value={value as any} cacheData={cacheData} />
-        </div>
-    }
-
     return (
-        <div className="JSONStringColumnClient viewer">
-            <Toolbar value={value} />
+        <div className="ActivityLogKeyValueTable">
+            {/* <Toolbar value={value} /> */}
             {Object.entries(value).map(([key, val], index) => (
                 // use chip container to make the chips inline
                 <CMChipContainer key={index} style={{ flexWrap: "nowrap" }}>
@@ -410,8 +504,53 @@ export const ActivityLogValueViewer = ({ value, cacheData, tableName }: Activity
     );
 
 
-
 };
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const ActivityLogValueViewer = ({ value, cacheData, tableName }: ActivityLogValueViewerProps<any>) => {
+    const [open, setOpen] = React.useState<boolean>();
+
+    if (value === null) return <div className="JSONStringColumnClient viewer">null</div>;
+    if (value === undefined) return <div className="JSONStringColumnClient viewer">undefined</div>;
+
+    if (typeof value !== "object") {
+        return <div className="JSONStringColumnClient viewer">
+            <Toolbar value={value} onExpand={() => setOpen(true)} />
+            <pre>{JSON.stringify(value, null, 2)}</pre>
+            {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+                <DialogContent>
+                    <div className="pre">{JSON.stringify(value, null, 2)}</div>
+                </DialogContent>
+            </ReactiveInputDialog>}
+        </div>;
+    }
+
+    if (tableName.toLowerCase() === "eventsonglist:songs" || tableName.toLowerCase() === "eventsonglist") {
+        return <div className="JSONStringColumnClient viewer">
+            <Toolbar value={value} onExpand={() => setOpen(true)} />
+            <ActivityLogSongListViewer value={value as any} cacheData={cacheData} />
+            {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+                <DialogContent>
+                    <ActivityLogSongListViewer value={value as any} cacheData={cacheData} />
+                </DialogContent>
+            </ReactiveInputDialog>}
+        </div>
+    }
+
+    return <div className="JSONStringColumnClient viewer">
+        <Toolbar value={value} onExpand={() => setOpen(true)} />
+        <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} />
+        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+            <DialogContent>
+                <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} />
+            </DialogContent>
+        </ReactiveInputDialog>}
+    </div>;
+};
+
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface JSONStringColumnClientArgs {
@@ -430,7 +569,7 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
             columnName: args.columnName,
             editable: true,
             headerName: args.columnName,
-            width: 350,
+            width: 400,
             visible: true,
             className: undefined,
             isAutoFocusable: true,
@@ -452,12 +591,16 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
             editable: false,
             renderCell: (params: GridRenderCellParams) => {
                 let asObj: any = undefined;
+                const row = params.row as Prisma.ChangeGetPayload<{}>;
                 try {
                     asObj = JSON.parse(params.value);
                 } catch (e) {
                     asObj = "<parse error>";
                 }
-                return <ActivityLogValueViewer tableName={(params.row as TRow).table} value={asObj} cacheData={this.cacheData} />;
+                return <div className="adminLogJSONValue">
+                    <AdminLogPkValue cacheData={this.cacheData} pk={row.recordId} tableName={row.table} />
+                    <ActivityLogValueViewer tableName={(params.row as TRow).table} value={asObj} cacheData={this.cacheData} />
+                </div>;
             },
         };
     };
@@ -468,82 +611,6 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
         value={params.value}
         fieldName={this.columnName}
         isReadOnly={false}
-    />;
-
-    renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => <div>(unsupported render style)</div>;
-};
-
-
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const AdminLogPkValue = ({ tableName, pk, cacheData }: { tableName: string, pk: number, cacheData: ActivityLogCacheData }) => {
-    switch (tableName.toLowerCase()) {
-        case 'event':
-            return <ActivityLogEvent cacheData={cacheData} eventId={pk} />;
-        case 'song':
-            return <ActivityLogSong cacheData={cacheData} songId={pk} />;
-        case 'eventtype':
-            return <ActivityLogEventType cacheData={cacheData} eventTypeId={pk} />;
-        case 'eventtag':
-            return <ActivityLogEventTag cacheData={cacheData} eventTagId={pk} />;
-        case 'eventstatus':
-            return <ActivityLogEventStatus cacheData={cacheData} eventStatusId={pk} />;
-        case 'user':
-            return <ActivityLogUserChip cacheData={cacheData} userId={pk} />;
-    }
-    return pk;
-};
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface AdminLogPkColumnArgs {
-    columnName: string;
-    cellWidth: number;
-    cacheData: ActivityLogCacheData;
-};
-
-export class AdminLogPkColumnClient extends DB3ClientCore.IColumnClient {
-
-    cacheData: ActivityLogCacheData;
-
-    constructor(args: AdminLogPkColumnArgs) {
-        super({
-            columnName: args.columnName,
-            editable: true,
-            headerName: args.columnName,
-            isAutoFocusable: true,
-            width: args.cellWidth,
-            visible: true,
-            className: undefined,
-            fieldCaption: undefined,
-            fieldDescriptionSettingName: undefined,
-        });
-        this.cacheData = args.cacheData;
-    }
-    ApplyClientToPostClient = undefined;
-
-    onSchemaConnected = (tableClient: DB3ClientCore.xTableRenderClient) => {
-        this.GridColProps = {
-            type: "string", // we will do our own number conversion
-            editable: false,
-            renderCell: (params: GridRenderCellParams) => {
-                let asObj: any = undefined;
-                return <AdminLogPkValue tableName={(params.row as TRow).table} pk={params.value} cacheData={this.cacheData} />;
-            },
-        };
-    };
-
-    renderViewer = (params: DB3ClientCore.RenderViewerArgs<number>) => <NameValuePair
-        className={params.className}
-        name={this.columnName}
-        value={params.value}
-        isReadOnly={!this.editable}
-        fieldName={this.columnName}
     />;
 
     renderForNewDialog = (params: DB3ClientCore.RenderForNewItemDialogArgs) => <div>(unsupported render style)</div>;

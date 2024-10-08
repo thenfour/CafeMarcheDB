@@ -34,6 +34,7 @@ export default resolver.pipe(
                 select: {
                     id: true,
                     name: true,
+                    startsAt: true,
                 }
             });
 

@@ -325,7 +325,7 @@ export const Markdown = (props: MarkdownProps) => {
 
         const onComponentAdd = () => {
             expectedComponentCount.current++;
-            console.log(`oncomponent add; ${expectedComponentCount.current}`);
+            //console.log(`oncomponent add; ${expectedComponentCount.current}`);
         }
         md.use(md => markdownItReactInline(md, onComponentAdd));
         md.use(md => markdownItReactBlock(md, onComponentAdd));
@@ -347,7 +347,7 @@ export const Markdown = (props: MarkdownProps) => {
             const nodes = Array.from(allNodes).filter(el => !el.getAttribute('data-rendered'));
 
             // count all nodes in case of weird reloads; expected component count bases itself on the TOTAL
-            console.log(`processing ${allNodes.length} nodes; expecting ${expectedComponentCount.current}`);
+            //console.log(`processing ${allNodes.length} nodes; expecting ${expectedComponentCount.current}`);
 
             nodes.forEach(node => {
                 const componentName = node.getAttribute('data-component');

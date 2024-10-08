@@ -1,5 +1,6 @@
 
 import { BlitzPage } from "@blitzjs/next";
+import { useMutation } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
@@ -15,6 +16,8 @@ import { mapWorkflowDef } from "src/core/components/WorkflowUserComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
+import insertOrUpdateWorkflowDefMutation from "src/core/db3/mutations/insertOrUpdateWorkflowDefMutation";
+import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
@@ -68,6 +71,86 @@ const WorkflowDefEditor = (props: WorkflowDefEditorProps) => {
 //     </div>;
 // };
 
+
+function WorkflowDefToMutationArgs(def: WorkflowDef): TinsertOrUpdateWorkflowDefArgs {
+    const { id, description, isDefaultForEvents, color, name, sortOrder } = def;
+    return {
+        id,
+        description: description || "",
+        isDefaultForEvents,
+        color,
+        name,
+        sortOrder,
+        groups: def.groupDefs.map(groupDef => {
+            const { id, color, name, height, position, selected, width } = groupDef;
+            return {
+                id, color, name, height, selected, width,
+                description: "",
+                positionX: position.x,
+                positionY: position.y,
+            };
+        }),
+        nodes: def.nodeDefs.map(nodeDef => {
+            const { id, name, height, width, position,
+                activationCriteriaType,
+                completionCriteriaType,
+                displayStyle,
+                fieldValueOperand2,
+                manualCompletionStyle,
+                relevanceCriteriaType,
+                selected,
+                thisNodeProgressWeight,
+                defaultDueDateDurationDaysAfterStarted,
+                fieldName,
+                fieldValueOperator,
+
+            } = nodeDef;
+            return {
+                id,
+                name,
+                description: "",
+                width,
+                height,
+                positionX: position.x,
+                positionY: position.y,
+                activationCriteriaType,
+                completionCriteriaType,
+                displayStyle,
+                fieldValueOperand2: JSON.stringify(fieldValueOperand2),
+                manualCompletionStyle,
+                relevanceCriteriaType,
+                selected,
+                thisNodeProgressWeight,
+                defaultDueDateDurationDaysAfterStarted,
+                fieldName,
+                fieldValueOperator,
+                groupId: nodeDef.groupDefId,
+
+                dependencies: nodeDef.nodeDependencies.map(dep => {
+                    const { selected,
+                        determinesRelevance,
+                        determinesActivation,
+                        determinesCompleteness,
+                        nodeDefId } = dep;
+
+                    return {
+                        selected,
+                        determinesRelevance,
+                        determinesActivation,
+                        determinesCompleteness,
+                        nodeDefId,
+                    };
+                }),
+                defaultAssignees: nodeDef.defaultAssignees.map(da => {
+                    return {
+                        userId: da.userId,
+                    };
+                }),
+            };
+        }),
+    };
+}
+
 type ModeOption = "empty" | "new" | "edit";
 
 const WorkflowDefEditorMain = () => {
@@ -82,6 +165,8 @@ const WorkflowDefEditorMain = () => {
     };
 
     const dashboardContext = useDashboardContext();
+
+    const [saveMutation] = useMutation(insertOrUpdateWorkflowDefMutation);
 
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
@@ -145,7 +230,9 @@ const WorkflowDefEditorMain = () => {
                     try {
                         console.log(`saving workflow def...`);
                         console.log(val);
-                        snackbar.showMessage({ severity: "error", children: "not implemented" });
+                        //snackbar.showMessage({ severity: "error", children: "not implemented" });
+                        const result = await saveMutation(WorkflowDefToMutationArgs(val));
+                        snackbar.showMessage({ severity: "success", children: "Saved successfully" });
                     } catch (e) {
                         console.log(e);
                         snackbar.showMessage({ severity: "error", children: "Error occurred; see console." });
