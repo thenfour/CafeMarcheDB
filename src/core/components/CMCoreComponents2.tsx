@@ -1,7 +1,7 @@
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
-import { Box, Button, CircularProgress, CircularProgressProps, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, Typography } from "@mui/material";
 import React from "react";
 
 import { useRouter } from "next/router";
@@ -366,3 +366,32 @@ export function useURLState<T extends Serializable>(
 
     return [state, setState];
 }
+
+
+interface CMAccordionProps {
+    thisTabId: number;
+    selectedTabId: number;
+    handleTabChange: (e: React.SyntheticEvent, newTabId: number) => void;
+
+    summaryIcon: React.ReactNode;
+    summaryTitle: React.ReactNode;
+    summarySubtitle?: React.ReactNode;
+};
+
+export const CMAccordion = (props: React.PropsWithChildren<CMAccordionProps>) => {
+    return <Accordion
+        elevation={1}
+        onChange={(e, expanded) => props.handleTabChange(e, expanded ? props.thisTabId : -1)}
+        expanded={props.selectedTabId === props.thisTabId}>
+        <AccordionSummary expandIcon={gIconMap.ExpandMore()}>
+            <div className='EventAccordionSummaryTitle'>
+                {props.summaryIcon}
+                <div className='title'>{props.summaryTitle}</div>
+                {props.summarySubtitle && <div className='subtitle'>{props.summarySubtitle}</div>}
+            </div>
+        </AccordionSummary>
+        <AccordionDetails>
+            {props.children}
+        </AccordionDetails>
+    </Accordion>
+};

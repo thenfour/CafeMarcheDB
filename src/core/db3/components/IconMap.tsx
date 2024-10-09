@@ -60,6 +60,7 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import TuneIcon from '@mui/icons-material/Tune';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React from "react";
 import { TIconOptions } from "shared/utils";
 import { AccountTree, Alarm, Notifications, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
@@ -67,6 +68,30 @@ import { AccountTree, Alarm, Notifications, VolumeDown, VolumeOff, VolumeUp } fr
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
 // };
+
+
+// https://www.svgrepo.com/svg/67252/trumpet
+const TrumpetIcon = ({ color = 'currentColor', size = 24, ...props }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 512 512"
+        transform='rotate(-45)'
+        fill={color}
+        {...props}
+    >
+        <path d="M478.609,150.261v24.69c-21.811,14.64-94.102,58.789-172.522,58.789h-31.801v-27.826h-33.391v27.826h-11.13v-27.826
+          h-33.391v27.826h-11.13v-27.826h-33.391v27.826H33.391v-16.696H0v66.783h33.391V267.13h61.705
+          c-1.853,5.226-2.872,10.843-2.872,16.696c0,27.619,22.469,50.087,50.087,50.087h9.54v27.826h33.391v-27.826h11.13v27.826h33.391
+          v-27.826h11.13v27.826h33.391v-27.826h9.54c27.619,0,50.087-22.468,50.087-50.087c0-5.296-0.833-10.399-2.363-15.194
+          c68.006,7.841,127.604,44.284,147.059,57.303v24.674H512V150.261H478.609z M151.85,300.522h-9.54
+          c-9.206,0-16.696-7.489-16.696-16.696c0-9.206,7.49-16.696,16.696-16.696h9.54V300.522z M196.373,300.522h-11.13V267.13h11.13
+          V300.522z M240.895,300.522h-11.13V267.13h11.13V300.522z M283.826,300.522h-9.54V267.13h9.54c9.207,0,16.696,7.49,16.696,16.696
+          C300.522,293.033,293.033,300.522,283.826,300.522z"/>
+    </svg>
+);
+
 
 // keep in sync with export const gIconOptions = 
 export const gIconMap /*: IIconMap*/ = {
@@ -93,6 +118,7 @@ export const gIconMap /*: IIconMap*/ = {
     EditNote: () => <EditNoteIcon />,
     Error: () => <ErrorIcon />,
     ErrorOutline: () => <ErrorOutlineIcon />,
+    ExpandMore: () => <ExpandMoreIcon />,
     Favorite: () => <FavoriteIcon />,
     GraphicEq: () => <GraphicEqIcon />,
     Group: () => <GroupIcon />,
@@ -131,6 +157,7 @@ export const gIconMap /*: IIconMap*/ = {
     Terminal: () => <TerminalIcon />,
     ThumbDown: () => <ThumbDownIcon />,
     ThumbUp: () => <ThumbUpIcon />,
+    Trumpet: () => <TrumpetIcon />,
     Tune: () => <TuneIcon />,
     Visibility: () => <VisibilityIcon />,
     VisibilityOff: () => <VisibilityOffIcon />,

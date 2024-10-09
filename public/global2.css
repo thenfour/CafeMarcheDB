@@ -2571,7 +2571,62 @@ i.placeholder {
     animation: lds-dual-ring 1.2s linear infinite;
 }
 
-/* act a little */
 .ActivityLogKeyValueTable {
     font-family: monospace;
+}
+
+
+
+.EventDetailFullAccordionArea .MuiAccordionSummary-content {
+    /* the default content area is way too tall*/
+    margin: 0;
+}
+
+.EventDetailFullAccordionArea .MuiAccordionSummary-root {
+    background-color: #eee;
+    min-height: 50px;
+}
+
+.EventAccordionSummaryTitle {
+    display: flex;
+    align-items: center;
+    color: var(--cm-blue);
+    opacity: 70%;
+}
+
+.EventAccordionSummaryTitle>* {
+    margin-right: 10px;
+}
+
+.EventAccordionSummaryTitle .title {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 17px;
+}
+
+.EventAccordionSummaryTitle .subtitle {
+    font-weight: normal;
+    color: #888;
+    font-size: 14px;
+
+}
+
+
+.EventDetailFullAccordionArea .Mui-expanded .MuiAccordionSummary-root {
+    /* border: 2px solid black; */
+    /* border-bottom: 0; */
+    /* border-top-left-radius: 3px;
+    border-top-right-radius: 3px; */
+    background-color: #ddf;
+}
+
+.EventDetailFullAccordionArea .Mui-expanded .MuiCollapse-root {
+    border: 2px solid #ddf;
+    border-top: 0;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+.EventDetailFullAccordionArea .Mui-expanded .EventAccordionSummaryTitle {
+    color: black;
 }
