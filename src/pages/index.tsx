@@ -83,9 +83,9 @@ const PublicIndex: BlitzPage = () => {
 
     const [userSelectedLang, setUserSelectedLang] = React.useState<EnNlFr | null>(null);
 
-    const handleManualLangChange = (newLang: EnNlFr) => {
-        router.push(router.pathname, router.asPath, { locale: newLang });
+    const handleManualLangChange = async (newLang: EnNlFr) => {
         setUserSelectedLang(newLang);
+        await router.push(router.pathname, router.asPath, { locale: newLang });
     };
 
     const lang = userSelectedLang || toEnNlFr(locale) || "en";

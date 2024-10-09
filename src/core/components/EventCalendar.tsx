@@ -159,7 +159,7 @@ const CustomEventWrapper = (props: React.PropsWithChildren<CustomEventWrapperPro
     const y = CalcEventAttendance({
         eventData,
         userMap,
-        alertOnly: false,
+        //alertOnly: false,
     });
 
     return <Tooltip title={db3.EventAPI.getLabel(eventData.event)} disableInteractive>

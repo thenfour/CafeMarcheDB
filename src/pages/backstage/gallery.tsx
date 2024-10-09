@@ -322,7 +322,7 @@ const MainContent = () => {
             <div style={{ backgroundColor: "#c4c", padding: "10px" }}>
                 <div style={{ backgroundColor: "white", padding: "10px" }}>
                     <SongAutocomplete
-                        index={0}
+                        //index={0}
                         value={songValue}
                         onChange={(value) => setSongValue(value as any)}
                     />

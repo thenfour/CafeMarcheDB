@@ -589,7 +589,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
     const formattedBPM = enrichedSong ? API.songs.getFormattedBPM(enrichedSong) : "";
 
     const style = {
-        "--song-hash-color": getHashedColor(props.value.type === "song" ? props.value.song.name : "" || ""),
+        "--song-hash-color": getHashedColor(props.value.type === "song" ? props.value.song.name : ""),
     };
 
     const handleNewDivider = () => {
