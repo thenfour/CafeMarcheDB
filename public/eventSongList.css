@@ -116,7 +116,13 @@
     margin-bottom: 3px; */
     /* background-color: #0001; */
     /* slope of 4/5 is nice and pretty, close enough to 45 deg. in fact 45 deg looks kinda terrible because it tries to be perfect but doesn't render so.*/
-    background-image: repeating-linear-gradient(-38.66deg, #0001 0 1.5px, transparent 1.5px 7.5px);
+    /* background-image: repeating-linear-gradient(-38.66deg, #0001 0 1.5px, transparent 1.5px 7.5px); */
+
+    /* mimicing vs code diff diagonal-fill. very clean and pretty, only limitation is it's locked to 45 degrees. */
+    --fc: #0001;
+    --bc: transparent;
+    background-image: linear-gradient(-45deg, var(--fc) 0%, var(--fc) 12.5%, var(--bc) 12.5%, var(--bc) 50%, var(--fc) 50%, var(--fc) 62.5%, var(--bc) 62.5%, var(--bc) 100%);
+    background-size: 8px 8px;
 }
 
 .songListSongTable .td.icon {

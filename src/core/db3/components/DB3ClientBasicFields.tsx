@@ -45,7 +45,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
             editable: false,
             headerName: args.columnName,
             visible: true,
-            width: 40,
+            width: 70,
             className: undefined,
             fieldCaption: "id",
             isAutoFocusable: false,
