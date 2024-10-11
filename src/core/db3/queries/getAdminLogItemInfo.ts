@@ -37,6 +37,27 @@ export default resolver.pipe(
                             eventId: eur.eventId,
                         }
                     }
+                case 'file':
+                    {
+                        const file = await db.file.findFirst({
+                            where: { id: input.pk },
+                            include: {
+                                taggedEvents: true,
+                                taggedInstruments: true,
+                                taggedSongs: true,
+                                taggedUsers: true,
+                            }
+                        });
+                        if (!file) break;
+                        const { taggedEvents, taggedInstruments, taggedSongs, taggedUsers, ...basicFile } = file;
+                        return {
+                            eventIds: file.taggedEvents.map(e => e.eventId),
+                            instrumentIds: file.taggedInstruments.map(e => e.instrumentId),
+                            songIds: file.taggedSongs.map(e => e.songId),
+                            userIds: file.taggedUsers.map(e => e.userId),
+                            file: basicFile,
+                        };
+                    }
             }
             return {
             };

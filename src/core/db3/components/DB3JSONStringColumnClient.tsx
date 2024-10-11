@@ -99,7 +99,7 @@ const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId
     if (!foundEvent) {
         return <ActivityLogChip><Id value={foundSegment.eventId} />, seg:{foundSegment.id}</ActivityLogChip>;
     }
-    return <ActivityLogChip>{foundEvent.name}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
+    return <ActivityLogChip uri={getURIForEvent(foundEvent.id)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
 };
 
 const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
@@ -247,6 +247,14 @@ const ActivityLogInstrument = ({ instrumentId, cacheData }: { instrumentId: numb
     </ActivityLogChip>;
 };
 
+const ActivityLogFile = ({ file, cacheData }: { file: Prisma.FileGetPayload<{}>, cacheData: ActivityLogCacheData }) => {
+    const dashboardContext = useDashboardContext();
+    return <ActivityLogChip
+    >
+        {file.fileLeafName}#{file.id}
+    </ActivityLogChip>;
+};
+
 
 type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number, sortOrder: number, subtitle: string, type: "song" };
 type ActivityLogSongListDividerPayload = { id?: number | undefined, sortOrder: number, subtitle: string, type: "div" };
@@ -366,11 +374,33 @@ const Toolbar = (props: { value: any, onExpand: () => void }) => {
 
 const AdminLogAsyncInfoChip = ({ pk, tableName, cacheData }: { pk: number, tableName: string, cacheData: ActivityLogCacheData }) => {
     const [result] = useQuery(getAdminLogItemInfo, { pk, tableName });
+    const nodes: React.ReactNode[] = [];
+
+    if (result.file) {
+        const tags: React.ReactNode[] = [];
+        if (result.eventIds) {
+            tags.push(...result.eventIds.map((eid, i) => <ActivityLogEvent key={i} cacheData={cacheData} eventId={eid} />));
+        }
+        if (result.userIds) {
+            tags.push(...result.userIds.map((uid, i) => <ActivityLogUserChip key={i} cacheData={cacheData} userId={uid} />));
+        }
+        if (result.instrumentIds) {
+            tags.push(...result.instrumentIds.map((iid, i) => <ActivityLogInstrument key={i} cacheData={cacheData} instrumentId={iid} />));
+        }
+        return <div style={{ border: "1px solid black" }}>
+            <strong>file:</strong>
+            <ActivityLogFile cacheData={cacheData} file={result.file} />
+            <div>
+                <strong>tags:</strong>
+                {tags}
+            </div>
+        </div>;
+    }
 
     if (result.eventId) {
-        return <ActivityLogEvent cacheData={cacheData} eventId={result.eventId} />;
+        nodes.push(<ActivityLogEvent cacheData={cacheData} eventId={result.eventId} />);
     }
-    return null;
+    return nodes;
 };
 
 
@@ -378,6 +408,7 @@ const AdminLogAsyncInfoChip = ({ pk, tableName, cacheData }: { pk: number, table
 const AdminLogPkValue = ({ tableName, pk, cacheData }: { tableName: string, pk: number, cacheData: ActivityLogCacheData }) => {
     switch (tableName.toLowerCase()) {
         case 'event':
+        case 'event:eventcustomfieldvalue':
             return <ActivityLogEvent cacheData={cacheData} eventId={pk} />;
         case 'song':
             return <ActivityLogSong cacheData={cacheData} songId={pk} />;
@@ -392,8 +423,11 @@ const AdminLogPkValue = ({ tableName, pk, cacheData }: { tableName: string, pk: 
         case 'eventsonglist:songs':
         case 'eventsonglist':
             return <ActivityLogSongListEventChip cacheData={cacheData} songListId={pk} />
+        case 'eventsegment':
+            return <ActivityLogEventSegment cacheData={cacheData} eventSegmentId={pk} />
         case 'eventsegmentuserresponse':
         case 'eventuserresponse':
+        case 'file':
             return <Suspense fallback={<div className="lds-dual-ring"></div>}>
                 <AdminLogAsyncInfoChip pk={pk} tableName={tableName} cacheData={cacheData} />
             </Suspense>

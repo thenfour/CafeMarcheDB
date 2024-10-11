@@ -380,6 +380,10 @@ interface CMAccordionProps {
 
 export const CMAccordion = (props: React.PropsWithChildren<CMAccordionProps>) => {
     return <Accordion
+        TransitionProps={{
+            timeout: 100
+        }}
+        disableGutters
         elevation={1}
         onChange={(e, expanded) => props.handleTabChange(e, expanded ? props.thisTabId : -1)}
         expanded={props.selectedTabId === props.thisTabId}>
