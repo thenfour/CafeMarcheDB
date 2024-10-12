@@ -22,7 +22,7 @@ import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
 import { GetICalRelativeURIForUserAndEvent, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { AdminInspectObject, AttendanceChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps } from './CMCoreComponents';
-import { CMAccordion, CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMAccordion, CMDialogContentText, CMTab, CMTabPanel, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, useDashboardContext } from './DashboardContext';
@@ -1071,15 +1071,16 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
     </div>;
 };
 
+// an list of slugs
 export const gEventDetailTabSlugIndices = {
-    "none": -1,
-    "info": 0,
-    "set-lists": 1,
-    "attendance": 2,
-    "completeness": 3,
-    "files": 4,
-    "frontpage": 5,
-    "workflow": 6,
+    "none": "none",
+    "info": "info",
+    "setlists": "setlists",
+    "attendance": "attendance",
+    "completeness": "completeness",
+    "files": "files",
+    "frontpage": "frontpage",
+    "workflow": "workflow",
 } as const;
 
 export interface EventDetailContainerProps {
@@ -1271,101 +1272,214 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
 export interface EventDetailFullProps {
     event: EventEnrichedVerbose_Event,
     tableClient: DB3Client.xTableRenderClient;
-    initialTabIndex?: number;
+    initialTabIndex?: string;
     readonly: boolean;
 };
 
 type EventDetailFullTabAreaProps = EventDetailFullProps & {
-    selectedTab: number;
-    setSelectedTab: (v: number) => void;
+    selectedTab: string;
+    setSelectedTab: (v: string) => void;
     refetch: () => void;
     eventData: VerboseEventWithMetadata;
     userMap: db3.UserInstrumentList;
 };
 
-export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
+// export const EventDetailFullTabArea = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
+//     const dashboardContext = React.useContext(DashboardContext);
+
+//     const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
+//         props.setSelectedTab(newValue);
+//     };
+
+//     const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => {
+//         return eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => {
+//             const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
+//             return acc + ((((att?.strength || 0) > 50) ? 1 : 0))
+//         }, 0);
+//     });
+//     const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${segmentResponseCounts.join(",")})` : "";
+
+//     const enrichedFiles = eventData.event.fileTags.map(ft => {
+//         return {
+//             ...ft,
+//             file: db3.enrichFile(ft.file, dashboardContext),
+//         };
+//     });
+
+//     return <>
+
+//         <Tabs
+//             value={selectedTab}
+//             onChange={handleTabChange}
+//             variant="scrollable"
+//             scrollButtons="auto"
+//         >
+//             <Tab label="Info" {...TabA11yProps('event', 0)} />
+//             <Tab label="Workflow" {...TabA11yProps('event', 1)} />
+//             <Tab label={`Setlists (${event.songLists.length})`} {...TabA11yProps('event', 2)} />
+//             <Tab label={`Responses ${segmentResponseCountStr}`} {...TabA11yProps('event', 3)} />
+//             <Tab label={`By Instrument`} {...TabA11yProps('event', 4)} />
+//             <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 5)} />
+//             <Tab label={`Frontpage`} {...TabA11yProps('event', 6)} />
+//         </Tabs>
+
+//         <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
+//             <div className='descriptionLine'>
+//                 <Suspense>
+//                     <EventCustomFieldsControl event={event} readonly={props.readonly} />
+//                 </Suspense>
+//                 <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
+//             </div>
+//         </CustomTabPanel>
+
+//         {/* <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
+//             <WorkflowEditorPOC />
+//         </CustomTabPanel> */}
+
+//         <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
+//             <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+//         </CustomTabPanel>
+
+//         <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
+//             <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
+//             <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
+//         </CustomTabPanel>
+
+//         <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
+//             <SettingMarkdown setting='EventCompletenessTabMarkdown' />
+//             <EventCompletenessTabContent eventData={eventData} userMap={userMap} />
+//         </CustomTabPanel>
+
+//         <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
+//             {/* <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} /> */}
+//             <FilesTabContent fileTags={enrichedFiles} uploadTags={{
+//                 taggedEventId: event.id,
+//             }} refetch={refetch} readonly={props.readonly} />
+//         </CustomTabPanel>
+
+//         <CustomTabPanel tabPanelID='event' value={selectedTab} index={6}>
+//             <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
+//         </CustomTabPanel>
+//     </>;
+// }
+
+// export const EventDetailFullAccordionArea = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
+//     const dashboardContext = React.useContext(DashboardContext);
+
+//     const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
+//         props.setSelectedTab(newValue);
+//     };
+
+//     const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => {
+//         return eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => {
+//             const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
+//             return acc + ((((att?.strength || 0) > 50) ? 1 : 0))
+//         }, 0);
+//     });
+//     const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${segmentResponseCounts.join(" - ")})` : "";
+
+//     const enrichedFiles = eventData.event.fileTags.map(ft => {
+//         return {
+//             ...ft,
+//             file: db3.enrichFile(ft.file, dashboardContext),
+//         };
+//     });
+//     const elevation = 1;
+
+//     return <div className='EventDetailFullAccordionArea'>
+
+//         <CMAccordion
+//             handleTabChange={handleTabChange}
+//             selectedTabId={selectedTab}
+//             summaryIcon={gIconMap.Info()}
+//             summaryTitle="Info"
+//             thisTabId={gEventDetailTabSlugIndices.info}
+//         >
+//             <div className='descriptionLine'>
+//                 <Suspense>
+//                     <EventCustomFieldsControl event={event} readonly={props.readonly} />
+//                 </Suspense>
+//                 <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
+//             </div>
+//         </CMAccordion>
+
+//         <CMAccordion
+//             handleTabChange={handleTabChange}
+//             selectedTabId={selectedTab}
+//             summaryIcon={gIconMap.AccountTree()}
+//             summaryTitle="Workflow"
+//             thisTabId={gEventDetailTabSlugIndices.workflow}
+//         >
+//         </CMAccordion>
+
+//         <CMAccordion
+//             thisTabId={gEventDetailTabSlugIndices['set-lists']}
+//             handleTabChange={handleTabChange}
+//             selectedTabId={selectedTab}
+//             summaryIcon={gIconMap.LibraryMusic()}
+//             summaryTitle="Setlists"
+//             summarySubtitle={<>({event.songLists.length})</>}
+//         >
+//             <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
+//         </CMAccordion>
+
+//         <CMAccordion
+//             thisTabId={gEventDetailTabSlugIndices.completeness}
+//             handleTabChange={handleTabChange}
+//             selectedTabId={selectedTab}
+//             summaryIcon={gIconMap.Trumpet()}
+//             summaryTitle="Responses by instrument"
+//         >
+//             <SettingMarkdown setting='EventCompletenessTabMarkdown' />
+//             <EventCompletenessTabContent eventData={eventData} userMap={userMap} />
+//         </CMAccordion>
+
+//         <CMAccordion
+//             thisTabId={gEventDetailTabSlugIndices.attendance}
+//             handleTabChange={handleTabChange}
+//             selectedTabId={selectedTab}
+//             summaryIcon={gIconMap.ThumbUp()}
+//             summaryTitle="All responses"
+//             summarySubtitle={segmentResponseCountStr}
+//         >
+//             <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
+//             <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
+//         </CMAccordion>
+
+//         <CMAccordion
+//             thisTabId={gEventDetailTabSlugIndices.frontpage}
+//             handleTabChange={handleTabChange}
+//             selectedTabId={selectedTab}
+//             summaryIcon={gIconMap.Public()}
+//             summaryTitle="Frontpage"
+//             summarySubtitle={<>{eventData.event.frontpageVisible && gCharMap.Checkmark()}</>}
+//         >
+//             <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
+//         </CMAccordion>
+
+//         <CMAccordion
+//             thisTabId={gEventDetailTabSlugIndices.files}
+//             handleTabChange={handleTabChange}
+//             selectedTabId={selectedTab}
+//             summaryIcon={gIconMap.AttachFile()}
+//             summaryTitle="Files"
+//             summarySubtitle={<>({event.fileTags.length})</>}
+//         >
+//             <FilesTabContent fileTags={enrichedFiles} uploadTags={{
+//                 taggedEventId: event.id,
+//             }} refetch={refetch} readonly={props.readonly} />
+//         </CMAccordion>
+
+//     </div>
+//         ;
+// };
+
+
+
+export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
-    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
-        props.setSelectedTab(newValue);
-    };
-
-    const segmentResponseCounts = !eventData.responseInfo ? [] : eventData.event.segments.map(seg => {
-        return eventData.responseInfo!.getResponsesForSegment(seg.id).reduce((acc, resp) => {
-            const att = dashboardContext.eventAttendance.getById(resp.response.attendanceId);
-            return acc + ((((att?.strength || 0) > 50) ? 1 : 0))
-        }, 0);
-    });
-    const segmentResponseCountStr = segmentResponseCounts.length > 0 ? `(${segmentResponseCounts.join(",")})` : "";
-
-    const enrichedFiles = eventData.event.fileTags.map(ft => {
-        return {
-            ...ft,
-            file: db3.enrichFile(ft.file, dashboardContext),
-        };
-    });
-
-    return <>
-
-        <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-        >
-            <Tab label="Info" {...TabA11yProps('event', 0)} />
-            <Tab label="Workflow" {...TabA11yProps('event', 1)} />
-            <Tab label={`Setlists (${event.songLists.length})`} {...TabA11yProps('event', 2)} />
-            <Tab label={`Responses ${segmentResponseCountStr}`} {...TabA11yProps('event', 3)} />
-            <Tab label={`By Instrument`} {...TabA11yProps('event', 4)} />
-            <Tab label={`Files (${event.fileTags.length})`} {...TabA11yProps('event', 5)} />
-            <Tab label={`Frontpage`} {...TabA11yProps('event', 6)} />
-        </Tabs>
-
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={0}>
-            <div className='descriptionLine'>
-                <Suspense>
-                    <EventCustomFieldsControl event={event} readonly={props.readonly} />
-                </Suspense>
-                <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
-            </div>
-        </CustomTabPanel>
-
-        {/* <CustomTabPanel tabPanelID='event' value={selectedTab} index={1}>
-            <WorkflowEditorPOC />
-        </CustomTabPanel> */}
-
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={2}>
-            <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
-        </CustomTabPanel>
-
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={3}>
-            <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
-            <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
-        </CustomTabPanel>
-
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={4}>
-            <SettingMarkdown setting='EventCompletenessTabMarkdown' />
-            <EventCompletenessTabContent eventData={eventData} userMap={userMap} />
-        </CustomTabPanel>
-
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={5}>
-            {/* <EventFilesTabContent event={event} refetch={refetch} readonly={props.readonly} /> */}
-            <FilesTabContent fileTags={enrichedFiles} uploadTags={{
-                taggedEventId: event.id,
-            }} refetch={refetch} readonly={props.readonly} />
-        </CustomTabPanel>
-
-        <CustomTabPanel tabPanelID='event' value={selectedTab} index={6}>
-            <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
-        </CustomTabPanel>
-    </>;
-}
-
-export const EventDetailFullAccordionArea = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
-
-    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = (e: React.SyntheticEvent, newValue: string) => {
         props.setSelectedTab(newValue);
     };
 
@@ -1383,13 +1497,13 @@ export const EventDetailFullAccordionArea = ({ eventData, refetch, selectedTab, 
             file: db3.enrichFile(ft.file, dashboardContext),
         };
     });
-    const elevation = 1;
+    //const elevation = 1;
 
-    return <div className='EventDetailFullAccordionArea'>
-
-        <CMAccordion
-            handleTabChange={handleTabChange}
-            selectedTabId={selectedTab}
+    return <CMTabPanel
+        handleTabChange={handleTabChange}
+        selectedTabId={selectedTab}
+    >
+        <CMTab
             summaryIcon={gIconMap.Info()}
             summaryTitle="Info"
             thisTabId={gEventDetailTabSlugIndices.info}
@@ -1400,66 +1514,54 @@ export const EventDetailFullAccordionArea = ({ eventData, refetch, selectedTab, 
                 </Suspense>
                 <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
             </div>
-        </CMAccordion>
+        </CMTab>
 
-        <CMAccordion
-            handleTabChange={handleTabChange}
-            selectedTabId={selectedTab}
+        <CMTab
             summaryIcon={gIconMap.AccountTree()}
             summaryTitle="Workflow"
             thisTabId={gEventDetailTabSlugIndices.workflow}
         >
-        </CMAccordion>
+        </CMTab>
 
-        <CMAccordion
-            thisTabId={gEventDetailTabSlugIndices['set-lists']}
-            handleTabChange={handleTabChange}
-            selectedTabId={selectedTab}
+        <CMTab
+            thisTabId={gEventDetailTabSlugIndices.setlists}
             summaryIcon={gIconMap.LibraryMusic()}
             summaryTitle="Setlists"
             summarySubtitle={<>({event.songLists.length})</>}
         >
             <EventSongListTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} />
-        </CMAccordion>
+        </CMTab>
 
-        <CMAccordion
+        <CMTab
             thisTabId={gEventDetailTabSlugIndices.completeness}
-            handleTabChange={handleTabChange}
-            selectedTabId={selectedTab}
             summaryIcon={gIconMap.Trumpet()}
-            summaryTitle="Responses by instrument"
+            summaryTitle="by instrument"
         >
             <SettingMarkdown setting='EventCompletenessTabMarkdown' />
             <EventCompletenessTabContent eventData={eventData} userMap={userMap} />
-        </CMAccordion>
+        </CMTab>
 
-        <CMAccordion
+        <CMTab
             thisTabId={gEventDetailTabSlugIndices.attendance}
-            handleTabChange={handleTabChange}
-            selectedTabId={selectedTab}
             summaryIcon={gIconMap.ThumbUp()}
-            summaryTitle="All responses"
+            summaryTitle="Responses"
             summarySubtitle={segmentResponseCountStr}
         >
             <SettingMarkdown setting='EventAttendanceDetailMarkdown' />
             <EventAttendanceDetail eventData={eventData} tableClient={tableClient} refetch={refetch} readonly={props.readonly} userMap={userMap} />
-        </CMAccordion>
+        </CMTab>
 
-        <CMAccordion
+        <CMTab
             thisTabId={gEventDetailTabSlugIndices.frontpage}
-            handleTabChange={handleTabChange}
-            selectedTabId={selectedTab}
             summaryIcon={gIconMap.Public()}
             summaryTitle="Frontpage"
             summarySubtitle={<>{eventData.event.frontpageVisible && gCharMap.Checkmark()}</>}
         >
             <EventFrontpageTabContent event={event} refetch={refetch} readonly={props.readonly} />
-        </CMAccordion>
+        </CMTab>
 
-        <CMAccordion
+        <CMTab
             thisTabId={gEventDetailTabSlugIndices.files}
-            handleTabChange={handleTabChange}
-            selectedTabId={selectedTab}
             summaryIcon={gIconMap.AttachFile()}
             summaryTitle="Files"
             summarySubtitle={<>({event.fileTags.length})</>}
@@ -1467,17 +1569,17 @@ export const EventDetailFullAccordionArea = ({ eventData, refetch, selectedTab, 
             <FilesTabContent fileTags={enrichedFiles} uploadTags={{
                 taggedEventId: event.id,
             }} refetch={refetch} readonly={props.readonly} />
-        </CMAccordion>
-
-    </div>
-        ;
+        </CMTab>
+    </CMTabPanel>
 };
+
+
 
 
 export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFullProps) => {
 
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices['set-lists'] : gEventDetailTabSlugIndices.info));
-    const tabSlug = Object.keys(gEventDetailTabSlugIndices)[selectedTab];
+    const [selectedTab, setSelectedTab] = React.useState<string>(props.initialTabIndex || ((IsNullOrWhitespace(event.description) && (event.songLists?.length > 0)) ? gEventDetailTabSlugIndices.setlists : gEventDetailTabSlugIndices.info));
+    const tabSlug = selectedTab;//Object.keys(gEventDetailTabSlugIndices)[selectedTab];
     const router = useRouter();
     const dashboardContext = React.useContext(DashboardContext);
 
@@ -1505,7 +1607,8 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
         <Suspense>
             {/* <EventDetailFullTabArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} /> */}
-            <EventDetailFullAccordionArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} />
+            {/* <EventDetailFullAccordionArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} /> */}
+            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} />
         </Suspense>
     </EventDetailContainer>;
 };

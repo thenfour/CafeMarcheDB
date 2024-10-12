@@ -2,7 +2,7 @@
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
 import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, Typography } from "@mui/material";
-import React from "react";
+import React, { Suspense } from "react";
 
 import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
@@ -399,3 +399,60 @@ export const CMAccordion = (props: React.PropsWithChildren<CMAccordionProps>) =>
         </AccordionDetails>
     </Accordion>
 };
+
+
+
+interface CMTabProps {
+    thisTabId: string | number | undefined | null;
+    summaryIcon?: React.ReactNode;
+    summaryTitle?: React.ReactNode;
+    summarySubtitle?: React.ReactNode;
+};
+
+export const CMTab = (props: React.PropsWithChildren<CMTabProps>) => {
+    return <Suspense>{props.children}</Suspense>;
+};
+
+const CMTabHeader = (props: CMTabProps & {
+    selected: boolean,
+    onClick: (e: React.MouseEvent<HTMLLIElement>) => void
+}) => {
+    return <li
+        key={props.thisTabId}
+        onClick={props.onClick}
+        className={`CMTabHeaderRoot ${props.selected ? "selected" : "notselected"}`}
+    >
+        <div className="CMTabHeaderL2">
+            {props.summaryIcon && <div className="CMTabHeaderIcon">{props.summaryIcon}</div>}
+            {props.summaryTitle && <div className="CMTabHeaderTitle">{props.summaryTitle}</div>}
+            {props.summarySubtitle && <div className="CMTabHeaderSubtitle">{props.summarySubtitle}</div>}
+        </div>
+    </li>
+};
+
+interface CMTabPanelProps {
+    selectedTabId: string | number | undefined | null;
+    handleTabChange: (e: React.SyntheticEvent, newTabId: string | number | undefined | null) => void;
+    children: React.ReactElement<React.PropsWithChildren<CMTabProps>>[];
+};
+
+export const CMTabPanel = (props: CMTabPanelProps) => {
+    const handleTabHeaderClick = (ch: React.ReactElement<React.PropsWithChildren<CMTabProps>>, e: React.MouseEvent<HTMLLIElement>) => {
+        props.handleTabChange(e, ch.props.thisTabId);
+    };
+    const selectedChild = props.children.find(tab => tab.props.thisTabId === props.selectedTabId);
+    return <div className="CMTabPanel">
+        <div className="CMTabHeader">
+            <ul className="CMTabList">
+                {
+                    props.children.map(tab => <CMTabHeader key={tab.props.thisTabId} {...tab.props} onClick={e => handleTabHeaderClick(tab, e)} selected={props.selectedTabId === tab.props.thisTabId} />)
+                }
+            </ul>
+        </div>
+        {selectedChild &&
+            <div className="CMTabExpanded">
+                {selectedChild}
+            </div>}
+    </div>;
+};
+

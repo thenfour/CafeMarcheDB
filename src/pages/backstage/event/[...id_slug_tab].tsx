@@ -56,9 +56,9 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
 
     queryArgs.filterModel!.tableParams!.eventId = eventId;
 
-    let initialTabIndex: undefined | number = undefined;
-    if (!!tab) {
-        initialTabIndex = gEventDetailTabSlugIndices[tab] || 0;
+    let initialTabIndex: string = "";
+    if (!!tab && gEventDetailTabSlugIndices[tab]) {
+        initialTabIndex = gEventDetailTabSlugIndices[tab];
     }
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
