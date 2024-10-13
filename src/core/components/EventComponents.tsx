@@ -41,7 +41,6 @@ import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { CMTextInputBase } from './CMTextField';
 
-
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
         type: true,

@@ -80,7 +80,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
     const scheduleTick = (why: string, t?: number | undefined) => {
         const ctx = audioContextRef.current;
         if (!ctx) return null;
-        //console.log(`scheduletick ${why}`);
         const tickSource = ctx.createBufferSource();
         tickSource.buffer = tickBufferRef.current;
         tickSource.connect(gainNodeRef.current!);
@@ -106,7 +105,6 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
     // Scheduler function to queue up ticks in the audio context; setInterval is not accurate enough.
     // basically this runs and schedules a tick a short time in the future.
     const tickProc = (forceImmediate?: boolean) => {
-        //console.log(`tickproc`);
         const ctx = audioContextRef.current!;
         const currentTime = ctx.currentTime;
         const halfBeatMS = beatsToMS(0.5);
@@ -216,25 +214,21 @@ export const MetronomePlayer: React.FC<MetronomePlayerProps> = ({ bpm, syncTrigg
     };
 
     React.useEffect(() => {
-        //console.log(`=== mount ===`);
         void doInit();
         return () => doStop();
     }, []);
 
     React.useEffect(() => {
         if (syncTrigger > initialSyncTrig) {
-            //console.log(`sync trig ${syncTrigger} > ${initialSyncTrig}`);
             doBeatSync();
         }
     }, [syncTrigger]);
 
     React.useEffect(() => {
-        //console.log(`BPM change ${bpm}`);
         if (initialBpm === bpm) {
             return;
         }
         setInitialBpm(null); // allow further bpm changes to always work even if === initial
-        //console.log(`YES BPM change ${bpm}`);
 
         // run the timer proc ASAP to evaluate what to do.
         killTimer();
@@ -316,31 +310,6 @@ export const MetronomeButton = ({ bpm, mountPlaying, tapTrigger, isTapping, onSy
 };
 
 
-
-// // filters outliers, takes equal average of all tap intervals
-// function calculateBPM(tapIntervals) {
-//     if (tapIntervals.length < 2) {
-//         return 0; // Not enough taps to calculate BPM
-//     }
-
-//     // Filter outliers using a method such as interquartile range or standard deviation
-//     const sortedIntervals = tapIntervals.slice().sort((a, b) => a - b);
-//     const q1 = sortedIntervals[Math.floor(sortedIntervals.length / 4)];
-//     const q3 = sortedIntervals[Math.floor(3 * sortedIntervals.length / 4)];
-//     const iqr = q3 - q1;
-//     const lowerBound = q1 - 1.5 * iqr;
-//     const upperBound = q3 + 1.5 * iqr;
-
-//     const filteredIntervals = sortedIntervals.filter(x => x >= lowerBound && x <= upperBound);
-
-//     // Calculate average interval from filtered intervals
-//     const averageInterval = filteredIntervals.reduce((a, b) => a + b, 0) / filteredIntervals.length;
-
-//     // Convert intervals into BPM
-//     const bpm = Math.round(60000 / averageInterval);
-//     return bpm;
-// }
-
 // uses IQR filter + linear weighted average
 function calculateBPM(tapIntervals): number | null {
     if (tapIntervals.length < 2) {
@@ -368,42 +337,6 @@ function calculateBPM(tapIntervals): number | null {
     const bpm = Math.round(60000 / averageInterval);
     return bpm;
 }
-
-// // filter outliers + use an RMS weighting
-// function calculateBPM(tapIntervals) {
-//     if (tapIntervals.length < 2) {
-//         return 0; // Not enough taps to calculate BPM accurately
-//     }
-
-//     // Filter out outliers first using IQR
-//     const sortedIntervals = [...tapIntervals].sort((a, b) => a - b);
-//     const q1 = sortedIntervals[Math.floor(sortedIntervals.length / 4)];
-//     const q3 = sortedIntervals[Math.floor(3 * sortedIntervals.length / 4)];
-//     const iqr = q3 - q1;
-//     const filteredIntervals = sortedIntervals.filter(x => (x >= q1 - 1.5 * iqr) && (x <= q3 + 1.5 * iqr));
-
-//     if (filteredIntervals.length < 2) {
-//         return 0; // Not enough valid taps after filtering
-//     }
-
-//     // Calculate weighted RMS of intervals
-//     let weightedSumSquares = 0;
-//     let totalWeight = 0;
-//     filteredIntervals.forEach((interval, index) => {
-//         let weight = index + 1; // Increasing weight for more recent intervals
-//         weightedSumSquares += interval * interval * weight;
-//         totalWeight += weight;
-//     });
-
-//     const rmsInterval = Math.sqrt(weightedSumSquares / totalWeight);
-
-//     // Convert RMS interval to BPM
-//     const bpm = Math.round(60000 / rmsInterval);
-//     return bpm;
-// }
-
-
-
 
 export interface TapTempoProps {
     onStopTapping: () => void;
@@ -546,3 +479,167 @@ export const MetronomeDialogButton = () => {
         {open && <MetronomeDialog onClose={() => setOpen(false)} />}
     </>;
 };
+
+
+
+
+
+
+
+
+// // filters outliers, takes equal average of all tap intervals
+// function calculateBPM(tapIntervals) {
+//     if (tapIntervals.length < 2) {
+//         return 0; // Not enough taps to calculate BPM
+//     }
+
+//     // Filter outliers using a method such as interquartile range or standard deviation
+//     const sortedIntervals = tapIntervals.slice().sort((a, b) => a - b);
+//     const q1 = sortedIntervals[Math.floor(sortedIntervals.length / 4)];
+//     const q3 = sortedIntervals[Math.floor(3 * sortedIntervals.length / 4)];
+//     const iqr = q3 - q1;
+//     const lowerBound = q1 - 1.5 * iqr;
+//     const upperBound = q3 + 1.5 * iqr;
+
+//     const filteredIntervals = sortedIntervals.filter(x => x >= lowerBound && x <= upperBound);
+
+//     // Calculate average interval from filtered intervals
+//     const averageInterval = filteredIntervals.reduce((a, b) => a + b, 0) / filteredIntervals.length;
+
+//     // Convert intervals into BPM
+//     const bpm = Math.round(60000 / averageInterval);
+//     return bpm;
+// }
+
+// // filter outliers + use an RMS weighting
+// function calculateBPM(tapIntervals) {
+//     if (tapIntervals.length < 2) {
+//         return 0; // Not enough taps to calculate BPM accurately
+//     }
+
+//     // Filter out outliers first using IQR
+//     const sortedIntervals = [...tapIntervals].sort((a, b) => a - b);
+//     const q1 = sortedIntervals[Math.floor(sortedIntervals.length / 4)];
+//     const q3 = sortedIntervals[Math.floor(3 * sortedIntervals.length / 4)];
+//     const iqr = q3 - q1;
+//     const filteredIntervals = sortedIntervals.filter(x => (x >= q1 - 1.5 * iqr) && (x <= q3 + 1.5 * iqr));
+
+//     if (filteredIntervals.length < 2) {
+//         return 0; // Not enough valid taps after filtering
+//     }
+
+//     // Calculate weighted RMS of intervals
+//     let weightedSumSquares = 0;
+//     let totalWeight = 0;
+//     filteredIntervals.forEach((interval, index) => {
+//         let weight = index + 1; // Increasing weight for more recent intervals
+//         weightedSumSquares += interval * interval * weight;
+//         totalWeight += weight;
+//     });
+
+//     const rmsInterval = Math.sqrt(weightedSumSquares / totalWeight);
+
+//     // Convert RMS interval to BPM
+//     const bpm = Math.round(60000 / rmsInterval);
+//     return bpm;
+// }
+
+
+
+
+
+
+
+// interface Metronome2Props {
+//     bpm: number;
+// }
+
+// export const Metronome2: React.FC<Metronome2Props> = ({ bpm }) => {
+//     const [isPlaying, setIsPlaying] = React.useState(false);
+//     const [flashing, setFlashing] = React.useState(false);
+//     const audioContextRef = React.useRef<AudioContext | null>(null);
+//     const nextTickTimeRef = React.useRef(0);
+//     const timerIDRef = React.useRef<number>();
+
+//     React.useEffect(() => {
+//         if (audioContextRef.current === null) {
+//             audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+//         }
+
+//         if (isPlaying) {
+//             const audioContext = audioContextRef.current!;
+//             const secondsPerBeat = 60 / bpm;
+//             nextTickTimeRef.current = audioContext.currentTime;
+//             scheduler();
+
+//             return () => {
+//                 if (timerIDRef.current) {
+//                     clearTimeout(timerIDRef.current);
+//                 }
+//             };
+//         }
+//     }, [isPlaying, bpm]);
+
+//     const scheduler = () => {
+//         const audioContext = audioContextRef.current!;
+//         while (nextTickTimeRef.current < audioContext.currentTime + 0.1) {
+//             scheduleTick(nextTickTimeRef.current);
+//             const secondsPerBeat = 60 / bpm;
+//             nextTickTimeRef.current += secondsPerBeat;
+//         }
+//         timerIDRef.current = window.setTimeout(scheduler, 25);
+//     };
+
+//     const scheduleTick = (time: number) => {
+//         const audioContext = audioContextRef.current!;
+
+//         // Schedule audible beep
+//         const oscillator = audioContext.createOscillator();
+//         const gainNode = audioContext.createGain();
+//         oscillator.connect(gainNode);
+//         gainNode.connect(audioContext.destination);
+//         oscillator.frequency.value = 880; // Frequency in Hz (A5 note)
+//         gainNode.gain.value = 1; // Volume
+
+//         oscillator.start(time);
+//         oscillator.stop(time + 0.05); // Beep duration
+
+//         // Schedule visual flash
+//         const flashDelay = (time - audioContext.currentTime) * 1000;
+//         setTimeout(() => {
+//             setFlashing(true);
+//             setTimeout(() => setFlashing(false), 100); // Flash duration
+//         }, flashDelay);
+//     };
+
+//     const toggleMetronome = () => {
+//         setIsPlaying((prev) => !prev);
+//     };
+
+//     return (
+//         <div style={{ textAlign: 'center' }}>
+//             <div
+//                 style={{
+//                     width: '50px',
+//                     height: '50px',
+//                     backgroundColor: flashing ? 'red' : 'gray',
+//                     borderRadius: '50%',
+//                     margin: '20px auto',
+//                     transition: 'background-color 0.1s',
+//                 }}
+//             />
+//             <button onClick={toggleMetronome}>{isPlaying ? 'Stop' : 'Start'}</button>
+//         </div>
+//     );
+// };
+
+// export const Metronome2Container = () => {
+//     const [bpm, setBPM] = useURLState<number>("bpm", 120);
+//     const [textBpm, setTextBpm] = React.useState<string>(bpm.toString());
+//     return <><input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
+//         setBPM(e.target.valueAsNumber);
+//         setTextBpm(e.target.value);
+//     }} />
+//         {textBpm}
+//         <Metronome2 bpm={bpm} /></>
+// };
