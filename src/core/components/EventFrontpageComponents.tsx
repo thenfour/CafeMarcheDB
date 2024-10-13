@@ -183,100 +183,6 @@ interface EventFrontpageControlProps {
     readonly: boolean;
 };
 
-// ////////////////////////////////////////////////////////////////
-// export const EventFrontpageControlOld = (props: EventFrontpageControlProps) => {
-//     const mutationToken = API.events.updateEventBasicFields.useToken();
-//     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
-//     const user = useCurrentUser()[0]!;
-//     const publicData = useAuthenticatedSession();
-//     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
-
-//     const handleChange = (valueEn: string | null, valueNl: string | null, valueFr: string | null) => {
-//         mutationToken.invoke({
-//             eventId: props.event.id,
-//             [props.fieldSpec.fieldNameEn]: valueEn,
-//             [props.fieldSpec.fieldNameNl]: valueNl,
-//             [props.fieldSpec.fieldNameFr]: valueFr,
-//         }).then(() => {
-//             showSnackbar({ severity: "success", children: `Successfully updated ${props.fieldSpec.fieldLabel}` });
-//         }).catch(e => {
-//             console.log(e);
-//             showSnackbar({ severity: "error", children: `error updating event date ${props.fieldSpec.fieldLabel}` });
-//         }).finally(() => {
-//             props.refetch();
-//         });
-//     };
-
-//     const defaultValue = props.fallbackValue;
-//     const valueEn = props.event[props.fieldSpec.fieldNameEn];
-//     const valueNl = props.event[props.fieldSpec.fieldNameNl];
-//     const valueFr = props.event[props.fieldSpec.fieldNameFr];
-//     const isNull = valueEn === null;
-
-//     // const handleNullChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     //     if (e.target.checked) {
-//     //         // switching from null to not null.
-//     //         handleChange(defaultValue, defaultValue, defaultValue);
-//     //         return;
-//     //     }
-//     //     handleChange(null, null, null);
-//     // }
-
-//     const canEdit = db3.xEvent.authorizeColumnForEdit({
-//         clientIntention,
-//         publicData,
-//         model: props.event,
-//         columnName: props.fieldSpec.fieldNameEn, // assume same perms for all languages
-//         fallbackOwnerId: null,
-//     });
-
-//     const readonly = props.readonly || !canEdit;
-
-//     return <div className={`fieldContainer ${props.fieldSpec.fieldNameEn /* assumes this is the "plain" fieldname with out lang suffix */} ${props.event.frontpageVisible ? "" : "faded"}`}>
-
-//         <div className='label'>
-//             <div className='text'>{props.fieldSpec.fieldLabel}</div>
-//             {/* <div className='icon'>{props.fieldSpec.renderIcon()}</div> */}
-//         </div>
-//         {/* <div className='nullContainer'>
-//             {props.fieldSpec.nullable &&
-//                 <>
-//                     <Switch size="small" checked={!isNull} onChange={readonly ? undefined : handleNullChange} disabled={readonly} />
-//                     {isNull && <div className="autoLabel">(auto)</div>}
-//                 </>
-//             }</div> */}
-//         <div className='editButtonContainer'>
-//             {!readonly && <div style={{ display: "flex", flexDirection: "column" }}><EditTextDialogButton
-//                 clientIntention={clientIntention}
-//                 columnSpecEn={db3.xEvent.getColumn(props.fieldSpec.fieldNameEn)! as db3.FieldBase<string>}
-//                 valueEn={valueEn || defaultValue}
-//                 columnSpecNl={db3.xEvent.getColumn(props.fieldSpec.fieldNameNl)! as db3.FieldBase<string>}
-//                 valueNl={valueNl || ""}
-//                 columnSpecFr={db3.xEvent.getColumn(props.fieldSpec.fieldNameFr)! as db3.FieldBase<string>}
-//                 valueFr={valueFr || ""}
-//                 dialogTitle={props.fieldSpec.fieldLabel}
-//                 readOnly={readonly}
-//                 dialogDescription={<SettingMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
-//                 selectButtonLabel='edit'
-//                 onChange={handleChange}
-//             />
-//                 <Button>Reset</Button>
-//             </div>}
-//         </div>
-//         <KeyValueTable className={`value ${isNull ? "faded" : ""}`} data={{
-//             EN: valueEn || defaultValue,
-//             NL: valueNl || "",
-//             FR: valueFr || "",
-//         }} />
-//     </div>;
-// };
-
-
-
-
-
-
-
 
 
 
@@ -348,7 +254,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                 }}>Reset</Button>}
             </div>}
         </div>
-        <KeyValueTable className={`value ${isNull ? "faded" : ""}`} data={{
+        <KeyValueTable className={`value`} data={{
             EN: valueEn || defaultValue,
             NL: valueNl || "",
             FR: valueFr || "",
