@@ -2,11 +2,11 @@ import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, IsEntirelyIntegral } from "shared/utils";
+import { CoerceToNumberOrNull, IsEntirelyIntegral, StringToEnumValue } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { NewSongButton } from "src/core/components/NewSongComponents";
-import { SongBreadcrumbs, SongClientColumns, SongDetail, gSongDetailTabSlugIndices } from "src/core/components/SongComponents";
+import { SongBreadcrumbs, SongClientColumns, SongDetail, SongDetailTabSlug } from "src/core/components/SongComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -57,9 +57,9 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
 
     queryArgs.filterModel!.tableParams!.songId = songId;
 
-    let initialTabIndex: undefined | number = undefined;
+    let initialTab: SongDetailTabSlug = SongDetailTabSlug.info;
     if (!!tab) {
-        initialTabIndex = gSongDetailTabSlugIndices[tab] || 0;
+        initialTab = StringToEnumValue(SongDetailTabSlug, tab) || SongDetailTabSlug.info;
     }
 
     const tableClient = DB3Client.useTableRenderContext(queryArgs);
@@ -72,7 +72,7 @@ const MyComponent = ({ songId }: { songId: number | null }) => {
         <NewSongButton />
         {song ? <>
             <SongBreadcrumbs song={song} />
-            <SongDetail readonly={false} song={song} tableClient={tableClient} initialTabIndex={initialTabIndex} />
+            <SongDetail readonly={false} song={song} tableClient={tableClient} initialTab={initialTab} />
         </> : <>
             no song was found. some possibilities:
             <ul>

@@ -201,6 +201,7 @@ interface WorkflowEditorForEventProps {
     initialValue: WorkflowDef;
     onSave: (val: WorkflowDef) => void;
     onDelete: (val: WorkflowDef) => void;
+    onCancel: (val: WorkflowDef) => void;
 };
 export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
     const dashboardCtx = useDashboardContext();
@@ -443,6 +444,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         <div>
             <Button onClick={() => props.onSave(workflowDef)} disabled={!defHasChanges}>{gIconMap.Save()} Save</Button>
             <Button onClick={() => props.onDelete(workflowDef)} disabled={!isExisting}>{gIconMap.Delete()} Delete</Button>
+            <Button onClick={() => props.onCancel(workflowDef)} disabled={!isExisting}>{gIconMap.Cancel()} Cancel</Button>
         </div>
         <EvaluatedWorkflowProvider
             flowDef={workflowDef}

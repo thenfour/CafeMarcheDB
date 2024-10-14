@@ -423,9 +423,9 @@ const CMTabHeader = (props: CMTabProps & {
         className={`CMTabHeaderRoot ${props.selected ? "selected" : "notselected"}`}
     >
         <div className="CMTabHeaderL2">
-            {props.summaryIcon && <div className="CMTabHeaderIcon">{props.summaryIcon}</div>}
-            {props.summaryTitle && <div className="CMTabHeaderTitle">{props.summaryTitle}</div>}
-            {props.summarySubtitle && <div className="CMTabHeaderSubtitle">{props.summarySubtitle}</div>}
+            {(props.summaryIcon !== undefined) && <div className="CMTabHeaderIcon">{props.summaryIcon}</div>}
+            {(props.summaryTitle !== undefined) && <div className="CMTabHeaderTitle">{props.summaryTitle}</div>}
+            {(props.summarySubtitle !== undefined) && <div className="CMTabHeaderSubtitle">{props.summarySubtitle}</div>}
         </div>
     </li>
 };

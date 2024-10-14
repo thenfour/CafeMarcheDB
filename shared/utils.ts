@@ -1001,3 +1001,58 @@ export function LangSelectString<
     // If all values are null or undefined, return null
     return null as any;
 }
+
+
+
+export type ObjectDiffResult<T extends Object> = {
+    areDifferent: boolean;
+    differences: { lhs: Partial<T>, rhs: Partial<T> };
+    similarities: Partial<T>;
+};
+
+export function ObjectDiff<T extends Object>(
+    lhs: T,
+    rhs: T,
+    options: { ignore?: (keyof T)[]; include?: (keyof T)[] } = {}
+): ObjectDiffResult<T> {
+    let keys: Array<keyof T>;
+
+    // Determine which keys to compare based on options
+    if (options.include && options.include.length > 0) {
+        // If 'include' is specified, only compare those keys
+        keys = options.include;
+    } else {
+        // Otherwise, get all keys from the 'lhs' object
+        keys = Object.keys(lhs) as Array<keyof T>;
+
+        // If 'ignore' is specified, exclude those keys from comparison
+        if (options.ignore && options.ignore.length > 0) {
+            keys = keys.filter((key) => !options.ignore!.includes(key));
+        }
+    }
+
+    const differences: { lhs: Partial<T>, rhs: Partial<T> } = { lhs: {}, rhs: {} };
+    const similarities: Partial<T> = {};
+
+    // Compare properties between 'lhs' and 'rhs'
+    for (const key of keys) {
+        if (lhs[key] !== rhs[key]) {
+            differences.lhs[key] = lhs[key]; // Store the differing value from 'lhs'
+            differences.rhs[key] = rhs[key]; // Store the differing value from 'rhs'
+        } else {
+            similarities[key] = lhs[key]; // Store the matching value from 'lhs'
+        }
+    }
+
+    const areDifferent = Object.keys(differences).length > 0;
+
+    return {
+        areDifferent,
+        differences,
+        similarities,
+    };
+}
+
+export function StringToEnumValue<T extends { [key: string]: string }>(enumObj: T, value: string): T[keyof T] | undefined {
+    return (Object.values(enumObj) as string[]).includes(value) ? (value as T[keyof T]) : undefined;
+}

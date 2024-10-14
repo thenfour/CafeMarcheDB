@@ -101,6 +101,7 @@ export interface CMStandardDBChipModel {
 
     text?: string | null;
     label?: string | null;
+    name?: string | null;
 
     description?: string | null;
 }
@@ -118,7 +119,7 @@ export interface CMStandardDBChipProps<T> {
 };
 
 export const CMStandardDBChip = <T extends CMStandardDBChipModel,>(props: CMStandardDBChipProps<T>) => {
-    const dbText = props.model?.label || props.model?.text || null;
+    const dbText = props.model?.label || props.model?.text || props.model?.name || null;
     const tooltip: string | null | undefined = props.getTooltip ? props.getTooltip(props.model, dbText) : (props.model?.description);
     return <CMChip
         color={props.model?.color}

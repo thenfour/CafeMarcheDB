@@ -3,7 +3,7 @@ import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "../apiTypes";
-import { BoolField, MakeColorField, MakeMarkdownTextField, MakeSortOrderField, MakeTitleField, PKField } from "../db3basicFields";
+import { BoolField, GhostField, MakeColorField, MakeMarkdownTextField, MakeSortOrderField, MakeTitleField, PKField } from "../db3basicFields";
 import * as db3 from "../db3core";
 
 // (todo: refine these)
@@ -78,8 +78,9 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
 
         new BoolField({ columnName: "isDefaultForEvents", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),
 
-        // groups    WorkflowDefGroup[]
-        // instances WorkflowInstance[]      
+        new GhostField({ memberName: "nodeDefs", authMap: xColumnAuthMap }),
+        new GhostField({ memberName: "groups", authMap: xColumnAuthMap }),
+        new GhostField({ memberName: "instances", authMap: xColumnAuthMap }),
     ]
 };
 

@@ -855,13 +855,13 @@ export interface TupdateEventCustomFieldValuesArgs {
 
 
 export interface TinsertOrUpdateWorkflowDefNodeDefaultAssignee {
-    id?: number; // for insertion, this is not used / specified.
+    id: number; // for insertion, this is not used / specified.
     userId: number;
     // nodeDefId
 };
 
 export interface TinsertOrUpdateWorkflowDefNodeDependency {
-    id?: number; // for insertion, this is not used / specified.
+    id: number; // for insertion, this is not used / specified.
 
     selected: boolean;
     determinesRelevance: boolean;
@@ -871,7 +871,7 @@ export interface TinsertOrUpdateWorkflowDefNodeDependency {
 };
 
 export interface TinsertOrUpdateWorkflowDefNode {
-    id?: number; // for insertion, this is not used / specified.
+    id: number; // for insertion, this is not used / specified.
     dependencies: TinsertOrUpdateWorkflowDefNodeDependency[];
     defaultAssignees: TinsertOrUpdateWorkflowDefNodeDefaultAssignee[];
 
@@ -902,25 +902,25 @@ export interface TinsertOrUpdateWorkflowDefNode {
 };
 
 export interface TinsertOrUpdateWorkflowDefGroup {
-    id?: number; // for insertion, this is not used / specified.
+    id: number; // for insertion, this is not used / specified.
     // workflowDefId
     name: string;
     description: string;
-    color?: string | null | undefined;
+    color: string | null;
 
-    positionX?: number | undefined;
-    positionY?: number | undefined;
-    width?: number | undefined;
-    height?: number | undefined;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
     selected: boolean;
 };
 
 export interface TinsertOrUpdateWorkflowDefArgs {
-    id?: number; // for insertion, this is not used / specified.
+    id: number; // for insertion, this is not used / specified.
     sortOrder: number;
     name: string;
     description: string;
-    color?: string | null | undefined;
+    color: string | null;
     isDefaultForEvents: boolean;
     groups: TinsertOrUpdateWorkflowDefGroup[];
     nodes: TinsertOrUpdateWorkflowDefNode[];

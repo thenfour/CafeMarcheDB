@@ -4,6 +4,7 @@ import { useMutation } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
+import { getUniqueNegativeID } from "shared/utils";
 import { MakeNewWorkflowDef, WorkflowDef } from "shared/workflowEngine";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
@@ -82,12 +83,14 @@ function WorkflowDefToMutationArgs(def: WorkflowDef): TinsertOrUpdateWorkflowDef
         name,
         sortOrder,
         groups: def.groupDefs.map(groupDef => {
-            const { id, color, name, height, position, selected, width } = groupDef;
+            const { id, color, name, position, selected } = groupDef;
             return {
-                id, color, name, height, selected, width,
+                id, color, name, selected,
                 description: "",
                 positionX: position.x,
                 positionY: position.y,
+                width: groupDef.width || 0,
+                height: groupDef.height || 0,
             };
         }),
         nodes: def.nodeDefs.map(nodeDef => {
@@ -139,11 +142,13 @@ function WorkflowDefToMutationArgs(def: WorkflowDef): TinsertOrUpdateWorkflowDef
                         determinesActivation,
                         determinesCompleteness,
                         nodeDefId,
+                        id: getUniqueNegativeID(),
                     };
                 }),
                 defaultAssignees: nodeDef.defaultAssignees.map(da => {
                     return {
                         userId: da.userId,
+                        id: getUniqueNegativeID(),
                     };
                 }),
             };
@@ -154,7 +159,7 @@ function WorkflowDefToMutationArgs(def: WorkflowDef): TinsertOrUpdateWorkflowDef
 type ModeOption = "empty" | "new" | "edit";
 
 const WorkflowDefEditorMain = () => {
-    const dctx = useDashboardContext();
+    const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const [mode, setMode] = React.useState<ModeOption>("empty");
     const [value, setValue] = React.useState<WorkflowDef | undefined>(undefined);
@@ -164,7 +169,6 @@ const WorkflowDefEditorMain = () => {
         setMode("new");
     };
 
-    const dashboardContext = useDashboardContext();
 
     const [saveMutation] = useMutation(insertOrUpdateWorkflowDefMutation);
 
@@ -187,34 +191,39 @@ const WorkflowDefEditorMain = () => {
     const canEdit = dashboardContext.isAuthorized(Permission.edit_workflow_defs);
 
     return <div>
-        {dctx.isAuthorized(Permission.admin_workflow_defs) && <Button onClick={() => simulateLinkClick("/backstage/editEventCustomFields")}>Edit custom fields</Button>}
+        {dashboardContext.isAuthorized(Permission.admin_workflow_defs) && <Button onClick={() => simulateLinkClick("/backstage/editEventCustomFields")}>Edit custom fields</Button>}
         <div>
             <Button onClick={handleNewWorkflowDef} startIcon={gIconMap.Add()}>New workflow</Button>
         </div>
         <div className="WorkflowDefSelect">
             <div>{items.length > 0 ? "Select a workflow to edit" : "There are no workflows to edit; create a new one."}</div>
             {(items.length > 0) && <CMSingleSelect<WorkflowDef>
-
                 getOptions={(args) => items}
-                onChange={(option) => {
-                    console.error(`todo: onchange`);
+                onChange={async (option) => {
+                    setValue(option || undefined);
                 }}
                 getOptionInfo={(item: WorkflowDef) => {
+                    console.log(item);
                     return {
                         id: item.id,
+                        name: item.name,
                         color: item.color,
                         tooltip: item.description || undefined,
                     };
                 }}
                 renderOption={(item) => {
-                    return <CMStandardDBChip model={item} />;
+                    return item.name;
+                    //return <CMStandardDBChip model={item} />;
                 }}
-                value={null}
+                value={value || null}
                 nullBehavior={CMSelectNullBehavior.AllowNull}
             />}
         </div>
         {value &&
             <WorkflowEditorForEvent
+                onCancel={val => {
+                    setValue(undefined);
+                }}
                 onDelete={(val) => {
                     try {
                         console.log(`deleting workflow def...`);
@@ -224,6 +233,7 @@ const WorkflowDefEditorMain = () => {
                         console.log(e);
                         snackbar.showMessage({ severity: "error", children: "Error occurred; see console." });
                     }
+                    client.refetch();
                 }}
                 initialValue={value}
                 onSave={async (val) => {
@@ -237,6 +247,7 @@ const WorkflowDefEditorMain = () => {
                         console.log(e);
                         snackbar.showMessage({ severity: "error", children: "Error occurred; see console." });
                     }
+                    client.refetch();
                 }} />}
         {/* {value && mode === "new" &&
             <WorkflowEditorForEvent initialValue={value} onSave={(val) => {

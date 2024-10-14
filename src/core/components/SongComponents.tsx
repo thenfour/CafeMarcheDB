@@ -5,7 +5,7 @@ import { Breadcrumbs, Button, Link, Tab, Tabs, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { StandardVariationSpec } from 'shared/color';
-import { IsNullOrWhitespace } from 'shared/utils';
+import { IsNullOrWhitespace, StringToEnumValue } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -14,7 +14,7 @@ import { API } from '../db3/clientAPI';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import { CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
-import { NameValuePair } from './CMCoreComponents2';
+import { CMTab, CMTabPanel, NameValuePair } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { MetronomeButton } from './Metronome';
@@ -474,19 +474,20 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const gSongDetailTabSlugIndices = {
-    info: 0,
-    parts: 1,
-    recordings: 2,
-    files: 3,
-    history: 4,
-} as const;
+export enum SongDetailTabSlug {
+    info = "info",
+    parts = "parts",
+    recordings = "recordings",
+    files = "files",
+    history = "history",
+};
+
 
 export interface SongDetailArgs {
     song: EnrichedVerboseSong;
     tableClient: DB3Client.xTableRenderClient;
     readonly: boolean;
-    initialTabIndex?: number;
+    initialTab?: SongDetailTabSlug;
 }
 
 export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
@@ -505,15 +506,15 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     });
 
     //const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
-    const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || ((IsNullOrWhitespace(song.description) && (enrichedFiles.length > 0)) ? gSongDetailTabSlugIndices.files : gSongDetailTabSlugIndices.info));
+    const [selectedTab, setSelectedTab] = React.useState<SongDetailTabSlug>(props.initialTab || ((IsNullOrWhitespace(song.description) && (enrichedFiles.length > 0)) ? SongDetailTabSlug.files : SongDetailTabSlug.info));
 
-    const handleTabChange = (e: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
-    };
+    // const handleTabChange = (e: React.SyntheticEvent, newValue: SongDetailTabSlug) => {
+    //     setSelectedTab(newValue);
+    // };
 
     // convert index to tab slug
-    const tabSlug = Object.keys(gSongDetailTabSlugIndices)[selectedTab];
-    const songData = CalculateSongMetadata(song, tabSlug);
+    //const tabSlug = Object.keys(gSongDetailTabSlugIndices)[selectedTab];
+    const songData = CalculateSongMetadata(song, selectedTab);
 
     React.useEffect(() => {
         void router.replace(songData.songURI);
@@ -526,7 +527,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
 
         <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
 
-        <Tabs
+        {/* <Tabs
             value={selectedTab}
             onChange={handleTabChange}
             variant="scrollable"
@@ -577,6 +578,73 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.history}>
             <SongHistory song={song} />
         </CustomTabPanel>
+ */}
+
+
+        <CMTabPanel
+            selectedTabId={selectedTab}
+            handleTabChange={(e, newId) => {
+                const slug = StringToEnumValue(SongDetailTabSlug, (newId || "").toString()) || SongDetailTabSlug.info;
+                setSelectedTab(slug);
+            }}
+        >
+            <CMTab
+                thisTabId={SongDetailTabSlug.info}
+                summaryTitle={"Info"}
+                summaryIcon={gIconMap.Info()}
+            >
+                <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
+            </CMTab>
+            <CMTab
+                thisTabId={SongDetailTabSlug.parts}
+                summaryTitle={"Parts"}
+                summaryIcon={gIconMap.LibraryMusic()}
+                summarySubtitle={partitions.length}
+            >
+                <FilesTabContent
+                    fileTags={partitions}
+                    readonly={props.readonly}
+                    refetch={refetch}
+                    uploadTags={{
+                        taggedSongId: song.id,
+                        fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
+                    }}
+                />
+            </CMTab>
+            <CMTab
+                thisTabId={SongDetailTabSlug.recordings}
+                summaryTitle={"Recordings"}
+                summaryIcon={gIconMap.PlayCircleOutline()}
+                summarySubtitle={recordings.length}
+            >
+                <FilesTabContent
+                    fileTags={recordings}
+                    readonly={props.readonly}
+                    refetch={refetch}
+                    uploadTags={{
+                        taggedSongId: song.id,
+                        fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
+                    }}
+                />
+            </CMTab>
+            <CMTab
+                thisTabId={SongDetailTabSlug.files}
+                summaryTitle={"All files"}
+                summaryIcon={gIconMap.AttachFile()}
+                summarySubtitle={song.taggedFiles.length}
+            >
+                <FilesTabContent fileTags={enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
+                    taggedSongId: song.id,
+                }} />
+            </CMTab>
+            <CMTab
+                thisTabId={SongDetailTabSlug.history}
+                summaryTitle={"History"}
+                summaryIcon={gIconMap.GraphicEq()}
+            >
+                <SongHistory song={song} />
+            </CMTab>
+        </CMTabPanel>
 
 
     </SongDetailContainer>;

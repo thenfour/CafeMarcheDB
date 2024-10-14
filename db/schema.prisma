@@ -1105,7 +1105,7 @@ model WorkflowDefNode {
 
   fieldName          String? @db.VarChar(768)
   fieldValueOperator String? @db.VarChar(768)
-  fieldValueOperand2 String  @db.MediumText // JSON ? not sure how this will be serialized.
+  fieldValueOperand2 String? @db.MediumText // JSON ? not sure how this will be serialized.
 
   defaultDueDateDurationDaysAfterStarted Int?
   positionX                              Float?
