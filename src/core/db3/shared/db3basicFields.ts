@@ -2131,11 +2131,22 @@ export const MakeIntegerField = (columnName: string, authSpec: DB3AuthSpec) => (
         _customAuth: (authSpec as any)._customAuth || null,
     }));
 
+// color fields convert to colorpaletteentry on query
 export const MakeColorField = (columnName: string, authSpec: DB3AuthSpec) => (
     new ColorField({
         columnName,
         allowNull: true,
         palette: gGeneralPaletteList,
+        authMap: (authSpec as any).authMap || null,
+        _customAuth: (authSpec as any)._customAuth || null,
+    }));
+
+// this does not convert to colorpaletteentry
+export const MakeColorAsStringField = (columnName: string, authSpec: DB3AuthSpec, allowNull?: boolean | undefined) => (
+    new GenericStringField({
+        columnName,
+        allowNull: CoalesceBool(allowNull, true),
+        format: "raw",
         authMap: (authSpec as any).authMap || null,
         _customAuth: (authSpec as any)._customAuth || null,
     }));

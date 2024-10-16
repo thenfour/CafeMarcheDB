@@ -6,7 +6,7 @@ import { gGeneralPaletteList, gLightSwatchColors } from "shared/color";
 import { getHashedColor } from "shared/utils";
 import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import { gCharMap } from "../db3/components/IconMap";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { GetStyleVariablesForColor } from "./Color";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
@@ -61,6 +61,7 @@ const FlowNodeNormal = (props: FlowNodeNormalProps) => {
             <div className="name">{nodeDef?.name || ""}</div>
             {(nodeDef.defaultAssignees.length > 0) && <Tooltip title={"This node has default assignees"} disableInteractive><div>{nodeDef.defaultAssignees.map(_ => <span key={_.userId}>{gCharMap.BustInSilhouette()}</span>)}</div></Tooltip>}
             {nodeDef.defaultDueDateDurationDaysAfterStarted !== undefined && <Tooltip title={"This node has a due date"} disableInteractive><div>🔔</div></Tooltip>}
+            {props.data.evaluatedNode?.evaluation.error_circularDependency && <Tooltip title={"Circular dependency was detected"} disableInteractive><div className="errorIcon">{gIconMap.Error()}</div></Tooltip>}
         </div>
         <Handle
             type="source"

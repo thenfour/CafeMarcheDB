@@ -1053,6 +1053,9 @@ export const xEventUserResponse = new db3.xTable({
             getQuickFilterWhereClause: (query: string) => false,
             authMap: xEventAuthMap_UserResponse,
         }),
+
+        new RevisionField({ columnName: "revision", authMap: xEventAuthMap_UserResponse, }),
+        new GhostField({ memberName: "uid", authMap: xEventAuthMap_UserResponse }),
     ]
 });
 

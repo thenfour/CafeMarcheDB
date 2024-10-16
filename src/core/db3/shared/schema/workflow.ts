@@ -1,10 +1,10 @@
 
 import { Prisma } from "db";
-import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { TAnyModel } from "../apiTypes";
-import { BoolField, GhostField, MakeColorField, MakeMarkdownTextField, MakeSortOrderField, MakeTitleField, PKField } from "../db3basicFields";
+import { BoolField, GenericStringField, GhostField, MakeColorAsStringField, MakeMarkdownTextField, MakeSortOrderField, MakeTitleField, PKField } from "../db3basicFields";
 import * as db3 from "../db3core";
+import { gGeneralPaletteList } from "shared/color";
 
 // (todo: refine these)
 const xColumnAuthMap: db3.DB3AuthContextPermissionMap = {
@@ -35,7 +35,7 @@ const WorkflowDefArgs_Verbose = Prisma.validator<Prisma.WorkflowDefDefaultArgs>(
         nodeDefs: {
             include: {
                 defaultAssignees: true,
-                dependencies: true,
+                dependenciesAsTarget: true,
             }
         }
     },
@@ -73,7 +73,7 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
         MakeTitleField("name", { authMap: xColumnAuthMap, }),
         MakeMarkdownTextField("description", { authMap: xColumnAuthMap, }),
         MakeSortOrderField("sortOrder", { authMap: xColumnAuthMap, }),
-        MakeColorField("color", { authMap: xColumnAuthMap, }),
+        MakeColorAsStringField("color", { authMap: xColumnAuthMap, }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),
 
         new BoolField({ columnName: "isDefaultForEvents", defaultValue: false, authMap: xColumnAuthMap, allowNull: false }),

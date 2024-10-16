@@ -213,6 +213,8 @@ export enum WorkflowNodeProgressState {
 export interface WorkflowNodeEvaluation {
     nodeDefId: number;
 
+    error_circularDependency: boolean; // was a circular dependency detected while evaluating?
+
     isEvaluated: boolean;
     relevanceSatisfied: boolean; // does relevance criteria pass?
     activationSatisfied: boolean; // 
@@ -412,23 +414,32 @@ const EvaluateTree = (
 
     const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
 
-    // evaluate dependencies
-    const evaluatedChildren: WorkflowEvaluatedDependentNode[] = nodeDef.nodeDependencies.map(childDependency => {
-        const evaluatedChild = EvaluateTree(
-            [...parentPathNodeDefIds, node.nodeDefId],
-            flowDef,
-            flowInstance.nodeInstances.find(n => n.nodeDefId === childDependency.nodeDefId)!,
-            flowInstance,
-            api,
-            evaluatedNodes,
-            instanceMutations
-        );
-        const ret: WorkflowEvaluatedDependentNode = {
-            ...evaluatedChild,
-            dependency: childDependency,
+    // evaluate dependencies -- because we're also detecting circular dependencies, try not to have uncaught exceptions
+    const evaluatedChildren: WorkflowEvaluatedDependentNode[] = [];
+    let circularDependencyDetected = false;
+    for (const childDependency of nodeDef.nodeDependencies) {
+        //nodeDef.nodeDependencies.map(childDependency => {
+        try {
+            const evaluatedChild = EvaluateTree(
+                [...parentPathNodeDefIds, node.nodeDefId],
+                flowDef,
+                flowInstance.nodeInstances.find(n => n.nodeDefId === childDependency.nodeDefId)!,
+                flowInstance,
+                api,
+                evaluatedNodes,
+                instanceMutations
+            );
+            const ret: WorkflowEvaluatedDependentNode = {
+                ...evaluatedChild,
+                dependency: childDependency,
+            }
+            //return ret;
+            evaluatedChildren.push(ret);
+        } catch (e) {
+            console.log(e);
+            circularDependencyDetected = true; // assumes circular dependency error.
         }
-        return ret;
-    });
+    }//);
 
     const completionDependsOnChildren = [WorkflowCompletionCriteriaType.allNodesComplete, WorkflowCompletionCriteriaType.someNodesComplete].includes(nodeDef.completionCriteriaType);
 
@@ -444,6 +455,7 @@ const EvaluateTree = (
         progressState: WorkflowNodeProgressState.InvalidState,
         dependentNodes: evaluatedChildren,
         completenessByAssigneeId: [],
+        error_circularDependency: circularDependencyDetected,
 
         // two cases:
         // 1. this step requires a field to complete. this weight is used.

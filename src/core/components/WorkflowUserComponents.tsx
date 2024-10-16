@@ -3,7 +3,6 @@ import React, { useContext } from "react";
 import { CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowManualCompletionStyle, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { GetStyleVariablesForColor } from "./Color";
-
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
@@ -16,10 +15,11 @@ import { DB3MultiSelect } from "../db3/components/db3Select";
 import * as db3 from "../db3/db3";
 import { Prisma } from "db";
 import { ReactiveInputDialog } from "./CMCoreComponents";
-import { AnimatedCircularProgress, CMSmallButton, EventDateField, Pre } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle } from "./CMSelect";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { CMTextField } from "./CMTextField";
+import { AnimatedCircularProgress, CMSmallButton, EventDateField, Pre } from "./CMCoreComponents2";
+import { ColorPaletteEntry } from "shared/color";
 
 // Converts WorkflowDefGroup (Prisma) to WorkflowNodeGroupDef (runtime)
 function mapGroup(group: Prisma.WorkflowDefGroupGetPayload<{}>): WorkflowNodeGroupDef {
@@ -37,7 +37,7 @@ function mapGroup(group: Prisma.WorkflowDefGroupGetPayload<{}>): WorkflowNodeGro
 // Converts WorkflowDefNodeDependency (Prisma) to WorkflowNodeDependency (runtime)
 function mapNodeDependency(dep: Prisma.WorkflowDefNodeDependencyGetPayload<{}>): WorkflowNodeDependency {
     return {
-        nodeDefId: dep.nodeDefId,
+        nodeDefId: dep.sourceNodeDefId,
         selected: dep.selected,
         determinesRelevance: dep.determinesRelevance,
         determinesActivation: dep.determinesActivation,
@@ -53,14 +53,14 @@ function mapDefaultAssignee(assignee: Prisma.WorkflowDefNodeDefaultAssigneeGetPa
 }
 
 // Converts WorkflowDefNode (Prisma) to WorkflowNodeDef (runtime)
-function mapNode(node: Prisma.WorkflowDefNodeGetPayload<{ include: { dependencies: true, defaultAssignees: true } }>): WorkflowNodeDef {
+function mapNode(node: Prisma.WorkflowDefNodeGetPayload<{ include: { defaultAssignees: true, dependenciesAsTarget: true, } }>): WorkflowNodeDef {
     return {
         id: node.id,
         name: node.name,
         groupDefId: node.groupId || null,
         displayStyle: node.displayStyle as WorkflowNodeDisplayStyle,
         manualCompletionStyle: node.manualCompletionStyle as WorkflowManualCompletionStyle,
-        nodeDependencies: node.dependencies.map(mapNodeDependency),
+        nodeDependencies: node.dependenciesAsTarget.map(mapNodeDependency),
         thisNodeProgressWeight: node.thisNodeProgressWeight,
         relevanceCriteriaType: node.relevanceCriteriaType as WorkflowCompletionCriteriaType,
         activationCriteriaType: node.activationCriteriaType as WorkflowCompletionCriteriaType,
@@ -84,7 +84,7 @@ type mapWorkflowDef_WorkflowDef = Prisma.WorkflowDefGetPayload<{
         nodeDefs: {
             include: {
                 defaultAssignees: true,
-                dependencies: true,
+                dependenciesAsTarget: true,
             }
         }
     }

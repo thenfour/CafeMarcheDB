@@ -10,11 +10,11 @@ import { WorkflowEditorPOC } from "./WorkflowEditorGraph";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { Button, Checkbox } from "@mui/material";
 import { Permission } from "shared/permissions";
-import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { Markdown3Editor } from "./MarkdownControl3";
 import { ColorPick } from "./Color";
 import { gGeneralPaletteList } from "shared/color";
+import { NameValuePair } from "./CMCoreComponents2";
 
 // name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
 // dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),

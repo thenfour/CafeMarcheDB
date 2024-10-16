@@ -203,7 +203,6 @@ const WorkflowDefEditorMain = () => {
                     setValue(option || undefined);
                 }}
                 getOptionInfo={(item: WorkflowDef) => {
-                    console.log(item);
                     return {
                         id: item.id,
                         name: item.name,
@@ -238,9 +237,6 @@ const WorkflowDefEditorMain = () => {
                 initialValue={value}
                 onSave={async (val) => {
                     try {
-                        console.log(`saving workflow def...`);
-                        console.log(val);
-                        //snackbar.showMessage({ severity: "error", children: "not implemented" });
                         const result = await saveMutation(WorkflowDefToMutationArgs(val));
                         snackbar.showMessage({ severity: "success", children: "Saved successfully" });
                     } catch (e) {

@@ -16,7 +16,6 @@ import React, { Suspense } from "react";
 import { ColorPaletteEntry } from "shared/color";
 import { formatTimeSpan } from "shared/time";
 import { CoalesceBool, CoerceToBoolean, CoerceToNumberOrNull, IsNullOrWhitespace, SettingKey } from "shared/utils";
-import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTextField, CMTextInputBase, SongLengthInput } from "src/core/components/CMTextField";
 import { ColorPick, ColorSwatch } from "src/core/components/Color";
 import { Markdown } from "src/core/components/RichTextEditor";
@@ -25,13 +24,13 @@ import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { IconEditCell } from "./IconSelectDialog";
 // NB: do not use API.* here due to circular dependencies
-import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { Markdown3Editor } from "src/core/components/MarkdownControl3";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { CMDBTableFilterModel, TAnyModel, gNullValue } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useDashboardContext } from "src/core/components/DashboardContext";
+import { NameValuePair } from "src/core/components/CMCoreComponents2";
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface PKColumnArgs {

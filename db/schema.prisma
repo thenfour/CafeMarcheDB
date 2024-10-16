@@ -485,7 +485,7 @@ model Event {
 
   createdAt DateTime
   updatedAt DateTime @default(now()) @updatedAt
-  uid       String?  @default(uuid())
+  uid       String   @default(uuid())
 
   // conforms to DateTimeRangeSpec, to encompass all segments. the idea is to be able to sort by event date.
   // normally these are stored in EventSegment, but sorting based on relation like that is not possible (and if it was, it would be VERY messy to manage)
@@ -776,6 +776,9 @@ model EventUserResponse {
   id      Int @id @default(autoincrement())
   userId  Int
   eventId Int
+
+  revision Int     @default(1)
+  uid      String? @default(uuid())
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -1114,10 +1117,12 @@ model WorkflowDefNode {
   height                                 Float?
   selected                               Boolean
 
-  dependencies     WorkflowDefNodeDependency[]
   logItems         WorkflowInstanceLogItem[]
   instances        WorkflowInstanceNode[]
   defaultAssignees WorkflowDefNodeDefaultAssignee[]
+
+  dependenciesAsSource WorkflowDefNodeDependency[] @relation("source")
+  dependenciesAsTarget WorkflowDefNodeDependency[] @relation("target")
 
   @@index([name])
   @@index([workflowDefId])
@@ -1144,11 +1149,13 @@ model WorkflowDefNodeDependency {
   determinesActivation   Boolean
   determinesCompleteness Boolean
 
-  nodeDefId Int
-  nodeDef   WorkflowDefNode @relation(fields: [nodeDefId], references: [id], onDelete: Cascade)
+  sourceNodeDefId Int
+  sourceNodeDef   WorkflowDefNode @relation(fields: [sourceNodeDefId], references: [id], onDelete: Cascade, name: "source")
+
+  targetNodeDefId Int
+  targetNodeDef   WorkflowDefNode @relation(fields: [targetNodeDefId], references: [id], onDelete: Cascade, name: "target")
 
   @@index([selected])
-  @@index([nodeDefId])
 }
 
 model WorkflowInstance {

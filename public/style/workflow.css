@@ -290,3 +290,21 @@
     font-weight: bold;
     font-family: monospace;
 }
+
+
+@keyframes errorIconFlash {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+.errorIcon {
+    color: red;
+    animation: errorIconFlash .8s infinite;
+}

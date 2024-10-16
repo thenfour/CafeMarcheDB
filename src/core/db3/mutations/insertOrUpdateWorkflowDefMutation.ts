@@ -166,8 +166,9 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
     });
 
     const desiredNodes: Prisma.WorkflowDefNodeGetPayload<{}>[] = args.nodes.map(x => {
+        const { defaultAssignees, dependencies, ...rootProps } = x;
         return {
-            ...x,
+            ...rootProps,
             fieldName: x.fieldName || null,
             fieldValueOperator: x.fieldValueOperator || null,
             fieldValueOperand2: x.fieldValueOperand2 || null,
@@ -249,16 +250,17 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
     const existingDefaultAssigneesForEntireWorkflow = await db.workflowDefNodeDefaultAssignee.findMany({
         where: { nodeDefId: { in: args.nodes.map(n => n.id) } }
     });
-    for (const node of nodeCP.create) {
+    //for (const node of nodeCP.create) {
+    for (const node of args.nodes) {
         assert(node.id >= 0, "real IDs must be assigned at this point.");
-        const correspondingArgNode = args.nodes.find(an => an.id === node.id)!;
-        assert(!!correspondingArgNode, "corresponding node not found; that's very bug.");
+        //const correspondingArgNode = args.nodes.find(an => an.id === node.id)!;
+        //assert(!!correspondingArgNode, "corresponding node not found; that's very bug.");
         const existingDefaultAssignees = existingDefaultAssigneesForEntireWorkflow.filter(x => x.nodeDefId === node.id);
 
-        const desiredObjs: Prisma.WorkflowDefNodeDefaultAssigneeGetPayload<{}>[] = correspondingArgNode.defaultAssignees.map(x => {
+        const desiredObjs: Prisma.WorkflowDefNodeDefaultAssigneeGetPayload<{}>[] = node.defaultAssignees.map(x => {
             return {
                 ...x,
-                nodeDefId: correspondingArgNode.id,
+                nodeDefId: node.id,
             };
         });
 
@@ -300,9 +302,9 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         // Create new
         for (const assignee of defaultAssigneesCP.create) {
             const { id, ...rest } = assignee;
-            const data = { ...rest, nodeDefId: correspondingArgNode.id, };
+            const data = { ...rest, nodeDefId: node.id, };
             const newItem = await db.workflowDefNodeDefaultAssignee.create({ data });
-            const resultObj = correspondingArgNode.defaultAssignees.find(n => n.id === assignee.id)!;
+            const resultObj = node.defaultAssignees.find(n => n.id === assignee.id)!;
             resultObj.id = newItem.id;
             resultChanges.push({
                 action: ChangeAction.insert,
@@ -323,18 +325,22 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
     ///// NODE DEPENDENCIES PER NODE ----------------------------------------
     const existingNodeDependenciesForEntireWorkflow = await db.workflowDefNodeDependency.findMany({
-        where: { nodeDefId: { in: args.nodes.map(n => n.id) } }
+        where: { targetNodeDefId: { in: args.nodes.map(n => n.id) } }
     });
-    for (const node of nodeCP.create) {
+    //for (const node of nodeCP.create) {
+    //debugger;
+    for (const node of args.nodes) {
         assert(node.id >= 0, "real IDs must be assigned at this point.");
-        const correspondingArgNode = args.nodes.find(an => an.id === node.id)!;
-        assert(!!correspondingArgNode, "corresponding node not found; that's very bug.");
-        const existingDependencies = existingNodeDependenciesForEntireWorkflow.filter(x => x.nodeDefId === node.id);
+        //const correspondingArgNode = args.nodes.find(an => an.id === node.id)!;
+        //assert(!!correspondingArgNode, "corresponding node not found; that's very bug.");
+        const existingDependencies = existingNodeDependenciesForEntireWorkflow.filter(x => x.targetNodeDefId === node.id);
 
-        const desiredDependencies: Prisma.WorkflowDefNodeDependencyGetPayload<{}>[] = correspondingArgNode.dependencies.map(x => {
+        const desiredDependencies: Prisma.WorkflowDefNodeDependencyGetPayload<{}>[] = node.dependencies.map(x => {
+            const { nodeDefId, ...otherProps } = x;
             return {
-                ...x,
-                nodeDefId: correspondingArgNode.id,
+                ...otherProps,
+                sourceNodeDefId: x.nodeDefId,
+                targetNodeDefId: node.id,
             };
         });
 
@@ -358,7 +364,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         // Update
         for (const dependencyAB of dependenciesCP.potentiallyUpdate) {
             const { a, b } = dependencyAB;
-            const diffResult = ObjectDiff(a, b, { ignore: ["id", "nodeDefId"] });
+            const diffResult = ObjectDiff(a, b, { ignore: ["id"] });
             if (!diffResult.areDifferent) continue;
             await db.workflowDefNodeDependency.update({
                 where: { id: a.id },
@@ -375,10 +381,9 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
         // Create new
         for (const dependency of dependenciesCP.create) {
-            const { id, ...rest } = dependency;
-            const data = { ...rest, nodeDefId: correspondingArgNode.id, };
+            const { id, ...data } = dependency;
             const newItem = await db.workflowDefNodeDependency.create({ data });
-            const resultObj = correspondingArgNode.dependencies.find(n => n.id === dependency.id)!;
+            const resultObj = node.dependencies.find(n => n.id === dependency.id)!;
             resultObj.id = newItem.id;
             resultChanges.push({
                 action: ChangeAction.insert,
