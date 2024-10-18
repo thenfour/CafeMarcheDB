@@ -42,6 +42,7 @@ import { LoginSignup } from "./LoginSignupForm";
 import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
+import { ConfirmProvider } from "./ConfirmationDialog";
 
 const drawerWidth = 260;
 
@@ -689,9 +690,11 @@ const Dashboard2 = ({ navRealm, basePermission, children }: React.PropsWithChild
         <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box sx={{ display: "flex" }} className={`CMDashboard2 ${isMdUp ? "bigScreen" : "smallScreen"} NODE_ENV_${process.env.NODE_ENV}`}>
                 <DashboardContextProvider>
-                    <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
-                        {children}
-                    </Dashboard3>
+                    <ConfirmProvider>
+                        <Dashboard3 navRealm={navRealm} basePermission={basePermission}>
+                            {children}
+                        </Dashboard3>
+                    </ConfirmProvider>
                 </DashboardContextProvider>
             </Box>
         </LocalizationProvider>

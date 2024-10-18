@@ -5,18 +5,19 @@ import { Button } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { getUniqueNegativeID } from "shared/utils";
-import { MakeNewWorkflowDef, WorkflowDef } from "shared/workflowEngine";
+import { MakeNewWorkflowDef, mapWorkflowDef, WorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 import { CMStandardDBChip } from "src/core/components/CMChip";
 import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 import { CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import { useConfirm } from "src/core/components/ConfirmationDialog";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { WorkflowEditorForEvent } from "src/core/components/WorkflowEventComponents";
-import { mapWorkflowDef } from "src/core/components/WorkflowUserComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
+import deleteWorkflowDefMutation from "src/core/db3/mutations/deleteWorkflowDefMutation";
 import insertOrUpdateWorkflowDefMutation from "src/core/db3/mutations/insertOrUpdateWorkflowDefMutation";
 import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
@@ -73,89 +74,6 @@ const WorkflowDefEditor = (props: WorkflowDefEditorProps) => {
 // };
 
 
-function WorkflowDefToMutationArgs(def: WorkflowDef): TinsertOrUpdateWorkflowDefArgs {
-    const { id, description, isDefaultForEvents, color, name, sortOrder } = def;
-    return {
-        id,
-        description: description || "",
-        isDefaultForEvents,
-        color,
-        name,
-        sortOrder,
-        groups: def.groupDefs.map(groupDef => {
-            const { id, color, name, position, selected } = groupDef;
-            return {
-                id, color, name, selected,
-                description: "",
-                positionX: position.x,
-                positionY: position.y,
-                width: groupDef.width || 0,
-                height: groupDef.height || 0,
-            };
-        }),
-        nodes: def.nodeDefs.map(nodeDef => {
-            const { id, name, height, width, position,
-                activationCriteriaType,
-                completionCriteriaType,
-                displayStyle,
-                fieldValueOperand2,
-                manualCompletionStyle,
-                relevanceCriteriaType,
-                selected,
-                thisNodeProgressWeight,
-                defaultDueDateDurationDaysAfterStarted,
-                fieldName,
-                fieldValueOperator,
-
-            } = nodeDef;
-            return {
-                id,
-                name,
-                description: "",
-                width,
-                height,
-                positionX: position.x,
-                positionY: position.y,
-                activationCriteriaType,
-                completionCriteriaType,
-                displayStyle,
-                fieldValueOperand2: JSON.stringify(fieldValueOperand2),
-                manualCompletionStyle,
-                relevanceCriteriaType,
-                selected,
-                thisNodeProgressWeight,
-                defaultDueDateDurationDaysAfterStarted,
-                fieldName,
-                fieldValueOperator,
-                groupId: nodeDef.groupDefId,
-
-                dependencies: nodeDef.nodeDependencies.map(dep => {
-                    const { selected,
-                        determinesRelevance,
-                        determinesActivation,
-                        determinesCompleteness,
-                        nodeDefId } = dep;
-
-                    return {
-                        selected,
-                        determinesRelevance,
-                        determinesActivation,
-                        determinesCompleteness,
-                        nodeDefId,
-                        id: getUniqueNegativeID(),
-                    };
-                }),
-                defaultAssignees: nodeDef.defaultAssignees.map(da => {
-                    return {
-                        userId: da.userId,
-                        id: getUniqueNegativeID(),
-                    };
-                }),
-            };
-        }),
-    };
-}
-
 type ModeOption = "empty" | "new" | "edit";
 
 const WorkflowDefEditorMain = () => {
@@ -169,8 +87,8 @@ const WorkflowDefEditorMain = () => {
         setMode("new");
     };
 
-
     const [saveMutation] = useMutation(insertOrUpdateWorkflowDefMutation);
+    const [deleteMutation] = useMutation(deleteWorkflowDefMutation);
 
     const client = DB3Client.useTableRenderContext({
         requestedCaps: DB3Client.xTableClientCaps.Query | DB3Client.xTableClientCaps.Mutation,
@@ -189,6 +107,8 @@ const WorkflowDefEditorMain = () => {
     const items = (client.items as db3.WorkflowDef_Verbose[]).map(x => mapWorkflowDef(x));
 
     const canEdit = dashboardContext.isAuthorized(Permission.edit_workflow_defs);
+
+    const confirm = useConfirm();
 
     return <div>
         {dashboardContext.isAuthorized(Permission.admin_workflow_defs) && <Button onClick={() => simulateLinkClick("/backstage/editEventCustomFields")}>Edit custom fields</Button>}
@@ -223,11 +143,20 @@ const WorkflowDefEditorMain = () => {
                 onCancel={val => {
                     setValue(undefined);
                 }}
-                onDelete={(val) => {
+                onDelete={async (val) => {
                     try {
-                        console.log(`deleting workflow def...`);
-                        console.log(val);
-                        snackbar.showMessage({ severity: "error", children: "not implemented" });
+                        const confirmed = await confirm({
+                            title: "delete item",
+                            description: `are you sure you want to delete '${val.name}'?`,
+                        });
+                        if (confirmed) {
+                            setValue(undefined);
+                            const result = await deleteMutation({ id: val.id });
+                            snackbar.showMessage({ severity: "success", children: "Deleted successfully" });
+                        }
+                        // console.log(`deleting workflow def...`);
+                        // console.log(val);
+                        // snackbar.showMessage({ severity: "error", children: "not implemented" });
                     } catch (e) {
                         console.log(e);
                         snackbar.showMessage({ severity: "error", children: "Error occurred; see console." });

@@ -4,13 +4,14 @@ import { AuthenticatedCtx } from "blitz";
 import { Permission } from "shared/permissions";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TGeneralDeleteArgs, TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
+import { TGeneralDeleteArgs, TGeneralDeleteArgsSchema, TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
 import db, { Prisma, PrismaClient } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
     resolver.authorize(Permission.login),
+    resolver.zod(TGeneralDeleteArgsSchema),
     async (args: TGeneralDeleteArgs, ctx: AuthenticatedCtx) => {
 
         // TODO

@@ -19,11 +19,13 @@ import {
     XYPosition
 } from '@xyflow/react';
 import { assert } from "blitz";
+import { Prisma } from "db";
 
 import '@xyflow/react/dist/style.css';
-import { getNextSequenceId, hashString } from "shared/utils";
+import { getNextSequenceId, getUniqueNegativeID, hashString } from "shared/utils";
 import { gSwatchColors } from "./color";
 import { gMillisecondsPerDay } from "./time";
+import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
 
 
 
@@ -817,3 +819,173 @@ export const MakeNewWorkflowDef = (): WorkflowDef => ({
     sortOrder: 0,
     nodeDefs: [],
 });
+
+
+
+
+export function WorkflowDefToMutationArgs(def: WorkflowDef): TinsertOrUpdateWorkflowDefArgs {
+    const { id, description, isDefaultForEvents, color, name, sortOrder } = def;
+    return {
+        id,
+        description: description || "",
+        isDefaultForEvents,
+        color,
+        name,
+        sortOrder,
+        groups: def.groupDefs.map(groupDef => {
+            const { id, color, name, position, selected } = groupDef;
+            return {
+                id, color, name, selected,
+                description: "",
+                positionX: position.x,
+                positionY: position.y,
+                width: groupDef.width || 0,
+                height: groupDef.height || 0,
+            };
+        }),
+        nodes: def.nodeDefs.map(nodeDef => {
+            const { id, name, height, width, position,
+                activationCriteriaType,
+                completionCriteriaType,
+                displayStyle,
+                fieldValueOperand2,
+                manualCompletionStyle,
+                relevanceCriteriaType,
+                selected,
+                thisNodeProgressWeight,
+                defaultDueDateDurationDaysAfterStarted,
+                fieldName,
+                fieldValueOperator,
+
+            } = nodeDef;
+            return {
+                id,
+                name,
+                description: "",
+                width,
+                height,
+                positionX: position.x,
+                positionY: position.y,
+                activationCriteriaType,
+                completionCriteriaType,
+                displayStyle,
+                fieldValueOperand2: JSON.stringify(fieldValueOperand2),
+                manualCompletionStyle,
+                relevanceCriteriaType,
+                selected,
+                thisNodeProgressWeight,
+                defaultDueDateDurationDaysAfterStarted,
+                fieldName,
+                fieldValueOperator,
+                groupId: nodeDef.groupDefId,
+
+                dependencies: nodeDef.nodeDependencies.map(dep => {
+                    const { selected,
+                        determinesRelevance,
+                        determinesActivation,
+                        determinesCompleteness,
+                        nodeDefId } = dep;
+
+                    return {
+                        selected,
+                        determinesRelevance,
+                        determinesActivation,
+                        determinesCompleteness,
+                        nodeDefId,
+                        id: getUniqueNegativeID(),
+                    };
+                }),
+                defaultAssignees: nodeDef.defaultAssignees.map(da => {
+                    return {
+                        userId: da.userId,
+                        id: getUniqueNegativeID(),
+                    };
+                }),
+            };
+        }),
+    };
+}
+
+
+
+
+// Converts WorkflowDefGroup (Prisma) to WorkflowNodeGroupDef (runtime)
+function mapGroup(group: Prisma.WorkflowDefGroupGetPayload<{}>): WorkflowNodeGroupDef {
+    return {
+        id: group.id,
+        name: group.name,
+        color: group.color || '',
+        selected: group.selected,
+        position: { x: group.positionX || 0, y: group.positionY || 0 },
+        width: group.width || undefined,
+        height: group.height || undefined,
+    };
+}
+
+// Converts WorkflowDefNodeDependency (Prisma) to WorkflowNodeDependency (runtime)
+function mapNodeDependency(dep: Prisma.WorkflowDefNodeDependencyGetPayload<{}>): WorkflowNodeDependency {
+    return {
+        nodeDefId: dep.sourceNodeDefId,
+        selected: dep.selected,
+        determinesRelevance: dep.determinesRelevance,
+        determinesActivation: dep.determinesActivation,
+        determinesCompleteness: dep.determinesCompleteness,
+    };
+}
+
+// Converts WorkflowDefNodeDefaultAssignee (Prisma) to WorkflowNodeAssignee (runtime)
+function mapDefaultAssignee(assignee: Prisma.WorkflowDefNodeDefaultAssigneeGetPayload<{}>): WorkflowNodeAssignee {
+    return {
+        userId: assignee.userId,
+    };
+}
+
+// Converts WorkflowDefNode (Prisma) to WorkflowNodeDef (runtime)
+function mapNode(node: Prisma.WorkflowDefNodeGetPayload<{ include: { defaultAssignees: true, dependenciesAsTarget: true, } }>): WorkflowNodeDef {
+    return {
+        id: node.id,
+        name: node.name,
+        groupDefId: node.groupId || null,
+        displayStyle: node.displayStyle as WorkflowNodeDisplayStyle,
+        manualCompletionStyle: node.manualCompletionStyle as WorkflowManualCompletionStyle,
+        nodeDependencies: node.dependenciesAsTarget.map(mapNodeDependency),
+        thisNodeProgressWeight: node.thisNodeProgressWeight,
+        relevanceCriteriaType: node.relevanceCriteriaType as WorkflowCompletionCriteriaType,
+        activationCriteriaType: node.activationCriteriaType as WorkflowCompletionCriteriaType,
+        completionCriteriaType: node.completionCriteriaType as WorkflowCompletionCriteriaType,
+        fieldName: node.fieldName || undefined,
+        fieldValueOperator: node.fieldValueOperator ? node.fieldValueOperator as WorkflowFieldValueOperator : undefined,
+        fieldValueOperand2: node.fieldValueOperand2 ? JSON.parse(node.fieldValueOperand2) : undefined,
+        defaultAssignees: node.defaultAssignees.map(mapDefaultAssignee),
+        defaultDueDateDurationDaysAfterStarted: node.defaultDueDateDurationDaysAfterStarted || undefined,
+        position: { x: node.positionX || 0, y: node.positionY || 0 },
+        selected: node.selected,
+        width: node.width || undefined,
+        height: node.height || undefined,
+    };
+}
+
+// Converts WorkflowDef (Prisma) to WorkflowDef (runtime)
+type mapWorkflowDef_WorkflowDef = Prisma.WorkflowDefGetPayload<{
+    include: {
+        groups: true,
+        nodeDefs: {
+            include: {
+                defaultAssignees: true,
+                dependenciesAsTarget: true,
+            }
+        }
+    }
+}>;
+export function mapWorkflowDef(workflowDef: mapWorkflowDef_WorkflowDef): WorkflowDef {
+    return {
+        id: workflowDef.id,
+        name: workflowDef.name,
+        sortOrder: workflowDef.sortOrder,
+        description: workflowDef.description || null,
+        color: workflowDef.color || null,
+        isDefaultForEvents: workflowDef.isDefaultForEvents,
+        groupDefs: workflowDef.groups.map(mapGroup),
+        nodeDefs: workflowDef.nodeDefs.map(mapNode),
+    };
+}

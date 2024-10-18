@@ -206,9 +206,16 @@ export interface TupdateEventCommentArgs {
     // updated at = automatic
 };
 
-export type TGeneralDeleteArgs = {
-    id: number;
-};
+
+export const TGeneralDeleteArgsSchema = z.object({
+    id: z.number(),
+});
+
+export type TGeneralDeleteArgs = z.infer<typeof TGeneralDeleteArgsSchema>;
+
+// export type TGeneralDeleteArgs = {
+//     id: number;
+// };
 
 export interface TdeleteEventCommentArgs {
     id: number;
