@@ -198,9 +198,10 @@ const gNodeTypes = {
 };
 
 interface WorkflowReactFlowEditorProps {
+    readonly?: boolean | undefined;
 }
 
-const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...props }) => {
+export const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = (props) => {
     const ctx = React.useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
 
@@ -442,7 +443,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
         return true;
     };
 
-    const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
+    const readonly = props.readonly || !ctx.instanceMutator.CanCurrentUserEditDefs();
 
     return (
         <div style={{ width: '100%', height: '900px', border: '2px solid #0002' }}>

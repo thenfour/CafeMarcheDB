@@ -6,7 +6,7 @@ import { assertUnreachable } from "shared/utils";
 import { AdminContainer, InspectObject } from "./CMCoreComponents";
 import { useDashboardContext } from "./DashboardContext";
 import * as React from 'react';
-import { WorkflowEditorPOC } from "./WorkflowEditorGraph";
+import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { Button, Checkbox } from "@mui/material";
 import { Permission } from "shared/permissions";
@@ -15,6 +15,7 @@ import { Markdown3Editor } from "./MarkdownControl3";
 import { ColorPick } from "./Color";
 import { gGeneralPaletteList } from "shared/color";
 import { NameValuePair } from "./CMCoreComponents2";
+import { ReactFlowProvider } from "@xyflow/react";
 
 // name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
 // dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
@@ -495,3 +496,56 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
 
 
 
+
+export const WorkflowViewer = (props: { value: WorkflowDef }) => {
+    const dashboardCtx = useDashboardContext();
+
+    const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
+        return WorkflowInitializeInstance(props.value);
+    });
+
+    const instanceMutator: WorkflowInstanceMutator = {
+        CanCurrentUserViewInstances: () => dashboardCtx.isAuthorized(Permission.view_workflow_instances),
+        CanCurrentUserEditInstances: () => dashboardCtx.isAuthorized(Permission.edit_workflow_instances),
+        CanCurrentUserViewDefs: () => dashboardCtx.isAuthorized(Permission.view_workflow_defs),
+        CanCurrentUserEditDefs: () => dashboardCtx.isAuthorized(Permission.edit_workflow_defs),
+
+        DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => false,
+        GetModelFieldNames: (args) => [],
+        GetFieldValueAsString: ({ flowDef, nodeDef, node }) => "",
+        ResetModelAndInstance: () => { },
+        SetAssigneesForNode: (args) => undefined,
+        SetHasBeenEvaluated: args => undefined,
+        SetDueDateForNode: (args) => undefined,
+        AddLogItem: (args) => undefined,
+        SetNodeStatusData: (args) => undefined,
+        SetLastFieldValue: (args) => undefined,
+        SetLastAssignees: (args) => undefined,
+        onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => { },
+    };
+
+    const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
+        return EvaluateWorkflow(props.value, workflowInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
+    });
+
+    const renderer: WorkflowRenderer = {
+        RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => null,
+        RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => null,
+    };
+
+    return <EvaluatedWorkflowProvider
+        flowDef={props.value}
+        flowInstance={workflowInstance}
+        evaluatedFlow={evaluatedInstance}
+        instanceMutator={instanceMutator}
+        renderer={renderer}
+        onWorkflowDefMutationChainComplete={(newFlowDef: WorkflowDef, reEvalRequested: boolean, reason: string) => {
+        }}
+    >
+        <ReactFlowProvider>
+            <WorkflowReactFlowEditor readonly={true} />
+        </ReactFlowProvider>
+
+    </EvaluatedWorkflowProvider>
+
+};

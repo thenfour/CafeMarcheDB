@@ -939,7 +939,6 @@ export interface TinsertOrUpdateWorkflowDefArgs {
     isDefaultForEvents: boolean;
     groups: TinsertOrUpdateWorkflowDefGroup[];
     nodes: TinsertOrUpdateWorkflowDefNode[];
-    changes?: any;
 };
 
 

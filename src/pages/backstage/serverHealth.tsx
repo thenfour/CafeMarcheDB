@@ -25,7 +25,7 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
     });
 
     const totalsRow: FileStatResult = {
-        fileName: "",
+        fileName: `${serverHealthResults.uploads.files.length} files`,
         isDirectory: false,
         size: agg.sum,
         modified: new Date(),
@@ -57,7 +57,7 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                 getRowStyle: (args) => {
                     const fillAmt01 = args.row.size * 100 / agg.max;
                     return {
-                        "--fill_percent": `${fillAmt01.toFixed(0)}%`,
+                        "--fill_percent": `${fillAmt01.toFixed(2)}%`,
                         "background": "linear-gradient(90deg, #08f2 0%, #08f2 var(--fill_percent), transparent var(--fill_percent))"
                     } as React.CSSProperties;
                 }
@@ -98,7 +98,7 @@ const DatabaseStats = ({ serverHealthResults }: { serverHealthResults: GetServer
                 memberName: "table_rows", render: (args) => args.row.table_rows.toLocaleString(), getRowStyle: (args) => {
                     const fillAmt01 = args.row.table_rows * 100 / maxValues.table_rows;
                     return {
-                        "--fill_percent": `${fillAmt01.toFixed(0)}%`,
+                        "--fill_percent": `${fillAmt01.toFixed(2)}%`,
                         "background": "linear-gradient(90deg, #08f2 0%, #08f2 var(--fill_percent), transparent var(--fill_percent))"
                     } as React.CSSProperties;
                 }
@@ -107,7 +107,7 @@ const DatabaseStats = ({ serverHealthResults }: { serverHealthResults: GetServer
                 memberName: "index_length", render: (args) => formatFileSize(args.row.index_length), getRowStyle: (args) => {
                     const fillAmt01 = args.row.index_length * 100 / maxValues.index_length;
                     return {
-                        "--fill_percent": `${fillAmt01.toFixed(0)}%`,
+                        "--fill_percent": `${fillAmt01.toFixed(2)}%`,
                         "background": "linear-gradient(90deg, #08f2 0%, #08f2 var(--fill_percent), transparent var(--fill_percent))"
                     } as React.CSSProperties;
                 }
@@ -116,7 +116,7 @@ const DatabaseStats = ({ serverHealthResults }: { serverHealthResults: GetServer
                 memberName: "data_length", render: (args) => formatFileSize(args.row.data_length), getRowStyle: (args) => {
                     const fillAmt01 = args.row.data_length * 100 / maxValues.data_length;
                     return {
-                        "--fill_percent": `${fillAmt01.toFixed(0)}%`,
+                        "--fill_percent": `${fillAmt01.toFixed(2)}%`,
                         "background": "linear-gradient(90deg, #08f2 0%, #08f2 var(--fill_percent), transparent var(--fill_percent))"
                     } as React.CSSProperties;
                 }

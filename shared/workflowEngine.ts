@@ -19,7 +19,7 @@ import {
     XYPosition
 } from '@xyflow/react';
 import { assert } from "blitz";
-import { Prisma } from "db";
+import { Prisma, WorkflowDefGroup } from "db";
 
 import '@xyflow/react/dist/style.css';
 import { ChangeAction, getNextSequenceId, getUniqueNegativeID, hashString } from "shared/utils";
@@ -93,7 +93,7 @@ export enum WorkflowFieldValueOperator {
 export interface WorkflowNodeGroupDef {
     id: number;
     name: string;
-    color: string;
+    color: string | null;
     selected: boolean;
     position: XYPosition;
     width: number | undefined;
@@ -935,7 +935,7 @@ function mapGroup(group: Prisma.WorkflowDefGroupGetPayload<{}>): WorkflowNodeGro
     return {
         id: group.id,
         name: group.name,
-        color: group.color || '',
+        color: group.color,
         selected: group.selected,
         position: { x: group.positionX || 0, y: group.positionY || 0 },
         width: group.width || undefined,
@@ -1012,3 +1012,138 @@ export function mapWorkflowDef(workflowDef: mapWorkflowDef_WorkflowDef): Workflo
         nodeDefs: workflowDef.nodeDefs.map(mapNode),
     };
 }
+
+
+export function MutationArgsToWorkflowDef(args: TinsertOrUpdateWorkflowDefArgs): WorkflowDef {
+    const { id, description, isDefaultForEvents, color, name, sortOrder } = args;
+
+    // Reconstruct group definitions
+    const groupDefs: WorkflowNodeGroupDef[] = args.groups.map(group => {
+        const {
+            id,
+            color,
+            name,
+            selected,
+            description,
+            positionX,
+            positionY,
+            width,
+            height,
+        } = group;
+
+        return {
+            id,
+            color,
+            name,
+            selected,
+            description: description || "",
+            position: {
+                x: positionX,
+                y: positionY,
+            },
+            width: width || 0,
+            height: height || 0,
+        };
+    });
+
+    // Reconstruct node definitions
+    const nodeDefs: WorkflowNodeDef[] = args.nodes.map(node => {
+        const {
+            id,
+            name,
+            description,
+            width,
+            height,
+            positionX,
+            positionY,
+            activationCriteriaType,
+            completionCriteriaType,
+            displayStyle,
+            fieldValueOperand2,
+            manualCompletionStyle,
+            relevanceCriteriaType,
+            selected,
+            thisNodeProgressWeight,
+            defaultDueDateDurationDaysAfterStarted,
+            fieldName,
+            fieldValueOperator,
+            groupId,
+            dependencies,
+            defaultAssignees,
+        } = node;
+
+        return {
+            id,
+            name,
+            description: description || "",
+            width,
+            height,
+            position: {
+                x: positionX || 0,
+                y: positionY || 0,
+            },
+            activationCriteriaType: activationCriteriaType as WorkflowCompletionCriteriaType,
+            completionCriteriaType: completionCriteriaType as WorkflowCompletionCriteriaType,
+            displayStyle: displayStyle as WorkflowNodeDisplayStyle,
+            fieldValueOperand2: fieldValueOperand2 ? JSON.parse(fieldValueOperand2) : null,
+            manualCompletionStyle: manualCompletionStyle as WorkflowManualCompletionStyle,
+            relevanceCriteriaType: relevanceCriteriaType as WorkflowCompletionCriteriaType,
+            selected,
+            thisNodeProgressWeight,
+            defaultDueDateDurationDaysAfterStarted,
+            fieldName,
+            fieldValueOperator: fieldValueOperator ? (fieldValueOperator as WorkflowFieldValueOperator) : undefined,
+            groupDefId: groupId,
+
+            // Reconstruct node dependencies
+            nodeDependencies: dependencies.map(dep => {
+                const {
+                    selected,
+                    determinesRelevance,
+                    determinesActivation,
+                    determinesCompleteness,
+                    nodeDefId,
+                } = dep;
+
+                return {
+                    selected,
+                    determinesRelevance,
+                    determinesActivation,
+                    determinesCompleteness,
+                    nodeDefId,
+                };
+            }),
+
+            // Reconstruct default assignees
+            defaultAssignees: defaultAssignees.map(da => {
+                const { userId } = da;
+                return { userId };
+            }),
+        };
+    });
+
+    // Construct and return the WorkflowDef object
+    return {
+        id,
+        description: description || "",
+        isDefaultForEvents,
+        color,
+        name,
+        sortOrder,
+        groupDefs,
+        nodeDefs,
+    };
+}
+
+// there are other types of workflowdef formats:
+// - Prisma.WorkflowDefGetPayload<...> // QUERY
+// - TinsertOrUpdateWorkflowDefArgs // SERIALIZABLE
+// - WorkflowDef // WORKFLOWDEF
+
+// QUERY -> SERIALIZABLE         mapWorkflowDef -> WorkflowDefToMutationArgs
+// QUERY -> WORKFLOWDEF          mapWorkflowDef
+// SERIALIZABLE -> QUERY         # not needed
+// SERIALIZABLE -> WORKFLOWDEF   MutationArgsToWorkflowDef
+// WORKFLOWDEF -> QUERY          # not needed
+// WORKFLOWDEF -> SERIALIZABLE   WorkflowDefToMutationArgs
+

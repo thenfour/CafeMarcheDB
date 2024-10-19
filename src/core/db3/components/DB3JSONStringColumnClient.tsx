@@ -4,9 +4,9 @@ import { DialogContent, Tooltip } from "@mui/material";
 import { GridRenderCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Prisma } from "db";
-import React, { Suspense } from "react";
+import React, { cache, Suspense } from "react";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { CMSmallButton, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, CMTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -20,6 +20,8 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { formatFileSize } from "shared/rootroot";
+import { mapWorkflowDef, MutationArgsToWorkflowDef, TWorkflowMutationResult } from "shared/workflowEngine";
+import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -543,6 +545,66 @@ const ActivityLogKeyValueTable = ({ value, cacheData, tableName }: ActivityLogVa
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const ActivityLogWorkflowDefMutationViewer = ({ value, cacheData }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData }) => {
+    if (!Array.isArray(value.changes)) {
+        return <>not an array</>;
+    }
+    return <>
+        <CMTable rows={value.changes} columns={[
+            { memberName: "pkid" },
+            { memberName: "objectType" },
+            { memberName: "action" },
+            {
+                memberName: "oldValues", render: (args) => {
+                    const val = args.row.oldValues;
+                    if (typeof val === "object") {
+                        return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
+                    }
+                    return val;
+                }
+            },
+            {
+                memberName: "newValues", render: (args) => {
+                    const val = args.row.newValues;
+                    if (typeof val === "object") {
+                        return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
+                    }
+                    return val;
+                }
+            },
+        ]} />
+    </>;
+};
+
+const ActivityLogWorkflowDefMutationGraphPopup = ({ value, cacheData, onClose }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData, onClose: () => void }) => {
+    if (!value.serializableFlowDef) {
+        return null;
+    }
+    const workflowDef = MutationArgsToWorkflowDef(value.serializableFlowDef);
+    return <ReactiveInputDialog onCancel={onClose} className="activityLogWorkflowGraphDialog">
+        <WorkflowViewer value={workflowDef} />
+    </ReactiveInputDialog>;
+};
+
+const ActivityLogWorkflowDefMutationRootViewer = ({ value, cacheData }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData }) => {
+    const [changesOpen, setChangesOpen] = React.useState<boolean>(false);
+    const [graphOpen, setGraphOpen] = React.useState<boolean>(false);
+
+    return <>
+        <Toolbar value={value} onExpand={() => setChangesOpen(true)} />
+        <CMSmallButton onClick={() => setGraphOpen(true)}>Open graph</CMSmallButton>
+        <ActivityLogWorkflowDefMutationViewer value={value} cacheData={cacheData} />
+        {changesOpen && <ReactiveInputDialog onCancel={() => setChangesOpen(false)}>
+            <DialogContent>
+                <ActivityLogWorkflowDefMutationViewer value={value} cacheData={cacheData} />
+            </DialogContent>
+        </ReactiveInputDialog>}
+        {graphOpen && <ActivityLogWorkflowDefMutationGraphPopup value={value} cacheData={cacheData} onClose={() => setGraphOpen(false)} />}
+    </>;
+};
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export const ActivityLogValueViewer = ({ value, cacheData, tableName }: ActivityLogValueViewerProps<any>) => {
     const [open, setOpen] = React.useState<boolean>();
 
@@ -570,6 +632,12 @@ export const ActivityLogValueViewer = ({ value, cacheData, tableName }: Activity
                     <ActivityLogSongListViewer value={value as any} cacheData={cacheData} />
                 </DialogContent>
             </ReactiveInputDialog>}
+        </div>
+    }
+
+    if (tableName.toLowerCase() === "workflowdef") {
+        return <div className="JSONStringColumnClient viewer">
+            <ActivityLogWorkflowDefMutationRootViewer value={value as any} cacheData={cacheData} />
         </div>
     }
 

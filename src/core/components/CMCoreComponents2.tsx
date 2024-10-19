@@ -536,6 +536,7 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
                             key={idx}
                             onClick={() => handleHeaderClick(column)}
                             style={{ cursor: CoalesceBool(column.allowSort, true) ? 'pointer' : 'default' }}
+                            className={`${CoalesceBool(column.allowSort, true) ? 'interactable' : ''}`}
                         >
                             {column.header ?? String(column.memberName)}
                             {CoalesceBool(column.allowSort, true) && sortColumn === column.memberName && (
