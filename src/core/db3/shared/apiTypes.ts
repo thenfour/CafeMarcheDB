@@ -922,6 +922,14 @@ export interface TinsertOrUpdateWorkflowDefGroup {
     selected: boolean;
 };
 
+enum WorkflowObjectType {
+    workflow,
+    node,
+    dependency,
+    assignee,
+    group,
+};
+
 export interface TinsertOrUpdateWorkflowDefArgs {
     id: number; // for insertion, this is not used / specified.
     sortOrder: number;
@@ -931,6 +939,7 @@ export interface TinsertOrUpdateWorkflowDefArgs {
     isDefaultForEvents: boolean;
     groups: TinsertOrUpdateWorkflowDefGroup[];
     nodes: TinsertOrUpdateWorkflowDefNode[];
+    changes?: any;
 };
 
 

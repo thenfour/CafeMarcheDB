@@ -199,14 +199,16 @@ const WorkflowDefRootDataEditor = () => {
 /////////////////////////////////////////////////////////////////////////////////////////////
 interface WorkflowEditorForEventProps {
     initialValue: WorkflowDef;
-    onSave: (val: WorkflowDef) => void;
-    onDelete: (val: WorkflowDef) => void;
+    readonly: boolean;
+    onSave: (val: WorkflowDef) => Promise<void>;
+    onDelete: (val: WorkflowDef) => Promise<void>;
     onCancel: (val: WorkflowDef) => void;
 };
 export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
     const dashboardCtx = useDashboardContext();
     // The workflow definition is what you expect. Describes the mechanics and layout of the workflow, which can then be instantiated and used.
     const [workflowDef, setWorkflowDef] = React.useState<WorkflowDef>(props.initialValue);
+    const [isSaving, setIsSaving] = React.useState<boolean>(false);
 
     // The workflow instance is an instantiation of a workflow definition. It basically holds live state which is persisted, like assignees, comments, which is per instance rather than per definition.
     const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
@@ -442,9 +444,32 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             <label htmlFor="canEditDefs">Can edit defs</label> */}
         </AdminContainer>
         <div>
-            <Button onClick={() => props.onSave(workflowDef)} disabled={!defHasChanges}>{gIconMap.Save()} Save</Button>
-            <Button onClick={() => props.onDelete(workflowDef)} disabled={!isExisting}>{gIconMap.Delete()} Delete</Button>
-            <Button onClick={() => props.onCancel(workflowDef)} disabled={!isExisting}>{gIconMap.Cancel()} Cancel</Button>
+            <Button
+                onClick={async () => {
+                    setIsSaving(true);
+                    await props.onSave(workflowDef);
+                    setIsSaving(false);
+                }}
+                disabled={!defHasChanges || isSaving || props.readonly}
+            >
+                {gIconMap.Save()} Save
+            </Button>
+            <Button
+                onClick={async () => {
+                    props.onDelete(workflowDef)
+                }}
+                disabled={!isExisting || isSaving || props.readonly}
+            >
+                {gIconMap.Delete()} Delete
+            </Button>
+            <Button
+                onClick={() => {
+                    props.onCancel(workflowDef)
+                }}
+                disabled={isSaving || props.readonly}
+            >
+                {gIconMap.Cancel()} Cancel
+            </Button>
         </div>
         <EvaluatedWorkflowProvider
             flowDef={workflowDef}

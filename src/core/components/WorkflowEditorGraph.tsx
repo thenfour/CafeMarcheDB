@@ -3,7 +3,7 @@ import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, Nod
 import { nanoid } from "nanoid";
 import React from "react";
 import { gGeneralPaletteList, gLightSwatchColors } from "shared/color";
-import { getHashedColor } from "shared/utils";
+import { getHashedColor, getUniqueNegativeID } from "shared/utils";
 import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
@@ -49,6 +49,17 @@ interface FlowNodeNormalProps {
 const FlowNodeNormal = (props: FlowNodeNormalProps) => {
     const nodeDef = props.data.flowDef.nodeDefs.find(nd => nd.id === props.data.evaluatedNode!.nodeDefId)!;
     if (!nodeDef) return <div>x</div>;
+    // const group = props.data.flowDef.groupDefs.find(g => g.id === nodeDef.groupDefId);
+    // const sv = GetStyleVariablesForColor({
+    //     color: group?.color,
+    //     enabled: true,
+    //     selected: true,
+    //     fillOption: "filled",
+    //     variation: "strong",
+    // });
+    // const style = {
+    //     "--group-color": gGeneralPaletteList.findEntry(group?.color || null)?.strong,
+    // };
     return <>
         <Handle
             type="target"
@@ -56,12 +67,14 @@ const FlowNodeNormal = (props: FlowNodeNormalProps) => {
             //style={{ background: '#555' }}
             onConnect={(params) => console.log('handle onConnect', params)}
         />
-        <div className="normalNodeContent">
-            {props.data.evaluatedNode?.evaluation && <WorkflowNodeProgressIndicator evaluatedNode={props.data.evaluatedNode} />}
-            <div className="name">{nodeDef?.name || ""}</div>
-            {(nodeDef.defaultAssignees.length > 0) && <Tooltip title={"This node has default assignees"} disableInteractive><div>{nodeDef.defaultAssignees.map(_ => <span key={_.userId}>{gCharMap.BustInSilhouette()}</span>)}</div></Tooltip>}
-            {nodeDef.defaultDueDateDurationDaysAfterStarted !== undefined && <Tooltip title={"This node has a due date"} disableInteractive><div>🔔</div></Tooltip>}
-            {props.data.evaluatedNode?.evaluation.error_circularDependency && <Tooltip title={"Circular dependency was detected"} disableInteractive><div className="errorIcon">{gIconMap.Error()}</div></Tooltip>}
+        <div className="normalNodeContent" /*style={sv.style}*/>
+            <div className="normalNodeInner">
+                {props.data.evaluatedNode?.evaluation && <WorkflowNodeProgressIndicator evaluatedNode={props.data.evaluatedNode} />}
+                <div className="name">{nodeDef?.name || ""}</div>
+                {(nodeDef.defaultAssignees.length > 0) && <Tooltip title={"This node has default assignees"} disableInteractive><div>{nodeDef.defaultAssignees.map(_ => <span key={_.userId}>{gCharMap.BustInSilhouette()}</span>)}</div></Tooltip>}
+                {nodeDef.defaultDueDateDurationDaysAfterStarted !== undefined && <Tooltip title={"This node has a due date"} disableInteractive><div>🔔</div></Tooltip>}
+                {props.data.evaluatedNode?.evaluation.error_circularDependency && <Tooltip title={"Circular dependency was detected"} disableInteractive><div className="errorIcon">{gIconMap.Error()}</div></Tooltip>}
+            </div>
         </div>
         <Handle
             type="source"
@@ -115,6 +128,16 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
 
     const normalNodes: CMFlowNode[] = evaluatedWorkflow.evaluatedNodes.map((node: WorkflowEvaluatedNode) => {
         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId);
+
+        const group = flowDef.groupDefs.find(g => g.id === nodeDef?.groupDefId);
+        const groupSV = GetStyleVariablesForColor({
+            color: group?.color,
+            enabled: true,
+            selected: true,
+            fillOption: "filled",
+            variation: "strong",
+        });
+
         const ret: CMFlowNode = {
             position: nodeDef?.position || { x: 0, y: 0 },
             selected: nodeDef?.selected || false,
@@ -127,6 +150,7 @@ const calcReactFlowObjects = (evaluatedWorkflow: EvaluatedWorkflow, flowDef: Wor
             id: makeNormalNodeId(node.nodeDefId),
             hidden: false,
             type: "cmNormal",
+            style: groupSV.style,
             data: {
                 evaluatedNode: node,
                 evaluatedWorkflow,
@@ -471,7 +495,7 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                         {!readonly && <>
                             <button onClick={() => {
                                 const n: WorkflowNodeDef = {
-                                    id: ctx.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
+                                    id: getUniqueNegativeID(),// ctx.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
                                     name: `New node #${ctx.flowDef.nodeDefs.length + 1}`,//nanoid(),
                                     groupDefId: null,
                                     displayStyle: WorkflowNodeDisplayStyle.Normal,
@@ -500,7 +524,8 @@ const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = ({ ...pr
                             }}>+ New node ({ctx.flowDef.nodeDefs.length})</button>
                             <button onClick={() => {
                                 const n: WorkflowNodeGroupDef = {
-                                    id: ctx.flowDef.groupDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
+                                    // must use negative ids to distinguish between database IDs and 
+                                    id: getUniqueNegativeID(),// ctx.flowDef.groupDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
                                     name: `New group #${ctx.flowDef.groupDefs.length + 1}`,//nanoid(),
                                     color: gGeneralPaletteList.getOrdinalEntry((Math.random() * 10000) | 0).id,
                                     height: 200,

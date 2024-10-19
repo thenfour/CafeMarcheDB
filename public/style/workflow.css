@@ -105,11 +105,20 @@
 .react-flow__node-cmNormal {
     color: #999;
     background-color: #fff8;
-    border: 2.5px solid #999;
+    /* border: 2px solid #999; */
     border-radius: 4px;
-    padding: 10px;
+    padding: 0px;
 
     max-width: 250px;
+}
+
+.react-flow__node-cmNormal>div.normalNodeContent {
+    border: 3px solid var(--color-background);
+}
+
+.react-flow__node-cmNormal>div.normalNodeContent>div.normalNodeInner {
+    border: 0;
+    padding: 6px;
 }
 
 .react-flow__node-cmNormal.selected {
@@ -118,13 +127,13 @@
     background-color: #fff;
 }
 
-.react-flow__node-cmNormal .normalNodeContent {
+.react-flow__node-cmNormal .normalNodeInner {
     /* vertically center caption + progress indicator */
     display: flex;
     align-items: center;
 }
 
-.react-flow__node-cmNormal .normalNodeContent .name {
+.react-flow__node-cmNormal .normalNodeInner .name {
     white-space: nowrap;
     /* display: inline-block; */
     text-overflow: ellipsis;
@@ -216,6 +225,7 @@
 /* very tired of react flow hiding my elements for no good reason. */
 .react-flow__node {
     visibility: visible !important;
+    box-shadow: var(--subtle-elevation);
 }
 
 

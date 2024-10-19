@@ -1044,7 +1044,7 @@ export function ObjectDiff<T extends Object>(
         }
     }
 
-    const areDifferent = Object.keys(differences).length > 0;
+    const areDifferent = (Object.keys(differences.lhs).length > 0) || (Object.keys(differences.rhs).length > 0);
 
     return {
         areDifferent,

@@ -22,7 +22,7 @@ import { assert } from "blitz";
 import { Prisma } from "db";
 
 import '@xyflow/react/dist/style.css';
-import { getNextSequenceId, getUniqueNegativeID, hashString } from "shared/utils";
+import { ChangeAction, getNextSequenceId, getUniqueNegativeID, hashString } from "shared/utils";
 import { gSwatchColors } from "./color";
 import { gMillisecondsPerDay } from "./time";
 import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
@@ -32,6 +32,27 @@ import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
 
 
 
+
+export enum WorkflowObjectType {
+    workflow = "workflow",
+    node = "node",
+    dependency = "dependency",
+    assignee = "assignee",
+    group = "group",
+};
+
+export type TWorkflowChange = {
+    action: ChangeAction;
+    objectType: WorkflowObjectType,
+    pkid: number,
+    oldValues?: any,
+    newValues?: any,
+};
+
+export type TWorkflowMutationResult = {
+    changes: TWorkflowChange[];
+    serializableFlowDef: TinsertOrUpdateWorkflowDefArgs | undefined; // same as input, but with ids populated
+};
 
 
 
@@ -977,6 +998,8 @@ type mapWorkflowDef_WorkflowDef = Prisma.WorkflowDefGetPayload<{
         }
     }
 }>;
+
+// converts a db query payload to a real workflowdef
 export function mapWorkflowDef(workflowDef: mapWorkflowDef_WorkflowDef): WorkflowDef {
     return {
         id: workflowDef.id,

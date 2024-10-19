@@ -82,6 +82,10 @@ const WorkflowDefEditorMain = () => {
     const [mode, setMode] = React.useState<ModeOption>("empty");
     const [value, setValue] = React.useState<WorkflowDef | undefined>(undefined);
 
+    // when you save, the db will populate a bunch of new IDs etc. for simplicity, reload the object. during that period,
+    // show spinner, and upon refetch, select the item with the given ID.
+    const [loadNewValueWithId, setLoadNewValueId] = React.useState<number | undefined>(undefined);
+
     const handleNewWorkflowDef = () => {
         setValue(MakeNewWorkflowDef());
         setMode("new");
@@ -104,11 +108,21 @@ const WorkflowDefEditorMain = () => {
             ],
         }),
     });
+
     const items = (client.items as db3.WorkflowDef_Verbose[]).map(x => mapWorkflowDef(x));
 
     const canEdit = dashboardContext.isAuthorized(Permission.edit_workflow_defs);
 
     const confirm = useConfirm();
+
+    React.useEffect(() => {
+        if (loadNewValueWithId) {
+            const item = items.find(i => i.id === loadNewValueWithId);
+            if (item) {
+                setValue(item);
+            }
+        }
+    }, [client.remainingQueryStatus.dataUpdatedAt]);
 
     return <div>
         {dashboardContext.isAuthorized(Permission.admin_workflow_defs) && <Button onClick={() => simulateLinkClick("/backstage/editEventCustomFields")}>Edit custom fields</Button>}
@@ -140,7 +154,7 @@ const WorkflowDefEditorMain = () => {
         </div>
         {value &&
             <WorkflowEditorForEvent
-                onCancel={val => {
+                onCancel={async (val) => {
                     setValue(undefined);
                 }}
                 onDelete={async (val) => {
@@ -154,9 +168,6 @@ const WorkflowDefEditorMain = () => {
                             const result = await deleteMutation({ id: val.id });
                             snackbar.showMessage({ severity: "success", children: "Deleted successfully" });
                         }
-                        // console.log(`deleting workflow def...`);
-                        // console.log(val);
-                        // snackbar.showMessage({ severity: "error", children: "not implemented" });
                     } catch (e) {
                         console.log(e);
                         snackbar.showMessage({ severity: "error", children: "Error occurred; see console." });
@@ -164,9 +175,13 @@ const WorkflowDefEditorMain = () => {
                     client.refetch();
                 }}
                 initialValue={value}
+                readonly={!canEdit}
                 onSave={async (val) => {
                     try {
                         const result = await saveMutation(WorkflowDefToMutationArgs(val));
+                        setValue(undefined);
+                        setLoadNewValueId(result.serializableFlowDef!.id);
+                        // now we need to actually re-query for this object and select it because by serializing, you have changed IDs etc.
                         snackbar.showMessage({ severity: "success", children: "Saved successfully" });
                     } catch (e) {
                         console.log(e);
@@ -174,19 +189,6 @@ const WorkflowDefEditorMain = () => {
                     }
                     client.refetch();
                 }} />}
-        {/* {value && mode === "new" &&
-            <WorkflowEditorForEvent initialValue={value} onSave={(val) => {
-                try {
-                    console.log(`saving new workflow def...`);
-                    console.log(val);
-                    // once you successfully save a new workflow, then you're editing it.
-                    setMode("edit");
-                    snackbar.showMessage({ severity: "error", children: "not implemented" });
-                } catch (e) {
-                    console.log(e);
-                    snackbar.showMessage({ severity: "error", children: "Error occurred; see console." });
-                }
-            }} />} */}
     </div>;
 };
 

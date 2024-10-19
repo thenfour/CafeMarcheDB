@@ -12,12 +12,9 @@ import { mapWorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
+    resolver.authorize(Permission.edit_workflow_defs),
     resolver.zod(TGeneralDeleteArgsSchema),
     async (args: TGeneralDeleteArgs, ctx: AuthenticatedCtx) => {
-
-        // TODO
-        //CMDBAuthorizeOrThrow("deleteEventComment", Permission.comm)
 
         const currentUser = await mutationCore.getCurrentUserCore(ctx);
         const clientIntention: db3.xTableClientUsageContext = {

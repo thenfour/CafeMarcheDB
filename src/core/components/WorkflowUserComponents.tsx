@@ -1,24 +1,23 @@
-import { Button, DialogActions, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
-import React, { useContext } from "react";
-import { CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
-import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowManualCompletionStyle, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
-import { GetStyleVariablesForColor } from "./Color";
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import { Button, DialogActions, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
+import React, { useContext } from "react";
 import { DateTimeRange, DateToYYYYMMDDHHMMSS } from "shared/time";
+import { CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
+import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import * as DB3Client from "../db3/DB3Client";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import * as db3 from "../db3/db3";
 import { ReactiveInputDialog } from "./CMCoreComponents";
-import { CMSelectDisplayStyle } from "./CMSelect";
-import { SettingMarkdown } from "./SettingMarkdown";
-import { CMTextField } from "./CMTextField";
 import { AnimatedCircularProgress, CMSmallButton, EventDateField, Pre } from "./CMCoreComponents2";
-import { ColorPaletteEntry } from "shared/color";
+import { CMSelectDisplayStyle } from "./CMSelect";
+import { CMTextField } from "./CMTextField";
+import { GetStyleVariablesForColor } from "./Color";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 type CMXYPosition = {
     x: number;

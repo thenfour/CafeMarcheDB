@@ -351,7 +351,7 @@ export const SongMetadataView = ({ songData, ...props }: { songData: SongWithMet
             onSave={handleSaveNew}
             row={newObj}
             tableRenderClient={creditsTableClient}
-            label={`Add song credit`}
+            label={<>{gIconMap.Add()} Add song credit</>}
         />}
     </div>;
 
