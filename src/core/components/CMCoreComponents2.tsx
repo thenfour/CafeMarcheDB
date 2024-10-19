@@ -6,9 +6,9 @@ import React, { Suspense } from "react";
 
 import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
-import { IsNullOrWhitespace, arraysContainSameValues, lerp } from "shared/utils";
+import { CoalesceBool, IsNullOrWhitespace, arraysContainSameValues, lerp } from "shared/utils";
 import * as db3 from "../db3/db3";
-import { gIconMap } from "../db3/components/IconMap";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { RouteUrlObject } from "blitz";
 import { UrlObject } from "url";
 
@@ -454,5 +454,108 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
                 {selectedChild}
             </div>}
     </div>;
+};
+
+/////////////////////////////////////////////////////////////////////////
+interface CMTableColumnSpec<T extends Object> {
+    memberName: keyof T;
+    allowSort?: boolean;
+    header?: React.ReactNode;
+    render?: (args: { row: T }) => React.ReactNode;
+    getRowStyle?: (args: { row: T }) => React.CSSProperties | undefined;
+}
+
+interface CMTableProps<T extends Object> {
+    rows: T[];
+    footerRow?: T;
+    className?: string | undefined;
+    getRowStyle?: (args: { row: T }) => React.CSSProperties | undefined;
+    columns: CMTableColumnSpec<T>[];
+}
+
+interface CMTableRowProps<T extends Object> {
+    row: T;
+    style?: React.CSSProperties | undefined;
+    columns: CMTableColumnSpec<T>[];
+}
+
+const CMTableRow = <T extends Object,>({ row, columns, ...props }: CMTableRowProps<T>) => {
+    return (
+        <tr style={props.style}>
+            {columns.map((column, idx) => {
+                const content = column.render
+                    ? column.render({ row })
+                    : String(row[column.memberName]);
+
+                const style = column.getRowStyle ? column.getRowStyle({ row }) : undefined;
+
+                return <td key={idx} style={style}>{content}</td>;
+            })}
+        </tr>
+    );
+};
+
+export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableProps<T>) => {
+    const [sortColumn, setSortColumn] = React.useState<keyof T | null>(null);
+    const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+
+    const sortedRows = React.useMemo(() => {
+        if (!sortColumn) return rows;
+
+        return [...rows].sort((a, b) => {
+            const aValue = a[sortColumn];
+            const bValue = b[sortColumn];
+
+            if (aValue == null && bValue != null) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue != null && bValue == null) return sortDirection === 'asc' ? 1 : -1;
+            if (aValue == null && bValue == null) return 0;
+
+            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [rows, sortColumn, sortDirection]);
+
+    const handleHeaderClick = (column: CMTableColumnSpec<T>) => {
+        if (!CoalesceBool(column.allowSort, true)) return;
+
+        if (sortColumn === column.memberName) {
+            setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortColumn(column.memberName);
+            setSortDirection('asc');
+        }
+    };
+
+    return (
+        <table className={props.className}>
+            <thead>
+                <tr>
+                    {columns.map((column, idx) => (
+                        <th
+                            key={idx}
+                            onClick={() => handleHeaderClick(column)}
+                            style={{ cursor: CoalesceBool(column.allowSort, true) ? 'pointer' : 'default' }}
+                        >
+                            {column.header ?? String(column.memberName)}
+                            {CoalesceBool(column.allowSort, true) && sortColumn === column.memberName && (
+                                <span>{sortDirection === 'asc' ? gCharMap.UpArrow() : gCharMap.DownArrow()}</span>
+                            )}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
+            <tbody>
+                {sortedRows.map((row, idx) => {
+                    const style = props.getRowStyle ? props.getRowStyle({ row }) : undefined;
+                    return <CMTableRow<T> key={idx} row={row} columns={columns} style={style} />;
+                })}
+            </tbody>
+            {props.footerRow &&
+                <tfoot>
+                    <CMTableRow<T> row={props.footerRow} columns={columns} />
+                </tfoot>}
+        </table>
+    );
 };
 

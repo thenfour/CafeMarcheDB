@@ -944,3 +944,34 @@ export interface TinsertOrUpdateWorkflowDefArgs {
 
 
 
+
+export type TableStatsQueryRowRaw = {
+    TABLE_NAME: string,
+    TABLE_ROWS: BigInt,
+    INDEX_LENGTH: BigInt,
+    DATA_LENGTH: BigInt,
+}
+
+export type TableStatsQueryRow = {
+    table_name: string,
+    table_rows: number,
+    index_length: number,
+    data_length: number,
+}
+
+export type FileStatResult = {
+    fileName: string,
+    size: number,
+    modified: Date,
+    isDirectory: boolean,
+}
+
+
+export type GetServerHealthResult = {
+    database: {
+        tableStats: TableStatsQueryRow[],
+    },
+    uploads: {
+        files: FileStatResult[],
+    }
+};

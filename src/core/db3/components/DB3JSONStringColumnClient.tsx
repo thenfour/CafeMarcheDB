@@ -19,6 +19,7 @@ import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { formatFileSize } from "shared/rootroot";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -632,6 +633,7 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
                     asObj = "<parse error>";
                 }
                 return <div className="adminLogJSONValue">
+                    <div className="size">{formatFileSize((params.value as string).length)}</div>
                     <AdminLogPkValue cacheData={this.cacheData} pk={row.recordId} tableName={row.table} />
                     <ActivityLogValueViewer tableName={(params.row as TRow).table} value={asObj} cacheData={this.cacheData} />
                 </div>;

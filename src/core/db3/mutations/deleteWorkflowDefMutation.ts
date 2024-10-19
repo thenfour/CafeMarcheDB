@@ -8,7 +8,7 @@ import { TGeneralDeleteArgs, TGeneralDeleteArgsSchema, TinsertOrUpdateEventSongL
 import db, { Prisma, PrismaClient } from "db";
 import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
-import { mapWorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine";
+import { mapWorkflowDef, TWorkflowMutationResult, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
@@ -44,16 +44,21 @@ export default resolver.pipe(
 
         await db.workflowDef.delete({ where: { id: args.id } });
 
+        const result: TWorkflowMutationResult = {
+            changes: [],
+            serializableFlowDef: serializableDef,
+        };
+
         await RegisterChange({
             action: ChangeAction.delete,
             changeContext,
             ctx,
             pkid: args.id,
             table: 'workflowDef',
-            oldValues: serializableDef,
+            oldValues: result,
         });
 
-        return args;
+        return result;
     }
 );
 

@@ -374,6 +374,7 @@ const gMenuItemGroup2: MenuItemGroup[] = [
         className: "admin users",
         items: [
             { type: "link", path: "/backstage/adminLogs", linkCaption: "Logs", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
+            { type: "link", path: "/backstage/serverHealth", linkCaption: "Server health", renderIcon: () => <SettingsIcon />, permission: Permission.sysadmin },
             { type: "link", path: "/backstage/users", linkCaption: "Users", renderIcon: () => <PersonIcon />, permission: Permission.admin_users },
             { type: "link", path: "/backstage/editUserTags", linkCaption: "Tags", renderIcon: () => gIconMap.Tag(), permission: Permission.admin_users },
             { type: "link", path: "/backstage/roles", linkCaption: "Roles", renderIcon: () => <SecurityIcon />, permission: Permission.admin_users },
@@ -668,10 +669,6 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
             <React.Suspense>
                 {forceLogin ? <LoginSignup /> : children}
             </React.Suspense>
-            {
-                dashboardContext.isShowingAdminControls &&
-                <KeyValueDisplay className="serverStartInfo" data={{ ...dashboardContext.serverStartupState, uptime: formatMillisecondsToDHMS(dashboardContext.serverStartupState.uptimeMS), uptimeMS: undefined }} />
-            }
         </Box>
     </>
     );
