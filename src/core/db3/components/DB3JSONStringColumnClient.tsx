@@ -547,33 +547,35 @@ const ActivityLogKeyValueTable = ({ value, cacheData, tableName }: ActivityLogVa
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const ActivityLogWorkflowDefMutationViewer = ({ value, cacheData }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData }) => {
     if (!Array.isArray(value.changes)) {
-        return <>not an array</>;
+        return null;
     }
-    return <>
-        <CMTable rows={value.changes} columns={[
-            { memberName: "pkid" },
-            { memberName: "objectType" },
-            { memberName: "action" },
-            {
-                memberName: "oldValues", render: (args) => {
-                    const val = args.row.oldValues;
-                    if (typeof val === "object") {
-                        return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
-                    }
-                    return val;
+    if (value.changes.length === 0) {
+        // width important so the floating toolbar doesn't overlap
+        return <div style={{ width: 180 }}>(nothing)</div>
+    }
+    return <CMTable rows={value.changes} columns={[
+        { memberName: "pkid" },
+        { memberName: "objectType" },
+        { memberName: "action" },
+        {
+            memberName: "oldValues", render: (args) => {
+                const val = args.row.oldValues;
+                if (typeof val === "object") {
+                    return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
                 }
-            },
-            {
-                memberName: "newValues", render: (args) => {
-                    const val = args.row.newValues;
-                    if (typeof val === "object") {
-                        return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
-                    }
-                    return val;
+                return val;
+            }
+        },
+        {
+            memberName: "newValues", render: (args) => {
+                const val = args.row.newValues;
+                if (typeof val === "object") {
+                    return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
                 }
-            },
-        ]} />
-    </>;
+                return val;
+            }
+        },
+    ]} />
 };
 
 const ActivityLogWorkflowDefMutationGraphPopup = ({ value, cacheData, onClose }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData, onClose: () => void }) => {
