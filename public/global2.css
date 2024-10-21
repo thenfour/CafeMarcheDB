@@ -1959,12 +1959,24 @@ table.songMetadata tr:hover td .CMSmallButton {
 }
 
 
+.GlobalMetronomeDialog {
+    user-select: none;
+    touch-action: none;
+}
+
+.GlobalMetronomeDialog.ReactiveInputDialog .MuiDialog-container>.MuiPaper-root.MuiDialog-paperFullScreen {
+    max-width: 360px;
+    max-height: 780px;
+}
+
 .GlobalMetronomeDialog .bpmAndTapRow {
     display: flex;
 }
 
+
 .GlobalMetronomeDialog .sliderContainer {
     display: flex;
+    justify-content: center;
 }
 
 .GlobalMetronomeDialog input {
@@ -2002,7 +2014,7 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 .GlobalMetronomeDialog .tapTempoButton,
 .GlobalMetronomeDialog .closeButton,
-.GlobalMetronomeDialog .sliderContainer .nudge {
+.GlobalMetronomeDialog .nudge {
     margin: 15px;
     border-radius: 8px;
     font-weight: bold;
@@ -2028,7 +2040,7 @@ table.songMetadata tr:hover td .CMSmallButton {
     padding: 20px;
 }
 
-.GlobalMetronomeDialog .sliderContainer .nudge {
+.GlobalMetronomeDialog .nudge {
     font-size: 40px;
     height: 60px;
     width: 60px;

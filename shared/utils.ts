@@ -419,6 +419,12 @@ export function lerp(a, b, t) {
     return a + t * (b - a);
 }
 
+// maps x from range [a,b] to range [c,d]
+export function mapRange(x: number, a: number, b: number, c: number, d: number): number {
+    const t = (x - a) / (b - a);
+    return lerp(c, d, t);
+}
+
 let gSequenceId = 0;
 export const getNextSequenceId = () => {
     return gSequenceId++;

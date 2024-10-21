@@ -3,14 +3,15 @@ import { ReactiveInputDialog } from "./CMCoreComponents";
 import { CMTextInputBase } from "./CMTextField";
 import { Clamp, CoerceToNumberOrNull } from "shared/utils";
 import { Button } from "@mui/base";
-import { DialogActions, DialogContent, DialogTitle, Tooltip } from "@mui/material";
+import { DialogActions, DialogContent, DialogTitle, Slider, Tooltip } from "@mui/material";
 import { DashboardContext } from './DashboardContext';
-import { useURLState } from "./CMCoreComponents2";
+//import { useURLState } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
+import { Knob } from "./Knob";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
-const gMinBPM = 30;
-const gMaxBPM = 240;
+const gMinBPM = 40;
+const gMaxBPM = 220;
 
 
 export interface MetronomePlayerProps {
@@ -407,7 +408,8 @@ export interface MetronomeDialogProps {
 }
 
 export const MetronomeDialog = (props: MetronomeDialogProps) => {
-    const [bpm, setBPM] = useURLState<number>("bpm", 120);
+    //const [bpm, setBPM] = useURLState<number>("bpm", 120);
+    const [bpm, setBPM] = React.useState<number>(120);
     const [textBpm, setTextBpm] = React.useState<string>(bpm.toString());
     const [tapTrigger, setTapTrigger] = React.useState<number>(0);
     const [killTapTrigger, setKillTapTrigger] = React.useState<number>(0);// trigger to exit tap mode
@@ -450,18 +452,32 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     }} />
             </div>
             <div className="sliderContainer">
-                <div className="nudge minus freeButton" onClick={() => {
+                {/* <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
+                    setBPM(e.target.valueAsNumber);
+                    setTextBpm(e.target.value);
+                }} /> */}
+                <Knob
+                    className="bpmSlider"
+                    min={gMinBPM}
+                    max={gMaxBPM}
+                    value={bpm}
+                    size={360}
+                    lineWidth={60}
+                    centerRadius={85}
+                    onChange={e => {
+                        //const valueAsNumber = value as number;
+                        setBPM(e);
+                        setTextBpm(e.toString());
+                    }} />
+                {/* <div className="nudge minus freeButton" onClick={() => {
                     setBPM(bpm - 1);
                     setTextBpm((bpm - 1).toString());
                 }}>-</div>
                 <div className="nudge plus freeButton" onClick={() => {
                     setBPM(bpm + 1);
                     setTextBpm((bpm + 1).toString());
-                }}>+</div>
-                <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
-                    setBPM(e.target.valueAsNumber);
-                    setTextBpm(e.target.value);
-                }} />
+                }}>+</div> */}
+
             </div>
         </DialogContent>
         <DialogActions>
@@ -472,8 +488,9 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
 };
 
 export const MetronomeDialogButton = () => {
-    const [open, setOpen] = useURLState<boolean>("metronome", false);
-    //const [open, setOpen] = React.useState<boolean>(false);
+    // don't use URL state because it's unlikely to actually be used like this, and can cause FF to throw exceptions on rapid changes (ok esp for bpm)
+    //const [open, setOpen] = useURLState<boolean>("metronome", false);
+    const [open, setOpen] = React.useState<boolean>(false);
     return <>
         <Tooltip title="Open metronome app"><div className="freeButton globalMetronomeButton" onClick={() => setOpen(!open)}>{gIconMap.VolumeDown()}</div></Tooltip>
         {open && <MetronomeDialog onClose={() => setOpen(false)} />}

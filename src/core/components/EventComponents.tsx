@@ -5,7 +5,7 @@
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
-import { Accordion, AccordionDetails, AccordionSummary, Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Link, MenuItem, Select, Tab, Tabs, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Link, MenuItem, Select, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import { Prisma } from "db";
 import { useRouter } from "next/router";
@@ -21,14 +21,16 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
 import { GetICalRelativeURIForUserAndEvent, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
-import { AdminInspectObject, AttendanceChip, CMStatusIndicator, CustomTabPanel, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog, TabA11yProps } from './CMCoreComponents';
-import { CMAccordion, CMDialogContentText, CMTab, CMTabPanel, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMChipContainer, CMStandardDBChip } from './CMChip';
+import { AdminInspectObject, AttendanceChip, CMStatusIndicator, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog } from './CMCoreComponents';
+import { CMDialogContentText, CMTab, CMTabPanel, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
 import { DashboardContext, useDashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
 import { EventAttendanceControl } from './EventAttendanceComponents';
-import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventWithMetadata, EventsFilterSpec } from './EventComponentsBase';
+import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
 import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
@@ -38,8 +40,6 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { CMChipContainer, CMStandardDBChip } from './CMChip';
-import { CMTextInputBase } from './CMTextField';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
