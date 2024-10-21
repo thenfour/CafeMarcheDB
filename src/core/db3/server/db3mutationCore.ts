@@ -1109,6 +1109,14 @@ export const UpdateEventCustomFieldValues = async (changeContext: ChangeContext,
         jsonValue: a.jsonValue,
     }));
 
+    // apply the existing correct db ids
+    for (const v of desiredValues) {
+        const found = currentValues.find(x => x.customFieldId === v.customFieldId);
+        if (found) {
+            v.id = found.id;
+        }
+    }
+
     // computes which values need to be created, deleted, and which may need to be updated
     const cp = ComputeChangePlan(
         currentValues,
@@ -1138,6 +1146,12 @@ export const UpdateEventCustomFieldValues = async (changeContext: ChangeContext,
                 jsonValue: a.jsonValue,
             },
         });
+        // save the new id.
+        a.id = newAssoc.id;
+        const dv = desiredValues.find(x => x.customFieldId === a.customFieldId);
+        if (dv) {
+            dv.id = newAssoc.id;
+        }
     }
 
     // updates
@@ -1184,6 +1198,5 @@ export const UpdateEventCustomFieldValues = async (changeContext: ChangeContext,
         tableName: "event:eventCustomFieldValue",
         model: { id: args.eventId }
     });
-
 };
 

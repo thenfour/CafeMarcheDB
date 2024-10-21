@@ -283,6 +283,7 @@ const EventCustomFieldEditDialog = (props: EventCustomFieldEditDialogProps) => {
 interface EventCustomFieldsControlProps {
     event: Prisma.EventGetPayload<{ include: { customFieldValues: true } }>;
     readonly?: boolean;
+    refetch: () => void;
 };
 
 export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) => {
@@ -337,6 +338,7 @@ export const EventCustomFieldsControl = (props: EventCustomFieldsControlProps) =
                 console.log(e);
                 snackbar.showMessage({ severity: "error", children: "Error; see console" });
             }
+            props.refetch();
             setOpen(false);
         }} initialValue={potentialValues} />}
     </div>;
@@ -1509,7 +1511,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
         >
             <div className='descriptionLine'>
                 <Suspense>
-                    <EventCustomFieldsControl event={event} readonly={props.readonly} />
+                    <EventCustomFieldsControl event={event} readonly={props.readonly} refetch={refetch} />
                 </Suspense>
                 <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
             </div>
