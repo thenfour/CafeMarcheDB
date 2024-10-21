@@ -35,7 +35,7 @@ import { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
-const gPageSizeDefault = 25 as number;
+const gPageSizeDefault = 50 as number;
 
 
 interface ClipboardControlsProps {
@@ -95,6 +95,7 @@ export type DB3EditGridProps = {
     renderExtraActions?: (args: DB3EditGridExtraActionsArgs) => React.ReactNode,
     tableParams?: TAnyModel,
     readOnly?: boolean,
+    defaultSortModel?: GridSortModel,
 };
 
 export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
@@ -108,7 +109,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         pageSize: gPageSizeDefault,
     });
 
-    const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
+    const [sortModel, setSortModel] = React.useState<GridSortModel>(props.defaultSortModel || []);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
     const clientIntention: db3.xTableClientUsageContext = { intention: 'admin', mode: 'primary' };

@@ -126,7 +126,7 @@ const UserListContent = () => {
         </div>;
     }
 
-    return <DB3EditGrid tableSpec={tableSpec} renderExtraActions={extraActions} />;
+    return <DB3EditGrid tableSpec={tableSpec} renderExtraActions={extraActions} defaultSortModel={[{ field: "id", sort: "desc" }]} />;
 };
 
 const UserListPage: BlitzPage = () => {

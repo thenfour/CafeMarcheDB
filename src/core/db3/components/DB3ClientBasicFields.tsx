@@ -44,7 +44,7 @@ export class PKColumnClient extends DB3ClientCore.IColumnClient {
             editable: false,
             headerName: args.columnName,
             visible: true,
-            width: 70,
+            width: 90, // ids don't need to be this wide, but it helps keep the column clean when hovering
             className: undefined,
             fieldCaption: "id",
             isAutoFocusable: false,
