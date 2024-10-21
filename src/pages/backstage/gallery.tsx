@@ -28,6 +28,7 @@ import { DateCalendar, DatePicker } from "@mui/x-date-pickers";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { useQuery } from "@blitzjs/rpc";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
+import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
 
 interface FilterSpec {
     qfText: string;
@@ -281,7 +282,7 @@ const ActivityLogValueViewerTester = () => {
         <CMTextField value={tableName} onChange={(e, v) => setTableName(v)} autoFocus={false} label="Table name" />
         <CMTextField value={value} onChange={(e, v) => setValue(v)} autoFocus={false} label="Value" multiline={true} />
         <div style={{ width: 350, border: "2px solid #0004" }}>
-            <DB3Client.ActivityLogValueViewer tableName={tableName} value={obj} cacheData={filterSourceData} />
+            <DB3Client.ActivityLogValueViewer tableName={tableName} value={obj} cacheData={filterSourceData} renderWorkflow={(workflowDef) => <WorkflowViewer value={workflowDef} />} />
         </div>
     </div>;
 };

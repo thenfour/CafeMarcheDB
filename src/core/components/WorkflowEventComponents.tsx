@@ -1,21 +1,24 @@
 // workflow client code specific to CMDB events
 
-import { EvaluatedWorkflow, EvaluateWorkflow, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowLogItemType, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
-import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeTextBinding, WFFieldBinding, WorkflowRenderer } from "./WorkflowUserComponents";
-import { assertUnreachable } from "shared/utils";
-import { AdminContainer, InspectObject } from "./CMCoreComponents";
-import { useDashboardContext } from "./DashboardContext";
-import * as React from 'react';
-import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
-import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { Button, Checkbox } from "@mui/material";
-import { Permission } from "shared/permissions";
-import { CMTextField } from "./CMTextField";
-import { Markdown3Editor } from "./MarkdownControl3";
-import { ColorPick } from "./Color";
-import { gGeneralPaletteList } from "shared/color";
-import { NameValuePair } from "./CMCoreComponents2";
 import { ReactFlowProvider } from "@xyflow/react";
+import * as React from 'react';
+import { gGeneralPaletteList } from "shared/color";
+import { Permission } from "shared/permissions";
+import { CoalesceBool } from "shared/utils";
+import * as db3 from "src/core/db3/db3";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
+import { AdminContainer, InspectObject } from "./CMCoreComponents";
+import { NameValuePair } from "./CMCoreComponents2";
+import { CMTextField } from "./CMTextField";
+import { ColorPick } from "./Color";
+import { DashboardContextData, useDashboardContext } from "./DashboardContext";
+import { Markdown3Editor } from "./MarkdownControl3";
+
+import { EvaluatedWorkflow, EvaluateWorkflow, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
+import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeTextBinding, WFFieldBinding, WorkflowRenderer } from "./WorkflowUserComponents";
+
 
 // name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
 // dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
@@ -47,14 +50,34 @@ import { ReactFlowProvider } from "@xyflow/react";
 interface MockEvent {
     name: string;
     description: string | null;
+    locationDescription: string | null;
+    typeId: number;
+    statusId: number;
+    expectedAttendanceUserTagId: number;
+    frontpageVisible: boolean;
 };
 
-const MakeEmptyModel = (): MockEvent => ({
-    name: `(empty model)`,
-    description: null,
-});
+// include custom fields
+type MockEventModel = MockEvent & Record<string, any>;
+
+const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
+    const ret: MockEventModel = {
+        name: `(empty model)`,
+        description: null,
+        frontpageVisible: false,
+        locationDescription: null,
+        expectedAttendanceUserTagId: dashboardContext.userTag.items[0]!.id,
+        typeId: dashboardContext.eventType.items[0]!.id,
+        statusId: dashboardContext.eventStatus.items[0]!.id,
+    };
+    for (const f of dashboardContext.eventCustomField.items) {
+        ret[f.name] = null; // todo: default values for custom fields?
+    }
+    return ret;
+};
 
 export function getMockEventBinding(args: {
+    dashboardContext: DashboardContextData,
     model: MockEvent,
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
@@ -63,9 +86,48 @@ export function getMockEventBinding(args: {
     setOperand2?: (newOperand: unknown) => void,
 }): WFFieldBinding<unknown> {
 
+    // do custom fields first
+    const cf = args.dashboardContext.eventCustomField.find(x => x.name === args.nodeDef.fieldName);
+    if (cf) {
+        switch (cf.dataType as db3.EventCustomFieldDataType) {
+            case db3.EventCustomFieldDataType.Checkbox:
+                return MakeBoolBinding({
+                    tidiedNodeInstance: args.tidiedNodeInstance,
+                    flowDef: args.flowDef,
+                    nodeDef: args.nodeDef,
+                    setOperand2: args.setOperand2,
+                    value: args.model[cf.name],
+                    setValue: (val) => {
+                        const newModel = { ...args.model };
+                        newModel[cf.name] = CoalesceBool(val, false); // TODO: default value? or allow null or ..sometihng?
+                        args.setModel && args.setModel(newModel);
+                    },
+                });
+            case db3.EventCustomFieldDataType.RichText:
+            case db3.EventCustomFieldDataType.SimpleText:
+                return MakeTextBinding({
+                    tidiedNodeInstance: args.tidiedNodeInstance,
+                    flowDef: args.flowDef,
+                    nodeDef: args.nodeDef,
+                    setOperand2: args.setOperand2,
+                    value: args.model[cf.name] || "",
+                    setValue: (val) => {
+                        const newModel = { ...args.model };
+                        newModel[cf.name] = val;
+                        args.setModel && args.setModel(newModel);
+                    },
+                });
+            case db3.EventCustomFieldDataType.Options:
+                console.log(`todo: handle case db3.EventCustomFieldDataType.Options`);
+                // TODO
+                break;
+        }
+    }
+
     const field = args.nodeDef.fieldName as keyof MockEvent;
     switch (field) {
         case "description":
+        case "locationDescription":
         case "name":
             return MakeTextBinding({
                 tidiedNodeInstance: args.tidiedNodeInstance,
@@ -78,7 +140,20 @@ export function getMockEventBinding(args: {
                     newModel[field] = val;
                     args.setModel && args.setModel(newModel);
                 },
-            })
+            });
+        case "frontpageVisible": // defaults to false
+            return MakeBoolBinding({
+                tidiedNodeInstance: args.tidiedNodeInstance,
+                flowDef: args.flowDef,
+                nodeDef: args.nodeDef,
+                setOperand2: args.setOperand2,
+                value: args.model[field],
+                setValue: (val) => {
+                    const newModel = { ...args.model };
+                    newModel[field] = CoalesceBool(val, false);
+                    args.setModel && args.setModel(newModel);
+                },
+            });
         case null: // new fields or changing schemas or whatever need to be tolerant.
         case undefined:
             return MakeAlwaysBinding({
@@ -98,18 +173,6 @@ export function getMockEventBinding(args: {
         // default:
         //     assertUnreachable(field, `unknown field '${field}'`);
     }
-    //         return MakeBoolBinding({
-    //             tidiedNodeInstance: args.tidiedNodeInstance,
-    //             flowDef: args.flowDef,
-    //             nodeDef: args.nodeDef,
-    //             setValue: (val) => {
-    //                 const newModel = { ...args.model };
-    //                 newModel.boolQuestions[index] = val;
-    //                 args.setModel && args.setModel(newModel);
-    //             },
-    //             setOperand2: args.setOperand2,
-    //             value: valueOr(args.model.boolQuestions[index], null, null),
-    //         });
     //         return MakeAlwaysBinding({
     //             tidiedNodeInstance: args.tidiedNodeInstance,
     //             flowDef: args.flowDef,
@@ -231,7 +294,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
     );
 
     // The model is the external data source that the workflow engine can use to determine completeness of tasks.
-    const [model, setModel] = React.useState<MockEvent>(MakeEmptyModel);
+    const [model, setModel] = React.useState<MockEventModel>(() => MakeEmptyModel(dashboardCtx));
 
     const setOperand2 = (nodeDefId: number, newOperand: unknown) => {
         const nd = workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
@@ -240,31 +303,15 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
     };
 
-    // const [canViewInstances, setCanViewInstances] = React.useState<boolean>(true);
-    // const [canEditInstances, setCanEditInstances] = React.useState<boolean>(true);
-    // const [canViewDefs, setCanViewDefs] = React.useState<boolean>(true);
-    // const [canEditDefs, setCanEditDefs] = React.useState<boolean>(true);
-
     const instanceMutator: WorkflowInstanceMutator = {
-        CanCurrentUserViewInstances: () => {
-            //return canViewInstances;
-            return dashboardCtx.isAuthorized(Permission.view_workflow_instances);
-        },
-        CanCurrentUserEditInstances: () => {
-            //return canEditInstances;
-            return dashboardCtx.isAuthorized(Permission.edit_workflow_instances);
-        },
-        CanCurrentUserViewDefs: () => {
-            //return canViewDefs;
-            return dashboardCtx.isAuthorized(Permission.view_workflow_defs);
-        },
-        CanCurrentUserEditDefs: () => {
-            //return canEditDefs;
-            return dashboardCtx.isAuthorized(Permission.edit_workflow_defs);
-        },
+        CanCurrentUserViewInstances: () => dashboardCtx.isAuthorized(Permission.view_workflow_instances),
+        CanCurrentUserEditInstances: () => dashboardCtx.isAuthorized(Permission.edit_workflow_instances),
+        CanCurrentUserViewDefs: () => dashboardCtx.isAuthorized(Permission.view_workflow_defs),
+        CanCurrentUserEditDefs: () => dashboardCtx.isAuthorized(Permission.edit_workflow_defs),
 
         DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
             const binding = getMockEventBinding({
+                dashboardContext: dashboardCtx,
                 model,
                 flowDef,
                 nodeDef,
@@ -278,11 +325,12 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             return binding.doesFieldValueSatisfyCompletionCriteria();
         },
         GetModelFieldNames: (args) => {
-            return Object.keys(MakeEmptyModel());
+            return Object.keys(MakeEmptyModel(dashboardCtx));
         },
         // result should be equality-comparable and database-serializable
         GetFieldValueAsString: ({ flowDef, nodeDef, node }) => {
             const binding = getMockEventBinding({
+                dashboardContext: dashboardCtx,
                 model,
                 flowDef,
                 nodeDef,
@@ -291,7 +339,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             return binding.valueAsString;
         },
         ResetModelAndInstance: () => {
-            setModel(MakeEmptyModel());
+            setModel(MakeEmptyModel(dashboardCtx));
             setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
             setEvaluationReason("ResetModelAndInstance");
             setEvaluationTrigger(evaluationTrigger + 1);
@@ -385,6 +433,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
     const renderer: WorkflowRenderer = {
         RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => {
             const binding = getMockEventBinding({
+                dashboardContext: dashboardCtx,
                 model,
                 flowDef,
                 nodeDef,
@@ -402,6 +451,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         },
         RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => {
             const binding = getMockEventBinding({
+                dashboardContext: dashboardCtx,
                 model,
                 flowDef,
                 nodeDef,
@@ -457,7 +507,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             </Button>
             <Button
                 onClick={async () => {
-                    props.onDelete(workflowDef)
+                    await props.onDelete(workflowDef)
                 }}
                 disabled={!isExisting || isSaving || props.readonly}
             >

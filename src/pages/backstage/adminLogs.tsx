@@ -15,6 +15,7 @@ import * as db3 from "src/core/db3/db3";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { Prisma } from "db";
+import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
 
 type AdHocUser = Prisma.UserGetPayload<{
     select: {
@@ -45,6 +46,8 @@ const MainContent = () => {
 
     const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
 
+    const renderWorkflow = (workflowDef) => <WorkflowViewer value={workflowDef} />;
+
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xChange,
         columns: [
@@ -57,8 +60,8 @@ const MainContent = () => {
             new DB3Client.GenericStringColumnClient({ columnName: "table", cellWidth: 150 }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 80, }),
             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
-            new DB3Client.JSONStringColumnClient({ columnName: "oldValues", cacheData: filterSourceData, }),
-            new DB3Client.JSONStringColumnClient({ columnName: "newValues", cacheData: filterSourceData, }),
+            new DB3Client.JSONStringColumnClient({ columnName: "oldValues", cacheData: filterSourceData, renderWorkflow }),
+            new DB3Client.JSONStringColumnClient({ columnName: "newValues", cacheData: filterSourceData, renderWorkflow }),
             new DB3Client.DateTimeColumn({ columnName: "changedAt" }),
         ],
     });

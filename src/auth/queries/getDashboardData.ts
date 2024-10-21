@@ -12,7 +12,7 @@ import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
 
 
 async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
-    const publicData = ctx.session?.$publicData;
+    const publicData = { ...ctx.session?.$publicData };
     if (!publicData?.userId) return false;
 
     // only query if x seconds has elapsed since last fetch
@@ -42,6 +42,8 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
     });
     await ctx.session.$setPublicData({
         permissionsLastRefreshedAt: new Date().toISOString(),
+        GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
+        GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     });
 
     // ensure user has an access token.
@@ -76,6 +78,7 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
             return true;
         }
     }
+
     return false;
 }
 

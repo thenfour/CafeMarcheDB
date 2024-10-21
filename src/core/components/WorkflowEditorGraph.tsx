@@ -1,13 +1,13 @@
-import { Button, FormControlLabel, Tooltip } from "@mui/material";
+import { Button, Tooltip } from "@mui/material";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { nanoid } from "nanoid";
 import React from "react";
-import { gGeneralPaletteList, gLightSwatchColors } from "shared/color";
+import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, getUniqueNegativeID } from "shared/utils";
-import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { GetStyleVariablesForColor } from "./Color";
+
+import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 

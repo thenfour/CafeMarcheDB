@@ -1,9 +1,11 @@
+import { useSession } from "@blitzjs/auth";
 import { BlitzPage } from "@blitzjs/next";
 import { NoSsr } from "@mui/material";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React, { Suspense } from "react";
 import { EnNlFr, LangSelectString } from "shared/utils";
+import GoogleAnalytics from "src/core/components/GoogleAnalytics";
 import { HomepageMain } from "src/core/components/homepageComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import { API, HomepageContentSpec } from "src/core/db3/clientAPI";
@@ -11,6 +13,7 @@ import * as db3 from "src/core/db3/db3";
 import { CMDBTableFilterModel } from "src/core/db3/shared/apiTypes";
 
 const MainContent = ({ lang, onLangChange }: { lang: EnNlFr, onLangChange: (newLang: EnNlFr) => void }) => {
+    const sess = useSession();
     const eventsTableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
         columns: [
@@ -60,6 +63,7 @@ const MainContent = ({ lang, onLangChange }: { lang: EnNlFr, onLangChange: (newL
     };
 
     return <NoSsr>
+        <GoogleAnalytics trackingId={sess.GOOGLE_ANALYTICS_ID_BACKSTAGE} />
         <HomepageMain content={content} className="realFrontpage" fullPage={true} lang={lang} onLangChange={onLangChange} />
     </NoSsr>;
 };

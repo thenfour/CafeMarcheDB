@@ -4,8 +4,10 @@ import { DialogContent, Tooltip } from "@mui/material";
 import { GridRenderCellParams } from "@mui/x-data-grid";
 import { assert } from "blitz";
 import { Prisma } from "db";
-import React, { cache, Suspense } from "react";
+import React, { Suspense } from "react";
+import { formatFileSize } from "shared/rootroot";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
+import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, CMTable, NameValuePair } from "src/core/components/CMCoreComponents2";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
@@ -18,10 +20,8 @@ import { TinsertOrUpdateEventSongListArgs } from "../shared/apiTypes";
 import * as db3fields from "../shared/db3basicFields";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
-import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
-import { formatFileSize } from "shared/rootroot";
-import { mapWorkflowDef, MutationArgsToWorkflowDef, TWorkflowMutationResult } from "shared/workflowEngine";
-import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
+
+import { MutationArgsToWorkflowDef, TWorkflowMutationResult, WorkflowDef } from "shared/workflowEngine";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -38,7 +38,7 @@ interface ActivityLogValueViewerProps<T> {
     value: T;
     tableName: string;
     cacheData: ActivityLogCacheData;
-
+    renderWorkflow: (workflowDef: WorkflowDef) => React.ReactNode
 };
 
 
@@ -266,7 +266,7 @@ type ActivityLogSongListV2 = Partial<TinsertOrUpdateEventSongListArgs> & Pick<Ti
 
 const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogSongListV2, cacheData: ActivityLogCacheData }) => {
     if (!value.songs) {
-        return <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={value} />;
+        return <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={value} renderWorkflow={(f) => "nope"} />;
     }
 
     const items: (ActivityLogSongListSongPayload | ActivityLogSongListDividerPayload)[] = [];
@@ -285,7 +285,7 @@ const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogS
     const { songs, dividers, ...otherFields } = value;
 
     return <>
-        <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={otherFields} />
+        <ActivityLogKeyValueTable cacheData={cacheData} tableName={"<always treat as keyvalues>"} value={otherFields} renderWorkflow={(f) => "nope"} />
         <table>
             <thead>
                 <tr>
@@ -545,7 +545,7 @@ const ActivityLogKeyValueTable = ({ value, cacheData, tableName }: ActivityLogVa
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const ActivityLogWorkflowDefMutationViewer = ({ value, cacheData }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData }) => {
+const ActivityLogWorkflowDefMutationViewer = ({ value, cacheData, renderWorkflow }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData, renderWorkflow: (workflowDef: WorkflowDef) => React.ReactNode }) => {
     if (!Array.isArray(value.changes)) {
         return null;
     }
@@ -561,7 +561,7 @@ const ActivityLogWorkflowDefMutationViewer = ({ value, cacheData }: { value: TWo
             memberName: "oldValues", render: (args) => {
                 const val = args.row.oldValues;
                 if (typeof val === "object") {
-                    return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
+                    return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} renderWorkflow={renderWorkflow} />
                 }
                 return val;
             }
@@ -570,7 +570,7 @@ const ActivityLogWorkflowDefMutationViewer = ({ value, cacheData }: { value: TWo
             memberName: "newValues", render: (args) => {
                 const val = args.row.newValues;
                 if (typeof val === "object") {
-                    return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} />
+                    return <ActivityLogKeyValueTable cacheData={cacheData} tableName="--" value={val} renderWorkflow={renderWorkflow} />
                 }
                 return val;
             }
@@ -578,36 +578,37 @@ const ActivityLogWorkflowDefMutationViewer = ({ value, cacheData }: { value: TWo
     ]} />
 };
 
-const ActivityLogWorkflowDefMutationGraphPopup = ({ value, cacheData, onClose }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData, onClose: () => void }) => {
+const ActivityLogWorkflowDefMutationGraphPopup = ({ value, cacheData, onClose, renderWorkflow, }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData, onClose: () => void, renderWorkflow: (workflowDef: WorkflowDef) => React.ReactNode; }) => {
     if (!value.serializableFlowDef) {
         return null;
     }
     const workflowDef = MutationArgsToWorkflowDef(value.serializableFlowDef);
     return <ReactiveInputDialog onCancel={onClose} className="activityLogWorkflowGraphDialog">
-        <WorkflowViewer value={workflowDef} />
+        {/* <WorkflowViewer value={workflowDef} /> */}
+        {renderWorkflow && renderWorkflow(workflowDef)}
     </ReactiveInputDialog>;
 };
 
-const ActivityLogWorkflowDefMutationRootViewer = ({ value, cacheData }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData }) => {
+const ActivityLogWorkflowDefMutationRootViewer = ({ value, cacheData, renderWorkflow }: { value: TWorkflowMutationResult, cacheData: ActivityLogCacheData, renderWorkflow: (workflowDef: WorkflowDef) => React.ReactNode }) => {
     const [changesOpen, setChangesOpen] = React.useState<boolean>(false);
     const [graphOpen, setGraphOpen] = React.useState<boolean>(false);
 
     return <>
         <Toolbar value={value} onExpand={() => setChangesOpen(true)} />
         <CMSmallButton onClick={() => setGraphOpen(true)}>Open graph</CMSmallButton>
-        <ActivityLogWorkflowDefMutationViewer value={value} cacheData={cacheData} />
+        <ActivityLogWorkflowDefMutationViewer value={value} cacheData={cacheData} renderWorkflow={renderWorkflow} />
         {changesOpen && <ReactiveInputDialog onCancel={() => setChangesOpen(false)}>
             <DialogContent>
-                <ActivityLogWorkflowDefMutationViewer value={value} cacheData={cacheData} />
+                <ActivityLogWorkflowDefMutationViewer value={value} cacheData={cacheData} renderWorkflow={renderWorkflow} />
             </DialogContent>
         </ReactiveInputDialog>}
-        {graphOpen && <ActivityLogWorkflowDefMutationGraphPopup value={value} cacheData={cacheData} onClose={() => setGraphOpen(false)} />}
+        {graphOpen && <ActivityLogWorkflowDefMutationGraphPopup value={value} cacheData={cacheData} onClose={() => setGraphOpen(false)} renderWorkflow={renderWorkflow} />}
     </>;
 };
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export const ActivityLogValueViewer = ({ value, cacheData, tableName }: ActivityLogValueViewerProps<any>) => {
+export const ActivityLogValueViewer = ({ value, cacheData, tableName, renderWorkflow, }: ActivityLogValueViewerProps<any>) => {
     const [open, setOpen] = React.useState<boolean>();
 
     if (value === null) return <div className="JSONStringColumnClient viewer">null</div>;
@@ -639,16 +640,16 @@ export const ActivityLogValueViewer = ({ value, cacheData, tableName }: Activity
 
     if (tableName.toLowerCase() === "workflowdef") {
         return <div className="JSONStringColumnClient viewer">
-            <ActivityLogWorkflowDefMutationRootViewer value={value as any} cacheData={cacheData} />
+            <ActivityLogWorkflowDefMutationRootViewer value={value as any} cacheData={cacheData} renderWorkflow={renderWorkflow} />
         </div>
     }
 
     return <div className="JSONStringColumnClient viewer">
         <Toolbar value={value} onExpand={() => setOpen(true)} />
-        <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} />
+        <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} renderWorkflow={renderWorkflow} />
         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
             <DialogContent>
-                <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} />
+                <ActivityLogKeyValueTable cacheData={cacheData} tableName={tableName} value={value} renderWorkflow={renderWorkflow} />
             </DialogContent>
         </ReactiveInputDialog>}
     </div>;
@@ -661,6 +662,7 @@ export const ActivityLogValueViewer = ({ value, cacheData, tableName }: Activity
 export interface JSONStringColumnClientArgs {
     columnName: string;
     cacheData: ActivityLogCacheData;
+    renderWorkflow?: (workflowDef: WorkflowDef) => React.ReactNode;
 };
 
 type TRow = Prisma.ChangeGetPayload<{}>;
@@ -668,6 +670,7 @@ type TRow = Prisma.ChangeGetPayload<{}>;
 export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
     typedSchemaColumn: db3fields.GenericStringField;
     cacheData: ActivityLogCacheData;
+    renderWorkflow: undefined | ((workflowDef: WorkflowDef) => React.ReactNode);
 
     constructor(args: JSONStringColumnClientArgs) {
         super({
@@ -682,6 +685,7 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
             fieldDescriptionSettingName: undefined,
         });
         this.cacheData = args.cacheData;
+        this.renderWorkflow = args.renderWorkflow;
     }
 
     ApplyClientToPostClient = undefined;
@@ -705,7 +709,7 @@ export class JSONStringColumnClient extends DB3ClientCore.IColumnClient {
                 return <div className="adminLogJSONValue">
                     <div className="size">{formatFileSize((params.value as string).length)}</div>
                     <AdminLogPkValue cacheData={this.cacheData} pk={row.recordId} tableName={row.table} />
-                    <ActivityLogValueViewer tableName={(params.row as TRow).table} value={asObj} cacheData={this.cacheData} />
+                    <ActivityLogValueViewer tableName={(params.row as TRow).table} value={asObj} cacheData={this.cacheData} renderWorkflow={this.renderWorkflow || (() => "nope")} />
                 </div>;
             },
         };

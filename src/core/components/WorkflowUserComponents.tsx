@@ -6,8 +6,7 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import { Button, DialogActions, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { DateTimeRange, DateToYYYYMMDDHHMMSS } from "shared/time";
-import { CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
-import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { assertUnreachable, CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
 import * as DB3Client from "../db3/DB3Client";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { DB3MultiSelect } from "../db3/components/db3Select";
@@ -18,6 +17,8 @@ import { CMSelectDisplayStyle } from "./CMSelect";
 import { CMTextField } from "./CMTextField";
 import { GetStyleVariablesForColor } from "./Color";
 import { SettingMarkdown } from "./SettingMarkdown";
+
+import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 
 type CMXYPosition = {
     x: number;
@@ -1195,6 +1196,8 @@ export const MakeBoolBinding = (args: {
                 case WorkflowFieldValueOperator.IsNotAnyOf:
                     if (Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                case WorkflowFieldValueOperator.StringPopulated:
+                    return false;
                 default:
                     // be tolerant to out of range
                     console.warn(`unknown boolean field operator ${args.nodeDef.fieldValueOperator}`);
@@ -1260,6 +1263,7 @@ export const MakeTextBinding = (args: {
                 case WorkflowFieldValueOperator.IsNull:
                     return isNull();
                 case WorkflowFieldValueOperator.Truthy:
+                case WorkflowFieldValueOperator.StringPopulated:
                 case WorkflowFieldValueOperator.IsNotNull:
                     return !isNull();
                 case WorkflowFieldValueOperator.EqualsOperand2:

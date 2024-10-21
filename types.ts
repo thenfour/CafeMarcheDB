@@ -43,6 +43,8 @@ export type PublicDataType = {
   permissionsLastRefreshedAt: string, // iso utc string new Date().toISOString()
 
   showAdminControls: boolean; // show things like editing chrome content (SettingMarkdown etc)
+  GOOGLE_ANALYTICS_ID_BACKSTAGE: string | undefined;
+  GOOGLE_ANALYTICS_ID_PUBLIC: string | undefined;
 };
 
 export type CMAuthorize2Args = {
@@ -121,6 +123,8 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
       impersonatingFromUserId: args.impersonatingFromUserId,
       showAdminControls: false,
       permissionsLastRefreshedAt: new Date().toISOString(),
+      GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
+      GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
     };
   }
   return {
@@ -130,5 +134,7 @@ export function CreatePublicData(args: CreatePublicDataArgs): PublicDataType {
     impersonatingFromUserId: args.impersonatingFromUserId,
     showAdminControls: args.showAdminControls || false,
     permissionsLastRefreshedAt: new Date().toISOString(),
+    GOOGLE_ANALYTICS_ID_BACKSTAGE: process.env.GOOGLE_ANALYTICS_ID_BACKSTAGE,
+    GOOGLE_ANALYTICS_ID_PUBLIC: process.env.GOOGLE_ANALYTICS_ID_PUBLIC,
   };
 };

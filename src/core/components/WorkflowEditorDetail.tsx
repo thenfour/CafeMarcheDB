@@ -4,12 +4,13 @@ import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import React, { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, sortBy } from "shared/utils";
-import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { CMChip, CMChipContainer } from "./CMChip";
 import { NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
+
+import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 
 

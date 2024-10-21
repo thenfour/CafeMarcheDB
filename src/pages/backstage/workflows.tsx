@@ -4,9 +4,7 @@ import { useMutation } from "@blitzjs/rpc";
 import { Button } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
-import { getUniqueNegativeID } from "shared/utils";
 import { MakeNewWorkflowDef, mapWorkflowDef, WorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine";
-import { CMStandardDBChip } from "src/core/components/CMChip";
 import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 import { CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
@@ -19,16 +17,15 @@ import { gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
 import deleteWorkflowDefMutation from "src/core/db3/mutations/deleteWorkflowDefMutation";
 import insertOrUpdateWorkflowDefMutation from "src/core/db3/mutations/insertOrUpdateWorkflowDefMutation";
-import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
-interface WorkflowDefEditorProps {
-    value: WorkflowDef;
-};
-const WorkflowDefEditor = (props: WorkflowDefEditorProps) => {
-    return <div>workflow def deitor dhere</div>;
-};
+// interface WorkflowDefEditorProps {
+//     value: WorkflowDef;
+// };
+// const WorkflowDefEditor = (props: WorkflowDefEditorProps) => {
+//     return <div>workflow def deitor dhere</div>;
+// };
 
 // interface ManageWorkflowDefItemProps {
 //     item: db3.WorkflowDef_SearchPayload;
@@ -139,14 +136,13 @@ const WorkflowDefEditorMain = () => {
                 getOptionInfo={(item: WorkflowDef) => {
                     return {
                         id: item.id,
-                        name: item.name,
+                        name: `${item.name} #${item.id} ${item.isDefaultForEvents ? "(Default)" : ""}`,
                         color: item.color,
                         tooltip: item.description || undefined,
                     };
                 }}
                 renderOption={(item) => {
-                    return item.name;
-                    //return <CMStandardDBChip model={item} />;
+                    return `${item.name} #${item.id} ${item.isDefaultForEvents ? "(Default)" : ""}`;
                 }}
                 value={value || null}
                 nullBehavior={CMSelectNullBehavior.AllowNull}

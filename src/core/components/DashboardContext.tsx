@@ -10,7 +10,6 @@ import * as db3 from "src/core/db3/db3";
 import { ColorVariationSpec, gAppColors } from "shared/color";
 import { GetStyleVariablesForColor } from "../components/Color";
 import setShowingAdminControls from 'src/auth/mutations/setShowingAdminControls';
-//import refreshSessionPermissions from 'src/auth/mutations/refreshSessionPermissions';
 
 interface ObjectWithVisiblePermission {
     visiblePermissionId: number | null;

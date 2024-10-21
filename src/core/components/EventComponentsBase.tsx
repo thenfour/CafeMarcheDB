@@ -11,8 +11,9 @@ import { SortDirection } from 'shared/rootroot';
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { useQuery } from '@blitzjs/rpc';
 import getSearchResults from '../db3/queries/getSearchResults';
-import { CoalesceBool } from 'shared/utils';
+import { CoalesceBool, getUniqueNegativeID } from 'shared/utils';
 import { assert } from 'blitz';
+import { hash256 } from '@blitzjs/auth';
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {
@@ -157,6 +158,8 @@ export function CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContex
             return {
                 userComment: "",
                 user: user,
+                revision: 0,
+                uid: getUniqueNegativeID().toString(),
                 eventId: event.id,
                 id: -1,
                 userId: user.id,
@@ -319,7 +322,7 @@ export const CalculateEventSearchResultsMetadata = ({ event, results }: EventLis
     >(event, undefined, dashboardContext,
         userMap,
         expectedAttendanceUserTag,
-        (segment, user) => {
+        (segment, user) => { // makeMockEventSegmentResponse
             if (!user?.id) return null;
             return {
                 attendanceId: null,
@@ -328,10 +331,12 @@ export const CalculateEventSearchResultsMetadata = ({ event, results }: EventLis
                 userId: user.id,
             }
         },
-        (event, user, isInvited) => {
+        (event, user, isInvited) => { // makeMockEventUserResponse
             if (!user?.id) return null;
             return {
                 userComment: "",
+                revision: 0,
+                uid: getUniqueNegativeID().toString(),
                 eventId: event.id,
                 id: -1,
                 userId: user.id,

@@ -4,7 +4,7 @@ import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from '
 interface Option<TValue> {
     value: TValue;
     label: string;
-    color?: string;
+    color?: string | null | undefined;
 }
 
 interface ChipSelectorProps<TValue> {
@@ -34,7 +34,7 @@ export const ChipSelector = <TValue,>({
         <div className="chip-selector">
             <CMChipContainer className="constEnumStringFieldOptions">
                 {options.map(option => {
-                    let color = option.color;
+                    let color = option.color || null;
                     let label = option.label;
 
                     if (getItemInfo) {

@@ -81,6 +81,7 @@ export enum WorkflowCompletionCriteriaType {
 export enum WorkflowFieldValueOperator {
     IsNotNull = "IsNotNull",
     IsNull = "IsNull",
+    StringPopulated = "StringPopulated",
     EqualsOperand2 = "EqualsOperand2",
     NotEqualsOperand2 = "NotEqualsOperand2",
     Truthy = "Truthy",
