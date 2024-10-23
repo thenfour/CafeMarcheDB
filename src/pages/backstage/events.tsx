@@ -311,7 +311,7 @@ const EventListOuter = () => {
 
     // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
-        pageSize: 20,
+        pageSize: 50,
         refreshSerial,
         page,
 

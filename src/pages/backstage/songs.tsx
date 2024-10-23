@@ -35,7 +35,7 @@ interface SongsFilterSpec {
 };
 
 const gDefaultFilter: SongsFilterSpec = {
-    pageSize: 20,
+    pageSize: 50,
     page: 0,
     selection: "all",
 
