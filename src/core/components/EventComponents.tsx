@@ -999,6 +999,14 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
 
     const isSingleSegment = eventData.event.segments.length === 1;
 
+    const segAttendees = event.segments.map(seg => ({
+        segment: seg,
+        attendeeCount: seg.responses.filter(resp => {
+            const att = dashboardContext.eventAttendance.getById(resp.attendanceId);
+            return att && (att.strength > 50)
+        }).length
+    }));
+
     return <div>
         {/* <FormControlLabel control={<input type="range" min={0} max={100} value={minStrength} onChange={e => setMinStrength(e.target.valueAsNumber)} />} label="Filter responses" /> */}
         <table className='EventCompletenessTabContent'>
@@ -1068,6 +1076,15 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
                 })
                 }
             </tbody>
+            <tfoot>
+                <tr>
+                    <td>
+                    </td>
+                    {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
+                        <td className='responseCell'>{seg.attendeeCount}</td>
+                    </React.Fragment>)}
+                </tr>
+            </tfoot>
         </table>
     </div>;
 };

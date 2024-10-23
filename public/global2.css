@@ -284,6 +284,10 @@ input.CMTextInputBase.titleText {
     background-color: white;
 }
 
+.EventCompletenessTabContent tfoot td {
+    text-align: center;
+}
+
 .searchListItem {
     cursor: pointer;
 }
@@ -1444,6 +1448,7 @@ in particular the date range picker is wide.*/
     text-align: center;
 }
 
+.EventCompletenessTabContent tfoot td,
 .attendanceDetailTable tfoot td {
     background-color: white;
     color: #aaa;
