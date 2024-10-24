@@ -982,6 +982,42 @@ export function assertUnreachable(x: never, msg?: string | undefined): never {
 
 export type EnNlFr = "en" | "nl" | "fr";
 
+type LangSelectStringWithDetailResult<T extends string | null | undefined> = {
+    result: T extends string ? string : string | null | undefined,
+    preferredLangWasChosen: boolean;
+    chosenLang: EnNlFr | null;
+};
+
+export function LangSelectStringWithDetail<
+    T extends string | null | undefined
+>(
+    preferredLang: EnNlFr,
+    value_en: T,
+    value_nl: T,
+    value_fr: T
+): LangSelectStringWithDetailResult<T> {
+    switch (preferredLang) {
+        case "en":
+            if (!IsNullOrWhitespace(value_en)) return { chosenLang: preferredLang, preferredLangWasChosen: true, result: value_en! };
+            break;
+        case "nl":
+            if (!IsNullOrWhitespace(value_nl)) return { chosenLang: preferredLang, preferredLangWasChosen: true, result: value_nl! };
+            break;
+        case "fr":
+            if (!IsNullOrWhitespace(value_fr)) return { chosenLang: preferredLang, preferredLangWasChosen: true, result: value_fr! };
+            break;
+    }
+
+    // Fallback to any available value
+    if (!IsNullOrWhitespace(value_en)) return { chosenLang: "en", preferredLangWasChosen: false, result: value_en! };
+    if (!IsNullOrWhitespace(value_nl)) return { chosenLang: "nl", preferredLangWasChosen: false, result: value_nl! };
+    if (!IsNullOrWhitespace(value_fr)) return { chosenLang: "fr", preferredLangWasChosen: false, result: value_fr! };
+
+    // If all values are nullish, return null
+    return { chosenLang: null, preferredLangWasChosen: false, result: "" }; // return an empty string because we dont know if null is allowed.
+}
+
+
 
 export function LangSelectString<
     T extends string | null | undefined
@@ -991,25 +1027,7 @@ export function LangSelectString<
     value_nl: T,
     value_fr: T
 ): T extends string ? string : string | null | undefined {
-    switch (preferredLang) {
-        case "en":
-            if (!IsNullOrWhitespace(value_en)) return value_en as any;
-            break;
-        case "nl":
-            if (!IsNullOrWhitespace(value_nl)) return value_nl as any;
-            break;
-        case "fr":
-            if (!IsNullOrWhitespace(value_fr)) return value_fr as any;
-            break;
-    }
-
-    // Fallback to any available value
-    if (!IsNullOrWhitespace(value_en)) return value_en as any;
-    if (!IsNullOrWhitespace(value_nl)) return value_nl as any;
-    if (!IsNullOrWhitespace(value_fr)) return value_fr as any;
-
-    // If all values are null or undefined, return null
-    return null as any;
+    return LangSelectStringWithDetail(preferredLang, value_en, value_nl, value_fr).result;
 }
 
 

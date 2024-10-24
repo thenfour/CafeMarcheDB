@@ -14,7 +14,7 @@ import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 import { gIconMap } from "../db3/components/IconMap";
 import { CMDialogContentText, CMSmallButton, KeyValueTable } from "./CMCoreComponents2";
 import { CMChip, CMChipContainer } from "./CMChip";
-import { EnNlFr, IsNullOrWhitespace } from "shared/utils";
+import { EnNlFr, IsNullOrWhitespace, LangSelectStringWithDetail } from "shared/utils";
 import { EditTextField, ReactiveInputDialog } from "./CMCoreComponents";
 
 
@@ -179,8 +179,8 @@ interface EventFrontpageControlProps {
     event: db3.EventWithStatusPayload;
     refetch: () => void;
     fieldSpec: FrontpageControlSpec;
-    fallbackValue: string;
     readonly: boolean;
+    getResetValues?: () => { en: string, nl: string, fr: string };
 };
 
 
@@ -213,11 +213,13 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         });
     };
 
-    const defaultValue = props.fallbackValue;
-    const valueEn = props.event[props.fieldSpec.fieldNameEn];
-    const valueNl = props.event[props.fieldSpec.fieldNameNl];
-    const valueFr = props.event[props.fieldSpec.fieldNameFr];
-    const isNull = valueEn === null;
+    //const defaultValue = props.fallbackValue;
+    const valueEn = props.event[props.fieldSpec.fieldNameEn] || "";
+    const valueNl = props.event[props.fieldSpec.fieldNameNl] || "";
+    const valueFr = props.event[props.fieldSpec.fieldNameFr] || "";
+    //const isNull = valueEn === null;
+
+    //const nlfrFallback = (IsNullOrWhitespace(valueEn) ? valueEn : defaultValue) || "";
 
     const canEdit = db3.xEvent.authorizeColumnForEdit({
         clientIntention,
@@ -229,6 +231,17 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
 
     const readonly = props.readonly || !canEdit;
 
+    const renderValueOrFallback = (lang: EnNlFr): React.ReactNode => {
+        const selectResult = LangSelectStringWithDetail(lang, valueEn, valueNl, valueFr);
+        if (selectResult.preferredLangWasChosen) {
+            return <span>{selectResult.result}</span>;
+        }
+        // if (IsNullOrWhitespace(val)) {
+        return <span className="faded">{selectResult.result}</span>;
+        // }
+        // return ;
+    };
+
     return <div className={`fieldContainer ${props.fieldSpec.fieldNameEn /* assumes this is the "plain" fieldname with out lang suffix */} ${props.event.frontpageVisible ? "" : "faded"}`}>
 
         <div className='label'>
@@ -238,7 +251,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
             {!readonly && <div style={{ display: "flex", flexDirection: "column", width: "100px" }}><EditTextDialogButton
                 clientIntention={clientIntention}
                 columnSpecEn={db3.xEvent.getColumn(props.fieldSpec.fieldNameEn)! as db3.FieldBase<string>}
-                valueEn={valueEn || defaultValue}
+                valueEn={valueEn || ""}
                 columnSpecNl={db3.xEvent.getColumn(props.fieldSpec.fieldNameNl)! as db3.FieldBase<string>}
                 valueNl={valueNl || ""}
                 columnSpecFr={db3.xEvent.getColumn(props.fieldSpec.fieldNameFr)! as db3.FieldBase<string>}
@@ -249,16 +262,18 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
                 selectButtonLabel='edit'
                 onChange={handleChange}
             />
-                {!IsNullOrWhitespace(defaultValue) && <Button onClick={() => {
+                {/* {!IsNullOrWhitespace(defaultValue) && <Button onClick={() => {
                     handleChange(defaultValue, null, null);
-                }}>Reset</Button>}
+                }}>Reset</Button>} */}
             </div>}
         </div>
+
         <KeyValueTable className={`value`} data={{
-            EN: valueEn || defaultValue,
-            NL: valueNl || "",
-            FR: valueFr || "",
+            EN: renderValueOrFallback("en"),
+            NL: renderValueOrFallback("nl"),
+            FR: renderValueOrFallback("fr"),
         }} />
+
     </div>;
 };
 
@@ -308,7 +323,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     }
 
     const agendaItem: HomepageAgendaItemSpec = API.events.getAgendaItem(props.event, previewLang);
-    const fallbackValues = API.events.getAgendaItemFallbackValues(props.event, previewLang);
+    //const fallbackValues = API.events.getAgendaItemFallbackValues(props.event, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
         clientIntention,
@@ -342,7 +357,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         </div>
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            fallbackValue={fallbackValues.date || ""}
+            //fallbackValue={fallbackValues.date || ""}
             fieldSpec={{
                 fieldLabel: "Date",
                 fieldNameEn: "frontpageDate",
@@ -353,7 +368,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            fallbackValue={fallbackValues.time || ""}
+            //fallbackValue={fallbackValues.time || ""}
             fieldSpec={{
                 fieldLabel: "Time",
                 fieldNameEn: "frontpageTime",
@@ -364,7 +379,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            fallbackValue={fallbackValues.title || ""}
+            //fallbackValue={fallbackValues.title || ""}
             fieldSpec={{
                 fieldLabel: "Title",
                 fieldNameEn: "frontpageTitle",
@@ -376,7 +391,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            fallbackValue={fallbackValues.detailsMarkdown || ""}
+            //fallbackValue={fallbackValues.detailsMarkdown || ""}
             fieldSpec={{
                 fieldLabel: "Details",
                 fieldNameEn: "frontpageDetails",
@@ -388,7 +403,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            fallbackValue={fallbackValues.location || ""}
+            //fallbackValue={fallbackValues.location || ""}
             fieldSpec={{
                 fieldLabel: "Location",
                 fieldNameEn: "frontpageLocation",
@@ -400,7 +415,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            fallbackValue={fallbackValues.locationURI || ""}
+            //fallbackValue={fallbackValues.locationURI || ""}
             fieldSpec={{
                 fieldLabel: "Location URI",
                 fieldNameEn: "frontpageLocationURI",
@@ -412,7 +427,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            fallbackValue={fallbackValues.tags || ""}
+            //fallbackValue={fallbackValues.tags || ""}
             fieldSpec={{
                 fieldLabel: "Tags",
                 fieldNameEn: "frontpageTags",

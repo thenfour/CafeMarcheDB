@@ -44,7 +44,7 @@ export const addEventToCalendar2 = (calendar: ICalCalendar, user: null | Prisma.
     // URI for event
     // URI for user calendar
     // URI for event calendar
-    const eventURL = process.env.CMDB_BASE_URL + `event/${event.id}/${event.slug}`; // 
+    const eventURL = process.env.CMDB_BASE_URL + `backstage/event/${event.id}/${event.slug}`; // 
 
     // // for all-day events, the datetime range will return midnight of the start day.
     // // BUT this will lead to issues because of timezones. In order to output a UTC date,

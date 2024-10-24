@@ -433,6 +433,8 @@ const CMTabHeader = (props: CMTabProps & {
 interface CMTabPanelProps {
     selectedTabId: string | number | undefined | null;
     handleTabChange: (e: React.SyntheticEvent, newTabId: string | number | undefined | null) => void;
+    className?: string | undefined;
+    style?: React.CSSProperties | undefined;
     children: React.ReactElement<React.PropsWithChildren<CMTabProps>>[];
 };
 
@@ -441,7 +443,7 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
         props.handleTabChange(e, ch.props.thisTabId);
     };
     const selectedChild = props.children.find(tab => tab.props.thisTabId === props.selectedTabId);
-    return <div className="CMTabPanel">
+    return <div className={`CMTabPanel ${props.className}`} style={props.style}>
         <div className="CMTabHeader">
             <ul className="CMTabList">
                 {
@@ -458,7 +460,7 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
 
 /////////////////////////////////////////////////////////////////////////
 interface CMTableColumnSpec<T extends Object> {
-    memberName: keyof T;
+    memberName?: keyof T;
     allowSort?: boolean;
     header?: React.ReactNode;
     render?: (args: { row: T }) => React.ReactNode;
@@ -501,7 +503,7 @@ const CMTableRow = <T extends Object,>({ row, columns, ...props }: CMTableRowPro
             {columns.map((column, idx) => {
                 const content = column.render
                     ? column.render({ row })
-                    : CMTableValueDefaultRenderer(row[column.memberName]);
+                    : (column.memberName ? CMTableValueDefaultRenderer(row[column.memberName]) : "");
 
                 const style = column.getRowStyle ? column.getRowStyle({ row }) : undefined;
 

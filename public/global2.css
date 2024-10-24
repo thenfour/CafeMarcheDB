@@ -2661,3 +2661,8 @@ span.faded {
     font-size: small;
     opacity: 30%;
 }
+
+
+table.TopAlignedCells td {
+    vertical-align: top;
+}

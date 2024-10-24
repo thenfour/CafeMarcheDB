@@ -984,3 +984,35 @@ export type GetServerHealthResult = {
         files: ServerHealthFileResult[],
     }
 };
+
+
+export interface ICalEventJSON {
+    start: Date;
+    end?: Date;
+    summary: string;
+    description?: {
+        plain?: string;
+        html?: string;
+    };
+    location?: string;
+    organizer?: {
+        name: string;
+        email?: string;
+        mailto?: string;
+        sentBy?: string;
+    };
+    //attendees?: string[]; complex and we don't do this anyway so ignore.
+    allDay: boolean;
+    url?: string;
+    status?: string;
+    sequence?: number;
+
+}
+
+export interface ICalCalendarJSON {
+    prodId?: string;// { company: string; product: string; language: string };
+    name: string;
+    timezone?: string;
+    events: ICalEventJSON[];
+}
+

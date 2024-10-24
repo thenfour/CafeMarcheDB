@@ -59,7 +59,6 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
             { memberName: "externalURI" },
             {
                 memberName: "fileName", render: args => {
-
                     return <a href={API.files.getURIForStoredLeafName(args.row.fileName)} target="_blank" rel="noreferrer">{args.row.fileName}</a>
                 }
             },
@@ -189,7 +188,7 @@ const MainContent = () => {
 const ServerHealthPage: BlitzPage = () => {
 
     return (
-        <DashboardLayout title="Admin Logs" basePermission={Permission.sysadmin}>
+        <DashboardLayout title="Server health" basePermission={Permission.sysadmin}>
             <MainContent />
         </DashboardLayout>
     )

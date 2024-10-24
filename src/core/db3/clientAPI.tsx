@@ -212,32 +212,34 @@ class EventsAPI {
         return ret;
     }
 
+    // null-or-whitespace values in EN will not show the field
+    // null-or-whitespace values in NL and FR fallback to english
     getAgendaItem(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
-        const fallbacks = this.getAgendaItemFallbackValues(event, lang);
+        //const fallbacks = this.getAgendaItemFallbackValues(event, lang);
         const ret: HomepageAgendaItemSpec = {
-            date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || fallbacks.date || "",
-            time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || fallbacks.time || "",
-            detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || fallbacks.detailsMarkdown || "",
-            location: LangSelectString(lang, event.frontpageLocation, event.frontpageLocation_nl, event.frontpageLocation_fr) || fallbacks.location || "",
-            locationURI: LangSelectString(lang, event.frontpageLocationURI, event.frontpageLocationURI_nl, event.frontpageLocationURI_fr) || fallbacks.locationURI || "",
-            tags: LangSelectString(lang, event.frontpageTags, event.frontpageTags_nl, event.frontpageTags_fr) || fallbacks.tags || "",
-            title: LangSelectString(lang, event.frontpageTitle, event.frontpageTitle_nl, event.frontpageTitle_fr) || fallbacks.title || "",
+            date: LangSelectString(lang, event.frontpageDate, event.frontpageDate_nl, event.frontpageDate_fr) || "",
+            time: LangSelectString(lang, event.frontpageTime, event.frontpageTime_nl, event.frontpageTime_fr) || "",
+            detailsMarkdown: LangSelectString(lang, event.frontpageDetails, event.frontpageDetails_nl, event.frontpageDetails_fr) || "",
+            location: LangSelectString(lang, event.frontpageLocation, event.frontpageLocation_nl, event.frontpageLocation_fr) || "",
+            locationURI: LangSelectString(lang, event.frontpageLocationURI, event.frontpageLocationURI_nl, event.frontpageLocationURI_fr) || "",
+            tags: LangSelectString(lang, event.frontpageTags, event.frontpageTags_nl, event.frontpageTags_fr) || "",
+            title: LangSelectString(lang, event.frontpageTitle, event.frontpageTitle_nl, event.frontpageTitle_fr) || "",
         }
         return ret;
     }
 
-    getAgendaItemFallbackValues(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
-        const ret: HomepageAgendaItemSpec = {
-            date: "",
-            time: "",
-            detailsMarkdown: "",
-            location: event.locationDescription,
-            locationURI: event.locationURL,
-            tags: event.tags.filter(a => a.eventTag.visibleOnFrontpage).map(a => `#${a.eventTag.text}`).join(" "),
-            title: event.name,
-        };
-        return ret;
-    }
+    // getAgendaItemFallbackValues(event: db3.EventWithTagsPayload, lang: EnNlFr): HomepageAgendaItemSpec {
+    //     const ret: HomepageAgendaItemSpec = {
+    //         date: "",
+    //         time: "",
+    //         detailsMarkdown: "",
+    //         location: event.locationDescription,
+    //         locationURI: event.locationURL,
+    //         tags: event.tags.filter(a => a.eventTag.visibleOnFrontpage).map(a => `#${a.eventTag.text}`).join(" "),
+    //         title: event.name,
+    //     };
+    //     return ret;
+    // }
 
     getEventSegmentFormattedDateRange(segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) {
         return db3.getEventSegmentDateTimeRange(segment).toString();
