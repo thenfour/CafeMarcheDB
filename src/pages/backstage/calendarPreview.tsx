@@ -1,6 +1,6 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import { FormControlLabel, Switch } from "@mui/material";
+import { Button, FormControlLabel, Switch } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
@@ -16,7 +16,7 @@ const MainContent = () => {
     const [showDetails, setShowDetails] = React.useState<boolean>(false);
     const [filterText, setFilterText] = React.useState<string>("");
     //console.log(cal);
-    const [cal, _] = useQuery(getCalendarPreview, {});
+    const [cal, queryExtra] = useQuery(getCalendarPreview, {});
     const { events, ...rootValues } = cal;
     const filterTextLower = filterText.toLowerCase();
     const filteredCal = {
@@ -31,7 +31,7 @@ const MainContent = () => {
         ...rootValues,
         totalEvents: events.length,
         shownEvents: filteredCal.events.length,
-        hiddenEventns: events.length - filteredCal.events.length,
+        hiddenEvents: events.length - filteredCal.events.length,
     }
 
     const eventsWithId = filteredCal.events.map((e, i) => ({ i, ...e }));
@@ -44,7 +44,12 @@ const MainContent = () => {
             }
             label="Show details"
         />
-        <CMTextInputBase value={filterText} onChange={(e, v) => setFilterText(v)} />
+        <FormControlLabel
+            control={
+                <CMTextInputBase value={filterText} onChange={(e, v) => setFilterText(v)} />}
+            label="Filter"
+        />
+        <Button onClick={() => queryExtra.refetch()}>Refresh</Button>
         <KeyValueDisplay data={moreValues} />
         <CMTable
             className="CalendarPreview TopAlignedCells"

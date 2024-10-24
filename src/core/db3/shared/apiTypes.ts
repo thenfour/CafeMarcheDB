@@ -1010,6 +1010,7 @@ export interface ICalEventJSON {
 }
 
 export interface ICalCalendarJSON {
+    executionTimeMillis: number,
     prodId?: string;// { company: string; product: string; language: string };
     name: string;
     timezone?: string;

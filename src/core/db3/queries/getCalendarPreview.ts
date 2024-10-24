@@ -27,6 +27,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.always_grant),
     async (input: {}, ctx: AuthenticatedCtx): Promise<ICalCalendarJSON> => {
         try {
+            const startTimestamp = Date.now();
 
             const u = (await getCurrentUserCore(ctx))!;
             const accessToken = u.accessToken || "";
@@ -41,6 +42,7 @@ export default resolver.pipe(
             });
 
             const ret: ICalCalendarJSON = {
+                executionTimeMillis: Date.now() - startTimestamp,
                 name: cal.name() || "",
                 prodId: cal.prodId(),
                 timezone: cal.timezone() || undefined,
