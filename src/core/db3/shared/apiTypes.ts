@@ -1013,6 +1013,13 @@ export interface ICalCalendarJSON {
     prodId?: string;// { company: string; product: string; language: string };
     name: string;
     timezone?: string;
+
+    description?: string;
+    method?: string;
+    scale?: string;
+    source?: string;
+    url?: string;
+
     events: ICalEventJSON[];
 }
 

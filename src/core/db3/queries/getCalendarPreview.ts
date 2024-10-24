@@ -44,6 +44,11 @@ export default resolver.pipe(
                 name: cal.name() || "",
                 prodId: cal.prodId(),
                 timezone: cal.timezone() || undefined,
+                description: cal.description() || undefined,
+                method: cal.method() || undefined,
+                scale: cal.scale() || undefined,
+                source: cal.source() || undefined,
+                url: cal.url() || undefined,
                 events: cal.events().map(e => ({
                     start: ICalConvertToDate(e.start()),
                     end: e.end() === null ? undefined : ICalConvertToDate(e.end()!),

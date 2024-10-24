@@ -7,10 +7,9 @@ import React, { Suspense } from "react";
 import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
 import { CoalesceBool, IsNullOrWhitespace, arraysContainSameValues, isValidDate, lerp } from "shared/utils";
-import * as db3 from "../db3/db3";
-import { gCharMap, gIconMap } from "../db3/components/IconMap";
-import { RouteUrlObject } from "blitz";
 import { UrlObject } from "url";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
+import * as db3 from "../db3/db3";
 
 
 
@@ -540,7 +539,7 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
         if (sortColumn === column.memberName) {
             setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
         } else {
-            setSortColumn(column.memberName);
+            setSortColumn(column.memberName || null);
             setSortDirection('asc');
         }
     };

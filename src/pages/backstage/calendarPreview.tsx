@@ -1,34 +1,40 @@
 import { BlitzPage } from "@blitzjs/next";
 import { useQuery } from "@blitzjs/rpc";
-import * as React from 'react';
-import { StandardVariationSpec } from "shared/color";
-import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, IsNullOrWhitespace, existsInArray, toggleValueInArray } from "shared/utils";
-import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { CMTable, EventDateField, KeyValueDisplay, KeyValueTable, NameValuePair } from "src/core/components/CMCoreComponents2";
-import { CMTextInputBase } from "src/core/components/CMTextField";
-import { DashboardContext } from "src/core/components/DashboardContext";
-import { SettingMarkdown } from "src/core/components/SettingMarkdown";
-import * as DB3Client from "src/core/db3/DB3Client";
-import { DB3EditGrid } from "src/core/db3/components/db3DataGrid";
-import * as db3 from "src/core/db3/db3";
-import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
-import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { Prisma } from "db";
-import { WorkflowViewer } from "src/core/components/WorkflowEventComponents";
-import getCalendarPreview from "src/core/db3/queries/getCalendarPreview";
-import { Markdown } from "src/core/components/RichTextEditor";
 import { FormControlLabel, Switch } from "@mui/material";
-import { CalcRelativeTiming, DateTimeRange } from "shared/time";
-import { DateRangeViewer } from "src/core/components/DateTimeRangeControl";
+import * as React from 'react';
+import { Permission } from "shared/permissions";
+import { DateTimeRange } from "shared/time";
+import { IsNullOrWhitespace } from "shared/utils";
+import { CMTable, EventDateField, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
+import { CMTextInputBase } from "src/core/components/CMTextField";
+import { Markdown } from "src/core/components/RichTextEditor";
+import getCalendarPreview from "src/core/db3/queries/getCalendarPreview";
+import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 
 const MainContent = () => {
-    const [cal, _] = useQuery(getCalendarPreview, {});
     const [showDetails, setShowDetails] = React.useState<boolean>(false);
-    console.log(cal);
+    const [filterText, setFilterText] = React.useState<string>("");
+    //console.log(cal);
+    const [cal, _] = useQuery(getCalendarPreview, {});
     const { events, ...rootValues } = cal;
-    const eventsWithId = events.map((e, i) => ({ i, ...e }));
+    const filterTextLower = filterText.toLowerCase();
+    const filteredCal = {
+        ...rootValues, events: events.filter(e => {
+            if (IsNullOrWhitespace(filterText)) return true;
+            const json = JSON.stringify(e);
+            return (json.toLowerCase().indexOf(filterTextLower)) !== -1;
+        })
+    };
+
+    const moreValues = {
+        ...rootValues,
+        totalEvents: events.length,
+        shownEvents: filteredCal.events.length,
+        hiddenEventns: events.length - filteredCal.events.length,
+    }
+
+    const eventsWithId = filteredCal.events.map((e, i) => ({ i, ...e }));
     return <div>
         <FormControlLabel
             control={
@@ -38,7 +44,8 @@ const MainContent = () => {
             }
             label="Show details"
         />
-        <KeyValueDisplay data={rootValues} />
+        <CMTextInputBase value={filterText} onChange={(e, v) => setFilterText(v)} />
+        <KeyValueDisplay data={moreValues} />
         <CMTable
             className="CalendarPreview TopAlignedCells"
             rows={eventsWithId}
