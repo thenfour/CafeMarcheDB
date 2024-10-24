@@ -825,6 +825,10 @@ export function isValidURL(url) {
     }
 }
 
+export function isValidDate(date) {
+    return date && Object.prototype.toString.call(date) === "[object Date]" && !isNaN(date);
+}
+
 
 export function smartTruncate(url: string, maxLength: number = 120) {
     if (url.length <= maxLength) return url;

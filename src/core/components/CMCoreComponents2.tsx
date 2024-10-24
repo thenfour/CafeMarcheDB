@@ -6,7 +6,7 @@ import React, { Suspense } from "react";
 
 import { useRouter } from "next/router";
 import { CalcRelativeTiming, DateTimeRange } from "shared/time";
-import { CoalesceBool, IsNullOrWhitespace, arraysContainSameValues, lerp } from "shared/utils";
+import { CoalesceBool, IsNullOrWhitespace, arraysContainSameValues, isValidDate, lerp } from "shared/utils";
 import * as db3 from "../db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { RouteUrlObject } from "blitz";
@@ -473,6 +473,22 @@ interface CMTableProps<T extends Object> {
     columns: CMTableColumnSpec<T>[];
 }
 
+function CMTableValueDefaultRenderer(value: any): React.ReactNode {
+    if (value === null) return <span className="faded">null</span>;
+    if (value === undefined) return <span className="faded">none</span>;
+    if (isValidDate(value)) {
+        return (value as Date).toISOString();
+    }
+    switch (typeof value) {
+        case "number":
+            return value.toLocaleString();
+        case "string":
+            return value;
+        default:
+            return String(value);
+    }
+}
+
 interface CMTableRowProps<T extends Object> {
     row: T;
     style?: React.CSSProperties | undefined;
@@ -485,7 +501,7 @@ const CMTableRow = <T extends Object,>({ row, columns, ...props }: CMTableRowPro
             {columns.map((column, idx) => {
                 const content = column.render
                     ? column.render({ row })
-                    : String(row[column.memberName]);
+                    : CMTableValueDefaultRenderer(row[column.memberName]);
 
                 const style = column.getRowStyle ? column.getRowStyle({ row }) : undefined;
 

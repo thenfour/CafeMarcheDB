@@ -3,7 +3,7 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
 import { getCurrentUserCore } from "../server/db3mutationCore";
-import { GetServerHealthResult, TableStatsQueryRowRaw } from "../shared/apiTypes";
+import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRowRaw } from "../shared/apiTypes";
 
 var fs = require('fs');
 var path = require('path');
@@ -22,23 +22,24 @@ async function GetDirectoryInfo(relativePath: string) {
 
         // const normalizedPath = path.normalize(requestedPath)
         const files = await fsp.readdir(normalizedPath)
-        const fileStats = await Promise.all(
+        const fileStats: FileStatResult[] = await Promise.all(
             files.map(async (fileName) => {
                 const filePath = path.join(normalizedPath, fileName)
                 const stats = await fsp.stat(filePath)
-                return {
+                const ret: FileStatResult = {
                     fileName,
                     size: stats.size,
                     modified: stats.mtime,
                     isDirectory: stats.isDirectory(),
-                }
+                };
+                return ret;
             })
         )
-        return fileStats
+        return fileStats;
     } catch (error) {
         throw new Error(`Failed to read directory: ${error.message}`)
     }
-}
+};
 
 export default resolver.pipe(
     resolver.authorize(Permission.sysadmin),
@@ -62,9 +63,30 @@ order by
 
             const tableStats = await db.$queryRaw(Prisma.raw(dbTableStatsQuery)) as TableStatsQueryRowRaw[];
 
+            const uploadsDirInfo = process.env.FILE_UPLOAD_PATH ? (await GetDirectoryInfo(process.env.FILE_UPLOAD_PATH)) : [];
+            const fileNames = uploadsDirInfo.map(f => f.fileName);
+            const fileRows = await db.file.findMany({
+                where: {
+                    storedLeafName: { in: fileNames }
+                }
+            });
+            const uploadsInfo: ServerHealthFileResult[] = uploadsDirInfo.map(di => {
+                const f = fileRows.find(x => x.storedLeafName === di.fileName);
+                return {
+                    ...di,
+                    fileId: f ? f.id : undefined,
+                    leafName: f ? f.fileLeafName : undefined,
+                    isDeleted: f ? f.isDeleted : undefined,
+                    mimeType: f?.mimeType || undefined,
+                    uploadedByUserId: f?.uploadedByUserId || undefined,
+                    uploadedAt: f ? f.uploadedAt : undefined,
+                    externalURI: f?.externalURI || undefined,
+                };
+            });
+
             const result: GetServerHealthResult = {
                 uploads: {
-                    files: process.env.FILE_UPLOAD_PATH ? (await GetDirectoryInfo(process.env.FILE_UPLOAD_PATH)) : [],
+                    files: uploadsInfo,
                 },
                 database: {
                     tableStats: tableStats.map(r => ({

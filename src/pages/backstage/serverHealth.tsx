@@ -6,11 +6,15 @@ import { formatFileSize } from "shared/rootroot";
 import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS, formatTimeSpan } from "shared/time";
 import { CMTab, CMTable, CMTabPanel, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
+import { API } from "src/core/db3/clientAPI";
+import { ActivityLogUserChip, ActivityLogValueViewer } from "src/core/db3/DB3Client";
+import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import getServerHealth from "src/core/db3/queries/getServerHealth";
-import { FileStatResult, GetServerHealthResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
+import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerHealthResult }) => {
+    const [filterSourceData, filterSourceDataOther] = useQuery(getDistinctChangeFilterValues, {});
     const agg = serverHealthResults.uploads.files.map(f => ({
         max: f.size,
         sum: f.size,
@@ -24,18 +28,41 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
         sum: 0,
     });
 
-    const totalsRow: FileStatResult = {
+    const totalsRow: ServerHealthFileResult = {
         fileName: `${serverHealthResults.uploads.files.length} files`,
         isDirectory: false,
         size: agg.sum,
         modified: new Date(),
+        fileId: undefined,
+        leafName: undefined,
+        isDeleted: undefined,
+        mimeType: undefined,
+        uploadedByUserId: undefined,
+        uploadedAt: undefined,
+        externalURI: undefined,
     };
 
     return <CMTable
         rows={serverHealthResults.uploads.files}
         footerRow={totalsRow}
         columns={[
-            { memberName: "fileName" },
+            { memberName: "fileId" },
+            { memberName: "leafName" },
+            { memberName: "isDeleted" },
+            { memberName: "mimeType" },
+            {
+                memberName: "uploadedByUserId", render: args => {
+                    return args.row.uploadedByUserId ? <ActivityLogUserChip userId={args.row.uploadedByUserId} cacheData={filterSourceData} /> : null;
+                }
+            },
+            { memberName: "uploadedAt" },
+            { memberName: "externalURI" },
+            {
+                memberName: "fileName", render: args => {
+
+                    return <a href={API.files.getURIForStoredLeafName(args.row.fileName)} target="_blank" rel="noreferrer">{args.row.fileName}</a>
+                }
+            },
             {
                 memberName: "modified", render: (args) => {
                     const value = args.row.modified;

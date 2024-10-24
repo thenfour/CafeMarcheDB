@@ -2654,3 +2654,10 @@ i.placeholder {
     max-width: 80vw;
     width: 1200px;
 }
+
+
+span.faded {
+    font-style: italic;
+    font-size: small;
+    opacity: 30%;
+}

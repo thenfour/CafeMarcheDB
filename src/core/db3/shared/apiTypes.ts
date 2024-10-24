@@ -965,12 +965,22 @@ export type FileStatResult = {
     isDirectory: boolean,
 }
 
+export type ServerHealthFileResult = FileStatResult & {
+    fileId: number | undefined;
+    leafName: string | undefined;
+    isDeleted: boolean | undefined;
+    mimeType: string | undefined;
+    uploadedByUserId: number | undefined;
+    uploadedAt: Date | undefined;
+    externalURI: string | undefined;
+
+};
 
 export type GetServerHealthResult = {
     database: {
         tableStats: TableStatsQueryRow[],
     },
     uploads: {
-        files: FileStatResult[],
+        files: ServerHealthFileResult[],
     }
 };

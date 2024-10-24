@@ -86,8 +86,12 @@ export interface SongListStats {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class FilesAPI {
+    getURIForStoredLeafName = (storedLeafName: string) => {
+        return `/api/files/download/${storedLeafName}`;
+    }
+
     getURIForFile = (file: Prisma.FileGetPayload<{}>) => {
-        return `/api/files/download/${file.storedLeafName}`;
+        return this.getURIForStoredLeafName(file.storedLeafName);//`/api/files/download/${file.storedLeafName}`;
     }
 
     getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {

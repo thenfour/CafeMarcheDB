@@ -85,7 +85,7 @@ const Id = ({ value }: { value: number | null | undefined | boolean | string }):
     return <>{value}</>;
 };
 
-const ActivityLogUserChip = ({ userId, cacheData }: { userId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
+export const ActivityLogUserChip = ({ userId, cacheData }: { userId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
     const foundUser = cacheData.users.find(u => u.id === userId);
     if (!foundUser) {
         return <ActivityLogChip><Id value={userId} /></ActivityLogChip>;
