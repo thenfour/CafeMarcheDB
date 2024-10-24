@@ -52,7 +52,7 @@ export default resolver.pipe(
         }
 
         // EVENT response stuff.
-        if (args.eventId != null && AreAnyDefined([args.comment, args.instrumentId, args.isInvited])) {
+        if (args.eventId != null) {//} && AreAnyDefined([args.comment, args.instrumentId, args.isInvited])) {
             const existing = await db.eventUserResponse.findFirst({
                 where: {
                     userId: args.userId,
@@ -65,6 +65,7 @@ export default resolver.pipe(
                     userComment: args.comment,
                     instrumentId: args.instrumentId,
                     isInvited: args.isInvited,
+                    revision: existing.revision + 1,
                 };
 
                 await mutationCore.updateImpl(db3.xEventUserResponse, existing.id, fields, ctx, clientIntention);
@@ -78,6 +79,7 @@ export default resolver.pipe(
                 userComment: args.comment || "",
                 instrumentId: args.instrumentId,
                 isInvited: args.isInvited,
+                revision: 1,
             };
 
             await mutationCore.insertImpl(db3.xEventUserResponse, fields, ctx, clientIntention);

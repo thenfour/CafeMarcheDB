@@ -1935,9 +1935,12 @@ export class CreatedAtField extends FieldBase<Date> {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export type RevisionFieldArgs = {
     columnName: string;
+    applyToUpdates: boolean;
 } & DB3AuthSpec;
 
 export class RevisionField extends FieldBase<number> {
+    applyToUpdates: boolean;
+
     constructor(args: RevisionFieldArgs) {
         super({
             member: args.columnName,
@@ -1946,6 +1949,7 @@ export class RevisionField extends FieldBase<number> {
             authMap: (args as any).authMap || null,
             _customAuth: (args as any)._customAuth || null,
         });
+        this.applyToUpdates = args.applyToUpdates;
     }
 
     connectToTable = (table: xTable) => { };
@@ -1981,7 +1985,12 @@ export class RevisionField extends FieldBase<number> {
             mutationModel[this.member] = this.defaultValue;
             return;
         }
-        // for update etc it gets handled in the mutation itself via an ad-hoc hook.
+        // for update etc it gets handled in the mutation itself via an ad-hoc hook. the idea is to avoid clients from setting this field.
+        // however sometimes like with EventUserResponse, it SHOULD be done here because the hook is not so sophisticated.
+        if (this.applyToUpdates) {
+            mutationModel[this.member] = clientModel[this.member];
+            return;
+        }
     };
     ApplyDbToClient = (dbModel: TAnyModel, clientModel: TAnyModel, mode: DB3RowMode) => {
         if (dbModel[this.member] === undefined) return; // don't clobber

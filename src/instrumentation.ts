@@ -3,6 +3,7 @@
 import { Permission } from "../shared/permissions";
 import db from "db"
 import { execSync } from "child_process";
+import { nanoid } from "nanoid";
 
 async function SyncPermissionsTable() {
     console.log(`Synchronizing permissions table...`);
@@ -27,6 +28,35 @@ async function SyncPermissionsTable() {
 export async function register() {
     console.log(`INSTRUMENTATION RUNNING`);
     await SyncPermissionsTable();
+
+    // ensure users have uids populated
+    // Fetch users with null uids
+    const usersWithoutUid = await db.user.findMany({
+        where: {
+            uid: null,
+        },
+    })
+
+    console.log(`Users with NULL UIDs: ${usersWithoutUid.length}`);
+
+    // Update each user, setting a new UUID for their uid field
+    const updates = usersWithoutUid.map(async (user) => {
+        return await db.user.update({
+            where: {
+                id: user.id,
+            },
+            data: {
+                uid: nanoid(),
+            },
+        })
+    });
+
+    const ups = await Promise.all(updates);
+
+    for (const up of ups) {
+        console.log(`-> #${up.id} (${up.name}) => ${up.uid}`);
+    }
+
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;

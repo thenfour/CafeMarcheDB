@@ -118,7 +118,9 @@ export type EventCalendarInput = Pick<EventForCal,
 > & {
     inputHash: string,
     description: string,
-    summary: string,
+    //summary: string,
+    name: string,
+    //cancelledText: string,
     statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance),
     start: Date,
     end: Date,
@@ -164,8 +166,8 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalenda
         (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
             ICalEventStatus.TENTATIVE;
 
-    const cancelledText = (calStatus === ICalEventStatus.CANCELLED) ? "CANCELLED " : "";
-    const summary = `CM: ${cancelledText}${event.name}`;
+    //const cancelledText = (calStatus === ICalEventStatus.CANCELLED) ? "CANCELLED " : "";
+    //const summary = `CM: ${cancelledText}${event.name}`;
     // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
     // so just bake it, and keep the payload simple.
     let descriptionText = event.description ? markdownToPlainText(event.description) : "";
@@ -196,7 +198,8 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalenda
         inputHash: "",
 
         id: event.id,
-        summary,
+        //summary,
+        name: event.name || "",
         slug: event.slug,
         uid: event.uid,
 

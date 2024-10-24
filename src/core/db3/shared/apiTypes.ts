@@ -491,10 +491,37 @@ export const MakeGetSongFilterInfoRet = (): GetSongFilterInfoRet => ({
     fullSongs: [],
 });
 
+// UIDs need to be url path compatible. So a slash cannot be used because it would break routing.
+export function MakeICalEventUid(eventUid: string, userUid: string | null) {
+    return `${eventUid}_${userUid || "public"}@cafemarche.be`;
+}
 
-export function GetICalRelativeURIForUserAndEvent(args: { userAccessToken: string | null, eventUid: string | null }) {
+
+export function ParseICalEventUid(uid: string): { eventUid: string; userUid: string | null } | null {
+    // Define the regex pattern
+    const regex = /^(.+?)_(.+?)@cafemarche\.be$/;
+
+    // Test the UID string against the regex
+    const match = uid.match(regex);
+
+    // If it doesn't match, return null
+    if (!match) {
+        console.error('Invalid UID format');
+        return null;
+    }
+
+    // Extract eventUid and userUid from the regex match
+    const [, eventUid, userUid] = match;
+
+    return {
+        eventUid: eventUid!,
+        userUid: userUid === "public" ? null : userUid!,
+    };
+}
+
+export function GetICalRelativeURIForUserAndEvent(args: { userAccessToken: string | null, eventUid: string | null, userUid: string | null }) {
     if (!args.eventUid) throw new Error("invalid event for ical");
-    return `/api/ical/user/${args.userAccessToken || "public"}/event/${args.eventUid}`;
+    return `/api/ical/user/${args.userAccessToken || "public"}/event/${MakeICalEventUid(args.eventUid, args.userUid)}`;
 }
 
 export function GetICalRelativeURIForUserUpcomingEvents(args: { userAccessToken: string | null }) {
@@ -990,6 +1017,7 @@ export interface ICalEventJSON {
     start: Date;
     end?: Date;
     summary: string;
+    uid: string,
     description?: {
         plain?: string;
         html?: string;

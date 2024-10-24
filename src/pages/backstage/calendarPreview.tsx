@@ -81,6 +81,7 @@ const MainContent = () => {
                 { memberName: "organizer" },
                 { memberName: "sequence" },
                 { memberName: "status" },
+                { memberName: "uid" },
                 {
                     memberName: "url", render: args => {
                         return <a href={args.row.url} target="_blank" rel="noreferrer">{args.row.url}</a>

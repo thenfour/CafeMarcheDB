@@ -59,6 +59,7 @@ export default resolver.pipe(
                     sequence: e.sequence(),
                     status: String(e.status()),
                     url: e.url() || undefined,
+                    uid: e.uid(),
                     //attendees: e.attendees(),
                     description: e.description() ? {
                         html: e.description()?.html,

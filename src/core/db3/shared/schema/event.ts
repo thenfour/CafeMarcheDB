@@ -586,7 +586,7 @@ export const xEventArgs_Base: db3.TableDesc = {
             authMap: xEventAuthMap_Homepage,
         }),
 
-        new RevisionField({ columnName: "revision", authMap: xEventAuthMap_CreatedAt, }),
+        new RevisionField({ columnName: "revision", authMap: xEventAuthMap_CreatedAt, applyToUpdates: false }),
 
         //new CalculatedEventDateRangeField(),
         MakeCreatedAtField("createdAt", { authMap: xEventAuthMap_CreatedAt, }),
@@ -1054,7 +1054,7 @@ export const xEventUserResponse = new db3.xTable({
             authMap: xEventAuthMap_UserResponse,
         }),
 
-        new RevisionField({ columnName: "revision", authMap: xEventAuthMap_UserResponse, }),
+        new RevisionField({ columnName: "revision", authMap: xEventAuthMap_UserResponse, applyToUpdates: true }),
         new GhostField({ memberName: "uid", authMap: xEventAuthMap_UserResponse }),
     ]
 });

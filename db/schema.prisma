@@ -130,6 +130,7 @@ model User {
   googleId       String?
   createdAt      DateTime @default(now())
   accessToken    String?  @db.VarChar(768) // used like a github access token; a const string which is private and can be used to access resources on your behalf without a session.
+  uid            String?  @default(uuid()) // used for unique identification but is NOT secret like the accessToken.
 
   roleId Int? // nullable for new users a role should be assigned by an admin. null = public
   role   Role? @relation(fields: [roleId], references: [id], onDelete: SetNull) // role deleted, user.roleId set to null.
@@ -164,6 +165,7 @@ model User {
   workflowLogItems              WorkflowInstanceLogItem[]
 
   @@unique([accessToken])
+  @@unique([uid])
   @@index([name])
   @@index([isDeleted])
   @@index([email])

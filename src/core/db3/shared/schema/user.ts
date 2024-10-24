@@ -146,6 +146,7 @@ export const xUserMinimum = new db3.xTable({
         new GhostField({ memberName: "isDeleted", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "uid", authMap: xUserAuthMap_R_EOwn_EManagers }),
     ]
 });
 
@@ -693,6 +694,7 @@ const userBaseArgs: db3.TableDesc = {
         new GhostField({ memberName: "googleId", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "hashedPassword", authMap: xUserAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "accessToken", authMap: xUserAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "uid", authMap: xUserAuthMap_R_EOwn_EManagers }),
     ]
 };
 

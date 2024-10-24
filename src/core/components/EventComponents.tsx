@@ -1234,7 +1234,13 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
             }
 
             <Tooltip title="Add to your calendar (iCal)">
-                <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: currentUser?.accessToken || null, eventUid: eventData.event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
+                <a href={GetICalRelativeURIForUserAndEvent({
+                    userAccessToken: currentUser?.accessToken || null,
+                    eventUid: eventData.event.uid,
+                    userUid: currentUser?.uid || null,
+                })}
+                    target='_blank'
+                    rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
             </Tooltip>
 
             {showVisibility && <VisibilityValue permission={eventData.event.visiblePermission} variant='minimal' />}
@@ -1653,7 +1659,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     const eventTiming = dateRange.hitTestDateTime();
 
     const visInfo = dashboardContext.getVisibilityInfo(event);
-
+    const currentUser = useCurrentUser()[0]!;
     const typeStyle = GetStyleVariablesForColor({
         ...StandardVariationSpec.Weak,
         color: event.type?.color || null,
@@ -1715,7 +1721,16 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
             }
 
             <Tooltip title="Add to your calendar (iCal)">
-                <a href={GetICalRelativeURIForUserAndEvent({ userAccessToken: dashboardContext.currentUser?.accessToken || null, eventUid: event.uid })} target='_blank' rel="noreferrer" className='HalfOpacity interactable shareCalendarButton'>{gIconMap.Share()}</a>
+                <a
+                    href={GetICalRelativeURIForUserAndEvent({
+                        userAccessToken: dashboardContext.currentUser?.accessToken || null,
+                        eventUid: event.uid,
+                        userUid: currentUser.uid,
+                    })}
+                    target='_blank'
+                    rel="noreferrer"
+                    className='HalfOpacity interactable shareCalendarButton'
+                >{gIconMap.Share()}</a>
             </Tooltip>
         </div>
 

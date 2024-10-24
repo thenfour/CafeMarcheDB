@@ -4,6 +4,7 @@ import { floorLocalToLocalDay } from "shared/time";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
+import { MakeICalEventUid } from "../shared/apiTypes";
 
 interface CreateCalendarArgs {
     sourceURL: string;
@@ -35,11 +36,54 @@ export const createCalendar = (args: CreateCalendarArgs): ICalCalendar => {
 
 
 // if user is null, it's a public access.
-export const addEventToCalendar2 = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventCalendarInput | null): ICalEvent | null => {
+export const addEventToCalendar2 = (
+    calendar: ICalCalendar,
+    user: null | Prisma.UserGetPayload<{}>,
+    event: EventCalendarInput | null,
+    eventVerbose: db3.EventClientPayload_Verbose,
+    eventAttendanceIdsRepresentingGoing: number[]
+): ICalEvent | null => {
 
     if (!event) {
         return null;
     }
+    //if (eventVerbose.status?.significance as db3.EventStatusSignificance)
+    if (event.statusSignificance === "Cancelled") {
+        return null;
+    }
+
+    // I don't have the right info here to use things like 
+    // db3.GetEventResponseInfo();
+    // CalculateEventMetadata
+    // et al,
+    // so wing it.
+    const getEventUserResponse = (): null | Prisma.EventUserResponseGetPayload<{}> => {
+        if (!user) return null;
+        const found = eventVerbose.responses.find(u => u.userId === user.id);
+        return found || null;
+    };
+
+    const isUserAttending = (userId: number): boolean => {
+        return eventVerbose.segments.some(segment =>
+            segment.responses.some(response =>
+                response.userId === userId && response.attendanceId && eventAttendanceIdsRepresentingGoing.includes(response.attendanceId)
+            )
+        );
+    }
+
+    // const userSegmentResponses = eventVerbose.
+
+    const eventUserResponse = getEventUserResponse();
+    // const numberOfPositiveResponses = user == null ? 0 : (eventVerbose.segments
+    //     .reduce((acc, seg) => {
+    //         const userResponse = seg.responses.find(sr => sr.userId === user.id);
+    //         if (!userResponse) return acc;
+    //         if (!userResponse.attendanceId) return acc;
+    //         const attendance = eventAttendances.find(ea => ea.id === userResponse.attendanceId);
+    //         if (!attendance) return acc;
+    //         if (attendance.strength < 50) return acc;
+    //         return acc + 1;
+    //     }, 0));
 
     // URI for event
     // URI for user calendar
@@ -61,16 +105,21 @@ export const addEventToCalendar2 = (calendar: ICalCalendar, user: null | Prisma.
     //     //end = prepareAllDayDateForICal(end);
     // }
 
+    let summary = `CM: ${event.name}`;
+    if (user && isUserAttending(user.id)) {
+        summary = `CM👍 ${event.name}`;
+    }
+
     const calEvent = calendar.createEvent({
         allDay: event.isAllDay,
         start: event.start,
         end: event.end,
-        summary: event.summary,
+        summary: summary,//`CM: ${event.name}`,
         description: event.description,
         location: event.locationDescription,
         url: eventURL,
         status: event.calStatus,
-        sequence: event.revision,
+        sequence: event.revision + (eventUserResponse?.revision || 0),
 
         //sequence: event.sequenceid, // not sure we really can do this well.
         // don't include organizer; this is like, for a meeting request, who would you contact to propose time changes.
@@ -83,14 +132,20 @@ export const addEventToCalendar2 = (calendar: ICalCalendar, user: null | Prisma.
         //class: "", // public | private | confidential
     });
     if (event.uid) {
-        calEvent.uid(`${event.uid}@cafemarche.be`);
+        calEvent.uid(`${MakeICalEventUid(event.uid, user?.uid || null)}`);
     }
 
     return calEvent;
 };
 
-export const addEventToCalendar = (calendar: ICalCalendar, user: null | Prisma.UserGetPayload<{}>, event: EventForCal): ICalEvent | null => {
-    return addEventToCalendar2(calendar, user, GetEventCalendarInput(event));
+export const addEventToCalendar = (
+    calendar: ICalCalendar,
+    user: null | Prisma.UserGetPayload<{}>,
+    event: EventForCal,
+    eventVerbose: db3.EventClientPayload_Verbose,
+    eventAttendanceIdsRepresentingGoing: number[]
+): ICalEvent | null => {
+    return addEventToCalendar2(calendar, user, GetEventCalendarInput(event), eventVerbose, eventAttendanceIdsRepresentingGoing);
 };
 
 export interface CalExportCoreArgs1 {
@@ -153,9 +208,11 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
         sourceURL: args.sourceURI,
     });
 
+    const eventAttendances = await db.eventAttendance.findMany();
+
     for (let i = 0; i < events.length; ++i) {
         const event = events[i]!;
-        addEventToCalendar(cal, currentUser, event);
+        addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id));
     }
 
     return cal;
