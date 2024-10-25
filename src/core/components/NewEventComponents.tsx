@@ -30,6 +30,9 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
     const dashboardContext = React.useContext(DashboardContext);
 
+    const workflowQuery = DB3Client.useDb3Query(db3.xWorkflowDef_Search);
+    const workflows = workflowQuery.items as db3.WorkflowDef_SearchPayload[];
+
     // EVENT table bindings
     const eventTableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEvent,
@@ -44,6 +47,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             //EventTableClientColumns.segmentBehavior,
             EventTableClientColumns.expectedAttendanceUserTag,
             EventTableClientColumns.visiblePermission,
+            EventTableClientColumns.workflowDef,
         ],
     });
 
@@ -55,11 +59,16 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     });
 
     const [eventValue, setEventValue] = React.useState<db3.EventPayload>(() => {
-        const ret = db3.xEvent.createNew(clientIntention);
+        const ret = db3.xEvent.createNew(clientIntention) as db3.EventPayload;
         // default to members visibility.
         // note: you cannot use API....defaultVisibility because that uses a hook and this is a callback.
         //ret.visiblePermission = API.users.getDefaultVisibilityPermission();//
-        ret.visiblePermission = dashboardContext.permission.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null;
+        ret.visiblePermission = (dashboardContext.permission.find(p => p.significance === db3.PermissionSignificance.Visibility_Members) || null) as any;
+        const defaultWorkflow = workflows.find(w => w.isDefaultForEvents);
+        if (defaultWorkflow) {
+            ret.workflowDef = defaultWorkflow;
+            ret.workflowDefId = defaultWorkflow.id;
+        }
         return ret;
     });
 
@@ -101,6 +110,8 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new", clientIntention);
 
     const handleSaveClick = async () => {
+        console.log(`hsavo`);
+        debugger;
         const payload: TinsertEventArgs = {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),
@@ -145,6 +156,8 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
                 {renderColumn(eventTableSpec, "expectedAttendanceUserTag", eventValue, eventValidationResult, eventAPI, false)}
 
                 {renderColumn(segmentTableSpec, "startsAt", segmentValue, segmentValidationResult, segmentAPI, false)}
+
+                {renderColumn(eventTableSpec, "workflowDef", eventValue, eventValidationResult, eventAPI, false)}
 
             </div>
         </DialogContent>

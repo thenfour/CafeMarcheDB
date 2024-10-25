@@ -678,7 +678,7 @@ export const EventArgs = Prisma.validator<Prisma.EventArgs>()({
                 user: true,
             }
         },
-
+        workflowDef: true,
         segments: {
             orderBy: { startsAt: "desc" },
             include: {
@@ -841,6 +841,7 @@ export const EventArgs_Verbose = Prisma.validator<Prisma.EventArgs>()({
         //     include: EventUserResponseArgs.include,
         // }
         responses: true,
+        workflowDef: true,
         customFieldValues: {
             // include: {
             //     customField: true,

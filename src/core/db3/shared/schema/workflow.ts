@@ -58,7 +58,7 @@ export const xWorkflowDefArgs: Omit<db3.TableDesc, "getInclude"> = {
     naturalOrderBy: WorkflowDefNaturalOrderBy,
     getRowInfo: (row: WorkflowDef_Minimum) => ({
         pk: row.id,
-        name: row.description,
+        name: `${row.name}${row.isDefaultForEvents ? " (🟢default)" : ""}`,
         description: row.description,
         color: gGeneralPaletteList.findEntry(row.color || null),
         ownerUserId: null,

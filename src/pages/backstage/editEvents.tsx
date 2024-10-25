@@ -61,6 +61,7 @@ const MainContent = () => {
             EventTableClientColumns.frontpageLocation,
             EventTableClientColumns.frontpageLocationURI,
             EventTableClientColumns.frontpageTags,
+            EventTableClientColumns.workflowDef,
         ],
     });
 

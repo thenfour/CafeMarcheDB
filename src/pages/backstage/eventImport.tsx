@@ -97,6 +97,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
             EventTableClientColumns.tags,
             EventTableClientColumns.expectedAttendanceUserTag,
             EventTableClientColumns.visiblePermission,
+            EventTableClientColumns.workflowDef,
         ],
     });
 

@@ -115,7 +115,11 @@ export const ForeignSingleFieldInlineValues = <TForeign extends TAnyModel,>(prop
             return <React.Fragment key={item[props.foreignSpec.typedSchemaColumn.getForeignTableSchema().pkMember]}>
                 {props.foreignSpec.args.renderAsChip!({
                     value: item,
-                    onDelete: selected ? (() => { }) : undefined,
+                    // this doesn't work and isn't really useful anyway.
+                    //onDelete: props.allowNull ? () => handleItemClick(null) : undefined,
+                    // onDelete: selected ? (() => {
+                    //     handleItemClick(null)
+                    // }) : undefined,
                     onClick: () => handleItemClick(item),
                     colorVariant: {
                         selected,

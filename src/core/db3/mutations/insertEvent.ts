@@ -13,7 +13,7 @@ export default resolver.pipe(
     async (args: TinsertEventArgs, ctx: AuthenticatedCtx) => {
 
         try {
-
+            debugger;
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             assert(!!currentUser, "user required to insert an event")
             const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };
@@ -32,6 +32,7 @@ export default resolver.pipe(
                 revision: 0,
                 expectedAttendanceUserTagId: args.event.expectedAttendanceUserTagId,
                 visiblePermissionId: args.event.visiblePermissionId,
+                workflowDefId: args.event.workflowDefId,
             };
 
             // create the root event,

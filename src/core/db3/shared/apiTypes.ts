@@ -183,6 +183,7 @@ export interface TinsertEventArgs {
         tags: number[],
         expectedAttendanceUserTagId: number | null,
         visiblePermissionId: number | null;
+        workflowDefId: number | null;
     },
     segment: {
         startsAt: Date | null,

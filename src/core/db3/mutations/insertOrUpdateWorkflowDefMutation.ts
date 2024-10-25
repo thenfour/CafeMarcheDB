@@ -218,8 +218,8 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         });
 
         // update references to this node id
-        for (const node of args.nodes) {
-            for (const dep of node.dependencies) {
+        for (const node2 of args.nodes) {
+            for (const dep of node2.dependencies) {
                 if (dep.nodeDefId === node.id) {
                     dep.nodeDefId = newItem.id;
                 }
@@ -300,6 +300,13 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
             });
 
             // update references to this?
+            for (const an of args.nodes) {
+                for (const d of an.dependencies) {
+                    if (d.nodeDefId === assignee.id) {
+                        d.nodeDefId = newItem.id;
+                    }
+                }
+            }
         }
     }
 

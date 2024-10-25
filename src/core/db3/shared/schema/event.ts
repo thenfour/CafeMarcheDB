@@ -34,6 +34,7 @@ import {
     UserWithInstrumentsPayload
 } from "./prismArgs";
 import { CreatedByUserField, EventResponses_ExpectedUserTag, VisiblePermissionField } from "./user";
+import { WorkflowDef_Minimum } from "./workflow";
 
 
 export const xEventAuthMap_UserResponse: db3.DB3AuthContextPermissionMap = {
@@ -715,7 +716,16 @@ export const xEventArgs_Base: db3.TableDesc = {
         new GhostField({ memberName: "updatedAt", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
         new GhostField({ memberName: "workflowInstanceId", authMap: xEventAuthMap_R_EOwn_EManagers }),
-        new GhostField({ memberName: "workflowDefId", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        //new GhostField({ memberName: "workflowDefId", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new ForeignSingleField<WorkflowDef_Minimum>({
+            columnName: "workflowDef",
+            fkMember: "workflowDefId",
+            allowNull: true,
+            foreignTableID: "WorkflowDef",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
+
         new GhostField({ memberName: "customFieldValues", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
         // because this is used for generating icals

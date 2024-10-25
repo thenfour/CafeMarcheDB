@@ -46,6 +46,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
                 EventTableClientColumns.tags,
                 EventTableClientColumns.expectedAttendanceUserTag,
                 EventTableClientColumns.visiblePermission,
+                EventTableClientColumns.workflowDef,
             ],
         }),
         filterModel: {
