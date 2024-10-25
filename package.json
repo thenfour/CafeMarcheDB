@@ -68,6 +68,7 @@
     "react-dom": "^18.2.0",
     "react-final-form": "6.5.9",
     "react-quill": "2.0.0",
+    "react-router-dom": "6.27.0",
     "react-smooth-dnd": "0.11.1",
     "secure-password": "4.0.0",
     "sharp": "0.32.6",

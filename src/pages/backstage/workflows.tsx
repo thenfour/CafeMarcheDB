@@ -1,8 +1,9 @@
 
 import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
-import { Button } from "@mui/material";
+import { Alert, Button } from "@mui/material";
 import * as React from 'react';
+import { useBeforeUnload } from "react-use";
 import { Permission } from "shared/permissions";
 import { MakeNewWorkflowDef, mapWorkflowDef, WorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
@@ -122,9 +123,10 @@ const WorkflowDefEditorMain = () => {
     }, [client.remainingQueryStatus.dataUpdatedAt]);
 
     return <div>
-        {dashboardContext.isAuthorized(Permission.admin_workflow_defs) && <Button onClick={() => simulateLinkClick("/backstage/editEventCustomFields")}>Edit custom fields</Button>}
+        {dashboardContext.isAuthorized(Permission.admin_workflow_defs) && <a href={"/backstage/editEventCustomFields"} target="_blank" rel="noreferrer">Edit custom fields</a>}
         <div>
             <Button onClick={handleNewWorkflowDef} startIcon={gIconMap.Add()}>New workflow</Button>
+            {(items.reduce((acc, i) => i.isDefaultForEvents ? (acc + 1) : acc, 0) > 1) && <Alert severity="error">more than one workflow is marked as default. no.</Alert>}
         </div>
         <div className="WorkflowDefSelect">
             <div>{items.length > 0 ? "Select a workflow to edit" : "There are no workflows to edit; create a new one."}</div>

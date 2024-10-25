@@ -18,6 +18,8 @@ import { Markdown3Editor } from "./MarkdownControl3";
 import { EvaluatedWorkflow, EvaluateWorkflow, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeTextBinding, WFFieldBinding, WorkflowRenderer } from "./WorkflowUserComponents";
+import UnsavedChangesHandler from "./UnsavedChangesHandler";
+//import useBeforeUnload from "../hooks/usePrompt";
 
 
 // name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
@@ -293,6 +295,9 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         [props.initialValue]
     );
 
+    //useBeforeUnload(true, 'You have unsaved changes. Are you sure you want to leave?');
+    //useBeforeUnload(true);
+
     // The model is the external data source that the workflow engine can use to determine completeness of tasks.
     const [model, setModel] = React.useState<MockEventModel>(() => MakeEmptyModel(dashboardCtx));
 
@@ -494,6 +499,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             <input id="canEditDefs" type="checkbox" onChange={(e) => setCanEditDefs(e.target.checked)} checked={canEditDefs} />
             <label htmlFor="canEditDefs">Can edit defs</label> */}
         </AdminContainer>
+        <UnsavedChangesHandler isDirty={defHasChanges} />
         <div>
             <Button
                 onClick={async () => {
