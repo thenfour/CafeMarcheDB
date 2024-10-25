@@ -7,7 +7,7 @@ import { DialogActions, DialogContent, DialogTitle, Slider, Tooltip } from "@mui
 import { DashboardContext } from './DashboardContext';
 //import { useURLState } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
-import { Knob } from "./Knob";
+import { Knob, Knob2 } from "./Knob";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;
@@ -419,6 +419,8 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
         setKillTapTrigger(killTapTrigger + 1);
     };
 
+    const standardTempos = [80, 90, 100, 120, 140, 160];
+
     return <ReactiveInputDialog onCancel={props.onClose} className="GlobalMetronomeDialog">
         <DialogTitle>
             Metronome
@@ -451,6 +453,20 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         }
                     }} />
             </div>
+            <div className="buttonRow">
+                <div className="nudge minus freeButton" onClick={() => {
+                    setBPM(bpm - 1);
+                    setTextBpm((bpm - 1).toString());
+                }}>-</div>
+                <div className="nudge plus freeButton" onClick={() => {
+                    setBPM(bpm + 1);
+                    setTextBpm((bpm + 1).toString());
+                }}>+</div>
+                {standardTempos.map(t => <div className="preset freeButton" onClick={() => {
+                    setBPM(t);
+                    setTextBpm(String(t));
+                }}>{t}</div>)}
+            </div>
             <div className="sliderContainer">
                 {/* <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
                     setBPM(e.target.valueAsNumber);
@@ -461,27 +477,21 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     min={gMinBPM}
                     max={gMaxBPM}
                     value={bpm}
-                    size={360}
-                    lineWidth={60}
-                    centerRadius={85}
+                    size={500}
+                    lineWidth={85}
+                    centerRadius={110}
                     onChange={e => {
                         //const valueAsNumber = value as number;
                         setBPM(e);
                         setTextBpm(e.toString());
                     }} />
-                {/* <div className="nudge minus freeButton" onClick={() => {
-                    setBPM(bpm - 1);
-                    setTextBpm((bpm - 1).toString());
-                }}>-</div>
-                <div className="nudge plus freeButton" onClick={() => {
-                    setBPM(bpm + 1);
-                    setTextBpm((bpm + 1).toString());
-                }}>+</div> */}
 
+            </div>
+            <div className="buttonRow">
+                <Button className="closeButton" onClick={props.onClose}>Close</Button>
             </div>
         </DialogContent>
         <DialogActions>
-            <Button className="closeButton" onClick={props.onClose}>Close</Button>
         </DialogActions>
 
     </ReactiveInputDialog>;

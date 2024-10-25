@@ -1970,8 +1970,14 @@ table.songMetadata tr:hover td .CMSmallButton {
 }
 
 .GlobalMetronomeDialog.ReactiveInputDialog .MuiDialog-container>.MuiPaper-root.MuiDialog-paperFullScreen {
-    max-width: 360px;
-    max-height: 780px;
+    /* max-width: 360px;
+    max-height: 780px; */
+    /* touch-action: none; */
+}
+
+.GlobalMetronomeDialog .buttonRow {
+    display: flex;
+    justify-content: center;
 }
 
 .GlobalMetronomeDialog .bpmAndTapRow {
@@ -2019,7 +2025,8 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 .GlobalMetronomeDialog .tapTempoButton,
 .GlobalMetronomeDialog .closeButton,
-.GlobalMetronomeDialog .nudge {
+.GlobalMetronomeDialog .nudge,
+.GlobalMetronomeDialog .preset {
     margin: 15px;
     border-radius: 8px;
     font-weight: bold;
@@ -2045,10 +2052,19 @@ table.songMetadata tr:hover td .CMSmallButton {
     padding: 20px;
 }
 
-.GlobalMetronomeDialog .nudge {
+.GlobalMetronomeDialog .nudge,
+.GlobalMetronomeDialog .preset {
     font-size: 40px;
-    height: 60px;
-    width: 60px;
+    width: unset;
+    flex-grow: 1;
+    flex-basis: 0;
+    min-width: 0;
+    margin: 5px;
+}
+
+.GlobalMetronomeDialog .preset {
+    background-color: #ccc;
+    color: #eee;
 }
 
 .GlobalMetronomeDialog .tapTempoButton.tick {
