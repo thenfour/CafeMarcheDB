@@ -462,7 +462,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     setBPM(bpm + 1);
                     setTextBpm((bpm + 1).toString());
                 }}>+</div>
-                {standardTempos.map(t => <div className="preset freeButton" onClick={() => {
+                {standardTempos.map((t, i) => <div key={i} className="preset freeButton" onClick={() => {
                     setBPM(t);
                     setTextBpm(String(t));
                 }}>{t}</div>)}

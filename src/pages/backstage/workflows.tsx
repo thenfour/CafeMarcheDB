@@ -3,7 +3,6 @@ import { BlitzPage } from "@blitzjs/next";
 import { useMutation } from "@blitzjs/rpc";
 import { Alert, Button } from "@mui/material";
 import * as React from 'react';
-import { useBeforeUnload } from "react-use";
 import { Permission } from "shared/permissions";
 import { MakeNewWorkflowDef, mapWorkflowDef, WorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 import { simulateLinkClick } from "src/core/components/CMCoreComponents2";

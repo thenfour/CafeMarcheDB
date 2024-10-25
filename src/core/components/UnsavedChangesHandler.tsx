@@ -64,7 +64,7 @@ const UnsavedChangesHandler: React.FC<UnsavedChangesHandlerProps> = ({
     //setIsDirty(false);
     isDirtyRef.current = false; // Ensure the ref is updated immediately
     if (nextRoute) {
-      router.push(nextRoute);
+      void router.push(nextRoute);
     }
   };
 
