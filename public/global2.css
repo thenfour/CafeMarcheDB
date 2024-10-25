@@ -1982,6 +1982,7 @@ table.songMetadata tr:hover td .CMSmallButton {
 
 .GlobalMetronomeDialog .bpmAndTapRow {
     display: flex;
+    justify-content: center;
 }
 
 
@@ -2052,9 +2053,16 @@ table.songMetadata tr:hover td .CMSmallButton {
     padding: 20px;
 }
 
-.GlobalMetronomeDialog .nudge,
-.GlobalMetronomeDialog .preset {
+.GlobalMetronomeDialog .nudge {
     font-size: 40px;
+}
+
+.GlobalMetronomeDialog .preset {
+    display: flex;
+    flex-direction: column;
+    text-transform: none;
+
+    background-color: #ccc;
     width: unset;
     flex-grow: 1;
     flex-basis: 0;
@@ -2062,9 +2070,32 @@ table.songMetadata tr:hover td .CMSmallButton {
     margin: 5px;
 }
 
-.GlobalMetronomeDialog .preset {
-    background-color: #ccc;
+.GlobalMetronomeDialog .preset.selected {
+    background-color: #88f;
+}
+
+.GlobalMetronomeDialog .preset.selected .subtitle {
+    color: #bbf;
+}
+
+.GlobalMetronomeDialog .nudge:hover,
+.GlobalMetronomeDialog .preset:hover,
+.GlobalMetronomeDialog .tapTempoButton,
+.GlobalMetronomeDialog .closeButton {
+    outline: 1px solid black;
+}
+
+.GlobalMetronomeDialog .preset .title {
+    font-size: 30px;
     color: #eee;
+    margin-bottom: -5px;
+}
+
+.GlobalMetronomeDialog .preset .subtitle {
+    font-size: 12px;
+    color: #88f;
+    letter-spacing: -.3px;
+    white-space: nowrap;
 }
 
 .GlobalMetronomeDialog .tapTempoButton.tick {

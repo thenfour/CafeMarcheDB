@@ -407,6 +407,8 @@ export interface MetronomeDialogProps {
     onClose: () => void;
 }
 
+type TempoPreset = [bpm: number, caption: string];
+
 export const MetronomeDialog = (props: MetronomeDialogProps) => {
     //const [bpm, setBPM] = useURLState<number>("bpm", 120);
     const [bpm, setBPM] = React.useState<number>(120);
@@ -419,15 +421,41 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
         setKillTapTrigger(killTapTrigger + 1);
     };
 
-    const standardTempos = [80, 90, 100, 120, 140, 160];
+    //const standardTempos = [80, 90, 100, 120, 140, 160];
+    //const standardTempos = [76, 92, 112, 126, 144, 168, 184, 200];
+    const standardTempos1: [bpm: number, caption: string][] = [
+        [76, 'Andante'],
+        [84, 'Moderato'],
+        [96, 'Moderato'],
+        [104, 'Allegretto'],
+        [116, 'Allegro Mod.'],
+        [124, 'Allegro'],
+        [132, 'Allegro'],
+    ];
+    const standardTempos2: [bpm: number, caption: string][] = [
+        [144, 'Vivace'],
+        [152, 'Vivace'],
+        [160, 'Presto'],
+        [168, 'Presto'],
+        [180, 'Presto'],
+        [192, 'Prestissimo'],
+        [200, 'Prestissimo'],
+    ];
+
+
 
     return <ReactiveInputDialog onCancel={props.onClose} className="GlobalMetronomeDialog">
-        <DialogTitle>
-            Metronome
-        </DialogTitle>
         <DialogContent dividers>
             <MetronomeButton bpm={bpm} mountPlaying={true} isTapping={isTapping} tapTrigger={tapTrigger} onSyncClick={handleSync} variant="normal" />
             <div className="bpmAndTapRow">
+                <div className="nudge minus freeButton" onClick={() => {
+                    setBPM(bpm - 1);
+                    setTextBpm((bpm - 1).toString());
+                }}>-</div>
+                <div className="nudge plus freeButton" onClick={() => {
+                    setBPM(bpm + 1);
+                    setTextBpm((bpm + 1).toString());
+                }}>+</div>
                 <CMTextInputBase
                     onChange={(e, v) => {
                         setTextBpm(v);
@@ -454,18 +482,28 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     }} />
             </div>
             <div className="buttonRow">
-                <div className="nudge minus freeButton" onClick={() => {
-                    setBPM(bpm - 1);
-                    setTextBpm((bpm - 1).toString());
-                }}>-</div>
-                <div className="nudge plus freeButton" onClick={() => {
-                    setBPM(bpm + 1);
-                    setTextBpm((bpm + 1).toString());
-                }}>+</div>
-                {standardTempos.map((t, i) => <div key={i} className="preset freeButton" onClick={() => {
-                    setBPM(t);
-                    setTextBpm(String(t));
-                }}>{t}</div>)}
+                {standardTempos1.map((t, i) => {
+                    const [presetBpm, caption] = t;
+                    return <div key={i} className={`preset freeButton ${presetBpm === bpm ? "selected" : ""}`} onClick={() => {
+                        setBPM(presetBpm);
+                        setTextBpm(String(presetBpm));
+                    }}>
+                        <div className="title">{presetBpm}</div>
+                        <div className="subtitle">{caption}</div>
+                    </div>
+                })}
+            </div>
+            <div className="buttonRow">
+                {standardTempos2.map((t, i) => {
+                    const [presetBpm, caption] = t;
+                    return <div key={i} className={`preset freeButton ${presetBpm === bpm ? "selected" : ""}`} onClick={() => {
+                        setBPM(presetBpm);
+                        setTextBpm(String(presetBpm));
+                    }}>
+                        <div className="title">{presetBpm}</div>
+                        <div className="subtitle">{caption}</div>
+                    </div>
+                })}
             </div>
             <div className="sliderContainer">
                 {/* <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
@@ -491,8 +529,6 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                 <Button className="closeButton" onClick={props.onClose}>Close</Button>
             </div>
         </DialogContent>
-        <DialogActions>
-        </DialogActions>
 
     </ReactiveInputDialog>;
 };
