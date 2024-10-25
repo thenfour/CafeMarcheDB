@@ -53,8 +53,10 @@ const SpecialCharacterDropdown: React.FC<SpecialCharacterDropdownProps> = ({ anc
 
 //////////////////////////////////////////////////
 interface Markdown3EditorProps {
+    readonly?: boolean;
     value: string;
     autoFocus?: boolean;
+    beginInPreview?: boolean;
     minHeight?: number;
     onChange: (v: string) => void;
     onSave?: () => void;
@@ -62,8 +64,8 @@ interface Markdown3EditorProps {
 
 type M3Tab = "write" | "preview";
 
-export const Markdown3Editor = (props: Markdown3EditorProps) => {
-    const [tab, setTab] = React.useState<M3Tab>("write");
+export const Markdown3Editor = ({ readonly = false, beginInPreview = false, ...props }: Markdown3EditorProps) => {
+    const [tab, setTab] = React.useState<M3Tab>(beginInPreview ? "preview" : "write");
 
     const [headingTrig, setHeadingTrig] = React.useState<number>(0);
     const [boldTrig, setBoldTrig] = React.useState<number>(0);
@@ -267,6 +269,10 @@ export const Markdown3Editor = (props: Markdown3EditorProps) => {
     const editorContainerStyle: React.CSSProperties = tab === 'write' ? {} : {
         visibility: "hidden",
         position: "absolute",
+    }
+
+    if (readonly) {
+        return <pre>{props.value}</pre>
     }
 
     return <div className="MD3 editor MD3Container">

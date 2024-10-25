@@ -1,4 +1,4 @@
-import { Button, Tooltip } from "@mui/material";
+import { Button, FormControlLabel, Switch, Tooltip } from "@mui/material";
 import { Background, Connection, Edge, EdgeChange, Handle, MarkerType, Node, NodeChange, NodeResizer, Position, ReactFlow, ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import React from "react";
 import { gGeneralPaletteList } from "shared/color";
@@ -10,6 +10,7 @@ import { GetStyleVariablesForColor } from "./Color";
 import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
+import { CMSmallButton } from "./CMCoreComponents2";
 
 
 const makeNormalNodeId = (nodeDefId: number) => {
@@ -498,6 +499,7 @@ export const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = (
                                 const n: WorkflowNodeDef = {
                                     id: getUniqueNegativeID(),// ctx.flowDef.nodeDefs.reduce((acc, n) => Math.max(acc, n.id), 0) + 1, // find a new ID
                                     name: `New node #${ctx.flowDef.nodeDefs.length + 1}`,//nanoid(),
+                                    descriptionMarkdown: "",
                                     groupDefId: null,
                                     displayStyle: WorkflowNodeDisplayStyle.Normal,
                                     completionCriteriaType: WorkflowCompletionCriteriaType.always,
@@ -566,6 +568,10 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
     const ctx = React.useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
 
+    const [showGraph, setShowGraph] = React.useState<boolean>(true);
+    const [showDetail, setShowDetail] = React.useState<boolean>(true);
+    const [showPreview, setShowPreview] = React.useState<boolean>(true);
+
     const selectedNodeDef = ctx.flowDef.nodeDefs.find(nd => !!nd.selected);
     const selectedGroupDef = ctx.flowDef.groupDefs.find(nd => !!nd.selected);
     const selectedEdgeTargetNodeDef = ctx.flowDef.nodeDefs.find(nd => nd.nodeDependencies.some(d => d.selected));
@@ -580,14 +586,37 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
 
     return (
         <div style={{ width: "100%", display: "flex", flexDirection: "column" }} className="WorkflowEditorPOC">
+            <div>
+                <FormControlLabel
+                    className='CMFormControlLabel'
+                    control={
+                        <Switch size="small" checked={showGraph} onChange={e => setShowGraph(e.target.checked)} />
+                    }
+                    label="Show graph"
+                />
+                <FormControlLabel
+                    className='CMFormControlLabel'
+                    control={
+                        <Switch size="small" checked={showDetail} onChange={e => setShowDetail(e.target.checked)} />
+                    }
+                    label="Show detail"
+                />
+                <FormControlLabel
+                    className='CMFormControlLabel'
+                    control={
+                        <Switch size="small" checked={showPreview} onChange={e => setShowPreview(e.target.checked)} />
+                    }
+                    label="Show preview"
+                />
+            </div>
             {ctx.evaluatedFlow && <>
-                <div style={{ display: "flex", flexDirection: "row" }}>
-                    <div style={{ width: "33%" }}>
+                <div className="workflowEditorGraphRowContainer">
+                    {(showGraph) && <div>
                         <ReactFlowProvider>
                             <WorkflowReactFlowEditor />
                         </ReactFlowProvider>
-                    </div>
-                    <div style={{ width: "33%" }}>
+                    </div>}
+                    {(showDetail) && <div>
                         {selectedNodeDef &&
                             <WorkflowNodeEditor
                                 nodeDef={selectedNodeDef}
@@ -604,8 +633,8 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                                 highlightDependencyNodeDef={selectedEdge.sourceNodeDef}
                             />
                         }
-                    </div>
-                    <div style={{ width: "33%" }}>
+                    </div>}
+                    {(showPreview) && <div>
                         <Button
                             onClick={() => {
                                 ctx.instanceMutator.ResetModelAndInstance();
@@ -629,6 +658,7 @@ export const WorkflowEditorPOC: React.FC<WorkflowEditorPOCProps> = (props) => {
                         />
                         <WorkflowLogView />
                     </div>
+                    }
                 </div>
             </>}
         </div>

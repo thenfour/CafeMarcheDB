@@ -5,7 +5,6 @@ import { Alert, Button } from "@mui/material";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { MakeNewWorkflowDef, mapWorkflowDef, WorkflowDef, WorkflowDefToMutationArgs } from "shared/workflowEngine";
-import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
 import { CMSingleSelect } from "src/core/components/CMSelect";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
 import { useConfirm } from "src/core/components/ConfirmationDialog";

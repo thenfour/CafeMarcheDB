@@ -276,6 +276,7 @@ type WorkflowDefMutator_SetNodeSizeArgs = WorkflowDefMutator_Args & {
 type WorkflowDefMutator_SetNodeBasicInfoArgs = WorkflowDefMutator_Args & {
     nodeDef: WorkflowNodeDef;
     name?: string | undefined;
+    descriptionMarkdown?: string | undefined;
     displayStyle?: WorkflowNodeDisplayStyle | undefined;
     thisNodeProgressWeight?: number | undefined;
 };
@@ -546,6 +547,9 @@ export const MakeWorkflowDefMutator = (): WorkflowDefMutator => {
             }
             if (args.thisNodeProgressWeight !== undefined) {
                 n.thisNodeProgressWeight = args.thisNodeProgressWeight;
+            }
+            if (args.descriptionMarkdown !== undefined) {
+                n.descriptionMarkdown = args.descriptionMarkdown;
             }
             return args.sourceDef;
         },

@@ -128,6 +128,7 @@ export interface WorkflowNodeDef {
     id: number;
 
     name: string;
+    descriptionMarkdown: string;
     groupDefId: number | null; // WorkflowNodeGroup.id
 
     // UI display & basic behaviors
@@ -878,12 +879,12 @@ export function WorkflowDefToMutationArgs(def: WorkflowDef): TinsertOrUpdateWork
                 defaultDueDateDurationDaysAfterStarted,
                 fieldName,
                 fieldValueOperator,
-
+                descriptionMarkdown,
             } = nodeDef;
             return {
                 id,
                 name,
-                description: "",
+                description: descriptionMarkdown,
                 width,
                 height,
                 positionX: position.x,
@@ -967,6 +968,7 @@ function mapNode(node: Prisma.WorkflowDefNodeGetPayload<{ include: { defaultAssi
     return {
         id: node.id,
         name: node.name,
+        descriptionMarkdown: node.description,
         groupDefId: node.groupId || null,
         displayStyle: node.displayStyle as WorkflowNodeDisplayStyle,
         manualCompletionStyle: node.manualCompletionStyle as WorkflowManualCompletionStyle,
@@ -1076,7 +1078,7 @@ export function MutationArgsToWorkflowDef(args: TinsertOrUpdateWorkflowDefArgs):
         return {
             id,
             name,
-            description: description || "",
+            descriptionMarkdown: description || "",
             width,
             height,
             position: {

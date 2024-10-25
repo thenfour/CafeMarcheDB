@@ -6,6 +6,7 @@ import * as React from 'react';
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoalesceBool } from "shared/utils";
+import { Prisma } from "db";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { AdminContainer, InspectObject } from "./CMCoreComponents";
@@ -57,6 +58,7 @@ interface MockEvent {
     statusId: number;
     expectedAttendanceUserTagId: number;
     frontpageVisible: boolean;
+    tags: Prisma.EventTagGetPayload<{}>[];
 };
 
 // include custom fields
@@ -71,6 +73,7 @@ const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel 
         expectedAttendanceUserTagId: dashboardContext.userTag.items[0]!.id,
         typeId: dashboardContext.eventType.items[0]!.id,
         statusId: dashboardContext.eventStatus.items[0]!.id,
+        tags: [],
     };
     for (const f of dashboardContext.eventCustomField.items) {
         ret[f.name] = null; // todo: default values for custom fields?

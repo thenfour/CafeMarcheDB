@@ -31,7 +31,7 @@ import { createRoot } from 'react-dom/client';
 
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
-import { IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
+import { CoalesceBool, IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
 import { SnackbarContext } from "src/core/components/SnackbarContext"; // 0 internal refs
 import { MatchingSlugItem } from "../db3/shared/apiTypes"; // 0 internal refs
 
@@ -1021,11 +1021,10 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 style={{ display: 'none' }}
                 onChange={handleNativeFileSelect}
             />
-
             <ReactTextareaAutocomplete
                 containerClassName="editorContainer"
                 loadingComponent={() => <div>Loading...</div>}
-                autoFocus={!!props.autoFocus}
+                autoFocus={CoalesceBool(props.autoFocus, false)}
                 //ref={rta => setRta(rta)}
                 innerRef={textarea => setTa(textarea)}
                 //movePopupAsYouType={true}

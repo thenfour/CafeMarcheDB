@@ -1,17 +1,20 @@
 // the non-react-flow editing components of workflow. WorkflowVisualEditor depends on this.
 
-import { FormControl, InputLabel, MenuItem, Select } from "@mui/material";
+import { Button, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import React, { useContext } from "react";
 import { gGeneralPaletteList } from "shared/color";
 import { getHashedColor, sortBy } from "shared/utils";
 import { CMChip, CMChipContainer } from "./CMChip";
-import { NameValuePair } from "./CMCoreComponents2";
+import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CMNumericTextField, CMTextField } from "./CMTextField";
 import { ChipSelector, EnumChipSelector } from "./ChipSelector";
 import { ColorPick } from "./Color";
 
 import { WorkflowCompletionCriteriaType, WorkflowDef, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowNodeDef, WorkflowNodeDependency, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { EvaluatedWorkflowContext, WorkflowAssigneesSelection, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
+import { Markdown3Editor } from "./MarkdownControl3";
+import { gIconMap } from "../db3/components/IconMap";
+import { useConfirm } from "./ConfirmationDialog";
 
 
 interface DueDateDefControlProps {
@@ -160,9 +163,10 @@ interface WorkflowNodeEditorProps {
 };
 
 export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
+
+    const confirm = useConfirm();
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
-    if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
     const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
 
     const relevanceDependencies = props.nodeDef.nodeDependencies.filter(d => d.determinesRelevance);
@@ -173,16 +177,35 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
     const activationUsesNodeDependencies = usesNodeDependencies(props.nodeDef.activationCriteriaType);
     const completionUsesNodeDependencies = usesNodeDependencies(props.nodeDef.completionCriteriaType);
     const evaluated = ctx.getEvaluatedNode(props.nodeDef.id);
+
     if (!evaluated) {
         return null;
     }
 
     const groupOptions = [{ value: null, label: "<none>" }, ...sortBy(ctx.flowDef.groupDefs, g => g.position.y).map(g => ({ value: g.id, label: g.name, color: g.color }))];
 
+    if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
+
     return <div className="CMWorkflowNodeEditorContainer">
 
         <NameValuePair
-            name={`Step / node #${props.nodeDef.id}`}
+            name={<>
+                Step / node #{props.nodeDef.id}
+                <CMSmallButton onClick={async () => {
+                    if (await confirm({ title: "Delete this node?" })) {
+                        ctx.chainDefMutations([
+                            {
+                                fn: (def) => ctx.flowDefMutator.deleteNode({
+                                    sourceDef: def,
+                                    nodeDef: props.nodeDef,
+                                }),
+                                wantsReevaluation: false,
+                            }
+                        ], "clicked delete button on node detail editor");
+                    }
+                }}
+                >{gIconMap.Delete()}</CMSmallButton>
+            </>}
             value={
                 <CMTextField
                     className="nodeNameInput"
@@ -200,6 +223,31 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                                 wantsReevaluation: false,
                             }
                         ], "changing node name");
+                    }}
+                />
+            }
+        />
+
+        <NameValuePair
+            name={`Description`}
+            value={
+                <Markdown3Editor
+                    autoFocus={false}
+                    beginInPreview={true}
+                    minHeight={100}
+                    //readOnly={readonly} // todo?
+                    value={props.nodeDef.descriptionMarkdown}
+                    onChange={(v) => {
+                        ctx.chainDefMutations([
+                            {
+                                fn: (def) => ctx.flowDefMutator.setNodeBasicInfo({
+                                    sourceDef: def,
+                                    nodeDef: props.nodeDef,
+                                    descriptionMarkdown: v,
+                                }),
+                                wantsReevaluation: false,
+                            }
+                        ], "changing node description");
                     }}
                 />
             }

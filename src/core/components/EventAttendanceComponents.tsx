@@ -117,24 +117,21 @@ EventAttendanceSummary (obsolete?)
 
 import React from "react";
 import { Timing } from 'shared/time';
-import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
-import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { AdminInspectObject, AttendanceChip, ReactiveInputDialog } from './CMCoreComponents';
-import { CMSmallButton, DebugCollapsibleAdminText, DebugCollapsibleText, NameValuePair } from "./CMCoreComponents2";
+import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
-import { DashboardContext, useDashboardContext } from "./DashboardContext";
-import { ArrayElement, CoalesceBool } from "shared/utils";
-import { Prisma } from "db";
-import { Markdown } from "./RichTextEditor";
-import { Markdown3Editor } from "./MarkdownControl3";
 import { DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { SettingMarkdown } from "./SettingMarkdown";
+import { Prisma } from "db";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
+import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { Markdown3Editor } from "./MarkdownControl3";
+import { Markdown } from "./RichTextEditor";
+import { SettingMarkdown } from "./SettingMarkdown";
 
 
 const gCaptionMap = {};

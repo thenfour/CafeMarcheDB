@@ -481,6 +481,26 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         }
                     }} />
             </div>
+            <div className="sliderContainer">
+                {/* <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
+                    setBPM(e.target.valueAsNumber);
+                    setTextBpm(e.target.value);
+                }} /> */}
+                <Knob
+                    className="bpmSlider"
+                    min={gMinBPM}
+                    max={gMaxBPM}
+                    value={bpm}
+                    size={500}
+                    lineWidth={85}
+                    centerRadius={110}
+                    onChange={e => {
+                        //const valueAsNumber = value as number;
+                        setBPM(e);
+                        setTextBpm(e.toString());
+                    }} />
+
+            </div>
             <div className="buttonRow">
                 {standardTempos1.map((t, i) => {
                     const [presetBpm, caption] = t;
@@ -504,26 +524,6 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                         <div className="subtitle">{caption}</div>
                     </div>
                 })}
-            </div>
-            <div className="sliderContainer">
-                {/* <input className="bpmSlider" type="range" min={gMinBPM} max={gMaxBPM} value={bpm} onChange={e => {
-                    setBPM(e.target.valueAsNumber);
-                    setTextBpm(e.target.value);
-                }} /> */}
-                <Knob
-                    className="bpmSlider"
-                    min={gMinBPM}
-                    max={gMaxBPM}
-                    value={bpm}
-                    size={500}
-                    lineWidth={85}
-                    centerRadius={110}
-                    onChange={e => {
-                        //const valueAsNumber = value as number;
-                        setBPM(e);
-                        setTextBpm(e.toString());
-                    }} />
-
             </div>
             <div className="buttonRow">
                 <Button className="closeButton" onClick={props.onClose}>Close</Button>
