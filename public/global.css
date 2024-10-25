@@ -678,6 +678,12 @@ table td {
 }
 
 
+table tfoot td {
+  background-color: transparent;
+  font-weight: bold;
+  font-family: monospace;
+}
+
 .CMEditGrid2 .MuiDataGrid-virtualScroller {
   /* when there are no rows, there's a "nothing to show" overlay, but with our row height auto, it will result in a 1px-height area. this allows the overlay to show.*/
   min-height: 40px;

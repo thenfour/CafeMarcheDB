@@ -458,11 +458,16 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
 };
 
 /////////////////////////////////////////////////////////////////////////
+export enum CMTableSlot {
+    Header,
+    Body,
+    Footer,
+}
 interface CMTableColumnSpec<T extends Object> {
     memberName?: keyof T;
     allowSort?: boolean;
     header?: React.ReactNode;
-    render?: (args: { row: T }) => React.ReactNode;
+    render?: (args: { row: T, slot: CMTableSlot, defaultRenderer: (val: any) => React.ReactNode }) => React.ReactNode;
     getRowStyle?: (args: { row: T }) => React.CSSProperties | undefined;
 }
 
@@ -492,16 +497,17 @@ function CMTableValueDefaultRenderer(value: any): React.ReactNode {
 
 interface CMTableRowProps<T extends Object> {
     row: T;
+    slot: CMTableSlot;
     style?: React.CSSProperties | undefined;
     columns: CMTableColumnSpec<T>[];
 }
 
-const CMTableRow = <T extends Object,>({ row, columns, ...props }: CMTableRowProps<T>) => {
+const CMTableRow = <T extends Object,>({ row, slot, columns, ...props }: CMTableRowProps<T>) => {
     return (
         <tr style={props.style}>
             {columns.map((column, idx) => {
                 const content = column.render
-                    ? column.render({ row })
+                    ? column.render({ row, slot, defaultRenderer: CMTableValueDefaultRenderer })
                     : (column.memberName ? CMTableValueDefaultRenderer(row[column.memberName]) : "");
 
                 const style = column.getRowStyle ? column.getRowStyle({ row }) : undefined;
@@ -566,12 +572,12 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
             <tbody>
                 {sortedRows.map((row, idx) => {
                     const style = props.getRowStyle ? props.getRowStyle({ row }) : undefined;
-                    return <CMTableRow<T> key={idx} row={row} columns={columns} style={style} />;
+                    return <CMTableRow<T> slot={CMTableSlot.Body} key={idx} row={row} columns={columns} style={style} />;
                 })}
             </tbody>
             {props.footerRow &&
                 <tfoot>
-                    <CMTableRow<T> row={props.footerRow} columns={columns} />
+                    <CMTableRow<T> slot={CMTableSlot.Footer} row={props.footerRow} columns={columns} />
                 </tfoot>}
         </table>
     );

@@ -3,14 +3,14 @@ import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { formatFileSize } from "shared/rootroot";
-import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS, formatTimeSpan } from "shared/time";
-import { CMTab, CMTable, CMTabPanel, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
+import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS } from "shared/time";
+import { CMTab, CMTable, CMTableSlot, CMTabPanel, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { API } from "src/core/db3/clientAPI";
-import { ActivityLogUserChip, ActivityLogValueViewer } from "src/core/db3/DB3Client";
+import { ActivityLogUserChip } from "src/core/db3/DB3Client";
 import getDistinctChangeFilterValues from "src/core/db3/queries/getDistinctChangeFilterValues";
 import getServerHealth from "src/core/db3/queries/getServerHealth";
-import { FileStatResult, GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
+import { GetServerHealthResult, ServerHealthFileResult, TableStatsQueryRow } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerHealthResult }) => {
@@ -59,11 +59,18 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
             { memberName: "externalURI" },
             {
                 memberName: "fileName", render: args => {
+                    if (args.slot === CMTableSlot.Footer) {
+                        return args.row.fileName;
+                    }
                     return <a href={API.files.getURIForStoredLeafName(args.row.fileName)} target="_blank" rel="noreferrer">{args.row.fileName}</a>
                 }
             },
             {
                 memberName: "modified", render: (args) => {
+                    if (args.slot === CMTableSlot.Footer) {
+                        return null;
+                    }
+
                     const value = args.row.modified;
 
                     const range = new DateTimeRange({
@@ -71,6 +78,7 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                         isAllDay: false,
                         startsAtDateTime: args.row.modified,
                     });
+                    //return <EventDateField dateRange={range} />;
 
                     const relativeTiming = CalcRelativeTiming(new Date(), range);
                     return <>{range.toString()} {relativeTiming.label}</>; // todo
@@ -88,7 +96,12 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                     } as React.CSSProperties;
                 }
             },
-            { memberName: "isDirectory" },
+            {
+                memberName: "isDirectory", render: args => {
+                    if (args.slot === CMTableSlot.Footer) return null;
+                    return args.defaultRenderer(args.row.isDirectory);
+                }
+            },
         ]}
     />;
 };
