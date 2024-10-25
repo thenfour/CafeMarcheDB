@@ -131,19 +131,20 @@ const WorkflowDefEditorMain = () => {
             <div>{items.length > 0 ? "Select a workflow to edit" : "There are no workflows to edit; create a new one."}</div>
             {(items.length > 0) && <CMSingleSelect<WorkflowDef>
                 getOptions={(args) => items}
+                chipSize="big"
                 onChange={async (option) => {
                     setValue(option || undefined);
                 }}
                 getOptionInfo={(item: WorkflowDef) => {
                     return {
                         id: item.id,
-                        name: `${item.name} #${item.id} ${item.isDefaultForEvents ? "(Default)" : ""}`,
+                        name: `${item.name} #${item.id} ${item.isDefaultForEvents ? "(🟢Default)" : ""}`,
                         color: item.color,
                         tooltip: item.description || undefined,
                     };
                 }}
                 renderOption={(item) => {
-                    return `${item.name} #${item.id} ${item.isDefaultForEvents ? "(Default)" : ""}`;
+                    return `${item.name} #${item.id} ${item.isDefaultForEvents ? "(🟢Default)" : ""}`;
                 }}
                 value={value || null}
                 nullBehavior={CMSelectNullBehavior.AllowNull}

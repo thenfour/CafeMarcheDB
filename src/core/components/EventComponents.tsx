@@ -1541,6 +1541,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
         </CMTab>
 
         <CMTab
+            enabled={!!event.workflowDefId}
             summaryIcon={gIconMap.AccountTree()}
             summaryTitle="Workflow"
             thisTabId={gEventDetailTabSlugIndices.workflow}

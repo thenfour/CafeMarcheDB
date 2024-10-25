@@ -538,6 +538,9 @@ model Event {
   workflowInstanceId Int?
   workflowInstance   WorkflowInstance? @relation(fields: [workflowInstanceId], references: [id], onDelete: SetNull)
 
+  workflowDefId Int?
+  workflowDef   WorkflowDef? @relation(fields: [workflowDefId], references: [id], onDelete: Cascade)
+
   fileTags  FileEventTag[]
   tags      EventTagAssignment[]
   comments  EventComment[]
@@ -557,6 +560,8 @@ model Event {
   @@index([endDateTime])
   @@index([visiblePermissionId])
   @@index([frontpageVisible])
+  @@index([workflowInstanceId])
+  @@index([workflowDefId])
 }
 
 model EventCustomField {
@@ -1065,6 +1070,7 @@ model WorkflowDef {
   groups    WorkflowDefGroup[]
   nodeDefs  WorkflowDefNode[]
   instances WorkflowInstance[]
+  events    Event[]
 
   @@index([name])
 }

@@ -715,6 +715,7 @@ export const xEventArgs_Base: db3.TableDesc = {
         new GhostField({ memberName: "updatedAt", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
         new GhostField({ memberName: "workflowInstanceId", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "workflowDefId", authMap: xEventAuthMap_R_EOwn_EManagers }),
         new GhostField({ memberName: "customFieldValues", authMap: xEventAuthMap_R_EOwn_EManagers }),
 
         // because this is used for generating icals

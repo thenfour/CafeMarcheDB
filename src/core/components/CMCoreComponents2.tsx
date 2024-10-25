@@ -406,10 +406,11 @@ interface CMTabProps {
     summaryIcon?: React.ReactNode;
     summaryTitle?: React.ReactNode;
     summarySubtitle?: React.ReactNode;
+    enabled?: boolean;
 };
 
-export const CMTab = (props: React.PropsWithChildren<CMTabProps>) => {
-    return <Suspense>{props.children}</Suspense>;
+export const CMTab = ({ enabled = true, ...props }: React.PropsWithChildren<CMTabProps>) => {
+    return enabled && <Suspense>{props.children}</Suspense>;
 };
 
 const CMTabHeader = (props: CMTabProps & {
@@ -441,12 +442,13 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
     const handleTabHeaderClick = (ch: React.ReactElement<React.PropsWithChildren<CMTabProps>>, e: React.MouseEvent<HTMLLIElement>) => {
         props.handleTabChange(e, ch.props.thisTabId);
     };
-    const selectedChild = props.children.find(tab => tab.props.thisTabId === props.selectedTabId);
+    const filteredChildren = props.children.filter(tab => CoalesceBool(tab.props.enabled, true));
+    const selectedChild = filteredChildren.find(tab => tab.props.thisTabId === props.selectedTabId);
     return <div className={`CMTabPanel ${props.className}`} style={props.style}>
         <div className="CMTabHeader">
             <ul className="CMTabList">
                 {
-                    props.children.map(tab => <CMTabHeader key={tab.props.thisTabId} {...tab.props} onClick={e => handleTabHeaderClick(tab, e)} selected={props.selectedTabId === tab.props.thisTabId} />)
+                    filteredChildren.map(tab => <CMTabHeader key={tab.props.thisTabId} {...tab.props} onClick={e => handleTabHeaderClick(tab, e)} selected={props.selectedTabId === tab.props.thisTabId} />)
                 }
             </ul>
         </div>
