@@ -1141,10 +1141,10 @@ export interface WFFieldBinding<Tunderlying> {
     value: Tunderlying,
     valueAsString: string; // equality-comparable and db-serializable
     setValue: (val: Tunderlying) => void,
-    setOperand2: (val: Tunderlying | Tunderlying[]) => void,
+    setOperand2: (val: Tunderlying | Tunderlying[]) => void, // the binding is not only for pure "binding", but defines all interactions with a field including definitions.
     doesFieldValueSatisfyCompletionCriteria: () => boolean;
-    FieldValueComponent: (props: FieldComponentProps<Tunderlying>) => React.ReactNode;
-    FieldOperand2Component: (props: FieldComponentProps<Tunderlying>) => React.ReactNode;
+    FieldValueComponent: React.ComponentType<FieldComponentProps<Tunderlying>>;
+    FieldOperand2Component: React.ComponentType<FieldComponentProps<Tunderlying>>;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1261,6 +1261,9 @@ export const MakeTextBinding = (args: {
         doesFieldValueSatisfyCompletionCriteria: () => {
             const isNull = () => IsNullOrWhitespace(args.value);
             const eq = () => args.value.trim().toLowerCase() === ((args.nodeDef.fieldValueOperand2 as string) || "").trim().toLowerCase();
+            if (!args.nodeDef.fieldValueOperator) {
+                return false;
+            }
 
             switch (args.nodeDef.fieldValueOperator) {
                 case WorkflowFieldValueOperator.Falsy:

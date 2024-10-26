@@ -7,6 +7,7 @@ import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
 import { CoalesceBool } from "shared/utils";
 import { Prisma } from "db";
+import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { AdminContainer, InspectObject } from "./CMCoreComponents";
@@ -16,7 +17,7 @@ import { ColorPick } from "./Color";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 
-import { EvaluatedWorkflow, EvaluateWorkflow, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeTextBinding, WFFieldBinding, WorkflowRenderer } from "./WorkflowUserComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
@@ -54,11 +55,11 @@ interface MockEvent {
     name: string;
     description: string | null;
     locationDescription: string | null;
-    typeId: number;
-    statusId: number;
-    expectedAttendanceUserTagId: number;
+    typeId: number | null;
+    statusId: number | null;
+    expectedAttendanceUserTagId: number | null;
     frontpageVisible: boolean;
-    tags: Prisma.EventTagGetPayload<{}>[];
+    tagIds: number[];
 };
 
 // include custom fields
@@ -73,7 +74,7 @@ const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel 
         expectedAttendanceUserTagId: dashboardContext.userTag.items[0]!.id,
         typeId: dashboardContext.eventType.items[0]!.id,
         statusId: dashboardContext.eventStatus.items[0]!.id,
-        tags: [],
+        tagIds: [],
     };
     for (const f of dashboardContext.eventCustomField.items) {
         ret[f.name] = null; // todo: default values for custom fields?
@@ -264,81 +265,66 @@ const WorkflowDefRootDataEditor = () => {
 };
 
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////
-interface WorkflowEditorForEventProps {
-    initialValue: WorkflowDef;
-    readonly: boolean;
-    onSave: (val: WorkflowDef) => Promise<void>;
-    onDelete: (val: WorkflowDef) => Promise<void>;
-    onCancel: (val: WorkflowDef) => void;
+interface MakeInstanceMutatorArgs {
+    dashboardContext: DashboardContextData;
+    workflowDef: WorkflowDef;
+    model: MockEventModel;
+    setModel: (m: MockEventModel) => void;
+    instance: WorkflowInstance;
+    setInstance: (x: WorkflowInstance) => void;
+    evaluationTrigger: number;
+    setEvaluationTrigger: (x: number) => void;
+    setEvaluationReason: (x: string) => void;
 };
-export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
-    const dashboardCtx = useDashboardContext();
-    // The workflow definition is what you expect. Describes the mechanics and layout of the workflow, which can then be instantiated and used.
-    const [workflowDef, setWorkflowDef] = React.useState<WorkflowDef>(props.initialValue);
-    const [isSaving, setIsSaving] = React.useState<boolean>(false);
 
-    // The workflow instance is an instantiation of a workflow definition. It basically holds live state which is persisted, like assignees, comments, which is per instance rather than per definition.
-    const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
-        return WorkflowInitializeInstance(workflowDef);
-    });
+function MakeInstanceMutatorAndRenderer({
+    dashboardContext,
+    workflowDef,
+    model,
+    setModel,
+    instance,
+    setInstance,
+    evaluationTrigger,
+    setEvaluationTrigger,
+    setEvaluationReason,
+}: MakeInstanceMutatorArgs): [WorkflowInstanceMutator, WorkflowRenderer] {
 
-    const [defHasChanges, setDefHasChanges] = React.useState<boolean>(false);
-
-    const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
-    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
-
-    React.useEffect(() => {
-        setWorkflowDef(props.initialValue);
-        setDefHasChanges(false);
-        setEvaluationReason("Initial value changed");
-        setEvaluationTrigger(evaluationTrigger + 1);
-    },
-        [props.initialValue]
-    );
-
-    //useBeforeUnload(true, 'You have unsaved changes. Are you sure you want to leave?');
-    //useBeforeUnload(true);
-
-    // The model is the external data source that the workflow engine can use to determine completeness of tasks.
-    const [model, setModel] = React.useState<MockEventModel>(() => MakeEmptyModel(dashboardCtx));
-
-    const setOperand2 = (nodeDefId: number, newOperand: unknown) => {
-        const nd = workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
-        nd.fieldValueOperand2 = newOperand;
-        setWorkflowDef({ ...workflowDef });
-        setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
-    };
+    // const setOperand2 = (nodeDefId: number, newOperand: unknown) => {
+    //     const nd = workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
+    //     nd.fieldValueOperand2 = newOperand;
+    //     setWorkflowDef({ ...workflowDef });
+    //     setInstance({ ...instance }); // trigger re-eval
+    // };
 
     const instanceMutator: WorkflowInstanceMutator = {
-        CanCurrentUserViewInstances: () => dashboardCtx.isAuthorized(Permission.view_workflow_instances),
-        CanCurrentUserEditInstances: () => dashboardCtx.isAuthorized(Permission.edit_workflow_instances),
-        CanCurrentUserViewDefs: () => dashboardCtx.isAuthorized(Permission.view_workflow_defs),
-        CanCurrentUserEditDefs: () => dashboardCtx.isAuthorized(Permission.edit_workflow_defs),
+        CanCurrentUserViewInstances: () => dashboardContext.isAuthorized(Permission.view_workflow_instances),
+        CanCurrentUserEditInstances: () => dashboardContext.isAuthorized(Permission.edit_workflow_instances),
+        CanCurrentUserViewDefs: () => dashboardContext.isAuthorized(Permission.view_workflow_defs),
+        CanCurrentUserEditDefs: () => dashboardContext.isAuthorized(Permission.edit_workflow_defs),
 
         DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
             const binding = getMockEventBinding({
-                dashboardContext: dashboardCtx,
+                dashboardContext: dashboardContext,
                 model,
                 flowDef,
                 nodeDef,
                 tidiedNodeInstance,
                 setModel: (newModel) => {
                     setModel(newModel);
-                    setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
+                    setInstance({ ...instance }); // trigger re-eval
                 },
-                setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+                setOperand2: (n) => { throw new Error("unsupported setOperand2") },
+                //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
             return binding.doesFieldValueSatisfyCompletionCriteria();
         },
         GetModelFieldNames: (args) => {
-            return Object.keys(MakeEmptyModel(dashboardCtx));
+            return Object.keys(MakeEmptyModel(dashboardContext));
         },
         // result should be equality-comparable and database-serializable
         GetFieldValueAsString: ({ flowDef, nodeDef, node }) => {
             const binding = getMockEventBinding({
-                dashboardContext: dashboardCtx,
+                dashboardContext: dashboardContext,
                 model,
                 flowDef,
                 nodeDef,
@@ -347,8 +333,8 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             return binding.valueAsString;
         },
         ResetModelAndInstance: () => {
-            setModel(MakeEmptyModel(dashboardCtx));
-            setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
+            setModel(MakeEmptyModel(dashboardContext));
+            setInstance(WorkflowInitializeInstance(workflowDef));
             setEvaluationReason("ResetModelAndInstance");
             setEvaluationTrigger(evaluationTrigger + 1);
         },
@@ -381,7 +367,7 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             return args.sourceWorkflowInstance;
         },
         AddLogItem: (args) => {
-            args.sourceWorkflowInstance.log.push({ ...args.msg, userId: dashboardCtx.currentUser?.id || undefined });
+            args.sourceWorkflowInstance.log.push({ ...args.msg, userId: dashboardContext.currentUser?.id || undefined });
             return args.sourceWorkflowInstance;
         },
         SetNodeStatusData: (args) => {
@@ -418,13 +404,239 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
             return args.sourceWorkflowInstance;
         },
         onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
-            setWorkflowInstance(newInstance);
+            setInstance(newInstance);
             if (reEvaluationNeeded) {
                 setEvaluationReason("instance mutator requested");
                 setEvaluationTrigger(evaluationTrigger + 1);
             }
         },
     };
+
+    // // re-evaluate when requested
+    // React.useEffect(() => {
+    //     // workflowInstance.log.push({
+    //     //     type: WorkflowLogItemType.Comment,
+    //     //     at: new Date(),
+    //     //     comment: "Evaluating due to React.useEffect[evaluationTrigger]",
+    //     // });
+
+    //     const x = EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
+    //     setEvaluatedInstance(x);
+    // }, [evaluationTrigger]);
+
+    const renderer: WorkflowRenderer = {
+        RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => {
+            const binding = getMockEventBinding({
+                dashboardContext,
+                model,
+                flowDef,
+                nodeDef,
+                tidiedNodeInstance: evaluatedNode,
+                setModel: (value) => {
+                    setModel(value);
+                    setInstance({ ...instance }); // trigger reeval when the model changes. important lel
+
+                    setEvaluationReason("model changed");
+                    setEvaluationTrigger(evaluationTrigger + 1);
+                },
+                setOperand2: (n) => { throw new Error("unsupported setOperand2") },
+                //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+            });
+            return <binding.FieldValueComponent binding={binding} readonly={readonly} />;
+        },
+        RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => {
+            const binding = getMockEventBinding({
+                dashboardContext,
+                model,
+                flowDef,
+                nodeDef,
+                tidiedNodeInstance: evaluatedNode,
+                setModel: (value) => {
+                    throw new Error(`should not be called from here.`);
+                },
+                setOperand2: (n) => { throw new Error("unsupported setOperand2") },
+                //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+            });
+            return <binding.FieldOperand2Component binding={binding} readonly={readonly} />;
+        }
+    };
+
+    return [instanceMutator, renderer];
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+interface WorkflowEditorForEventProps {
+    initialValue: WorkflowDef;
+    readonly: boolean;
+    onSave: (val: WorkflowDef) => Promise<void>;
+    onDelete: (val: WorkflowDef) => Promise<void>;
+    onCancel: (val: WorkflowDef) => void;
+};
+export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
+    const dashboardContext = useDashboardContext();
+    // The workflow definition is what you expect. Describes the mechanics and layout of the workflow, which can then be instantiated and used.
+    const [workflowDef, setWorkflowDef] = React.useState<WorkflowDef>(props.initialValue);
+    const [isSaving, setIsSaving] = React.useState<boolean>(false);
+
+    // The workflow instance is an instantiation of a workflow definition. It basically holds live state which is persisted, like assignees, comments, which is per instance rather than per definition.
+    const [workflowInstance, setWorkflowInstance] = React.useState<WorkflowInstance>(() => {
+        return WorkflowInitializeInstance(workflowDef);
+    });
+
+    const [defHasChanges, setDefHasChanges] = React.useState<boolean>(false);
+
+    const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
+    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
+
+    React.useEffect(() => {
+        setWorkflowDef(props.initialValue);
+        setDefHasChanges(false);
+        setEvaluationReason("Initial value changed");
+        setEvaluationTrigger(evaluationTrigger + 1);
+    },
+        [props.initialValue]
+    );
+
+    //useBeforeUnload(true, 'You have unsaved changes. Are you sure you want to leave?');
+    //useBeforeUnload(true);
+
+    // The model is the external data source that the workflow engine can use to determine completeness of tasks.
+    const [model, setModel] = React.useState<MockEventModel>(() => MakeEmptyModel(dashboardContext));
+
+    // const setOperand2 = (nodeDefId: number, newOperand: unknown) => {
+    //     const nd = workflowDef.nodeDefs.find(nd => nd.id === nodeDefId)!;
+    //     nd.fieldValueOperand2 = newOperand;
+    //     setWorkflowDef({ ...workflowDef });
+    //     setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
+    // };
+
+    const [instanceMutator, renderer] = MakeInstanceMutatorAndRenderer({
+        model,
+        dashboardContext,
+        evaluationTrigger,
+        instance: workflowInstance,
+        setInstance: setWorkflowInstance,
+        setEvaluationReason,
+        setEvaluationTrigger,
+        setModel,
+        workflowDef,
+    });
+
+    // const instanceMutator: WorkflowInstanceMutator = {
+    //     CanCurrentUserViewInstances: () => dashboardCtx.isAuthorized(Permission.view_workflow_instances),
+    //     CanCurrentUserEditInstances: () => dashboardCtx.isAuthorized(Permission.edit_workflow_instances),
+    //     CanCurrentUserViewDefs: () => dashboardCtx.isAuthorized(Permission.view_workflow_defs),
+    //     CanCurrentUserEditDefs: () => dashboardCtx.isAuthorized(Permission.edit_workflow_defs),
+
+    //     DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
+    //         const binding = getMockEventBinding({
+    //             dashboardContext: dashboardCtx,
+    //             model,
+    //             flowDef,
+    //             nodeDef,
+    //             tidiedNodeInstance,
+    //             setModel: (newModel) => {
+    //                 setModel(newModel);
+    //                 setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
+    //             },
+    //             setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+    //         });
+    //         return binding.doesFieldValueSatisfyCompletionCriteria();
+    //     },
+    //     GetModelFieldNames: (args) => {
+    //         return Object.keys(MakeEmptyModel(dashboardCtx));
+    //     },
+    //     // result should be equality-comparable and database-serializable
+    //     GetFieldValueAsString: ({ flowDef, nodeDef, node }) => {
+    //         const binding = getMockEventBinding({
+    //             dashboardContext: dashboardCtx,
+    //             model,
+    //             flowDef,
+    //             nodeDef,
+    //             tidiedNodeInstance: node,
+    //         });
+    //         return binding.valueAsString;
+    //     },
+    //     ResetModelAndInstance: () => {
+    //         setModel(MakeEmptyModel(dashboardCtx));
+    //         setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
+    //         setEvaluationReason("ResetModelAndInstance");
+    //         setEvaluationTrigger(evaluationTrigger + 1);
+    //     },
+    //     SetAssigneesForNode: (args) => {
+    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+    //         if (!ni) {
+    //             // evaluated nodes are instances, so this works and adds unused fields
+    //             ni = { ...args.evaluatedNode };
+    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
+    //         }
+
+    //         ni.assignees = JSON.parse(JSON.stringify(args.assignees));
+    //         return args.sourceWorkflowInstance;
+    //     },
+    //     SetHasBeenEvaluated: args => {
+    //         if (args.sourceWorkflowInstance.hasBeenEvaluated) return undefined;
+    //         args.sourceWorkflowInstance.hasBeenEvaluated = true;
+    //         return args.sourceWorkflowInstance;
+    //     },
+    //     SetDueDateForNode: (args) => {
+    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+    //         if (!ni) {
+    //             // evaluated nodes are instances, so this works and adds unused fields
+    //             ni = { ...args.evaluatedNode };
+    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
+    //         }
+
+    //         if (ni.dueDate === args.dueDate) return undefined;
+    //         ni.dueDate = args.dueDate;
+    //         return args.sourceWorkflowInstance;
+    //     },
+    //     AddLogItem: (args) => {
+    //         args.sourceWorkflowInstance.log.push({ ...args.msg, userId: dashboardCtx.currentUser?.id || undefined });
+    //         return args.sourceWorkflowInstance;
+    //     },
+    //     SetNodeStatusData: (args) => {
+    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+    //         if (!ni) {
+    //             // evaluated nodes are instances, so this works and adds unused fields
+    //             ni = { ...args.evaluatedNode };
+    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
+    //         }
+    //         ni.activeStateFirstTriggeredAt = args.activeStateFirstTriggeredAt;
+    //         //ni.dueDate = args.dueDate;
+    //         ni.lastProgressState = args.lastProgressState;
+    //         return args.sourceWorkflowInstance;
+    //     },
+    //     SetLastFieldValue: (args) => {
+    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+    //         if (!ni) {
+    //             // evaluated nodes are instances, so this works and adds unused fields
+    //             ni = { ...args.evaluatedNode };
+    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
+    //         }
+    //         ni.lastFieldName = args.fieldName;
+    //         ni.lastFieldValueAsString = args.fieldValueAsString;
+    //         return args.sourceWorkflowInstance;
+    //     },
+    //     SetLastAssignees: (args) => {
+    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
+    //         if (!ni) {
+    //             // evaluated nodes are instances, so this works and adds unused fields
+    //             ni = { ...args.evaluatedNode };
+    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
+    //         }
+    //         ni.lastAssignees = args.value;
+    //         return args.sourceWorkflowInstance;
+    //     },
+    //     onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
+    //         setWorkflowInstance(newInstance);
+    //         if (reEvaluationNeeded) {
+    //             setEvaluationReason("instance mutator requested");
+    //             setEvaluationTrigger(evaluationTrigger + 1);
+    //         }
+    //     },
+    // };
 
     // re-evaluate when requested
     React.useEffect(() => {
@@ -438,40 +650,40 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         setEvaluatedInstance(x);
     }, [evaluationTrigger]);
 
-    const renderer: WorkflowRenderer = {
-        RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => {
-            const binding = getMockEventBinding({
-                dashboardContext: dashboardCtx,
-                model,
-                flowDef,
-                nodeDef,
-                tidiedNodeInstance: evaluatedNode,
-                setModel: (value) => {
-                    setModel(value);
-                    setWorkflowInstance({ ...workflowInstance }); // trigger reeval when the model changes. important lel
+    // const renderer: WorkflowRenderer = {
+    //     RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => {
+    //         const binding = getMockEventBinding({
+    //             dashboardContext: dashboardCtx,
+    //             model,
+    //             flowDef,
+    //             nodeDef,
+    //             tidiedNodeInstance: evaluatedNode,
+    //             setModel: (value) => {
+    //                 setModel(value);
+    //                 setWorkflowInstance({ ...workflowInstance }); // trigger reeval when the model changes. important lel
 
-                    setEvaluationReason("model changed");
-                    setEvaluationTrigger(evaluationTrigger + 1);
-                },
-                setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
-            });
-            return binding.FieldValueComponent({ binding, readonly });
-        },
-        RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => {
-            const binding = getMockEventBinding({
-                dashboardContext: dashboardCtx,
-                model,
-                flowDef,
-                nodeDef,
-                tidiedNodeInstance: evaluatedNode,
-                setModel: (value) => {
-                    throw new Error(`should not be called from here.`);
-                },
-                setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
-            });
-            return binding.FieldOperand2Component({ binding, readonly });
-        }
-    };
+    //                 setEvaluationReason("model changed");
+    //                 setEvaluationTrigger(evaluationTrigger + 1);
+    //             },
+    //             setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+    //         });
+    //         return binding.FieldValueComponent({ binding, readonly });
+    //     },
+    //     RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => {
+    //         const binding = getMockEventBinding({
+    //             dashboardContext: dashboardCtx,
+    //             model,
+    //             flowDef,
+    //             nodeDef,
+    //             tidiedNodeInstance: evaluatedNode,
+    //             setModel: (value) => {
+    //                 throw new Error(`should not be called from here.`);
+    //             },
+    //             setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+    //         });
+    //         return binding.FieldOperand2Component({ binding, readonly });
+    //     }
+    // };
 
     const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
         // workflowInstance.log.push({
@@ -608,3 +820,116 @@ export const WorkflowViewer = (props: { value: WorkflowDef }) => {
     </EvaluatedWorkflowProvider>
 
 };
+
+
+interface EventWorkflowTabContentProps {
+    event: db3.EventClientPayload_Verbose,
+    tableClient: DB3Client.xTableRenderClient,
+    readonly: boolean,
+    refetch: () => void,
+};
+
+function GetModelForEvent(dashboardContext: DashboardContextData, event: db3.EventClientPayload_Verbose): MockEventModel {
+    const {
+        description,
+        expectedAttendanceUserTagId,
+        frontpageVisible,
+        locationDescription,
+        name,
+        statusId,
+        typeId,
+    } = event;
+
+    const ret: MockEventModel = {
+        description,
+        expectedAttendanceUserTagId,
+        frontpageVisible,
+        locationDescription,
+        name,
+        statusId,
+        tagIds: event.tags.map(t => t.eventTagId),
+        typeId,
+    };
+
+    // apply custom fields
+    for (const cfv of event.customFieldValues) {
+        const cf = dashboardContext.eventCustomField.getById(cfv.customFieldId);
+        if (!cf) throw new Error(`CFV ref no good for id: ${cfv.customFieldId}`);
+        try {
+            const deserializedValue = JSON.parse(cfv.jsonValue);
+            ret[cf.name] = deserializedValue;
+        } catch (e) {
+            console.log(e);
+            throw e;
+        }
+    }
+
+    return ret;
+}
+
+export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
+    const dashboardContext = useDashboardContext();
+
+    const workflowDefId = props.event.workflowDefId;
+    if (!workflowDefId) return null;
+
+    const workflowDefsRaw = DB3Client.useDb3Query<db3.WorkflowDef_Verbose>(db3.xWorkflowDef_Verbose, {
+        pks: [workflowDefId],
+        items: [],
+    });
+    if (workflowDefsRaw.items.length !== 1) throw new Error(`workflowdef query did not give 1 result with id ${workflowDefId}`);
+
+    const workflowDef = mapWorkflowDef(workflowDefsRaw.items[0]!);
+
+    // load workflow instance
+    const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef);
+    const setInstance = (v) => { };
+
+    // establish model
+    const [model, setModel] = React.useState<MockEventModel>(() => GetModelForEvent(dashboardContext, props.event));
+
+    // evaluate
+    const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
+    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
+
+    const [instanceMutator, renderer] = MakeInstanceMutatorAndRenderer({
+        dashboardContext,
+        workflowDef,
+        evaluationTrigger,
+        setEvaluationTrigger,
+        setEvaluationReason,
+        model,
+        setModel,
+        instance,
+        setInstance,
+    });
+
+    const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
+        return EvaluateWorkflow(workflowDef, instance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
+    });
+
+    return <EvaluatedWorkflowProvider
+        flowDef={workflowDef}
+        flowInstance={instance}
+        evaluatedFlow={evaluatedInstance}
+        instanceMutator={instanceMutator}
+        renderer={renderer}
+        onWorkflowDefMutationChainComplete={(newFlowDef: WorkflowDef, reEvalRequested: boolean, reason: string) => {
+            console.log(`todo: commit instance`);
+        }}
+    >
+        <ReactFlowProvider>
+            <WorkflowReactFlowEditor readonly={true} />
+        </ReactFlowProvider>
+
+    </EvaluatedWorkflowProvider>
+};
+
+
+
+export const EventWorkflowTabContent = (props: EventWorkflowTabContentProps) => {
+    return <React.Suspense>
+        <EventWorkflowTabInner {...props} />;
+    </React.Suspense>;
+};
+

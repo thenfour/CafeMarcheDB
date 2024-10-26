@@ -634,7 +634,7 @@ const MainContent = () => {
                 },
                 setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
-            return binding.FieldValueComponent({ binding, readonly });
+            return <binding.FieldOperand2Component binding={binding} readonly={readonly} />;
         },
         RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => {
             const binding = getModelBinding({
@@ -647,7 +647,7 @@ const MainContent = () => {
                 },
                 setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
-            return binding.FieldOperand2Component({ binding, readonly });
+            return <binding.FieldOperand2Component binding={binding} readonly={readonly} />;
         }
     };
 

@@ -186,6 +186,8 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
 
     if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
 
+    const fieldNames = ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) });
+
     return <div className="CMWorkflowNodeEditorContainer">
 
         <NameValuePair
@@ -456,7 +458,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         <div style={{ display: "flex", alignItems: "center" }}>
                             <FormControl variant="standard">
                                 <InputLabel>Field</InputLabel>
-                                <Select variant="filled" readOnly={readonly} size="small" value={props.nodeDef.fieldName || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
+                                <Select variant="filled" readOnly={readonly} size="small" value={props.nodeDef.fieldName || fieldNames[0] || "--never-never-never-field--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
                                     onChange={readonly ? undefined : (e) => {
                                         ctx.chainDefMutations([
                                             {
@@ -471,12 +473,12 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                                             }
                                         ], `setting which field`);
                                     }}>
-                                    {ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) }).map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
+                                    {fieldNames.map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                                 </Select>
                             </FormControl>
                             <FormControl variant="standard">
                                 <InputLabel>Operator</InputLabel>
-                                <Select variant="filled" size="small" readOnly={readonly} value={props.nodeDef.fieldValueOperator || "--never-never-never--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
+                                <Select variant="filled" size="small" readOnly={readonly} value={props.nodeDef.fieldValueOperator || WorkflowFieldValueOperator.IsNotNull /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
                                     onChange={readonly ? undefined : (e) => {
                                         ctx.chainDefMutations([
                                             {
