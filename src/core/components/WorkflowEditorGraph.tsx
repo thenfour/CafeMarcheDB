@@ -7,7 +7,7 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { GetStyleVariablesForColor } from "./Color";
 
-import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
+import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
 import { CMSmallButton } from "./CMCoreComponents2";
@@ -446,6 +446,8 @@ export const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = (
 
     const readonly = props.readonly || !ctx.instanceMutator.CanCurrentUserEditDefs();
 
+    const fieldNames = ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, });
+
     return (
         <div style={{ width: '100%', height: '900px', border: '2px solid #0002' }}>
             <ReactFlow
@@ -513,6 +515,8 @@ export const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = (
                                     selected: true,
                                     width: undefined,
                                     height: undefined,
+                                    fieldValueOperator: WorkflowFieldValueOperator.IsNotNull,
+                                    fieldName: fieldNames[0] || "",
                                 };
 
                                 ctx.chainDefMutations([

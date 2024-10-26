@@ -18,6 +18,7 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
     const [id__, slug, tab] = params.id_slug_tab as string[];
     const dashboardContext = React.useContext(DashboardContext);
+    const [workflowRefreshTrigger, setWorkflowRefreshTrigger] = React.useState<number>(0);
 
     //if (!idOrSlug) return <div>no event specified</div>;
     if (!eventId) throw new Error(`song not found`);
@@ -66,11 +67,16 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const eventRaw = tableClient.items[0]! as db3.EventClientPayload_Verbose;
     const event = eventRaw ? db3.enrichSearchResultEvent(eventRaw, dashboardContext) : null;
 
+    const refetch = () => {
+        setWorkflowRefreshTrigger(workflowRefreshTrigger + 1);
+        tableClient.refetch();
+    };
+
     return <div className="eventDetailComponent">
         <NewEventButton />
         {event ? <>
             <EventBreadcrumbs event={event} />
-            <EventDetailFull readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} />
+            <EventDetailFull readonly={false} event={event} tableClient={tableClient} initialTabIndex={initialTabIndex} workflowRefreshTrigger={workflowRefreshTrigger} refetch={refetch} />
         </> : <>
             no event was found. some possibilities:
             <ul>

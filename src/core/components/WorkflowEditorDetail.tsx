@@ -186,7 +186,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
 
     if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
 
-    const fieldNames = ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) });
+    const fieldNames = ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef });//, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) });
 
     return <div className="CMWorkflowNodeEditorContainer">
 

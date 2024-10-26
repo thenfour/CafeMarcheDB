@@ -5,8 +5,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import * as React from 'react';
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoalesceBool } from "shared/utils";
-import { Prisma } from "db";
+import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
@@ -18,10 +17,9 @@ import { DashboardContextData, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 
 import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
-import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
-import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeTextBinding, WFFieldBinding, WorkflowRenderer } from "./WorkflowUserComponents";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
-//import useBeforeUnload from "../hooks/usePrompt";
+import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
+import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeTextBinding, WFFieldBinding, WorkflowContainer, WorkflowLogView, WorkflowRenderer } from "./WorkflowUserComponents";
 
 
 // name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
@@ -89,7 +87,7 @@ export function getMockEventBinding(args: {
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
     setModel?: (newModel: MockEvent) => void,
-    setOperand2?: (newOperand: unknown) => void,
+    //setOperand2?: (newOperand: unknown) => void,
 }): WFFieldBinding<unknown> {
 
     // do custom fields first
@@ -101,7 +99,7 @@ export function getMockEventBinding(args: {
                     tidiedNodeInstance: args.tidiedNodeInstance,
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
-                    setOperand2: args.setOperand2,
+                    //setOperand2: args.setOperand2,
                     value: args.model[cf.name],
                     setValue: (val) => {
                         const newModel = { ...args.model };
@@ -115,7 +113,7 @@ export function getMockEventBinding(args: {
                     tidiedNodeInstance: args.tidiedNodeInstance,
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
-                    setOperand2: args.setOperand2,
+                    //setOperand2: args.setOperand2,
                     value: args.model[cf.name] || "",
                     setValue: (val) => {
                         const newModel = { ...args.model };
@@ -139,7 +137,7 @@ export function getMockEventBinding(args: {
                 tidiedNodeInstance: args.tidiedNodeInstance,
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
-                setOperand2: args.setOperand2,
+                //setOperand2: args.setOperand2,
                 value: args.model[field] || "",
                 setValue: (val) => {
                     const newModel = { ...args.model };
@@ -152,7 +150,7 @@ export function getMockEventBinding(args: {
                 tidiedNodeInstance: args.tidiedNodeInstance,
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
-                setOperand2: args.setOperand2,
+                //setOperand2: args.setOperand2,
                 value: args.model[field],
                 setValue: (val) => {
                     const newModel = { ...args.model };
@@ -313,7 +311,7 @@ function MakeInstanceMutatorAndRenderer({
                     setModel(newModel);
                     setInstance({ ...instance }); // trigger re-eval
                 },
-                setOperand2: (n) => { throw new Error("unsupported setOperand2") },
+                //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
                 //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
             return binding.doesFieldValueSatisfyCompletionCriteria();
@@ -439,7 +437,7 @@ function MakeInstanceMutatorAndRenderer({
                     setEvaluationReason("model changed");
                     setEvaluationTrigger(evaluationTrigger + 1);
                 },
-                setOperand2: (n) => { throw new Error("unsupported setOperand2") },
+                //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
                 //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
             return <binding.FieldValueComponent binding={binding} readonly={readonly} />;
@@ -454,7 +452,7 @@ function MakeInstanceMutatorAndRenderer({
                 setModel: (value) => {
                     throw new Error(`should not be called from here.`);
                 },
-                setOperand2: (n) => { throw new Error("unsupported setOperand2") },
+                //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
                 //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
             return <binding.FieldOperand2Component binding={binding} readonly={readonly} />;
@@ -523,174 +521,13 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
         workflowDef,
     });
 
-    // const instanceMutator: WorkflowInstanceMutator = {
-    //     CanCurrentUserViewInstances: () => dashboardCtx.isAuthorized(Permission.view_workflow_instances),
-    //     CanCurrentUserEditInstances: () => dashboardCtx.isAuthorized(Permission.edit_workflow_instances),
-    //     CanCurrentUserViewDefs: () => dashboardCtx.isAuthorized(Permission.view_workflow_defs),
-    //     CanCurrentUserEditDefs: () => dashboardCtx.isAuthorized(Permission.edit_workflow_defs),
-
-    //     DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => {
-    //         const binding = getMockEventBinding({
-    //             dashboardContext: dashboardCtx,
-    //             model,
-    //             flowDef,
-    //             nodeDef,
-    //             tidiedNodeInstance,
-    //             setModel: (newModel) => {
-    //                 setModel(newModel);
-    //                 setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
-    //             },
-    //             setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
-    //         });
-    //         return binding.doesFieldValueSatisfyCompletionCriteria();
-    //     },
-    //     GetModelFieldNames: (args) => {
-    //         return Object.keys(MakeEmptyModel(dashboardCtx));
-    //     },
-    //     // result should be equality-comparable and database-serializable
-    //     GetFieldValueAsString: ({ flowDef, nodeDef, node }) => {
-    //         const binding = getMockEventBinding({
-    //             dashboardContext: dashboardCtx,
-    //             model,
-    //             flowDef,
-    //             nodeDef,
-    //             tidiedNodeInstance: node,
-    //         });
-    //         return binding.valueAsString;
-    //     },
-    //     ResetModelAndInstance: () => {
-    //         setModel(MakeEmptyModel(dashboardCtx));
-    //         setWorkflowInstance(WorkflowInitializeInstance(workflowDef));
-    //         setEvaluationReason("ResetModelAndInstance");
-    //         setEvaluationTrigger(evaluationTrigger + 1);
-    //     },
-    //     SetAssigneesForNode: (args) => {
-    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
-    //         if (!ni) {
-    //             // evaluated nodes are instances, so this works and adds unused fields
-    //             ni = { ...args.evaluatedNode };
-    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
-    //         }
-
-    //         ni.assignees = JSON.parse(JSON.stringify(args.assignees));
-    //         return args.sourceWorkflowInstance;
-    //     },
-    //     SetHasBeenEvaluated: args => {
-    //         if (args.sourceWorkflowInstance.hasBeenEvaluated) return undefined;
-    //         args.sourceWorkflowInstance.hasBeenEvaluated = true;
-    //         return args.sourceWorkflowInstance;
-    //     },
-    //     SetDueDateForNode: (args) => {
-    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
-    //         if (!ni) {
-    //             // evaluated nodes are instances, so this works and adds unused fields
-    //             ni = { ...args.evaluatedNode };
-    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
-    //         }
-
-    //         if (ni.dueDate === args.dueDate) return undefined;
-    //         ni.dueDate = args.dueDate;
-    //         return args.sourceWorkflowInstance;
-    //     },
-    //     AddLogItem: (args) => {
-    //         args.sourceWorkflowInstance.log.push({ ...args.msg, userId: dashboardCtx.currentUser?.id || undefined });
-    //         return args.sourceWorkflowInstance;
-    //     },
-    //     SetNodeStatusData: (args) => {
-    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
-    //         if (!ni) {
-    //             // evaluated nodes are instances, so this works and adds unused fields
-    //             ni = { ...args.evaluatedNode };
-    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
-    //         }
-    //         ni.activeStateFirstTriggeredAt = args.activeStateFirstTriggeredAt;
-    //         //ni.dueDate = args.dueDate;
-    //         ni.lastProgressState = args.lastProgressState;
-    //         return args.sourceWorkflowInstance;
-    //     },
-    //     SetLastFieldValue: (args) => {
-    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
-    //         if (!ni) {
-    //             // evaluated nodes are instances, so this works and adds unused fields
-    //             ni = { ...args.evaluatedNode };
-    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
-    //         }
-    //         ni.lastFieldName = args.fieldName;
-    //         ni.lastFieldValueAsString = args.fieldValueAsString;
-    //         return args.sourceWorkflowInstance;
-    //     },
-    //     SetLastAssignees: (args) => {
-    //         let ni = args.sourceWorkflowInstance.nodeInstances.find(ni => ni.nodeDefId === args.evaluatedNode.nodeDefId);
-    //         if (!ni) {
-    //             // evaluated nodes are instances, so this works and adds unused fields
-    //             ni = { ...args.evaluatedNode };
-    //             args.sourceWorkflowInstance.nodeInstances.push(ni);
-    //         }
-    //         ni.lastAssignees = args.value;
-    //         return args.sourceWorkflowInstance;
-    //     },
-    //     onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
-    //         setWorkflowInstance(newInstance);
-    //         if (reEvaluationNeeded) {
-    //             setEvaluationReason("instance mutator requested");
-    //             setEvaluationTrigger(evaluationTrigger + 1);
-    //         }
-    //     },
-    // };
-
     // re-evaluate when requested
     React.useEffect(() => {
-        // workflowInstance.log.push({
-        //     type: WorkflowLogItemType.Comment,
-        //     at: new Date(),
-        //     comment: "Evaluating due to React.useEffect[evaluationTrigger]",
-        // });
-
         const x = EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
         setEvaluatedInstance(x);
     }, [evaluationTrigger]);
 
-    // const renderer: WorkflowRenderer = {
-    //     RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => {
-    //         const binding = getMockEventBinding({
-    //             dashboardContext: dashboardCtx,
-    //             model,
-    //             flowDef,
-    //             nodeDef,
-    //             tidiedNodeInstance: evaluatedNode,
-    //             setModel: (value) => {
-    //                 setModel(value);
-    //                 setWorkflowInstance({ ...workflowInstance }); // trigger reeval when the model changes. important lel
-
-    //                 setEvaluationReason("model changed");
-    //                 setEvaluationTrigger(evaluationTrigger + 1);
-    //             },
-    //             setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
-    //         });
-    //         return binding.FieldValueComponent({ binding, readonly });
-    //     },
-    //     RenderEditorForFieldOperand2: ({ flowDef, nodeDef, evaluatedNode, setValue, readonly }) => {
-    //         const binding = getMockEventBinding({
-    //             dashboardContext: dashboardCtx,
-    //             model,
-    //             flowDef,
-    //             nodeDef,
-    //             tidiedNodeInstance: evaluatedNode,
-    //             setModel: (value) => {
-    //                 throw new Error(`should not be called from here.`);
-    //             },
-    //             setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
-    //         });
-    //         return binding.FieldOperand2Component({ binding, readonly });
-    //     }
-    // };
-
     const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
-        // workflowInstance.log.push({
-        //     type: WorkflowLogItemType.Comment,
-        //     at: new Date(),
-        //     comment: "initial setup in React.useState<EvaluatedWorkflow>",
-        // });
         return EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
     });
 
@@ -824,6 +661,7 @@ export const WorkflowViewer = (props: { value: WorkflowDef }) => {
 
 interface EventWorkflowTabContentProps {
     event: db3.EventClientPayload_Verbose,
+    refreshTrigger: number;
     tableClient: DB3Client.xTableRenderClient,
     readonly: boolean,
     refetch: () => void,
@@ -855,11 +693,17 @@ function GetModelForEvent(dashboardContext: DashboardContextData, event: db3.Eve
     for (const cfv of event.customFieldValues) {
         const cf = dashboardContext.eventCustomField.getById(cfv.customFieldId);
         if (!cf) throw new Error(`CFV ref no good for id: ${cfv.customFieldId}`);
+        if (IsNullOrWhitespace(cfv.jsonValue)) {
+            ret[cf.name] = null;
+            continue;
+        }
         try {
             const deserializedValue = JSON.parse(cfv.jsonValue);
             ret[cf.name] = deserializedValue;
         } catch (e) {
             console.log(e);
+            console.log(`json value:`);
+            console.log(cfv.jsonValue);
             throw e;
         }
     }
@@ -867,11 +711,20 @@ function GetModelForEvent(dashboardContext: DashboardContextData, event: db3.Eve
     return ret;
 }
 
+export const EventWorkflowTabWithWFContext = () => {
+    return <div>
+        <WorkflowContainer />
+        <WorkflowLogView />
+    </div>;
+};
+
 export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     const dashboardContext = useDashboardContext();
 
     const workflowDefId = props.event.workflowDefId;
-    if (!workflowDefId) return null;
+    if (!workflowDefId) {
+        return null;
+    }
 
     const workflowDefsRaw = DB3Client.useDb3Query<db3.WorkflowDef_Verbose>(db3.xWorkflowDef_Verbose, {
         pks: [workflowDefId],
@@ -879,10 +732,14 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     });
     if (workflowDefsRaw.items.length !== 1) throw new Error(`workflowdef query did not give 1 result with id ${workflowDefId}`);
 
+    React.useEffect(() => {
+        workflowDefsRaw.refetch();
+    }, [props.refreshTrigger]);
+
     const workflowDef = mapWorkflowDef(workflowDefsRaw.items[0]!);
 
     // load workflow instance
-    const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef);
+    const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef); // TODO: load from db
     const setInstance = (v) => { };
 
     // establish model
@@ -904,6 +761,12 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
         setInstance,
     });
 
+    // re-evaluate when requested
+    React.useEffect(() => {
+        const x = EvaluateWorkflow(workflowDef, instance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
+        setEvaluatedInstance(x);
+    }, [evaluationTrigger]);
+
     const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
         return EvaluateWorkflow(workflowDef, instance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
     });
@@ -918,10 +781,7 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
             console.log(`todo: commit instance`);
         }}
     >
-        <ReactFlowProvider>
-            <WorkflowReactFlowEditor readonly={true} />
-        </ReactFlowProvider>
-
+        <EventWorkflowTabWithWFContext />
     </EvaluatedWorkflowProvider>
 };
 

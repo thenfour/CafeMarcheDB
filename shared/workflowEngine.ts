@@ -143,8 +143,8 @@ export interface WorkflowNodeDef {
     relevanceCriteriaType: WorkflowCompletionCriteriaType;
     activationCriteriaType: WorkflowCompletionCriteriaType;
     completionCriteriaType: WorkflowCompletionCriteriaType;
-    fieldName?: string;
-    fieldValueOperator?: WorkflowFieldValueOperator;
+    fieldName: string;
+    fieldValueOperator: WorkflowFieldValueOperator;
     fieldValueOperand2?: unknown; // for things like less than, equals, whatever.
 
     // defaults
@@ -365,7 +365,7 @@ export interface WorkflowInstanceMutator {
     CanCurrentUserEditDefs: () => boolean,
 
     DoesFieldValueSatisfyCompletionCriteria: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, tidiedNodeInstance: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee }) => boolean;
-    GetModelFieldNames: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, node: WorkflowTidiedNodeInstance }) => string[];
+    GetModelFieldNames: (args: { flowDef: WorkflowDef }) => string[];
 
     // equality-comparable and db-serializable
     GetFieldValueAsString: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, node: WorkflowTidiedNodeInstance }) => string;
@@ -977,8 +977,8 @@ function mapNode(node: Prisma.WorkflowDefNodeGetPayload<{ include: { defaultAssi
         relevanceCriteriaType: node.relevanceCriteriaType as WorkflowCompletionCriteriaType,
         activationCriteriaType: node.activationCriteriaType as WorkflowCompletionCriteriaType,
         completionCriteriaType: node.completionCriteriaType as WorkflowCompletionCriteriaType,
-        fieldName: node.fieldName || undefined,
-        fieldValueOperator: node.fieldValueOperator ? node.fieldValueOperator as WorkflowFieldValueOperator : undefined,
+        fieldName: node.fieldName || "",
+        fieldValueOperator: node.fieldValueOperator ? node.fieldValueOperator as WorkflowFieldValueOperator : WorkflowFieldValueOperator.IsNotNull,
         fieldValueOperand2: node.fieldValueOperand2 ? JSON.parse(node.fieldValueOperand2) : undefined,
         defaultAssignees: node.defaultAssignees.map(mapDefaultAssignee),
         defaultDueDateDurationDaysAfterStarted: node.defaultDueDateDurationDaysAfterStarted || undefined,
@@ -1062,14 +1062,14 @@ export function MutationArgsToWorkflowDef(args: TinsertOrUpdateWorkflowDefArgs):
             activationCriteriaType,
             completionCriteriaType,
             displayStyle,
+            fieldName,
+            fieldValueOperator,
             fieldValueOperand2,
             manualCompletionStyle,
             relevanceCriteriaType,
             selected,
             thisNodeProgressWeight,
             defaultDueDateDurationDaysAfterStarted,
-            fieldName,
-            fieldValueOperator,
             groupId,
             dependencies,
             defaultAssignees,
@@ -1094,8 +1094,8 @@ export function MutationArgsToWorkflowDef(args: TinsertOrUpdateWorkflowDefArgs):
             selected,
             thisNodeProgressWeight,
             defaultDueDateDurationDaysAfterStarted,
-            fieldName,
-            fieldValueOperator: fieldValueOperator ? (fieldValueOperator as WorkflowFieldValueOperator) : undefined,
+            fieldName: fieldName || "",
+            fieldValueOperator: fieldValueOperator ? (fieldValueOperator as WorkflowFieldValueOperator) : WorkflowFieldValueOperator.IsNotNull,
             groupDefId: groupId,
 
             // Reconstruct node dependencies

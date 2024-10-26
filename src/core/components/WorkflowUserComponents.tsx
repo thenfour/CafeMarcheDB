@@ -11,7 +11,7 @@ import * as DB3Client from "../db3/DB3Client";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import * as db3 from "../db3/db3";
-import { ReactiveInputDialog } from "./CMCoreComponents";
+import { AdminInspectObject, ReactiveInputDialog } from "./CMCoreComponents";
 import { AnimatedCircularProgress, CMSmallButton, EventDateField, Pre } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle } from "./CMSelect";
 import { CMTextField } from "./CMTextField";
@@ -354,8 +354,8 @@ export interface WorkflowDefMutator {
     setNodeGroup: (args: WorkflowDefMutator_SetNodeGroupArgs) => WorkflowDef | undefined;
     setNodeFieldInfo: WorkflowDefMutatorFn<{
         nodeDef: WorkflowNodeDef,
-        fieldName: string | undefined;
-        fieldValueOperator: WorkflowFieldValueOperator | undefined;
+        fieldName: string;
+        fieldValueOperator: WorkflowFieldValueOperator;
         fieldValueOperand2: unknown; // for things like less than, equals, whatever.
     }>;
     setNodeRelevanceCriteriaType: WorkflowDefMutatorFn<{ nodeDef: WorkflowNodeDef, criteriaType: WorkflowCompletionCriteriaType }>;
@@ -1063,24 +1063,31 @@ export const WorkflowContainer = (props: WorkflowContainerProps) => {
     });
 
     return (
-        <div className="workflowContainer">
-            {
-                (ungroupedNodes.length > 0) && <WorkflowGroupComponent
-                    groupDefId={null}
-                    onClickToSelectNode={props.onClickToSelectNode}
-                />
-            }
-            {sortedGroups.map(groupDef => {
-                return (
-                    <WorkflowGroupComponent
-                        key={groupDef.id}
-                        groupDefId={groupDef.id}
-                        onClickToSelectGroup={props.onClickToSelectGroup}
+        <>
+            <div>
+                <AdminInspectObject src={ctx.flowDef} label="FlowDef" />
+                <AdminInspectObject src={ctx.flowInstance} label="FlowInstance" />
+                <AdminInspectObject src={ctx.evaluatedFlow} label="EvaluatedFlow" />
+            </div>
+            <div className="workflowContainer">
+                {
+                    (ungroupedNodes.length > 0) && <WorkflowGroupComponent
+                        groupDefId={null}
                         onClickToSelectNode={props.onClickToSelectNode}
                     />
-                );
-            })}
-        </div>
+                }
+                {sortedGroups.map(groupDef => {
+                    return (
+                        <WorkflowGroupComponent
+                            key={groupDef.id}
+                            groupDefId={groupDef.id}
+                            onClickToSelectGroup={props.onClickToSelectGroup}
+                            onClickToSelectNode={props.onClickToSelectNode}
+                        />
+                    );
+                })}
+            </div>
+        </>
     );
 };
 

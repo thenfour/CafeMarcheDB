@@ -40,6 +40,7 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
+import { EventWorkflowTabContent } from './WorkflowEventComponents';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1298,12 +1299,13 @@ export interface EventDetailFullProps {
     tableClient: DB3Client.xTableRenderClient;
     initialTabIndex?: string;
     readonly: boolean;
+    workflowRefreshTrigger: number;
+    refetch: () => void;
 };
 
 type EventDetailFullTabAreaProps = EventDetailFullProps & {
     selectedTab: string;
     setSelectedTab: (v: string) => void;
-    refetch: () => void;
     eventData: VerboseEventWithMetadata;
     userMap: db3.UserInstrumentList;
 };
@@ -1546,6 +1548,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="Workflow"
             thisTabId={gEventDetailTabSlugIndices.workflow}
         >
+            <EventWorkflowTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} refreshTrigger={props.workflowRefreshTrigger} />
         </CMTab>
 
         <CMTab
@@ -1614,7 +1617,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         void router.replace(eventData.eventURI);
     }, [eventData.eventURI]);
 
-    const refetch = tableClient.refetch;
+    //const refetch = tableClient.refetch;
 
     return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true}>
         <EventAttendanceControl
@@ -1631,9 +1634,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
         />
 
         <Suspense>
-            {/* <EventDetailFullTabArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} /> */}
-            {/* <EventDetailFullAccordionArea {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} /> */}
-            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={refetch} eventData={eventData} userMap={userMap} />
+            <EventDetailFullTab2Area {...props} event={event} tableClient={tableClient} selectedTab={selectedTab} setSelectedTab={setSelectedTab} refetch={props.refetch} eventData={eventData} userMap={userMap} />
         </Suspense>
     </EventDetailContainer>;
 };
