@@ -5,7 +5,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import * as React from 'react';
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
+import { CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
@@ -16,10 +16,13 @@ import { ColorPick } from "./Color";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 
-import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWorkflowInstance, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceToMutationArgs, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowLogView, WorkflowRenderer } from "./WorkflowUserComponents";
+import { useMutation } from "@blitzjs/rpc";
+import insertOrUpdateEventWorkflowInstance from "../db3/mutations/insertOrUpdateEventWorkflowInstance";
+import { useSnackbar } from "./SnackbarContext";
 
 
 // name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
@@ -431,7 +434,12 @@ function MakeInstanceMutatorAndRenderer({
                 ni = { ...args.evaluatedNode };
                 args.sourceWorkflowInstance.nodeInstances.push(ni);
             }
-            ni.lastAssignees = args.value;
+            ni.lastAssignees = args.value.map(x => (
+                {
+                    id: getUniqueNegativeID(),
+                    userId: x.userId,
+                }
+            ));
             return args.sourceWorkflowInstance;
         },
         onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => {
@@ -753,12 +761,15 @@ export const EventWorkflowTabWithWFContext = () => {
 
 export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     const dashboardContext = useDashboardContext();
+    const snackbar = useSnackbar();
+    const [insertOrUpdateEventWorkflowInstanceMutation] = useMutation(insertOrUpdateEventWorkflowInstance);
 
     const workflowDefId = props.event.workflowDefId;
     if (!workflowDefId) {
         return null;
     }
 
+    // WORKFLOW DEF LOAD
     const workflowDefsRaw = DB3Client.useDb3Query<db3.WorkflowDef_Verbose>(db3.xWorkflowDef_Verbose, {
         pks: [workflowDefId],
         items: [],
@@ -771,17 +782,49 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
 
     const workflowDef = mapWorkflowDef(workflowDefsRaw.items[0]!);
 
+    // WORKFLOW INSTANCE LOAD
+    const workflowInstanceRaw = DB3Client.useDb3Query<db3.WorkflowInstance_Verbose>(db3.xWorkflowInstance_Verbose, {
+        pks: [props.event.workflowInstanceId || -1],
+        items: [],
+    });
+
+    const instanceQueryResult = (workflowInstanceRaw.items.length === 1) ? workflowInstanceRaw.items[0] : undefined;
+
+    const instance: WorkflowInstance = instanceQueryResult ?
+        MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(instanceQueryResult, props.event.id))
+        : WorkflowInitializeInstance(workflowDef);
+
+    React.useEffect(() => {
+        workflowInstanceRaw.refetch();
+    }, [props.refreshTrigger]);
+
     // load workflow instance
-    const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef); // TODO: load from db
-    const setInstance = (v) => {
+    //const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef); // TODO: load from db
+    const setInstance = async (v) => {
+        if (!dashboardContext.isAuthorized(Permission.edit_workflow_instances)) return;
+        //     CanCurrentUserViewInstances: () => dashboardContext.isAuthorized(Permission.view_workflow_instances),
+        // CanCurrentUserEditInstances: () => dashboardContext.isAuthorized(Permission.edit_workflow_instances),
+        // CanCurrentUserViewDefs: () => dashboardContext.isAuthorized(Permission.view_workflow_defs),
+        // CanCurrentUserEditDefs: () => dashboardContext.isAuthorized(Permission.edit_workflow_defs),
         console.log(`todo: serialize instance`);
         console.log(v);
+        const mutationArgs = WorkflowInstanceToMutationArgs(instance, props.event.id);
+        try {
+            const result = await insertOrUpdateEventWorkflowInstanceMutation(mutationArgs);
+            const newInstance = MutationArgsToWorkflowInstance(result);
+            workflowInstanceRaw.refetch();
+            snackbar.showMessage({ severity: "success", children: "Workflow instance has been updated" });
+        } catch (e) {
+            console.log(e);
+            snackbar.showMessage({ severity: "error", children: "Error; see console" });
+        }
     };
 
     // establish model
     //const [model, setModel] = React.useState<MockEventModel>(() => GetModelForEvent(dashboardContext, props.event));
     const model = GetModelForEvent(dashboardContext, props.event);
     const setModel = (model: MockEventModel) => {
+        if (!dashboardContext.isAuthorized(Permission.manage_events)) return;
         // serialize it.
         console.log(`todo: serialize model`);
     };

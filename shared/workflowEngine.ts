@@ -19,13 +19,13 @@ import {
     XYPosition
 } from '@xyflow/react';
 import { assert } from "blitz";
-import { Prisma, WorkflowDefGroup } from "db";
+import { Prisma } from "db";
 
 import '@xyflow/react/dist/style.css';
-import { ChangeAction, getNextSequenceId, getUniqueNegativeID, hashString } from "shared/utils";
+import { ChangeAction, getNextSequenceId, getUniqueNegativeID } from "shared/utils";
+import { TinsertOrUpdateWorkflowDefArgs, TUpdateEventWorkflowInstanceArgs, WorkflowLogItemType, WorkflowNodeProgressState, WorkflowObjectType } from "src/core/db3/shared/apiTypes";
 import { gSwatchColors } from "./color";
 import { gMillisecondsPerDay } from "./time";
-import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
 
 
 
@@ -33,13 +33,13 @@ import { TinsertOrUpdateWorkflowDefArgs } from "src/core/db3/shared/apiTypes";
 
 
 
-export enum WorkflowObjectType {
-    workflow = "workflow",
-    node = "node",
-    dependency = "dependency",
-    assignee = "assignee",
-    group = "group",
-};
+// export enum WorkflowObjectType {
+//     workflow = "workflow",
+//     node = "node",
+//     dependency = "dependency",
+//     assignee = "assignee",
+//     group = "group",
+// };
 
 export type TWorkflowChange = {
     action: ChangeAction;
@@ -172,16 +172,23 @@ export interface WorkflowDef {
 
 
 ///////////// INSTANCE /////////////////////////////////////////////////////////////////
-export enum WorkflowLogItemType {
-    Comment = "Comment", // dev comments or other custom stuff you can pollute the log with.
-    InstanceStarted = "InstanceStarted",
-    FieldUpdated = "FieldUpdated",// field updated
-    AssigneesChanged = "AssigneesChanged",// assignee changed
-    DueDateChanged = "DueDateChanged",// duedate changed
-    StatusChanged = "StatusChanged",
-};
+
+export interface WorkflowNodeInstanceAssignee {
+    id: number;
+    userId: number;
+}
+
+// export enum WorkflowLogItemType {
+//     Comment = "Comment", // dev comments or other custom stuff you can pollute the log with.
+//     InstanceStarted = "InstanceStarted",
+//     FieldUpdated = "FieldUpdated",// field updated
+//     AssigneesChanged = "AssigneesChanged",// assignee changed
+//     DueDateChanged = "DueDateChanged",// duedate changed
+//     StatusChanged = "StatusChanged",
+// };
 
 export interface WorkflowLogItem {
+    id: number;
     at: Date;
     type: WorkflowLogItemType;
     nodeDefId?: number | undefined;
@@ -195,7 +202,7 @@ export interface WorkflowLogItem {
 export interface WorkflowNodeInstance {
     id: number;
     nodeDefId: number;
-    assignees: WorkflowNodeAssignee[];
+    assignees: WorkflowNodeInstanceAssignee[];
     dueDate?: Date | undefined;
 
     manuallyCompleted: boolean;
@@ -205,7 +212,7 @@ export interface WorkflowNodeInstance {
     // and it's necessary to keep field name as well because if you change the workflow def to a different field name. sure you could just clear it out, but it can be common to change the field name and change it back like "nah i didn't mean to" and it would be dumb to clear out statuses invoking a bunch of log messages that are just noise.
     lastFieldName: unknown;
     lastFieldValueAsString: string | unknown;
-    lastAssignees: WorkflowNodeAssignee[];
+    lastAssignees: WorkflowNodeInstanceAssignee[];
     activeStateFirstTriggeredAt: Date | undefined;
     lastProgressState: WorkflowNodeProgressState;
 };
@@ -215,6 +222,7 @@ export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
 };
 
 export interface WorkflowInstance {
+    id: number;
     nodeInstances: WorkflowNodeInstance[];
     lastEvaluatedWorkflowDefId: number | undefined;
     log: WorkflowLogItem[];
@@ -227,13 +235,6 @@ export type WorkflowTidiedInstance = Omit<WorkflowInstance, "nodeInstances"> & {
 };
 
 ///////////// EVALUATION /////////////////////////////////////////////////////////////////
-export enum WorkflowNodeProgressState {
-    InvalidState = "InvalidState", // initial before evaluation etc. never to reach the user.
-    Irrelevant = "Irrelevant", // effectively visibility = relevance. Irrelevant nodes are not shown.
-    Relevant = "Relevant", // unable to enter started/activated state because of dependencies.
-    Activated = "Activated", // blocked from completed state because of 
-    Completed = "Completed",
-};
 
 export interface WorkflowNodeEvaluation {
     nodeDefId: number;
@@ -323,6 +324,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
 
     return {
         //flowDef,
+        id: flowInstance.id,
         nodeInstances: tidiedNodes,
         lastEvaluatedWorkflowDefId: flowInstance.lastEvaluatedWorkflowDefId,
         log: flowInstance.log,
@@ -651,6 +653,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
             fn: sourceWorkflowInstance => api.AddLogItem({
                 sourceWorkflowInstance,
                 msg: {
+                    id: getUniqueNegativeID(),
                     at: new Date(),
                     nodeDefId: undefined,
                     fieldName: undefined,
@@ -691,6 +694,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                     fn: sourceWorkflowInstance => api.AddLogItem({
                         sourceWorkflowInstance,
                         msg: {
+                            id: getUniqueNegativeID(),
                             at: new Date(),
                             nodeDefId: nodeDef.id,
                             fieldName: undefined,
@@ -722,6 +726,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                         // it's tempting to want to include things like whether this was a user-induced change or derivative. but that can be known by looking at the node defs so don't put it directly in the log.
                         fn: sourceWorkflowInstance => api.AddLogItem({
                             sourceWorkflowInstance, msg: {
+                                id: getUniqueNegativeID(),
                                 type: WorkflowLogItemType.StatusChanged,
                                 at: new Date(),
                                 nodeDefId: node.nodeDefId,
@@ -750,6 +755,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                 fn: sourceWorkflowInstance => api.AddLogItem({
                     sourceWorkflowInstance,
                     msg: {
+                        id: getUniqueNegativeID(),
                         at: new Date(),
                         nodeDefId: nodeDef.id,
                         fieldName: undefined,
@@ -780,6 +786,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                     fn: sourceWorkflowInstance => api.AddLogItem({
                         sourceWorkflowInstance,
                         msg: {
+                            id: getUniqueNegativeID(),
                             at: new Date(),
                             fieldName: nodeDef.fieldName,
                             nodeDefId: nodeDef.id,
@@ -818,6 +825,7 @@ export const WorkflowMakeConnectionId = (srcNodeDefId: number, targetNodeDefId: 
 
 export const WorkflowInitializeInstance = (workflowDef: WorkflowDef): WorkflowInstance => {
     return {
+        id: getUniqueNegativeID(),
         nodeInstances: [],
         lastEvaluatedWorkflowDefId: undefined,
         log: [],
@@ -1151,3 +1159,96 @@ export function MutationArgsToWorkflowDef(args: TinsertOrUpdateWorkflowDefArgs):
 // WORKFLOWDEF -> QUERY          # not needed
 // WORKFLOWDEF -> SERIALIZABLE   WorkflowDefToMutationArgs
 
+
+
+
+///////////// WF INSTANCE /////////////////////////////////////////////////////////////////
+// workflow INSTANCE formats
+// - QUERY prisma
+// - SERIALIZABLE TUpdateEventWorkflowInstanceArgs
+// - WORKFLOW WorkflowInstance
+
+
+// QUERY -> SERIALIZABLE      WorkflowInstanceQueryResultToMutationArgs -> MutationArgsToWorkflowInstance
+// QUERY -> WORKFLOW          WorkflowInstanceQueryResultToMutationArgs
+// SERIALIZABLE -> QUERY      #
+// SERIALIZABLE -> WORKFLOW   MutationArgsToWorkflowInstance
+// WORKFLOW -> QUERY          #
+// WORKFLOW -> SERIALIZABLE   WorkflowInstanceToMutationArgs
+
+// export interface TUpdateEventWorkflowInstanceArgsAssignee {
+//     id: number; // for insertion, this is not used / specified.
+//     userId: number;
+// };
+
+// export interface TUpdateEventWorkflowNodeInstance {
+//     id: number;
+//     nodeDefId: number;
+//     assignees: TUpdateEventWorkflowInstanceArgsAssignee[];
+//     dueDate?: Date | undefined;
+//     manuallyCompleted: boolean;
+//     manualCompletionComment: string | undefined;
+//     lastFieldName: unknown;
+//     lastFieldValueAsString: string | unknown;
+//     lastAssignees: TUpdateEventWorkflowInstanceArgsAssignee[];
+//     activeStateFirstTriggeredAt: Date | undefined;
+//     lastProgressState: WorkflowNodeProgressState;
+// };
+
+// export interface TUpdateEventWorkflowInstance {
+//     id: number;
+//     nodeInstances: TUpdateEventWorkflowNodeInstance[];
+//     lastEvaluatedWorkflowDefId: number | undefined;
+// };
+
+// export interface TUpdateEventWorkflowInstanceArgs {
+//     instance: TUpdateEventWorkflowInstance;
+//     eventId: number;
+// };
+
+
+export function MutationArgsToWorkflowInstance(x: TUpdateEventWorkflowInstanceArgs): WorkflowInstance {
+    const i = x.instance;
+    return {
+        id: i.id,
+        log: [],
+        lastEvaluatedWorkflowDefId: i.lastEvaluatedWorkflowDefId,
+        nodeInstances: i.nodeInstances.map(node => ({
+            id: node.id,
+            nodeDefId: node.nodeDefId,
+            assignees: [...node.assignees],
+            dueDate: node.dueDate,
+            manuallyCompleted: node.manuallyCompleted,
+            manualCompletionComment: node.manualCompletionComment,
+            lastFieldName: node.lastFieldName,
+            lastFieldValueAsString: node.lastFieldValueAsString,
+            lastAssignees: [...node.lastAssignees],
+            activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt,
+            lastProgressState: node.lastProgressState,
+        })),
+    };
+};
+
+export function WorkflowInstanceToMutationArgs(x: WorkflowInstance, eventId: number): TUpdateEventWorkflowInstanceArgs {
+    return {
+        eventId,
+        instance: {
+            id: x.id,
+            //log: [],
+            lastEvaluatedWorkflowDefId: x.lastEvaluatedWorkflowDefId,
+            nodeInstances: x.nodeInstances.map(node => ({
+                id: node.id,
+                nodeDefId: node.nodeDefId,
+                assignees: [...node.assignees],
+                dueDate: node.dueDate,
+                manuallyCompleted: node.manuallyCompleted,
+                manualCompletionComment: node.manualCompletionComment,
+                lastFieldName: node.lastFieldName,
+                lastFieldValueAsString: node.lastFieldValueAsString,
+                lastAssignees: [...node.lastAssignees],
+                activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt,
+                lastProgressState: node.lastProgressState,
+            })),
+        }
+    };
+};

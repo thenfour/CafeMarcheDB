@@ -49,11 +49,13 @@ const EventsList = () => {
 
     const events = API.events.sortEvents(eventsRich);
 
+    const refetch = eventsClient.refetch;
+
     return <>{events.length < 1 ? "Nothing here!" : <>
         {events.map(event => {
             const { eventData, userMap } = CalculateEventMetadata_Verbose({ event, tabSlug: undefined, dashboardContext });
 
-            return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData} showVisibility={true}>
+            return <EventDetailContainer key={event.id} fadePastEvents={false} readonly={true} tableClient={eventsClient} eventData={eventData} showVisibility={true} refetch={refetch}>
                 <EventFrontpageTabContent readonly={false} refetch={eventsClient.refetch} event={event} />
             </EventDetailContainer>;
         }

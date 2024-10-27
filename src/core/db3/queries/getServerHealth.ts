@@ -10,7 +10,6 @@ var path = require('path');
 var fsp = require('fs/promises');
 
 async function GetDirectoryInfo(relativePath: string) {
-    //debugger;
     try {
         const baseUploadsDir = path.join(process.cwd(), relativePath)
         //const requestedPath = path.join(baseUploadsDir, relativePath)

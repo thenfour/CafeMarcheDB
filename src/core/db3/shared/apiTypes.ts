@@ -886,6 +886,23 @@ export interface TupdateEventCustomFieldValuesArgs {
 
 
 
+export enum WorkflowNodeProgressState {
+    InvalidState = "InvalidState", // initial before evaluation etc. never to reach the user.
+    Irrelevant = "Irrelevant", // effectively visibility = relevance. Irrelevant nodes are not shown.
+    Relevant = "Relevant", // unable to enter started/activated state because of dependencies.
+    Activated = "Activated", // blocked from completed state because of 
+    Completed = "Completed",
+};
+
+export enum WorkflowLogItemType {
+    Comment = "Comment", // dev comments or other custom stuff you can pollute the log with.
+    InstanceStarted = "InstanceStarted",
+    FieldUpdated = "FieldUpdated",// field updated
+    AssigneesChanged = "AssigneesChanged",// assignee changed
+    DueDateChanged = "DueDateChanged",// duedate changed
+    StatusChanged = "StatusChanged",
+};
+
 
 
 
@@ -950,13 +967,16 @@ export interface TinsertOrUpdateWorkflowDefGroup {
     selected: boolean;
 };
 
-enum WorkflowObjectType {
-    workflow,
-    node,
-    dependency,
-    assignee,
-    group,
+
+
+export enum WorkflowObjectType {
+    workflow = "workflow",
+    node = "node",
+    dependency = "dependency",
+    assignee = "assignee",
+    group = "group",
 };
+
 
 export interface TinsertOrUpdateWorkflowDefArgs {
     id: number; // for insertion, this is not used / specified.
@@ -1053,3 +1073,40 @@ export interface ICalCalendarJSON {
     events: ICalEventJSON[];
 }
 
+
+
+
+
+
+///////////// WF INSTANCE /////////////////////////////////////////////////////////////////
+export interface TUpdateEventWorkflowInstanceArgsAssignee {
+    id: number; // for insertion, this is not used / specified.
+    userId: number;
+};
+
+export interface TUpdateEventWorkflowNodeInstance {
+    id: number;
+    nodeDefId: number;
+    assignees: TUpdateEventWorkflowInstanceArgsAssignee[];
+    dueDate?: Date | undefined;
+
+    manuallyCompleted: boolean;
+    manualCompletionComment: string | undefined;
+
+    lastFieldName: unknown;
+    lastFieldValueAsString: string | unknown;
+    lastAssignees: TUpdateEventWorkflowInstanceArgsAssignee[];
+    activeStateFirstTriggeredAt: Date | undefined;
+    lastProgressState: WorkflowNodeProgressState;
+};
+
+export interface TUpdateEventWorkflowInstance {
+    id: number;
+    nodeInstances: TUpdateEventWorkflowNodeInstance[];
+    lastEvaluatedWorkflowDefId: number | undefined;
+};
+
+export interface TUpdateEventWorkflowInstanceArgs {
+    instance: TUpdateEventWorkflowInstance;
+    eventId: number;
+};

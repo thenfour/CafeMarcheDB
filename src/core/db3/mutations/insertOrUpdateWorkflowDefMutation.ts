@@ -6,10 +6,10 @@ import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, getUniqueNegativeID, ObjectDiff, RegisterChange } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TinsertOrUpdateWorkflowDefArgs } from "../shared/apiTypes";
+import { TinsertOrUpdateWorkflowDefArgs, WorkflowObjectType } from "../shared/apiTypes";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
-import { mapWorkflowDef, TWorkflowChange, TWorkflowMutationResult, WorkflowDefToMutationArgs, WorkflowObjectType } from "shared/workflowEngine";
+import { mapWorkflowDef, TWorkflowChange, TWorkflowMutationResult, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 
 
 async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefArgs): Promise<TWorkflowMutationResult> {
@@ -18,8 +18,6 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
     const resultChanges: TWorkflowChange[] = [];
     const tempToRealIdMappings: { objectType: WorkflowObjectType, tempId: number, realId: number }[] = [];
-
-    //debugger;
 
     ///// WORKFLOW DEF ----------------------------------------
     if (args.id >= 0) {
@@ -315,8 +313,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
     const existingNodeDependenciesForEntireWorkflow = await db.workflowDefNodeDependency.findMany({
         where: { targetNodeDefId: { in: args.nodes.map(n => n.id) } }
     });
-    //for (const node of nodeCP.create) {
-    //debugger;
+
     for (const node of args.nodes) {
         assert(node.id >= 0, "real IDs must be assigned at this point.");
         //const correspondingArgNode = args.nodes.find(an => an.id === node.id)!;

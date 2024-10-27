@@ -39,6 +39,7 @@
 }
 
 .workflowNodeContainer>.notBorderLeft {
+    padding: 3px;
     display: flex;
     flex-grow: 1;
     flex-direction: column;
@@ -70,6 +71,11 @@
     letter-spacing: -.5px;
     font-weight: bold;
     flex-grow: 1;
+}
+
+
+.workflowNodeContainer.Completed .notBorderLeft {
+    opacity: 33%;
 }
 
 .workflowNodeContainer .dotMenu {

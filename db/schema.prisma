@@ -160,9 +160,10 @@ model User {
   creatorForEventSongLists       EventSongList[]
   creatorForFrontpageGalleryItem FrontpageGalleryItem[]
 
-  workflowNodeDefaultAssignees  WorkflowDefNodeDefaultAssignee[]
-  workflowNodeInstanceAssignees WorkflowInstanceNodeAssignee[]
-  workflowLogItems              WorkflowInstanceLogItem[]
+  workflowNodeDefaultAssignees      WorkflowDefNodeDefaultAssignee[]
+  workflowNodeInstanceAssignees     WorkflowInstanceNodeAssignee[]
+  workflowNodeInstanceLastAssignees WorkflowInstanceNodeLastAssignee[]
+  workflowLogItems                  WorkflowInstanceLogItem[]
 
   @@unique([accessToken])
   @@unique([uid])
@@ -1210,7 +1211,7 @@ model WorkflowInstanceNode {
   instanceId Int
   instance   WorkflowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   nodeDefId  Int
-  nodeDef    WorkflowDefNode  @relation(fields: [nodeDefId], references: [id], onDelete: Cascade)
+  nodeDef    WorkflowDefNode  @relation(fields: [nodeDefId], references: [id], onDelete: Cascade) // it's kinda tempting to setNull here, maybe useful but cascade is just simpler.
 
   dueDate                     DateTime?
   activeStateFirstTriggeredAt DateTime?
@@ -1220,13 +1221,24 @@ model WorkflowInstanceNode {
 
   lastFieldName          String? @db.VarChar(768)
   lastFieldValueAsString String? @db.MediumText
-  lastAssignees          String? @db.MediumText // JSON array of user IDs
   lastProgressState      String? @db.VarChar(768) // WorkflowNodeProgressState
 
-  assignees WorkflowInstanceNodeAssignee[]
+  assignees     WorkflowInstanceNodeAssignee[]
+  lastAssignees WorkflowInstanceNodeLastAssignee[]
 
   @@index([instanceId])
   @@index([nodeDefId])
+}
+
+model WorkflowInstanceNodeLastAssignee {
+  id             Int                  @id @default(autoincrement())
+  userId         Int
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instanceNodeId Int
+  instanceNode   WorkflowInstanceNode @relation(fields: [instanceNodeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([instanceNodeId])
 }
 
 model WorkflowInstanceNodeAssignee {

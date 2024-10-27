@@ -110,8 +110,6 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
     const segmentValidationResult = segmentTableSpec.args.table.ValidateAndComputeDiff(segmentValue, segmentValue, "new", clientIntention);
 
     const handleSaveClick = async () => {
-        console.log(`hsavo`);
-        debugger;
         const payload: TinsertEventArgs = {
             event: eventTableClient.prepareInsertMutation(eventValue),
             segment: segmentTableClient.prepareInsertMutation(segmentValue),

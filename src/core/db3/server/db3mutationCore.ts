@@ -414,11 +414,9 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             });
 
             if (!authResult.rowIsAuthorized) {
-                //debugger;
                 throw new Error(`unauthorized (row); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))} on table ${table.tableName}`);
             }
             if (authResult.authorizedColumnCount < 1) {
-                //debugger;
                 throw new Error(`unauthorized (0 columns); ${JSON.stringify(Object.keys(authResult.unauthorizedModel))}`);
             }
 

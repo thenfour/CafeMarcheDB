@@ -13,7 +13,6 @@ export default resolver.pipe(
     async (args: TinsertEventArgs, ctx: AuthenticatedCtx) => {
 
         try {
-            debugger;
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             assert(!!currentUser, "user required to insert an event")
             const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser, };

@@ -1683,7 +1683,6 @@ export function GetEventResponseInfo<
         //     users.push(userMap.find(u => u.id === eventResponse.userId)!);
         // }
         if (users.find((u) => {
-            //if (!u) debugger;
             return u.id === eventResponse.userId;
         }) == null) {
             const mappedUser = userMap.find(u => u.id === eventResponse.userId);
