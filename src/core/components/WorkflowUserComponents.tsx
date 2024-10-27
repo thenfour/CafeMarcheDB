@@ -20,6 +20,7 @@ import { SettingMarkdown } from "./SettingMarkdown";
 
 import { MoreHoriz } from '@mui/icons-material';
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { Markdown3Editor } from './MarkdownControl3';
 
 type CMXYPosition = {
     x: number;
@@ -840,7 +841,7 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
                     <div style={{ position: 'relative', display: 'inline-flex' }}>
                         <AnimatedCircularProgress size={progressSize} value={(props.evaluatedNode.evaluation.progress01 || 0) * 100} duration={200} />
                         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {progressStateIcons[props.evaluatedNode.evaluation.progressState]}
+                            {isOverdue ? gIconMap.ErrorOutline() : progressStateIcons[props.evaluatedNode.evaluation.progressState]}
                         </div>
                     </div>
                 </div>
@@ -952,16 +953,24 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
     }
 
     if (evaluatedNode.evaluation.progressState === WorkflowNodeProgressState.Irrelevant) return null;
+    if (nodeDef.displayStyle === WorkflowNodeDisplayStyle.Hidden) return null;
+
+    // ----------------------------------------------
+    // | indicator  title             edit   dotmenu|
+    // |            description-------------        |
+    // |            assignees --------------        |
+    // |            duedate ----------------        |
+    // ----------------------------------------------
 
     return (
-        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState}`} style={{ display: "flex" }}>
-            <div className="indicator">
-                <WorkflowNodeProgressIndicator evaluatedNode={evaluatedNode} />
-            </div>
-            <div className="body" style={{ flexGrow: 1 }}>
-                <div style={{ display: "flex" }}>
+        <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState}`}>
+            <div className='borderLeft'></div>
+            <div className='notBorderLeft'>
+                <div className='header'>
+                    <div className="indicator">
+                        <WorkflowNodeProgressIndicator evaluatedNode={evaluatedNode} />
+                    </div>
                     <div
-                        style={{ flexGrow: 1 }}
                         className="nameLabel"
                         onClick={props.onClickToSelect ? (() => {
                             props.onClickToSelect!();
@@ -969,27 +978,26 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     >
                         {nodeDef.name}
                     </div>
-                    {activeControls}
-                    <WorkflowNodeDotMenu evaluatedNode={evaluatedNode} />
+                    <div className='activeControls'>{activeControls}</div>
+                    <div className='dotMenu'><WorkflowNodeDotMenu evaluatedNode={evaluatedNode} /></div>
                 </div>
-                {/* i was tempted to remove due dates if you're not authorized to edit instances. but most of the time it will be
+                <div className="body">
+                    {/* i was tempted to remove due dates if you're not authorized to edit instances. but most of the time it will be
                 a model field change due, not the instance itself. so better just leave it.
                  */}
-                {evaluatedNode.evaluation.isInProgress && editAuthorized &&
-                    <div className="dueDateRow">
-                        <WorkflowDueDateValue dueDate={evaluatedNode.dueDate} />
-                    </div>}
-                <div className="assigneesRow">
-                    {!evaluatedNode.evaluation.isComplete && <WorkflowAssigneesSelection
-                        value={evaluatedNode.assignees}
-                        showPictogram={true}
-                        readonly={true} // always readonly; editing is via the dot menu
-                        evaluatedNode={evaluatedNode}
-                    />}
+                    {evaluatedNode.evaluation.isInProgress && editAuthorized &&
+                        <div className="dueDateRow">
+                            <WorkflowDueDateValue dueDate={evaluatedNode.dueDate} />
+                        </div>}
+                    <div className="assigneesRow">
+                        {!evaluatedNode.evaluation.isComplete && <WorkflowAssigneesSelection
+                            value={evaluatedNode.assignees}
+                            showPictogram={true}
+                            readonly={true} // always readonly; editing is via the dot menu
+                            evaluatedNode={evaluatedNode}
+                        />}
+                    </div>
                 </div>
-                {/* <div className="activeControlsContainer">
-                    {activeControls}
-                </div> */}
             </div>
         </div>
     );
@@ -1157,6 +1165,7 @@ export interface WFFieldBinding<Tunderlying> {
     flowDef: WorkflowDef;
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    fieldNameForDisplay: string; // a user-friendly version of the field name.
     value: Tunderlying,
     valueAsString: string; // equality-comparable and db-serializable
     setValue: (val: Tunderlying) => void,
@@ -1186,6 +1195,7 @@ export const MakeBoolBinding = (args: {
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    fieldNameForDisplay: string,
     value: boolean | null,
     setValue?: (val: boolean | null) => void,
     setOperand2?: (val: (boolean | null) | (boolean | null)[]) => void,
@@ -1193,6 +1203,7 @@ export const MakeBoolBinding = (args: {
 ): WFFieldBinding<boolean | null> => {
     return {
         flowDef: args.flowDef,
+        fieldNameForDisplay: args.fieldNameForDisplay,
         nodeDef: args.nodeDef,
         tidiedNodeInstance: args.tidiedNodeInstance,
         value: args.value,
@@ -1234,14 +1245,76 @@ export const MakeBoolBinding = (args: {
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-export const WFTextField = (props: FieldComponentProps<string>) => {
+export const WFSingleLineTextField = (props: FieldComponentProps<string>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
-    return <TextField size='small' margin='none' value={props.binding.value} disabled={props.readonly} onChange={(e) => {
-        props.binding.setValue(e.target.value);
-    }} />;
+    const [open, setOpen] = React.useState<boolean>(false);
+    const [value, setValue] = React.useState<string>(props.binding.value);
+
+    return <>
+        <Button onClick={() => setOpen(true)}>Edit</Button>
+        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+            <DialogTitle>
+                {props.binding.fieldNameForDisplay}
+            </DialogTitle>
+            <DialogContent dividers>
+                <TextField
+                    autoFocus
+                    size='small'
+                    margin='none'
+                    value={value}
+                    disabled={props.readonly}
+                    onChange={(e) => {
+                        //props.binding.setValue(e.target.value);
+                        setValue(e.target.value);
+                    }} />            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setOpen(false)}>Cancel</Button>
+                <Button onClick={() => {
+                    props.binding.setValue(value);
+                    setOpen(false);
+                }}>OK</Button>
+            </DialogActions>
+        </ReactiveInputDialog>}
+    </>;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+export const WFRichTextField = (props: FieldComponentProps<string>) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    const [open, setOpen] = React.useState<boolean>(false);
+    const [value, setValue] = React.useState<string>(props.binding.value);
+
+    return <>
+        <Button onClick={() => setOpen(true)}>Edit</Button>
+        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+            <DialogTitle>
+                {props.binding.fieldNameForDisplay}
+            </DialogTitle>
+            <DialogContent dividers>
+                <Markdown3Editor
+                    autoFocus
+                    value={value}
+                    readonly={props.readonly}
+                    onChange={(v) => {
+                        setValue(v);
+                    }} />
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setOpen(false)}>Cancel</Button>
+                <Button onClick={() => {
+                    props.binding.setValue(value);
+                    setOpen(false);
+                }}>OK</Button>
+            </DialogActions>
+        </ReactiveInputDialog>}
+    </>;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 export const TextOperand = (props: FieldComponentProps<string>) => {
     const val = CoerceToString(props.binding.nodeDef.fieldValueOperand2);
     return <CMTextField
@@ -1254,10 +1327,11 @@ export const TextOperand = (props: FieldComponentProps<string>) => {
     />;
 }
 
-export const MakeTextBinding = (args: {
+export const MakeSingleLineTextBinding = (args: {
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    fieldNameForDisplay: string,
     value: string,
     setValue?: (val: string) => void,
     setOperand2?: (val: (string) | (string)[]) => void,
@@ -1267,6 +1341,7 @@ export const MakeTextBinding = (args: {
         flowDef: args.flowDef,
         nodeDef: args.nodeDef,
         tidiedNodeInstance: args.tidiedNodeInstance,
+        fieldNameForDisplay: args.fieldNameForDisplay,
         value: args.value,
         valueAsString: JSON.stringify(args.value),
         setValue: args.setValue || (() => { }),
@@ -1301,10 +1376,68 @@ export const MakeTextBinding = (args: {
                     return false;
             }
         },
-        FieldValueComponent: WFTextField,
+        FieldValueComponent: WFSingleLineTextField,
         FieldOperand2Component: TextOperand,
     };
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+export const MakeRichTextBinding = (args: {
+    flowDef: WorkflowDef,
+    nodeDef: WorkflowNodeDef,
+    tidiedNodeInstance: WorkflowTidiedNodeInstance,
+    fieldNameForDisplay: string,
+    value: string,
+    setValue?: (val: string) => void,
+    setOperand2?: (val: (string) | (string)[]) => void,
+}
+): WFFieldBinding<string> => {
+    return {
+        flowDef: args.flowDef,
+        nodeDef: args.nodeDef,
+        tidiedNodeInstance: args.tidiedNodeInstance,
+        fieldNameForDisplay: args.fieldNameForDisplay,
+        value: args.value,
+        valueAsString: JSON.stringify(args.value),
+        setValue: args.setValue || (() => { }),
+        setOperand2: args.setOperand2 || (() => { }),
+        doesFieldValueSatisfyCompletionCriteria: () => {
+            const isNull = () => IsNullOrWhitespace(args.value);
+            const eq = () => args.value.trim().toLowerCase() === ((args.nodeDef.fieldValueOperand2 as string) || "").trim().toLowerCase();
+            if (!args.nodeDef.fieldValueOperator) {
+                return false;
+            }
+
+            switch (args.nodeDef.fieldValueOperator) {
+                case WorkflowFieldValueOperator.Falsy:
+                case WorkflowFieldValueOperator.IsNull:
+                    return isNull();
+                case WorkflowFieldValueOperator.Truthy:
+                case WorkflowFieldValueOperator.StringPopulated:
+                case WorkflowFieldValueOperator.IsNotNull:
+                    return !isNull();
+                case WorkflowFieldValueOperator.EqualsOperand2:
+                    return eq();
+                case WorkflowFieldValueOperator.NotEqualsOperand2:
+                    return !eq();
+                case WorkflowFieldValueOperator.EqualsAnyOf:
+                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
+                    return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                case WorkflowFieldValueOperator.IsNotAnyOf:
+                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
+                    return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                default:
+                    console.warn(`unknown text field operator ${args.nodeDef.fieldValueOperator}`);
+                    return false;
+            }
+        },
+        FieldValueComponent: WFRichTextField,
+        FieldOperand2Component: TextOperand,
+    };
+};
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1313,6 +1446,7 @@ export const MakeTextBinding = (args: {
 export const MakeAlwaysBinding = <T,>(args: {
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
+    fieldNameForDisplay: string,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
     value: T;
 }
@@ -1321,6 +1455,7 @@ export const MakeAlwaysBinding = <T,>(args: {
         flowDef: args.flowDef,
         nodeDef: args.nodeDef,
         tidiedNodeInstance: args.tidiedNodeInstance,
+        fieldNameForDisplay: args.fieldNameForDisplay,
         value: args.value,
         valueAsString: JSON.stringify(args.value),
         setValue: () => { },

@@ -19,7 +19,7 @@ import { Markdown3Editor } from "./MarkdownControl3";
 import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
-import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeTextBinding, WFFieldBinding, WorkflowContainer, WorkflowLogView, WorkflowRenderer } from "./WorkflowUserComponents";
+import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowLogView, WorkflowRenderer } from "./WorkflowUserComponents";
 
 
 // name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
@@ -99,7 +99,7 @@ export function getMockEventBinding(args: {
                     tidiedNodeInstance: args.tidiedNodeInstance,
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
-                    //setOperand2: args.setOperand2,
+                    fieldNameForDisplay: cf.name,
                     value: args.model[cf.name],
                     setValue: (val) => {
                         const newModel = { ...args.model };
@@ -108,12 +108,24 @@ export function getMockEventBinding(args: {
                     },
                 });
             case db3.EventCustomFieldDataType.RichText:
-            case db3.EventCustomFieldDataType.SimpleText:
-                return MakeTextBinding({
+                return MakeRichTextBinding({
                     tidiedNodeInstance: args.tidiedNodeInstance,
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
-                    //setOperand2: args.setOperand2,
+                    fieldNameForDisplay: cf.name,
+                    value: args.model[cf.name] || "",
+                    setValue: (val) => {
+                        const newModel = { ...args.model };
+                        newModel[cf.name] = val;
+                        args.setModel && args.setModel(newModel);
+                    },
+                });
+            case db3.EventCustomFieldDataType.SimpleText:
+                return MakeSingleLineTextBinding({
+                    tidiedNodeInstance: args.tidiedNodeInstance,
+                    flowDef: args.flowDef,
+                    nodeDef: args.nodeDef,
+                    fieldNameForDisplay: cf.name,
                     value: args.model[cf.name] || "",
                     setValue: (val) => {
                         const newModel = { ...args.model };
@@ -123,20 +135,38 @@ export function getMockEventBinding(args: {
                 });
             case db3.EventCustomFieldDataType.Options:
                 console.log(`todo: handle case db3.EventCustomFieldDataType.Options`);
-                // TODO
-                break;
+                return MakeAlwaysBinding({
+                    tidiedNodeInstance: args.tidiedNodeInstance,
+                    fieldNameForDisplay: cf.name,
+                    flowDef: args.flowDef,
+                    nodeDef: args.nodeDef,
+                    value: false,
+                });
         }
     }
 
     const field = args.nodeDef.fieldName as keyof MockEvent;
     switch (field) {
         case "description":
-        case "locationDescription":
-        case "name":
-            return MakeTextBinding({
+            return MakeRichTextBinding({
                 tidiedNodeInstance: args.tidiedNodeInstance,
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
+                fieldNameForDisplay: field,
+                value: args.model[field] || "",
+                setValue: (val) => {
+                    const newModel = { ...args.model };
+                    newModel[field] = val;
+                    args.setModel && args.setModel(newModel);
+                },
+            });
+        case "locationDescription":
+        case "name":
+            return MakeSingleLineTextBinding({
+                tidiedNodeInstance: args.tidiedNodeInstance,
+                flowDef: args.flowDef,
+                nodeDef: args.nodeDef,
+                fieldNameForDisplay: field,
                 //setOperand2: args.setOperand2,
                 value: args.model[field] || "",
                 setValue: (val) => {
@@ -150,6 +180,7 @@ export function getMockEventBinding(args: {
                 tidiedNodeInstance: args.tidiedNodeInstance,
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
+                fieldNameForDisplay: field,
                 //setOperand2: args.setOperand2,
                 value: args.model[field],
                 setValue: (val) => {
@@ -162,6 +193,7 @@ export function getMockEventBinding(args: {
         case undefined:
             return MakeAlwaysBinding({
                 tidiedNodeInstance: args.tidiedNodeInstance,
+                fieldNameForDisplay: field,
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
                 value: false,
@@ -170,6 +202,7 @@ export function getMockEventBinding(args: {
             console.log(`Unknown field name ${field}`);
             return MakeAlwaysBinding({
                 tidiedNodeInstance: args.tidiedNodeInstance,
+                fieldNameForDisplay: field,
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
                 value: false,
@@ -740,9 +773,10 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
 
     // load workflow instance
     const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef); // TODO: load from db
-    const setInstance = (v) => { };
-
-    React.useEffect(() => { console.log(`refreshTrig: ${props.refreshTrigger}`); }, [props.refreshTrigger]);
+    const setInstance = (v) => {
+        console.log(`todo: serialize instance`);
+        console.log(v);
+    };
 
     // establish model
     //const [model, setModel] = React.useState<MockEventModel>(() => GetModelForEvent(dashboardContext, props.event));
