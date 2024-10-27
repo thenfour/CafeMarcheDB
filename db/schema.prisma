@@ -1167,17 +1167,17 @@ model WorkflowDefNodeDependency {
 }
 
 model WorkflowInstance {
-  id            Int         @id @default(autoincrement())
-  workflowDefId Int
-  workflowDef   WorkflowDef @relation(fields: [workflowDefId], references: [id], onDelete: Cascade)
+  id Int @id @default(autoincrement())
 
-  hasBeenEvaluated Boolean
-  logItems         WorkflowInstanceLogItem[]
-  nodes            WorkflowInstanceNode[]
+  lastEvaluatedWorkflowDefId Int?
+  lastEvaluatedWorkflowDef   WorkflowDef? @relation(fields: [lastEvaluatedWorkflowDefId], references: [id], onDelete: Cascade)
+
+  logItems WorkflowInstanceLogItem[]
+  nodes    WorkflowInstanceNode[]
 
   events Event[]
 
-  @@index([workflowDefId])
+  @@index([lastEvaluatedWorkflowDefId])
 }
 
 model WorkflowInstanceLogItem {

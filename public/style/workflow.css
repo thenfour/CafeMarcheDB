@@ -28,14 +28,14 @@
     border: 1px solid transparent;
 }
 
-.workflowNodeContainer:hover {
+/* .workflowNodeContainer:hover {
     border: 1px solid #33c4;
-}
-
+} */
+/* 
 .workflowNodeContainer .nameLabel:hover {
     background-color: #0001;
     cursor: pointer;
-}
+} */
 
 .workflowNodeContainer .nameLabel {
     letter-spacing: -.5px;

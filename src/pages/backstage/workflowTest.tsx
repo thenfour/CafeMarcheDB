@@ -543,9 +543,9 @@ const MainContent = () => {
             ni.assignees = JSON.parse(JSON.stringify(args.assignees));
             return args.sourceWorkflowInstance;
         },
-        SetHasBeenEvaluated: args => {
-            if (args.sourceWorkflowInstance.hasBeenEvaluated) return undefined;
-            args.sourceWorkflowInstance.hasBeenEvaluated = true;
+        SetLastEvaluatedWorkflowDefId: args => {
+            if (args.sourceWorkflowInstance.lastEvaluatedWorkflowDefId === args.workflowDefId) return undefined;
+            args.sourceWorkflowInstance.lastEvaluatedWorkflowDefId = args.workflowDefId;
             return args.sourceWorkflowInstance;
         },
         SetDueDateForNode: (args) => {

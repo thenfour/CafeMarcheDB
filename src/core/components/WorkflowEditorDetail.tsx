@@ -281,6 +281,13 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
         <NameValuePair
             name="Dependencies"
             value={<>
+                <div className="criteriaDescription">
+                    <ul>
+                        <li><b>Makes relevant</b>: when the source nodes complete, this node becomes relevant. Only relevant when relevance style uses dependent nodes.</li>
+                        <li><b>Makes active</b>: when the source nodes complete, this node becomes active (in progress, towards completion). Only relevant when activation style uses dependent nodes.</li>
+                        <li><b>Makes progress</b>: This node's progress (0-100%) is the sum of dependent nodes. Only relevant when completion style uses dependent nodes.</li>
+                    </ul>
+                </div>
                 {
                     props.nodeDef.nodeDependencies.map(nd => <NodeDependencyEditor
                         key={nd.nodeDefId}

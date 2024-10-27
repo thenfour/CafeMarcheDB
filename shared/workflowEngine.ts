@@ -216,7 +216,7 @@ export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
 
 export interface WorkflowInstance {
     nodeInstances: WorkflowNodeInstance[];
-    hasBeenEvaluated: boolean; // for logging 1st evaluation
+    lastEvaluatedWorkflowDefId: number | undefined;
     log: WorkflowLogItem[];
 };
 
@@ -324,7 +324,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
     return {
         //flowDef,
         nodeInstances: tidiedNodes,
-        hasBeenEvaluated: flowInstance.hasBeenEvaluated,
+        lastEvaluatedWorkflowDefId: flowInstance.lastEvaluatedWorkflowDefId,
         log: flowInstance.log,
         isTidy: true,
     };
@@ -377,7 +377,7 @@ export interface WorkflowInstanceMutator {
     AddLogItem: WorkflowInstanceMutatorFn<{ msg: Omit<WorkflowLogItem, 'userId'> }>; // userId should be added by handler
     SetLastFieldValue: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, fieldName: string | undefined, fieldValueAsString: string | undefined }>;
     SetLastAssignees: WorkflowInstanceMutatorFn<{ evaluatedNode: WorkflowEvaluatedNode, value: WorkflowNodeAssignee[] }>;
-    SetHasBeenEvaluated: WorkflowInstanceMutatorFn<{}>;
+    SetLastEvaluatedWorkflowDefId: WorkflowInstanceMutatorFn<{ workflowDefId: number | undefined }>;
 
     // commit the instance after chaining mutations.
     onWorkflowInstanceMutationChainComplete: (newInstance: WorkflowInstance, reEvaluationNeeded: boolean) => void
@@ -646,7 +646,7 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
         EvaluateTree([], flowDef, tidiedInstance.nodeInstances[i]!, tidiedInstance, api, evaluatedNodes, mutations);
     }
 
-    if (!workflowInstance.hasBeenEvaluated) {
+    if (workflowInstance.lastEvaluatedWorkflowDefId !== flowDef.id) {
         mutations.push({
             fn: sourceWorkflowInstance => api.AddLogItem({
                 sourceWorkflowInstance,
@@ -660,8 +660,9 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
                 }
             }), wantsReevaluation: false
         }, {
-            fn: sourceWorkflowInstance => api.SetHasBeenEvaluated({
+            fn: sourceWorkflowInstance => api.SetLastEvaluatedWorkflowDefId({
                 sourceWorkflowInstance,
+                workflowDefId: flowDef.id,
             }), wantsReevaluation: false,
         });
     }
@@ -818,7 +819,7 @@ export const WorkflowMakeConnectionId = (srcNodeDefId: number, targetNodeDefId: 
 export const WorkflowInitializeInstance = (workflowDef: WorkflowDef): WorkflowInstance => {
     return {
         nodeInstances: [],
-        hasBeenEvaluated: false,
+        lastEvaluatedWorkflowDefId: undefined,
         log: [],
     };
 };

@@ -3,10 +3,10 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import { Button, DialogActions, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, Tooltip } from "@mui/material";
+import { Button, DialogActions, DialogContent, DialogTitle, ListItemIcon, Menu, MenuItem, TextField, Tooltip } from "@mui/material";
 import React, { useContext } from "react";
 import { DateTimeRange, DateToYYYYMMDDHHMMSS } from "shared/time";
-import { assertUnreachable, CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
+import { CoerceToString, IsNullOrWhitespace, Setting, sortBy } from "shared/utils";
 import * as DB3Client from "../db3/DB3Client";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { DB3MultiSelect } from "../db3/components/db3Select";
@@ -18,6 +18,7 @@ import { CMTextField } from "./CMTextField";
 import { GetStyleVariablesForColor } from "./Color";
 import { SettingMarkdown } from "./SettingMarkdown";
 
+import { MoreHoriz } from '@mui/icons-material';
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowNodeProgressState, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 
 type CMXYPosition = {
@@ -766,8 +767,8 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
 
-    const iconSize = `14px`;
-    const progressSize = 18;
+    const iconSize = `18px`;
+    const progressSize = 22;
 
     let isOverdue: boolean = false;
     if (props.evaluatedNode.evaluation.isInProgress) {
@@ -779,7 +780,11 @@ export const WorkflowNodeProgressIndicator = (props: WorkflowNodeProgressIndicat
     const progressStateIcons = {
         [WorkflowNodeProgressState.Irrelevant]: <RemoveCircleOutlineIcon style={{ width: iconSize, color: '#bbb' }} />, // not part of the flow
         [WorkflowNodeProgressState.Relevant]: <HourglassEmptyIcon style={{ width: iconSize, color: '#777' }} />, // part of the flow but not active / started yet
-        [WorkflowNodeProgressState.Activated]: <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
+        //[WorkflowNodeProgressState.Activated]: <PlayCircleOutlineIcon style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
+        //[WorkflowNodeProgressState.Activated]: <PlayArrow style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
+        //[WorkflowNodeProgressState.Activated]: <DonutLarge style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
+        //[WorkflowNodeProgressState.Activated]: <Autorenew style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
+        [WorkflowNodeProgressState.Activated]: <MoreHoriz style={{ width: iconSize, color: 'blue' }} />, // actionable / in progress
         [WorkflowNodeProgressState.Completed]: <CheckCircleIcon style={{ width: iconSize, color: 'green' }} />, // all criteria satisfied / complete
         [WorkflowNodeProgressState.InvalidState]: <CancelIcon style={{ width: iconSize, color: 'red' }} />, // error condition
     };
@@ -857,9 +862,10 @@ const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     let k = 0;
 
-    const menuItems: React.ReactNode[] = [
-        // <Divider key={++k} />,
-        <WorkflowAssigneesMenuItem
+    const menuItems: React.ReactNode[] = [];
+
+    if (!props.evaluatedNode.evaluation.isComplete) {
+        menuItems.push(<WorkflowAssigneesMenuItem
             key={++k}
             value={props.evaluatedNode.assignees}
             evaluatedNode={props.evaluatedNode}
@@ -877,8 +883,9 @@ const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
                     },
                 ], `User NodeComponent, assignees change`);
             }}
-        />,
-        <WorkflowDueDateMenuItem
+        />);
+
+        menuItems.push(<WorkflowDueDateMenuItem
             key={++k}
             value={props.evaluatedNode.dueDate}
             evaluatedNode={props.evaluatedNode}
@@ -896,8 +903,10 @@ const WorkflowNodeDotMenu = (props: WorkflowNodeDotMenuProps) => {
                     },
                 ], `User NodeComponent, assignees change`);
             }}
-        />,
-    ];
+        />);
+    }
+
+    if (!menuItems.length) return null;
 
     return <>
         <CMSmallButton className='DotMenu' style={{ fontSize: "14px" }} onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>
@@ -942,6 +951,8 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
             });
     }
 
+    if (evaluatedNode.evaluation.progressState === WorkflowNodeProgressState.Irrelevant) return null;
+
     return (
         <div className={`workflowNodeContainer ${evaluatedNode.evaluation.progressState}`} style={{ display: "flex" }}>
             <div className="indicator">
@@ -958,6 +969,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     >
                         {nodeDef.name}
                     </div>
+                    {activeControls}
                     <WorkflowNodeDotMenu evaluatedNode={evaluatedNode} />
                 </div>
                 {/* i was tempted to remove due dates if you're not authorized to edit instances. but most of the time it will be
@@ -975,9 +987,9 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                         evaluatedNode={evaluatedNode}
                     />}
                 </div>
-                <div className="activeControlsContainer">
+                {/* <div className="activeControlsContainer">
                     {activeControls}
-                </div>
+                </div> */}
             </div>
         </div>
     );
@@ -1021,13 +1033,13 @@ export const WorkflowGroupComponent = (props: WorkflowGroupProps) => {
     return (
         <div className={`workflowNodeGroupContainer`} style={vars.style}
         >
-            <div className="header">
+            {IsNullOrWhitespace(groupDef.name) ? null : <div className="header">
                 <div className={`groupName name ${props.onClickToSelectGroup ? "selectable" : "notSelectable"}`}
                     onClick={props.onClickToSelectGroup ? (() => props.onClickToSelectGroup!({ groupDefId: props.groupDefId! })) : undefined}
                 >
                     {groupDef.name}
                 </div>
-            </div>
+            </div>}
             <div className="content">
                 {sortedNodes.map(x => <WorkflowNodeComponent
                     key={x.nodeDefId}
@@ -1222,18 +1234,12 @@ export const MakeBoolBinding = (args: {
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
-export const TextField = (props: FieldComponentProps<string>) => {
+export const WFTextField = (props: FieldComponentProps<string>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
-    return <CMTextField
-        autoFocus={false}
-        readOnly={props.readonly}
-        value={props.binding.value || ""}
-        style={{ width: "auto" }}
-        onChange={(e, v) => {
-            props.binding.setValue(v);
-        }}
-    />
+    return <TextField size='small' margin='none' value={props.binding.value} disabled={props.readonly} onChange={(e) => {
+        props.binding.setValue(e.target.value);
+    }} />;
 }
 
 export const TextOperand = (props: FieldComponentProps<string>) => {
@@ -1295,7 +1301,7 @@ export const MakeTextBinding = (args: {
                     return false;
             }
         },
-        FieldValueComponent: TextField,
+        FieldValueComponent: WFTextField,
         FieldOperand2Component: TextOperand,
     };
 };

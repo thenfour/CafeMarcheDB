@@ -1105,6 +1105,7 @@ export const gEventDetailTabSlugIndices = {
 export interface EventDetailContainerProps {
     eventData: VerboseEventWithMetadata;
     tableClient: DB3Client.xTableRenderClient | null;
+    refetch: () => void;
     readonly: boolean;
     fadePastEvents: boolean;
     showVisibility?: boolean;
@@ -1114,7 +1115,7 @@ export interface EventDetailContainerProps {
     highlightTypeId?: number[];
 }
 
-export const EventDetailContainer = ({ eventData, tableClient, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
+export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props }: React.PropsWithChildren<EventDetailContainerProps>) => {
     const [currentUser] = useCurrentUser()!;
     const router = useRouter();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -1124,9 +1125,9 @@ export const EventDetailContainer = ({ eventData, tableClient, ...props }: React
     const highlightStatusIds = props.highlightStatusId || [];
     const highlightTypeIds = props.highlightTypeId || [];
 
-    const refetch = () => {
-        tableClient?.refetch();
-    };
+    // const refetch = () => {
+    //     //tableClient?.refetch();
+    // };
 
     const visInfo = dashboardContext.getVisibilityInfo(eventData.event);
 
@@ -1619,7 +1620,7 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
     //const refetch = tableClient.refetch;
 
-    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true}>
+    return <EventDetailContainer eventData={eventData} readonly={props.readonly} tableClient={tableClient} fadePastEvents={false} showVisibility={true} refetch={props.refetch}>
         <EventAttendanceControl
             eventData={eventData}
             onRefetch={tableClient.refetch}

@@ -9,7 +9,7 @@ import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
-import { AdminContainer, InspectObject } from "./CMCoreComponents";
+import { AdminContainer, AdminInspectObject, InspectObject } from "./CMCoreComponents";
 import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { ColorPick } from "./Color";
@@ -347,9 +347,9 @@ function MakeInstanceMutatorAndRenderer({
             ni.assignees = JSON.parse(JSON.stringify(args.assignees));
             return args.sourceWorkflowInstance;
         },
-        SetHasBeenEvaluated: args => {
-            if (args.sourceWorkflowInstance.hasBeenEvaluated) return undefined;
-            args.sourceWorkflowInstance.hasBeenEvaluated = true;
+        SetLastEvaluatedWorkflowDefId: args => {
+            if (args.sourceWorkflowInstance.lastEvaluatedWorkflowDefId === args.workflowDefId) return undefined;
+            args.sourceWorkflowInstance.lastEvaluatedWorkflowDefId = args.workflowDefId;
             return args.sourceWorkflowInstance;
         },
         SetDueDateForNode: (args) => {
@@ -623,7 +623,7 @@ export const WorkflowViewer = (props: { value: WorkflowDef }) => {
         GetFieldValueAsString: ({ flowDef, nodeDef, node }) => "",
         ResetModelAndInstance: () => { },
         SetAssigneesForNode: (args) => undefined,
-        SetHasBeenEvaluated: args => undefined,
+        SetLastEvaluatedWorkflowDefId: args => undefined,
         SetDueDateForNode: (args) => undefined,
         AddLogItem: (args) => undefined,
         SetNodeStatusData: (args) => undefined,
@@ -714,7 +714,7 @@ function GetModelForEvent(dashboardContext: DashboardContextData, event: db3.Eve
 export const EventWorkflowTabWithWFContext = () => {
     return <div>
         <WorkflowContainer />
-        <WorkflowLogView />
+        {/* <WorkflowLogView /> */}
     </div>;
 };
 
@@ -742,8 +742,20 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef); // TODO: load from db
     const setInstance = (v) => { };
 
+    React.useEffect(() => { console.log(`refreshTrig: ${props.refreshTrigger}`); }, [props.refreshTrigger]);
+
     // establish model
-    const [model, setModel] = React.useState<MockEventModel>(() => GetModelForEvent(dashboardContext, props.event));
+    //const [model, setModel] = React.useState<MockEventModel>(() => GetModelForEvent(dashboardContext, props.event));
+    const model = GetModelForEvent(dashboardContext, props.event);
+    const setModel = (model: MockEventModel) => {
+        // serialize it.
+        console.log(`todo: serialize model`);
+    };
+
+    // // when the event changes, we need to re-establish the model
+    // React.useEffect(() => {
+    //     setModel(GetModelForEvent(dashboardContext, props.event));
+    // }, [props.refreshTrigger]);
 
     // evaluate
     const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
@@ -765,7 +777,7 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     React.useEffect(() => {
         const x = EvaluateWorkflow(workflowDef, instance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
         setEvaluatedInstance(x);
-    }, [evaluationTrigger]);
+    }, [evaluationTrigger, workflowDefId, workflowDefsRaw.remainingQueryStatus.dataUpdatedAt]);
 
     const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
         return EvaluateWorkflow(workflowDef, instance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
@@ -781,6 +793,7 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
             console.log(`todo: commit instance`);
         }}
     >
+        <AdminInspectObject src={model} label="Model" />
         <EventWorkflowTabWithWFContext />
     </EvaluatedWorkflowProvider>
 };
@@ -789,7 +802,7 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
 
 export const EventWorkflowTabContent = (props: EventWorkflowTabContentProps) => {
     return <React.Suspense>
-        <EventWorkflowTabInner {...props} />;
+        <EventWorkflowTabInner {...props} />
     </React.Suspense>;
 };
 
