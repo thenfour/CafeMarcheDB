@@ -1,21 +1,23 @@
 
+import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Button, DialogActions, DialogContent, DialogTitle, FormControlLabel, Switch } from "@mui/material";
+import { Prisma } from "db";
 import React from "react";
+import { DateTimeRange } from "shared/time";
+import { EnNlFr, LangSelectStringWithDetail } from "shared/utils";
+import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
-import { Prisma } from "db";
 import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
-import { AgendaItem } from './homepageComponents';
-import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { useAuthenticatedSession } from "@blitzjs/auth";
-import { SettingMarkdown } from "./SettingMarkdown";
+import { gIconMap } from "../db3/components/IconMap";
+import { CMChip, CMChipContainer } from "./CMChip";
+import { EditTextField, ReactiveInputDialog } from "./CMCoreComponents";
+import { CMDialogContentText } from "./CMCoreComponents2";
+import { useConfirm } from "./ConfirmationDialog";
 import { DashboardContext } from "./DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
-import { gIconMap } from "../db3/components/IconMap";
-import { CMDialogContentText, CMSmallButton, KeyValueTable } from "./CMCoreComponents2";
-import { CMChip, CMChipContainer } from "./CMChip";
-import { EnNlFr, IsNullOrWhitespace, LangSelectStringWithDetail } from "shared/utils";
-import { EditTextField, ReactiveInputDialog } from "./CMCoreComponents";
+import { AgendaItem } from './homepageComponents';
+import { SettingMarkdown } from "./SettingMarkdown";
 
 
 
@@ -186,7 +188,25 @@ interface EventFrontpageControlProps {
 
 
 
+const EventFrontpageValuesTable = ({ valueEn, valueNl, valueFr }: { valueEn: string, valueNl: string, valueFr: string }) => {
 
+    const renderValueOrFallback = (lang: EnNlFr): React.ReactNode => {
+        const selectResult = LangSelectStringWithDetail(lang, valueEn, valueNl, valueFr);
+        if (selectResult.preferredLangWasChosen) {
+            return <span>{selectResult.result}</span>;
+        }
+        return <span className="faded">{selectResult.result}</span>;
+    };
+
+    return <table className="EventFrontpageValuesTable value">
+        <tbody>
+            <tr><th>EN</th><td>{renderValueOrFallback("en")}</td></tr>
+            <tr><th>NL</th><td>{renderValueOrFallback("nl")}</td></tr>
+            <tr><th>FR</th><td>{renderValueOrFallback("fr")}</td></tr>
+        </tbody>
+    </table>;
+
+};
 
 
 ////////////////////////////////////////////////////////////////
@@ -194,6 +214,7 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
     const mutationToken = API.events.updateEventBasicFields.useToken();
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const user = useCurrentUser()[0]!;
+    const confirm = useConfirm();
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
@@ -213,13 +234,9 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
         });
     };
 
-    //const defaultValue = props.fallbackValue;
     const valueEn = props.event[props.fieldSpec.fieldNameEn] || "";
     const valueNl = props.event[props.fieldSpec.fieldNameNl] || "";
     const valueFr = props.event[props.fieldSpec.fieldNameFr] || "";
-    //const isNull = valueEn === null;
-
-    //const nlfrFallback = (IsNullOrWhitespace(valueEn) ? valueEn : defaultValue) || "";
 
     const canEdit = db3.xEvent.authorizeColumnForEdit({
         clientIntention,
@@ -231,48 +248,43 @@ export const EventFrontpageControl = (props: EventFrontpageControlProps) => {
 
     const readonly = props.readonly || !canEdit;
 
-    const renderValueOrFallback = (lang: EnNlFr): React.ReactNode => {
-        const selectResult = LangSelectStringWithDetail(lang, valueEn, valueNl, valueFr);
-        if (selectResult.preferredLangWasChosen) {
-            return <span>{selectResult.result}</span>;
-        }
-        // if (IsNullOrWhitespace(val)) {
-        return <span className="faded">{selectResult.result}</span>;
-        // }
-        // return ;
-    };
-
     return <div className={`fieldContainer ${props.fieldSpec.fieldNameEn /* assumes this is the "plain" fieldname with out lang suffix */} ${props.event.frontpageVisible ? "" : "faded"}`}>
 
         <div className='label'>
             <div className='text'>{props.fieldSpec.fieldLabel}</div>
         </div>
         <div className='editButtonContainer'>
-            {!readonly && <div style={{ display: "flex", flexDirection: "column", width: "100px" }}><EditTextDialogButton
-                clientIntention={clientIntention}
-                columnSpecEn={db3.xEvent.getColumn(props.fieldSpec.fieldNameEn)! as db3.FieldBase<string>}
-                valueEn={valueEn || ""}
-                columnSpecNl={db3.xEvent.getColumn(props.fieldSpec.fieldNameNl)! as db3.FieldBase<string>}
-                valueNl={valueNl || ""}
-                columnSpecFr={db3.xEvent.getColumn(props.fieldSpec.fieldNameFr)! as db3.FieldBase<string>}
-                valueFr={valueFr || ""}
-                dialogTitle={props.fieldSpec.fieldLabel}
-                readOnly={readonly}
-                dialogDescription={<SettingMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
-                selectButtonLabel='edit'
-                onChange={handleChange}
-            />
-                {/* {!IsNullOrWhitespace(defaultValue) && <Button onClick={() => {
-                    handleChange(defaultValue, null, null);
-                }}>Reset</Button>} */}
+            {!readonly && <div style={{ display: "flex", flexDirection: "column", width: "100px" }}>
+                <EditTextDialogButton
+                    clientIntention={clientIntention}
+                    columnSpecEn={db3.xEvent.getColumn(props.fieldSpec.fieldNameEn)! as db3.FieldBase<string>}
+                    valueEn={valueEn || ""}
+                    columnSpecNl={db3.xEvent.getColumn(props.fieldSpec.fieldNameNl)! as db3.FieldBase<string>}
+                    valueNl={valueNl || ""}
+                    columnSpecFr={db3.xEvent.getColumn(props.fieldSpec.fieldNameFr)! as db3.FieldBase<string>}
+                    valueFr={valueFr || ""}
+                    dialogTitle={props.fieldSpec.fieldLabel}
+                    readOnly={readonly}
+                    dialogDescription={<SettingMarkdown setting={`EventFrontpageEditDialog_${props.fieldSpec.fieldLabel}` as any} />}
+                    selectButtonLabel='edit'
+                    onChange={handleChange}
+                />
+                {props.getResetValues && <Button onClick={async () => {
+                    const vals = props.getResetValues!();
+                    const r = await confirm({
+                        title: `Reset ${props.fieldSpec.fieldLabel} to auto values?`,
+                        description: <EventFrontpageValuesTable valueEn={vals.en} valueFr={vals.fr} valueNl={vals.nl} />
+                    });
+                    if (r) {
+                        handleChange(vals.en, vals.nl, vals.fr);
+                    }
+                }}>
+                    Reset
+                </Button>}
             </div>}
         </div>
 
-        <KeyValueTable className={`value`} data={{
-            EN: renderValueOrFallback("en"),
-            NL: renderValueOrFallback("nl"),
-            FR: renderValueOrFallback("fr"),
-        }} />
+        <EventFrontpageValuesTable valueEn={valueEn} valueFr={valueFr} valueNl={valueNl} />
 
     </div>;
 };
@@ -304,6 +316,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     const [previewLang, setPreviewLang] = React.useState<EnNlFr>("en");
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const user = useCurrentUser()[0]!;
+    const confirm = useConfirm();
     const publicData = useAuthenticatedSession();
     const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
     const dashboardContext = React.useContext(DashboardContext);
@@ -323,7 +336,6 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
     }
 
     const agendaItem: HomepageAgendaItemSpec = API.events.getAgendaItem(props.event, previewLang);
-    //const fallbackValues = API.events.getAgendaItemFallbackValues(props.event, previewLang);
 
     const canEdit_frontpageVisible = db3.xEvent.authorizeColumnForEdit({
         clientIntention,
@@ -333,11 +345,94 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         fallbackOwnerId: null,
     });
 
+    let dateRange = new DateTimeRange({
+        startsAtDateTime: props.event.startsAt,
+        durationMillis: Number(props.event.durationMillis),
+        isAllDay: props.event.isAllDay,
+    });
+    let dateTimeDisplayStrings = dateRange.toDisplayStrings();
+
+    const dateResetter = () => ({
+        en: dateTimeDisplayStrings.en.date,
+        nl: dateTimeDisplayStrings.nl.date,
+        fr: dateTimeDisplayStrings.fr.date,
+    });
+    const timeResetter = () => ({
+        en: dateTimeDisplayStrings.en.time || "",
+        nl: dateTimeDisplayStrings.nl.time || "",
+        fr: dateTimeDisplayStrings.fr.time || "",
+    });
+    const titleResetter = () => ({ en: props.event.name, fr: "", nl: "" });
+    const locationResetter = () => ({ en: props.event.locationDescription, fr: "", nl: "" });
+    const tagsResetter = () => ({
+        en: props.event.tags.filter(t => t.eventTag.visibleOnFrontpage).map(t => `#${t.eventTag.text}`).join(" "),
+        fr: "",
+        nl: "",
+    });
+
+    const resetAll = async () => {
+        const dateValues = dateResetter();
+        const timeValues = timeResetter();
+        const titleValues = titleResetter();
+        const locationValues = locationResetter();
+        const tagsValues = tagsResetter();
+        const y = await confirm({
+            title: "Reset all fields to the following?",
+            description: <>
+                <h3>Date</h3>
+                <EventFrontpageValuesTable valueEn={dateValues.en} valueFr={dateValues.fr} valueNl={dateValues.nl} />
+                <h3>Time</h3>
+                <EventFrontpageValuesTable valueEn={timeValues.en} valueFr={timeValues.fr} valueNl={timeValues.nl} />
+                <h3>Title</h3>
+                <EventFrontpageValuesTable valueEn={titleValues.en} valueFr={titleValues.fr} valueNl={titleValues.nl} />
+                <h3>Location</h3>
+                <EventFrontpageValuesTable valueEn={locationValues.en} valueFr={locationValues.fr} valueNl={locationValues.nl} />
+                <h3>Tags</h3>
+                <EventFrontpageValuesTable valueEn={tagsValues.en} valueFr={tagsValues.fr} valueNl={tagsValues.nl} />
+            </>
+        });
+        if (y) {
+            try {
+                await mutationToken.invoke({
+                    eventId: props.event.id,
+
+                    frontpageDate: dateValues.en,
+                    frontpageDate_fr: dateValues.fr,
+                    frontpageDate_nl: dateValues.nl,
+
+                    frontpageTime: timeValues.en,
+                    frontpageTime_fr: timeValues.fr,
+                    frontpageTime_nl: timeValues.nl,
+
+                    frontpageTitle: titleValues.en,
+                    frontpageTitle_fr: titleValues.fr,
+                    frontpageTitle_nl: titleValues.nl,
+
+                    frontpageLocation: locationValues.en,
+                    frontpageLocation_fr: locationValues.fr,
+                    frontpageLocation_nl: locationValues.nl,
+
+                    frontpageTags: tagsValues.en,
+                    frontpageTags_fr: tagsValues.fr,
+                    frontpageTags_nl: tagsValues.nl,
+                });
+                showSnackbar({ severity: "success", children: `Success` });
+            } catch (e) {
+                console.log(e);
+                showSnackbar({ severity: "error", children: `error` });
+            } finally {
+                props.refetch();
+            };
+
+        }
+    };
+
     return <div className='EventFrontpageTabContent'>
         <div className={`fieldContainer frontpageVisible`}>
             <div className='label'>
             </div>
-            <div className='nullContainer'>
+            <div className='nullContainer' style={{ alignItems: "flex-start" }}>
+                <Button onClick={resetAll}>Reset all</Button>
             </div>
             <div className={`value frontpageVisible`}>
                 <FormControlLabel
@@ -357,7 +452,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
         </div>
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            //fallbackValue={fallbackValues.date || ""}
+            getResetValues={dateResetter}
             fieldSpec={{
                 fieldLabel: "Date",
                 fieldNameEn: "frontpageDate",
@@ -368,7 +463,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            //fallbackValue={fallbackValues.time || ""}
+            getResetValues={timeResetter}
             fieldSpec={{
                 fieldLabel: "Time",
                 fieldNameEn: "frontpageTime",
@@ -379,7 +474,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
             }} />
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            //fallbackValue={fallbackValues.title || ""}
+            getResetValues={titleResetter}
             fieldSpec={{
                 fieldLabel: "Title",
                 fieldNameEn: "frontpageTitle",
@@ -391,7 +486,6 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            //fallbackValue={fallbackValues.detailsMarkdown || ""}
             fieldSpec={{
                 fieldLabel: "Details",
                 fieldNameEn: "frontpageDetails",
@@ -403,7 +497,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            //fallbackValue={fallbackValues.location || ""}
+            getResetValues={locationResetter}
             fieldSpec={{
                 fieldLabel: "Location",
                 fieldNameEn: "frontpageLocation",
@@ -415,7 +509,6 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            //fallbackValue={fallbackValues.locationURI || ""}
             fieldSpec={{
                 fieldLabel: "Location URI",
                 fieldNameEn: "frontpageLocationURI",
@@ -427,7 +520,7 @@ export const EventFrontpageTabContent = (props: EventFrontpageTabContentProps) =
 
 
         <EventFrontpageControl event={props.event} refetch={props.refetch} readonly={props.readonly}
-            //fallbackValue={fallbackValues.tags || ""}
+            getResetValues={tagsResetter}
             fieldSpec={{
                 fieldLabel: "Tags",
                 fieldNameEn: "frontpageTags",

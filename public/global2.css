@@ -951,6 +951,17 @@ what's the diff between interactable, freeButton, and iconButton? so far not muc
     color: #444;
 }
 
+.EventFrontpageValuesTable th {
+    width: 40px;
+    font-family: monospace;
+    color: #0008;
+}
+
+.EventFrontpageValuesTable td {
+    /* if the value is narrower than the label it looks weird */
+    min-width: 60px;
+}
+
 
 .EventFrontpageTabContent .fieldContainer .value.faded {
     /* border: 1px solid #555; */

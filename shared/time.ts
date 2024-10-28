@@ -284,7 +284,16 @@ export class TimeOptionsGenerator {
     }
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export type DateTimeDisplayString = {
+    date: string;
+    time?: string | undefined;
+};
+export type DateTimeDisplayStrings = {
+    en: DateTimeDisplayString,
+    fr: DateTimeDisplayString,
+    nl: DateTimeDisplayString,
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface DateTimeRangeSpec {
@@ -467,6 +476,147 @@ export class DateTimeRange {
 
         return `${startDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(startDate)} - ${endDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(endDate)}h`;
 
+    }
+
+    public toDisplayStrings(): {
+        en: { date: string; time?: string };
+        fr: { date: string; time?: string };
+        nl: { date: string; time?: string };
+    } {
+        if (this.isTBD()) {
+            return {
+                en: { date: 'TBD' },
+                fr: { date: 'À déterminer' },
+                nl: { date: 'Nog te bepalen' },
+            };
+        }
+
+        const startDate = dayjs(this.getStartDateTime()!);
+        const endDate = dayjs(this.getEndDateTime()!);
+        const durationDays = this.getDurationDays();
+
+        const isAllDay = this.isAllDay();
+        const isSameDay = durationDays <= 1.0;
+        const isSameMonth = startDate.isSame(endDate, 'month');
+        const isSameYear = startDate.isSame(endDate, 'year');
+
+        const locales = ['en', 'fr', 'nl'] as const;
+
+        const result: {
+            en: { date: string; time?: string };
+            fr: { date: string; time?: string };
+            nl: { date: string; time?: string };
+        } = {
+            en: { date: '', time: undefined },
+            fr: { date: '', time: undefined },
+            nl: { date: '', time: undefined },
+        };
+
+        for (const locale of locales) {
+            const formatDate = (
+                date: dayjs.Dayjs,
+                options: Intl.DateTimeFormatOptions,
+                datePartsOrder: Intl.DateTimeFormatPartTypes[]
+            ): string => {
+                const formatter = new Intl.DateTimeFormat(`${locale}-BE`, options);
+                const parts = formatter.formatToParts(date.toDate());
+                const dateStr = datePartsOrder
+                    .map((partType) => parts.find((part) => part.type === partType)?.value)
+                    .filter(Boolean)
+                    .join(' ');
+                return dateStr;
+            };
+
+            const formatTime = (date: dayjs.Dayjs): string => {
+                const hour = date.hour();
+                const minutes = date.minute();
+                const suffix = locale === 'nl' ? 'u' : 'h';
+                if (minutes === 0) {
+                    return `${hour}${suffix}`; // Return only hour with suffix if minutes are 0
+                }
+                return `${hour}:${minutes.toString().padStart(2, '0')}${suffix}`;
+            };
+
+            let dateStr = '';
+            let timeStr: string | undefined = undefined;
+
+            if (isAllDay) {
+                if (isSameDay) {
+                    // Single-day all-day event
+                    dateStr = formatDate(
+                        startDate,
+                        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+                        ['weekday', 'day', 'month', 'year']
+                    );
+                } else if (isSameMonth) {
+                    // Multi-day event within the same month
+                    const startDay = formatDate(startDate, { day: 'numeric' }, ['day']);
+                    const endDateStr = formatDate(
+                        endDate,
+                        { day: 'numeric', month: 'long', year: 'numeric' },
+                        ['day', 'month', 'year']
+                    );
+                    dateStr = `${startDay} - ${endDateStr}`;
+                } else if (isSameYear) {
+                    // Multi-day event within the same year
+                    const startDateStr = formatDate(
+                        startDate,
+                        { day: 'numeric', month: 'long' },
+                        ['day', 'month']
+                    );
+                    const endDateStr = formatDate(
+                        endDate,
+                        { day: 'numeric', month: 'long', year: 'numeric' },
+                        ['day', 'month', 'year']
+                    );
+                    dateStr = `${startDateStr} - ${endDateStr}`;
+                } else {
+                    // Multi-day event spanning different years
+                    const startDateStr = formatDate(
+                        startDate,
+                        { day: 'numeric', month: 'long', year: 'numeric' },
+                        ['day', 'month', 'year']
+                    );
+                    const endDateStr = formatDate(
+                        endDate,
+                        { day: 'numeric', month: 'long', year: 'numeric' },
+                        ['day', 'month', 'year']
+                    );
+                    dateStr = `${startDateStr} - ${endDateStr}`;
+                }
+            } else {
+                if (isSameDay) {
+                    // Single-day event with specific times
+                    dateStr = formatDate(
+                        startDate,
+                        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+                        ['weekday', 'day', 'month', 'year']
+                    );
+                    timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
+                } else {
+                    // Multi-day event with specific times
+                    const startDateStr = formatDate(
+                        startDate,
+                        { day: 'numeric', month: 'long', year: 'numeric' },
+                        ['day', 'month', 'year']
+                    );
+                    const endDateStr = formatDate(
+                        endDate,
+                        { day: 'numeric', month: 'long', year: 'numeric' },
+                        ['day', 'month', 'year']
+                    );
+                    dateStr = `${startDateStr} - ${endDateStr}`;
+                    timeStr = `${formatTime(startDate)} - ${formatTime(endDate)}`;
+                }
+            }
+
+            result[locale] = {
+                date: dateStr,
+                time: timeStr,
+            };
+        }
+
+        return result;
     }
 
     durationToString() {

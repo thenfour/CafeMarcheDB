@@ -3,8 +3,8 @@ import { Button, Dialog, DialogActions, DialogContent, DialogContentText, Dialog
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface ConfirmOptions {
-    title?: string;
-    description?: string;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
 }
 
 type ConfirmFunction = (options: ConfirmOptions) => Promise<boolean>;
@@ -64,8 +64,8 @@ export const ConfirmProvider: React.FC<ConfirmProviderProps> = ({ children }) =>
 
 interface ConfirmDialogProps {
     open: boolean;
-    title?: string;
-    description?: string;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
     onClose: (result: boolean) => void;
 }
 
@@ -75,11 +75,16 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     description = 'Are you sure?',
     onClose,
 }) => {
+    // in order to allow things like tables in the description, careful not to wrap in a <p> accidentally.
+    let descElement = description;
+    if (typeof (description) === 'string') {
+        descElement = <DialogContentText>{description}</DialogContentText>;
+    }
     return (
         <Dialog open={open} onClose={() => onClose(false)}>
             <DialogTitle>{title}</DialogTitle>
             <DialogContent>
-                <DialogContentText>{description}</DialogContentText>
+                {descElement}
             </DialogContent>
             <DialogActions>
                 <Button onClick={() => onClose(false)} color="primary">
