@@ -22,6 +22,7 @@ import { MoreHoriz } from '@mui/icons-material';
 import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedDependentNode, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceMutatorFnChainSpec, WorkflowNodeAssignee, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { Markdown3Editor } from './MarkdownControl3';
 import { WorkflowNodeProgressState } from '../db3/shared/apiTypes';
+import { Markdown } from './RichTextEditor';
 
 type CMXYPosition = {
     x: number;
@@ -986,6 +987,10 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     {/* i was tempted to remove due dates if you're not authorized to edit instances. but most of the time it will be
                 a model field change due, not the instance itself. so better just leave it.
                  */}
+                    {IsNullOrWhitespace(nodeDef.descriptionMarkdown) ? null :
+                        <div className="descriptionRow">
+                            <Markdown markdown={nodeDef.descriptionMarkdown} compact={true} />
+                        </div>}
                     {evaluatedNode.evaluation.isInProgress && editAuthorized &&
                         <div className="dueDateRow">
                             <WorkflowDueDateValue dueDate={evaluatedNode.dueDate} />

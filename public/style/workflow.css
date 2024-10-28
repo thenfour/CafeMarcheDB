@@ -57,13 +57,13 @@
 }
 
 .workflowNodeContainer .body {
-    margin-left: 33px;
+    margin-left: 36px;
     display: flex;
     flex-direction: column;
 }
 
 .workflowNodeContainer .indicator {
-    width: 33px;
+    width: 36px;
     display: flex;
 }
 
@@ -74,8 +74,12 @@
 }
 
 
-.workflowNodeContainer.Completed .notBorderLeft {
-    opacity: 33%;
+.workflowNodeContainer .nameLabel {
+    opacity: 25%;
+}
+
+.workflowNodeContainer.Activated .nameLabel {
+    opacity: 100%;
 }
 
 .workflowNodeContainer .dotMenu {
