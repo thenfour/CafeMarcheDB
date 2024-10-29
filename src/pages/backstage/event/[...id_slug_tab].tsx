@@ -138,6 +138,8 @@ const EventDetailPage: BlitzPage = (props: PageProps) => {
             <Suspense>
                 <MyComponent eventId={props.eventId}></MyComponent>
             </Suspense>
+            {/* this helps prevent annoying scroll behavior when switching tabs */}
+            <div style={{ height: "65vh" }}></div>
         </DashboardLayout>
     )
 }

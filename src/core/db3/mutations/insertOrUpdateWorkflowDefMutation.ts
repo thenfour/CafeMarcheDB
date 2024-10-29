@@ -6,13 +6,13 @@ import { Permission } from "shared/permissions";
 import { ChangeAction, CreateChangeContext, getUniqueNegativeID, ObjectDiff, RegisterChange } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TinsertOrUpdateWorkflowDefArgs, WorkflowObjectType } from "../shared/apiTypes";
+import { TinsertOrUpdateWorkflowDefArgs, TransactionalPrismaClient, WorkflowObjectType } from "../shared/apiTypes";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { mapWorkflowDef, TWorkflowChange, TWorkflowMutationResult, WorkflowDefToMutationArgs } from "shared/workflowEngine";
 
 
-async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefArgs): Promise<TWorkflowMutationResult> {
+async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefArgs, transactionalDb: TransactionalPrismaClient): Promise<TWorkflowMutationResult> {
 
     // NB: we will mutate args during this function to add new ids as items are inserted.
 
@@ -21,11 +21,11 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
     ///// WORKFLOW DEF ----------------------------------------
     if (args.id >= 0) {
-        const existingWorkflow = (await db.workflowDef.findFirst({ where: { id: args.id } }))!;
+        const existingWorkflow = (await transactionalDb.workflowDef.findFirst({ where: { id: args.id } }))!;
         const workflowDiff = ObjectDiff<Prisma.WorkflowDefGetPayload<{}>>(existingWorkflow, args, { ignore: [] });
         if (workflowDiff.areDifferent) {
             // Update existing workflow definition
-            const newObj = await db.workflowDef.update({
+            const newObj = await transactionalDb.workflowDef.update({
                 where: { id: args.id },
                 data: {
                     sortOrder: args.sortOrder,
@@ -45,7 +45,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         }
     } else {
         // Insert new workflow definition
-        const newObj = await db.workflowDef.create({
+        const newObj = await transactionalDb.workflowDef.create({
             data: {
                 sortOrder: args.sortOrder,
                 name: args.name,
@@ -65,7 +65,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
     ///// GROUPS ----------------------------------------
     // Fetch existing groups from the database
-    const existingGroups = await db.workflowDefGroup.findMany({
+    const existingGroups = await transactionalDb.workflowDefGroup.findMany({
         where: { workflowDefId: args.id },
     });
 
@@ -81,7 +81,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
     const groupIdsToDelete = groupCP.delete.map(x => x.id);
 
     // Delete
-    await db.workflowDefGroup.deleteMany({
+    await transactionalDb.workflowDefGroup.deleteMany({
         where: { id: { in: groupIdsToDelete } },
     });
     resultChanges.push(...groupCP.delete.map(x => {
@@ -98,7 +98,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         const { a, b } = groupAB;
         const diffResult = ObjectDiff(a, b, { ignore: ["id", "workflowDefId"] });
         if (!diffResult.areDifferent) continue;
-        await db.workflowDefGroup.update({
+        await transactionalDb.workflowDefGroup.update({
             where: { id: a.id },
             data: diffResult.differences.rhs,
         });
@@ -115,7 +115,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
     for (const group of groupCP.create) {
         const { id, ...rest } = group;
         const data = { ...rest, workflowDefId: args.id };
-        const newGroup = await db.workflowDefGroup.create({ data });
+        const newGroup = await transactionalDb.workflowDefGroup.create({ data });
         tempToRealIdMappings.push({
             objectType: WorkflowObjectType.group,
             tempId: group.id,
@@ -141,7 +141,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
     ///// NODES ----------------------------------------
     // Fetch existing nodes from the database
-    const existingNodes = await db.workflowDefNode.findMany({
+    const existingNodes = await transactionalDb.workflowDefNode.findMany({
         where: { workflowDefId: args.id },
     });
 
@@ -166,7 +166,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
     const nodeIdsToDelete = nodeCP.delete.map(x => x.id);
 
     // Delete
-    await db.workflowDefNode.deleteMany({
+    await transactionalDb.workflowDefNode.deleteMany({
         where: { id: { in: nodeIdsToDelete } },
     });
     resultChanges.push(...nodeCP.delete.map(x => {
@@ -183,7 +183,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         const { a, b } = nodeAB;
         const diffResult = ObjectDiff(a, b, { ignore: ["id", "workflowDefId"] });
         if (!diffResult.areDifferent) continue;
-        await db.workflowDefNode.update({
+        await transactionalDb.workflowDefNode.update({
             where: { id: a.id },
             data: diffResult.differences.rhs,
         });
@@ -200,7 +200,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
     for (const node of nodeCP.create) {
         const { id, ...rest } = node;
         const data = { ...rest, workflowDefId: args.id };
-        const newItem = await db.workflowDefNode.create({ data });
+        const newItem = await transactionalDb.workflowDefNode.create({ data });
         const resultNode = args.nodes.find(n => n.id === node.id)!;
         resultNode.id = newItem.id;
         resultChanges.push({
@@ -227,7 +227,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
 
     ///// DEFAULT ASSIGNEES PER NODE ----------------------------------------
-    const existingDefaultAssigneesForEntireWorkflow = await db.workflowDefNodeDefaultAssignee.findMany({
+    const existingDefaultAssigneesForEntireWorkflow = await transactionalDb.workflowDefNodeDefaultAssignee.findMany({
         where: { nodeDefId: { in: args.nodes.map(n => n.id) } }
     });
 
@@ -248,7 +248,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         const defaultAssigneeIdsToDelete = defaultAssigneesCP.delete.map(x => x.id);
 
         // Delete
-        await db.workflowDefNodeDefaultAssignee.deleteMany({
+        await transactionalDb.workflowDefNodeDefaultAssignee.deleteMany({
             where: { id: { in: defaultAssigneeIdsToDelete } },
         });
         resultChanges.push(...defaultAssigneesCP.delete.map(x => {
@@ -265,7 +265,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
             const { a, b } = assigneeAB;
             const diffResult = ObjectDiff(a, b, { ignore: ["id", "nodeDefId"] });
             if (!diffResult.areDifferent) continue;
-            await db.workflowDefNodeDefaultAssignee.update({
+            await transactionalDb.workflowDefNodeDefaultAssignee.update({
                 where: { id: a.id },
                 data: diffResult.differences.rhs,
             });
@@ -282,7 +282,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         for (const assignee of defaultAssigneesCP.create) {
             const { id, ...rest } = assignee;
             const data = { ...rest, nodeDefId: node.id, };
-            const newItem = await db.workflowDefNodeDefaultAssignee.create({ data });
+            const newItem = await transactionalDb.workflowDefNodeDefaultAssignee.create({ data });
             const resultObj = node.defaultAssignees.find(n => n.id === assignee.id)!;
             resultObj.id = newItem.id;
             resultChanges.push({
@@ -310,7 +310,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
 
 
     ///// NODE DEPENDENCIES PER NODE ----------------------------------------
-    const existingNodeDependenciesForEntireWorkflow = await db.workflowDefNodeDependency.findMany({
+    const existingNodeDependenciesForEntireWorkflow = await transactionalDb.workflowDefNodeDependency.findMany({
         where: { targetNodeDefId: { in: args.nodes.map(n => n.id) } }
     });
 
@@ -334,7 +334,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         const dependencyIdsToDelete = dependenciesCP.delete.map(x => x.id);
 
         // Delete
-        await db.workflowDefNodeDependency.deleteMany({
+        await transactionalDb.workflowDefNodeDependency.deleteMany({
             where: { id: { in: dependencyIdsToDelete } },
         });
         resultChanges.push(...dependenciesCP.delete.map(x => {
@@ -351,7 +351,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
             const { a, b } = dependencyAB;
             const diffResult = ObjectDiff(a, b, { ignore: ["id"] });
             if (!diffResult.areDifferent) continue;
-            await db.workflowDefNodeDependency.update({
+            await transactionalDb.workflowDefNodeDependency.update({
                 where: { id: a.id },
                 data: diffResult.differences.rhs,
             });
@@ -367,7 +367,7 @@ async function InsertOrUpdateWorkflowCoreAsync(args: TinsertOrUpdateWorkflowDefA
         // Create new
         for (const dependency of dependenciesCP.create) {
             const { id, ...data } = dependency;
-            const newItem = await db.workflowDefNodeDependency.create({ data });
+            const newItem = await transactionalDb.workflowDefNodeDependency.create({ data });
             const resultObj = node.dependencies.find(n => n.id === dependency.id)!;
             resultObj.id = newItem.id;
             resultChanges.push({
@@ -408,43 +408,48 @@ export default resolver.pipe(
 
         const changeContext = CreateChangeContext(`insertOrUpdateWorkflow`);
 
-        // old workflow def
-        //let oldSerializableDef: TinsertOrUpdateWorkflowDefArgs | undefined = undefined;
-        const oldPayload: TWorkflowMutationResult = {
-            changes: [],
-            serializableFlowDef: undefined,
-        };
-        if (args.id >= 0) {
-            const oldValuesInfo = await DB3QueryCore2({
-                clientIntention,
-                cmdbQueryContext: "insertOrUpdateWorkflowDef",
-                tableID: db3.xWorkflowDef_Verbose.tableID,
-                tableName: db3.xWorkflowDef_Verbose.tableName,
-                filter: {
-                    items: [],
-                    pks: [args.id],
+        return await db.$transaction(async (transactionalDb) => {
+            // old workflow def
+            //let oldSerializableDef: TinsertOrUpdateWorkflowDefArgs | undefined = undefined;
+            const oldPayload: TWorkflowMutationResult = {
+                changes: [],
+                serializableFlowDef: undefined,
+            };
+            if (args.id >= 0) {
+                const oldValuesInfo = await DB3QueryCore2({
+                    clientIntention,
+                    cmdbQueryContext: "insertOrUpdateWorkflowDef",
+                    tableID: db3.xWorkflowDef_Verbose.tableID,
+                    tableName: db3.xWorkflowDef_Verbose.tableName,
+                    filter: {
+                        items: [],
+                        pks: [args.id],
+                    },
+                    orderBy: undefined,
                 },
-                orderBy: undefined,
-            }, currentUser);
+                    currentUser,
+                    transactionalDb);
 
-            // convert to engine workflow def
-            const oldEngineDef = mapWorkflowDef(oldValuesInfo.items[0] as any);
-            oldPayload.serializableFlowDef = WorkflowDefToMutationArgs(oldEngineDef);
-        }
+                // convert to engine workflow def
+                const oldEngineDef = mapWorkflowDef(oldValuesInfo.items[0] as any);
+                oldPayload.serializableFlowDef = WorkflowDefToMutationArgs(oldEngineDef);
+            }
 
-        const newPayload = await InsertOrUpdateWorkflowCoreAsync(args);
+            const newPayload = await InsertOrUpdateWorkflowCoreAsync(args, transactionalDb);
 
-        await RegisterChange({
-            action: oldPayload.serializableFlowDef ? ChangeAction.update : ChangeAction.insert,
-            changeContext,
-            ctx,
-            pkid: newPayload.serializableFlowDef!.id,
-            table: 'workflowDef',
-            oldValues: oldPayload,
-            newValues: newPayload,
+            await RegisterChange({
+                action: oldPayload.serializableFlowDef ? ChangeAction.update : ChangeAction.insert,
+                changeContext,
+                ctx,
+                pkid: newPayload.serializableFlowDef!.id,
+                table: 'workflowDef',
+                oldValues: oldPayload,
+                newValues: newPayload,
+                db: transactionalDb,
+            });
+
+            return newPayload;
         });
-
-        return newPayload;
     }
 );
 

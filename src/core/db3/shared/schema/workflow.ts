@@ -131,7 +131,8 @@ export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getInclude"> = {
     },
     columns: [
         new PKField({ columnName: "id" }),
-        new GhostField({ memberName: "lastEvaluatedWorkflowDef", authMap: xColumnAuthMap }),
+        new GhostField({ memberName: "lastEvaluatedWorkflowDefId", authMap: xColumnAuthMap }),
+
         new GhostField({ memberName: "logItems", authMap: xColumnAuthMap }),
         new GhostField({ memberName: "nodes", authMap: xColumnAuthMap }),
         new GhostField({ memberName: "events", authMap: xColumnAuthMap }),
@@ -150,6 +151,7 @@ export function WorkflowInstanceQueryResultToMutationArgs(x: WorkflowInstance_Ve
     return {
         instance: {
             id: x.id,
+            revision: x.revision,
             lastEvaluatedWorkflowDefId: x.lastEvaluatedWorkflowDefId || undefined,
             nodeInstances: x.nodes.map(node => ({
                 id: node.id,
@@ -158,8 +160,8 @@ export function WorkflowInstanceQueryResultToMutationArgs(x: WorkflowInstance_Ve
                 dueDate: node.dueDate || undefined,
                 manuallyCompleted: node.manuallyCompleted,
                 manualCompletionComment: node.manualCompletionComment || undefined,
-                lastFieldName: node.lastFieldName,
-                lastFieldValueAsString: node.lastFieldValueAsString,
+                lastFieldName: node.lastFieldName || undefined,
+                lastFieldValueAsString: node.lastFieldValueAsString || undefined,
                 lastAssignees: [...node.lastAssignees],
                 activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt || undefined,
                 lastProgressState: (node.lastProgressState || WorkflowNodeProgressState.InvalidState) as WorkflowNodeProgressState,
@@ -169,3 +171,40 @@ export function WorkflowInstanceQueryResultToMutationArgs(x: WorkflowInstance_Ve
     };
 };
 
+
+export function MutationArgsToPrismaWorkflowInstance(a: TUpdateEventWorkflowInstanceArgs): WorkflowInstance_Verbose {
+    const x = a.instance;
+    return {
+        id: x.id,
+        revision: x.revision,
+        logItems: [],
+        //log: [],
+        // '{ assignees: { id: number; userId: number; instanceNodeId: number; }[]; lastAssignees: { id: number; userId: number; instanceNodeId: number; }[]; }': assignees, lastAssigneests(2322)
+
+        lastEvaluatedWorkflowDefId: x.lastEvaluatedWorkflowDefId || null,
+        nodes: x.nodeInstances.map(node => ({
+            instanceId: x.id,
+            id: node.id,
+            nodeDefId: node.nodeDefId,
+            assignees: node.assignees.map(ass => ({
+                id: ass.id,
+                userId: ass.userId,
+                instanceNodeId: node.id,
+            })),
+            lastAssignees: node.lastAssignees.map(ass => ({
+                id: ass.id,
+                userId: ass.userId,
+                instanceNodeId: node.id,
+            })),
+            //assignees: [...node.assignees],
+            dueDate: node.dueDate || null,
+            manuallyCompleted: node.manuallyCompleted,
+            manualCompletionComment: node.manualCompletionComment || null,
+            lastFieldName: node.lastFieldName || null,
+            lastFieldValueAsString: node.lastFieldValueAsString || null,
+            //lastAssignees: [...node.lastAssignees],
+            activeStateFirstTriggeredAt: node.activeStateFirstTriggeredAt || null,
+            lastProgressState: node.lastProgressState,
+        })),
+    }
+};

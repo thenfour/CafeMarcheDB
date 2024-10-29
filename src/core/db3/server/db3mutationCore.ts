@@ -8,12 +8,13 @@ import { nanoid } from 'nanoid';
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
 import { DateTimeRange } from "shared/time";
-import { ChangeAction, ChangeContext, CreateChangeContext, RegisterChange, getIntersectingFields } from "shared/utils";
+import { ChangeAction, ChangeContext, CreateChangeContext, ObjectDiff, RegisterChange, getIntersectingFields, sanitize } from "shared/utils";
 import sharp from "sharp";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, getFileCustomData } from "../shared/apiTypes";
+import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
+import { TWorkflowChange } from "shared/workflowEngine";
 
 var path = require('path');
 var fs = require('fs');
@@ -1197,3 +1198,81 @@ export const UpdateEventCustomFieldValues = async (changeContext: ChangeContext,
     });
 };
 
+
+export type SyncEntitiesResult = {
+    changes: TWorkflowChange[],
+    tempToRealIdMappings: { objectType: WorkflowObjectType, tempId: number, realId: number }[],
+};
+
+// takes 2 lists of entities, compares them, and performs the requisite CRUD to bring the database in sync with the desired state.
+// assumes negative IDs are provisional.
+//
+// one limitation of this function is that it cannot deal with self-referencing entities. for example,
+// if a node entity contains a "nextNodeId", and both have provisional ids, then we would need extra logic to order in a DAG, ensure creating in a safe order, and updating from provisional to real IDs each creation.
+export async function SyncNonSelfReferencingEntities<T extends { id: number }>(
+    entityName: string,
+    existingEntities: T[],
+    desiredEntities: T[],
+    allowedKeysForCreate: (keyof T)[],
+    dbOperations: {
+        deleteMany: (ids: number[]) => Promise<any>,
+        update: (id: number, data: Partial<T>) => Promise<any>,
+        create: (data: Omit<T, "id">) => Promise<T>,
+    },
+    ignoreDiffFieldsForUpdates?: (keyof Omit<T, "id">)[], // only for updates, fields of T which should not ever be updated or contribute to equality check. "id" is automatically included
+): Promise<SyncEntitiesResult> {
+    // Compute change plan
+    const changePlan = ComputeChangePlan(existingEntities, desiredEntities, (a, b) => a.id === b.id);
+    const result: SyncEntitiesResult = {
+        changes: [],
+        tempToRealIdMappings: [],
+    };
+
+    // Delete
+    const idsToDelete = changePlan.delete.map(x => x.id);
+    if (idsToDelete.length > 0) {
+        await dbOperations.deleteMany(idsToDelete);
+        result.changes.push(...changePlan.delete.map(x => ({
+            action: ChangeAction.delete,
+            pkid: x.id,
+            objectType: entityName as WorkflowObjectType,
+            oldValues: x,
+        })));
+    }
+
+    // Update
+    const ignoredFields: (keyof T)[] = ["id"];
+    if (ignoreDiffFieldsForUpdates) ignoredFields.push(...ignoreDiffFieldsForUpdates);
+    for (const { a, b } of changePlan.potentiallyUpdate) {
+        const diffResult = ObjectDiff(a, b, { ignore: ignoredFields });
+        if (!diffResult.areDifferent) continue;
+        await dbOperations.update(a.id, diffResult.differences.rhs);
+        result.changes.push({
+            action: ChangeAction.update,
+            pkid: a.id,
+            objectType: entityName as WorkflowObjectType,
+            oldValues: diffResult.differences.lhs,
+            newValues: diffResult.differences.rhs,
+        });
+    }
+
+    // Create
+    for (const entity of changePlan.create) {
+        //const { id, ...data } = entity;
+        const insertionObj = sanitize(entity, allowedKeysForCreate);
+        const newEntity = await dbOperations.create(insertionObj);
+        result.changes.push({
+            action: ChangeAction.insert,
+            pkid: newEntity.id,
+            objectType: entityName as WorkflowObjectType,
+            newValues: insertionObj,
+        });
+        result.tempToRealIdMappings.push({
+            objectType: entityName as WorkflowObjectType,
+            tempId: entity.id,
+            realId: newEntity.id,
+        });
+    }
+
+    return result;
+}

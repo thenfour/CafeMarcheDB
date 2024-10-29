@@ -4,23 +4,25 @@ import db from "db";
 import { CreatePublicData } from "types";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { TAnyModel } from "../shared/apiTypes";
+import { TAnyModel, TransactionalPrismaClient } from "../shared/apiTypes";
 import { sleep } from "shared/utils";
 
 
 
-export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: db3.UserWithRolesPayload | null) => {
+export const DB3QueryCore2 = async (input: db3.QueryInput, currentUser: db3.UserWithRolesPayload | null, __transactionalDb?: TransactionalPrismaClient) => {
     try {
         const startTimestamp = Date.now();
         const table = db3.GetTableById(input.tableID);
         console.assert(!!table);
         const contextDesc = `query:${table.tableName}`;
 
+        const transactionalDb: TransactionalPrismaClient = (__transactionalDb as any) || (db as any); // have to do this way to avoid excessive stack depth by vs code
+
         // a jolting experience is a new user signs up, and immediately gets a full-page exception because of this next call.
         // the solution is not to lighten authorization handling here, but rather to build the client in such a way
         // that it doesn't query things it shouldn't.
         //CMDBAuthorizeOrThrow(contextDesc, table.viewPermission, ctx);
-        const dbTableClient = db[table.tableName]; // the prisma interface
+        const dbTableClient = (transactionalDb || db)[table.tableName]; // the prisma interface
 
         const orderBy = input.orderBy || table.naturalOrderBy;
 

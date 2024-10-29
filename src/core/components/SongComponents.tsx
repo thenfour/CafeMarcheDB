@@ -517,7 +517,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const songData = CalculateSongMetadata(song, selectedTab);
 
     React.useEffect(() => {
-        void router.replace(songData.songURI);
+        void router.replace(songData.songURI, undefined, { shallow: true }); // shallow prevents annoying re-scroll behavior
     }, [songData.songURI]);
 
     const partitions = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Partition));
@@ -526,60 +526,6 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} showVisibility={true}>
 
         <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
-
-        {/* <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-        >
-            <Tab label="Song Info" {...TabA11yProps('song', gSongDetailTabSlugIndices.info)} />
-            <Tab label={`Parts (${partitions.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.parts)} />
-            <Tab label={`Recordings (${recordings.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.recordings)} />
-            <Tab label={`All files (${song.taggedFiles.length})`} {...TabA11yProps('song', gSongDetailTabSlugIndices.files)} />
-            <Tab label={`History`} {...TabA11yProps('song', gSongDetailTabSlugIndices.history)} />
-        </Tabs>
-
-        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.info}>
-            <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
-        </CustomTabPanel>
-
-        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.parts}>
-            <FilesTabContent
-                fileTags={partitions}
-                readonly={props.readonly}
-                refetch={refetch}
-                uploadTags={{
-                    taggedSongId: song.id,
-                    fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Partition)?.id,
-                }}
-            />
-        </CustomTabPanel>
-
-        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.recordings}>
-            <FilesTabContent
-                fileTags={recordings}
-                readonly={props.readonly}
-                refetch={refetch}
-                uploadTags={{
-                    taggedSongId: song.id,
-                    fileTagId: dashboardContext.fileTag.find(t => t.significance === db3.FileTagSignificance.Recording)?.id,
-                }}
-            />
-        </CustomTabPanel>
-
-        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.files}>
-            <FilesTabContent fileTags={enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
-                taggedSongId: song.id,
-            }} />
-        </CustomTabPanel>
-
-
-        <CustomTabPanel tabPanelID='song' value={selectedTab} index={gSongDetailTabSlugIndices.history}>
-            <SongHistory song={song} />
-        </CustomTabPanel>
- */}
-
 
         <CMTabPanel
             selectedTabId={selectedTab}

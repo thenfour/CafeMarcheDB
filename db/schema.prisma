@@ -1170,6 +1170,8 @@ model WorkflowDefNodeDependency {
 model WorkflowInstance {
   id Int @id @default(autoincrement())
 
+  revision Int @default(1)
+
   lastEvaluatedWorkflowDefId Int?
   lastEvaluatedWorkflowDef   WorkflowDef? @relation(fields: [lastEvaluatedWorkflowDefId], references: [id], onDelete: Cascade)
 

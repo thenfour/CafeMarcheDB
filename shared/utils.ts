@@ -1,7 +1,7 @@
 import { Ctx } from "@blitzjs/next";
 import { randomUUID } from "crypto";
-import db from "db"
-import { Size } from "src/core/db3/shared/apiTypes";
+import db, { Prisma, PrismaClient } from "db"
+import { Size, TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 import { crc32 } from "@foxglove/crc";
 
 export const Date_MIN_VALUE = new Date(-8640000000000000);
@@ -68,6 +68,7 @@ export type RegisterChangeArgs = {
     newValues?: any,
     ctx: Ctx,
     options?: RegisterChangeOptions,
+    db?: TransactionalPrismaClient,
 }
 
 export type CalculateChangesResult = {
@@ -107,6 +108,8 @@ export async function RegisterChange(args: RegisterChangeArgs) {
     let oldValues: any = null;
     let newValues: any = null;
 
+    const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
+
     if (CoalesceBool(args.options?.dontCalculateChanges, false)) {
         // used by custom change objects like song lists
         oldValues = args.oldValues || {};
@@ -135,7 +138,7 @@ export async function RegisterChange(args: RegisterChangeArgs) {
 
     try {
 
-        await db.change.create({
+        await transactionalDb.change.create({
             data: {
                 operationId: args.changeContext.operationId,
                 sessionHandle: args.ctx?.session?.$handle || null,
@@ -1084,3 +1087,27 @@ export function ObjectDiff<T extends Object>(
 export function StringToEnumValue<T extends { [key: string]: string }>(enumObj: T, value: string): T[keyof T] | undefined {
     return (Object.values(enumObj) as string[]).includes(value) ? (value as T[keyof T]) : undefined;
 }
+
+// returns an object which has stripped all keys except for those specified.
+// because (keyof T) is not possible at runtime, caller needs to pass it in.
+export function sanitize<T>(inp: any, keys: (keyof T)[]): T {
+    const result = {} as T;
+    for (const key of keys) {
+        if (key in inp) {
+            result[key] = inp[key];
+        }
+    }
+    return result;
+}
+// export function sanitize<T extends Object, K extends readonly (keyof T)[]>(
+//     input: T,
+//     keys: K
+// ): Pick<T, K[number]> {
+//     const result = {} as Pick<T, K[number]>;
+//     for (const key of keys) {
+//         if (key in input) {
+//             result[key] = input[key];
+//         }
+//     }
+//     return result;
+// }

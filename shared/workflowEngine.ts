@@ -55,6 +55,13 @@ export type TWorkflowMutationResult = {
 };
 
 
+export type TWorkflowInstanceMutationResult = {
+    changes: TWorkflowChange[];
+    serializableInstance: TUpdateEventWorkflowInstanceArgs | undefined; // same as input, but with ids populated
+};
+
+
+
 
 ///////////// DEFS /////////////////////////////////////////////////////////////////
 export interface WorkflowNodeDependency {
@@ -210,8 +217,8 @@ export interface WorkflowNodeInstance {
 
     // for logging field value changes, this is necessary.
     // and it's necessary to keep field name as well because if you change the workflow def to a different field name. sure you could just clear it out, but it can be common to change the field name and change it back like "nah i didn't mean to" and it would be dumb to clear out statuses invoking a bunch of log messages that are just noise.
-    lastFieldName: unknown;
-    lastFieldValueAsString: string | unknown;
+    lastFieldName: string | undefined;
+    lastFieldValueAsString: string | undefined;
     lastAssignees: WorkflowNodeInstanceAssignee[];
     activeStateFirstTriggeredAt: Date | undefined;
     lastProgressState: WorkflowNodeProgressState;
@@ -223,6 +230,7 @@ export type WorkflowTidiedNodeInstance = WorkflowNodeInstance & {
 
 export interface WorkflowInstance {
     id: number;
+    revision: number; // important to reduce re-evaluations due to react renders
     nodeInstances: WorkflowNodeInstance[];
     lastEvaluatedWorkflowDefId: number | undefined;
     log: WorkflowLogItem[];
@@ -325,6 +333,7 @@ export const TidyWorkflowInstance = (flowInstance: WorkflowInstance, def: Workfl
     return {
         //flowDef,
         id: flowInstance.id,
+        revision: flowInstance.revision,
         nodeInstances: tidiedNodes,
         lastEvaluatedWorkflowDefId: flowInstance.lastEvaluatedWorkflowDefId,
         log: flowInstance.log,
@@ -638,6 +647,7 @@ const EvaluateTree = (
 //
 // actually i'm skeptical to update too much state in an evaluation function ... feels out of character.
 export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: WorkflowInstance, api: WorkflowInstanceMutator, reason: string): EvaluatedWorkflow => {
+    console.log(`{ BEGIN evaluate workflow`);
     const evaluatedNodes: WorkflowEvaluatedNode[] = [];
 
     const tidiedInstance = TidyWorkflowInstance(workflowInstance, flowDef);
@@ -814,6 +824,9 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
         evaluatedNodes,
         flowInstance: tidiedInstance,
     };
+
+    console.log(`} END evaluate workflow`);
+
     return ret;
 };
 
@@ -826,6 +839,7 @@ export const WorkflowMakeConnectionId = (srcNodeDefId: number, targetNodeDefId: 
 export const WorkflowInitializeInstance = (workflowDef: WorkflowDef): WorkflowInstance => {
     return {
         id: getUniqueNegativeID(),
+        revision: 1,
         nodeInstances: [],
         lastEvaluatedWorkflowDefId: undefined,
         log: [],
@@ -1212,6 +1226,7 @@ export function MutationArgsToWorkflowInstance(x: TUpdateEventWorkflowInstanceAr
     return {
         id: i.id,
         log: [],
+        revision: i.revision,
         lastEvaluatedWorkflowDefId: i.lastEvaluatedWorkflowDefId,
         nodeInstances: i.nodeInstances.map(node => ({
             id: node.id,
@@ -1235,6 +1250,7 @@ export function WorkflowInstanceToMutationArgs(x: WorkflowInstance, eventId: num
         instance: {
             id: x.id,
             //log: [],
+            revision: x.revision,
             lastEvaluatedWorkflowDefId: x.lastEvaluatedWorkflowDefId,
             nodeInstances: x.nodeInstances.map(node => ({
                 id: node.id,
@@ -1252,3 +1268,4 @@ export function WorkflowInstanceToMutationArgs(x: WorkflowInstance, eventId: num
         }
     };
 };
+

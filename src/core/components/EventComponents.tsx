@@ -1217,7 +1217,7 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                             api.close();
                             if (obj.slug !== eventData.event.slug) {
                                 const newUrl = API.events.getURIForEvent(obj.id, obj.slug);
-                                void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                                //void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
                             }
                         }).catch(err => {
                             console.log(err);
@@ -1423,8 +1423,9 @@ export const EventDetailFull = ({ event, tableClient, ...props }: EventDetailFul
 
     const { eventData, userMap } = CalculateEventMetadata_Verbose({ event, tabSlug, dashboardContext });
 
+
     React.useEffect(() => {
-        void router.replace(eventData.eventURI);
+        void router.replace(eventData.eventURI, undefined, { shallow: true });// unfortunately this causes annoyances with scrolling.
     }, [eventData.eventURI]);
 
     //const refetch = tableClient.refetch;

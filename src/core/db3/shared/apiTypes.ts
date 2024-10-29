@@ -1,7 +1,9 @@
 
-import { Prisma } from "db";
-import { SortDirection } from "shared/rootroot";
+import { DefaultArgs } from "@prisma/client/runtime/library";
+import { Prisma, PrismaClient } from "db";
 import { z } from "zod";
+
+import { SortDirection } from "shared/rootroot";
 
 // types used by mutations and other blitzy-things which can't export more than 1 thing, or just as a "no dependency" base
 
@@ -12,7 +14,7 @@ export const gNullValue = "__null__498b0049-f883-4c77-9613-c8712e49e183";
 export const gIDValue = "__id__498b0049-f883-4c77-9613-c8712e49e183";
 export const gNameValue = "__name__498b0049-f883-4c77-9613-c8712e49e183";
 
-
+export type TransactionalPrismaClient = Omit<PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 
 export interface CMDBTableFilterItem { // from MUI GridFilterItem
     id?: number | string;
@@ -975,6 +977,12 @@ export enum WorkflowObjectType {
     dependency = "dependency",
     assignee = "assignee",
     group = "group",
+
+    workflowInstance = "workflowInstance",
+    workflowNodeInstance = "workflowNodeInstance",
+    workflowNodeInstanceAssignee = "workflowNodeInstanceAssignee",
+    workflowNodeInstanceLastAssignee = "workflowNodeInstanceLastAssignee",
+    logItem = "logItem",
 };
 
 
@@ -1093,8 +1101,8 @@ export interface TUpdateEventWorkflowNodeInstance {
     manuallyCompleted: boolean;
     manualCompletionComment: string | undefined;
 
-    lastFieldName: unknown;
-    lastFieldValueAsString: string | unknown;
+    lastFieldName: string | undefined;
+    lastFieldValueAsString: string | undefined;
     lastAssignees: TUpdateEventWorkflowInstanceArgsAssignee[];
     activeStateFirstTriggeredAt: Date | undefined;
     lastProgressState: WorkflowNodeProgressState;
@@ -1102,6 +1110,7 @@ export interface TUpdateEventWorkflowNodeInstance {
 
 export interface TUpdateEventWorkflowInstance {
     id: number;
+    revision: number;
     nodeInstances: TUpdateEventWorkflowNodeInstance[];
     lastEvaluatedWorkflowDefId: number | undefined;
 };
