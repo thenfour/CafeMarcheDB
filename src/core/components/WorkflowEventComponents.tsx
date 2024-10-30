@@ -8,6 +8,7 @@ import { Permission } from "shared/permissions";
 import { arraysContainSameValues, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace, sleep } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
+import { Prisma } from "db";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { AdminContainer, AdminInspectObject, InspectObject } from "./CMCoreComponents";
 import { NameValuePair } from "./CMCoreComponents2";
@@ -20,9 +21,10 @@ import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWork
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowLogView, WorkflowRenderer } from "./WorkflowUserComponents";
-import { useMutation } from "@blitzjs/rpc";
+import { useMutation, useQuery } from "@blitzjs/rpc";
 import insertOrUpdateEventWorkflowInstance from "../db3/mutations/insertOrUpdateEventWorkflowInstance";
 import { useSnackbar } from "./SnackbarContext";
+import getWorkflowDefAndInstanceForEvent from "../db3/queries/getWorkflowDefAndInstanceForEvent";
 
 interface MockEvent {
     name: string;
@@ -758,132 +760,172 @@ export const EventWorkflowTabWithWFContext = () => {
     </div>;
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+type WorkflowObjects = {
+    workflowDef: WorkflowDef | undefined,
+    workflowInstance: WorkflowInstance | undefined,
+    refetch: () => void,
+};
+
+function useWorkflowDefAndInstanceForEvent(eventId: number, refreshTrigger: number) {
+    const [qr, qrx] = useQuery(getWorkflowDefAndInstanceForEvent, { eventId, refreshTrigger });
+    React.useEffect(() => void qrx.refetch(), [refreshTrigger]);
+    const ret: WorkflowObjects = {
+        workflowDef: qr.workflowDef ? mapWorkflowDef(qr.workflowDef) : undefined,
+        workflowInstance: qr.workflowInstance ? MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(qr.workflowInstance, eventId)) : undefined,
+        refetch: qrx.refetch,
+    };
+
+    // ensure an instance object exists
+    const initialInstance = React.useMemo(() => {
+        if (!ret.workflowDef) return undefined;
+        WorkflowInitializeInstance(ret.workflowDef!);
+    }, [ret.workflowDef?.id]);
+
+    ret.workflowInstance = ret.workflowInstance || initialInstance;
+
+    return ret;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+type EvaluatedWorkflowObjects = {
+    evaluatedWorkflow: EvaluatedWorkflow | undefined,
+    instanceMutator: WorkflowInstanceMutator | undefined;
+    renderer: WorkflowRenderer | undefined;
+};
+
+function useEvaluatedWorkflow(workflowObjects: WorkflowObjects, model: MockEventModel) {
+    const dashboardContext = useDashboardContext();
+    const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
+    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
+
+    const evaluate = (): EvaluatedWorkflow | undefined => {
+        if (!workflowObjects.workflowDef || !workflowObjects.workflowInstance || !instanceMutator) {
+            return undefined;
+        }
+        const x = EvaluateWorkflow(workflowObjects.workflowDef, workflowObjects.workflowInstance, instanceMutator, `...`);
+        return x;
+    };
+
+    const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow | undefined>(() => {
+        if (!workflowObjects.workflowDef || !workflowObjects.workflowInstance) return undefined;
+        return evaluate();
+    });
+
+    const [instanceMutator, renderer] = (!workflowObjects.workflowDef || !workflowObjects.workflowInstance) ?
+        [undefined, undefined]
+        : MakeInstanceMutatorAndRenderer({
+            dashboardContext,
+            workflowDef: workflowObjects.workflowDef,
+            evaluationTrigger,
+            setEvaluationTrigger,
+            setEvaluationReason,
+            model,
+            setModel: () => console.log(`todo: model saving`),
+            instance: workflowObjects.workflowInstance,
+            setInstance: () => console.log(`todo: instance mutation`),
+        });
+
+    // re-evaluate when requested
+    React.useEffect(() => {
+        setEvaluatedInstance(evaluate());
+    }, [evaluationTrigger, workflowObjects.workflowDef]);
+
+    const ret: EvaluatedWorkflowObjects = {
+        evaluatedWorkflow: evaluatedInstance,
+        instanceMutator,
+        renderer,
+    };
+
+    return ret;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////
 export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const [insertOrUpdateEventWorkflowInstanceMutation] = useMutation(insertOrUpdateEventWorkflowInstance);
+    const workflowObjects = useWorkflowDefAndInstanceForEvent(props.event.id, props.refreshTrigger);
 
-    const workflowDefId = props.event.workflowDefId;
-    if (!workflowDefId) {
-        return null;
-    }
+    // evaluate and DONT MUTATE instance
+
+    // commit instance changes
+
+
+    // 
+
+
+    // const workflowDefId = props.event.workflowDefId;
+    // if (!workflowDefId) {
+    //     return null;
+    // }
 
     // WORKFLOW DEF LOAD ---------------------------------------------------------
-    const workflowDefsRaw = DB3Client.useDb3Query<db3.WorkflowDef_Verbose>(db3.xWorkflowDef_Verbose, {
-        pks: [workflowDefId],
-        items: [],
-    });
-    if (workflowDefsRaw.items.length !== 1) throw new Error(`workflowdef query did not give 1 result with id ${workflowDefId}`);
+    // const workflowDefsRaw = DB3Client.useDb3Query<db3.WorkflowDef_Verbose>(db3.xWorkflowDef_Verbose, {
+    //     pks: [workflowDefId],
+    //     items: [],
+    // });
+    // if (workflowDefsRaw.items.length !== 1) throw new Error(`workflowdef query did not give 1 result with id ${workflowDefId}`);
 
-    React.useEffect(() => {
-        workflowDefsRaw.refetch();
-    }, [props.refreshTrigger]);
+    // React.useEffect(() => {
+    //     workflowDefsRaw.refetch();
+    // }, [props.refreshTrigger]);
 
-    const workflowDef = mapWorkflowDef(workflowDefsRaw.items[0]!);
+    //const workflowDef = mapWorkflowDef(workflowDefsRaw.items[0]!);
 
     // WORKFLOW INSTANCE LOAD ---------------------------------------------------------
+    // const workflowInstanceQueryResult = DB3Client.useDb3Query<db3.WorkflowInstance_Verbose>(db3.xWorkflowInstance_Verbose, {
+    //     pks: [props.event.workflowInstanceId || -1],
+    //     items: [],
+    // });
 
-    // revision is needed for reducing redundant evaluations, mutations, and therefore db mutations.
-    // when we make changes to a workflow instance, this gets incremented. It's "this is the workflow revision that i have evaluated".
-    // now when subsequent evaluations happen on a workflow instance less than this revision, it's ignored. we know the mutation has already been sent.
+    // React.useEffect(() => {
+    //     workflowInstanceQueryResult.refetch();
+    // }, [props.refreshTrigger]);
 
-    // NEW WORKFLOW INSTANCE:
-    //                                stateRevision        dbRevision          highestKnownEvaluatedRevision
-    // - init                               1                 null                 -1
-    // - BEGIN INITIAL EVAL                 1                 null                 -1
-    // - BEFORE END INITIAL EVAL         => 2                 null               => 2
-    // - BEGIN SAVE                         2                 null                  2
-    // - attempt eval again                 2                 null                  2  <-- redundant, because the current state revision is <= highestKnownEvaluatedRevision.
-    // - END SAVE                           2                  2                    2  <-- dont need to re-evaluate either for the same reason.
-    //                                                                                     ALSO NOTE: db revision has changed; convert this to state.
+    // const instanceFromDb = (workflowInstanceQueryResult.items.length === 1) ? workflowInstanceQueryResult.items[0] : undefined;
 
-    // EXISTING WORKFLOW INSTANCE (where db load happens before eval)
-    //                                stateRevision        dbRevision          highestKnownEvaluatedRevision
-    // - init                               1                 2                    -1
-    // - LOADED FROM DB                  => 2                 2                 =>  2 <-- db revision is higher than state revision; use it. do re-evaluate but we expect 0 changes.
-    // - BEGIN INITIAL EVAL                 2                 2                     2
-    // - BEFORE END INITIAL EVAL            2                 2                     2 <-- no instance mutations means no committing, no incremented revision.
-    // - instance mutation occurs        => 3                 2                 =>  3
-    // - BEGIN SAVE                         3                 2                     3
-    // - attempt eval again                 3                 2                     3  <-- redundant, because the current state revision is <= highestKnownEvaluatedRevision.
-    // - END SAVE                           3                 3                     3  <-- dont need to re-evaluate either for the same reason.
+    // // We operate directly with the stateInstance, which is less overhead for changing.
+    // const [stateInstance, setStateInstance] = React.useState<WorkflowInstance>(
+    //     instanceFromDb ? MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(instanceFromDb, props.event.id)) : WorkflowInitializeInstance(workflowDef)
+    // );
 
-    const [highestKnownEvaluatedRevision, setHighestKnownEvaluatedRevision] = React.useState<number>(-1);
-
-    const workflowInstanceQueryResult = DB3Client.useDb3Query<db3.WorkflowInstance_Verbose>(db3.xWorkflowInstance_Verbose, {
-        pks: [props.event.workflowInstanceId || -1],
-        items: [],
-    });
-
-    React.useEffect(() => {
-        workflowInstanceQueryResult.refetch();
-    }, [props.refreshTrigger]);
-
-    const instanceFromDb = (workflowInstanceQueryResult.items.length === 1) ? workflowInstanceQueryResult.items[0] : undefined;
-
-    // We operate directly with the stateInstance, which is less overhead for changing.
-    const [stateInstance, setStateInstance] = React.useState<WorkflowInstance>(
-        instanceFromDb ? MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(instanceFromDb, props.event.id)) : WorkflowInitializeInstance(workflowDef)
-    );
-
-    // when the db revision is greater than the state revision, take the db version.
-    React.useEffect(() => {
-        if (!instanceFromDb) return;
-        if (instanceFromDb?.revision > stateInstance.revision) {
-            setStateInstance(MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(instanceFromDb, props.event.id)));
-        }
-    }, [instanceFromDb?.revision]);
+    // // when the db revision is greater than the state revision, take the db version.
+    // React.useEffect(() => {
+    //     if (!instanceFromDb) return;
+    //     if (instanceFromDb?.revision > stateInstance.revision) {
+    //         setStateInstance(MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(instanceFromDb, props.event.id)));
+    //     }
+    // }, [instanceFromDb?.revision]);
 
     // load workflow instance
-    //const instance: WorkflowInstance = WorkflowInitializeInstance(workflowDef); // TODO: load from db
-    const commitInstanceMutations = async (v) => {
-        if (!dashboardContext.isAuthorized(Permission.edit_workflow_instances)) return;
-
-        console.log(`SET INSTANCE`);
-
-        //     CanCurrentUserViewInstances: () => dashboardContext.isAuthorized(Permission.view_workflow_instances),
-        // CanCurrentUserEditInstances: () => dashboardContext.isAuthorized(Permission.edit_workflow_instances),
-        // CanCurrentUserViewDefs: () => dashboardContext.isAuthorized(Permission.view_workflow_defs),
-        // CanCurrentUserEditDefs: () => dashboardContext.isAuthorized(Permission.edit_workflow_defs),
-        //console.log(`todo: serialize instance`);
-        //console.log(v);
-        const mutationArgs = WorkflowInstanceToMutationArgs(stateInstance, props.event.id);
-        try {
-            // const result = await insertOrUpdateEventWorkflowInstanceMutation(mutationArgs);
-            // const newInstance = MutationArgsToWorkflowInstance(result.serializableInstance!);
-            // //console.log(`make sure we reftch the insatnce`);
-            // workflowInstanceRaw.refetch();
-            // props.refetch();
-            //snackbar.showMessage({ severity: "success", children: "Workflow instance has been updated" });
-        } catch (e) {
-            console.log(e);
-            snackbar.showMessage({ severity: "error", children: "Error; see console" });
-        }
-    };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    // const commitInstanceMutations = async (v) => {
+    //     if (!dashboardContext.isAuthorized(Permission.edit_workflow_instances)) return;
+    //     console.log(`SET INSTANCE`);
+    //     // const mutationArgs = WorkflowInstanceToMutationArgs(stateInstance, props.event.id);
+    //     // try {
+    //     //     const result = await insertOrUpdateEventWorkflowInstanceMutation(mutationArgs);
+    //     //     const newInstance = MutationArgsToWorkflowInstance(result.serializableInstance!);
+    //     //     // //console.log(`make sure we reftch the insatnce`);
+    //     //     workflowInstanceQueryResult.refetch();
+    //     //     props.refetch();
+    //     //     snackbar.showMessage({ severity: "success", children: "Workflow instance has been updated" });
+    //     // } catch (e) {
+    //     //     console.log(e);
+    //     //     snackbar.showMessage({ severity: "error", children: "Error; see console" });
+    //     // }
+    // };
 
     // establish model
     //const [model, setModel] = React.useState<MockEventModel>(() => GetModelForEvent(dashboardContext, props.event));
     const model = GetModelForEvent(dashboardContext, props.event);
-    const setModel = (model: MockEventModel) => {
-        if (!dashboardContext.isAuthorized(Permission.manage_events)) return;
-        // serialize it.
-        console.log(`todo: serialize model`);
-    };
+    // const setModel = (model: MockEventModel) => {
+    //     if (!dashboardContext.isAuthorized(Permission.manage_events)) return;
+    //     // serialize it.
+    //     console.log(`todo: serialize model`);
+    // };
+
+    const evaluatedObjects = useEvaluatedWorkflow(workflowObjects, model);
 
     // // when the event changes, we need to re-establish the model
     // React.useEffect(() => {
@@ -891,39 +933,46 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     // }, [props.refreshTrigger]);
 
     // evaluate
-    const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
-    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
+    // const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
+    // const [evaluationReason, setEvaluationReason] = React.useState<string>("");
 
-    const [instanceMutator, renderer] = MakeInstanceMutatorAndRenderer({
-        dashboardContext,
-        workflowDef,
-        evaluationTrigger,
-        setEvaluationTrigger,
-        setEvaluationReason,
-        model,
-        setModel,
-        instance: stateInstance,
-        setInstance: commitInstanceMutations,
-    });
+    // const [instanceMutator, renderer] = MakeInstanceMutatorAndRenderer({
+    //     dashboardContext,
+    //     workflowDef: workflowObjects.workflowDef,
+    //     evaluationTrigger,
+    //     setEvaluationTrigger,
+    //     setEvaluationReason,
+    //     model,
+    //     setModel,
+    //     instance: workflowObjects.workflowInstance,
+    //     setInstance: commitInstanceMutations,
+    // });
 
-    // re-evaluate when requested
-    React.useEffect(() => {
-        const x = EvaluateWorkflow(workflowDef, stateInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
-        setEvaluatedInstance(x);
-    }, [evaluationTrigger, workflowDefId, workflowDefsRaw.remainingQueryStatus.dataUpdatedAt]);
+    // // re-evaluate when requested
+    // React.useEffect(() => {
+    //     const x = EvaluateWorkflow(workflowObjects.workflowDef, stateInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
+    //     setEvaluatedInstance(x);
+    // }, [evaluationTrigger, workflowDefId, workflowDefsRaw.remainingQueryStatus.dataUpdatedAt]);
 
-    const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
-        return EvaluateWorkflow(workflowDef, stateInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
-    });
+    // const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
+    //     return EvaluateWorkflow(workflowObjects.workflowDef, stateInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
+    // });
+
+
+    if (!workflowObjects.workflowDef) return null;
+    if (!workflowObjects.workflowInstance) return null;
+    if (!evaluatedObjects.evaluatedWorkflow) return null;
+    if (!evaluatedObjects.instanceMutator) return null;
+    if (!evaluatedObjects.renderer) return null;
 
     return <EvaluatedWorkflowProvider
-        flowDef={workflowDef}
-        flowInstance={stateInstance}
-        evaluatedFlow={evaluatedInstance}
-        instanceMutator={instanceMutator}
-        renderer={renderer}
+        flowDef={workflowObjects.workflowDef}
+        flowInstance={workflowObjects.workflowInstance}
+        evaluatedFlow={evaluatedObjects.evaluatedWorkflow}
+        instanceMutator={evaluatedObjects.instanceMutator}
+        renderer={evaluatedObjects.renderer}
         onWorkflowDefMutationChainComplete={(newFlowDef: WorkflowDef, reEvalRequested: boolean, reason: string) => {
-            console.log(`todo: commit instance`);
+            throw new Error(`def mutations not possible here`);
         }}
     >
         <AdminInspectObject src={model} label="Model" />

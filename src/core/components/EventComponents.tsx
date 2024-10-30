@@ -1338,6 +1338,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
     return <CMTabPanel
         handleTabChange={handleTabChange}
         selectedTabId={selectedTab}
+        defaultTabId={gEventDetailTabSlugIndices.info}
     >
         <CMTab
             summaryIcon={gIconMap.Info()}
@@ -1351,7 +1352,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
                 <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
             </div>
         </CMTab>
-
+        {/* 
         <CMTab
             enabled={!!event.workflowDefId}
             summaryIcon={<Checklist />}
@@ -1359,7 +1360,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             thisTabId={gEventDetailTabSlugIndices.workflow}
         >
             <EventWorkflowTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} refreshTrigger={props.workflowRefreshTrigger} />
-        </CMTab>
+        </CMTab> */}
 
         <CMTab
             thisTabId={gEventDetailTabSlugIndices.setlists}

@@ -432,6 +432,7 @@ const CMTabHeader = (props: CMTabProps & {
 
 interface CMTabPanelProps {
     selectedTabId: string | number | undefined | null;
+    defaultTabId?: string | number | undefined | null;
     handleTabChange: (e: React.SyntheticEvent, newTabId: string | number | undefined | null) => void;
     className?: string | undefined;
     style?: React.CSSProperties | undefined;
@@ -442,13 +443,19 @@ export const CMTabPanel = (props: CMTabPanelProps) => {
     const handleTabHeaderClick = (ch: React.ReactElement<React.PropsWithChildren<CMTabProps>>, e: React.MouseEvent<HTMLLIElement>) => {
         props.handleTabChange(e, ch.props.thisTabId);
     };
+
+    // if the selected tab is not available
+
     const filteredChildren = props.children.filter(tab => CoalesceBool(tab.props.enabled, true));
-    const selectedChild = filteredChildren.find(tab => tab.props.thisTabId === props.selectedTabId);
+    let selectedChild = filteredChildren.find(tab => tab.props.thisTabId === props.selectedTabId);
+    if (!selectedChild) {
+        selectedChild = filteredChildren.find(tab => tab.props.thisTabId === props.defaultTabId);
+    }
     return <div className={`CMTabPanel ${props.className}`} style={props.style}>
         <div className="CMTabHeader">
             <ul className="CMTabList">
                 {
-                    filteredChildren.map(tab => <CMTabHeader key={tab.props.thisTabId} {...tab.props} onClick={e => handleTabHeaderClick(tab, e)} selected={props.selectedTabId === tab.props.thisTabId} />)
+                    filteredChildren.map(tab => <CMTabHeader key={tab.props.thisTabId} {...tab.props} onClick={e => handleTabHeaderClick(tab, e)} selected={selectedChild?.props.thisTabId === tab.props.thisTabId} />)
                 }
             </ul>
         </div>
