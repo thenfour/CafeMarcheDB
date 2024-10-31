@@ -55,7 +55,7 @@ SELECT
 FROM 
     information_schema.tables 
 WHERE
-    table_schema = 'cmdb'
+    table_schema = '${process.env.DATABASE_SCHEMA}'
 order by
 	data_length desc
             `;
