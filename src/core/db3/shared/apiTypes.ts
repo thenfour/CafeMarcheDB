@@ -1038,7 +1038,8 @@ export type GetServerHealthResult = {
     },
     uploads: {
         files: ServerHealthFileResult[],
-    }
+    },
+    env: Record<string, string | undefined>,
 };
 
 

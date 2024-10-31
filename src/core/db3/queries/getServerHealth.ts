@@ -53,7 +53,7 @@ SELECT
     INDEX_LENGTH,
     DATA_LENGTH
 FROM 
-    information_schema.tables 
+    information_schema.tables
 WHERE
     table_schema = '${process.env.DATABASE_SCHEMA}'
 order by
@@ -87,6 +87,7 @@ order by
                 uploads: {
                     files: uploadsInfo,
                 },
+                env: process.env,
                 database: {
                     tableStats: tableStats.map(r => ({
                         table_name: r.TABLE_NAME,

@@ -168,6 +168,7 @@ const DatabaseStats = ({ serverHealthResults }: { serverHealthResults: GetServer
 enum TabId {
     Database = "Database",
     Uploads = "Uploads",
+    Env = "Env",
 };
 
 
@@ -175,8 +176,13 @@ const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const [tabId, setTabId] = React.useState<TabId>(TabId.Database);
     const [serverHealthResults, serverHealthQueryResult] = useQuery(getServerHealth, {});
+    console.log(serverHealthResults.env);
     return <div>
-        <KeyValueDisplay className="serverStartInfo" data={{ ...dashboardContext.serverStartupState, uptime: formatMillisecondsToDHMS(dashboardContext.serverStartupState.uptimeMS), uptimeMS: undefined }} />
+        <KeyValueDisplay className="serverStartInfo" data={{
+            ...dashboardContext.serverStartupState,
+            uptime: formatMillisecondsToDHMS(dashboardContext.serverStartupState.uptimeMS),
+            uptimeMS: undefined,
+        }} />
         <CMTabPanel
             handleTabChange={(e, n) => setTabId(n as any)}
             selectedTabId={tabId}
@@ -192,6 +198,12 @@ const MainContent = () => {
                 summaryTitle={"Uploads directory"}
             >
                 <UploadsStats serverHealthResults={serverHealthResults} />
+            </CMTab>
+            <CMTab
+                thisTabId={TabId.Env}
+                summaryTitle={"Env"}
+            >
+                <KeyValueDisplay data={serverHealthResults.env} />
             </CMTab>
         </CMTabPanel>
 
