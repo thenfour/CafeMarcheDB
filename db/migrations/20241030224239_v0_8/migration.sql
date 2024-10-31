@@ -39,7 +39,7 @@ ALTER TABLE `Event` ADD COLUMN `frontpageDate_fr` VARCHAR(300) NULL,
     MODIFY `uid` VARCHAR(191) NOT NULL;
 
 -- AlterTable
-ALTER TABLE `EventSonglist` ADD COLUMN `isActuallyPlayed` BOOLEAN NOT NULL DEFAULT true,
+ALTER TABLE `EventSongList` ADD COLUMN `isActuallyPlayed` BOOLEAN NOT NULL DEFAULT true,
     ADD COLUMN `isOrdered` BOOLEAN NOT NULL DEFAULT true;
 
 -- AlterTable
