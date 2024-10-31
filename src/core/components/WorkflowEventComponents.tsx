@@ -845,119 +845,24 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     const dashboardContext = useDashboardContext();
     const snackbar = useSnackbar();
     const [insertOrUpdateEventWorkflowInstanceMutation] = useMutation(insertOrUpdateEventWorkflowInstance);
+
     const workflowObjects = useWorkflowDefAndInstanceForEvent(props.event.id, props.refreshTrigger);
-
-    // evaluate and DONT MUTATE instance
-
-    // commit instance changes
-
-
-    // 
-
-
-    // const workflowDefId = props.event.workflowDefId;
-    // if (!workflowDefId) {
-    //     return null;
-    // }
-
-    // WORKFLOW DEF LOAD ---------------------------------------------------------
-    // const workflowDefsRaw = DB3Client.useDb3Query<db3.WorkflowDef_Verbose>(db3.xWorkflowDef_Verbose, {
-    //     pks: [workflowDefId],
-    //     items: [],
-    // });
-    // if (workflowDefsRaw.items.length !== 1) throw new Error(`workflowdef query did not give 1 result with id ${workflowDefId}`);
-
-    // React.useEffect(() => {
-    //     workflowDefsRaw.refetch();
-    // }, [props.refreshTrigger]);
-
-    //const workflowDef = mapWorkflowDef(workflowDefsRaw.items[0]!);
-
-    // WORKFLOW INSTANCE LOAD ---------------------------------------------------------
-    // const workflowInstanceQueryResult = DB3Client.useDb3Query<db3.WorkflowInstance_Verbose>(db3.xWorkflowInstance_Verbose, {
-    //     pks: [props.event.workflowInstanceId || -1],
-    //     items: [],
-    // });
-
-    // React.useEffect(() => {
-    //     workflowInstanceQueryResult.refetch();
-    // }, [props.refreshTrigger]);
-
-    // const instanceFromDb = (workflowInstanceQueryResult.items.length === 1) ? workflowInstanceQueryResult.items[0] : undefined;
-
-    // // We operate directly with the stateInstance, which is less overhead for changing.
-    // const [stateInstance, setStateInstance] = React.useState<WorkflowInstance>(
-    //     instanceFromDb ? MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(instanceFromDb, props.event.id)) : WorkflowInitializeInstance(workflowDef)
-    // );
-
-    // // when the db revision is greater than the state revision, take the db version.
-    // React.useEffect(() => {
-    //     if (!instanceFromDb) return;
-    //     if (instanceFromDb?.revision > stateInstance.revision) {
-    //         setStateInstance(MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(instanceFromDb, props.event.id)));
-    //     }
-    // }, [instanceFromDb?.revision]);
-
-    // load workflow instance
-    // const commitInstanceMutations = async (v) => {
-    //     if (!dashboardContext.isAuthorized(Permission.edit_workflow_instances)) return;
-    //     console.log(`SET INSTANCE`);
-    //     // const mutationArgs = WorkflowInstanceToMutationArgs(stateInstance, props.event.id);
-    //     // try {
-    //     //     const result = await insertOrUpdateEventWorkflowInstanceMutation(mutationArgs);
-    //     //     const newInstance = MutationArgsToWorkflowInstance(result.serializableInstance!);
-    //     //     // //console.log(`make sure we reftch the insatnce`);
-    //     //     workflowInstanceQueryResult.refetch();
-    //     //     props.refetch();
-    //     //     snackbar.showMessage({ severity: "success", children: "Workflow instance has been updated" });
-    //     // } catch (e) {
-    //     //     console.log(e);
-    //     //     snackbar.showMessage({ severity: "error", children: "Error; see console" });
-    //     // }
-    // };
-
-    // establish model
-    //const [model, setModel] = React.useState<MockEventModel>(() => GetModelForEvent(dashboardContext, props.event));
     const model = GetModelForEvent(dashboardContext, props.event);
-    // const setModel = (model: MockEventModel) => {
-    //     if (!dashboardContext.isAuthorized(Permission.manage_events)) return;
-    //     // serialize it.
-    //     console.log(`todo: serialize model`);
-    // };
-
     const evaluatedObjects = useEvaluatedWorkflow(workflowObjects, model);
 
-    // // when the event changes, we need to re-establish the model
-    // React.useEffect(() => {
-    //     setModel(GetModelForEvent(dashboardContext, props.event));
-    // }, [props.refreshTrigger]);
-
-    // evaluate
-    // const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
-    // const [evaluationReason, setEvaluationReason] = React.useState<string>("");
-
-    // const [instanceMutator, renderer] = MakeInstanceMutatorAndRenderer({
-    //     dashboardContext,
-    //     workflowDef: workflowObjects.workflowDef,
-    //     evaluationTrigger,
-    //     setEvaluationTrigger,
-    //     setEvaluationReason,
-    //     model,
-    //     setModel,
-    //     instance: workflowObjects.workflowInstance,
-    //     setInstance: commitInstanceMutations,
-    // });
-
-    // // re-evaluate when requested
-    // React.useEffect(() => {
-    //     const x = EvaluateWorkflow(workflowObjects.workflowDef, stateInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
-    //     setEvaluatedInstance(x);
-    // }, [evaluationTrigger, workflowDefId, workflowDefsRaw.remainingQueryStatus.dataUpdatedAt]);
-
-    // const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow>(() => {
-    //     return EvaluateWorkflow(workflowObjects.workflowDef, stateInstance, instanceMutator, "initial setup in React.useState<EvaluatedWorkflow>");
-    // });
-
+    // in order to actually save instances to db, it's not so easy.
+    // the problem is that each node eval will trigger mutations so you get this huge cascade of mutations right at the start, and it's not clear when the end of those mutations is.
+    // ! well i guess it needs to be after evaluate(), rather than onInstanceMutationChainComplete
+    // -> then for mutations that happen outside of evaluate(), we need to handle those differently and save immediately?...
+    //   -> or eval after those types of changes and do the same logic?
+    // and i found it somehow difficult to only keep the database's instance version because the mutator wants to save everything, and the client gets out of sync.
+    // maybe that's necessary though, so the idea is that after mutations are applied, we have to wait for the db to return the correct intsance.
+    // in the meantime though we still work with the old data, and react renders will constantly trigger re-evaluations.
+    //
+    // i did not find a good solution for this. evaluate() MUST apply mutations due to things like default due dates and logging.
+    // so a revision system was considered and may be the way to go, and also would prevent clobbering synchronous changes from others.
+    // so afetr evaluate(), we increment revision and compare it with the last known db revision. if you're working with old data, ignore.
+    // upon serializing, we can also compare the "from revision" and "to revision" and detect when someone else clobbered your changes.
 
     if (!workflowObjects.workflowDef) return null;
     if (!workflowObjects.workflowInstance) return null;
