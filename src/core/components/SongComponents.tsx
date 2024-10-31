@@ -592,8 +592,8 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
             </CMTab>
             <CMTab
                 thisTabId={SongDetailTabSlug.history}
-                summaryTitle={"History"}
-                summaryIcon={gIconMap.GraphicEq()}
+                summaryTitle={"Stats"}
+                summaryIcon={gIconMap.Equalizer()}
             >
                 <SongHistory song={song} />
             </CMTab>

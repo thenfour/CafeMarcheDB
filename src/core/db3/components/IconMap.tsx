@@ -63,7 +63,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React from "react";
 import { TIconOptions } from "shared/utils";
-import { AccountTree, Alarm, Notifications, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
+import { AccountTree, Alarm, Equalizer, Notifications, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -118,6 +118,7 @@ export const gIconMap /*: IIconMap*/ = {
     EditNote: () => <EditNoteIcon />,
     Error: () => <ErrorIcon />,
     ErrorOutline: () => <ErrorOutlineIcon />,
+    Equalizer: () => <Equalizer />,
     ExpandMore: () => <ExpandMoreIcon />,
     Favorite: () => <FavoriteIcon />,
     GraphicEq: () => <GraphicEqIcon />,

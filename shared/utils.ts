@@ -471,6 +471,7 @@ export const gIconOptions = {
     Error: "Error",
     ErrorOutline: "ErrorOutline",
     ExpandMore: "ExpandMore",
+    Equalizer: "Equalizer",
     Favorite: "Favorite",
     GraphicEq: "GraphicEq",
     Group: "Group",
