@@ -25,6 +25,7 @@ import { useMutation, useQuery } from "@blitzjs/rpc";
 import insertOrUpdateEventWorkflowInstance from "../db3/mutations/insertOrUpdateEventWorkflowInstance";
 import { useSnackbar } from "./SnackbarContext";
 import getWorkflowDefAndInstanceForEvent from "../db3/queries/getWorkflowDefAndInstanceForEvent";
+import { DB3ForeignSingleBindingValueComponent, EventTypeBindingOperand2Component, MakeDB3ForeignSingleBinding } from "./WorkflowDB3ForeignSingleBinding";
 
 interface MockEvent {
     name: string;
@@ -64,7 +65,7 @@ export function getMockEventBinding(args: {
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
     setModel?: (newModel: MockEvent) => void,
-    //setOperand2?: (newOperand: unknown) => void,
+    setOperand2?: (newOperand: unknown) => void,
 }): WFFieldBinding<unknown> {
 
     // do custom fields first
@@ -91,6 +92,7 @@ export function getMockEventBinding(args: {
                     nodeDef: args.nodeDef,
                     fieldNameForDisplay: cf.name,
                     value: args.model[cf.name] || "",
+                    setOperand2: args.setOperand2,
                     setValue: (val) => {
                         const newModel = { ...args.model };
                         newModel[cf.name] = val;
@@ -166,6 +168,39 @@ export function getMockEventBinding(args: {
                     args.setModel && args.setModel(newModel);
                 },
             });
+        case "typeId":
+            return MakeDB3ForeignSingleBinding({
+                tidiedNodeInstance: args.tidiedNodeInstance,
+                flowDef: args.flowDef,
+                nodeDef: args.nodeDef,
+                fieldNameForDisplay: field,
+                setOperand2: args.setOperand2,
+                value: args.model[field],
+                setValue: (val) => {
+                    const newModel = { ...args.model };
+                    newModel[field] = val || null;
+                    args.setModel && args.setModel(newModel);
+                },
+                FieldValueComponent: (props) => <DB3ForeignSingleBindingValueComponent {...props} />,
+                FieldOperand2Component: (props) => <EventTypeBindingOperand2Component {...props} />,
+            });
+        case "expectedAttendanceUserTagId":
+        case "statusId":
+        case "tagIds":
+        // return MakeDB3TagsBinding({
+        //     tidiedNodeInstance: args.tidiedNodeInstance,
+        //     flowDef: args.flowDef,
+        //     nodeDef: args.nodeDef,
+        //     fieldNameForDisplay: field,
+        //     //setOperand2: args.setOperand2,
+        //     value: args.model[field],
+        //     setValue: (val) => {
+        //         const newModel = { ...args.model };
+        //         newModel[field] = CoalesceBool(val, false);
+        //         args.setModel && args.setModel(newModel);
+        //     },
+
+        // });
         case null: // new fields or changing schemas or whatever need to be tolerant.
         case undefined:
             return MakeAlwaysBinding({
@@ -769,6 +804,7 @@ type WorkflowObjects = {
 
 function useWorkflowDefAndInstanceForEvent(eventId: number, refreshTrigger: number) {
     const [qr, qrx] = useQuery(getWorkflowDefAndInstanceForEvent, { eventId, refreshTrigger });
+
     React.useEffect(() => void qrx.refetch(), [refreshTrigger]);
     const ret: WorkflowObjects = {
         workflowDef: qr.workflowDef ? mapWorkflowDef(qr.workflowDef) : undefined,
@@ -776,13 +812,16 @@ function useWorkflowDefAndInstanceForEvent(eventId: number, refreshTrigger: numb
         refetch: qrx.refetch,
     };
 
-    // ensure an instance object exists
-    const initialInstance = React.useMemo(() => {
-        if (!ret.workflowDef) return undefined;
-        WorkflowInitializeInstance(ret.workflowDef!);
-    }, [ret.workflowDef?.id]);
+    if (ret.workflowDef && !ret.workflowInstance) {
+        ret.workflowInstance = WorkflowInitializeInstance(ret.workflowDef!);
+    }
 
-    ret.workflowInstance = ret.workflowInstance || initialInstance;
+    // // ensure an instance object exists
+    // const initialInstance = React.useMemo(() => {
+    //     if (!ret.workflowDef) return undefined;
+    //     WorkflowInitializeInstance(ret.workflowDef!);
+    // }, [ret.workflowDef?.id]);
+    //ret.workflowInstance = ret.workflowInstance || initialInstance;
 
     return ret;
 }
@@ -799,19 +838,6 @@ function useEvaluatedWorkflow(workflowObjects: WorkflowObjects, model: MockEvent
     const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
     const [evaluationReason, setEvaluationReason] = React.useState<string>("");
 
-    const evaluate = (): EvaluatedWorkflow | undefined => {
-        if (!workflowObjects.workflowDef || !workflowObjects.workflowInstance || !instanceMutator) {
-            return undefined;
-        }
-        const x = EvaluateWorkflow(workflowObjects.workflowDef, workflowObjects.workflowInstance, instanceMutator, `...`);
-        return x;
-    };
-
-    const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow | undefined>(() => {
-        if (!workflowObjects.workflowDef || !workflowObjects.workflowInstance) return undefined;
-        return evaluate();
-    });
-
     const [instanceMutator, renderer] = (!workflowObjects.workflowDef || !workflowObjects.workflowInstance) ?
         [undefined, undefined]
         : MakeInstanceMutatorAndRenderer({
@@ -826,10 +852,23 @@ function useEvaluatedWorkflow(workflowObjects: WorkflowObjects, model: MockEvent
             setInstance: () => console.log(`todo: instance mutation`),
         });
 
+    const evaluate = (): EvaluatedWorkflow | undefined => {
+        if (!workflowObjects.workflowDef || !workflowObjects.workflowInstance || !instanceMutator) {
+            return undefined;
+        }
+        const x = EvaluateWorkflow(workflowObjects.workflowDef, workflowObjects.workflowInstance, instanceMutator, `...`);
+        return x;
+    };
+
+    const [evaluatedInstance, setEvaluatedInstance] = React.useState<EvaluatedWorkflow | undefined>(() => {
+        if (!workflowObjects.workflowDef || !workflowObjects.workflowInstance) return undefined;
+        return evaluate();
+    });
+
     // re-evaluate when requested
     React.useEffect(() => {
         setEvaluatedInstance(evaluate());
-    }, [evaluationTrigger, workflowObjects.workflowDef]);
+    }, [evaluationTrigger, workflowObjects.workflowDef?.id]);
 
     const ret: EvaluatedWorkflowObjects = {
         evaluatedWorkflow: evaluatedInstance,
@@ -843,9 +882,10 @@ function useEvaluatedWorkflow(workflowObjects: WorkflowObjects, model: MockEvent
 /////////////////////////////////////////////////////////////////////////////////////////////
 export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     const dashboardContext = useDashboardContext();
-    const snackbar = useSnackbar();
-    const [insertOrUpdateEventWorkflowInstanceMutation] = useMutation(insertOrUpdateEventWorkflowInstance);
+    //const snackbar = useSnackbar();
+    //const [insertOrUpdateEventWorkflowInstanceMutation] = useMutation(insertOrUpdateEventWorkflowInstance);
 
+    //console.log(`here`);
     const workflowObjects = useWorkflowDefAndInstanceForEvent(props.event.id, props.refreshTrigger);
     const model = GetModelForEvent(dashboardContext, props.event);
     const evaluatedObjects = useEvaluatedWorkflow(workflowObjects, model);

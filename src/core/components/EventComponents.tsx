@@ -1179,7 +1179,6 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                         size='small'
                         model={eventData.event.type}
                         getTooltip={_ => eventData.event.type?.description || null}
-                        //getTooltip={(_, c) => !!c ? `Type: ${c}` : `Type`}
                         variation={{ ...StandardVariationSpec.Strong, selected: highlightTypeIds.includes(eventData.event.typeId!) }}
                     />
                 }

@@ -1162,7 +1162,7 @@ export const WorkflowLogView = () => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-interface FieldComponentProps<Tunderlying> {
+export interface FieldComponentProps<Tunderlying> {
     binding: WFFieldBinding<Tunderlying>,
     readonly?: boolean;
 };
@@ -1194,7 +1194,7 @@ export const BoolField = (props: FieldComponentProps<boolean | null>) => {
 }
 
 export const BoolOperand = (props: FieldComponentProps<boolean | null>) => {
-    return <div>bool operand not really necessary</div>;
+    return <div>--.-</div>;
 };
 
 export const MakeBoolBinding = (args: {
