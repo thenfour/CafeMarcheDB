@@ -39,15 +39,15 @@ ALTER TABLE `Event` ADD COLUMN `frontpageDate_fr` VARCHAR(300) NULL,
     MODIFY `uid` VARCHAR(191) NOT NULL;
 
 -- AlterTable
-ALTER TABLE `Eventsonglist` ADD COLUMN `isActuallyPlayed` BOOLEAN NOT NULL DEFAULT true,
+ALTER TABLE `EventSonglist` ADD COLUMN `isActuallyPlayed` BOOLEAN NOT NULL DEFAULT true,
     ADD COLUMN `isOrdered` BOOLEAN NOT NULL DEFAULT true;
 
 -- AlterTable
-ALTER TABLE `Eventuserresponse` ADD COLUMN `revision` INTEGER NOT NULL DEFAULT 1,
+ALTER TABLE `EventUserResponse` ADD COLUMN `revision` INTEGER NOT NULL DEFAULT 1,
     ADD COLUMN `uid` VARCHAR(191) NULL;
 
 -- AlterTable
-ALTER TABLE `Frontpagegalleryitem` ADD COLUMN `caption_fr` MEDIUMTEXT NULL,
+ALTER TABLE `FrontpageGalleryItem` ADD COLUMN `caption_fr` MEDIUMTEXT NULL,
     ADD COLUMN `caption_nl` MEDIUMTEXT NULL;
 
 -- AlterTable
