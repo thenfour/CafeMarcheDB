@@ -89,6 +89,7 @@ order by
                 },
                 env: process.env,
                 database: {
+                    tableStatsQuery: dbTableStatsQuery,
                     tableStats: tableStats.map(r => ({
                         table_name: r.TABLE_NAME,
                         table_rows: new Number(r.TABLE_ROWS).valueOf(),

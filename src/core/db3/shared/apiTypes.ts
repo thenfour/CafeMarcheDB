@@ -1035,6 +1035,7 @@ export type ServerHealthFileResult = FileStatResult & {
 export type GetServerHealthResult = {
     database: {
         tableStats: TableStatsQueryRow[],
+        tableStatsQuery: string,
     },
     uploads: {
         files: ServerHealthFileResult[],

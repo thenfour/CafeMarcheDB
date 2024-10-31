@@ -192,6 +192,7 @@ const MainContent = () => {
                 summaryTitle={"Database"}
             >
                 <DatabaseStats serverHealthResults={serverHealthResults} />
+                <pre>{serverHealthResults.database.tableStatsQuery}</pre>
             </CMTab>
             <CMTab
                 thisTabId={TabId.Uploads}
