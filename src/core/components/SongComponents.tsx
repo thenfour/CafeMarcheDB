@@ -1,7 +1,7 @@
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import HomeIcon from '@mui/icons-material/Home';
-import { Breadcrumbs, Button, Link, Tab, Tabs, Tooltip } from "@mui/material";
+import { Breadcrumbs, Button, Link, Tooltip } from "@mui/material";
 import { useRouter } from "next/router";
 import React from "react";
 import { StandardVariationSpec } from 'shared/color';
@@ -11,23 +11,24 @@ import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
+import { gIconMap } from '../db3/components/IconMap';
 import { DB3EditRowButton, DB3EditRowButtonAPI } from '../db3/components/db3NewObjectDialog';
 import { TAnyModel } from '../db3/shared/apiTypes';
-import { CustomTabPanel, InspectObject, TabA11yProps } from './CMCoreComponents';
-import { CMTab, CMTabPanel, NameValuePair } from './CMCoreComponents2';
+import { CMChipContainer, CMStandardDBChip } from './CMChip';
+import { InspectObject } from './CMCoreComponents';
+import { NameValuePair } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
 import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsDialog';
+import { Markdown3Editor } from './MarkdownControl3';
 import { MetronomeButton } from './Metronome';
 import { Markdown } from './RichTextEditor';
 import { SearchableNameColumnClient } from './SearchableNameColumnClient';
 import { SettingMarkdown } from './SettingMarkdown';
 import { CalculateSongMetadata, EnrichedVerboseSong, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from './SongFileComponents';
-import { VisibilityValue } from './VisibilityControl';
 import { SongHistory } from './SongHistory';
-import { Markdown3Editor } from './MarkdownControl3';
-import { gIconMap } from '../db3/components/IconMap';
-import { CMChipContainer, CMStandardDBChip } from './CMChip';
+import { VisibilityValue } from './VisibilityControl';
+import { CMTab, CMTabPanel } from './TabPanel';
 
 
 export const SongClientColumns = {
@@ -523,21 +524,24 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
     const partitions = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Partition));
     const recordings = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Recording));
 
+    const handleTabChange = (newId: string) => {
+        const slug = StringToEnumValue(SongDetailTabSlug, (newId || "").toString()) || SongDetailTabSlug.info;
+        setSelectedTab(slug);
+    }
+
     return <SongDetailContainer readonly={props.readonly} songData={songData} tableClient={tableClient} showVisibility={true}>
 
         <SongMetadataView readonly={props.readonly} refetch={refetch} songData={songData} showCredits={true} />
 
         <CMTabPanel
             selectedTabId={selectedTab}
-            handleTabChange={(e, newId) => {
-                const slug = StringToEnumValue(SongDetailTabSlug, (newId || "").toString()) || SongDetailTabSlug.info;
-                setSelectedTab(slug);
-            }}
+            handleTabChange={(e, newId) => handleTabChange(newId as string)}
         >
             <CMTab
                 thisTabId={SongDetailTabSlug.info}
                 summaryTitle={"Info"}
                 summaryIcon={gIconMap.Info()}
+                canBeDefault={!IsNullOrWhitespace(song.description)}
             >
                 <SongDescriptionControl readonly={props.readonly} refetch={refetch} song={song} />
             </CMTab>
@@ -546,6 +550,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryTitle={"Parts"}
                 summaryIcon={gIconMap.LibraryMusic()}
                 summarySubtitle={partitions.length}
+                canBeDefault={!!partitions.length}
             >
                 <FilesTabContent
                     fileTags={partitions}
@@ -562,6 +567,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryTitle={"Recordings"}
                 summaryIcon={gIconMap.PlayCircleOutline()}
                 summarySubtitle={recordings.length}
+                canBeDefault={!!recordings.length}
             >
                 <FilesTabContent
                     fileTags={recordings}
@@ -578,6 +584,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summaryTitle={"All files"}
                 summaryIcon={gIconMap.AttachFile()}
                 summarySubtitle={song.taggedFiles.length}
+                canBeDefault={!!song.taggedFiles.length}
             >
                 <FilesTabContent fileTags={enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
                     taggedSongId: song.id,

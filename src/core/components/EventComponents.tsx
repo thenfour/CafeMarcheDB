@@ -23,7 +23,7 @@ import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
 import { GetICalRelativeURIForUserAndEvent, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, AttendanceChip, CMStatusIndicator, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog } from './CMCoreComponents';
-import { CMDialogContentText, CMTab, CMTabPanel, EventDateField, NameValuePair } from './CMCoreComponents2';
+import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
 import { GetStyleVariablesForColor } from './Color';
@@ -40,8 +40,9 @@ import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './Settin
 import { FilesTabContent } from './SongFileComponents';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { Checklist } from '@mui/icons-material';
+import { EventWorkflowTabContent } from './WorkflowEventComponents';
+import { CMTab, CMTabPanel } from './TabPanel';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -1315,7 +1316,7 @@ type EventDetailFullTabAreaProps = EventDetailFullProps & {
 export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event, tableClient, userMap, ...props }: EventDetailFullTabAreaProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
-    const handleTabChange = (e: React.SyntheticEvent, newValue: string) => {
+    const handleTabChange = (_: undefined | React.SyntheticEvent, newValue: string) => {
         props.setSelectedTab(newValue);
     };
 
@@ -1338,12 +1339,13 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
     return <CMTabPanel
         handleTabChange={handleTabChange}
         selectedTabId={selectedTab}
-        defaultTabId={gEventDetailTabSlugIndices.info}
+    //setNewDefault={(t) => handleTabChange(undefined, t as string)}
     >
         <CMTab
             summaryIcon={gIconMap.Info()}
             summaryTitle="Info"
             thisTabId={gEventDetailTabSlugIndices.info}
+            canBeDefault={!IsNullOrWhitespace(event.description)}
         >
             <div className='descriptionLine'>
                 <Suspense>
@@ -1352,7 +1354,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
                 <EventDescriptionControl event={event} refetch={refetch} readonly={props.readonly} />
             </div>
         </CMTab>
-        {/* 
+
         <CMTab
             enabled={!!event.workflowDefId}
             summaryIcon={<Checklist />}
@@ -1360,10 +1362,11 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             thisTabId={gEventDetailTabSlugIndices.workflow}
         >
             <EventWorkflowTabContent event={event} tableClient={tableClient} readonly={props.readonly} refetch={refetch} refreshTrigger={props.workflowRefreshTrigger} />
-        </CMTab> */}
+        </CMTab>
 
         <CMTab
             thisTabId={gEventDetailTabSlugIndices.setlists}
+            canBeDefault={!!event.songLists.length}
             summaryIcon={gIconMap.LibraryMusic()}
             summaryTitle="Setlists"
             summarySubtitle={<>({event.songLists.length})</>}
@@ -1401,6 +1404,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
 
         <CMTab
             thisTabId={gEventDetailTabSlugIndices.files}
+            canBeDefault={!!event.fileTags.length}
             summaryIcon={gIconMap.AttachFile()}
             summaryTitle="Files"
             summarySubtitle={<>({event.fileTags.length})</>}
