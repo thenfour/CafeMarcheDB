@@ -89,8 +89,8 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number, 
         const existingRevision = existingEvent.revision;
         if (existingRevision === undefined) return;
 
-        const calInp = GetEventCalendarInput(existingEvent);
-        const newHash = calInp?.inputHash || "-";
+        const calInp = GetEventCalendarInput(existingEvent)!;
+        const newHash = calInp.inputHash || "-";
         const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 
         await db.event.update({

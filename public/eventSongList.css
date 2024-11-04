@@ -141,6 +141,7 @@
     font-weight: bold;
     color: var(--song-hash-color);
     letter-spacing: -.3px;
+    overflow: hidden;
 }
 
 .songListSongTable .td.songName .divider {

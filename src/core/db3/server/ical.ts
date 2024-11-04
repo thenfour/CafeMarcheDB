@@ -146,8 +146,9 @@ export const addEventToCalendar = (
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[]
 ): ICalEvent[] => {
-    const inputs = GetEventCalendarInput(event);
+    const inputs = GetEventCalendarInput(event)!;
     return inputs
+        .segments
         .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing))
         .filter(x => !!x);
 };
