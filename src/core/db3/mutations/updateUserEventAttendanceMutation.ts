@@ -2,7 +2,7 @@ import { resolver } from "@blitzjs/rpc";
 import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { AreAnyDefined } from "shared/utils";
+import { AreAnyDefined, CreateChangeContext, ObjectDiff } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TupdateUserEventAttendanceMutationArgs } from "../shared/apiTypes";
@@ -19,6 +19,8 @@ export default resolver.pipe(
             currentUser,
         };
 
+        let didSegmentChangesOccur = false;
+
         if (args.segmentResponses) {
             const entries = Object.entries(args.segmentResponses);
             for (let i = 0; i < entries.length; ++i) {
@@ -33,9 +35,10 @@ export default resolver.pipe(
                 });
 
                 if (existing) {
-                    await mutationCore.updateImpl(db3.xEventSegmentUserResponse, existing.id, {
+                    const ur = await mutationCore.updateImpl(db3.xEventSegmentUserResponse, existing.id, {
                         attendanceId: segmentArgs.attendanceId,
                     }, ctx, clientIntention);
+                    didSegmentChangesOccur = didSegmentChangesOccur || ur.didChangesOccur;
                     continue;
                 }
 
@@ -61,14 +64,22 @@ export default resolver.pipe(
             });
 
             if (existing) {
-                const fields: Prisma.EventUserResponseUncheckedUpdateInput = {
+                const desired: Prisma.EventUserResponseUncheckedUpdateInput = {
                     userComment: args.comment,
                     instrumentId: args.instrumentId,
                     isInvited: args.isInvited,
                     revision: existing.revision + 1,
                 };
 
-                await mutationCore.updateImpl(db3.xEventUserResponse, existing.id, fields, ctx, clientIntention);
+                // avoid incrementing revision when nothing changed.
+                let isEventUserResponseDifferent = false;
+                if (args.comment !== undefined && args.comment !== existing.userComment) isEventUserResponseDifferent = true;
+                if (args.instrumentId !== undefined && args.instrumentId !== existing.instrumentId) isEventUserResponseDifferent = true;
+                if (args.isInvited !== undefined && args.isInvited !== existing.isInvited) isEventUserResponseDifferent = true;
+
+                if (isEventUserResponseDifferent || didSegmentChangesOccur) {
+                    await mutationCore.updateImpl(db3.xEventUserResponse, existing.id, desired, ctx, clientIntention);
+                }
                 return args;
             }
 

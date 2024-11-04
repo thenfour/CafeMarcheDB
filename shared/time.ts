@@ -23,10 +23,14 @@ export enum Timing {
     Future = 'Future',
 }
 
+
 export function formatMillisecondsToDHMS(milliseconds: number): string {
     if (milliseconds === 0) {
         return "--";
     }
+
+    const isNegative = milliseconds < 0;
+    milliseconds = Math.abs(milliseconds);
 
     const days = Math.floor(milliseconds / 86400000); // 86400000 milliseconds in a day
     milliseconds %= 86400000;
@@ -37,7 +41,7 @@ export function formatMillisecondsToDHMS(milliseconds: number): string {
     const minutes = Math.floor(milliseconds / 60000); // 60000 milliseconds in a minute
     milliseconds %= 60000;
 
-    const seconds = milliseconds / 1000;
+    const seconds = Math.floor(milliseconds / 1000);
 
     const parts: string[] = [];
     if (days > 0) {
@@ -50,7 +54,7 @@ export function formatMillisecondsToDHMS(milliseconds: number): string {
         parts.push(`${minutes}m`);
     }
     if (seconds > 0) {
-        parts.push(`${seconds.toFixed(0)}s`);
+        parts.push(`${seconds}s`);
     }
 
     return parts.join(' ');

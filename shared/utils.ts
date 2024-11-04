@@ -457,6 +457,7 @@ export const gIconOptions = {
     Campaign: "Campaign",
     Cancel: "Cancel",
     Celebration: "Celebration",
+    Check: "Check",
     CheckCircleOutline: "CheckCircleOutline",
     Close: "Close",
     Comment: "Comment",

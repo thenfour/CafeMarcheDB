@@ -5,6 +5,7 @@ import { useAuthenticatedSession } from '@blitzjs/auth';
 import {
     Add as AddIcon,
     Close as CancelIcon,
+    //DateRange,
     DeleteOutlined as DeleteIcon,
     Edit as EditIcon,
     Save as SaveIcon
@@ -24,18 +25,47 @@ import {
 } from '@mui/x-data-grid';
 import React from "react";
 import { useBeforeunload } from 'react-beforeunload';
+import { formatMillisecondsToDHMS } from 'shared/time';
 import { CoerceToBoolean } from 'shared/utils';
 import { InspectObject } from 'src/core/components/CMCoreComponents';
+import { KeyValueTable } from 'src/core/components/CMCoreComponents2';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as DB3Client from "../DB3Client";
 import { API } from '../clientAPI';
 import * as db3 from '../db3';
-import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 import { CMDBTableFilterItem, TAnyModel } from '../shared/apiTypes';
 import { gIconMap } from './IconMap';
+import { DB3NewObjectDialog } from "./db3NewObjectDialog";
 
 const gPageSizeOptions = [10, 25, 50, 100, 250, 500] as number[];
 const gPageSizeDefault = 50 as number;
+
+
+
+const AgeRelativeTo = ({ value1, value2 }: { value1: Date; value2: Date }) => {
+    const delta = value1.valueOf() - value2.valueOf();
+    const isPast = delta < 0;
+    const formattedDuration = formatMillisecondsToDHMS(delta);
+
+    if (formattedDuration === "--") {
+        return <>now</>;
+    }
+
+    return <>{isPast ? `${formattedDuration} ago` : `in ${formattedDuration}`}</>;
+};
+
+const AgeRelativeToNow = ({ value }: { value: Date }) => {
+    const [now, setNow] = React.useState<Date>(new Date());
+
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            setNow(new Date());
+        }, 1000); // Update every second
+        return () => clearInterval(interval);
+    }, []);
+
+    return <AgeRelativeTo value1={value} value2={now} />;
+};
 
 
 interface ClipboardControlsProps {
@@ -109,6 +139,7 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
         pageSize: gPageSizeDefault,
     });
 
+    const [isWaitingForRefresh, setIsWaitingForRefresh] = React.useState<boolean>(false);
     const [sortModel, setSortModel] = React.useState<GridSortModel>(props.defaultSortModel || []);
     const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
 
@@ -385,6 +416,10 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             },
         });
 
+    React.useEffect(() => {
+        setIsWaitingForRefresh(false);
+    }, [tableClient.remainingQueryStatus.dataUpdatedAt]);
+
     return (<>
         {renderConfirmDialog()}
         {renderDeleteConfirmation()}
@@ -396,7 +431,17 @@ export function DB3EditGrid({ tableSpec, ...props }: DB3EditGridProps) {
             clientIntention={clientIntention}
         />}
 
-        <ClipboardControls client={tableClient} />
+        <KeyValueTable data={{
+            QueryTimeMS: tableClient.queryResultInfo.executionTimeMillis,
+            Updated: <AgeRelativeToNow value={new Date(tableClient.remainingQueryStatus.dataUpdatedAt)} />,// <>   {formatMillisecondsToDHMS((new Date()).valueOf() - dataUpdateAt.valueOf())} ago</>,
+            Extras: <>
+                <Button disabled={isWaitingForRefresh} onClick={() => {
+                    setIsWaitingForRefresh(true);
+                    tableClient.refetch();
+                }}>Refresh</Button>
+                <ClipboardControls client={tableClient} />
+            </>,
+        }} />
 
         {isShowingAdminControls && <InspectObject label={"items"} src={tableClient.items} />}
 

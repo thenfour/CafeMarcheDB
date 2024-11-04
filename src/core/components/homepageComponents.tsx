@@ -401,7 +401,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
 
                     <text x="2050" y="74" className='subtitle1SVG subtitleSVG portrait' textAnchor='end'>
                         {LangSelectString(props.lang, "NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL",
-                            "NO-NONSENSE ALLE STIJL ORKEST UIT BRUXL",
+                            "NO-NONSENSE ALL STYLE ORKEST UIT BRUXL",
                             "ORCHESTRE TOUS STYLES NO CHICHIS DE BRUXL"
                         )}
                     </text>
@@ -458,7 +458,7 @@ export const MainSVGComponent = (props: MainSVGComponentProps) => {
 
                     <text x="1065" y="65" className='subtitle1SVG subtitleSVG portrait' textAnchor='end'>
                         {LangSelectString(props.lang, "NO-NONSENSE ALL STYLE ORCHESTRA FROM BRUXL",
-                            "NO-NONSENSE ALLE STIJL ORKEST UIT BRUXL",
+                            "NO-NONSENSE ALL STYLE ORKEST UIT BRUXL",
                             "ORCHESTRE TOUS STYLES NO CHICHIS DE BRUXL"
                         )}
                     </text>

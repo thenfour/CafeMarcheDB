@@ -714,3 +714,11 @@ table tfoot td {
   font-weight: bold;
   font-size: 20px;
 }
+
+span.verified {
+  color: green;
+}
+
+span.songListVerified {
+  font-size: 18px;
+}

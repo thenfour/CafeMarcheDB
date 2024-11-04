@@ -39,7 +39,7 @@ export default resolver.pipe(
 
         const changeContext = CreateChangeContext(`updateEventSongList`);
 
-        const newObject = await mutationCore.updateImpl(db3.xEventSongList, args.id, fields, ctx, clientIntention);
+        const newObject = (await mutationCore.updateImpl(db3.xEventSongList, args.id, fields, ctx, clientIntention)).newModel;
 
         await mutationCore.UpdateEventSongListSongs({ changeContext, ctx, songListID: newObject.id, desiredSongs: args.songs, desiredDividers: args.dividers });
 

@@ -378,7 +378,11 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
 
 
 // UPDATE ////////////////////////////////////////////////
-export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<TAnyModel> => {
+interface UpdateImplResult<T> {
+    newModel: T,
+    didChangesOccur: boolean,
+};
+export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyModel, ctx: AuthenticatedCtx, clientIntention: db3.xTableClientUsageContext): Promise<UpdateImplResult<TAnyModel>> => {
     try {
         const contextDesc = `update:${table.tableName}`;
         const changeContext = CreateChangeContext(contextDesc);
@@ -401,6 +405,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         const oldRowInfo = table.getRowInfo(fullOldObj);
         const oldValues = getIntersectingFields(localFields, fullOldObj); // only care about values which will actually change.
         let obj = oldValues;
+        let didChangesOccur = false;
 
         if (Object.keys(localFields).length > 0) {
             const authResult = table.authorizeAndSanitize({
@@ -427,15 +432,19 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
                 //include,
             });
 
-            await RegisterChange({
-                action: ChangeAction.update,
-                changeContext,
-                table: table.tableName,
-                pkid,
-                oldValues,
-                newValues: obj,
-                ctx,
-            });
+            const d = ObjectDiff(oldValues, obj);
+            if (d.areDifferent) {
+                didChangesOccur = true;
+                await RegisterChange({
+                    action: ChangeAction.update,
+                    changeContext,
+                    table: table.tableName,
+                    pkid,
+                    oldValues,
+                    newValues: obj,
+                    ctx,
+                });
+            }
         }
 
         // now update any associations
@@ -443,6 +452,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         table.columns.forEach(async (column) => {
             if (column.fieldTableAssociation !== "associationRecord") { return; }
             if (!associationFields[column.member]) { return; }
+            didChangesOccur = true; // not certain if this is correct
             await UpdateAssociations({
                 changeContext,
                 ctx,
@@ -458,7 +468,10 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
             model: { id: pkid, ...obj },
         });
 
-        return obj;
+        return {
+            didChangesOccur,
+            newModel: obj,
+        };
     } catch (e) {
         console.error(e);
         throw (e);

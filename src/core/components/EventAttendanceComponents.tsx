@@ -115,16 +115,16 @@ EventAttendanceSummary (obsolete?)
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import React from "react";
+import React, { Suspense } from "react";
 import { Timing } from 'shared/time';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { AdminInspectObject, AttendanceChip, ReactiveInputDialog } from './CMCoreComponents';
-import { CMSmallButton, NameValuePair } from "./CMCoreComponents2";
+import { AnimatedCircularProgress, CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
-import { DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { CircularProgress, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { Prisma } from "db";
 import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
@@ -202,24 +202,27 @@ interface EventAttendanceInstrumentControlProps {
 
 const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentControlProps) => {
   const token = API.events.updateUserEventAttendance.useToken();
+  const [inProgress, setInProgress] = React.useState<boolean>(false);
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
   const dashboardContext = React.useContext(DashboardContext);
 
   const selectedInstrument = dashboardContext.instrument.getById(props.eventUserResponse.response.instrumentId);
 
   const handleChange = async (value: null | db3.InstrumentPayloadMinimum) => {
+    setInProgress(true);
     token.invoke({
       userId: props.eventUserResponse.response.userId,
       eventId: props.eventId,
       instrumentId: value === null ? null : value.id,
     }).then(() => {
       showSnackbar({ children: "Response updated", severity: 'success' });
-      //setExplicitEdit(false);
       props.onRefetch();
     }).catch(err => {
       console.log(err);
       showSnackbar({ children: "update error", severity: 'error' });
       props.onRefetch();
+    }).finally(() => {
+      setInProgress(false);
     });
   };
 
@@ -234,8 +237,10 @@ const EventAttendanceInstrumentControl = (props: EventAttendanceInstrumentContro
     //isReadOnly={props.readonly || false}
     name="Instrument"
     value={<CMChipContainer className='EventAttendanceResponseControlButtonGroup'>
-      {instrumentList.map(option =>
-        <EventAttendanceInstrumentButton key={option.id} selected={option.id === selectedInstrument?.id} value={option} onSelect={() => handleChange(option)} />)}
+      {inProgress ? <CircularProgress size={16} /> :
+        instrumentList.map(option =>
+          <EventAttendanceInstrumentButton key={option.id} selected={option.id === selectedInstrument?.id} value={option} onSelect={() => handleChange(option)} />)
+      }
     </CMChipContainer>
     } />
     ;
@@ -319,7 +324,6 @@ interface EventAttendanceCommentControlProps {
 
 const EventAttendanceCommentControl = (props: EventAttendanceCommentControlProps) => {
   const [editing, setEditing] = React.useState<boolean>(false);
-  //const token = API.events.updateUserEventAttendance.useToken();
   const val = props.userResponse.response.userComment || "";
 
   const clickToEdit = !props.readonly && !editing;
@@ -387,6 +391,7 @@ interface EventAttendanceAnswerControlProps {
 const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) => {
   const [explicitEdit, setExplicitEdit] = React.useState<boolean>(false);
   const editMode = explicitEdit || props.forceEditMode;
+  const [inProgress, setInProgress] = React.useState<boolean>(false);
 
   const token = API.events.updateUserEventAttendance.useToken();
   const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
@@ -405,6 +410,7 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
     segmentResponses[props.segmentUserResponse.segment.id] = {
       attendanceId: (value === null ? null : value.id),
     }
+    setInProgress(true);
     token.invoke({
       userId: props.eventUserResponse.user.id,
       eventId: props.eventUserResponse.event.id,
@@ -418,10 +424,13 @@ const EventAttendanceAnswerControl = (props: EventAttendanceAnswerControlProps) 
       console.log(err);
       showSnackbar({ children: "update error", severity: 'error' });
       props.onRefetch();
+    }).finally(() => {
+      setInProgress(false);
     });
   };
 
   const selectedAttendance = dashboardContext.eventAttendance.getById(selectedResponse.attendanceId);
+  if (inProgress) return <CircularProgress size={16} />;
 
   return <>
     {editMode ? (

@@ -473,16 +473,16 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
             <div className={`columnName-name ${editAuthorized && "draggable dragHandle"}`}>
                 {editAuthorized && <div className="dragHandleIcon ">{gCharMap.Hamburger()}</div>}
                 {props.value.name}
+                <Tooltip disableInteractive title={`This is the playlist that was actually played or will be played`}><span className='verified songListVerified'>{gIconMap.Check()}</span></Tooltip>
             </div>
             {!props.readonly && editAuthorized && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
 
         </div>
         <div className="content">
-
+            {/* 
             <CMChipContainer>
                 {props.value.isActuallyPlayed && <CMChip tooltip={"This setlist will be/was actually played; it's complete and in order"} size='small' color={gSwatchColors.green}>As performed</CMChip>}
-                {!props.value.isOrdered && <CMChip tooltip={"This setlist is not in order; just a list of songs"} size='small'>Order not important</CMChip>}
-            </CMChipContainer>
+            </CMChipContainer> */}
 
             <Markdown markdown={props.value.description} />
 
