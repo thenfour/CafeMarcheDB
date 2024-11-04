@@ -6,7 +6,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { assert } from 'blitz';
 import dayjs, { Dayjs } from "dayjs";
 import { CalcRelativeTiming, DateTimeRange, DateTimeRangeHitTestResult, TimeOption, TimeOptionsGenerator, combineDateAndTime, floorLocalToLocalDay, formatMillisecondsToDHMS, gMillisecondsPerDay, gMillisecondsPerHour, gMillisecondsPerMinute, getTimeOfDayInMinutes } from "shared/time";
-import { NameValuePair } from './CMCoreComponents2';
+import { EventDateField, NameValuePair } from './CMCoreComponents2';
 import { gIconMap } from '../db3/components/IconMap';
 
 interface CalendarEventSpec {
@@ -441,6 +441,7 @@ const DateRangeViewer = ({ value }: { value: DateTimeRange }) => {
         <DateViewer value={value.getLastDateTime()} caption='getLastDateTime'></DateViewer>
         <DateViewer value={value.getEndDateTime()} caption='getEndDateTime'></DateViewer>
         <div>duration: {formatMillisecondsToDHMS(value.getDurationMillis())}</div>
+        <div><EventDateField dateRange={value} /></div>
         <DateViewer value={value.getSpec().startsAtDateTime} caption='SPEC StartsAt'></DateViewer>
         <div>spec duration: {formatMillisecondsToDHMS(value.getSpec().durationMillis)}</div>
 

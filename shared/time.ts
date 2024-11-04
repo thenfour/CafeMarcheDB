@@ -446,12 +446,12 @@ export class DateTimeRange {
 
         const startDate = this.getStartDateTime()!;
         const startDateDjs = dayjs(startDate);
-        const endDate = this.getEndDateTime()!;
+        const endDate = this.getLastDateTime();// this.getEndDateTime()!;
         const endDateDjs = dayjs(endDate);
         // in fact a "same day" means the duration is <= 24 hours. Why? because events can start at 10pm and last 4 hours.
         // using the date would make this look like it spans 2 days. but it's clearer/more intuitive to count that as the same day.
         //const isSameDay = startDateDjs.isSame(endDateDjs, 'day');
-        const isSameDay = this.getDurationDays() <= 1.0;
+        const isSameDay = this.getDurationDays() <= 1.00001;
 
         if (this.isAllDay()) {
 
@@ -475,10 +475,10 @@ export class DateTimeRange {
 
         // not all-day (time specified)
         if (isSameDay) {
-            return `${startDateDjs.format(`dddd, D MMMM YYYY`)} @ ${formatTime(startDate)}-${formatTime(endDate)}h`;
+            return `${startDateDjs.format(`dddd, D MMMM YYYY`)} @ ${formatTime(startDate)}-${formatTime(endDate!)}h`;
         }
 
-        return `${startDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(startDate)} - ${endDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(endDate)}h`;
+        return `${startDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(startDate)} - ${endDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(endDate!)}h`;
 
     }
 

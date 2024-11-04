@@ -234,7 +234,7 @@ const MarkdownTester = () => {
 
 Here is some ABCjs music notation:
 
-\`\`\`abcjs
+\`\`\`abc
 X: 1
 T: Scale
 M: 4/4
@@ -245,7 +245,7 @@ C D E F | G A B c |
 
 Another ABCjs block:
 
-\`\`\`abcjs
+\`\`\`abc
 X: 2
 T: Another Scale
 M: 4/4
