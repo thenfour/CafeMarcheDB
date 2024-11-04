@@ -76,12 +76,12 @@ export interface GenericStringColumnArgs {
     className?: string;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
-    renderCell?: (params: GridRenderCellParams) => React.ReactNode;
+    renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 };
 
 export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     typedSchemaColumn: db3fields.GenericStringField;
-    renderCell?: (params: GridRenderCellParams) => React.ReactNode;
+    renderCell?: undefined | ((params: GridRenderCellParams) => React.ReactNode);
 
     constructor(args: GenericStringColumnArgs) {
         super({
