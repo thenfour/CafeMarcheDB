@@ -21,10 +21,18 @@ const markdownToPlainText = (markdownText: string): string => {
     return plainText;
 };
 
+export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
+    select: {
+        sortOrder: true,
+        subtitle: true,
+    },
+});
+
 export const EventSongListForCalArgs = Prisma.validator<Prisma.EventSongListDefaultArgs>()({
     select: {
         description: true,
         name: true,
+        dividers: EventSongListDividerForCalArgs,
         songs: {
             select: {
                 subtitle: true,
@@ -34,9 +42,9 @@ export const EventSongListForCalArgs = Prisma.validator<Prisma.EventSongListDefa
                     }
                 }
             },
-            orderBy: {
-                sortOrder: "asc",
-            }
+            // orderBy: {
+            //     sortOrder: "asc",
+            // }
         },
     },
 });
@@ -98,22 +106,16 @@ set 1
  8. song
  9. song
 10. song
- 
+
 */
 const songListToString = (l: EventSongListForCal) => {
-    const songsFormatted = l.songs.map((song, index) => `${(index + 1).toString().padStart(2, ' ')}. ${song.song.name}${IsNullOrWhitespace(song.subtitle) ? "" : ` (${song.subtitle})`}`);
+    // TODO: include dividers.
+    const songsFormatted = l.songs
+        .map((song, index) => `${(index + 1).toString().padStart(2, ' ')}. ${song.song.name}${IsNullOrWhitespace(song.subtitle) ? "" : ` (${song.subtitle})`}`);
     return `-------------
 ${l.name}
 
 ${songsFormatted.join("\n")}`;
-
-    //     const setLists = event.songLists.map(l => {
-    //         `-------------
-    // ${l.name}
-
-    // ${}`
-    //     });
-
 };
 
 
