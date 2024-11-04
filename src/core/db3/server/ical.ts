@@ -5,6 +5,7 @@ import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import * as db3 from "../db3";
 import { EventCalendarInput, EventForCal, GetEventCalendarInput } from "./icalUtils";
 import { MakeICalEventUid } from "../shared/apiTypes";
+import { slugify } from "shared/rootroot";
 
 interface CreateCalendarArgs {
     sourceURL: string;
@@ -88,7 +89,7 @@ export const addEventToCalendar2 = (
     // URI for event
     // URI for user calendar
     // URI for event calendar
-    const eventURL = process.env.CMDB_BASE_URL + `backstage/event/${event.id}/${event.slug}`; // 
+    const eventURL = process.env.CMDB_BASE_URL + `backstage/event/${event.eventId}/${slugify(event.name)}`; // 
 
     // // for all-day events, the datetime range will return midnight of the start day.
     // // BUT this will lead to issues because of timezones. In order to output a UTC date,
@@ -144,8 +145,11 @@ export const addEventToCalendar = (
     event: EventForCal,
     eventVerbose: db3.EventClientPayload_Verbose,
     eventAttendanceIdsRepresentingGoing: number[]
-): ICalEvent | null => {
-    return addEventToCalendar2(calendar, user, GetEventCalendarInput(event), eventVerbose, eventAttendanceIdsRepresentingGoing);
+): ICalEvent[] => {
+    const inputs = GetEventCalendarInput(event);
+    return inputs
+        .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing))
+        .filter(x => !!x);
 };
 
 export interface CalExportCoreArgs1 {

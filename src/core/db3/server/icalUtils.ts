@@ -2,7 +2,7 @@ import { hash256 } from "@blitzjs/auth";
 import { Prisma } from "db";
 import { convert } from 'html-to-text';
 import MarkdownIt from 'markdown-it';
-import { IsNullOrWhitespace } from "shared/utils";
+import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
 import * as db3 from "../db3";
 import { DateTimeRange } from "shared/time";
 import { ICalEventStatus } from "ical-generator";
@@ -41,6 +41,18 @@ export const EventSongListForCalArgs = Prisma.validator<Prisma.EventSongListDefa
     },
 });
 
+export const EventSegmentForCalArgs = Prisma.validator<Prisma.EventSegmentDefaultArgs>()({
+    select: {
+        id: true,
+        name: true,
+        description: true,
+        startsAt: true,
+        isAllDay: true,
+        durationMillis: true,
+        uid: true,
+    }
+});
+
 export const EventForCalArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
     select: {
         id: true,
@@ -48,14 +60,10 @@ export const EventForCalArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
         description: true,
         revision: true,
         calendarInputHash: true,
-        startsAt: true,
-        isAllDay: true,
-        durationMillis: true,
-        endDateTime: true,
+
         locationDescription: true,
         locationURL: true,
-        uid: true,
-        slug: true,
+        segments: EventSegmentForCalArgs,
         status: {
             select: {
                 significance: true,
@@ -72,6 +80,7 @@ export const EventForCalArgs = Prisma.validator<Prisma.EventDefaultArgs>()({
 
 export type EventSongListForCal = Prisma.EventSongListGetPayload<typeof EventSongListForCalArgs>;
 export type EventForCal = Prisma.EventGetPayload<typeof EventForCalArgs>;
+export type EventSegmentForCal = Prisma.EventSegmentGetPayload<typeof EventSegmentForCalArgs>;
 
 
 
@@ -109,22 +118,24 @@ ${songsFormatted.join("\n")}`;
 
 
 export type EventCalendarInput = Pick<EventForCal,
-    "id"
-    | "isAllDay"
-    | "slug"
-    | "revision"
-    | "uid"
+    "revision"
     | "locationDescription"
-> & {
+> &
+    Pick<EventSegmentForCal, "isAllDay" | "uid"> &
+{
     inputHash: string,
     description: string,
     //summary: string,
     name: string,
     //cancelledText: string,
     statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance),
+
     start: Date,
     end: Date,
+
     calStatus: ICalEventStatus,
+    eventId: number,
+    segmentId: number,
 };
 
 
@@ -135,26 +146,23 @@ function prepareAllDayDateForICal(date) {
 }
 
 
+
 // does some processing on an Event db model in order to prepare it for calendar export. the idea is to
 // grab just the info needed to know if a revision # is necessary.
 // returns null if no event can be generated
-export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalendarInput | null => {
-    const setLists = event.songLists ? event.songLists.map(l => songListToString(l)) : [];
-
-    // if you pass in something that is insufficient for using as an event.
-    // it's theoretical because it's always going to be an event object.
-    if (event.startsAt === undefined) return null; // tbd
-    if (event.isAllDay === undefined) return null;
-    if (event.revision === undefined) return null;
-    if (event.id === undefined) return null;
-    if (event.slug === undefined) return null;
-    if (event.uid === undefined) return null;
-    if (event.locationDescription === undefined) return null;
-
+type GetEventSegmentCalendarInputArgs = {
+    event: Partial<EventForCal>;
+    segment: EventSegmentForCal;
+    //statusSignificance: db3.EventStatusSignificance | undefined;
+    //calStatus: ICalEventStatus;
+    descriptionText: string;
+    //locationDescription: string;
+};
+export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, ...args }: GetEventSegmentCalendarInputArgs): EventCalendarInput | null => {
     const dateRange = new DateTimeRange({
-        startsAtDateTime: event.startsAt,
-        durationMillis: Number(event.durationMillis),
-        isAllDay: event.isAllDay,
+        startsAtDateTime: segment.startsAt || null,
+        durationMillis: Number(segment.durationMillis),
+        isAllDay: CoalesceBool(segment.isAllDay, true),
     });
 
     if (dateRange.isTBD()) {
@@ -166,15 +174,6 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalenda
         (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
             ICalEventStatus.TENTATIVE;
 
-    //const cancelledText = (calStatus === ICalEventStatus.CANCELLED) ? "CANCELLED " : "";
-    //const summary = `CM: ${cancelledText}${event.name}`;
-    // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
-    // so just bake it, and keep the payload simple.
-    let descriptionText = event.description ? markdownToPlainText(event.description) : "";
-    if (setLists.length) {
-        descriptionText += "\n\n" + setLists.join(`\n\n`);
-    }
-
     // for all-day events, the datetime range will return midnight of the start day.
     // BUT this will lead to issues because of timezones. In order to output a UTC date,
     // the time gets shifted and will likely be the previous day. For all-day events therefore,
@@ -185,43 +184,70 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalenda
     if (dateRange.isAllDay()) {
         start = prepareAllDayDateForICal(start);
         end = prepareAllDayDateForICal(end);
-        // end = new Date(start);
-        // end.setMilliseconds(start.getMilliseconds() + dateRange.getDurationMillis());
-        //end = prepareAllDayDateForICal(end);
     }
-
-
 
     const ret: EventCalendarInput = {
         // note: when calculating changes, we must ignore revision
         revision: 0,
         inputHash: "",
 
-        id: event.id,
-        //summary,
-        name: event.name || "",
-        slug: event.slug,
-        uid: event.uid,
+        eventId: event.id!,
+        segmentId: segment.id,
+        name: `${event.name || ""} ${segment.name || ""}`,
+        uid: segment.uid,//
 
-        locationDescription: event.locationDescription,
+        locationDescription: event.locationDescription || "",
         description: descriptionText,
 
-        //startsAt: event.startsAt,
-        //durationMillis: event.durationMillis,
-        //endDateTime: event.endDateTime,
         start,
         end,
-        isAllDay: event.isAllDay,
+        isAllDay: segment.isAllDay,
         calStatus,
 
         statusSignificance,
     };
 
-    // console.log(`calculating hash of`);
-    // console.log(ret);
-    // console.log(` -> ${hash256(JSON.stringify(ret))}`);
     ret.inputHash = hash256(JSON.stringify(ret));
-    ret.revision = event.revision;
+    ret.revision = event.revision!;
 
     return ret;
 };
+
+
+
+// does some processing on an Event db model in order to prepare it for calendar export. the idea is to
+// grab just the info needed to know if a revision # is necessary.
+// returns null if no event can be generated
+export const GetEventCalendarInput = (event: Partial<EventForCal>): EventCalendarInput[] => {
+    // if you pass in something that is insufficient for using as an event.
+    // it's theoretical because it's always going to be an event object.
+    if (event.revision === undefined) return [];
+    if (event.id === undefined) return [];
+    if (event.locationDescription === undefined) return [];
+
+    const setLists = event.songLists ? event.songLists.map(l => songListToString(l)) : [];
+
+    const statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance) = event.status?.significance as any;
+
+    const calStatus = (statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
+        (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
+            ICalEventStatus.TENTATIVE;
+
+    // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
+    // so just bake it, and keep the payload simple.
+    let descriptionText = event.description ? markdownToPlainText(event.description) : "";
+    if (setLists.length) {
+        descriptionText += "\n\n" + setLists.join(`\n\n`);
+    }
+
+    const segmentsForCalendar = event.segments!.map(segment => GetEventSegmentCalendarInput({
+        segment,
+        event,
+        descriptionText,
+    }));
+
+    return segmentsForCalendar.filter(e => !!e);
+};
+
+
+

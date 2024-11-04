@@ -102,11 +102,11 @@ export const EventTypeSignificance = {
     Weekend: "Weekend",
 } as const satisfies Record<string, string>;
 
-export const EventStatusSignificance = {
-    New: "New",
-    Cancelled: "Cancelled",
-    FinalConfirmation: "FinalConfirmation",
-} as const satisfies Record<string, string>;
+export enum EventStatusSignificance {
+    New = "New",
+    Cancelled = "Cancelled",
+    FinalConfirmation = "FinalConfirmation",
+};// as const satisfies Record<string, string>;
 
 export const EventTagSignificance = {
     Majoretteketet: "Majoretteketet",

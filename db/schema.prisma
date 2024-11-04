@@ -611,8 +611,9 @@ model EventSegment {
   eventId Int
   event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade) // events are soft-delete.
 
-  name        String @db.VarChar(768)
-  description String @db.MediumText // short description, like 
+  name        String  @db.VarChar(768)
+  description String  @db.MediumText // short description, like 
+  uid         String? @default(uuid()) // used for unique identification but is NOT secret like the accessToken.
 
   // conform to DateTimeRangeSpec
   startsAt       DateTime? // date null means TBD

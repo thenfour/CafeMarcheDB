@@ -25,10 +25,7 @@ async function SyncPermissionsTable() {
     }
 }
 
-export async function register() {
-    console.log(`INSTRUMENTATION RUNNING`);
-    await SyncPermissionsTable();
-
+async function CorrectUserUids() {
     // ensure users have uids populated
     // Fetch users with null uids
     const usersWithoutUid = await db.user.findMany({
@@ -56,7 +53,42 @@ export async function register() {
     for (const up of ups) {
         console.log(`-> #${up.id} (${up.name}) => ${up.uid}`);
     }
+};
 
+async function CorrectEventSegmentUids() {
+    const segmentsWithoutUid = await db.eventSegment.findMany({
+        where: {
+            uid: null,
+        },
+    })
+
+    console.log(`Event Segments with NULL UIDs: ${segmentsWithoutUid.length}`);
+
+    // Update each user, setting a new UUID for their uid field
+    const updates = segmentsWithoutUid.map(async (seg) => {
+        return await db.eventSegment.update({
+            where: {
+                id: seg.id,
+            },
+            data: {
+                uid: nanoid(),
+            },
+        })
+    });
+
+    const ups = await Promise.all(updates);
+
+    for (const up of ups) {
+        console.log(`-> #${up.id} (${up.id}) => ${up.uid}`);
+    }
+};
+
+export async function register() {
+    console.log(`INSTRUMENTATION RUNNING`);
+    await SyncPermissionsTable();
+
+    await CorrectUserUids();
+    await CorrectEventSegmentUids();
 
     //const startupState = getServerStartStateRef();
     process.env.CMDB_START_TIME = `${new Date().valueOf()}`;
