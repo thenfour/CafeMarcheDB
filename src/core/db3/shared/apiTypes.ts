@@ -1080,6 +1080,7 @@ export interface ICalCalendarJSON {
     source?: string;
     url?: string;
 
+    iCalText: string;
     events: ICalEventJSON[];
 }
 

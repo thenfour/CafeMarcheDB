@@ -51,6 +51,7 @@ export default resolver.pipe(
                 scale: cal.scale() || undefined,
                 source: cal.source() || undefined,
                 url: cal.url() || undefined,
+                iCalText: cal.toString(),
                 events: cal.events().map(e => ({
                     start: ICalConvertToDate(e.start()),
                     end: e.end() === null ? undefined : ICalConvertToDate(e.end()!),
