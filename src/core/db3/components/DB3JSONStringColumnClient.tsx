@@ -401,7 +401,7 @@ const AdminLogAsyncInfoChip = ({ pk, tableName, cacheData }: { pk: number, table
     }
 
     if (result.eventId) {
-        nodes.push(<ActivityLogEvent cacheData={cacheData} eventId={result.eventId} />);
+        nodes.push(<ActivityLogEvent key={"notanumber"} cacheData={cacheData} eventId={result.eventId} />);
     }
     return nodes;
 };

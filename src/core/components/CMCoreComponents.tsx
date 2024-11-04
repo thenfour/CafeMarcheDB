@@ -141,8 +141,8 @@ export interface ConfirmationDialogProps {
     onCancel: () => void;
     confirmLabel?: string;
     cancelLabel?: string;
-    title?: () => React.ReactElement | string;
-    description?: () => React.ReactElement | string;
+    title?: () => React.ReactNode;
+    description?: () => React.ReactNode;
 };
 export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
     return <ReactiveInputDialog

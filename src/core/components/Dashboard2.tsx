@@ -286,7 +286,7 @@ interface MenuItemLink {
     path: string;
     openInNewTab?: boolean;
     realm?: NavRealm;
-    renderIcon: () => React.ReactElement;
+    renderIcon: () => React.ReactNode;
 };
 
 type MenuItemSpec = MenuItemDivider | MenuItemSectionHeader | MenuItemLink;

@@ -82,8 +82,8 @@ export abstract class IColumnClient {
 
     GridColProps?: Partial<GridColDef>;
 
-    abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactElement; // will render as a child of <FormControl>
-    abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactElement; // will render as a child of <FormControl>
+    abstract renderForNewDialog?: (params: RenderForNewItemDialogArgs) => React.ReactNode; // will render as a child of <FormControl>
+    abstract renderViewer: (params: RenderViewerArgs<unknown>) => React.ReactNode; // will render as a child of <FormControl>
     abstract ApplyClientToPostClient?: (clientRow: TAnyModel, updateModel: TAnyModel, mode: db3.DB3RowMode) => void; // applies the values from the client object to a db-compatible object.
     abstract onSchemaConnected(tableClient: xTableRenderClient<any>): void;
 

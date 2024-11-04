@@ -3,7 +3,7 @@ import { useQuery } from "@blitzjs/rpc";
 import * as React from 'react';
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, IsNullOrWhitespace, existsInArray, toggleValueInArray } from "shared/utils";
+import { CoerceToNumberOrNull, IsNullOrWhitespace, existsInArray, getHashedColor, toggleValueInArray } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { NameValuePair } from "src/core/components/CMCoreComponents2";
 import { CMTextInputBase } from "src/core/components/CMTextField";
@@ -52,12 +52,34 @@ const MainContent = () => {
         table: db3.xChange,
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
-            new DB3Client.ForeignSingleFieldClient({ columnName: "user", cellWidth: 120, size: "small" }),
+            new DB3Client.ForeignSingleFieldClient({
+                columnName: "user",
+                cellWidth: 120,
+                size: "small",
+                renderAsChip: (args) => {
+                    if (!args) return "--";
+                    const user = args.value as db3.UserPayloadMinimum;
+                    return <CMChip
+                        size="small"
+                        tooltip={`${user.name} #${user.id}`}
+                    >
+                        <span style={{ color: getHashedColor(user.id.toString()) }}>
+                            {user.name}
+                        </span>
+                    </CMChip>;
+                }
+            }),
 
             new DB3Client.GenericStringColumnClient({ columnName: "action", cellWidth: 80 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "context", cellWidth: 150 }),
             //new DB3Client.GenericStringColumnClient({ columnName: "operationId", cellWidth: 150 }),
-            new DB3Client.GenericStringColumnClient({ columnName: "table", cellWidth: 150 }),
+            new DB3Client.GenericStringColumnClient({
+                columnName: "table",
+                cellWidth: 150,
+                renderCell: (params) => {
+                    return <span style={{ color: getHashedColor((params.value || "") as string) }}>{params.value}</span>;
+                }
+            }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "recordId", cellWidth: 80, }),
             //new DB3Client.GenericStringColumnClient({ columnName: "sessionHandle", cellWidth: 150 }),
             new DB3Client.JSONStringColumnClient({ columnName: "oldValues", cacheData: filterSourceData, renderWorkflow }),

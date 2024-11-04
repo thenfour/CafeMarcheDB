@@ -395,7 +395,7 @@ export const TagsFieldInput = <TAssociation extends TAnyModel,>(props: TagsField
 export interface TagsViewProps<TAssociation> {
     value: TAssociation[],
     associationForeignIDMember: string,
-    renderAsChip: (args: RenderAsChipParams<TAssociation>) => React.ReactElement;
+    renderAsChip: (args: RenderAsChipParams<TAssociation>) => React.ReactNode;
 };
 export const TagsView = <TAssociation,>(props: TagsViewProps<TAssociation>) => {
     const [open, setOpen] = React.useState<boolean>(false);
@@ -458,10 +458,10 @@ export interface TagsFieldClientArgs<TAssociation> {
     cellWidth: number;
     allowDeleteFromCell: boolean,
 
-    renderAsChip?: (args: RenderAsChipParams<TAssociation>) => React.ReactElement;
+    renderAsChip?: (args: RenderAsChipParams<TAssociation>) => React.ReactNode;
 
     // should render a <li {...props}> for autocomplete
-    renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TAssociation, selected: boolean) => React.ReactElement;
+    renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TAssociation, selected: boolean) => React.ReactNode;
     className?: string;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;

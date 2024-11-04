@@ -76,10 +76,12 @@ export interface GenericStringColumnArgs {
     className?: string;
     fieldCaption?: string;
     fieldDescriptionSettingName?: SettingKey;
+    renderCell?: (params: GridRenderCellParams) => React.ReactNode;
 };
 
 export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
     typedSchemaColumn: db3fields.GenericStringField;
+    renderCell?: (params: GridRenderCellParams) => React.ReactNode;
 
     constructor(args: GenericStringColumnArgs) {
         super({
@@ -93,6 +95,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
             fieldCaption: args.fieldCaption,
             fieldDescriptionSettingName: args.fieldDescriptionSettingName,
         });
+        this.renderCell = args.renderCell;
     }
 
     ApplyClientToPostClient = undefined;
@@ -110,6 +113,7 @@ export class GenericStringColumnClient extends DB3ClientCore.IColumnClient {
 
         this.GridColProps = {
             type: "string",
+            renderCell: this.renderCell,
             renderEditCell: (params: GridRenderEditCellParams) => {
                 const vr = this.schemaColumn.ValidateAndParse({ row: params.row, mode: "update", clientIntention: tableClient.args.clientIntention });
                 return <CMTextField

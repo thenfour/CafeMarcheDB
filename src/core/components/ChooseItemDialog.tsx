@@ -38,8 +38,8 @@ export interface ChooseItemDialogProps<T> {
 
     // how to treat items of unknown type...
     isEqual: (a: T, b: T) => boolean; // non-null values. null values are compared internally.
-    renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactElement;
-    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: T, selected: boolean) => React.ReactElement;
+    renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactNode;
+    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: T, selected: boolean) => React.ReactNode;
     items: any[];
 };
 
@@ -133,8 +133,8 @@ export interface ChoiceEditCellProps {
     dialogDescription: React.ReactNode; // i should actually be using child elements like <ChooseItemDialogDescription> or something. but whatev.
 
     isEqual: (a: any, b: any) => boolean;
-    renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactElement;
-    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: any, selected: boolean) => React.ReactElement;
+    renderValue: (args: ChoiceEditCellRenderValueArgs) => React.ReactNode;
+    renderAsListItem: (props: React.HTMLAttributes<HTMLLIElement>, value: any, selected: boolean) => React.ReactNode;
     items: any[];
 };
 

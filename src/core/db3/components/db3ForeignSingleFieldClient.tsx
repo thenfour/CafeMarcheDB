@@ -228,10 +228,10 @@ export interface ForeignSingleFieldClientArgs<TForeign extends TAnyModel> {
     columnName: string;
     cellWidth: number;
 
-    renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactElement;
+    renderAsChip?: (args: RenderAsChipParams<TForeign>) => React.ReactNode;
 
     // should render a <li {...props}> for autocomplete
-    renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactElement;
+    renderAsListItem?: (props: React.HTMLAttributes<HTMLLIElement>, value: TForeign, selected: boolean) => React.ReactNode;
 
     visible?: boolean;
     className?: string;
