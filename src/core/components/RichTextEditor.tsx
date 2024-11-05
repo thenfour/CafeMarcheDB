@@ -28,7 +28,6 @@ import MarkdownIt from 'markdown-it';
 import React from "react";
 import { createRoot } from 'react-dom/client';
 
-
 import { Permission } from "shared/permissions";
 import { slugify } from "shared/rootroot";
 import { CoalesceBool, IsNullOrWhitespace, isValidURL, parseMimeType } from "shared/utils";
@@ -61,8 +60,6 @@ const spanClasses = [
     "highlightgreen",
     "enclosed",
 ] as const;
-
-
 
 interface ABCProps {
     abcCode: string;
@@ -347,7 +344,6 @@ export const Markdown = (props: MarkdownProps) => {
             const nodes = Array.from(allNodes).filter(el => !el.getAttribute('data-rendered'));
 
             // count all nodes in case of weird reloads; expected component count bases itself on the TOTAL
-            //console.log(`processing ${allNodes.length} nodes; expecting ${expectedComponentCount.current}`);
 
             nodes.forEach(node => {
                 const componentName = node.getAttribute('data-component');
@@ -401,7 +397,6 @@ async function fetchWikiSlugs(keyword: string): Promise<string[]> {
     return response.json();
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 async function fetchInlineClasses(keyword: string): Promise<string[]> {
     if (keyword.includes("}}")) return []; // make sure we don't autocomplete outside of the link syntax
@@ -415,27 +410,6 @@ async function fetchInlineClasses(keyword: string): Promise<string[]> {
     return ret;
 }
 
-
-
-// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// async function fetchEventOrSongTagsBracketAt(keyword: string): Promise<string[]> {
-//     if (keyword.startsWith("[@")) {
-//         keyword = keyword.substring(2);
-//     }
-//     else {
-//         return [];
-//     }
-
-//     const response = await fetch(`/api/wiki/searchSongEvents?keyword=${keyword}`);
-
-//     if (!response.ok) {
-//         throw new Error('Network response was not ok');
-//     }
-//     const ret = await response.json();
-//     return ret;
-// }
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 async function fetchEventOrSongTagsAt(keyword: string): Promise<string[]> {
     // no prefix here.
@@ -448,8 +422,6 @@ async function fetchEventOrSongTagsAt(keyword: string): Promise<string[]> {
     const ret = await response.json();
     return ret;
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface MarkdownEditorProps {
@@ -1025,9 +997,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 containerClassName="editorContainer"
                 loadingComponent={() => <div>Loading...</div>}
                 autoFocus={CoalesceBool(props.autoFocus, false)}
-                //ref={rta => setRta(rta)}
                 innerRef={textarea => setTa(textarea)}
-                //movePopupAsYouType={true}
                 value={props.value || ""}
                 height={props.height || 400}
                 style={style}

@@ -175,16 +175,46 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-async function CopySongListNames(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const txt = value.songs.filter(s => !!s.song).map(s => s.song.name).join("\n");
-    await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+function DividerToString(subtitle: string | null | undefined) {
+    return subtitle ? `-- ${subtitle} ------` : `--------`;
 }
 
-async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const txt = value.songs.filter(s => !!s.song).map((s, i) => `${i + 1}. ${s.song.name}`).join("\n");
+async function CopySongListNames(setlist: db3.EventSongListPayload, snackbarContext: SnackbarContextType) {
+    const rowItems = GetRowItems(setlist);
+
+    const txt = rowItems.map(item => {
+        if (item.type === 'divider') {
+            return DividerToString(item.subtitle);
+        } else if (item.type === 'song') {
+            return item.song.name;
+        }
+        return '';
+    }).join('\n');
+
     await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+    snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
+}
+
+async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
+    const rowItems = GetRowItems(setlist);
+
+    let index = 1;
+    const lines: string[] = [];
+
+    for (const item of rowItems) {
+        if (item.type === 'divider') {
+            index = 1;
+            lines.push(DividerToString(item.subtitle));
+        } else if (item.type === 'song') {
+            lines.push(`${index}. ${item.song.name}`);
+            index++;
+        }
+        // Ignore other item types (e.g., 'new')
+    }
+
+    const txt = lines.join('\n');
+    await navigator.clipboard.writeText(txt);
+    snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
 type PortableSongListSong = {
@@ -226,27 +256,66 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
     snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
 }
 
-async function CopySongListCSV(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const obj = value.songs.filter(s => !!s.song).map((s, i) => ({
-        Index: (i + 1).toString(),
-        Song: s.song.name,
-        Length: (s.song.lengthSeconds ? formatSongLength(s.song.lengthSeconds) : "") || "",
-        Tempo: API.songs.getFormattedBPM(s.song),
-        Comment: s.subtitle || "",
-    }));
-    const txt = arrayToTSV(obj);
+
+async function CopySongListCSV(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
+    // Get the combined list of songs and dividers in order
+    const rowItems = GetRowItems(setlist);
+
+    let index = 1;
+    const csvRows: any[] = [];
+
+    for (const item of rowItems) {
+        if (item.type === 'divider') {
+            index = 1;
+            csvRows.push({
+                Index: '',
+                Song: DividerToString(item.subtitle),
+                Length: '',
+                Tempo: '',
+                Comment: '',
+            });
+        } else if (item.type === 'song') {
+            csvRows.push({
+                Index: index.toString(),
+                Song: item.song.name,
+                Length: item.song.lengthSeconds ? formatSongLength(item.song.lengthSeconds) : '',
+                Tempo: API.songs.getFormattedBPM(item.song),
+                Comment: item.subtitle || '',
+            });
+            index++;
+        }
+    }
+
+    const txt = arrayToTSV(csvRows);
     await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+    snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
-async function CopySongListMarkdown(snackbarContext: SnackbarContextType, value: db3.EventSongListPayload) {
-    const txt = value.songs.filter(s => !!s.song).map((s, i) => {
-        // so uh i'm technically putting markdown in markdown so this is not correct but let's go for it anyway.
-        const commentTxt = IsNullOrWhitespace(s.subtitle) ? "" : ` *${s.subtitle}*`;
-        return `${i + 1}. **${s.song.name}**${commentTxt}`;
-    }).join("\n");
+async function CopySongListMarkdown(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
+    const rowItems = GetRowItems(setlist);
+
+    let index = 1;
+    const lines: string[] = [];
+
+    for (const item of rowItems) {
+        if (item.type === 'divider') {
+            index = 1;
+            // not sure the best way to format this but this feels practical.
+            if (item.subtitle) {
+                lines.push(`\n-----\n\n### ${item.subtitle}\n`);
+            } else {
+                lines.push(`\n-----\n`);
+            }
+        } else if (item.type === 'song') {
+            const commentTxt = IsNullOrWhitespace(item.subtitle) ? '' : ` *${item.subtitle}*`;
+            lines.push(`${index}. **${item.song.name}**${commentTxt}`);
+            index++;
+        }
+    }
+
+    const txt = lines.join('\n');
     await navigator.clipboard.writeText(txt);
-    snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+    snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -501,13 +570,13 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                                 multipleLists={props.event.songLists.length > 1}
                                 showTags={showTags}
                                 setShowTags={setShowTags}
-                                handleCopySongNames={async () => await CopySongListNames(snackbarContext, props.value)}
+                                handleCopySongNames={async () => await CopySongListNames(props.value, snackbarContext)}
                                 handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value)}
                                 handleCopyCSV={async () => await CopySongListCSV(snackbarContext, props.value)}
                                 handleCopyJSON={async () => await CopySongListJSON(snackbarContext, props.value)}
                                 handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value)}
 
-                                handleCopyCombinedSongNames={async () => await CopySongListNames(snackbarContext, getCombinedList())}
+                                handleCopyCombinedSongNames={async () => await CopySongListNames(getCombinedList(), snackbarContext)}
                                 handleCopyCombinedMarkdown={async () => await CopySongListMarkdown(snackbarContext, getCombinedList())}
                                 handleCopyCombinedCSV={async () => await CopySongListCSV(snackbarContext, getCombinedList())}
                                 handleCopyCombinedJSON={async () => await CopySongListJSON(snackbarContext, getCombinedList())}
@@ -966,7 +1035,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                         multipleLists={false} // don't bother with this from the editor
                                         showTags={showTags}
                                         setShowTags={setShowTags}
-                                        handleCopySongNames={async () => await CopySongListNames(snackbarContext, value)}
+                                        handleCopySongNames={async () => await CopySongListNames(value, snackbarContext)}
                                         handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
                                         handleCopyCSV={async () => await CopySongListCSV(snackbarContext, value)}
                                         handleCopyJSON={async () => await CopySongListJSON(snackbarContext, value)}

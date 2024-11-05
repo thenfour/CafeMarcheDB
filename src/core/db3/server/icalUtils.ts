@@ -182,7 +182,7 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
     // let's be precise and use an ISO string (20240517) because all-day events are not subject to
     // time zone offsets.
     let start: Date = dateRange.getStartDateTime()!;
-    let end: Date = dateRange.getLastDateTime()!; // this date must be IN the time range so don't use "end", use "last"
+    let end: Date = dateRange.getEndDateTime()!; // this date must be IN the time range so don't use "end", use "last"
     if (dateRange.isAllDay()) {
         start = prepareAllDayDateForICal(start);
         end = prepareAllDayDateForICal(end);
@@ -233,11 +233,11 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): GetEventCale
 
     const setLists = event.songLists ? event.songLists.map(l => songListToString(l)) : [];
 
-    const statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance) = event.status?.significance as any;
+    // const statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance) = event.status?.significance as any;
 
-    const calStatus = (statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
-        (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
-            ICalEventStatus.TENTATIVE;
+    // const calStatus = (statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
+    //     (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
+    //         ICalEventStatus.TENTATIVE;
 
     // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
     // so just bake it, and keep the payload simple.
