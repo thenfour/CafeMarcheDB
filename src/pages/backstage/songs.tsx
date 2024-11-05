@@ -212,7 +212,7 @@ const SongListItem = (props: SongListItemProps) => {
     const songData = CalculateSongMetadata(props.song);
     return <div className="searchListItem">
         <SongDetailContainer readonly={true} tableClient={null} songData={songData} showVisibility={true} highlightedTagIds={props.filterSpec.tagFilter}
-            renderAsLinkTo={API.songs.getURIForSong(props.song.id, props.song.slug)}
+            renderAsLinkTo={API.songs.getURIForSong(props.song)}
         >
         </SongDetailContainer>
     </div>;
@@ -231,7 +231,7 @@ async function CopySongListCSV(snackbarContext: SnackbarContextType, value: db3.
         StartBPM: e.startBPM?.toString() || "",
         EndBPM: e.endBPM?.toString() || "",
         LengthSeconds: e.lengthSeconds?.toString() || "",
-        URL: getURIForSong(e.id),
+        URL: getURIForSong(e),
     }));
     const txt = arrayToTSV(obj);
     await navigator.clipboard.writeText(txt);

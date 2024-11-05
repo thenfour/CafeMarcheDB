@@ -8,11 +8,10 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
+import { CMDBTableFilterModel } from "../apiTypes";
 import { ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance, UserPayload, UserWithInstrumentsPayload } from "./prismArgs";
-import { CMDBTableFilterModel } from "../apiTypes";
-import { TableAccessor } from "shared/rootroot";
+import { InstrumentArgs, InstrumentFunctionalGroupArgs, InstrumentFunctionalGroupNaturalSortOrder, InstrumentFunctionalGroupPayload, InstrumentNaturalOrderBy, InstrumentPayload, InstrumentTagArgs, InstrumentTagAssociationArgs, InstrumentTagAssociationNaturalOrderBy, InstrumentTagAssociationPayload, InstrumentTagNaturalOrderBy, InstrumentTagPayload, InstrumentTagSignificance } from "./prismArgs";
 
 // editable by anyone
 export const xInstrumentAuthMap_R_EManagers: db3.DB3AuthContextPermissionMap = {
@@ -191,12 +190,12 @@ export const xInstrument = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name", { authMap: xInstrumentAuthMap_R_EManagers, }),
-        new GenericStringField({
-            columnName: "slug",
-            allowNull: false,
-            format: "plain",
-            authMap: xInstrumentAuthMap_R_EManagers,
-        }),
+        // new GenericStringField({
+        //     columnName: "slug",
+        //     allowNull: false,
+        //     format: "plain",
+        //     authMap: xInstrumentAuthMap_R_EManagers,
+        // }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,

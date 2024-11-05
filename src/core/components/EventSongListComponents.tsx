@@ -10,9 +10,9 @@ import { assert } from 'blitz';
 import { Prisma } from "db";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { StandardVariationSpec, gSwatchColors } from 'shared/color';
+import { StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { CoalesceBool, IsNullOrWhitespace, arrayToTSV, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { CoalesceBool, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -20,7 +20,8 @@ import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
-import { CMChip, CMChipContainer, CMStandardDBChip } from './CMChip';
+import * as SetlistAPI from '../db3/shared/setlistApi';
+import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText, CMSmallButton } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
@@ -31,89 +32,89 @@ import { SongAutocomplete } from './SongAutocomplete';
 
 const gDividerText = <>&nbsp;</>;
 
-type LocalSongPayload = Prisma.SongGetPayload<{}>;
+// type LocalSongPayload = Prisma.SongGetPayload<{}>;
 
-// make song nullable for "add new item" support
-type EventSongListSongItem = Prisma.EventSongListSongGetPayload<{
-    select: {
-        eventSongListId: true,
-        subtitle: true,
-        id: true,
-        sortOrder: true,
-    }
-}> & {
-    songId: number;
-    song: LocalSongPayload;
-    type: "song";
-    index: number;
-    runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
-    songsWithUnknownLength: number;
-};
+// // make song nullable for "add new item" support
+// type EventSongListSongItem = Prisma.EventSongListSongGetPayload<{
+//     select: {
+//         eventSongListId: true,
+//         subtitle: true,
+//         id: true,
+//         sortOrder: true,
+//     }
+// }> & {
+//     songId: number;
+//     song: LocalSongPayload;
+//     type: "song";
+//     index: number;
+//     runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
+//     songsWithUnknownLength: number;
+// };
 
-type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{}> & { type: "divider" };
+// type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{}> & { type: "divider" };
 
-type EventSongListNewItem = {
-    eventSongListId: number,
-    id: number,
-    sortOrder: number,
-    type: "new";
-};
+// type EventSongListNewItem = {
+//     eventSongListId: number,
+//     id: number,
+//     sortOrder: number,
+//     type: "new";
+// };
 
-type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
+// type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
 
 
-function GetRowItems(songList: db3.EventSongListPayload): EventSongListItem[] {
-    // row items are a combination of songs + dividers, with a new blank row at the end
-    const rowItems: EventSongListItem[] = songList.songs.toSorted((a, b) => a.sortOrder - b.sortOrder).map((s, index) => ({
-        ...s,
-        type: "song",
-        index,
-        runningTimeSeconds: null, // populated later
-        songsWithUnknownLength: 0,
-    }));
-    rowItems.push(...songList.dividers.map(s => {
-        const x: EventSongListDividerItem = {
-            ...s,
-            type: 'divider',
-        };
-        return x;
-    }));
+// function GetRowItems(songList: db3.EventSongListPayload): EventSongListItem[] {
+//     // row items are a combination of songs + dividers, with a new blank row at the end
+//     const rowItems: EventSongListItem[] = songList.songs.toSorted((a, b) => a.sortOrder - b.sortOrder).map((s, index) => ({
+//         ...s,
+//         type: "song",
+//         index,
+//         runningTimeSeconds: null, // populated later
+//         songsWithUnknownLength: 0,
+//     }));
+//     rowItems.push(...songList.dividers.map(s => {
+//         const x: EventSongListDividerItem = {
+//             ...s,
+//             type: 'divider',
+//         };
+//         return x;
+//     }));
 
-    // by some theory this shouldn't be necessary because sortorder is there, but it is.
-    rowItems.sort((a, b) => a.sortOrder - b.sortOrder);
+//     // by some theory this shouldn't be necessary because sortorder is there, but it is.
+//     rowItems.sort((a, b) => a.sortOrder - b.sortOrder);
 
-    // set indices and runningTime
-    let songIndex: number = 0;
-    let runningTimeSeconds: number | null = null;
-    let songsWithUnknownLength: number = 0;
-    for (let i = 0; i < rowItems.length; ++i) {
-        const item = rowItems[i]!;
-        if (item.type === 'divider') {
-            // reset!
-            songIndex = 0;
-            runningTimeSeconds = null;
-            songsWithUnknownLength = 0;
-            continue;
-        }
-        if (item.type !== 'song') throw new Error(`unknown type at this moment`);
+//     // set indices and runningTime
+//     let songIndex: number = 0;
+//     let runningTimeSeconds: number | null = null;
+//     let songsWithUnknownLength: number = 0;
+//     for (let i = 0; i < rowItems.length; ++i) {
+//         const item = rowItems[i]!;
+//         if (item.type === 'divider') {
+//             // reset!
+//             songIndex = 0;
+//             runningTimeSeconds = null;
+//             songsWithUnknownLength = 0;
+//             continue;
+//         }
+//         if (item.type !== 'song') throw new Error(`unknown type at this moment`);
 
-        item.index = songIndex;
+//         item.index = songIndex;
 
-        if (item.song.lengthSeconds) {
-            runningTimeSeconds = item.song.lengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
-        } else {
-            // don't inc runtime
-            songsWithUnknownLength++;
-        }
+//         if (item.song.lengthSeconds) {
+//             runningTimeSeconds = item.song.lengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
+//         } else {
+//             // don't inc runtime
+//             songsWithUnknownLength++;
+//         }
 
-        item.runningTimeSeconds = runningTimeSeconds;
-        item.songsWithUnknownLength = songsWithUnknownLength;
+//         item.runningTimeSeconds = runningTimeSeconds;
+//         item.songsWithUnknownLength = songsWithUnknownLength;
 
-        songIndex++;
-    }
+//         songIndex++;
+//     }
 
-    return rowItems;
-}
+//     return rowItems;
+// }
 
 /*
 similar to other tab contents structures (see also EventSegmentComponents, EventCommentComponents...)
@@ -138,8 +139,8 @@ it will just be updateSetList(song list etc.)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerRowProps {
     //index: number;
-    value: EventSongListItem;
-    showTags: boolean;
+    value: SetlistAPI.EventSongListItem;
+    //showTags: boolean;
     songList: db3.EventSongListPayload;
 };
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
@@ -153,7 +154,7 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
             {props.songList.isOrdered && props.value.type === 'song' && (props.value.index + 1)}
         </div>
         <div className="td songName">
-            {props.value.type === 'song' && <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song.id, props.value.song.slug)}>{props.value.song.name}</a>}
+            {props.value.type === 'song' && <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)}>{props.value.song.name}</a>}
             {props.value.type === 'divider' && <div className='divider'>{gDividerText}</div>}
         </div>
         <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
@@ -163,11 +164,6 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         <div className="td comment">
             <div className="comment">{props.value.type !== 'new' && props.value.subtitle}</div>
             {/* <div className="CMChipContainer comment2"></div> */}
-            {props.value.type === 'song' && props.showTags && ((props.value.song as any).tags.length > 0) && (
-                <CMChipContainer>
-                    {enrichedSong!.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} size="small" variation={StandardVariationSpec.Weak} />)}
-                </CMChipContainer>
-            )}
         </div>
     </div>
 
@@ -175,44 +171,18 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function DividerToString(subtitle: string | null | undefined) {
-    return subtitle ? `-- ${subtitle} ------` : `--------`;
-}
+// function DividerToString(subtitle: string | null | undefined) {
+//     return subtitle ? `-- ${subtitle} ------` : `--------`;
+// }
 
 async function CopySongListNames(setlist: db3.EventSongListPayload, snackbarContext: SnackbarContextType) {
-    const rowItems = GetRowItems(setlist);
-
-    const txt = rowItems.map(item => {
-        if (item.type === 'divider') {
-            return DividerToString(item.subtitle);
-        } else if (item.type === 'song') {
-            return item.song.name;
-        }
-        return '';
-    }).join('\n');
-
+    const txt = SetlistAPI.SongListNamesToString(setlist);
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
 async function CopySongListIndexAndNames(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
-    const rowItems = GetRowItems(setlist);
-
-    let index = 1;
-    const lines: string[] = [];
-
-    for (const item of rowItems) {
-        if (item.type === 'divider') {
-            index = 1;
-            lines.push(DividerToString(item.subtitle));
-        } else if (item.type === 'song') {
-            lines.push(`${index}. ${item.song.name}`);
-            index++;
-        }
-        // Ignore other item types (e.g., 'new')
-    }
-
-    const txt = lines.join('\n');
+    const txt = SetlistAPI.SongListIndexAndNamesToString(setlist);
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
@@ -258,62 +228,13 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
 
 
 async function CopySongListCSV(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
-    // Get the combined list of songs and dividers in order
-    const rowItems = GetRowItems(setlist);
-
-    let index = 1;
-    const csvRows: any[] = [];
-
-    for (const item of rowItems) {
-        if (item.type === 'divider') {
-            index = 1;
-            csvRows.push({
-                Index: '',
-                Song: DividerToString(item.subtitle),
-                Length: '',
-                Tempo: '',
-                Comment: '',
-            });
-        } else if (item.type === 'song') {
-            csvRows.push({
-                Index: index.toString(),
-                Song: item.song.name,
-                Length: item.song.lengthSeconds ? formatSongLength(item.song.lengthSeconds) : '',
-                Tempo: API.songs.getFormattedBPM(item.song),
-                Comment: item.subtitle || '',
-            });
-            index++;
-        }
-    }
-
-    const txt = arrayToTSV(csvRows);
+    const txt = SetlistAPI.SongListToCSV(setlist);
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
 
 async function CopySongListMarkdown(snackbarContext: SnackbarContextType, setlist: db3.EventSongListPayload) {
-    const rowItems = GetRowItems(setlist);
-
-    let index = 1;
-    const lines: string[] = [];
-
-    for (const item of rowItems) {
-        if (item.type === 'divider') {
-            index = 1;
-            // not sure the best way to format this but this feels practical.
-            if (item.subtitle) {
-                lines.push(`\n-----\n\n### ${item.subtitle}\n`);
-            } else {
-                lines.push(`\n-----\n`);
-            }
-        } else if (item.type === 'song') {
-            const commentTxt = IsNullOrWhitespace(item.subtitle) ? '' : ` *${item.subtitle}*`;
-            lines.push(`${index}. **${item.song.name}**${commentTxt}`);
-            index++;
-        }
-    }
-
-    const txt = lines.join('\n');
+    const txt = SetlistAPI.SongListToMarkdown(setlist);
     await navigator.clipboard.writeText(txt);
     snackbarContext.showMessage({ severity: "success", children: `Copied ${txt.length} characters` });
 }
@@ -322,8 +243,8 @@ async function CopySongListMarkdown(snackbarContext: SnackbarContextType, setlis
 interface EventSongListDotMenuProps {
     readonly: boolean;
     multipleLists: boolean;
-    showTags: boolean;
-    setShowTags: (v: boolean) => void;
+    //showTags: boolean;
+    //setShowTags: (v: boolean) => void;
     handleCopySongNames: () => Promise<void>;
     handleCopyIndexSongNames: () => Promise<void>;
     handleCopyMarkdown: () => Promise<void>;
@@ -344,13 +265,6 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
     let k = 0;
 
     const menuItems: React.ReactNode[] = [
-        <MenuItem key={++k} onClick={() => { props.setShowTags(!props.showTags); setAnchorEl(null); }}>
-            <ListItemIcon>
-                {props.showTags && gIconMap.CheckCircleOutline()}
-            </ListItemIcon>
-            Show song tags
-        </MenuItem>,
-        <Divider key={++k} />,
         <MenuItem key={++k} onClick={async () => { await props.handleCopySongNames(); setAnchorEl(null); }}>
             <ListItemIcon>
                 {gIconMap.ContentCopy()}
@@ -459,7 +373,7 @@ type SongListSortSpec = "sortOrderAsc" | "sortOrderDesc" | "nameAsc" | "nameDesc
 
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     //const [currentUser] = useCurrentUser();
-    const [showTags, setShowTags] = React.useState<boolean>(false);
+    //const [showTags, setShowTags] = React.useState<boolean>(false);
     const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
     //const visInfo = API.users.getVisibilityInfo(props.value);
     const snackbarContext = React.useContext(SnackbarContext);
@@ -474,7 +388,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         model: props.value,
     });
 
-    const rowItems = GetRowItems(props.value);
+    const rowItems = SetlistAPI.GetRowItems(props.value);
 
     const stats = API.events.getSongListStats(props.value);
 
@@ -568,8 +482,6 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
                             <EventSongListDotMenu
                                 readonly={true}
                                 multipleLists={props.event.songLists.length > 1}
-                                showTags={showTags}
-                                setShowTags={setShowTags}
                                 handleCopySongNames={async () => await CopySongListNames(props.value, snackbarContext)}
                                 handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value)}
                                 handleCopyCSV={async () => await CopySongListCSV(snackbarContext, props.value)}
@@ -590,7 +502,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
                 <div className="tbody">
                     {
-                        rowItems.map((s, index) => <EventSongListValueViewerRow key={s.id} value={s} songList={props.value} showTags={showTags} />)
+                        rowItems.map((s, index) => <EventSongListValueViewerRow key={s.id} value={s} songList={props.value} />)
                     }
 
                 </div>
@@ -611,23 +523,23 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueEditorRowProps {
     //index: number;
-    value: EventSongListItem;
+    value: SetlistAPI.EventSongListItem;
     songList: db3.EventSongListPayload;
-    showTags?: boolean;
+    //showTags?: boolean;
     showDragHandle?: boolean;
-    onChange: (newValue: EventSongListItem) => void;
+    onChange: (newValue: SetlistAPI.EventSongListItem) => void;
     onDelete?: () => void;
 };
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
-    const showTags = CoalesceBool(props.showTags, false);
+    //const showTags = CoalesceBool(props.showTags, false);
     const showDragHandle = CoalesceBool(props.showDragHandle, true);
 
     const handleAutocompleteChange = (song: db3.SongPayload | null) => {
         if (!song) return;
         const { id, eventSongListId, sortOrder } = props.value;
-        const item: EventSongListSongItem = {
+        const item: SetlistAPI.EventSongListSongItem = {
             type: "song",
             eventSongListId,
             id,
@@ -709,11 +621,11 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                             onChange={(e) => handleCommentChange(e.target.value)}
                         />}
                 </div>
-                {showTags && enrichedSong && enrichedSong.tags.length > 0 && (
+                {/* {showTags && enrichedSong && enrichedSong.tags.length > 0 && (
                     <CMChipContainer>
                         {enrichedSong.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variation={StandardVariationSpec.Weak} size="small" />)}
                     </CMChipContainer>
-                )}
+                )} */}
             </div>
         </div>
     </>;
@@ -753,7 +665,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
     //         });
     //     }
     // };
-    const [showTags, setShowTags] = React.useState<boolean>(false);
+    //const [showTags, setShowTags] = React.useState<boolean>(false);
 
     // make sure the caller's object doesn't get modified. esp. create a copy of the songs array so we can manipulate it. any refs we modify should not leak outside of this component.
     //const initialValueCopy: db3.EventSongListPayload = { ...props.initialValue, songs: [...props.initialValue.songs.map(s => ({ ...s }))], dividers: [...props.initialValue.dividers.map(d => ({ ...d }))] };
@@ -762,7 +674,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
     const [value, setValue] = React.useState<db3.EventSongListPayload>(JSON.parse(JSON.stringify(props.initialValue)));
 
     // row items are a combination of songs + dividers, with a new blank row at the end
-    const rowItems = GetRowItems(value);
+    const rowItems = SetlistAPI.GetRowItems(value);
     //ensureHasNewRow(rowItems);
 
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -792,70 +704,37 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
     const stats = API.events.getSongListStats(value);
 
-    const itemToEventSongListSong = (x: EventSongListSongItem) => {
-        const a: EventSongListSongItem = x;
+    const itemToEventSongListSong = (x: SetlistAPI.EventSongListSongItem) => {
         const { type, songId, song, ...rest } = x;
         if (!songId) throw new Error(`expected songId here`);
         if (!song) throw new Error(`expected song here`);
         const id = x.id === newRowId ? getUniqueNegativeID() : x.id;
-        const p: Prisma.EventSongListSongGetPayload<{ include: { song: true } }> = { ...rest, songId, song, id };
+        const p: SetlistAPI.EventSongListSongItemWithSong = { ...rest, songId, song, id };
         return p;
     };
 
     // after you mutate rowItems (ordering, data, whatever), call this to apply to the setlist object
-    const handleRowsUpdated = (rows: EventSongListItem[]) => {
+    const handleRowsUpdated = (rows: SetlistAPI.EventSongListItem[]) => {
         const newValue = JSON.parse(JSON.stringify(value));
-        newValue.songs = rows.filter(r => r.type === 'song').map(item => itemToEventSongListSong(item)) as any;
+        newValue.songs = rows.filter(r => r.type === 'song').map(item => itemToEventSongListSong(item));
         newValue.dividers = rows.filter(r => r.type === "divider");
         setValue(newValue);
     };
 
-    const handleRowChange = (newValue: EventSongListItem) => {
+    const handleRowChange = (newValue: SetlistAPI.EventSongListItem) => {
         handleRowsUpdated([...rowItems.filter(row => row.id !== newValue.id), newValue]);
-        // // replace existing with this.
-        // const n = { ...value };
-        // n.songs = n.songs.filter(s => s.id !== newValue.id);
-        // n.dividers = n.dividers.filter(s => s.id !== newValue.id);
-        // switch (newValue.type) {
-        //     case 'divider':
-        //         {
-        //             n.dividers.push(newValue);
-        //             break;
-        //         }
-        //     case 'song':
-        //         {
-        //             n.songs.push(itemToEventSongListSong(newValue) as any); // payloads are slightly different.
-        //         }
-        //     default:
-        //         return; // noop on new or whatever
-        // }
-        // //if (index === -1) throw new Error(`id should alread be populated`);
-        // //n.songs[index] = newValue;
-        // //ensureHasNewRow();
-        // setValue(n);
     };
 
-    const handleRowDelete = (row: EventSongListItem) => {
+    const handleRowDelete = (row: SetlistAPI.EventSongListItem) => {
         handleRowsUpdated(rowItems.filter(existing => existing.id !== row.id));
-
-        // const n = { ...value };
-        // n.songs = n.songs.filter(s => s.id !== row.id);
-        // n.dividers = n.dividers.filter(s => s.id !== row.id);
-        // const index = n.songs.findIndex(s => s.id === row.id);
-        // if (index === -1) throw new Error(`id should alread be populated`);
-        // n.songs.splice(index, 1);
-        // ensureHasNewRow(n.songs);
-        //setValue(n);
     };
 
     const onDrop = (args: ReactSmoothDnd.DropResult) => {
         // removedIndex is the previous index; the original item to be moved
         // addedIndex is the new index where it should be moved to.
         if (args.addedIndex == null || args.removedIndex == null) throw new Error(`why are these null?`);
-        //value.songs = moveItemInArray(value.songs, args.removedIndex, args.addedIndex).map((song, index) => ({ ...song, sortOrder: index }));
         const newItems = moveItemInArray(rowItems, args.removedIndex, args.addedIndex).map((item, index) => ({ ...item, sortOrder: index }));
         handleRowsUpdated(newItems);
-        //setValue({ ...value });
     };
 
     const getClipboardSongList = async (): Promise<PortableSongList | null> => {
@@ -880,13 +759,13 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
     };
 
     const appendPortableSongList = (list: db3.EventSongListPayload, obj: PortableSongList) => {
-        const newItems: EventSongListItem[] = [...rowItems.filter(item => item.type !== 'new')];
+        const newItems: SetlistAPI.EventSongListItem[] = [...rowItems.filter(item => item.type !== 'new')];
         const highestSortOrder = 1 + newItems.reduce((acc, val) => Math.max(acc, val.sortOrder), 0);
 
         newItems.push(...obj.map(p => {
             switch (p.type) {
                 case 'divider':
-                    const div: EventSongListDividerItem = {
+                    const div: SetlistAPI.EventSongListDividerItem = {
                         type: 'divider',
                         id: getUniqueNegativeID(),
                         eventSongListId: list.id,
@@ -895,7 +774,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     };
                     return div;
                 case 'song':
-                    const song: EventSongListSongItem = {
+                    const song: SetlistAPI.EventSongListSongItem = {
                         type: 'song',
                         id: getUniqueNegativeID(),
                         eventSongListId: list.id,
@@ -1033,8 +912,8 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                                     <EventSongListDotMenu
                                         readonly={false}
                                         multipleLists={false} // don't bother with this from the editor
-                                        showTags={showTags}
-                                        setShowTags={setShowTags}
+                                        // showTags={showTags}
+                                        // setShowTags={setShowTags}
                                         handleCopySongNames={async () => await CopySongListNames(value, snackbarContext)}
                                         handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
                                         handleCopyCSV={async () => await CopySongListCSV(snackbarContext, value)}
@@ -1059,7 +938,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                         >
                             {
                                 rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
-                                    <EventSongListValueEditorRow key={s.id} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} showTags={showTags} />
+                                    <EventSongListValueEditorRow key={s.id} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} />
                                 </ReactSmoothDndDraggable>
                                 )
                             }

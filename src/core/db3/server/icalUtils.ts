@@ -2,10 +2,11 @@ import { hash256 } from "@blitzjs/auth";
 import { Prisma } from "db";
 import { convert } from 'html-to-text';
 import MarkdownIt from 'markdown-it';
-import { CoalesceBool, IsNullOrWhitespace } from "shared/utils";
+import { CoalesceBool } from "shared/utils";
 import * as db3 from "../db3";
 import { DateTimeRange } from "shared/time";
 import { ICalEventStatus } from "ical-generator";
+import { SongListIndexAndNamesToString } from "../shared/setlistApi";
 
 
 // Function to convert Markdown to plain text
@@ -23,8 +24,10 @@ const markdownToPlainText = (markdownText: string): string => {
 
 export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
     select: {
+        id: true,
         sortOrder: true,
         subtitle: true,
+        eventSongListId: true,
     },
 });
 
@@ -36,9 +39,16 @@ export const EventSongListForCalArgs = Prisma.validator<Prisma.EventSongListDefa
         songs: {
             select: {
                 subtitle: true,
+                sortOrder: true,
+                eventSongListId: true,
+                id: true,
+                songId: true,
                 song: {
                     select: {
                         name: true,
+                        id: true,
+                        startBPM: true,
+                        endBPM: true,
                     }
                 }
             },
@@ -108,15 +118,15 @@ set 1
 10. song
 
 */
-const songListToString = (l: EventSongListForCal) => {
-    // TODO: include dividers.
-    const songsFormatted = l.songs
-        .map((song, index) => `${(index + 1).toString().padStart(2, ' ')}. ${song.song.name}${IsNullOrWhitespace(song.subtitle) ? "" : ` (${song.subtitle})`}`);
-    return `-------------
-${l.name}
+// const songListToString = (l: EventSongListForCal) => {
+//     // TODO: include dividers.
+//     const songsFormatted = l.songs
+//         .map((song, index) => `${(index + 1).toString().padStart(2, ' ')}. ${song.song.name}${IsNullOrWhitespace(song.subtitle) ? "" : ` (${song.subtitle})`}`);
+//     return `-------------
+// ${l.name}
 
-${songsFormatted.join("\n")}`;
-};
+// ${songsFormatted.join("\n")}`;
+// };
 
 
 export type EventCalendarInput = Pick<EventForCal,
@@ -231,7 +241,7 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): GetEventCale
     if (event.id === undefined) return null;
     if (event.locationDescription === undefined) return null;
 
-    const setLists = event.songLists ? event.songLists.map(l => songListToString(l)) : [];
+    const setLists = event.songLists ? event.songLists.map(l => SongListIndexAndNamesToString(l)) : [];
 
     // const statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance) = event.status?.significance as any;
 

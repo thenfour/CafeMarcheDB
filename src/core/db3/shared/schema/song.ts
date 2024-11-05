@@ -6,7 +6,7 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeSlugField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
 import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
@@ -192,7 +192,7 @@ const xSongArgs_Base: db3.TableDesc = {
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name", { authMap: xSongAuthMap_R_EOwn_EManagers, }),
-        MakeSlugField("slug", "name", { authMap: xSongAuthMap_R_EAdmin, }),
+        //MakeSlugField("slug", "name", { authMap: xSongAuthMap_R_EAdmin, }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,

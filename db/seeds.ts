@@ -1009,7 +1009,6 @@ const main = async () => {
     const song = await gState.prisma.song.create({
       data: {
         name: songName,
-        slug: slugify(songName),
         description: probabool(0.5) ? faker.lorem.paragraphs(faker.number.int({ max: 3 })) : "",
         aliases: probabool(0.2) ? faker.music.songName() : undefined,
         startBPM: probabool(0.7) ? faker.number.int({ min: 70, max: 160 }) : undefined,

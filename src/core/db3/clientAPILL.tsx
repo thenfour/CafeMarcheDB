@@ -1,5 +1,8 @@
 // stuff that clientAPI uses which doesn't require DB3ClientBasicFields to avoid a dependency cycle.
 
+import { Prisma } from "db";
+import { slugify } from "shared/rootroot";
+
 import { IsNullOrWhitespace } from "shared/utils";
 
 export const getAbsoluteUrl = (slug: string): string => {
@@ -9,17 +12,17 @@ export const getAbsoluteUrl = (slug: string): string => {
     return `${window.location.origin}${encodeURI(slug)}`;
 }
 
-export const getURIForEvent = (eventId: number | string, eventSlug?: string, tabSlug?: string) => {
-    const parts: string[] = [eventId.toString()];
-    if (!IsNullOrWhitespace(eventSlug)) parts.push(eventSlug || "");
+export const getURIForEvent = (event: Prisma.EventGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) => {
+    const parts: string[] = [event.id.toString()];
+    //if (!IsNullOrWhitespace(eventSlug)) parts.push(eventSlug || "");
+    parts.push(slugify(event.name));
     if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
     return getAbsoluteUrl(`/backstage/event/${parts.join("/")}`);
 };
 
-export const getURIForSong = (songId: number | string, songSlug?: string, tabSlug?: string) => {
-    const parts: string[] = [songId.toString()];
-
-    if (!IsNullOrWhitespace(songSlug)) parts.push(songSlug || "");
+export const getURIForSong = (song: Prisma.SongGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) => {
+    const parts: string[] = [song.id.toString()];
+    parts.push(slugify(song.name));
     if (!IsNullOrWhitespace(tabSlug)) parts.push(tabSlug || "");
     return getAbsoluteUrl(`/backstage/song/${parts.join("/")}`);
 };
@@ -43,4 +46,21 @@ export function getURLClass(url: string, baseDomain: string = window.location.ho
         }
         return "internalPage";
     }
+}
+
+export function getFormattedBPM(song: Prisma.SongGetPayload<{ select: { startBPM: true, endBPM: true } }>) {
+    if (!song.startBPM) {
+        if (!song.endBPM) {
+            return "";// neither specified
+        }
+        return `⇢${song.endBPM}`; // only end bpm
+    }
+    if (!song.endBPM) {
+        return `${song.startBPM}⇢`; // only start bpm
+    }
+    // both specified 
+    if ((song.startBPM | 0) === (song.endBPM | 0)) {
+        return `${song.startBPM}`; // both BPMs the same: just show 1.
+    }
+    return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
 }

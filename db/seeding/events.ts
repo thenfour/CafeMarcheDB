@@ -88,7 +88,6 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
         data: {
             name: eventName,
             revision: 0,
-            slug: slugify(eventName),
             expectedAttendanceUserTagId: faker.datatype.boolean(0.8) ? faker.helpers.arrayElement(gState.gAllUserTags).id : null,
             calendarInputHash: faker.string.uuid(),
             uid: faker.string.uuid(),
@@ -138,7 +137,6 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
 
         segments.push(seg);
     }
-
     // song lists
     const songListCount = faker.number.int({ max: 2 });
     for (let ii = 0; ii < songListCount; ++ii) {
@@ -152,16 +150,62 @@ const MakeEvent = async (gState: SeedingState, eventName: string, typeId: number
             }
         });
 
-        const songCount = faker.datatype.boolean(0.1) ? 0 : faker.number.int(40);
+        const songCount = faker.datatype.boolean(0.1) ? 0 : faker.number.int({ min: 1, max: 40 });
+
+        // Create a combined list of songs and dividers
+        const items: any[] = [];
+        let sortOrder = 0;
+
         for (let iii = 0; iii < songCount; ++iii) {
-            await gState.prisma.eventSongListSong.create({
+
+            // Randomly decide to insert a divider before the song
+            if (faker.datatype.boolean(0.1)) {
+                // Add a divider
+                items.push({
+                    type: 'divider',
+                    data: {
+                        eventSongListId: songList.id,
+                        sortOrder: sortOrder++,
+                        subtitle: faker.datatype.boolean(0.5) ? faker.lorem.words() : '', // Optional subtitle
+                    }
+                });
+            }
+
+            // Add a song
+            items.push({
+                type: 'song',
                 data: {
                     eventSongListId: songList.id,
                     songId: faker.helpers.arrayElement(gState.gAllSongs).id,
-                    sortOrder: iii,
+                    sortOrder: sortOrder++,
                     subtitle: faker.datatype.boolean(0.1) ? faker.lorem.sentence() : undefined,
                 }
             });
+        }
+
+        // Optionally add a divider at the end
+        if (faker.datatype.boolean(0.1)) {
+            items.push({
+                type: 'divider',
+                data: {
+                    eventSongListId: songList.id,
+                    sortOrder: sortOrder++,
+                    subtitle: faker.datatype.boolean(0.5) ? faker.lorem.words() : '',
+                }
+            });
+        }
+
+        // Insert the items into the database
+        for (const item of items) {
+            if (item.type === 'song') {
+                await gState.prisma.eventSongListSong.create({
+                    data: item.data
+                });
+            } else if (item.type === 'divider') {
+                await gState.prisma.eventSongListDivider.create({
+                    data: item.data
+                });
+            }
         }
 
     } // create song lists

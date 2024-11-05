@@ -437,7 +437,7 @@ export interface EventTableParams {
     eventId?: number;
     eventIds?: number[];
     eventUids?: string[];
-    eventSlug?: string;
+    //eventSlug?: string;
     eventTypeIds?: number[];
     eventStatusIds?: number[];
     minDate?: Date;
@@ -477,7 +477,7 @@ export const xEventArgs_Base: db3.TableDesc = {
         const ret: Prisma.EventWhereInput[] = [];
 
         if (params.eventId !== undefined) {
-            console.assert(params.eventSlug === undefined);
+            //console.assert(params.eventSlug === undefined);
             ret.push({ id: params.eventId, });
         }
         if (params.eventIds !== undefined) {
@@ -498,10 +498,10 @@ export const xEventArgs_Base: db3.TableDesc = {
                 ret.push(t);
             }
         }
-        if (params.eventSlug !== undefined) {
-            console.assert(params.eventId === undefined);
-            ret.push({ slug: params.eventSlug });
-        }
+        // if (params.eventSlug !== undefined) {
+        //     console.assert(params.eventId === undefined);
+        //     ret.push({ slug: params.eventSlug });
+        // }
         if (params.eventTypeIds !== undefined) {
             assertIsNumberArray(params.eventTypeIds);
             if (params.eventTypeIds.length > 0) {
@@ -573,7 +573,7 @@ export const xEventArgs_Base: db3.TableDesc = {
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("name", { authMap: xEventAuthMap_Homepage, }),
-        MakeSlugField("slug", "name", { authMap: xEventAuthMap_R_EAdmin, }),
+        //MakeSlugField("slug", "name", { authMap: xEventAuthMap_R_EAdmin, }),
         MakeMarkdownTextField("description", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "isDeleted", defaultValue: false, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         MakePlainTextField("locationDescription", { authMap: xEventAuthMap_Homepage, }),

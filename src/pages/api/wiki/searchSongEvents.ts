@@ -18,7 +18,7 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
                 },
                 {
                     OR: [
-                        { slug: { contains: keyword } },
+                        //{ slug: { contains: keyword } },
                         { aliases: { contains: keyword } },
                         { name: { contains: keyword } },
                     ]
@@ -29,7 +29,7 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
             id: true,
             name: true,
             introducedYear: true,
-            slug: true,
+            //slug: true,
         },
         take: 10,
     });
@@ -46,7 +46,7 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
                 },
                 {
                     OR: [
-                        { slug: { contains: keyword } },
+                        //{ slug: { contains: keyword } },
                         { name: { contains: keyword } },
                     ]
                 },
@@ -56,7 +56,7 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
             id: true,
             name: true,
             startsAt: true,
-            slug: true,
+            //slug: true,
         },
         take: 10,
     });
@@ -90,7 +90,7 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
         select: {
             id: true,
             name: true,
-            slug: true,
+            //slug: true,
         },
         take: 10,
     });
@@ -112,7 +112,7 @@ async function getMatchingSlugs(keyword: string): Promise<MatchingSlugItem[]> {
     const ret: MatchingSlugItem[] = [
         ...songSlugs.map(s => MakeMatchingSlugItem({ ...s, name: makeSongName(s), itemType: "song" })),
         ...eventSlugs.map(s => MakeMatchingSlugItem({ ...s, name: makeEventName(s), itemType: "event" })),
-        ...userSlugs.map(s => MakeMatchingSlugItem({ ...s, slug: slugify(s.name), itemType: "user" })),
+        ...userSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "user" })),
         ...instrumentSlugs.map(s => MakeMatchingSlugItem({ ...s, itemType: "instrument" })),
     ];
 

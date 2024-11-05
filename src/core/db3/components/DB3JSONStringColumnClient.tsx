@@ -102,7 +102,7 @@ const ActivityLogEventSegment = ({ eventSegmentId, cacheData }: { eventSegmentId
     if (!foundEvent) {
         return <ActivityLogChip><Id value={foundSegment.eventId} />, seg:{foundSegment.id}</ActivityLogChip>;
     }
-    return <ActivityLogChip uri={getURIForEvent(foundEvent.id)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
+    return <ActivityLogChip uri={getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id} seg:{foundSegment.name}#{foundSegment.id}</ActivityLogChip>;
 };
 
 const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | undefined, cacheData: ActivityLogCacheData }) => {
@@ -111,7 +111,7 @@ const ActivityLogEvent = ({ eventId, cacheData }: { eventId: number | null | und
         return <ActivityLogChip><Id value={eventId} /></ActivityLogChip>;
     }
 
-    return <ActivityLogChip uri={getURIForEvent(foundEvent.id)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
+    return <ActivityLogChip uri={getURIForEvent(foundEvent)}>{EventAPI.getLabel(foundEvent)}#{foundEvent.id}</ActivityLogChip>;
 };
 
 const ActivityLogEventTag = ({ eventTagId, cacheData }: { eventTagId: number | null | undefined, cacheData: ActivityLogCacheData }) => {

@@ -91,7 +91,7 @@ const NewEventForm = (props: NewEventDialogProps) => {
             EventTableClientColumns.id,
             EventTableClientColumns.name,
             EventTableClientColumns.description,
-            EventTableClientColumns.slug,
+            //EventTableClientColumns.slug,
             EventTableClientColumns.type,
             EventTableClientColumns.status,
             EventTableClientColumns.tags,
@@ -275,7 +275,7 @@ const ImportEventsPageContent = () => {
                 <textarea className="configTxt" value={configTxt} onChange={(e) => setConfigTxt(e.target.value)} />
                 <textarea className="eventTxt" value={eventTxt} onChange={(e) => setEventTxt(e.target.value)} />
                 <ul className="history">
-                    {eventSaveLog.map((e, i) => <li key={i}><a href={getURIForEvent(e.event.id)} target="_blank" rel="noreferrer">{e.event.id} / {e.segment.startsAt?.toDateString()} / {e.event.name}</a></li>)}
+                    {eventSaveLog.map((e, i) => <li key={i}><a href={getURIForEvent(e.event)} target="_blank" rel="noreferrer">{e.event.id} / {e.segment.startsAt?.toDateString()} / {e.event.name}</a></li>)}
                 </ul>
             </div>
             <div>

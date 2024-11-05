@@ -102,7 +102,7 @@ export interface TupdateUserEventAttendanceMutationArgs {
 export interface TupdateEventBasicFieldsArgs {
     eventId: number;
     name?: string;
-    slug?: string;
+    //slug?: string;
     description?: string;
     typeId?: number;
     locationDescription?: string;
@@ -179,7 +179,7 @@ export interface TinsertEventArgs {
         name: string,
         description: string,
         locationDescription: string | null,
-        slug: string,
+        //slug: string,
         typeId: number | null,
         statusId: number | null,
         tags: number[],
@@ -557,7 +557,7 @@ export const ZTUpdateWikiPageArgs = z.object({
 export interface MatchingSlugItem {
     id: number,
     name: string,
-    slug: string,
+    //slug: string,
     itemType: "event" | "song" | "user" | "instrument";
 };
 export const MakeMatchingSlugItem = (value: MatchingSlugItem) => ({ ...value });

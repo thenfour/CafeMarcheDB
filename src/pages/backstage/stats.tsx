@@ -122,7 +122,14 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
 
     return <div>
         <h2>
-            <a href={getURIForSong(occurrances[0]!.songId)} rel="noreferrer" target="_blank">
+            <a
+                href={getURIForSong({
+                    id: occurrances[0]!.songId,
+                    name: occurrances[0]!.songName,
+                })}
+                rel="noreferrer"
+                target="_blank"
+            >
                 {occurrances[0]!.songName}</a>
             ({occurrances.length})
         </h2>
@@ -146,7 +153,7 @@ const StatsPagePopularSong = ({ occurrances, expanded }: { occurrances: GetGloba
                 <ul>
                     {selectedBucket?.items.map(i => {
                         return <li key={i.item.eventId}>
-                            <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item.eventId)}>
+                            <a rel="noreferrer" target="_blank" href={getURIForEvent({ id: i.item.eventId, name: i.item.eventName })}>
                                 {i.item.startsAt?.toLocaleDateString()} {i.item.eventName}
                             </a></li>;
 
@@ -261,7 +268,7 @@ const StatsPageInner = () => {
             <ul>
                 {selectedEventBucket?.items.map(i => {
                     return <li key={i.item.id}>
-                        <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item.id)}>
+                        <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
                             {EventAPI.getLabel(i.item)}
                         </a></li>;
 

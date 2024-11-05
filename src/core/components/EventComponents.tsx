@@ -378,7 +378,7 @@ export const EventBreadcrumbs = (props: EventBreadcrumbProps) => {
         <Link
             underline="hover"
             color="inherit"
-            href={API.events.getURIForEvent(props.event.id, props.event.slug)}
+            href={API.events.getURIForEvent(props.event)}
             sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.event.name}
@@ -1215,10 +1215,10 @@ export const EventDetailContainer = ({ eventData, tableClient, refetch, ...props
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
-                            if (obj.slug !== eventData.event.slug) {
-                                const newUrl = API.events.getURIForEvent(obj.id, obj.slug);
-                                //void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
-                            }
+                            // if (obj.slug !== eventData.event.slug) {
+                            //     const newUrl = API.events.getURIForEvent(obj.id, obj.slug);
+                            //     //void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                            // }
                         }).catch(err => {
                             console.log(err);
                             showSnackbar({ children: "update error", severity: 'error' });
@@ -1471,7 +1471,7 @@ export const EventSearchItemContainer = ({ ...props }: React.PropsWithChildren<E
     const highlightStatusIds = props.highlightStatusIds || [];
     const highlightTypeIds = props.highlightTypeIds || [];
 
-    const eventURI = API.events.getURIForEvent(event.id, event.slug);
+    const eventURI = API.events.getURIForEvent(event);
     const dateRange = API.events.getEventDateRange(event);
     const eventTiming = dateRange.hitTestDateTime();
 
@@ -1624,13 +1624,13 @@ export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),
     name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
     dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
-    slug: new DB3Client.SlugColumnClient({
-        columnName: "slug", cellWidth: 150, fieldCaption: "URL (auto-generated)", previewSlug: (obj) => {
-            const id = obj.id || "???";
-            const slug = obj.slug || undefined;
-            return API.events.getURIForEvent(id, slug);
-        }
-    }),
+    // slug: new DB3Client.SlugColumnClient({
+    //     columnName: "slug", cellWidth: 150, fieldCaption: "URL (auto-generated)", previewSlug: (obj) => {
+    //         const id = obj.id || "???";
+    //         const slug = obj.slug || undefined;
+    //         return API.events.getURIForEvent(id, slug);
+    //     }
+    // }),
     description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
     isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
     locationDescription: new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150, fieldCaption: "Location" }),

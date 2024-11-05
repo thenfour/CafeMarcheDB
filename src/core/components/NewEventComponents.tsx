@@ -39,7 +39,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
         columns: [
             EventTableClientColumns.id,
             EventTableClientColumns.name,
-            EventTableClientColumns.slug,
+            //EventTableClientColumns.slug,
             EventTableClientColumns.locationDescription,
             EventTableClientColumns.type,
             EventTableClientColumns.status,
@@ -119,7 +119,7 @@ const NewEventDialogWrapper = (props: NewEventDialogProps) => {
             showSnackbar({ children: "insert successful", severity: 'success' });
             props.onOK();
 
-            simulateLinkClick(API.events.getURIForEvent(ret.event.id, ret.event.slug));
+            simulateLinkClick(API.events.getURIForEvent(ret.event));
 
         }).catch(err => {
             console.log(err);

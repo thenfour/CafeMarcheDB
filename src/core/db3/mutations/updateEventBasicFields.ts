@@ -15,7 +15,7 @@ export default resolver.pipe(
         // verbose on purpose in order to validate args type against UncheckedUpdateInput
         const fields: Prisma.EventUncheckedUpdateInput = {
             name: args.name,
-            slug: args.slug,
+            //slug: args.slug,
             description: args.description,
             typeId: args.typeId,
             visiblePermissionId: args.visiblePermissionId,

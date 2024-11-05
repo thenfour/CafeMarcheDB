@@ -262,7 +262,6 @@ model Song {
   id             Int    @id @default(autoincrement())
   name           String @db.VarChar(768)
   aliases        String @default("") @db.VarChar(768)
-  slug           String @db.VarChar(768)
   description    String @db.MediumText
   startBPM       Int?
   endBPM         Int?
@@ -286,7 +285,6 @@ model Song {
 
   @@index([name])
   @@index([aliases])
-  @@index([slug])
   @@index([isDeleted])
   @@index([visiblePermissionId])
 }
@@ -393,7 +391,6 @@ model InstrumentFunctionalGroup {
 model Instrument {
   id          Int    @id @default(autoincrement())
   name        String @unique @db.VarChar(768)
-  slug        String @default("") @db.VarChar(768)
   description String @db.MediumText
   sortOrder   Int
 
@@ -409,7 +406,6 @@ model Instrument {
   eventUserResponses EventUserResponse[]
 
   @@index([name])
-  @@index([slug])
   @@index([sortOrder])
   @@index([functionalGroupId])
 }
@@ -466,7 +462,6 @@ model Event {
   revision          Int
   calendarInputHash String?    @db.VarChar(200) // ical input payload, to know if revision should be updated.
   name              String     @db.VarChar(768)
-  slug              String     @db.VarChar(768)
   description       String     @db.MediumText // what's the diff between a description & comment? description is the pinned general description in markdown.
   typeId            Int?
   type              EventType? @relation(fields: [typeId], references: [id], onDelete: SetNull) // when deleting foreign object,set local id to null
@@ -553,7 +548,6 @@ model Event {
 
   @@unique([uid])
   @@index([name])
-  @@index([slug])
   @@index([typeId])
   @@index([isDeleted])
   @@index([statusId])

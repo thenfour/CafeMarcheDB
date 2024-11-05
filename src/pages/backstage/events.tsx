@@ -1,29 +1,24 @@
 import { BlitzPage } from "@blitzjs/next";
-import { ListItemIcon, Menu, MenuItem, Pagination, Tooltip } from "@mui/material";
-import Link from "next/link";
+import { ListItemIcon, Menu, MenuItem, Pagination } from "@mui/material";
 import React, { Suspense } from "react";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { Timing } from "shared/time";
-import { IsNullOrWhitespace, arrayToTSV, arraysContainSameValues } from "shared/utils";
+import { arrayToTSV, arraysContainSameValues } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { AdminInspectObject, CMSinglePageSurfaceCard, InspectObject } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, EventDateField, NameValuePair, useURLState } from "src/core/components/CMCoreComponents2";
-import { GetStyleVariablesForColor } from "src/core/components/Color";
+import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { EventAttendanceControl } from "src/core/components/EventAttendanceComponents";
-import { EventListItem, EventSearchItemContainer } from "src/core/components/EventComponents";
-import { CalculateEventMetadata, EventListQuerier, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "src/core/components/EventComponentsBase";
+import { EventListItem } from "src/core/components/EventComponents";
+import { EventListQuerier, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "src/core/components/EventComponentsBase";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
-import { API } from "src/core/db3/clientAPI";
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterion, DiscreteCriterionFilterType, GetICalRelativeURIForUserAndEvent, MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterion, DiscreteCriterionFilterType, MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
 // // for serializing in compact querystring
@@ -71,7 +66,7 @@ async function CopyEventListCSV(snackbarContext: SnackbarContextType, value: db3
         DurationMinutes: (new Number(e.durationMillis).valueOf() / 60000).toString(),
         Location: e.locationDescription,
         LocationURL: e.locationURL,
-        URL: getURIForEvent(e.id),
+        URL: getURIForEvent(e),
     }));
     const txt = arrayToTSV(obj);
     await navigator.clipboard.writeText(txt);

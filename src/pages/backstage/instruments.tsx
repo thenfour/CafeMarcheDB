@@ -19,11 +19,11 @@ const InstrumentListContent = () => {
         columns: [
             new DB3Client.PKColumnClient({ columnName: "id" }),
             new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 200 }),
-            new DB3Client.SlugColumnClient({
-                columnName: "slug", cellWidth: 120, previewSlug: (obj) => {
-                    return null;
-                }
-            }),
+            // new DB3Client.SlugColumnClient({
+            //     columnName: "slug", cellWidth: 120, previewSlug: (obj) => {
+            //         return null;
+            //     }
+            // }),
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
             new DB3Client.GenericStringColumnClient({ columnName: "autoAssignFileLeafRegex", cellWidth: 200, fieldCaption: "Regex" }),
             new DB3Client.GenericIntegerColumnClient({ columnName: "sortOrder", cellWidth: 80 }),

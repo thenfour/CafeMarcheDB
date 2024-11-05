@@ -18,7 +18,7 @@ import { hash256 } from '@blitzjs/auth';
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {
         expectedAttendanceUserTagId: true,
-        slug: true,
+        name: true,
         startsAt: true,
         durationMillis: true,
         isAllDay: true,
@@ -67,7 +67,7 @@ export function CalculateEventMetadata<
         makeMockEventSegmentResponse,
         makeMockEventUserResponse,
     });
-    const eventURI = API.events.getURIForEvent(event.id, event.slug, tabSlug);
+    const eventURI = API.events.getURIForEvent(event, tabSlug);
 
     let dateRange = new DateTimeRange({
         startsAtDateTime: event.startsAt,

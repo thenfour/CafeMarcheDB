@@ -40,7 +40,7 @@ const MainContent = () => {
             EventTableClientColumns.id,
             EventTableClientColumns.name,
             EventTableClientColumns.dateRange,
-            EventTableClientColumns.slug,
+            //EventTableClientColumns.slug,
             EventTableClientColumns.description,
             EventTableClientColumns.isDeleted,
             EventTableClientColumns.locationDescription,

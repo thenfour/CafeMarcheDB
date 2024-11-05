@@ -17,7 +17,7 @@ export interface SongWithMetadata {
 export const CalculateSongMetadata = (song: EnrichedVerboseSong, tabSlug?: string | undefined | null): SongWithMetadata => {
     return {
         song,
-        songURI: API.songs.getURIForSong(song.id, song.slug, tabSlug || undefined),
+        songURI: API.songs.getURIForSong(song, tabSlug || undefined),
         formattedBPM: (song.startBPM === null && song.endBPM === null) ? null : API.songs.getFormattedBPM(song),
         formattedLength: song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds),
     };

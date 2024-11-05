@@ -183,7 +183,7 @@ export const SongHistoryInner = ({ song, ...props }: SongHistoryProps) => {
         <ul>
             {selectedBucket && selectedBucket.items.map(i => {
                 return <li key={i.item.id}>
-                    <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item.id)}>
+                    <a rel="noreferrer" target="_blank" href={getURIForEvent(i.item)}>
                         {EventAPI.getLabel(i.item)}
                     </a></li>;
             })}

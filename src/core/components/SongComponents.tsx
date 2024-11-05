@@ -36,13 +36,6 @@ export const SongClientColumns = {
     name: new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
     //searchableName: new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
     aliases: new DB3Client.GenericStringColumnClient({ columnName: "aliases", cellWidth: 180 }),
-    slug: new DB3Client.SlugColumnClient({
-        columnName: "slug", cellWidth: 120, previewSlug: (obj) => {
-            const id = obj.id || "???";
-            const slug = obj.slug || undefined;
-            return API.songs.getURIForSong(id, slug);
-        }
-    }),
     description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200 }),
     isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
     startBPM: new DB3Client.GenericIntegerColumnClient({ columnName: "startBPM", cellWidth: 100 }),
@@ -87,7 +80,7 @@ export const SongBreadcrumbs = (props: SongBreadcrumbProps) => {
         <Link
             underline="hover"
             color="inherit"
-            href={API.songs.getURIForSong(props.song.id, props.song.slug)}
+            href={API.songs.getURIForSong(props.song)}
             sx={{ display: 'flex', alignItems: 'center' }}
         >
             {props.song.name}
@@ -429,10 +422,10 @@ export const SongDetailContainer = ({ songData, tableClient, ...props }: React.P
                         tableClient.doUpdateMutation(obj).then(() => {
                             showSnackbar({ children: "update successful", severity: 'success' });
                             api.close();
-                            if (obj.slug !== song.slug) {
-                                const newUrl = API.songs.getURIForSong(obj.id, obj.slug);
-                                void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
-                            }
+                            // if (obj.slug !== song.slug) {
+                            //     const newUrl = API.songs.getURIForSong(obj.id, obj.slug);
+                            //     void router.replace(newUrl); // <-- ideally we would show the snackbar on refresh but no.
+                            // }
                         }).catch(err => {
                             console.log(err);
                             showSnackbar({ children: "update error", severity: 'error' });

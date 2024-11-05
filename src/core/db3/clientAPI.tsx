@@ -256,8 +256,8 @@ class EventsAPI {
         return ret;
     }
 
-    getURIForEvent(eventId: number | string, eventSlug?: string, tabSlug?: string) {
-        return ClientAPILL.getURIForEvent(eventId, eventSlug, tabSlug);
+    getURIForEvent(event: Prisma.EventGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) {
+        return ClientAPILL.getURIForEvent(event, tabSlug);
     }
 
 
@@ -298,25 +298,12 @@ class EventsAPI {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class SongsAPI {
 
-    getURIForSong(songId: number | string, songSlug?: string, tabSlug?: string) {
-        return ClientAPILL.getURIForSong(songId, songSlug, tabSlug);
+    getURIForSong(song: Prisma.SongGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) {
+        return ClientAPILL.getURIForSong(song, tabSlug);
     }
 
-    getFormattedBPM(song: db3.SongPayloadMinimum) {
-        if (!song.startBPM) {
-            if (!song.endBPM) {
-                return "";// neither specified
-            }
-            return `⇢${song.endBPM}`; // only end bpm
-        }
-        if (!song.endBPM) {
-            return `${song.startBPM}⇢`; // only start bpm
-        }
-        // both specified 
-        if ((song.startBPM | 0) === (song.endBPM | 0)) {
-            return `${song.startBPM}`; // both BPMs the same: just show 1.
-        }
-        return `${song.startBPM}⇢${song.endBPM}`; // only start bpm
+    getFormattedBPM(song: Prisma.SongGetPayload<{ select: { startBPM: true, endBPM: true } }>) {
+        return ClientAPILL.getFormattedBPM(song);
     }
 
     updateSongBasicFields = CreateAPIMutationFunction(updateSongBasicFields);

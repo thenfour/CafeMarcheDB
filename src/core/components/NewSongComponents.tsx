@@ -41,7 +41,7 @@ export const NewSongButton = () => {
             SongClientColumns.name,
             //new SearchableNameColumnClient({ columnName: "name", cellWidth: 250 }),
             SongClientColumns.aliases,
-            SongClientColumns.slug,
+            //SongClientColumns.slug,
             new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 200, visible: false }), // required field but it's distracting to see here.
             SongClientColumns.startBPM,
             SongClientColumns.endBPM,
@@ -63,7 +63,7 @@ export const NewSongButton = () => {
     const handleSave = (obj: TAnyModel, api: DB3EditRowButtonAPI) => {
         songTableClient.doInsertMutation(obj).then(async (ret) => {
             showSnackbar({ severity: "success", children: "success" });
-            simulateLinkClick(API.songs.getURIForSong((ret as any).id));
+            simulateLinkClick(API.songs.getURIForSong(ret as any));
             api.closeDialog();
         }).catch(e => {
             console.log(e);

@@ -32,7 +32,7 @@ const MainContent = () => {
             SongClientColumns.id,
             SongClientColumns.name,
             SongClientColumns.aliases,
-            SongClientColumns.slug,
+            //SongClientColumns.slug,
             SongClientColumns.description,
             SongClientColumns.startBPM,
             SongClientColumns.endBPM,
