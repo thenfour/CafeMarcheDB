@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState, MouseEvent, TouchEventHandler, TouchEvent } from 'react';
-import { clamp01, lerp, mapRange } from 'shared/utils';
+import React, { MouseEvent, TouchEvent, useEffect, useRef, useState } from 'react';
+import { lerp, mapRange } from 'shared/utils';
 
 interface KnobProps {
     min: number;
@@ -15,6 +15,12 @@ interface KnobProps {
     style?: React.CSSProperties;
     startAngle01?: number;
     endAngle01?: number;
+    /** 
+     * Determines the dragging behavior of the knob. 
+     * 'radial' - value changes based on cursor angle around the knob.
+     * 'vertical' - value changes based on vertical cursor movement.
+     */
+    dragBehavior?: 'radial' | 'vertical';
 }
 
 export const Knob: React.FC<KnobProps> = ({
@@ -31,10 +37,14 @@ export const Knob: React.FC<KnobProps> = ({
     style,
     startAngle01,
     endAngle01,
+    dragBehavior = 'radial',
 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [currentValue, setCurrentValue] = useState(value);
+
+    const [startY, setStartY] = useState<number | null>(null);
+    const [startValue, setStartValue] = useState<number>(value);
 
     // Calculate value range
     const valueRange = max - min;
@@ -96,42 +106,102 @@ export const Knob: React.FC<KnobProps> = ({
         drawKnob(value);
     }, [value]);
 
-    // Handle mouse events
+    // // Handle mouse events
+    // const handleStart = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+    //     if (disabled) return;
+    //     setIsDragging(true);
+    //     handleMove(e);
+    //     //e.preventDefault(); // Prevent scrolling on touch devices -- actually this is better handled by touch-action css prop
+    // };
+
+    // const handleMove = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+    //     if (!isDragging) return;
+    //     const rect = canvasRef.current?.getBoundingClientRect();
+    //     if (!rect) return;
+
+    //     let clientX: number = 0;
+    //     let clientY: number = 0;
+
+    //     if ('touches' in e && e.touches) {
+    //         // Touch event
+    //         clientX = e.touches[0]!.clientX;
+    //         clientY = e.touches[0]!.clientY;
+    //     } else if ('clientX' in e && 'clientY' in e) {
+    //         // Mouse event
+    //         clientX = e.clientX;
+    //         clientY = e.clientY;
+    //     }
+    //     else {
+    //         throw new Error(`unexpected cursor move scenario`);
+    //     }
+
+    //     const x = clientX - rect.left - size / 2;
+    //     const y = clientY - rect.top - size / 2;
+    //     let angle = (Math.atan2(y, x) / (Math.PI * 2)) + 0.75;
+
+    //     let angle01 = mapRange(angle % 1, startAngle01, endAngle01, 0, 1);
+
+    //     let newValue = lerp(min, max, angle01);
+
+    //     // Apply step
+    //     if (step > 0) {
+    //         newValue = Math.round(newValue / step) * step;
+    //     }
+
+    //     // Clamp value
+    //     newValue = Math.min(Math.max(newValue, min), max);
+
+    //     setCurrentValue(newValue);
+    //     drawKnob(newValue);
+    //     onChange(newValue);
+    // };
+
+
+
+    // Handle mouse and touch events
     const handleStart = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
         if (disabled) return;
         setIsDragging(true);
-        handleMove(e);
-        //e.preventDefault(); // Prevent scrolling on touch devices -- actually this is better handled by touch-action css prop
+
+        if (dragBehavior === 'vertical') {
+            if ('touches' in e && e.touches.length > 0) {
+                setStartY(e.touches[0]!.clientY);
+            } else if ('clientY' in e) {
+                setStartY(e.clientY);
+            }
+            setStartValue(currentValue);
+        }
+
+        e.preventDefault(); // Prevent default touch behavior
     };
 
-    const handleMove = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (!rect) return;
 
-        let clientX: number = 0;
+        if (dragBehavior === 'vertical') {
+            handleVerticalDrag(e);
+        } else {
+            handleRadialDrag(e);
+        }
+    };
+
+    const handleVerticalDrag = (e: MouseEvent | TouchEvent) => {
+        if (startY === null) return;
+
         let clientY: number = 0;
 
-        if ('touches' in e && e.touches) {
-            // Touch event
-            clientX = e.touches[0]!.clientX;
+        if ('touches' in e && e.touches.length > 0) {
             clientY = e.touches[0]!.clientY;
-        } else if ('clientX' in e && 'clientY' in e) {
-            // Mouse event
-            clientX = e.clientX;
+        } else if ('clientY' in e) {
             clientY = e.clientY;
         }
-        else {
-            throw new Error(`unexpected cursor move scenario`);
-        }
 
-        const x = clientX - rect.left - size / 2;
-        const y = clientY - rect.top - size / 2;
-        let angle = (Math.atan2(y, x) / (Math.PI * 2)) + 0.75;
+        const deltaY = startY - clientY; // Positive when moving up
 
-        let angle01 = mapRange(angle % 1, startAngle01, endAngle01, 0, 1);
+        // Sensitivity factor: adjust this value to control how fast the knob changes with movement
+        const sensitivity = (max - min) / 1000; // Adjust denominator for sensitivity
 
-        let newValue = lerp(min, max, angle01);
+        let newValue = startValue + deltaY * sensitivity;
 
         // Apply step
         if (step > 0) {
@@ -144,6 +214,52 @@ export const Knob: React.FC<KnobProps> = ({
         setCurrentValue(newValue);
         drawKnob(newValue);
         onChange(newValue);
+
+        e.preventDefault(); // Prevent text selection and other defaults
+    };
+
+    const handleRadialDrag = (e: MouseEvent | TouchEvent) => {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        let clientX: number = 0;
+        let clientY: number = 0;
+
+        if ('touches' in e && e.touches.length > 0) {
+            clientX = e.touches[0]!.clientX;
+            clientY = e.touches[0]!.clientY;
+        } else if ('clientX' in e && 'clientY' in e) {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const x = clientX - rect.left - size / 2;
+        const y = clientY - rect.top - size / 2;
+        let angle = Math.atan2(y, x);
+
+        // Normalize angle to a value between 0 and 2*PI
+        if (angle < 0) {
+            angle += 2 * Math.PI;
+        }
+
+        let angleRatio = (angle - startAngle + 2 * Math.PI) % (2 * Math.PI);
+        angleRatio = angleRatio / angleRange;
+
+        let newValue = min + angleRatio * valueRange;
+
+        // Apply step
+        if (step > 0) {
+            newValue = Math.round(newValue / step) * step;
+        }
+
+        // Clamp value
+        newValue = Math.min(Math.max(newValue, min), max);
+
+        setCurrentValue(newValue);
+        drawKnob(newValue);
+        onChange(newValue);
+
+        e.preventDefault();
     };
 
     const handleEnd = () => {
@@ -197,223 +313,332 @@ export const Knob: React.FC<KnobProps> = ({
 
 
 
-interface Knob2Props {
-    min: number;
-    max: number;
-    value: number;
-    step?: number;
-    lineWidth?: number;
-    centerRadius?: number;
-    onChange: (value: number) => void;
-    disabled?: boolean;
-    className?: string;
-    style?: React.CSSProperties;
-    startAngle01?: number;
-    endAngle01?: number;
-}
+// interface Knob2Props {
+//     min: number;
+//     max: number;
+//     value: number;
+//     step?: number;
+//     lineWidth?: number;
+//     centerRadius?: number;
+//     onChange: (value: number) => void;
+//     disabled?: boolean;
+//     className?: string;
+//     style?: React.CSSProperties;
+//     startAngle01?: number;
+//     endAngle01?: number;
+// }
 
-export const Knob2: React.FC<Knob2Props> = ({
-    min,
-    max,
-    value,
-    step = 1,
-    lineWidth,
-    centerRadius,
-    onChange,
-    disabled = false,
-    className,
-    style,
-    startAngle01 = 0.1,
-    endAngle01 = 0.9,
-}) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [currentValue, setCurrentValue] = useState(value);
+// export const Knob2: React.FC<Knob2Props> = ({
+//     min,
+//     max,
+//     value,
+//     step = 1,
+//     lineWidth,
+//     centerRadius,
+//     onChange,
+//     disabled = false,
+//     className,
+//     style,
+//     startAngle01 = 0.1,
+//     endAngle01 = 0.9,
+//     dragBehavior
+// }) => {
+//     const canvasRef = useRef<HTMLCanvasElement>(null);
+//     const [isDragging, setIsDragging] = useState(false);
+//     const [currentValue, setCurrentValue] = useState(value);
 
-    // Calculate value range
-    const valueRange = max - min;
+//     const [startY, setStartY] = useState<number | null>(null);
+//     const [startValue, setStartValue] = useState<number>(value);
 
-    // Calculate angle range
-    const startAngle = startAngle01 * Math.PI * 2 + Math.PI / 2;
-    const endAngle = endAngle01 * Math.PI * 2 + Math.PI / 2;
-    const angleRange = endAngle - startAngle;
+//     // Calculate value range
+//     const valueRange = max - min;
 
-    // Draw the knob
-    const drawKnob = (val: number) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+//     // Calculate angle range
+//     const startAngle = startAngle01 * Math.PI * 2 + Math.PI / 2;
+//     const endAngle = endAngle01 * Math.PI * 2 + Math.PI / 2;
+//     const angleRange = endAngle - startAngle;
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+//     // Draw the knob
+//     const drawKnob = (val: number) => {
+//         const canvas = canvasRef.current;
+//         if (!canvas) return;
 
-        const width = canvas.width;
-        const height = canvas.height;
-        const size = Math.min(width, height);
+//         const ctx = canvas.getContext('2d');
+//         if (!ctx) return;
 
-        // Adjust lineWidth and centerRadius based on size
-        const lineWidthScaled = lineWidth || size * 0.1; // Default to 10% of size
-        const centerRadiusScaled = centerRadius || size * 0.2; // Default to 20% of size
+//         const width = canvas.width;
+//         const height = canvas.height;
+//         const size = Math.min(width, height);
 
-        // Clear canvas
-        ctx.clearRect(0, 0, width, height);
+//         // Adjust lineWidth and centerRadius based on size
+//         const lineWidthScaled = lineWidth || size * 0.1; // Default to 10% of size
+//         const centerRadiusScaled = centerRadius || size * 0.2; // Default to 20% of size
 
-        // Calculate angle for current value
-        const valueRatio = (val - min) / valueRange;
-        const angle = startAngle + valueRatio * angleRange;
+//         // Clear canvas
+//         ctx.clearRect(0, 0, width, height);
 
-        // Draw track
-        ctx.beginPath();
-        ctx.arc(
-            width / 2,
-            height / 2,
-            Math.max(1, size / 2 - lineWidthScaled),
-            startAngle,
-            endAngle,
-            false
-        );
-        ctx.lineWidth = lineWidthScaled;
-        ctx.strokeStyle = '#e0e0e0';
-        ctx.stroke();
+//         // Calculate angle for current value
+//         const valueRatio = (val - min) / valueRange;
+//         const angle = startAngle + valueRatio * angleRange;
 
-        // Draw value arc
-        ctx.beginPath();
-        ctx.arc(
-            width / 2,
-            height / 2,
-            Math.max(1, size / 2 - lineWidthScaled),
-            startAngle,
-            angle,
-            false
-        );
-        ctx.lineWidth = lineWidthScaled;
-        ctx.strokeStyle = disabled ? '#a0a0a0' : '#ff9500';
-        ctx.stroke();
+//         // Draw track
+//         ctx.beginPath();
+//         ctx.arc(
+//             width / 2,
+//             height / 2,
+//             Math.max(1, size / 2 - lineWidthScaled),
+//             startAngle,
+//             endAngle,
+//             false
+//         );
+//         ctx.lineWidth = lineWidthScaled;
+//         ctx.strokeStyle = '#e0e0e0';
+//         ctx.stroke();
 
-        // Draw knob center
-        ctx.beginPath();
-        ctx.arc(width / 2, height / 2, centerRadiusScaled, 0, 2 * Math.PI, false);
-        ctx.fillStyle = '#00000004';
-        ctx.fill();
-    };
+//         // Draw value arc
+//         ctx.beginPath();
+//         ctx.arc(
+//             width / 2,
+//             height / 2,
+//             Math.max(1, size / 2 - lineWidthScaled),
+//             startAngle,
+//             angle,
+//             false
+//         );
+//         ctx.lineWidth = lineWidthScaled;
+//         ctx.strokeStyle = disabled ? '#a0a0a0' : '#ff9500';
+//         ctx.stroke();
 
-    // Update the knob when value changes
-    useEffect(() => {
-        setCurrentValue(value);
-        drawKnob(value);
-    }, [value]);
+//         // Draw knob center
+//         ctx.beginPath();
+//         ctx.arc(width / 2, height / 2, centerRadiusScaled, 0, 2 * Math.PI, false);
+//         ctx.fillStyle = '#00000004';
+//         ctx.fill();
+//     };
 
-    // Handle mouse and touch events
-    const handleStart = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
-        if (disabled) return;
-        setIsDragging(true);
-        handleMove(e);
-    };
+//     // Update the knob when value changes
+//     useEffect(() => {
+//         setCurrentValue(value);
+//         drawKnob(value);
+//     }, [value]);
 
-    const handleMove = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
-        if (!isDragging) return;
-        const rect = canvasRef.current?.getBoundingClientRect();
-        if (!rect) return;
+//     // // Handle mouse and touch events
+//     // const handleStart = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+//     //     if (disabled) return;
+//     //     setIsDragging(true);
+//     //     handleMove(e);
+//     // };
 
-        let clientX: number = 0;
-        let clientY: number = 0;
+//     // const handleMove = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+//     //     if (!isDragging) return;
+//     //     const rect = canvasRef.current?.getBoundingClientRect();
+//     //     if (!rect) return;
 
-        if ('touches' in e && e.touches) {
-            clientX = e.touches[0]!.clientX;
-            clientY = e.touches[0]!.clientY;
-        } else if ('clientX' in e && 'clientY' in e) {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
+//     //     let clientX: number = 0;
+//     //     let clientY: number = 0;
 
-        const x = clientX - rect.left - rect.width / 2;
-        const y = clientY - rect.top - rect.height / 2;
-        let angle = Math.atan2(y, x) / (Math.PI * 2) + 0.75;
+//     //     if ('touches' in e && e.touches) {
+//     //         clientX = e.touches[0]!.clientX;
+//     //         clientY = e.touches[0]!.clientY;
+//     //     } else if ('clientX' in e && 'clientY' in e) {
+//     //         clientX = e.clientX;
+//     //         clientY = e.clientY;
+//     //     }
 
-        let angle01 = ((angle % 1) - startAngle01) / (endAngle01 - startAngle01);
+//     //     const x = clientX - rect.left - rect.width / 2;
+//     //     const y = clientY - rect.top - rect.height / 2;
+//     //     let angle = Math.atan2(y, x) / (Math.PI * 2) + 0.75;
 
-        let newValue = min + angle01 * valueRange;
+//     //     let angle01 = ((angle % 1) - startAngle01) / (endAngle01 - startAngle01);
 
-        // Apply step
-        if (step > 0) {
-            newValue = Math.round(newValue / step) * step;
-        }
+//     //     let newValue = min + angle01 * valueRange;
 
-        // Clamp value
-        newValue = Math.min(Math.max(newValue, min), max);
+//     //     // Apply step
+//     //     if (step > 0) {
+//     //         newValue = Math.round(newValue / step) * step;
+//     //     }
 
-        setCurrentValue(newValue);
-        drawKnob(newValue);
-        onChange(newValue);
-    };
+//     //     // Clamp value
+//     //     newValue = Math.min(Math.max(newValue, min), max);
 
-    const handleEnd = () => {
-        setIsDragging(false);
-    };
+//     //     setCurrentValue(newValue);
+//     //     drawKnob(newValue);
+//     //     onChange(newValue);
+//     // };
 
-    useEffect(() => {
-        //const handleWindowMove = (e: MouseEvent | TouchEvent) => handleMove(e as any);
-        //const handleWindowEnd = () => handleEnd();
-        const handleWindowMove: any = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => handleMove(e);
-        const handleWindowEnd = () => handleEnd();
+//     // Handle mouse and touch events
+//     const handleStart = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => {
+//         if (disabled) return;
+//         setIsDragging(true);
 
-        if (isDragging) {
-            window.addEventListener('mousemove', handleWindowMove, { passive: false });
-            window.addEventListener('mouseup', handleWindowEnd, { passive: false });
-            window.addEventListener('touchmove', handleWindowMove, { passive: false });
-            window.addEventListener('touchend', handleWindowEnd, { passive: false });
-            window.addEventListener('touchcancel', handleWindowEnd, { passive: false });
-        } else {
-            window.removeEventListener('mousemove', handleWindowMove);
-            window.removeEventListener('mouseup', handleWindowEnd);
-            window.removeEventListener('touchmove', handleWindowMove);
-            window.removeEventListener('touchend', handleWindowEnd);
-            window.removeEventListener('touchcancel', handleWindowEnd);
-        }
+//         if (dragBehavior === 'vertical') {
+//             if ('touches' in e && e.touches.length > 0) {
+//                 setStartY(e.touches[0].clientY);
+//             } else if ('clientY' in e) {
+//                 setStartY(e.clientY);
+//             }
+//             setStartValue(currentValue);
+//         }
 
-        return () => {
-            window.removeEventListener('mousemove', handleWindowMove);
-            window.removeEventListener('mouseup', handleWindowEnd);
-            window.removeEventListener('touchmove', handleWindowMove);
-            window.removeEventListener('touchend', handleWindowEnd);
-            window.removeEventListener('touchcancel', handleWindowEnd);
-        };
-    }, [isDragging]);
+//         e.preventDefault(); // Prevent default touch behavior
+//     };
 
-    // Handle canvas resizing
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+//     const handleMove = (e: MouseEvent | TouchEvent) => {
+//         if (!isDragging) return;
 
-        const resizeCanvas = () => {
-            const width = canvas.offsetWidth;
-            const height = canvas.offsetHeight;
+//         if (dragBehavior === 'vertical') {
+//             handleVerticalDrag(e);
+//         } else {
+//             handleRadialDrag(e);
+//         }
+//     };
 
-            canvas.width = width;
-            canvas.height = height;
+//     const handleVerticalDrag = (e: MouseEvent | TouchEvent) => {
+//         if (startY === null) return;
 
-            drawKnob(currentValue);
-        };
+//         let clientY: number = 0;
 
-        resizeCanvas();
+//         if ('touches' in e && e.touches.length > 0) {
+//             clientY = e.touches[0].clientY;
+//         } else if ('clientY' in e) {
+//             clientY = e.clientY;
+//         }
 
-        window.addEventListener('resize', resizeCanvas);
+//         const deltaY = startY - clientY; // Positive when moving up
 
-        return () => {
-            window.removeEventListener('resize', resizeCanvas);
-        };
-    }, [currentValue]);
+//         // Sensitivity factor: adjust this value to control how fast the knob changes with movement
+//         const sensitivity = (max - min) / 200; // Adjust denominator for sensitivity
 
-    return (
-        <canvas
-            ref={canvasRef}
-            className={className}
-            style={{
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                touchAction: 'none',
-                ...style,
-            }}
-            onMouseDown={handleStart}
-            onTouchStart={handleStart}
-        ></canvas>
-    );
-};
+//         let newValue = startValue + deltaY * sensitivity;
+
+//         // Apply step
+//         if (step > 0) {
+//             newValue = Math.round(newValue / step) * step;
+//         }
+
+//         // Clamp value
+//         newValue = Math.min(Math.max(newValue, min), max);
+
+//         setCurrentValue(newValue);
+//         drawKnob(newValue);
+//         onChange(newValue);
+
+//         e.preventDefault(); // Prevent text selection and other defaults
+//     };
+
+//     const handleRadialDrag = (e: MouseEvent | TouchEvent) => {
+//         const rect = canvasRef.current?.getBoundingClientRect();
+//         if (!rect) return;
+
+//         let clientX: number = 0;
+//         let clientY: number = 0;
+
+//         if ('touches' in e && e.touches.length > 0) {
+//             clientX = e.touches[0]!.clientX;
+//             clientY = e.touches[0]!.clientY;
+//         } else if ('clientX' in e && 'clientY' in e) {
+//             clientX = e.clientX;
+//             clientY = e.clientY;
+//         }
+
+//         const x = clientX - rect.left - size / 2;
+//         const y = clientY - rect.top - size / 2;
+//         let angle = Math.atan2(y, x);
+
+//         // Normalize angle to a value between 0 and 2*PI
+//         if (angle < 0) {
+//             angle += 2 * Math.PI;
+//         }
+
+//         let angleRatio = (angle - startAngle + 2 * Math.PI) % (2 * Math.PI);
+//         angleRatio = angleRatio / angleRange;
+
+//         let newValue = min + angleRatio * valueRange;
+
+//         // Apply step
+//         if (step > 0) {
+//             newValue = Math.round(newValue / step) * step;
+//         }
+
+//         // Clamp value
+//         newValue = Math.min(Math.max(newValue, min), max);
+
+//         setCurrentValue(newValue);
+//         drawKnob(newValue);
+//         onChange(newValue);
+
+//         e.preventDefault();
+//     };
+
+
+//     const handleEnd = () => {
+//         setIsDragging(false);
+//     };
+
+//     useEffect(() => {
+//         //const handleWindowMove = (e: MouseEvent | TouchEvent) => handleMove(e as any);
+//         //const handleWindowEnd = () => handleEnd();
+//         const handleWindowMove: any = (e: MouseEvent<HTMLCanvasElement> | TouchEvent<HTMLCanvasElement>) => handleMove(e);
+//         const handleWindowEnd = () => handleEnd();
+
+//         if (isDragging) {
+//             window.addEventListener('mousemove', handleWindowMove, { passive: false });
+//             window.addEventListener('mouseup', handleWindowEnd, { passive: false });
+//             window.addEventListener('touchmove', handleWindowMove, { passive: false });
+//             window.addEventListener('touchend', handleWindowEnd, { passive: false });
+//             window.addEventListener('touchcancel', handleWindowEnd, { passive: false });
+//         } else {
+//             window.removeEventListener('mousemove', handleWindowMove);
+//             window.removeEventListener('mouseup', handleWindowEnd);
+//             window.removeEventListener('touchmove', handleWindowMove);
+//             window.removeEventListener('touchend', handleWindowEnd);
+//             window.removeEventListener('touchcancel', handleWindowEnd);
+//         }
+
+//         return () => {
+//             window.removeEventListener('mousemove', handleWindowMove);
+//             window.removeEventListener('mouseup', handleWindowEnd);
+//             window.removeEventListener('touchmove', handleWindowMove);
+//             window.removeEventListener('touchend', handleWindowEnd);
+//             window.removeEventListener('touchcancel', handleWindowEnd);
+//         };
+//     }, [isDragging]);
+
+//     // Handle canvas resizing
+//     useEffect(() => {
+//         const canvas = canvasRef.current;
+//         if (!canvas) return;
+
+//         const resizeCanvas = () => {
+//             const width = canvas.offsetWidth;
+//             const height = canvas.offsetHeight;
+
+//             canvas.width = width;
+//             canvas.height = height;
+
+//             drawKnob(currentValue);
+//         };
+
+//         resizeCanvas();
+
+//         window.addEventListener('resize', resizeCanvas);
+
+//         return () => {
+//             window.removeEventListener('resize', resizeCanvas);
+//         };
+//     }, [currentValue]);
+
+//     return (
+//         <canvas
+//             ref={canvasRef}
+//             className={className}
+//             style={{
+//                 cursor: disabled ? 'not-allowed' : 'pointer',
+//                 touchAction: 'none',
+//                 ...style,
+//             }}
+//             onMouseDown={handleStart}
+//             onTouchStart={handleStart}
+//         ></canvas>
+//     );
+// };

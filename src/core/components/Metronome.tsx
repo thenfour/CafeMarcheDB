@@ -1,13 +1,13 @@
+import { Button } from "@mui/base";
+import { DialogContent, Tooltip } from "@mui/material";
 import React from "react";
+import { Clamp, CoerceToNumberOrNull } from "shared/utils";
 import { ReactiveInputDialog } from "./CMCoreComponents";
 import { CMTextInputBase } from "./CMTextField";
-import { Clamp, CoerceToNumberOrNull } from "shared/utils";
-import { Button } from "@mui/base";
-import { DialogActions, DialogContent, DialogTitle, Slider, Tooltip } from "@mui/material";
 import { DashboardContext } from './DashboardContext';
 //import { useURLState } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
-import { Knob, Knob2 } from "./Knob";
+import { Knob } from "./Knob";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;
@@ -494,6 +494,7 @@ export const MetronomeDialog = (props: MetronomeDialogProps) => {
                     size={500}
                     lineWidth={85}
                     centerRadius={110}
+                    dragBehavior="vertical"
                     onChange={e => {
                         //const valueAsNumber = value as number;
                         setBPM(e);
