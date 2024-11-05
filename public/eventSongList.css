@@ -188,12 +188,12 @@
 
 .songListSongTable .td.tempo,
 .songListSongTable .th.tempo {
-    width: 80px;
+    width: 104px;
 }
 
 .songListSongTable .td.tempo {
     font-family: monospace;
-    justify-content: flex-end;
+    justify-content: space-between;
     color: blue;
 }
 

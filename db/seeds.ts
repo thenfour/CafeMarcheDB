@@ -1,8 +1,6 @@
-import { PrismaClient, Prisma } from '@prisma/client'
-import { gPermissionOrdered } from '../shared/permissions'
 import { faker } from '@faker-js/faker';
-import { slugify } from '../shared/rootroot';
-import { DateTimeRange, gMillisecondsPerDay, roundToNearest15Minutes } from '../shared/time';
+import { Prisma } from '@prisma/client';
+import { gPermissionOrdered } from '../shared/permissions';
 import { SeedingState } from './seeding/base';
 import { SeedEvents_VeryRandom } from './seeding/events';
 
@@ -487,7 +485,7 @@ const main = async () => {
   await SeedTable("instrument", gState.prisma.instrument,
     functionalGroupSeed.map(g => ({
       name: g.name,
-      slug: slugify(g.name),
+      //slug: slugify(g.name),
       description: "",
       autoAssignFileLeafRegex: g.name,
       sortOrder: g.sortOrder,

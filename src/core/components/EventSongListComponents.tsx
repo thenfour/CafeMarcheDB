@@ -159,7 +159,10 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         </div>
         <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
         <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
-        <div className="td tempo">{enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}</div>
+        <div className="td tempo">
+            <div>{enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />}</div>
+            <div>{formattedBPM}</div>
+        </div>
 
         <div className="td comment">
             <div className="comment">{props.value.type !== 'new' && props.value.subtitle}</div>
