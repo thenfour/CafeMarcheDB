@@ -198,6 +198,11 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
         end = prepareAllDayDateForICal(end);
     }
 
+    let name = event.name || "";
+    if (event.segments && (event.segments.length > 1)) {
+        name = `${event.name || ""} ${segment.name || ""}`;
+    }
+
     const ret: EventCalendarInput = {
         // note: when calculating changes, we must ignore revision
         revision: 0,
@@ -205,7 +210,7 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
 
         eventId: event.id!,
         segmentId: segment.id,
-        name: `${event.name || ""} ${segment.name || ""}`,
+        name,//: `${event.name || ""} ${segment.name || ""}`,
         uid: segment.uid,//
 
         locationDescription: event.locationDescription || "",
