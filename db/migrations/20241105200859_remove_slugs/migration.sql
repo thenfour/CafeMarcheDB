@@ -7,19 +7,19 @@
 
 */
 -- DropIndex
-DROP INDEX `Event_slug_idx` ON `event`;
+DROP INDEX `Event_slug_idx` ON `Event`;
 
 -- DropIndex
-DROP INDEX `Instrument_slug_idx` ON `instrument`;
+DROP INDEX `Instrument_slug_idx` ON `Instrument`;
 
 -- DropIndex
-DROP INDEX `Song_slug_idx` ON `song`;
+DROP INDEX `Song_slug_idx` ON `Song`;
 
 -- AlterTable
-ALTER TABLE `event` DROP COLUMN `slug`;
+ALTER TABLE `Event` DROP COLUMN `slug`;
 
 -- AlterTable
-ALTER TABLE `instrument` DROP COLUMN `slug`;
+ALTER TABLE `Instrument` DROP COLUMN `slug`;
 
 -- AlterTable
-ALTER TABLE `song` DROP COLUMN `slug`;
+ALTER TABLE `Song` DROP COLUMN `slug`;
