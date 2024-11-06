@@ -6,7 +6,7 @@
 
 import { Prisma } from "db";
 import { formatSongLength } from "shared/time";
-import { arrayToTSV, IsNullOrWhitespace } from "shared/utils";
+import { arrayToTSV, IsNullOrWhitespace, toSorted } from "shared/utils";
 import { getFormattedBPM } from "../clientAPILL";
 //import * as db3 from "src/core/db3/db3";
 
@@ -109,7 +109,8 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
 
 export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[] {
     // row items are a combination of songs + dividers, with a new blank row at the end
-    const rowItems: EventSongListItem[] = songList.songs.toSorted((a, b) => a.sortOrder - b.sortOrder).map((s, index) => ({
+    // NB: toSorted() is not supported on uberspace server code.
+    const rowItems: EventSongListItem[] = toSorted(songList.songs, (a, b) => a.sortOrder - b.sortOrder).map((s, index) => ({
         ...s,
         type: "song",
         index,

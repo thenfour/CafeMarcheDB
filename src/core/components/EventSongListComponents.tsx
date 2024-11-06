@@ -7,10 +7,8 @@
 import { useAuthenticatedSession } from '@blitzjs/auth';
 import { Button, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
-import { Prisma } from "db";
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { StandardVariationSpec } from 'shared/color';
 import { formatSongLength } from 'shared/time';
 import { CoalesceBool, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
@@ -21,7 +19,6 @@ import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
-import { CMChipContainer, CMStandardDBChip } from './CMChip';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
 import { CMDialogContentText, CMSmallButton } from './CMCoreComponents2';
 import { DashboardContext } from './DashboardContext';
@@ -31,110 +28,6 @@ import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 
 const gDividerText = <>&nbsp;</>;
-
-// type LocalSongPayload = Prisma.SongGetPayload<{}>;
-
-// // make song nullable for "add new item" support
-// type EventSongListSongItem = Prisma.EventSongListSongGetPayload<{
-//     select: {
-//         eventSongListId: true,
-//         subtitle: true,
-//         id: true,
-//         sortOrder: true,
-//     }
-// }> & {
-//     songId: number;
-//     song: LocalSongPayload;
-//     type: "song";
-//     index: number;
-//     runningTimeSeconds: number | null; // the setlist time AFTER this song is played (no point in the 1st entry always having a 0)
-//     songsWithUnknownLength: number;
-// };
-
-// type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{}> & { type: "divider" };
-
-// type EventSongListNewItem = {
-//     eventSongListId: number,
-//     id: number,
-//     sortOrder: number,
-//     type: "new";
-// };
-
-// type EventSongListItem = EventSongListSongItem | EventSongListDividerItem | EventSongListNewItem;
-
-
-// function GetRowItems(songList: db3.EventSongListPayload): EventSongListItem[] {
-//     // row items are a combination of songs + dividers, with a new blank row at the end
-//     const rowItems: EventSongListItem[] = songList.songs.toSorted((a, b) => a.sortOrder - b.sortOrder).map((s, index) => ({
-//         ...s,
-//         type: "song",
-//         index,
-//         runningTimeSeconds: null, // populated later
-//         songsWithUnknownLength: 0,
-//     }));
-//     rowItems.push(...songList.dividers.map(s => {
-//         const x: EventSongListDividerItem = {
-//             ...s,
-//             type: 'divider',
-//         };
-//         return x;
-//     }));
-
-//     // by some theory this shouldn't be necessary because sortorder is there, but it is.
-//     rowItems.sort((a, b) => a.sortOrder - b.sortOrder);
-
-//     // set indices and runningTime
-//     let songIndex: number = 0;
-//     let runningTimeSeconds: number | null = null;
-//     let songsWithUnknownLength: number = 0;
-//     for (let i = 0; i < rowItems.length; ++i) {
-//         const item = rowItems[i]!;
-//         if (item.type === 'divider') {
-//             // reset!
-//             songIndex = 0;
-//             runningTimeSeconds = null;
-//             songsWithUnknownLength = 0;
-//             continue;
-//         }
-//         if (item.type !== 'song') throw new Error(`unknown type at this moment`);
-
-//         item.index = songIndex;
-
-//         if (item.song.lengthSeconds) {
-//             runningTimeSeconds = item.song.lengthSeconds + (runningTimeSeconds === null ? 0 : runningTimeSeconds); // inc running time.
-//         } else {
-//             // don't inc runtime
-//             songsWithUnknownLength++;
-//         }
-
-//         item.runningTimeSeconds = runningTimeSeconds;
-//         item.songsWithUnknownLength = songsWithUnknownLength;
-
-//         songIndex++;
-//     }
-
-//     return rowItems;
-// }
-
-/*
-similar to other tab contents structures (see also EventSegmentComponents, EventCommentComponents...)
-
-<tab content>
-    <button + add song list> => song list editor
-    <song list control>
-        <song list viewer> - with edit button, maybe delete
-        <song list editor>
-
-the song list will be considered a value just like a event comment, et al. that simplifies things
-regarding API and mutations etc. so instead of having tons of calls like 
-- addSong
-- removeSong
-- reorderSong
-
-it will just be updateSetList(song list etc.)
-
-*/
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerRowProps {

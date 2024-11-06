@@ -22,7 +22,7 @@ import { assert } from "blitz";
 import { Prisma } from "db";
 
 import '@xyflow/react/dist/style.css';
-import { ChangeAction, getNextSequenceId, getUniqueNegativeID } from "shared/utils";
+import { ChangeAction, getNextSequenceId, getUniqueNegativeID, toSorted } from "shared/utils";
 import { TinsertOrUpdateWorkflowDefArgs, TUpdateEventWorkflowInstanceArgs, WorkflowLogItemType, WorkflowNodeProgressState, WorkflowObjectType } from "src/core/db3/shared/apiTypes";
 import { gSwatchColors } from "./color";
 import { gMillisecondsPerDay } from "./time";
@@ -758,8 +758,8 @@ export const EvaluateWorkflow = (flowDef: WorkflowDef, workflowInstance: Workflo
         const nodeDef = flowDef.nodeDefs.find(nd => nd.id === node.nodeDefId)!;
 
         // detect assignees changed
-        const sanitizedLastKnownAssignees = JSON.stringify(node.lastAssignees.map(v => v.userId).toSorted());
-        const sanitizedCurrentAssignees = JSON.stringify(node.assignees.map(a => a.userId).toSorted());
+        const sanitizedLastKnownAssignees = JSON.stringify(toSorted(node.lastAssignees.map(v => v.userId)));
+        const sanitizedCurrentAssignees = JSON.stringify(toSorted(node.assignees.map(a => a.userId)));
         if (sanitizedCurrentAssignees !== sanitizedLastKnownAssignees) {
             mutations.push({
                 fn: sourceWorkflowInstance => api.AddLogItem({

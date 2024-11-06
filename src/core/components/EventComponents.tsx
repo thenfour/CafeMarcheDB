@@ -13,7 +13,7 @@ import React, { Suspense } from "react";
 import { ColorVariationSpec, StandardVariationSpec } from 'shared/color';
 import { Permission } from 'shared/permissions';
 import { Timing } from 'shared/time';
-import { CoalesceBool, IsNullOrWhitespace } from 'shared/utils';
+import { CoalesceBool, IsNullOrWhitespace, toSorted } from 'shared/utils';
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
 import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -230,7 +230,7 @@ interface EventCustomFieldEditDialogProps {
 const EventCustomFieldEditDialog = (props: EventCustomFieldEditDialogProps) => {
     const dashboardContext = useDashboardContext();
     const [currentValue, setCurrentValue] = React.useState<EventCustomFieldValuePayload[]>(() => {
-        return props.initialValue.toSorted((a, b) => {
+        return toSorted(props.initialValue, (a, b) => {
             const sorta = dashboardContext.eventCustomField.getById(a.customFieldId)?.sortOrder || 0;
             const sortb = dashboardContext.eventCustomField.getById(b.customFieldId)?.sortOrder || 0;
             return sortb - sorta;
@@ -261,14 +261,6 @@ const EventCustomFieldEditDialog = (props: EventCustomFieldEditDialogProps) => {
                         // todo: assert all other fields are the same.
                         changedVal.jsonValue = val.jsonValue;
                         setCurrentValue(newArray);
-                        // const newVal = [...currentValue.filter(x => x.customFieldId !== val.customFieldId)]; // create new array which excludes this
-                        // newVal.push(val);
-                        // const sorted = newVal.toSorted((a, b) => {
-                        //     const adef = dashboardContext.eventCustomField.getById(a.customFieldId)!;
-                        //     const bdef = dashboardContext.eventCustomField.getById(b.customFieldId)!;
-                        //     return adef.sortOrder - bdef.sortOrder;
-                        // });
-                        //setCurrentValue(sorted);
                     }}
                 />)
             }
