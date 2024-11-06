@@ -446,39 +446,43 @@ export class DateTimeRange {
 
         const startDate = this.getStartDateTime()!;
         const startDateDjs = dayjs(startDate);
-        const endDate = this.getLastDateTime();// this.getEndDateTime()!;
-        const endDateDjs = dayjs(endDate);
         // in fact a "same day" means the duration is <= 24 hours. Why? because events can start at 10pm and last 4 hours.
         // using the date would make this look like it spans 2 days. but it's clearer/more intuitive to count that as the same day.
         //const isSameDay = startDateDjs.isSame(endDateDjs, 'day');
         const isSameDay = this.getDurationDays() <= 1.00001;
 
         if (this.isAllDay()) {
+            const lastDate = this.getLastDateTime()!;
+            const lastDateDjs = dayjs(lastDate);
 
             if (isSameDay) {
                 return startDateDjs.format(`dddd, D MMMM YYYY`); // Wednesday 29 June 2024
             }
-            const isSameMonth = startDateDjs.isSame(endDateDjs, 'month');
+            const isSameMonth = startDateDjs.isSame(lastDateDjs, 'month');
             if (isSameMonth) {
                 // 29-30 June 2024
-                return `${startDateDjs.format(`D`)} - ${endDateDjs.format(`D MMMM YYYY`)}`;
+                return `${startDateDjs.format(`D`)} - ${lastDateDjs.format(`D MMMM YYYY`)}`;
             }
-            const isSameYear = startDateDjs.isSame(endDateDjs, 'year');
+            const isSameYear = startDateDjs.isSame(lastDateDjs, 'year');
             if (isSameYear) {
                 // 29 June - 3 July 2024
-                return `${startDateDjs.format(`D MMMM`)} - ${endDateDjs.format(`D MMMM YYYY`)}`;
+                return `${startDateDjs.format(`D MMMM`)} - ${lastDateDjs.format(`D MMMM YYYY`)}`;
             }
 
             // 29 December 2024 - 2 January 2025
-            return `${startDateDjs.format(`D MMMM YYYY`)} - ${endDateDjs.format(`D MMMM YYYY`)}`;
+            return `${startDateDjs.format(`D MMMM YYYY`)} - ${lastDateDjs.format(`D MMMM YYYY`)}`;
         }
+
+        // for non-all-day events, we need to use "END" otherwise it shows as 1:59
+        const endDate = this.getEndDateTime()!;
+        const endDateDjs = dayjs(endDate);
 
         // not all-day (time specified)
         if (isSameDay) {
-            return `${startDateDjs.format(`dddd, D MMMM YYYY`)} @ ${formatTime(startDate)}-${formatTime(endDate!)}h`;
+            return `${startDateDjs.format(`dddd, D MMMM YYYY`)} @ ${formatTime(startDate)}-${formatTime(endDate)}h`;
         }
 
-        return `${startDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(startDate)} - ${endDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(endDate!)}h`;
+        return `${startDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(startDate)} - ${endDateDjs.format(`D MMMM YYYY`)} @ ${formatTime(endDate)}h`;
 
     }
 
