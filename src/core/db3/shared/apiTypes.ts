@@ -833,8 +833,10 @@ export interface GetSearchResultsSortModel {
 export interface GetSearchResultsInput {
     tableID: string;
 
-    pageSize: number;
-    page: number;
+    // pageSize: number;
+    // page: number;
+    offset: number;
+    take: number;
 
     sort: GetSearchResultsSortModel[];
 
@@ -870,8 +872,8 @@ const ZGetSearchResultsSortModel = z.object({
 export const ZGetSearchResultsInput = z.object({
     tableID: ZDBSymbol,
 
-    pageSize: z.number(),
-    page: z.number(),
+    offset: z.number(),
+    take: z.number(),
 
     sort: z.array(ZGetSearchResultsSortModel),
 

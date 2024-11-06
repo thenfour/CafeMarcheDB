@@ -1,19 +1,18 @@
 
+import { useQuery } from '@blitzjs/rpc';
+import { assert } from 'blitz';
+import { Prisma } from "db";
+import React, { Suspense } from 'react';
+import { SortDirection } from 'shared/rootroot';
 import { DateTimeRange, Timing } from 'shared/time';
+import { getUniqueNegativeID } from 'shared/utils';
+import { DashboardContext } from "src/core/components/DashboardContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import React, { Suspense } from 'react';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../db3/components/DB3ClientCore';
-import { Prisma } from "db";
-import { DashboardContextData } from './DashboardContext';
-import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
-import { SortDirection } from 'shared/rootroot';
-import { DashboardContext } from "src/core/components/DashboardContext";
-import { useQuery } from '@blitzjs/rpc';
 import getSearchResults from '../db3/queries/getSearchResults';
-import { CoalesceBool, getUniqueNegativeID } from 'shared/utils';
-import { assert } from 'blitz';
-import { hash256 } from '@blitzjs/auth';
+import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
+import { DashboardContextData } from './DashboardContext';
 
 type CalculateEventMetadataEvent = db3.EventResponses_MinimalEvent & Prisma.EventGetPayload<{
     select: {
@@ -353,7 +352,7 @@ export const CalculateEventSearchResultsMetadata = ({ event, results }: EventLis
 };
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////////////////
 export enum EventOrderByColumnOptions {
     id = "id",
     startsAt = "startsAt",
@@ -363,8 +362,8 @@ export enum EventOrderByColumnOptions {
 export type EventOrderByColumnOption = keyof typeof EventOrderByColumnOptions;// "startsAt" | "name";
 
 export interface EventsFilterSpec {
-    pageSize: number;
-    page: number;
+    //pageSize: number;
+    //page: number;
     quickFilter: string;
     refreshSerial: number; // this is necessary because you can do things to change the results from this page. think of adding an event then refetching.
 
@@ -378,51 +377,51 @@ export interface EventsFilterSpec {
 };
 
 
-export interface EventListQuerierProps {
-    filterSpec: EventsFilterSpec;
-    setResults: (v: SearchResultsRet, enrichedEvents: db3.EnrichedSearchEventPayload[]) => void;
-    render: (isLoading: boolean) => React.ReactNode;
-};
+// export interface EventListQuerierProps {
+//     filterSpec: EventsFilterSpec;
+//     setResults: (v: SearchResultsRet, enrichedEvents: db3.EnrichedSearchEventPayload[]) => void;
+//     render: (isLoading: boolean) => React.ReactNode;
+// };
 
-const EventListQuerierInner = (props: EventListQuerierProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+// const EventListQuerierInner = (props: EventListQuerierProps) => {
+//     const dashboardContext = React.useContext(DashboardContext);
 
-    const [searchResult, queryExtra] = useQuery(getSearchResults, {
-        page: props.filterSpec.page,
-        pageSize: props.filterSpec.pageSize,
-        tableID: db3.xEvent.tableID,
-        refreshSerial: props.filterSpec.refreshSerial,
-        sort: [{
-            db3Column: props.filterSpec.orderByColumn,
-            direction: props.filterSpec.orderByDirection,
-        }],
+//     const [searchResult, queryExtra] = useQuery(getSearchResults, {
+//         page: props.filterSpec.page,
+//         pageSize: props.filterSpec.pageSize,
+//         tableID: db3.xEvent.tableID,
+//         refreshSerial: props.filterSpec.refreshSerial,
+//         sort: [{
+//             db3Column: props.filterSpec.orderByColumn,
+//             direction: props.filterSpec.orderByDirection,
+//         }],
 
-        quickFilter: props.filterSpec.quickFilter,
-        discreteCriteria: [
-            props.filterSpec.dateFilter,
-            props.filterSpec.typeFilter,
-            props.filterSpec.statusFilter,
-            props.filterSpec.tagFilter,
-        ],
-    });
+//         quickFilter: props.filterSpec.quickFilter,
+//         discreteCriteria: [
+//             props.filterSpec.dateFilter,
+//             props.filterSpec.typeFilter,
+//             props.filterSpec.statusFilter,
+//             props.filterSpec.tagFilter,
+//         ],
+//     });
 
-    React.useEffect(() => {
-        if (queryExtra.isSuccess) {
-            const enrichedEvents = searchResult.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
-            props.setResults({ ...searchResult, }, enrichedEvents);
-        }
-    }, [queryExtra.dataUpdatedAt]);
+//     React.useEffect(() => {
+//         if (queryExtra.isSuccess) {
+//             const enrichedEvents = searchResult.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
+//             props.setResults({ ...searchResult, }, enrichedEvents);
+//         }
+//     }, [queryExtra.dataUpdatedAt]);
 
-    return <>{props.render(queryExtra.isLoading)}</>;// <div className={`queryProgressLine idle`}></div>;
-};
+//     return <>{props.render(queryExtra.isLoading)}</>;// <div className={`queryProgressLine idle`}></div>;
+// };
 
 
-export const EventListQuerier = (props: EventListQuerierProps) => {
-    return <Suspense fallback={props.render(true)}>
-        <EventListQuerierInner
-            {...props}
-        />
-    </Suspense>
-};
+// export const EventListQuerier = (props: EventListQuerierProps) => {
+//     return <Suspense fallback={props.render(true)}>
+//         <EventListQuerierInner
+//             {...props}
+//         />
+//     </Suspense>
+// };
 
 

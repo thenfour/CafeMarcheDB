@@ -1,6 +1,8 @@
+import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { BlitzPage } from "@blitzjs/next";
-import { ListItemIcon, Menu, MenuItem, Pagination } from "@mui/material";
+import { ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
@@ -10,7 +12,6 @@ import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components
 import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { EventListItem } from "src/core/components/EventComponents";
-import { EventListQuerier, EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from "src/core/components/EventComponentsBase";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -18,14 +19,138 @@ import { SnackbarContext, SnackbarContextType } from "src/core/components/Snackb
 import { getURIForEvent } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterion, DiscreteCriterionFilterType, MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
+import { DiscreteCriterion, DiscreteCriterionFilterType, GetSearchResultsInput, MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
+import superjson from 'superjson';
 
-// // for serializing in compact querystring
-// interface CriterionStatic {
-//     o: number[];
-//     b: DiscreteCriterionFilterType;
-// }
+const gPageSize = 15;
+
+async function fetchSearchResultsApi(args: GetSearchResultsInput): Promise<SearchResultsRet> {
+    const serializedArgs = superjson.stringify(args);
+    const encodedArgs = encodeURIComponent(serializedArgs);
+
+    //console.log(`fetching items [${args.offset}, ${args.take}]`);
+
+    const response = await fetch(
+        `/api/search/getSearchResultsApi?args=${encodedArgs}`
+    );
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok');
+    }
+    return superjson.parse(await response.text());
+}
+
+
+function GetSearchResultsQueryArgs(filterSpec: EventsFilterSpec, offset: number, take: number = gPageSize) {
+    return {
+        offset,
+        take,
+        tableID: db3.xEvent.tableID,
+        refreshSerial: filterSpec.refreshSerial,
+        sort: [{
+            db3Column: filterSpec.orderByColumn,
+            direction: filterSpec.orderByDirection,
+        }],
+        quickFilter: filterSpec.quickFilter,
+        discreteCriteria: [
+            filterSpec.dateFilter,
+            filterSpec.typeFilter,
+            filterSpec.statusFilter,
+            filterSpec.tagFilter,
+        ],
+    };
+}
+
+
+
+
+function useEventListData(filterSpec: EventsFilterSpec) {
+    const dashboardContext = useContext(DashboardContext);
+    const snackbarContext = useContext(SnackbarContext);
+
+    const filterSpecHash = JSON.stringify(filterSpec);
+
+    const [enrichedEvents, setEnrichedEvents] = useState<db3.EnrichedSearchEventPayload[]>([]);
+    const [results, setResults] = useState<SearchResultsRet>(MakeEmptySearchResultsRet());
+    //const [hasMore, setHasMore] = useState(true);
+
+    const isFetchingRef = useRef(false);
+    const totalEventsFetchedRef = useRef(0);
+
+    const fetchData = async (offset: number) => {
+        //if (isFetchingRef.current || !hasMore) return;
+        if (isFetchingRef.current) return;
+        isFetchingRef.current = true;
+
+        try {
+            const searchResult = await fetchSearchResultsApi(GetSearchResultsQueryArgs(filterSpec, offset));
+            //console.log(searchResult);
+
+            const newEvents = searchResult.results.map(e =>
+                db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext)
+            );
+
+            // if (newEvents.length < 1) {
+            //     setHasMore(false);
+            // }
+
+            setEnrichedEvents(prevEvents => {
+                const newItems: db3.EnrichedSearchEventPayload[] = [];
+                const overlaps: db3.EnrichedSearchEventPayload[] = [];
+
+                for (const event of newEvents) {
+                    const foundIndex = prevEvents.findIndex(e => e.id === event.id);
+                    if (foundIndex === -1) {
+                        newItems.push(event);
+                    } else {
+                        // the item already exists; just leave it.
+                        overlaps.push(event);
+                    }
+                }
+
+                const ret = [...prevEvents, ...newItems];
+                // console.log(`new enriched events ${prevEvents.length} + ${newEvents.length} => ${ret.length} (${overlaps.length} overlap)`);
+                // console.log(`    ${JSON.stringify(prevEvents.map(e => e.id))}`);
+                // console.log(`  + ${JSON.stringify(newEvents.map(e => e.id))} (overlaps: ${JSON.stringify(overlaps.map(e => e.id))})`);
+                return ret;
+            });
+
+            setResults(searchResult);
+        } catch (error) {
+            snackbarContext.showMessage({
+                severity: 'error',
+                children: 'Failed to load more events.',
+            });
+        } finally {
+            isFetchingRef.current = false;
+        }
+    };
+
+    // Reset data when filters change
+    useEffect(() => {
+        //console.log(`fetching due to filterspec change`);
+        setEnrichedEvents([]);
+        setResults(MakeEmptySearchResultsRet());
+        //setHasMore(true);
+        totalEventsFetchedRef.current = 0;
+        // Fetch the first page
+        fetchData(0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterSpecHash]);
+
+    // Function to load more data, passed to InfiniteScroll
+    const loadMoreData = useCallback(() => {
+        if (isFetchingRef.current) return;
+        //if (isFetchingRef.current || !hasMore) return;
+        fetchData(enrichedEvents.length);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [/*hasMore, */enrichedEvents]);
+
+    return { enrichedEvents, results, loadMoreData/*, hasMore*/ };
+}
+
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -79,17 +204,15 @@ async function CopyEventListCSV(snackbarContext: SnackbarContextType, value: db3
 interface EventsListArgs {
     filterSpec: EventsFilterSpec,
     results: SearchResultsRet;
-    //    setFilterSpec: (value: EventsFilterSpec) => void, // for pagination
-    setPage: (n: number) => void,
     events: db3.EnrichedSearchEventPayload[],
     refetch: () => void;
+    loadMoreData: () => void;
+    hasMore: boolean;
 };
 
-const EventsList = ({ filterSpec, results, events, refetch, ...props }: EventsListArgs) => {
+const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMore }: EventsListArgs) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
-
-    const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
 
     const handleCopy = async () => {
         await CopyEventListCSV(snackbarContext, events);
@@ -97,7 +220,7 @@ const EventsList = ({ filterSpec, results, events, refetch, ...props }: EventsLi
 
     return <div className="eventList searchResults">
         <div className="searchRecordCount">
-            {results.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + events.length} of {results.rowCount} total</>}
+            {results.rowCount === 0 ? "No items to show" : <>Displaying {events.length} items of {results.rowCount} total</>}
             <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
             <Menu
                 id="menu-searchResults"
@@ -114,14 +237,25 @@ const EventsList = ({ filterSpec, results, events, refetch, ...props }: EventsLi
                 </MenuItem>
             </Menu>
         </div>
-        {events.map(event => <EventListItem key={event.id} event={event} filterSpec={filterSpec} refetch={refetch} results={results} />)}
-        <Pagination
-            count={Math.ceil(results.rowCount / filterSpec.pageSize)}
-            page={filterSpec.page + 1}
-            onChange={(e, newPage) => {
-                //console.log(`filterSpec.page: ${filterSpec.page} // setting to ${newPage - 1}`);
-                props.setPage(newPage - 1);
-            }} />
+
+        <InfiniteScroll
+            dataLength={events.length}
+            next={loadMoreData}
+            hasMore={hasMore}
+            loader={<h4>Loading...</h4>}
+            scrollableTarget="scrollableDiv"
+        >
+            {events.map((event, i) => (
+                <EventListItem
+                    key={event.id}
+                    event={event}
+                    filterSpec={filterSpec}
+                    refetch={refetch}
+                    results={results}
+                />
+            ))}
+        </InfiniteScroll>
+
     </div>;
 };
 
@@ -229,7 +363,7 @@ const EventListOuter = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const [page, setPage] = useURLState<number>("p", 0);
+    //const [page, setPage] = useURLState<number>("p", 0);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
 
     const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
@@ -306,9 +440,9 @@ const EventListOuter = () => {
 
     // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
-        pageSize: 50,
+        //pageSize: gPageSize,
         refreshSerial,
-        page,
+        //page,
 
         // in dto...
         quickFilter,
@@ -322,25 +456,7 @@ const EventListOuter = () => {
         dateFilter: dateFilterEnabled ? dateFilterWhenEnabled : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
-    const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
-    const [enrichedEvents, setEnrichedEvents] = React.useState<db3.EnrichedSearchEventPayload[]>([]);
-
-    // # when filter spec (other than page change), reset page to 0.
-    let everythingButPage: any = {};
-    { // avoid collision with `page`
-        const { page, ...everythingButPage__ } = filterSpec;
-        everythingButPage = everythingButPage__;
-    }
-
-    const specHash = JSON.stringify(everythingButPage);
-    // React.useEffect(() => {
-    //     setFilterSpec({ ...filterSpec, page: 0 });
-    // }, [specHash]);
-    React.useEffect(() => {
-        setPage(0);
-    }, [specHash]);
-
-    //const enrichedEvents = results.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
+    const { enrichedEvents, results, /*hasMore, */loadMoreData } = useEventListData(filterSpec,);
 
     const handleCopyFilterspec = () => {
         const o: EventsFilterSpecStatic = {
@@ -482,7 +598,7 @@ const EventListOuter = () => {
                             <TagsFilterGroup
                                 label={"Status"}
                                 style="foreignSingle"
-                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "status")?.error}
+                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "status")?.error}
                                 value={statusFilterWhenEnabled}
                                 filterEnabled={statusFilterEnabled}
                                 onChange={(n, enabled) => {
@@ -495,7 +611,7 @@ const EventListOuter = () => {
                             <TagsFilterGroup
                                 label={"Type"}
                                 style="foreignSingle"
-                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "type")?.error}
+                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "type")?.error}
                                 value={typeFilterWhenEnabled}
                                 filterEnabled={typeFilterEnabled}
                                 onChange={(n, enabled) => {
@@ -509,7 +625,7 @@ const EventListOuter = () => {
                                 label={"Tags"}
                                 style="tags"
                                 filterEnabled={tagFilterEnabled}
-                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "tags")?.error}
+                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
                                 value={tagFilterWhenEnabled}
                                 onChange={(n, enabled) => {
                                     setTagFilterEnabled(enabled);
@@ -522,7 +638,7 @@ const EventListOuter = () => {
                                 label={"Date"}
                                 style="radio"
                                 filterEnabled={dateFilterEnabled}
-                                errorMessage={results.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
+                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "startsAt")?.error}
                                 value={dateFilterWhenEnabled}
                                 onChange={(n, enabled) => {
                                     setDateFilterEnabled(enabled);
@@ -546,22 +662,14 @@ const EventListOuter = () => {
                 />
             </div>
 
-            <EventListQuerier
-                filterSpec={filterSpec}
-                setResults={(r, ee) => {
-                    setResults(r);
-                    setEnrichedEvents(ee);
-                }}
-                render={(isLoading) => <div className={`queryProgressLine ${isLoading ? "loading" : "idle"}`}></div>}
-            />
         </CMSinglePageSurfaceCard >
         <EventsList
             filterSpec={filterSpec}
-            //setFilterSpec={setFilterSpec}
-            setPage={setPage}
             events={enrichedEvents}
             results={results}
-            refetch={() => setRefreshSerial(filterSpec.refreshSerial + 1)}
+            loadMoreData={loadMoreData}
+            hasMore={enrichedEvents.length < results.rowCount}
+            refetch={() => setRefreshSerial(refreshSerial + 1)}
         />
     </>;
 };
