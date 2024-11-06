@@ -1,438 +1,438 @@
-// generalized version of search results.
-// hopefully can unify song & event search, and then extend to users & files.
+// // generalized version of search results.
+// // hopefully can unify song & event search, and then extend to users & files.
 
-import { resolver } from "@blitzjs/rpc";
-import { AuthenticatedCtx } from "blitz";
-import db, { Prisma } from "db";
-import { Permission } from "shared/permissions";
-import { SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } from "shared/utils";
-import * as db3 from "../db3";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
-import { getCurrentUserCore } from "../server/db3mutationCore";
-import { CalculateFilterQueryResult, GetSearchResultsInput, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel, ZGetSearchResultsInput } from "../shared/apiTypes";
-import { Stopwatch } from "shared/rootroot";
+// import { resolver } from "@blitzjs/rpc";
+// import { AuthenticatedCtx } from "blitz";
+// import db, { Prisma } from "db";
+// import { Permission } from "shared/permissions";
+// import { SplitQuickFilter, SqlCombineAndExpression, SqlCombineOrExpression } from "shared/utils";
+// import * as db3 from "../db3";
+// import { DB3QueryCore2 } from "../server/db3QueryCore";
+// import { getCurrentUserCore } from "../server/db3mutationCore";
+// import { CalculateFilterQueryResult, GetSearchResultsInput, SearchCustomDataHookId, SearchResultsRet, SortQueryElements, TAnyModel, ZGetSearchResultsInput } from "../shared/apiTypes";
+// import { Stopwatch } from "shared/rootroot";
 
-async function GetCustomSearchResultsHook(currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
-    const fullEvents = resultsSoFar.results as db3.EventSearch_Event[];
+// async function GetCustomSearchResultsHook(currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet): Promise<db3.EventSearchCustomData> {
+//     const fullEvents = resultsSoFar.results as db3.EventSearch_Event[];
 
-    // collect distinct usertags
-    const expectedAttendanceUserTagIds = new Set<number>();
-    fullEvents.forEach(e => {
-        if (!e.expectedAttendanceUserTagId) return;
-        expectedAttendanceUserTagIds.add(e.expectedAttendanceUserTagId);
-    });
+//     // collect distinct usertags
+//     const expectedAttendanceUserTagIds = new Set<number>();
+//     fullEvents.forEach(e => {
+//         if (!e.expectedAttendanceUserTagId) return;
+//         expectedAttendanceUserTagIds.add(e.expectedAttendanceUserTagId);
+//     });
 
-    let userTags: db3.EventResponses_ExpectedUserTag[] = [];
+//     let userTags: db3.EventResponses_ExpectedUserTag[] = [];
 
-    if (!expectedAttendanceUserTagIds.size) {
-        return {
-            userTags: []
-        };
-    }
-    const tableParams: db3.UserTagTableParams = {
-        ids: [...expectedAttendanceUserTagIds],
-    };
+//     if (!expectedAttendanceUserTagIds.size) {
+//         return {
+//             userTags: []
+//         };
+//     }
+//     const tableParams: db3.UserTagTableParams = {
+//         ids: [...expectedAttendanceUserTagIds],
+//     };
 
-    const queryResult = await DB3QueryCore2({
-        clientIntention: { intention: "user", currentUser, mode: "primary" },
-        cmdbQueryContext: "getEventFilterInfo-userTags",
-        tableID: db3.xUserTagForEventSearch.tableID,
-        tableName: db3.xUserTagForEventSearch.tableName,
-        filter: {
-            items: [],
-            tableParams,
-        },
-        orderBy: undefined,
-    }, currentUser);
+//     const queryResult = await DB3QueryCore2({
+//         clientIntention: { intention: "user", currentUser, mode: "primary" },
+//         cmdbQueryContext: "getEventFilterInfo-userTags",
+//         tableID: db3.xUserTagForEventSearch.tableID,
+//         tableName: db3.xUserTagForEventSearch.tableName,
+//         filter: {
+//             items: [],
+//             tableParams,
+//         },
+//         orderBy: undefined,
+//     }, currentUser);
 
-    userTags = queryResult.items as db3.EventResponses_ExpectedUserTag[];
-    return {
-        userTags,
-    };
-};
-
-
-type CustomSearchHookProc = (currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet) => Promise<any>;
-
-const gSearchCustomHookMap: { [key in SearchCustomDataHookId]: CustomSearchHookProc } = {
-    "Events": GetCustomSearchResultsHook,
-} as const;
+//     userTags = queryResult.items as db3.EventResponses_ExpectedUserTag[];
+//     return {
+//         userTags,
+//     };
+// };
 
 
+// type CustomSearchHookProc = (currentUser: db3.UserWithRolesPayload, inp: GetSearchResultsInput, resultsSoFar: SearchResultsRet) => Promise<any>;
 
-function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQueryElements {
-    // the sort order value is best added to this query to avoid having to join to the same table later in the paginated results query.
-    const sortElementsArray: SortQueryElements[] = [];
-    let sortSymbolNameId = 0;
-    const getSortColumnAPI: db3.SqlGetSortableQueryElementsAPI = {
-        primaryTableAlias: "P",
-        sortModel: { // to be changed as we loop.
-            db3Column: "",
-            direction: "asc",
-        },
-        getColumnAlias: () => {
-            return `sortCol_${++sortSymbolNameId}`;
-        },
-        getTableAlias: () => {
-            return `sortTbl_${++sortSymbolNameId}`;
-        },
-    };
+// const gSearchCustomHookMap: { [key in SearchCustomDataHookId]: CustomSearchHookProc } = {
+//     "Events": GetCustomSearchResultsHook,
+// } as const;
 
-    for (let i = 0; i < args.sort.length; ++i) {
-        const spec = args.sort[i]!;
-        getSortColumnAPI.sortModel = spec;
-        const orderByCol = table.getColumn(spec.db3Column);
-        if (!orderByCol) {
-            throw new Error(`Order by column ${spec.db3Column} not found on table ${table.tableName}`);
-        }
-        const sortElements = orderByCol.SqlGetSortableQueryElements(getSortColumnAPI);
-        if (sortElements) {
-            sortElementsArray.push(sortElements);
-        }
-    }
 
-    if (sortElementsArray.length === 0) {
-        sortElementsArray.push({
-            join: [],
-            select: [{
-                alias: getSortColumnAPI.getColumnAlias(),
-                expression: `P.id`,
-                direction: "asc",
-            }],
-        });
-    }
 
-    // flatten sort columns
-    const emptySortElements: SortQueryElements = {
-        join: [],
-        select: [],
-    };
-    const sortElements = sortElementsArray.reduce((acc, v) => {
-        acc.join.push(...v.join);
-        acc.select.push(...v.select);
-        return acc;
-    }, emptySortElements);
+// function ProcessSortModel(table: db3.xTable, args: GetSearchResultsInput): SortQueryElements {
+//     // the sort order value is best added to this query to avoid having to join to the same table later in the paginated results query.
+//     const sortElementsArray: SortQueryElements[] = [];
+//     let sortSymbolNameId = 0;
+//     const getSortColumnAPI: db3.SqlGetSortableQueryElementsAPI = {
+//         primaryTableAlias: "P",
+//         sortModel: { // to be changed as we loop.
+//             db3Column: "",
+//             direction: "asc",
+//         },
+//         getColumnAlias: () => {
+//             return `sortCol_${++sortSymbolNameId}`;
+//         },
+//         getTableAlias: () => {
+//             return `sortTbl_${++sortSymbolNameId}`;
+//         },
+//     };
 
-    return sortElements;
-};
+//     for (let i = 0; i < args.sort.length; ++i) {
+//         const spec = args.sort[i]!;
+//         getSortColumnAPI.sortModel = spec;
+//         const orderByCol = table.getColumn(spec.db3Column);
+//         if (!orderByCol) {
+//             throw new Error(`Order by column ${spec.db3Column} not found on table ${table.tableName}`);
+//         }
+//         const sortElements = orderByCol.SqlGetSortableQueryElements(getSortColumnAPI);
+//         if (sortElements) {
+//             sortElementsArray.push(sortElements);
+//         }
+//     }
 
-// construct a SQL select clause returning filtered items.
-// no pagination or sorting applied yet
-function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSearchResultsInput, excludeCriterionColumn: string | null, sortElements: SortQueryElements): CalculateFilterQueryResult {
-    const table = db3.GetTableById(args.tableID);
-    if (!table) {
-        throw new Error(`table ${args.tableID} not found`);
-    }
+//     if (sortElementsArray.length === 0) {
+//         sortElementsArray.push({
+//             join: [],
+//             select: [{
+//                 alias: getSortColumnAPI.getColumnAlias(),
+//                 expression: `P.id`,
+//                 direction: "asc",
+//             }],
+//         });
+//     }
 
-    const result: CalculateFilterQueryResult = {
-        sqlSelect: "",
-        errors: [],
-    }
+//     // flatten sort columns
+//     const emptySortElements: SortQueryElements = {
+//         join: [],
+//         select: [],
+//     };
+//     const sortElements = sortElementsArray.reduce((acc, v) => {
+//         acc.join.push(...v.join);
+//         acc.select.push(...v.select);
+//         return acc;
+//     }, emptySortElements);
 
-    // each criterion will supply the info we need to construct the correct query.
-    const whereAnd: string[] = [];
+//     return sortElements;
+// };
 
-    const qfTokens = SplitQuickFilter(args.quickFilter);
-    for (let itok = 0; itok < qfTokens.length; ++itok) {
-        const token = qfTokens[itok]!;
-        const OR: string[] = [];
-        for (let i = 0; i < table.columns.length; ++i) {
-            const column = table.columns[i]!;
-            const orExpr = column.SqlGetQuickFilterElementsForToken(token, qfTokens);
-            if (orExpr === null) continue;
-            OR.push(orExpr);
-        }
+// // construct a SQL select clause returning filtered items.
+// // no pagination or sorting applied yet
+// function calculateFilterQuery(currentUser: db3.UserWithRolesPayload, args: GetSearchResultsInput, excludeCriterionColumn: string | null, sortElements: SortQueryElements): CalculateFilterQueryResult {
+//     const table = db3.GetTableById(args.tableID);
+//     if (!table) {
+//         throw new Error(`table ${args.tableID} not found`);
+//     }
 
-        // integrate elements
-        whereAnd.push(SqlCombineOrExpression(OR));
-    }
+//     const result: CalculateFilterQueryResult = {
+//         sqlSelect: "",
+//         errors: [],
+//     }
 
-    for (let i = 0; i < args.discreteCriteria.length; ++i) {
-        const criterion = args.discreteCriteria[i]!;
-        const col = table.getColumn(criterion.db3Column);
-        if (!col) {
-            throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
-        }
-        if (col.member === excludeCriterionColumn) {
-            continue;
-        }
-        const elements = col.SqlGetDiscreteCriterionElements(criterion, "P");
-        // no filtering to be done on this column
-        if (!elements) continue;
+//     // each criterion will supply the info we need to construct the correct query.
+//     const whereAnd: string[] = [];
 
-        if (!!elements.error) {
-            result.errors.push({
-                column: criterion.db3Column,
-                error: elements.error,
-            });
-            continue;
-        }
+//     const qfTokens = SplitQuickFilter(args.quickFilter);
+//     for (let itok = 0; itok < qfTokens.length; ++itok) {
+//         const token = qfTokens[itok]!;
+//         const OR: string[] = [];
+//         for (let i = 0; i < table.columns.length; ++i) {
+//             const column = table.columns[i]!;
+//             const orExpr = column.SqlGetQuickFilterElementsForToken(token, qfTokens);
+//             if (orExpr === null) continue;
+//             OR.push(orExpr);
+//         }
 
-        // integrate elements
-        whereAnd.push(elements.whereAnd);
-    }
+//         // integrate elements
+//         whereAnd.push(SqlCombineOrExpression(OR));
+//     }
 
-    whereAnd.push(table.SqlGetVisFilterExpression(currentUser, "P"));
+//     for (let i = 0; i < args.discreteCriteria.length; ++i) {
+//         const criterion = args.discreteCriteria[i]!;
+//         const col = table.getColumn(criterion.db3Column);
+//         if (!col) {
+//             throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
+//         }
+//         if (col.member === excludeCriterionColumn) {
+//             continue;
+//         }
+//         const elements = col.SqlGetDiscreteCriterionElements(criterion, "P");
+//         // no filtering to be done on this column
+//         if (!elements) continue;
 
-    // // the sort order value is best added to this query to avoid having to join to the same table later in the paginated results query.
-    // const sortElementsArray: SortQueryElements[] = [];
-    // let sortSymbolNameId = 0;
-    // const getSortColumnAPI: db3.SqlGetSortableQueryElementsAPI = {
-    //     primaryTableAlias: "P",
-    //     sortModel: { // to be changed as we loop.
-    //         db3Column: "",
-    //         direction: "asc",
-    //     },
-    //     getColumnAlias: () => {
-    //         return `sortCol_${++sortSymbolNameId}`;
-    //     },
-    //     getTableAlias: () => {
-    //         return `sortTbl_${++sortSymbolNameId}`;
-    //     },
-    // };
+//         if (!!elements.error) {
+//             result.errors.push({
+//                 column: criterion.db3Column,
+//                 error: elements.error,
+//             });
+//             continue;
+//         }
 
-    // for (let i = 0; i < args.sort.length; ++i) {
-    //     const spec = args.sort[i]!;
-    //     getSortColumnAPI.sortModel = spec;
-    //     const orderByCol = table.getColumn(spec.db3Column);
-    //     if (!orderByCol) {
-    //         throw new Error(`Order by column ${spec.db3Column} not found on table ${table.tableName}`);
-    //     }
-    //     const sortElements = orderByCol.SqlGetSortableQueryElements(getSortColumnAPI);
-    //     if (sortElements) {
-    //         sortElementsArray.push(sortElements);
-    //     }
-    // }
+//         // integrate elements
+//         whereAnd.push(elements.whereAnd);
+//     }
 
-    // if (sortElementsArray.length === 0) {
-    //     sortElementsArray.push({
-    //         join: [],
-    //         select: [{
-    //             alias: getSortColumnAPI.getColumnAlias(),
-    //             expression: `P.id`,
-    //             direction: "asc",
-    //         }],
-    //     });
-    // }
+//     whereAnd.push(table.SqlGetVisFilterExpression(currentUser, "P"));
 
-    // // flatten sort columns
-    // const emptySortElements: SortQueryElements = {
-    //     join: [],
-    //     select: [],
-    // };
-    // const sortElements = sortElementsArray.reduce((acc, v) => {
-    //     acc.join.push(...v.join);
-    //     acc.select.push(...v.select);
-    //     return acc;
-    // }, emptySortElements);
+//     // // the sort order value is best added to this query to avoid having to join to the same table later in the paginated results query.
+//     // const sortElementsArray: SortQueryElements[] = [];
+//     // let sortSymbolNameId = 0;
+//     // const getSortColumnAPI: db3.SqlGetSortableQueryElementsAPI = {
+//     //     primaryTableAlias: "P",
+//     //     sortModel: { // to be changed as we loop.
+//     //         db3Column: "",
+//     //         direction: "asc",
+//     //     },
+//     //     getColumnAlias: () => {
+//     //         return `sortCol_${++sortSymbolNameId}`;
+//     //     },
+//     //     getTableAlias: () => {
+//     //         return `sortTbl_${++sortSymbolNameId}`;
+//     //     },
+//     // };
 
-    const ret: string = `
-        SELECT
-            P.${table.pkMember} id,
-            ${sortElements.select.map(m => `${m.expression} ${m.alias}`).join(", \n")}
-        FROM 
-            ${table.tableName} P
-            ${sortElements.join.join(", \n")}
-        WHERE
-            ${SqlCombineAndExpression(whereAnd)}
-        group by
-            P.${table.pkMember}
-    `;
-    result.sqlSelect = ret;
-    return result;
-};
+//     // for (let i = 0; i < args.sort.length; ++i) {
+//     //     const spec = args.sort[i]!;
+//     //     getSortColumnAPI.sortModel = spec;
+//     //     const orderByCol = table.getColumn(spec.db3Column);
+//     //     if (!orderByCol) {
+//     //         throw new Error(`Order by column ${spec.db3Column} not found on table ${table.tableName}`);
+//     //     }
+//     //     const sortElements = orderByCol.SqlGetSortableQueryElements(getSortColumnAPI);
+//     //     if (sortElements) {
+//     //         sortElementsArray.push(sortElements);
+//     //     }
+//     // }
 
-export default resolver.pipe(
-    resolver.authorize(Permission.visibility_members), // ? right or?
-    resolver.zod(ZGetSearchResultsInput),
-    async (args: GetSearchResultsInput, ctx: AuthenticatedCtx): Promise<SearchResultsRet> => {
-        try {
-            const rootsw = new Stopwatch();
-            const ret: SearchResultsRet = {
-                facets: [],
-                results: [],
-                rowCount: 0,
-                customData: null,
-                queryMetrics: [],
-                filterQueryResult: {
-                    errors: [],
-                    sqlSelect: "",
-                }
-            };
-            const u = (await getCurrentUserCore(ctx))!;
-            if (!u.role || u.role.permissions.length < 1) {
-                return ret;
-            }
+//     // if (sortElementsArray.length === 0) {
+//     //     sortElementsArray.push({
+//     //         join: [],
+//     //         select: [{
+//     //             alias: getSortColumnAPI.getColumnAlias(),
+//     //             expression: `P.id`,
+//     //             direction: "asc",
+//     //         }],
+//     //     });
+//     // }
 
-            // todo: input validation. it's very important because things are being appended to SQL.
+//     // // flatten sort columns
+//     // const emptySortElements: SortQueryElements = {
+//     //     join: [],
+//     //     select: [],
+//     // };
+//     // const sortElements = sortElementsArray.reduce((acc, v) => {
+//     //     acc.join.push(...v.join);
+//     //     acc.select.push(...v.select);
+//     //     return acc;
+//     // }, emptySortElements);
 
-            const table = db3.GetTableById(args.tableID);
-            if (!table) {
-                throw new Error(`table ${args.tableID} not found`);
-            }
+//     const ret: string = `
+//         SELECT
+//             P.${table.pkMember} id,
+//             ${sortElements.select.map(m => `${m.expression} ${m.alias}`).join(", \n")}
+//         FROM
+//             ${table.tableName} P
+//             ${sortElements.join.join(", \n")}
+//         WHERE
+//             ${SqlCombineAndExpression(whereAnd)}
+//         group by
+//             P.${table.pkMember}
+//     `;
+//     result.sqlSelect = ret;
+//     return result;
+// };
 
-            const sortElements = ProcessSortModel(table, args);
+// export default resolver.pipe(
+//     resolver.authorize(Permission.visibility_members), // ? right or?
+//     resolver.zod(ZGetSearchResultsInput),
+//     async (args: GetSearchResultsInput, ctx: AuthenticatedCtx): Promise<SearchResultsRet> => {
+//         try {
+//             const rootsw = new Stopwatch();
+//             const ret: SearchResultsRet = {
+//                 facets: [],
+//                 results: [],
+//                 rowCount: 0,
+//                 customData: null,
+//                 queryMetrics: [],
+//                 filterQueryResult: {
+//                     errors: [],
+//                     sqlSelect: "",
+//                 }
+//             };
+//             const u = (await getCurrentUserCore(ctx))!;
+//             if (!u.role || u.role.permissions.length < 1) {
+//                 return ret;
+//             }
 
-            const filterResult = calculateFilterQuery(u, args, null, sortElements);
-            ret.filterQueryResult = filterResult;
+//             // todo: input validation. it's very important because things are being appended to SQL.
 
-            const queries: Promise<any>[] = [];
+//             const table = db3.GetTableById(args.tableID);
+//             if (!table) {
+//                 throw new Error(`table ${args.tableID} not found`);
+//             }
 
-            for (let i = 0; i < args.discreteCriteria.length; ++i) {
-                const criterion = args.discreteCriteria[i]!;
-                const col = table.getColumn(criterion.db3Column);
-                if (!col) {
-                    throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
-                }
+//             const sortElements = ProcessSortModel(table, args);
 
-                const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements);
+//             const filterResult = calculateFilterQuery(u, args, null, sortElements);
+//             ret.filterQueryResult = filterResult;
 
-                const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filterResult.sqlSelect, filterResult2.sqlSelect, criterion);
-                // no facet info to be done on this column
-                if (!facetInfoQuery) continue;
+//             const queries: Promise<any>[] = [];
 
-                const proc = async () => {
-                    const sw = new Stopwatch();
-                    const result: TAnyModel[] = await db.$queryRaw(Prisma.raw(facetInfoQuery.sql));
-                    const tr = result.map(r => facetInfoQuery.transformResult(r));
-                    ret.facets.push({
-                        db3Column: criterion.db3Column,
-                        items: tr,
-                    });
-                    ret.queryMetrics.push({
-                        title: `[${col.member}] facet info`,
-                        millis: sw.ElapsedMillis,
-                        query: facetInfoQuery.sql,
-                        rowCount: tr.length,
-                    });
-                };
+//             for (let i = 0; i < args.discreteCriteria.length; ++i) {
+//                 const criterion = args.discreteCriteria[i]!;
+//                 const col = table.getColumn(criterion.db3Column);
+//                 if (!col) {
+//                     throw new Error(`Column ${criterion.db3Column} wasn't found on table ${table.tableName} / ID:${table.tableID}; unable to form the search query.`);
+//                 }
 
-                queries.push(proc());
-            }
+//                 const filterResult2 = calculateFilterQuery(u, args, col.member, sortElements);
 
-            // query paginated
-            let resultIds: number[] = [];
-            const paginatedQueryProc = async () => {
-                const sw = new Stopwatch();
-                // const orderByCol = table.getColumn(args.orderByDb3Column);
-                // if (!orderByCol) {
-                //     throw new Error(`Order by column ${args.orderByDb3Column} not found on table ${table.tableName}`);
-                // }
+//                 const facetInfoQuery = col.SqlGetFacetInfoQuery(u, filterResult.sqlSelect, filterResult2.sqlSelect, criterion);
+//                 // no facet info to be done on this column
+//                 if (!facetInfoQuery) continue;
 
-                const orderBy: string[] = [];
-                sortElements.select.forEach(s => {
-                    orderBy.push(`${s.alias} ${s.direction}`);
-                });
+//                 const proc = async () => {
+//                     const sw = new Stopwatch();
+//                     const result: TAnyModel[] = await db.$queryRaw(Prisma.raw(facetInfoQuery.sql));
+//                     const tr = result.map(r => facetInfoQuery.transformResult(r));
+//                     ret.facets.push({
+//                         db3Column: criterion.db3Column,
+//                         items: tr,
+//                     });
+//                     ret.queryMetrics.push({
+//                         title: `[${col.member}] facet info`,
+//                         millis: sw.ElapsedMillis,
+//                         query: facetInfoQuery.sql,
+//                         rowCount: tr.length,
+//                     });
+//                 };
 
-                const paginatedResultQuery = `
-                    with FilteredItems as (
-                        ${filterResult.sqlSelect}
-                    )
-                    select
-                        id
-                    from
-                        FilteredItems
-                    order by
-                        ${orderBy.join(`,\n`)}
-                    limit
-                        ${args.pageSize * args.page},${args.pageSize}
-                        `;
+//                 queries.push(proc());
+//             }
 
-                const r: { id: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
-                resultIds = r.map(x => x.id);
-                ret.queryMetrics.push({
-                    title: "paginated results",
-                    millis: sw.ElapsedMillis,
-                    query: paginatedResultQuery,
-                    rowCount: r.length,
-                });
-            };
-            queries.push(paginatedQueryProc());
+//             // query paginated
+//             let resultIds: number[] = [];
+//             const paginatedQueryProc = async () => {
+//                 const sw = new Stopwatch();
+//                 // const orderByCol = table.getColumn(args.orderByDb3Column);
+//                 // if (!orderByCol) {
+//                 //     throw new Error(`Order by column ${args.orderByDb3Column} not found on table ${table.tableName}`);
+//                 // }
 
-            // TOTAL filtered row count (basically the special "self" facet)
-            const totalRowCountQueryProc = async () => {
-                const sw = new Stopwatch();
-                const totalRowCountQuery = `
-                with FilteredItems as (
-                    ${filterResult.sqlSelect}
-                )
-                select
-                    count(*) as rowCount
-                from
-                    FilteredItems
-                    `;
-                const rowCountResult: [{ rowCount: bigint }] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
-                ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
-                ret.queryMetrics.push({
-                    title: "total row count",
-                    millis: sw.ElapsedMillis,
-                    query: totalRowCountQuery,
-                    rowCount: 1,
-                });
-            };
+//                 const orderBy: string[] = [];
+//                 sortElements.select.forEach(s => {
+//                     orderBy.push(`${s.alias} ${s.direction}`);
+//                 });
 
-            queries.push(totalRowCountQueryProc());
+//                 const paginatedResultQuery = `
+//                     with FilteredItems as (
+//                         ${filterResult.sqlSelect}
+//                     )
+//                     select
+//                         id
+//                     from
+//                         FilteredItems
+//                     order by
+//                         ${orderBy.join(`,\n`)}
+//                     limit
+//                         ${args.pageSize * args.page},${args.pageSize}
+//                         `;
 
-            const parallelsw = new Stopwatch();
-            await Promise.all(queries);
-            ret.queryMetrics.push({
-                title: "parallel execution",
-                millis: parallelsw.ElapsedMillis,
-                query: "",
-                rowCount: 0,
-            });
+//                 const r: { id: number }[] = await db.$queryRaw(Prisma.raw(paginatedResultQuery));
+//                 resultIds = r.map(x => x.id);
+//                 ret.queryMetrics.push({
+//                     title: "paginated results",
+//                     millis: sw.ElapsedMillis,
+//                     query: paginatedResultQuery,
+//                     rowCount: r.length,
+//                 });
+//             };
+//             queries.push(paginatedQueryProc());
 
-            // FULL EVENT DETAILS USING DB3.
-            if (resultIds.length) {
-                const queryResult = await DB3QueryCore2({
-                    clientIntention: { intention: "user", currentUser: u, mode: "primary" },
-                    cmdbQueryContext: `getSearchResults[${table.tableName}]`,
-                    tableID: table.tableID,
-                    tableName: table.tableName,
-                    filter: {
-                        items: [],
-                        pks: resultIds,
-                    },
-                    orderBy: undefined,
-                }, u);
-                ret.queryMetrics.push({
-                    title: "db3 verbose items",
-                    millis: queryResult.executionTimeMillis,
-                    query: "",
-                    rowCount: queryResult.items.length,
-                });
+//             // TOTAL filtered row count (basically the special "self" facet)
+//             const totalRowCountQueryProc = async () => {
+//                 const sw = new Stopwatch();
+//                 const totalRowCountQuery = `
+//                 with FilteredItems as (
+//                     ${filterResult.sqlSelect}
+//                 )
+//                 select
+//                     count(*) as rowCount
+//                 from
+//                     FilteredItems
+//                     `;
+//                 const rowCountResult: [{ rowCount: bigint }] = await db.$queryRaw(Prisma.raw(totalRowCountQuery));
+//                 ret.rowCount = (new Number(rowCountResult[0].rowCount)).valueOf();
+//                 ret.queryMetrics.push({
+//                     title: "total row count",
+//                     millis: sw.ElapsedMillis,
+//                     query: totalRowCountQuery,
+//                     rowCount: 1,
+//                 });
+//             };
 
-                // apply sorting to make sure the page looks correct.
-                // the filter *should* be unnecessary but some edge cases (race conditions) could result in mismatches so play safe.
-                ret.results = resultIds.map(id => queryResult.items.find(r => r[table.pkMember] === id)).filter(r => !!r);
-            }
+//             queries.push(totalRowCountQueryProc());
 
-            if (table.SearchCustomDataHookId) {
-                const hooksw = new Stopwatch();
-                const proc = gSearchCustomHookMap[table.SearchCustomDataHookId];
-                ret.customData = await proc(u, args, ret);
-                ret.queryMetrics.push({
-                    title: `Custom hook: [${table.SearchCustomDataHookId}]`,
-                    millis: hooksw.ElapsedMillis,
-                    query: "",
-                    rowCount: 0,
-                });
-            }
+//             const parallelsw = new Stopwatch();
+//             await Promise.all(queries);
+//             ret.queryMetrics.push({
+//                 title: "parallel execution",
+//                 millis: parallelsw.ElapsedMillis,
+//                 query: "",
+//                 rowCount: 0,
+//             });
 
-            ret.queryMetrics.push({
-                title: "(root)",
-                millis: rootsw.ElapsedMillis,
-                query: "",
-                rowCount: 0,
-            });
+//             // FULL EVENT DETAILS USING DB3.
+//             if (resultIds.length) {
+//                 const queryResult = await DB3QueryCore2({
+//                     clientIntention: { intention: "user", currentUser: u, mode: "primary" },
+//                     cmdbQueryContext: `getSearchResults[${table.tableName}]`,
+//                     tableID: table.tableID,
+//                     tableName: table.tableName,
+//                     filter: {
+//                         items: [],
+//                         pks: resultIds,
+//                     },
+//                     orderBy: undefined,
+//                 }, u);
+//                 ret.queryMetrics.push({
+//                     title: "db3 verbose items",
+//                     millis: queryResult.executionTimeMillis,
+//                     query: "",
+//                     rowCount: queryResult.items.length,
+//                 });
 
-            return ret;
-        } catch (e) {
-            console.error(e);
-            throw (e);
-        }
-    }
-);
+//                 // apply sorting to make sure the page looks correct.
+//                 // the filter *should* be unnecessary but some edge cases (race conditions) could result in mismatches so play safe.
+//                 ret.results = resultIds.map(id => queryResult.items.find(r => r[table.pkMember] === id)).filter(r => !!r);
+//             }
+
+//             if (table.SearchCustomDataHookId) {
+//                 const hooksw = new Stopwatch();
+//                 const proc = gSearchCustomHookMap[table.SearchCustomDataHookId];
+//                 ret.customData = await proc(u, args, ret);
+//                 ret.queryMetrics.push({
+//                     title: `Custom hook: [${table.SearchCustomDataHookId}]`,
+//                     millis: hooksw.ElapsedMillis,
+//                     query: "",
+//                     rowCount: 0,
+//                 });
+//             }
+
+//             ret.queryMetrics.push({
+//                 title: "(root)",
+//                 millis: rootsw.ElapsedMillis,
+//                 query: "",
+//                 rowCount: 0,
+//             });
+
+//             return ret;
+//         } catch (e) {
+//             console.error(e);
+//             throw (e);
+//         }
+//     }
+// );
 
 
 

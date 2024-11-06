@@ -1,8 +1,7 @@
 
-import { useQuery } from '@blitzjs/rpc';
 import { assert } from 'blitz';
 import { Prisma } from "db";
-import React, { Suspense } from 'react';
+import React from 'react';
 import { SortDirection } from 'shared/rootroot';
 import { DateTimeRange, Timing } from 'shared/time';
 import { getUniqueNegativeID } from 'shared/utils';
@@ -10,7 +9,6 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
 import { useTableRenderContext, xTableClientCaps, xTableClientSpec } from '../db3/components/DB3ClientCore';
-import getSearchResults from '../db3/queries/getSearchResults';
 import { DiscreteCriterion, SearchResultsRet } from '../db3/shared/apiTypes';
 import { DashboardContextData } from './DashboardContext';
 

@@ -23,134 +23,7 @@ import { DiscreteCriterion, DiscreteCriterionFilterType, GetSearchResultsInput, 
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { EventOrderByColumnOption, EventOrderByColumnOptions, EventsFilterSpec } from 'src/core/components/EventComponentsBase';
 import superjson from 'superjson';
-
-const gPageSize = 15;
-
-async function fetchSearchResultsApi(args: GetSearchResultsInput): Promise<SearchResultsRet> {
-    const serializedArgs = superjson.stringify(args);
-    const encodedArgs = encodeURIComponent(serializedArgs);
-
-    //console.log(`fetching items [${args.offset}, ${args.take}]`);
-
-    const response = await fetch(
-        `/api/search/getSearchResultsApi?args=${encodedArgs}`
-    );
-
-    if (!response.ok) {
-        throw new Error('Network response was not ok');
-    }
-    return superjson.parse(await response.text());
-}
-
-
-function GetSearchResultsQueryArgs(filterSpec: EventsFilterSpec, offset: number, take: number = gPageSize) {
-    return {
-        offset,
-        take,
-        tableID: db3.xEvent.tableID,
-        refreshSerial: filterSpec.refreshSerial,
-        sort: [{
-            db3Column: filterSpec.orderByColumn,
-            direction: filterSpec.orderByDirection,
-        }],
-        quickFilter: filterSpec.quickFilter,
-        discreteCriteria: [
-            filterSpec.dateFilter,
-            filterSpec.typeFilter,
-            filterSpec.statusFilter,
-            filterSpec.tagFilter,
-        ],
-    };
-}
-
-
-
-
-function useEventListData(filterSpec: EventsFilterSpec) {
-    const dashboardContext = useContext(DashboardContext);
-    const snackbarContext = useContext(SnackbarContext);
-
-    const filterSpecHash = JSON.stringify(filterSpec);
-
-    const [enrichedEvents, setEnrichedEvents] = useState<db3.EnrichedSearchEventPayload[]>([]);
-    const [results, setResults] = useState<SearchResultsRet>(MakeEmptySearchResultsRet());
-    //const [hasMore, setHasMore] = useState(true);
-
-    const isFetchingRef = useRef(false);
-    const totalEventsFetchedRef = useRef(0);
-
-    const fetchData = async (offset: number) => {
-        //if (isFetchingRef.current || !hasMore) return;
-        if (isFetchingRef.current) return;
-        isFetchingRef.current = true;
-
-        try {
-            const searchResult = await fetchSearchResultsApi(GetSearchResultsQueryArgs(filterSpec, offset));
-            //console.log(searchResult);
-
-            const newEvents = searchResult.results.map(e =>
-                db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext)
-            );
-
-            // if (newEvents.length < 1) {
-            //     setHasMore(false);
-            // }
-
-            setEnrichedEvents(prevEvents => {
-                const newItems: db3.EnrichedSearchEventPayload[] = [];
-                const overlaps: db3.EnrichedSearchEventPayload[] = [];
-
-                for (const event of newEvents) {
-                    const foundIndex = prevEvents.findIndex(e => e.id === event.id);
-                    if (foundIndex === -1) {
-                        newItems.push(event);
-                    } else {
-                        // the item already exists; just leave it.
-                        overlaps.push(event);
-                    }
-                }
-
-                const ret = [...prevEvents, ...newItems];
-                // console.log(`new enriched events ${prevEvents.length} + ${newEvents.length} => ${ret.length} (${overlaps.length} overlap)`);
-                // console.log(`    ${JSON.stringify(prevEvents.map(e => e.id))}`);
-                // console.log(`  + ${JSON.stringify(newEvents.map(e => e.id))} (overlaps: ${JSON.stringify(overlaps.map(e => e.id))})`);
-                return ret;
-            });
-
-            setResults(searchResult);
-        } catch (error) {
-            snackbarContext.showMessage({
-                severity: 'error',
-                children: 'Failed to load more events.',
-            });
-        } finally {
-            isFetchingRef.current = false;
-        }
-    };
-
-    // Reset data when filters change
-    useEffect(() => {
-        //console.log(`fetching due to filterspec change`);
-        setEnrichedEvents([]);
-        setResults(MakeEmptySearchResultsRet());
-        //setHasMore(true);
-        totalEventsFetchedRef.current = 0;
-        // Fetch the first page
-        fetchData(0);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filterSpecHash]);
-
-    // Function to load more data, passed to InfiniteScroll
-    const loadMoreData = useCallback(() => {
-        if (isFetchingRef.current) return;
-        //if (isFetchingRef.current || !hasMore) return;
-        fetchData(enrichedEvents.length);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [/*hasMore, */enrichedEvents]);
-
-    return { enrichedEvents, results, loadMoreData/*, hasMore*/ };
-}
-
+import { useEventListData } from 'src/core/components/EventSearch';
 
 // for serializing in compact querystring
 interface EventsFilterSpecStatic {
@@ -456,7 +329,7 @@ const EventListOuter = () => {
         dateFilter: dateFilterEnabled ? dateFilterWhenEnabled : { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
 
-    const { enrichedEvents, results, /*hasMore, */loadMoreData } = useEventListData(filterSpec,);
+    const { enrichedEvents, results, /*hasMore, */loadMoreData } = useEventListData(filterSpec);
 
     const handleCopyFilterspec = () => {
         const o: EventsFilterSpecStatic = {

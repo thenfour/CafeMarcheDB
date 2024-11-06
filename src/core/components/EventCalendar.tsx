@@ -9,11 +9,12 @@ import { AdminInspectObject, CMSinglePageSurfaceCard, InspectObject } from './CM
 import { useURLState } from './CMCoreComponents2';
 import { GetStyleVariablesForColor } from './Color';
 import { EventListItem, EventSearchItemContainer } from './EventComponents';
-import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventListQuerier, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
+import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
 import { RenderMuiIcon, gCharMap, gIconMap } from "../db3/components/IconMap";
 import { NoSsr, Tooltip } from "@mui/material";
 import { DashboardContext } from "./DashboardContext";
 import "moment/locale/nl-be"; // forces the calendar to use nl-BE locale
+import { useEventListData } from "./EventSearch";
 
 
 // attach useful data to the event for passing around the calendar.
@@ -265,8 +266,8 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
 export const BigEventCalendarInner = () => {
     const [selectedEvent, setSelectedEvent] = React.useState<EventWithSearchResult | null>(null);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
-    const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
-    const [enrichedEvents, setEnrichedEvents] = React.useState<EventWithSearchResult[]>([]);
+    //const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
+    //const [enrichedEvents, setEnrichedEvents] = React.useState<EventWithSearchResult[]>([]);
     // a string like 2024-06
     const [monthStr, setMonthStr] = useURLState<string | null>("month", null);
 
@@ -290,9 +291,9 @@ export const BigEventCalendarInner = () => {
 
     // the default basic filter spec when no params specified.
     const filterSpec: EventsFilterSpec = {
-        pageSize: 100,
+        //pageSize: 100,
         refreshSerial,
-        page: 0,
+        //page: 0,
 
         // in dto...
         quickFilter: `${dayjs(minDate).format('YYYYMMDD')}-${dayjs(maxDate).format('YYYYMMDD')}`,
@@ -305,6 +306,8 @@ export const BigEventCalendarInner = () => {
         typeFilter: { db3Column: "type", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
         dateFilter: { db3Column: "startsAt", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
     };
+
+    const { enrichedEvents, results } = useEventListData(filterSpec, 100);
 
     // nossr to prevent using server's locale settings.
     return <>
@@ -320,12 +323,15 @@ export const BigEventCalendarInner = () => {
                         setSelectedEvent(e);
                     }}
                     date={date}
-                    enrichedEvents={enrichedEvents}
+                    enrichedEvents={enrichedEvents.map(e => ({
+                        event: e,
+                        result: results,
+                    }))}
                     filterSpec={filterSpec}
                     results={results}
                     setMonthStr={setMonthStr}
                 />
-
+                {/* 
                 <EventListQuerier
                     filterSpec={filterSpec}
                     setResults={(r, ee) => {
@@ -342,7 +348,7 @@ export const BigEventCalendarInner = () => {
                         }
                     }}
                     render={(isLoading) => <div className={`queryProgressLine ${isLoading ? "loading" : "idle"}`}></div>}
-                />
+                /> */}
 
             </div>
         </CMSinglePageSurfaceCard>
