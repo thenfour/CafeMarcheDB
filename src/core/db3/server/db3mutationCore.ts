@@ -834,7 +834,7 @@ export function PrepareNewFileRecord({ uploadedByUserId, humanReadableLeafName, 
     // generate a new unique filename given to the file. like a GUID. "2e3b4218f38f5aedcf765f801"
     // file.newFilename is already done for us, though it doesn't seem very secure. i want to avoid using sequential IDs to avoid scraping.
     // so generate a new guid.
-    const filename = nanoid();//file.newFilename;
+    const filename = nanoid(10);//file.newFilename;
 
     // keeping the extension is actually important for mime-type serving. or, save mime-type in db?
     const extension = path.extname(humanReadableLeafName); // includes dot. ".pdf"
