@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Permission } from "shared/permissions";
 import { formatFileSize } from "shared/rootroot";
 import { CalcRelativeTiming, DateTimeRange, formatMillisecondsToDHMS } from "shared/time";
+import { InspectObject } from "src/core/components/CMCoreComponents";
 import { CMTable, CMTableSlot, KeyValueDisplay } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { CMTab, CMTabPanel } from "src/core/components/TabPanel";
@@ -63,7 +64,10 @@ const UploadsStats = ({ serverHealthResults }: { serverHealthResults: GetServerH
                     if (args.slot === CMTableSlot.Footer) {
                         return args.row.fileName;
                     }
-                    return <a href={API.files.getURIForStoredLeafName(args.row.fileName)} target="_blank" rel="noreferrer">{args.row.fileName}</a>
+                    return <a href={!args.row.fileName ? undefined : API.files.getURIForFile({
+                        fileLeafName: args.row.leafName || "?",
+                        storedLeafName: args.row.fileName,
+                    })} target="_blank" rel="noreferrer">{args.row.fileName}</a>
                 }
             },
             {
@@ -176,8 +180,9 @@ const MainContent = () => {
     const dashboardContext = React.useContext(DashboardContext);
     const [tabId, setTabId] = React.useState<TabId>(TabId.Database);
     const [serverHealthResults, serverHealthQueryResult] = useQuery(getServerHealth, {});
-    console.log(serverHealthResults.env);
+    //console.log(serverHealthResults.env);
     return <div>
+        <InspectObject src={serverHealthResults} />
         <KeyValueDisplay className="serverStartInfo" data={{
             ...dashboardContext.serverStartupState,
             uptime: formatMillisecondsToDHMS(dashboardContext.serverStartupState.uptimeMS),

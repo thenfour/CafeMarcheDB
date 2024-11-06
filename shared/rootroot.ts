@@ -33,6 +33,19 @@ export const unslugify = (slug: string): string => {
         .join(' ');
 }
 
+export const slugifyWithDots = (...args: (string | number)[]): string => {
+    const value = args.join(' ');
+
+    return value
+        .normalize('NFD') // Split an accented letter into the base letter and the accent
+        .replace(/[\u0300-\u036f]/g, '') // Remove all previously split accents
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9 _.-]/g, '') // Allow single hyphens, dots, spaces, underscores, disallow other characters
+        .replace(/[\s_-]+/g, '-') // Replace spaces, underscores, and hyphens with a single hyphen
+        .replace(/-+/g, '-'); // Replace multiple hyphens with a single hyphen
+};
+
 
 
 export function formatFileSize(bytes: number): string {

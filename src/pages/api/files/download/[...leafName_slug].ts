@@ -21,11 +21,22 @@ export default api(async (req, res, ctx: Ctx) => {
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             clientIntention = { currentUser, intention: currentUser ? "user" : "public", mode: 'primary' };
 
-            const leafRaw = req.query.leafName;
+            if (!req.query.leafName_slug) {
+                reject(`invalid file`);
+                return;
+            }
+
+            const [leafRaw, slug] = req.query.leafName_slug;
             if (!leafRaw || (typeof (leafRaw) !== 'string')) {
                 reject(`invalid file`);
                 return;
             }
+
+            // const leafRaw = req.query.leafName;
+            // if (!leafRaw || (typeof (leafRaw) !== 'string')) {
+            //     reject(`invalid file`);
+            //     return;
+            // }
             const leaf = leafRaw as string;
 
             const fullpath = mutationCore.GetFileServerStoragePath(leaf || "");

@@ -25,6 +25,7 @@ import updateUserEventAttendanceMutation from "./mutations/updateUserEventAttend
 import updateUserPrimaryInstrumentMutation from "./mutations/updateUserPrimaryInstrumentMutation";
 import { AddCoord2DSize, Coord2D, ImageEditParams, Size, TAnyModel, getFileCustomData } from "./shared/apiTypes";
 import updateEventCustomFieldValuesMutation from "./mutations/updateEventCustomFieldValuesMutation";
+import { slugify, slugifyWithDots } from "shared/rootroot";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 export interface APIQueryArgs {
@@ -86,12 +87,16 @@ export interface SongListStats {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class FilesAPI {
-    getURIForStoredLeafName = (storedLeafName: string) => {
-        return `/api/files/download/${storedLeafName}`;
-    }
+    // getURIForStoredLeafName = (storedLeafName: string) => {
+    //     return `/api/files/download/${storedLeafName}`;
+    // }
 
-    getURIForFile = (file: Prisma.FileGetPayload<{}>) => {
-        return this.getURIForStoredLeafName(file.storedLeafName);//`/api/files/download/${file.storedLeafName}`;
+    getURIForFile = (file: Prisma.FileGetPayload<{ select: { storedLeafName: true } }> & { fileLeafName?: undefined | string }) => {
+        //return this.getURIForStoredLeafName(file.storedLeafName);//`/api/files/download/${file.storedLeafName}`;
+        if (!file.fileLeafName) {
+            return `/api/files/download/${file.storedLeafName}`;
+        }
+        return `/api/files/download/${file.storedLeafName}/${slugifyWithDots(file.fileLeafName)}`;
     }
 
     getImageFileDimensions = (file: db3.FilePayloadMinimum): Size => {
