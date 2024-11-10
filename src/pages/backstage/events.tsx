@@ -200,14 +200,14 @@ const gStaticFilters: EventsFilterSpecStatic[] = [
         ]
     },
     {
-        "label": "Past concerts",
+        "label": "(n/a)",
         "helpText": "",
         "orderByColumn": "startsAt",
         "orderByDirection": "desc",
         "statusFilterEnabled": true,
         "statusFilterBehavior": "hasSomeOf" as any,
         "statusFilterOptions": [
-            4
+            3
         ],
         "typeFilterEnabled": true,
         "typeFilterBehavior": "hasSomeOf" as any,
