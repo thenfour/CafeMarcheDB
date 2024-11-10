@@ -262,7 +262,7 @@ const ActivityLogFile = ({ file, cacheData }: { file: Prisma.FileGetPayload<{}>,
 
 
 type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number, sortOrder: number, subtitle: string, type: "song" };
-type ActivityLogSongListDividerPayload = { id?: number | undefined, sortOrder: number, subtitle: string, color: string | null | undefined, type: "div" };
+type ActivityLogSongListDividerPayload = { id?: number | undefined, sortOrder: number, subtitle: string, color: string | null | undefined, isInterruption: boolean, type: "div" };
 type ActivityLogSongListV1 = { id: number, songId: number, sortOrder: number, subtitle: string }[];
 type ActivityLogSongListV2 = Partial<TinsertOrUpdateEventSongListArgs> & Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'>;
 
@@ -311,7 +311,17 @@ const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogS
                     <td>{s.sortOrder}</td>
                     <td >
                         {s.type === "song" && <ActivityLogSong songId={s.songId} cacheData={cacheData} />}
-                        {s.type === "div" && <div style={{ display: "flex" }}><div>-----</div><ColorSwatch color={gGeneralPaletteList.findEntry(s.color || null)} size="small" variation={gStrong} /></div>}
+                        {s.type === "div" && (
+                            <div style={{ display: "flex" }}>
+                                <div>-----</div>
+                                <ColorSwatch color={gGeneralPaletteList.findEntry(s.color || null)} size="small" variation={gStrong} />
+                                <div style={{ opacity: "50%" }}>{s.isInterruption ? (
+                                    gIconMap.Pause()
+                                ) : (
+                                    gIconMap.Comment()
+                                )}</div>
+                            </div>
+                        )}
                     </td>
                     <td>{s.subtitle}</td>
                 </tr>)}
