@@ -24,7 +24,7 @@ import { MetronomeButton } from './Metronome';
 import { Markdown } from './RichTextEditor';
 import { SearchableNameColumnClient } from './SearchableNameColumnClient';
 import { SettingMarkdown } from './SettingMarkdown';
-import { CalculateSongMetadata, EnrichedVerboseSong, SongWithMetadata } from './SongComponentsBase';
+import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongWithMetadata } from './SongComponentsBase';
 import { FilesTabContent } from './SongFileComponents';
 import { SongHistory } from './SongHistory';
 import { VisibilityValue } from './VisibilityControl';
@@ -492,30 +492,16 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
         tableClient.refetch();
     };
 
-    const enrichedFiles = song.taggedFiles.map(ft => {
-        return {
-            ...ft,
-            file: db3.enrichFile(ft.file, dashboardContext),
-        };
-    });
+    const fileInfo = GetSongFileInfo(song, dashboardContext);
 
-    //const [selectedTab, setSelectedTab] = React.useState<number>(props.initialTabIndex || 0);
-    const [selectedTab, setSelectedTab] = React.useState<SongDetailTabSlug>(props.initialTab || ((IsNullOrWhitespace(song.description) && (enrichedFiles.length > 0)) ? SongDetailTabSlug.files : SongDetailTabSlug.info));
-
-    // const handleTabChange = (e: React.SyntheticEvent, newValue: SongDetailTabSlug) => {
-    //     setSelectedTab(newValue);
-    // };
+    const [selectedTab, setSelectedTab] = React.useState<SongDetailTabSlug>(props.initialTab || ((IsNullOrWhitespace(song.description) && (fileInfo.enrichedFiles.length > 0)) ? SongDetailTabSlug.files : SongDetailTabSlug.info));
 
     // convert index to tab slug
-    //const tabSlug = Object.keys(gSongDetailTabSlugIndices)[selectedTab];
     const songData = CalculateSongMetadata(song, selectedTab);
 
     React.useEffect(() => {
         void router.replace(songData.songURI, undefined, { shallow: true }); // shallow prevents annoying re-scroll behavior
     }, [songData.songURI]);
-
-    const partitions = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Partition));
-    const recordings = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Recording));
 
     const handleTabChange = (newId: string) => {
         const slug = StringToEnumValue(SongDetailTabSlug, (newId || "").toString()) || SongDetailTabSlug.info;
@@ -542,11 +528,11 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 thisTabId={SongDetailTabSlug.parts}
                 summaryTitle={"Parts"}
                 summaryIcon={gIconMap.LibraryMusic()}
-                summarySubtitle={partitions.length}
-                canBeDefault={!!partitions.length}
+                summarySubtitle={fileInfo.partitions.length}
+                canBeDefault={!!fileInfo.partitions.length}
             >
                 <FilesTabContent
-                    fileTags={partitions}
+                    fileTags={fileInfo.partitions}
                     readonly={props.readonly}
                     refetch={refetch}
                     uploadTags={{
@@ -559,11 +545,11 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 thisTabId={SongDetailTabSlug.recordings}
                 summaryTitle={"Recordings"}
                 summaryIcon={gIconMap.PlayCircleOutline()}
-                summarySubtitle={recordings.length}
-                canBeDefault={!!recordings.length}
+                summarySubtitle={fileInfo.recordings.length}
+                canBeDefault={!!fileInfo.recordings.length}
             >
                 <FilesTabContent
-                    fileTags={recordings}
+                    fileTags={fileInfo.recordings}
                     readonly={props.readonly}
                     refetch={refetch}
                     uploadTags={{
@@ -579,7 +565,7 @@ export const SongDetail = ({ song, tableClient, ...props }: SongDetailArgs) => {
                 summarySubtitle={song.taggedFiles.length}
                 canBeDefault={!!song.taggedFiles.length}
             >
-                <FilesTabContent fileTags={enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
+                <FilesTabContent fileTags={fileInfo.enrichedFiles} readonly={props.readonly} refetch={refetch} uploadTags={{
                     taggedSongId: song.id,
                 }} />
             </CMTab>

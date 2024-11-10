@@ -1,9 +1,11 @@
 
 import { formatSongLength } from 'shared/time';
 import * as db3 from "src/core/db3/db3";
+import db, { Prisma } from "db";
 import { API } from '../db3/clientAPI';
 import { SortDirection } from 'shared/rootroot';
 import { DiscreteCriterion } from '../db3/shared/apiTypes';
+import { DashboardContextData } from './DashboardContext';
 
 export type EnrichedVerboseSong = db3.EnrichedSong<db3.SongPayload_Verbose>;
 
@@ -23,6 +25,34 @@ export const CalculateSongMetadata = (song: EnrichedVerboseSong, tabSlug?: strin
         formattedBPM: (song.startBPM === null && song.endBPM === null) ? null : API.songs.getFormattedBPM(song),
         formattedLength: song.lengthSeconds === null ? null : formatSongLength(song.lengthSeconds),
     };
+};
+
+
+export const GetSongFileInfo = (song: EnrichedVerboseSong, dashboardContext: DashboardContextData) => {
+
+    const enrichedFiles = song.taggedFiles.map(ft => {
+        return {
+            ...ft,
+            file: db3.enrichFile(ft.file, dashboardContext),
+        };
+    });
+
+    const partitions = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Partition));
+    const recordings = enrichedFiles.filter(f => f.file.tags.some(t => t.fileTag.significance === db3.FileTagSignificance.Recording));
+    const otherFiles = enrichedFiles.filter(
+        f =>
+            !f.file.tags.some(
+                t =>
+                    t.fileTag.significance === db3.FileTagSignificance.Partition ||
+                    t.fileTag.significance === db3.FileTagSignificance.Recording
+            )
+    );
+    return {
+        enrichedFiles,
+        partitions,
+        recordings,
+        otherFiles,
+    }
 };
 
 

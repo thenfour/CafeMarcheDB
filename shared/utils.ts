@@ -1023,7 +1023,7 @@ export function LangSelectStringWithDetail<
     return { chosenLang: null, preferredLangWasChosen: false, result: "" }; // return an empty string because we dont know if null is allowed.
 }
 
-
+export const SelectEnglishNoun = (quantity: number, singular: string, plural: string) => Math.abs(quantity) === 1 ? singular : plural;
 
 export function LangSelectString<
     T extends string | null | undefined

@@ -309,15 +309,17 @@ model SongComment {
 
 // composer / arranger / whatever
 model SongCreditType {
-  id          Int     @id @default(autoincrement())
-  text        String
-  description String  @db.MediumText
-  color       String?
-  sortOrder   Int     @default(0)
+  id           Int     @id @default(autoincrement())
+  text         String
+  description  String  @db.MediumText
+  color        String?
+  sortOrder    Int     @default(0)
+  significance String? // SongCreditTypeSignificance
 
   songCredits SongCredit[]
 
   @@index([text])
+  @@index([significance])
   @@index([sortOrder])
 }
 

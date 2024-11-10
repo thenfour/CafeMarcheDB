@@ -136,6 +136,10 @@ export const RoleSignificance = {
     General: "General",
 } as const satisfies Record<string, string>;
 
+export const SongCreditTypeSignificance = {
+    Composer: "Composer",
+    Arranger: "Arranger",
+} as const satisfies Record<string, string>;
 
 export const SongTagSignificance = {
     Improvisation: "Improvisation",

@@ -17,6 +17,7 @@ import '../../public/global2.css';
 import '../../public/markdown.css';
 import '../../public/frontpage.css';
 import '../../public/style/filterControls.css';
+import '../../public/style/songSearch.css';
 import '../../public/style/bigCalendar.css';
 import '../../public/style/tabs.css';
 import '../../public/style/metronome.css';

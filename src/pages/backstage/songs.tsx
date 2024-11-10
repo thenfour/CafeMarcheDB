@@ -5,50 +5,85 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
 import { SortDirection } from "shared/rootroot";
-import { arrayToTSV, arraysContainSameValues } from "shared/utils";
-import { CMChip, CMChipContainer } from "src/core/components/CMChip";
+import { IsNullOrWhitespace, LangSelectString, SelectEnglishNoun, arrayToTSV, arraysContainSameValues } from "shared/utils";
+import { CMChip, CMChipContainer, CMStandardDBChip } from "src/core/components/CMChip";
 import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
-import { DashboardContext } from "src/core/components/DashboardContext";
+import { DashboardContext, useDashboardContext } from "src/core/components/DashboardContext";
 import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
-import { SongDetailContainer } from "src/core/components/SongComponents";
-import { CalculateSongMetadata, EnrichedVerboseSong, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/SongComponentsBase";
+import { CalculateSongMetadata, EnrichedVerboseSong, GetSongFileInfo, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/SongComponentsBase";
 import { useSongListData } from "src/core/components/SongSearch";
 import { getURIForSong } from "src/core/db3/clientAPILL";
 import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
 import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
-import { API } from "src/core/db3/clientAPI";
 
 type SongListItemProps = {
+    index: number;
     song: EnrichedVerboseSong;
     results: SearchResultsRet;
     refetch: () => void;
     filterSpec: SongsFilterSpec;
 };
 
-// const SongListItem = (props: SongListItemProps) => {
-//     return <div className={`songListItem`}>
-//         <h2>{props.song.name}</h2>
-//     </div>;
-// };
-
-// //////////////////////////////////////////////////////////////////////////////////////////////////
-// interface SongListItemProps {
-//     song: EnrichedVerboseSong;
-//     filterSpec: SongsFilterSpec;
-// };
 const SongListItem = (props: SongListItemProps) => {
-    //const router = useRouter();
+    const dashboardContext = useDashboardContext();
     const songData = CalculateSongMetadata(props.song);
-    return <div className="searchListItem">
-        <SongDetailContainer readonly={true} tableClient={null} songData={songData} showVisibility={true} highlightedTagIds={[]}
-            renderAsLinkTo={API.songs.getURIForSong(props.song)}
-        >
-        </SongDetailContainer>
+    const fileInfo = GetSongFileInfo(props.song, dashboardContext);
+    const hasBpm = !IsNullOrWhitespace(songData.formattedBPM);
+    const hasLength = !!songData.song.lengthSeconds;
+    const hasPartitions = fileInfo.partitions.length > 0;
+    const hasRecordings = fileInfo.recordings.length > 0;
+    const hasOtherFiles = fileInfo.otherFiles.length > 0;
+
+    return <div className={`songListItem`}>
+        <div className="titleLine">
+            <div className="topTitleLine">
+                <a className="nameLink" href={songData.songURI}>{props.song.name}</a>
+                {props.song.introducedYear && <span className="introducedYear">({props.song.introducedYear})</span>}
+                <div style={{ flexGrow: 1 }}></div>
+                <span className="resultIndex">#{props.index}</span>
+            </div>
+            <div className="aliases">{props.song.aliases}</div>
+        </div>
+        <div className="searchBody">
+            <CMChipContainer className="songTags">
+                {props.song.tags.map(tag => <CMStandardDBChip
+                    key={tag.id}
+                    size='small'
+                    model={tag.tag}
+                    variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.options.includes(tag.tagId) }}
+                    getTooltip={(_) => tag.tag.description}
+                />)}
+            </CMChipContainer>
+
+            {!!props.song.credits.length && (
+                <div className="credits">
+                    {props.song.credits.map(credit => {
+                        const creditType = dashboardContext.songCreditType.getById(credit.typeId);
+                        return <div className="credit row" key={credit.id}>
+                            {!!credit.user && <><div className="userName fieldItem">{credit.user?.name}</div></>}
+                            {!!creditType && <div className="creditType fieldItem">{creditType.text}</div>}
+                            {!IsNullOrWhitespace(credit.year) && <div className="year fieldItem">({credit.year})</div>}
+                            {!IsNullOrWhitespace(credit.comment) && <div className="creditComment fieldItem">{credit.comment}</div>}
+                        </div>;
+                    })}
+                </div>
+            )}
+
+            {(hasBpm || hasLength) && (
+                <div className="lengthBpmLine row">
+                    {hasBpm && <div className="bpm fieldItem"><span className="label">BPM: </span><div className="value">{songData.formattedBPM}</div></div>}
+                    {hasLength && <div className="length  fieldItem"><span className="label">Length: </span><div className="value">{songData.formattedLength}</div></div>}
+                    {hasPartitions && <div className="partitionCount fieldItem">{gIconMap.LibraryMusic()} {fileInfo.partitions.length} {SelectEnglishNoun(fileInfo.partitions.length, "partition", "partitions")}</div>}
+                    {hasRecordings && <div className="recordingCount fieldItem">{gIconMap.PlayCircleOutline()} {fileInfo.recordings.length} {SelectEnglishNoun(fileInfo.recordings.length, "recording", "recordings")}</div>}
+                    {hasOtherFiles && <div className="otherFilesCount fieldItem">{gIconMap.AttachFile()} {fileInfo.otherFiles.length} {SelectEnglishNoun(fileInfo.otherFiles.length, "unsorted file", "unsorted files")}</div>}
+                </div>
+            )}
+        </div>
     </div>;
 };
 
@@ -136,6 +171,7 @@ const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore 
         >
             {songs.map((song, i) => (
                 <SongListItem
+                    index={i + 1}
                     key={song.id}
                     song={song}
                     filterSpec={filterSpec}

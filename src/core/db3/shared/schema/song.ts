@@ -6,9 +6,9 @@
 import { Prisma } from "db";
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
+import { BoolField, ColorField, ConstEnumStringField, ForeignSingleField, GenericIntegerField, GenericStringField, GhostField, MakeSignificanceField, MakeTitleField, PKField, TagsField } from "../db3basicFields";
 import * as db3 from "../db3core";
-import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
+import { SongArgs, SongArgs_Verbose, SongCreditArgs, SongCreditNaturalOrderBy, SongCreditPayload, SongCreditTypeArgs, SongCreditTypeNaturalOrderBy, SongCreditTypePayload, SongCreditTypeSignificance, SongNaturalOrderBy, SongPayload, SongTagArgs, SongTagAssociationArgs, SongTagAssociationNaturalOrderBy, SongTagAssociationPayload, SongTagNaturalOrderBy, SongTagPayload, SongTagSignificance, SongTaggedFilesPayload } from "./prismArgs";
 import { CreatedByUserField, VisiblePermissionField } from "./user";
 import { CMDBTableFilterModel, TAnyModel } from "../apiTypes";
 
@@ -340,6 +340,7 @@ export const xSongCreditType = new db3.xTable({
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("text", { authMap: xSongAuthMap_R_EManagers }),
+        MakeSignificanceField("significance", SongCreditTypeSignificance, { authMap: xSongAuthMap_R_EManagers, }),
         new GenericStringField({
             columnName: "description",
             allowNull: false,
