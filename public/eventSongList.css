@@ -222,6 +222,11 @@
     flex-grow: 1;
 }
 
+.songListSongTable .td.comment svg {
+    /* mui icons in the divider row */
+    fill: var(--color-foreground);
+}
+
 .songListSongTable .th.comment {
     /* left-justify */
     justify-content: space-between;

@@ -604,6 +604,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         id: a.id || -(index + 1), // negative index would be a unique value for temp purposes
         sortOrder: a.sortOrder,
         color: a.color,
+        isInterruption: a.isInterruption,
         subtitle: a.subtitle || "",
     }));
 
@@ -616,6 +617,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     const currentDivAssociations: TinsertOrUpdateEventSongListDivider[] = currentDivAssociationsRaw.map(a => ({
         id: a.id,
         sortOrder: a.sortOrder,
+        isInterruption: a.isInterruption,
         color: a.color,
         subtitle: a.subtitle || "",
     }));
@@ -646,6 +648,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
                 eventSongListId: args.songListID,
 
                 sortOrder: item.sortOrder,
+                isInterruption: item.isInterruption,
                 color: item.color,
                 subtitle: item.subtitle,
             },
@@ -665,6 +668,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         checkChangedColumn("sortOrder");
         checkChangedColumn("subtitle");
         checkChangedColumn("color");
+        checkChangedColumn("isInterruption");
 
         if (Object.entries(data).length < 1) {
             // nothing to update.

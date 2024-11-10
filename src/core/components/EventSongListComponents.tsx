@@ -54,6 +54,16 @@ export const EventSongListValueViewerDividerRow = (props: EventSongListValueView
         <div className="td comment">
             <div className="comment dividerComment">{props.value.subtitle}&nbsp;</div>
             <div className="flexGrow"></div>
+            <Tooltip title={props.value.isInterruption ? "This divider resets the running time and song count" : "This divider is a comment"} disableInteractive>
+                <div style={{ display: "flex", opacity: "50%" }}>
+                    {props.value.isInterruption ? (
+                        gIconMap.Pause()
+                    ) : (
+                        gIconMap.Comment()
+                    )}
+                </div>
+            </Tooltip>
+
         </div>
     </div>
 
@@ -117,6 +127,7 @@ type PortableSongListDivider = {
     sortOrder: number;
     comment: string;
     color: string | null;
+    isInterruption: boolean;
     type: 'divider';
 };
 
@@ -134,6 +145,7 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
         const x: PortableSongListDivider = {
             type: 'divider',
             color: d.color,
+            isInterruption: d.isInterruption,
             sortOrder: d.sortOrder,
             comment: d.subtitle || "",
         };
@@ -509,6 +521,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             color: null,
             eventSongListId: props.value.eventSongListId,
             id: getUniqueNegativeID(),
+            isInterruption: true,
             sortOrder: props.value.sortOrder,
             subtitle: "",
         });
@@ -519,6 +532,14 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         props.onChange({
             ...props.value,
             color: newColor?.id || null,
+        });
+    };
+
+    const toggleIsInterruptionChange = () => {
+        if (props.value.type !== 'divider') throw new Error(`wrong item type`);
+        props.onChange({
+            ...props.value,
+            isInterruption: !props.value.isInterruption,
         });
     };
 
@@ -549,6 +570,15 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                             />
                         </div>
                         <ColorPick size={'small'} value={props.value.color} onChange={handleDividerColorChange} />
+                        <Tooltip title="Reset the setlist? This resets the running time and song number." disableInteractive>
+                            <div className='interactable' onClick={toggleIsInterruptionChange} style={{ display: "flex", marginLeft: "10px" }}>
+                                {props.value.isInterruption ? (
+                                    gIconMap.Pause()
+                                ) : (
+                                    gIconMap.Comment()
+                                )}
+                            </div>
+                        </Tooltip>
                     </div>
                 </>
             ) : (
@@ -722,6 +752,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                         type: 'divider',
                         id: getUniqueNegativeID(),
                         color: p.color,
+                        isInterruption: p.isInterruption,
                         eventSongListId: list.id,
                         sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
                         subtitle: p.comment,
@@ -978,6 +1009,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
             })),
             dividers: newValue.dividers.map(d => ({
                 sortOrder: d.sortOrder,
+                isInterruption: d.isInterruption,
                 color: d.color,
                 subtitle: d.subtitle || "",
             })),
@@ -1042,7 +1074,10 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
     };
     const initialValue = db3.xEventSongList.createNew(clientIntention) as db3.EventSongListPayload;
     initialValue.dividers = []; // because it's just not created (i would need to create like a db3.ArrayColumnType or something)
-    initialValue.name = `Set ${props.event.songLists.length + 1}`;
+    initialValue.name = `Setlist`;
+    if (props.event.songLists.length > 0) {
+        initialValue.name = `Set ${props.event.songLists.length + 1}`;
+    }
 
     const handleSave = (value: db3.EventSongListPayload) => {
         insertMutation.invoke({
@@ -1060,6 +1095,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
             dividers: value.dividers.map(d => ({
                 sortOrder: d.sortOrder,
                 color: d.color,
+                isInterruption: d.isInterruption,
                 subtitle: d.subtitle || "",
             })),
         }).then(() => {

@@ -63,6 +63,7 @@ export type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{
         id: true,
         eventSongListId: true,
         subtitle: true,
+        isInterruption: true,
         color: true,
         sortOrder: true,
     }
@@ -101,6 +102,7 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
             select: {
                 id: true,
                 eventSongListId: true,
+                isInterruption: true,
                 subtitle: true,
                 color: true,
                 sortOrder: true,
@@ -138,9 +140,11 @@ export function GetRowItems(songList: LocalSongListPayload): EventSongListItem[]
         const item = rowItems[i]!;
         if (item.type === 'divider') {
             // reset!
-            songIndex = 0;
-            runningTimeSeconds = null;
-            songsWithUnknownLength = 0;
+            if (item.isInterruption) {
+                songIndex = 0;
+                runningTimeSeconds = null;
+                //songsWithUnknownLength = 0;
+            }
             continue;
         }
         if (item.type !== 'song') throw new Error(`unknown type at this moment`);

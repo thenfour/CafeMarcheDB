@@ -1210,6 +1210,7 @@ export const xEventSongListDivider = new db3.xTable({
         new PKField({ columnName: "id" }),
         MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        new BoolField({ columnName: "isInterruption", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
         MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "eventSongList",

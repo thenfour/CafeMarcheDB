@@ -238,6 +238,7 @@ export interface TinsertOrUpdateEventSongListDivider {
     // don't rely on array ordering because it's shuffled etc during the change plan computation
     sortOrder: number;
     color: string | null | undefined;
+    isInterruption: boolean;
     subtitle: string;
 };
 

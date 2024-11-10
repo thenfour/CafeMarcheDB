@@ -740,10 +740,11 @@ model EventSongListSong {
 }
 
 model EventSongListDivider {
-  id        Int     @id @default(autoincrement())
-  subtitle  String? @db.MediumText // could be a small comment like "15 min break"
-  sortOrder Int     @default(0)
-  color     String?
+  id             Int     @id @default(autoincrement())
+  subtitle       String? @db.MediumText // could be a small comment like "15 min break"
+  sortOrder      Int     @default(0)
+  color          String?
+  isInterruption Boolean @default(true) // either interruption or comment.
 
   eventSongListId Int
   eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.

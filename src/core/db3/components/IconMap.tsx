@@ -63,7 +63,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React from "react";
 import { TIconOptions } from "shared/utils";
-import { AccountTree, Alarm, Check, Equalizer, Notifications, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
+import { AccountTree, Alarm, Check, Equalizer, Notifications, Pause, VolumeDown, VolumeOff, VolumeUp } from '@mui/icons-material';
 
 // interface IIconMap {
 //     [name: string]: () => React.ReactElement
@@ -140,6 +140,7 @@ export const gIconMap /*: IIconMap*/ = {
     MusicNote: () => <MusicNoteIcon />,
     Nightlife: () => <NightlifeIcon />,
     Notifications: () => <Notifications />,
+    Pause: () => <Pause />,
     PauseCircleOutline: () => <PauseCircleOutlineIcon />,
     Person: () => <PersonIcon />,
     PersonSearch: () => <PersonSearchIcon />,

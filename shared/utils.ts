@@ -493,6 +493,7 @@ export const gIconOptions = {
     MusicNote: "MusicNote",
     Nightlife: "Nightlife",
     Notifications: "Notifications",
+    Pause: "Pause",
     PauseCircleOutline: "PauseCircleOutline",
     Person: "Person",
     PersonSearch: "PersonSearch",
