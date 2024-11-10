@@ -1443,6 +1443,7 @@ export type EnrichedSong<T extends EnrichSongInput> = Omit<T,
     }
 }>;
 
+
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichSong<T extends EnrichSongInput>(
     item: T,

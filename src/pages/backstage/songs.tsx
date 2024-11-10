@@ -1,217 +1,51 @@
 import { BlitzPage } from "@blitzjs/next";
-import { useQuery } from "@blitzjs/rpc";
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Button, ListItemIcon, Menu, MenuItem, Pagination } from "@mui/material";
+import { ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
+import InfiniteScroll from "react-infinite-scroll-component";
 import { StandardVariationSpec } from "shared/color";
 import { Permission } from "shared/permissions";
-import { arrayToTSV, arraysContainSameValues, toggleValueInArray } from "shared/utils";
+import { SortDirection } from "shared/rootroot";
+import { arrayToTSV, arraysContainSameValues } from "shared/utils";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, DebugCollapsibleAdminText } from "src/core/components/CMCoreComponents2";
-import { SearchInput } from "src/core/components/CMTextField";
+import { AdminInspectObject, CMSinglePageSurfaceCard } from "src/core/components/CMCoreComponents";
+import { CMSmallButton, useURLState } from "src/core/components/CMCoreComponents2";
 import { DashboardContext } from "src/core/components/DashboardContext";
+import { FilterControls, SortByGroup, SortBySpec, TagsFilterGroup } from "src/core/components/FilterControl";
 import { NewSongButton } from "src/core/components/NewSongComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import { SongDetailContainer } from "src/core/components/SongComponents";
-import { CalculateSongMetadata, EnrichedVerboseSong } from "src/core/components/SongComponentsBase";
-import { API } from "src/core/db3/clientAPI";
+import { CalculateSongMetadata, EnrichedVerboseSong, SongOrderByColumnOption, SongOrderByColumnOptions, SongsFilterSpec } from "src/core/components/SongComponentsBase";
+import { useSongListData } from "src/core/components/SongSearch";
 import { getURIForSong } from "src/core/db3/clientAPILL";
-import { RenderMuiIcon, gCharMap, gIconMap } from "src/core/db3/components/IconMap";
-import * as db3 from "src/core/db3/db3";
-import getSongFilterInfo from "src/core/db3/queries/getSongFilterInfo";
-import { GetSongFilterInfoRet, MakeGetSongFilterInfoRet, SongSelectionFilter } from "src/core/db3/shared/apiTypes";
+import { gCharMap, gIconMap } from "src/core/db3/components/IconMap";
+import { DiscreteCriterion, DiscreteCriterionFilterType, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
+import { API } from "src/core/db3/clientAPI";
 
-interface SongsFilterSpec {
-    pageSize: number;
-    page: number;
-    selection: SongSelectionFilter;
-
-    quickFilter: string;
-    tagFilter: number[];
-};
-
-const gDefaultFilter: SongsFilterSpec = {
-    pageSize: 50,
-    page: 0,
-    selection: "all",
-
-    quickFilter: "",
-    tagFilter: [],
-};// cannot be as const because the array is writable.
-
-const HasExtraFilters = (val: SongsFilterSpec) => {
-    if (val.pageSize != gDefaultFilter.pageSize) return true;
-    if (val.quickFilter != gDefaultFilter.quickFilter) return true;
-    if (val.selection != gDefaultFilter.selection) return true;
-    if (!arraysContainSameValues(val.tagFilter, gDefaultFilter.tagFilter)) return true;
-    return false;
-};
-
-const HasAnyFilters = (val: SongsFilterSpec) => {
-    if (val.quickFilter != gDefaultFilter.quickFilter) return true;
-    return HasExtraFilters(val);
-};
-
-interface SongsListArgs {
-    filterSpec: SongsFilterSpec,
-};
-
-type SongsControlsValueProps = SongsControlsProps & {
-    filterInfo: GetSongFilterInfoRet,
-};
-
-
-const SongsFilterControlsValue = ({ filterInfo, ...props }: SongsControlsValueProps) => {
-
-    const toggleTag = (tagId: number) => {
-        const newSpec: SongsFilterSpec = { ...props.filterSpec };
-        newSpec.tagFilter = toggleValueInArray(newSpec.tagFilter, tagId);
-        props.onChange(newSpec);
-    };
-
-    // const selectionChips: Record<SongSelectionFilter, string> = {
-    //     "relevant": "Search songs from upcoming and recent events",
-    //     "all": "Search all songs",
-    // };
-
-    // const selectSelection = (t: SongSelectionFilter) => {
-    //     const newSpec: SongsFilterSpec = { ...props.filterSpec };
-    //     newSpec.selection = t;
-    //     props.onChange(newSpec);
-    // };
-
-    return <div className={`SongsFilterControlsValue`}>
-        {/* <div className="row" style={{ display: "flex", alignItems: "center" }}>
-            <CMChipContainer className="cell">
-                {Object.keys(selectionChips).map(k => (
-                    <CMChip
-                        key={k}
-                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.selection === k }}
-                        size="small"
-                        onClick={() => selectSelection(k as any)}
-                    >
-                        {k}
-                    </CMChip>
-                ))}
-            </CMChipContainer>
-            <div className="tinyCaption">{selectionChips[props.filterSpec.selection]}</div>
-        </div> */}
-
-        <div className="divider"></div>
-
-        <div className="row">
-            <CMChipContainer className="cell">
-                {filterInfo.tags.map(tag => (
-                    <CMChip
-                        key={tag.id}
-                        variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.tagFilter.some(id => id === tag.id) }}
-                        size="small"
-                        onClick={() => toggleTag(tag.id)}
-                        color={tag.color}
-                    //tooltip={status.tooltip} // no. it gets in the way and is annoying.
-                    >
-                        {RenderMuiIcon(tag.iconName)}{tag.label} ({tag.rowCount})
-                    </CMChip>
-                ))}
-            </CMChipContainer>
-        </div>
-    </div>;
-};
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-interface SongsControlsProps {
-    filterSpec: SongsFilterSpec;
-    filterInfo: GetSongFilterInfoRet;
-    onChange: (value: SongsFilterSpec) => void;
-};
-
-const SongsControls = (props: SongsControlsProps) => {
-    const [expanded, setExpanded] = React.useState<boolean>(false);
-    const hasExtraFilters = HasExtraFilters(props.filterSpec);
-    const hasAnyFilters = HasAnyFilters(props.filterSpec);
-
-    const setFilterText = (quickFilter: string) => {
-        props.onChange({ ...props.filterSpec, quickFilter });
-    };
-
-    const handleClearFilter = () => {
-        props.onChange({ ...gDefaultFilter });
-    };
-
-    const selectionChips: Record<SongSelectionFilter, string> = {
-        "relevant": "Showing songs from upcoming and recent events",
-        "all": "Showing all songs",
-    };
-
-    const selectSelection = (t: SongSelectionFilter) => {
-        const newSpec: SongsFilterSpec = { ...props.filterSpec };
-        newSpec.selection = t;
-        props.onChange(newSpec);
-    };
-
-    return <div className="filterControlsContainer">
-        <div className="content">
-            <div className="row">
-                <div className="filterControls">
-
-                    <div className="row quickFilter">
-                        <SearchInput
-                            onChange={(v) => setFilterText(v)}
-                            value={props.filterSpec.quickFilter}
-                            autoFocus={true}
-                        />
-                        {(hasAnyFilters) && <Button onClick={handleClearFilter}>Reset filter</Button>}
-                        <div className="freeButton headerExpandableButton" onClick={() => setExpanded(!expanded)}>
-                            Filter {hasExtraFilters && "*"}
-                            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </div>
-                    </div>
-
-
-                    <div className={`SongsFilterControlsValue`}>
-                        <div className="row" style={{ display: "flex", alignItems: "center" }}>
-                            <CMChipContainer className="cell">
-                                {Object.keys(selectionChips).map(k => (
-                                    <CMChip
-                                        key={k}
-                                        variation={{ fillOption: "hollow", selected: (k === props.filterSpec.selection), enabled: true, variation: "weak" }}
-                                        //variation={{ ...StandardVariationSpec.Weak, selected: props.filterSpec.selection === k }}
-                                        shape="rectangle"
-                                        size="small"
-                                        onClick={() => selectSelection(k as any)}
-                                    >
-                                        {k}
-                                    </CMChip>
-                                ))}
-                            </CMChipContainer>
-                            <div className="tinyCaption">{selectionChips[props.filterSpec.selection]}</div>
-                        </div>
-                    </div>
-
-                    {expanded && <SongsFilterControlsValue {...props} filterInfo={props.filterInfo} />}
-
-                </div>
-            </div>
-        </div>{/* content */}
-    </div>; // {/* filterControlsContainer */ }
-};
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-interface SongListItemProps {
+type SongListItemProps = {
     song: EnrichedVerboseSong;
+    results: SearchResultsRet;
+    refetch: () => void;
     filterSpec: SongsFilterSpec;
 };
+
+// const SongListItem = (props: SongListItemProps) => {
+//     return <div className={`songListItem`}>
+//         <h2>{props.song.name}</h2>
+//     </div>;
+// };
+
+// //////////////////////////////////////////////////////////////////////////////////////////////////
+// interface SongListItemProps {
+//     song: EnrichedVerboseSong;
+//     filterSpec: SongsFilterSpec;
+// };
 const SongListItem = (props: SongListItemProps) => {
     //const router = useRouter();
     const songData = CalculateSongMetadata(props.song);
     return <div className="searchListItem">
-        <SongDetailContainer readonly={true} tableClient={null} songData={songData} showVisibility={true} highlightedTagIds={props.filterSpec.tagFilter}
+        <SongDetailContainer readonly={true} tableClient={null} songData={songData} showVisibility={true} highlightedTagIds={[]}
             renderAsLinkTo={API.songs.getURIForSong(props.song)}
         >
         </SongDetailContainer>
@@ -223,14 +57,29 @@ const SongListItem = (props: SongListItemProps) => {
 
 
 
-async function CopySongListCSV(snackbarContext: SnackbarContextType, value: db3.SongPayload_Verbose[]) {
+
+
+
+// for serializing in compact querystring
+interface SongsFilterSpecStatic {
+    label: string,
+    helpText: string,
+
+    orderByColumn: SongOrderByColumnOption;
+    orderByDirection: SortDirection;
+
+    tagFilterEnabled: boolean;
+    tagFilterBehavior: DiscreteCriterionFilterType;
+    tagFilterOptions: number[];
+};
+
+
+
+async function CopySongListCSV(snackbarContext: SnackbarContextType, value: EnrichedVerboseSong[]) {
     const obj = value.map((e, i) => ({
         Order: (i + 1).toString(),
         ID: e.id.toString(),
         Name: e.name,
-        StartBPM: e.startBPM?.toString() || "",
-        EndBPM: e.endBPM?.toString() || "",
-        LengthSeconds: e.lengthSeconds?.toString() || "",
         URL: getURIForSong(e),
     }));
     const txt = arrayToTSV(obj);
@@ -241,31 +90,26 @@ async function CopySongListCSV(snackbarContext: SnackbarContextType, value: db3.
 
 
 
-
-
 interface SongsListArgs {
     filterSpec: SongsFilterSpec,
-    filterInfo: GetSongFilterInfoRet;
-    setFilterSpec: (value: SongsFilterSpec) => void, // for pagination
-    //items: EnrichedVerboseSong[],
+    results: SearchResultsRet;
+    songs: EnrichedVerboseSong[],
+    refetch: () => void;
+    loadMoreData: () => void;
+    hasMore: boolean;
 };
 
-const SongsList = ({ filterSpec, filterInfo, ...props }: SongsListArgs) => {
-    const dashboardContext = React.useContext(DashboardContext);
+const SongsList = ({ filterSpec, results, songs, refetch, loadMoreData, hasMore }: SongsListArgs) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
 
-    const itemBaseOrdinal = filterSpec.page * filterSpec.pageSize;
-
-    const items = (filterInfo.fullSongs as db3.SongPayload_Verbose[]).map(s => db3.enrichSong(s, dashboardContext));
-
     const handleCopy = async () => {
-        await CopySongListCSV(snackbarContext, items);
+        await CopySongListCSV(snackbarContext, songs);
     };
 
-    return <div className="songsList searchResults">
+    return <div className="eventList searchResults">
         <div className="searchRecordCount">
-            {filterInfo.rowCount === 0 ? "No items to show" : <>Displaying items {itemBaseOrdinal + 1}-{itemBaseOrdinal + items.length} of {filterInfo.rowCount} total</>}
+            {results.rowCount === 0 ? "No items to show" : <>Displaying {songs.length} items of {results.rowCount} total</>}
             <CMSmallButton className='DotMenu' onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>{gCharMap.VerticalEllipses()}</CMSmallButton>
             <Menu
                 id="menu-searchResults"
@@ -282,109 +126,242 @@ const SongsList = ({ filterSpec, filterInfo, ...props }: SongsListArgs) => {
                 </MenuItem>
             </Menu>
         </div>
-        {items.map(song => <SongListItem key={song.id} song={song} filterSpec={filterSpec} />)}
-        <Pagination
-            count={Math.ceil(filterInfo.rowCount / filterSpec.pageSize)}
-            page={filterSpec.page + 1}
-            onChange={(e, newPage) => {
-                props.setFilterSpec({ ...filterSpec, page: newPage - 1 });
-            }} />
+
+        <InfiniteScroll
+            dataLength={songs.length}
+            next={loadMoreData}
+            hasMore={hasMore}
+            loader={<h4>Loading...</h4>}
+            scrollableTarget="scrollableDiv"
+        >
+            {songs.map((song, i) => (
+                <SongListItem
+                    key={song.id}
+                    song={song}
+                    filterSpec={filterSpec}
+                    refetch={refetch}
+                    results={results}
+                />
+            ))}
+        </InfiniteScroll>
+
     </div>;
-
 };
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-interface SongListQuerierProps {
-    filterSpec: SongsFilterSpec;
-    setFilterInfo: (v: GetSongFilterInfoRet) => void;
-    //setSongsQueryResult: (v: EnrichedVerboseSong[]) => void;
-};
 
-const SongListQuerier = (props: SongListQuerierProps) => {
-    //const dashboardContext = React.useContext(DashboardContext);
+const gStaticFilters: SongsFilterSpecStatic[] = [
+    {
+        label: "All",
+        helpText: "Searching all songs",
+        orderByColumn: SongOrderByColumnOptions.name,
+        orderByDirection: "asc",
+        tagFilterBehavior: DiscreteCriterionFilterType.hasAllOf,
+        tagFilterOptions: [],
+        tagFilterEnabled: false,
+    },
+];
 
-    // QUERY: filtered results & info
-    const [queriedFilterInfo, getFilterInfoExtra] = useQuery(getSongFilterInfo, {
-        filterSpec: {
-            quickFilter: props.filterSpec.quickFilter,
-            tagIds: props.filterSpec.tagFilter,
-            pageSize: props.filterSpec.pageSize,
-            page: props.filterSpec.page,
-            selection: props.filterSpec.selection,
-        }
-    });
-
-    React.useEffect(() => {
-        if (getFilterInfoExtra.isSuccess) {
-            props.setFilterInfo({ ...queriedFilterInfo });
-        }
-    }, [getFilterInfoExtra.dataUpdatedAt]);
-
-    return <div className="queryProgressLine idle"></div>;
-};
-
-
+const gDefaultStaticFilterName = "All" as const;
+const gDefaultStaticFilterValue = gStaticFilters.find(x => x.label === gDefaultStaticFilterName)!;
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 const SongListOuter = () => {
-    const [filterSpec, setFilterSpec] = React.useState<SongsFilterSpec>({ ...gDefaultFilter });
+    const dashboardContext = React.useContext(DashboardContext);
+    const snackbarContext = React.useContext(SnackbarContext);
 
-    const [filterInfo, setFilterInfo] = React.useState<GetSongFilterInfoRet>(MakeGetSongFilterInfoRet());
-    //const [songsQueryResult, setSongsQueryResult] = React.useState<EnrichedVerboseSong[]>([]);
+    const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
 
-    // # when filter spec (other than page change), reset page to 0.
-    const { page, ...everythingButPage } = filterSpec;
+    const [quickFilter, setQuickFilter] = useURLState<string>("qf", "");
 
-    const specHash = JSON.stringify(everythingButPage);
-    React.useEffect(() => {
-        setFilterSpec({ ...filterSpec, page: 0 });
-    }, [specHash]);
+    const [sortColumn, setSortColumn] = useURLState<string>("sc", gDefaultStaticFilterValue.orderByColumn);
+    const [sortDirection, setSortDirection] = useURLState<SortDirection>("sd", gDefaultStaticFilterValue.orderByDirection);
+
+    const sortModel: SortBySpec = {
+        columnName: sortColumn,
+        direction: sortDirection,
+    };
+    const setSortModel = (x: SortBySpec) => {
+        setSortColumn(x.columnName);
+        setSortDirection(x.direction);
+    };
+
+    // "tg" prefix
+    const [tagFilterBehaviorWhenEnabled, setTagFilterBehaviorWhenEnabled] = useURLState<DiscreteCriterionFilterType>("tgb", gDefaultStaticFilterValue.tagFilterBehavior);
+    const [tagFilterOptionsWhenEnabled, setTagFilterOptionsWhenEnabled] = useURLState<number[]>("tgo", gDefaultStaticFilterValue.tagFilterOptions);
+    const [tagFilterEnabled, setTagFilterEnabled] = useURLState<boolean>("tge", gDefaultStaticFilterValue.tagFilterEnabled);
+    const tagFilterWhenEnabled: DiscreteCriterion = {
+        db3Column: "tags",
+        behavior: tagFilterBehaviorWhenEnabled,
+        options: tagFilterOptionsWhenEnabled,
+    };
+    const setTagFilterWhenEnabled = (x: DiscreteCriterion) => {
+        setTagFilterBehaviorWhenEnabled(x.behavior);
+        setTagFilterOptionsWhenEnabled(x.options as any);
+    };
+
+    // the default basic filter spec when no params specified.
+    const filterSpec: SongsFilterSpec = {
+        //pageSize: gPageSize,
+        refreshSerial,
+        //page,
+
+        // in dto...
+        quickFilter,
+
+        orderByColumn: sortColumn as any,
+        orderByDirection: sortDirection,
+
+        tagFilter: tagFilterEnabled ? tagFilterWhenEnabled : { db3Column: "tags", behavior: DiscreteCriterionFilterType.alwaysMatch, options: [] },
+    };
+
+    const { enrichedItems, results, loadMoreData } = useSongListData(filterSpec);
+
+    const handleCopyFilterspec = () => {
+        const o: SongsFilterSpecStatic = {
+            label: "(n/a)",
+            helpText: "",
+            orderByColumn: sortColumn as any,
+            orderByDirection: sortDirection,
+
+            tagFilterEnabled,
+            tagFilterBehavior: tagFilterBehaviorWhenEnabled,
+            tagFilterOptions: tagFilterOptionsWhenEnabled,
+        }
+        const txt = JSON.stringify(o, null, 2);
+        console.log(o);
+        navigator.clipboard.writeText(txt).then(() => {
+            snackbarContext.showMessage({ severity: "success", children: `copied ${txt.length} chars` });
+        }).catch(() => {
+            // nop
+        });
+    };
+
+    const handleClickStaticFilter = (x: SongsFilterSpecStatic) => {
+        setSortColumn(x.orderByColumn);
+        setSortDirection(x.orderByDirection);
+
+        setTagFilterEnabled(x.tagFilterEnabled);
+        setTagFilterBehaviorWhenEnabled(x.tagFilterBehavior);
+        setTagFilterOptionsWhenEnabled(x.tagFilterOptions);
+    };
+
+    const MatchesStaticFilter = (x: SongsFilterSpecStatic): boolean => {
+        if (sortColumn !== x.orderByColumn) return false;
+        if (sortDirection !== x.orderByDirection) return false;
+
+        if (x.tagFilterEnabled !== tagFilterEnabled) return false;
+        if (tagFilterEnabled) {
+            if (tagFilterBehaviorWhenEnabled !== x.tagFilterBehavior) return false;
+            if (!arraysContainSameValues(tagFilterOptionsWhenEnabled, x.tagFilterOptions)) return false;
+        }
+
+        return true;
+    };
+
+    const matchingStaticFilter = gStaticFilters.find(x => MatchesStaticFilter(x));
+
+    const hasExtraFilters = ((): boolean => {
+        if (!!matchingStaticFilter) return false;
+        if (tagFilterEnabled) return true;
+        return false;
+    })();
+
+    const hasAnyFilters = hasExtraFilters;
 
     return <>
-        <NewSongButton />
-
-        <DebugCollapsibleAdminText text={filterInfo.tagsQuery} caption={"tagsQuery"} />
-        <DebugCollapsibleAdminText text={filterInfo.paginatedResultQuery} caption={"paginatedResultQuery"} />
-        <DebugCollapsibleAdminText text={filterInfo.totalRowCountQuery} caption={"totalRowCountQuery"} />
-
         <CMSinglePageSurfaceCard className="filterControls">
             <div className="content">
-                <SongsControls onChange={setFilterSpec} filterSpec={filterSpec} filterInfo={filterInfo} />
+
+                {dashboardContext.isShowingAdminControls && <CMSmallButton onClick={handleCopyFilterspec}>Copy filter spec</CMSmallButton>}
+                <AdminInspectObject src={filterSpec} label="Filter spec" />
+                <AdminInspectObject src={results} label="Results obj" />
+                <FilterControls
+                    inCard={false}
+                    onQuickFilterChange={(v) => setQuickFilter(v)}
+                    onResetFilter={() => {
+                        handleClickStaticFilter(gDefaultStaticFilterValue);
+                    }}
+                    hasAnyFilters={hasAnyFilters}
+                    hasExtraFilters={hasExtraFilters}
+                    quickFilterText={filterSpec.quickFilter}
+                    primaryFilter={
+                        <div>
+                            <CMChipContainer>
+                                {
+                                    gStaticFilters.map(e => {
+                                        const doesMatch = e.label === matchingStaticFilter?.label;// MatchesStaticFilter(e[1]);
+                                        return <CMChip
+                                            key={e.label}
+                                            onClick={() => handleClickStaticFilter(e)} size="small"
+                                            variation={{ ...StandardVariationSpec.Strong, selected: doesMatch }}
+                                            shape="rectangle"
+                                        >
+                                            {e.label}
+                                        </CMChip>;
+                                    })
+                                }
+                                {matchingStaticFilter && <div className="tinyCaption">{matchingStaticFilter.helpText}</div>}
+                            </CMChipContainer>
+                        </div>
+                    }
+                    extraFilter={
+                        <div>
+                            <TagsFilterGroup
+                                label={"Tags"}
+                                style="tags"
+                                filterEnabled={tagFilterEnabled}
+                                errorMessage={results?.filterQueryResult.errors.find(x => x.column === "tags")?.error}
+                                value={tagFilterWhenEnabled}
+                                onChange={(n, enabled) => {
+                                    setTagFilterEnabled(enabled);
+                                    setTagFilterWhenEnabled(n);
+                                }}
+                                items={results.facets.find(f => f.db3Column === "tags")?.items || []}
+                            />
+
+                        </div>
+                    } // extra filter
+                    footerFilter={
+                        <div>
+                            <div className="divider" />
+                            <SortByGroup
+                                columnOptions={Object.keys(SongOrderByColumnOptions)}
+                                setValue={setSortModel}
+                                value={sortModel}
+                            />
+                        </div>
+                    }
+                />
             </div>
 
-            <Suspense fallback={<div className="queryProgressLine loading"></div>}>
-                <SongListQuerier filterSpec={filterSpec} setFilterInfo={setFilterInfo} />
-            </Suspense>
-        </CMSinglePageSurfaceCard>
-        <SongsList filterSpec={filterSpec} setFilterSpec={setFilterSpec} filterInfo={filterInfo} />
+        </CMSinglePageSurfaceCard >
+        <SongsList
+            filterSpec={filterSpec}
+            songs={enrichedItems}
+            results={results}
+            loadMoreData={loadMoreData}
+            hasMore={enrichedItems.length < results.rowCount}
+            refetch={() => setRefreshSerial(refreshSerial + 1)}
+        />
     </>;
 };
 
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
-const SongListPageContent = () => {
-    return <div className="eventsMainContent searchPage">
-
-        <Suspense>
-            <SettingMarkdown setting="songs_markdown"></SettingMarkdown>
-        </Suspense>
-
-        <SongListOuter />
-    </div>;
-};
-
-
-
-
-
-const ViewSongsPage: BlitzPage = () => {
+const SearchSongsPage: BlitzPage = (props) => {
     return (
         <DashboardLayout title="Songs" basePermission={Permission.view_songs}>
-            <SongListPageContent />
+            <div className="eventsMainContent searchPage">
+                <Suspense>
+                    <SettingMarkdown setting="songs_markdown"></SettingMarkdown>
+                </Suspense>
+                <NewSongButton />
+
+                <SongListOuter />
+            </div>
         </DashboardLayout>
     )
 }
 
-export default ViewSongsPage;
+export default SearchSongsPage;

@@ -1,18 +1,18 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { EventsFilterSpec } from 'src/core/components/EventComponentsBase';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { fetchSearchResultsApi } from './SearchBase';
+import { EnrichedVerboseSong, SongsFilterSpec } from './SongComponentsBase';
 
 const gPageSize = 15;
 
-function GetSearchResultsQueryArgs(filterSpec: EventsFilterSpec, offset: number, take: number) {
+function GetSearchResultsQueryArgs(filterSpec: SongsFilterSpec, offset: number, take: number) {
     return {
         offset,
         take,
-        tableID: db3.xEvent.tableID,
+        tableID: db3.xSong_Verbose.tableID,
         refreshSerial: filterSpec.refreshSerial,
         sort: [{
             db3Column: filterSpec.orderByColumn,
@@ -20,25 +20,22 @@ function GetSearchResultsQueryArgs(filterSpec: EventsFilterSpec, offset: number,
         }],
         quickFilter: filterSpec.quickFilter,
         discreteCriteria: [
-            filterSpec.dateFilter,
-            filterSpec.typeFilter,
-            filterSpec.statusFilter,
             filterSpec.tagFilter,
         ],
     };
 }
 
-export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number = gPageSize) {
+export function useSongListData(filterSpec: SongsFilterSpec, pageSize: number = gPageSize) {
     const dashboardContext = useContext(DashboardContext);
     const snackbarContext = useContext(SnackbarContext);
 
     const filterSpecHash = JSON.stringify(filterSpec);
 
-    const [enrichedEvents, setEnrichedEvents] = useState<db3.EnrichedSearchEventPayload[]>([]);
+    const [enrichedItems, setEnrichedItems] = useState<EnrichedVerboseSong[]>([]);
     const [results, setResults] = useState<SearchResultsRet>(MakeEmptySearchResultsRet());
 
     const isFetchingRef = useRef(false);
-    const totalEventsFetchedRef = useRef(0);
+    const totalItemsFetchedRef = useRef(0);
 
     const fetchData = async (offset: number) => {
         if (isFetchingRef.current) return;
@@ -47,21 +44,21 @@ export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number 
         try {
             const searchResult = await fetchSearchResultsApi(GetSearchResultsQueryArgs(filterSpec, offset, pageSize));
 
-            const newEvents = searchResult.results.map(e =>
-                db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext)
+            const newItemsDb = searchResult.results.map(e =>
+                db3.enrichSong(e as db3.SongPayload_Verbose, dashboardContext)
             );
 
-            setEnrichedEvents(prevEvents => {
-                const newItems: db3.EnrichedSearchEventPayload[] = [];
-                const overlaps: db3.EnrichedSearchEventPayload[] = [];
+            setEnrichedItems(prevEvents => {
+                const newItems: EnrichedVerboseSong[] = [];
+                const overlaps: EnrichedVerboseSong[] = [];
 
-                for (const event of newEvents) {
-                    const foundIndex = prevEvents.findIndex(e => e.id === event.id);
+                for (const item of newItemsDb) {
+                    const foundIndex = prevEvents.findIndex(e => e.id === item.id);
                     if (foundIndex === -1) {
-                        newItems.push(event);
+                        newItems.push(item);
                     } else {
                         // the item already exists; just leave it.
-                        overlaps.push(event);
+                        overlaps.push(item);
                     }
                 }
 
@@ -81,18 +78,18 @@ export function useEventListData(filterSpec: EventsFilterSpec, pageSize: number 
     };
 
     useEffect(() => {
-        setEnrichedEvents([]);
+        setEnrichedItems([]);
         setResults(MakeEmptySearchResultsRet());
-        totalEventsFetchedRef.current = 0;
+        totalItemsFetchedRef.current = 0;
         // Fetch the first page
         void fetchData(0);
     }, [filterSpecHash]);
 
     const loadMoreData = useCallback(() => {
         if (isFetchingRef.current) return;
-        void fetchData(enrichedEvents.length);
-    }, [enrichedEvents]);
+        void fetchData(enrichedItems.length);
+    }, [enrichedItems]);
 
-    return { enrichedEvents, results, loadMoreData };
+    return { enrichedItems, results, loadMoreData };
 }
 

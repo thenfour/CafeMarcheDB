@@ -80,6 +80,13 @@ export const xSongTag = new db3.xTable({
         color: gGeneralPaletteList.findEntry(row.color),
         ownerUserId: null,
     }),
+    SqlGetSpecialColumns: {
+        label: "text",
+        sortOrder: "sortOrder",
+        color: "color",
+        iconName: undefined,
+        tooltip: "description",
+    },
     columns: [
         new PKField({ columnName: "id" }),
         MakeTitleField("text", { authMap: xSongAuthMap_R_EOwn_EManagers }),

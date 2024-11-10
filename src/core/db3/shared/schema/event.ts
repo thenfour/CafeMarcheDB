@@ -671,17 +671,6 @@ export const xEventArgs_Base: db3.TableDesc = {
             foreignTableID: "EventTag",
             // don't allow quick search on tag; it interferes with getEventFilterInfo.ts
             getQuickFilterWhereClause: () => false,
-            // getQuickFilterWhereClause: (query: string): Prisma.EventWhereInput => ({
-            //     tags: {
-            //         some: {
-            //             eventTag: {
-            //                 text: {
-            //                     contains: query
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }),
             getCustomFilterWhereClause: (query: CMDBTableFilterModel): Prisma.EventWhereInput | boolean => {
                 if (!query.tagIds?.length) return false;
                 const tagIds = query!.tagIds;
