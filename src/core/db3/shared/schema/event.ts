@@ -1193,6 +1193,7 @@ export const xEventSongListDivider = new db3.xTable({
     getRowInfo: (row: EventSongListDividerPayload) => ({
         pk: row.id,
         name: "divider",
+        color: gGeneralPaletteList.findEntry(row.color),
         description: row.subtitle || "",
         ownerUserId: null,
     }),
@@ -1209,6 +1210,7 @@ export const xEventSongListDivider = new db3.xTable({
         new PKField({ columnName: "id" }),
         MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
+        MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "eventSongList",
             fkMember: "eventSongListId",

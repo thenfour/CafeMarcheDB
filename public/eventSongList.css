@@ -119,10 +119,22 @@
     /* background-image: repeating-linear-gradient(-38.66deg, #0001 0 1.5px, transparent 1.5px 7.5px); */
 
     /* mimicing vs code diff diagonal-fill. very clean and pretty, only limitation is it's locked to 45 degrees. */
-    --fc: #0001;
+    --fc: var(--color-background);
+    /* #0001;*/
     --bc: transparent;
     background-image: linear-gradient(-45deg, var(--fc) 0%, var(--fc) 12.5%, var(--bc) 12.5%, var(--bc) 50%, var(--fc) 50%, var(--fc) 62.5%, var(--bc) 62.5%, var(--bc) 100%);
     background-size: 8px 8px;
+}
+
+.songListSongTable .tr.item.type_divider .td.comment {
+    display: flex;
+}
+
+.songListSongTable .tr.item.type_divider .dividerComment {
+    padding-left: 20px;
+    color: var(--color-foreground);
+    /* background-color: var(--color-background); */
+    /* opacity: 50%; */
 }
 
 .songListSongTable .td.icon {
@@ -147,6 +159,8 @@
 .songListSongTable .td.songName .divider {
     font-family: monospace;
     color: #888;
+    /* for vertically-centering color swatch */
+    display: flex;
 }
 
 .songListSongTable .td.songName input {

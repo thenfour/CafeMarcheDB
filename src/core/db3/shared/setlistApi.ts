@@ -63,6 +63,7 @@ export type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{
         id: true,
         eventSongListId: true,
         subtitle: true,
+        color: true,
         sortOrder: true,
     }
 }> & { type: "divider" };
@@ -101,6 +102,7 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
                 id: true,
                 eventSongListId: true,
                 subtitle: true,
+                color: true,
                 sortOrder: true,
             }
         }

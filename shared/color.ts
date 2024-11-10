@@ -231,6 +231,7 @@ const gPaletteMap: ColorPaletteEntry[] = [
     CreatePaletteEntry("dark_gray", "dark_gray", "#cccccc", "#000000", "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#474a61", "#d8d9e4", false, "#444444", "#d7dbff", false, "#888888", "#aaaaaa", false, "#888888", "#eeeeee", false, "#8e92af", "#b3b5c9", false, "#8e92af", "#eeeeee", false),
     CreatePaletteEntry("gray", "gray", "#dddddd", "#000000", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#8e92af", "#ffffff", false, "#8e92af", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#ffffff", false, "#b3b5c9", "#d8d9e4", false, "#b3b5c9", "#ffffff", false),
     CreatePaletteEntry("light_gray", "light_gray", "#eeeeee", "#444444", "#cccccc", "#aaaaaa", false, "#cccccc", "#666666", false, "#b3b5c9", "#474a61", false, "#b3b5c9", "#474a61", false, "#cccccc", "#aaaaaa", false, "#cccccc", "#666666", false, "#b3b5c9", "#6a7095", false, "#b3b5c9", "#474a61", false),
+    CreatePaletteEntry("lighter_gray", "lighter_gray", "#eeeeee", "#444444", "#eeeeee", "#cccccc", false, "#eeeeee", "#cccccc", false, "#ececf1", "#6a7095", false, "#ececf1", "#6a7095", false, "#eeeeee", "#cccccc", false, "#eeeeee", "#cccccc", false, "#ececf1", "#6a7095", false, "#ececf1", "#6a7095", false),
     CreatePaletteEntry("white", "white", "#ffffff", "#000000", "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#ffffff", "#474a61", true, "#ffffff", "#474a61", true, "#eeeeee", "#aaaaaa", false, "#eeeeee", "#666666", false, "#d8d9e4", "#6a7095", false, "#d8d9e4", "#000000", false),
     CreatePaletteEntry("pink", "pink", "#ffddc4", "#ffaaaa", "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ffaaaa", "#eeeeee", false, "#ffaaaa", "#ffffff", false, "#cccccc", "#eeeeee", false, "#cccccc", "#ffffff", false, "#ffdddd", "#ffaaaa", false, "#ffdddd", "#e00000", false),
     CreatePaletteEntry("red", "red", "#e00000", "#e00000", "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#e00000", "#ffdddd", false, "#e00000", "#ffffff", false, "#aaaaaa", "#cccccc", false, "#aaaaaa", "#eeeeee", false, "#ffaaaa", "#ffdddd", false, "#ffaaaa", "#ffffff", false),
@@ -645,6 +646,7 @@ export const gSwatchColors = {
     "dark_gray": "dark_gray",
     "gray": "gray",
     "light_gray": "light_gray",
+    "lighter_gray": "lighter_gray",
     "white": "white",
 
     "pink": "pink",
@@ -663,7 +665,7 @@ export const gSwatchColors = {
 
 const swatchPaletteArgs: ColorPaletteArgs = {
     name: "Swatches",
-    columns: 5,
+    columns: 6,
     defaultIndex: 0,
     entries: Object.keys(gSwatchColors).map(k => FetchColorPaletteEntry(k)),
 };
@@ -685,7 +687,7 @@ export const gLightSwatchColors = {
 
 const liteSwatchPaletteArgs: ColorPaletteArgs = {
     name: "Light Swatches",
-    columns: 5,
+    columns: 6,
     defaultIndex: 0,
     entries: Object.keys(gLightSwatchColors).map(k => FetchColorPaletteEntry(k)),
 };

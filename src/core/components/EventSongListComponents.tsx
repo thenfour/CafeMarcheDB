@@ -26,17 +26,41 @@ import { MetronomeButton } from './Metronome';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
+import { ColorPick, GetStyleVariablesForColor } from './Color';
+import { ColorPaletteEntry, gAppColors, gGeneralPaletteList, gSwatchColors } from 'shared/color';
 
 const gDividerText = <>&nbsp;</>;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerRowProps {
-    //index: number;
     value: SetlistAPI.EventSongListItem;
-    //showTags: boolean;
     songList: db3.EventSongListPayload;
 };
+
+export const EventSongListValueViewerDividerRow = (props: EventSongListValueViewerRowProps) => {
+    if (props.value.type !== 'divider') throw new Error(`wrongtype`);
+
+    const colorInfo = GetStyleVariablesForColor({
+        color: props.value.color || gSwatchColors.lighter_gray,// gAppColors.attendance_yes,
+        enabled: true,
+        fillOption: 'filled',
+        selected: false,
+        variation: 'strong',
+    });
+
+    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${colorInfo.cssClass}`} style={colorInfo.style}>
+        <div className="td songIndex">
+        </div>
+        <div className="td comment">
+            <div className="comment dividerComment">{props.value.subtitle}&nbsp;</div>
+            <div className="flexGrow"></div>
+        </div>
+    </div>
+
+};
+
 export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowProps) => {
+    if (props.value.type === 'divider') return <EventSongListValueViewerDividerRow {...props} />;
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = props.value.type === 'song' ? db3.enrichSong(props.value.song, dashboardContext) : null;
     const formattedBPM = props.value.type === 'song' ? API.songs.getFormattedBPM(props.value.song) : "";
@@ -48,7 +72,6 @@ export const EventSongListValueViewerRow = (props: EventSongListValueViewerRowPr
         </div>
         <div className="td songName">
             {props.value.type === 'song' && <a target='_blank' rel="noreferrer" href={API.songs.getURIForSong(props.value.song)}>{props.value.song.name}</a>}
-            {props.value.type === 'divider' && <div className='divider'>{gDividerText}</div>}
         </div>
         <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
         <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>
@@ -93,6 +116,7 @@ type PortableSongListSong = {
 type PortableSongListDivider = {
     sortOrder: number;
     comment: string;
+    color: string | null;
     type: 'divider';
 };
 
@@ -109,6 +133,7 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
     obj.push(...value.dividers.map(d => {
         const x: PortableSongListDivider = {
             type: 'divider',
+            color: d.color,
             sortOrder: d.sortOrder,
             comment: d.subtitle || "",
         };
@@ -418,10 +443,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueEditorRowProps {
-    //index: number;
     value: SetlistAPI.EventSongListItem;
     songList: db3.EventSongListPayload;
-    //showTags?: boolean;
     showDragHandle?: boolean;
     onChange: (newValue: SetlistAPI.EventSongListItem) => void;
     onDelete?: () => void;
@@ -429,8 +452,18 @@ interface EventSongListValueEditorRowProps {
 export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowProps) => {
     const dashboardContext = React.useContext(DashboardContext);
     const enrichedSong = (props.value.type === 'song') ? db3.enrichSong(props.value.song, dashboardContext) : null;
-    //const showTags = CoalesceBool(props.showTags, false);
     const showDragHandle = CoalesceBool(props.showDragHandle, true);
+
+    const colorInfo = props.value.type === 'divider' ? GetStyleVariablesForColor({
+        color: props.value.color || gSwatchColors.lighter_gray,// gAppColors.attendance_yes,
+        enabled: true,
+        fillOption: 'filled',
+        selected: false,
+        variation: 'strong',
+    }) : {
+        cssClass: "",
+        style: {},
+    };
 
     const handleAutocompleteChange = (song: db3.SongPayload | null) => {
         if (!song) return;
@@ -467,11 +500,13 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
 
     const style = {
         "--song-hash-color": getHashedColor(props.value.type === "song" ? props.value.song.name : ""),
+        ...colorInfo.style,
     };
 
     const handleNewDivider = () => {
         props.onChange({
             type: 'divider',
+            color: null,
             eventSongListId: props.value.eventSongListId,
             id: getUniqueNegativeID(),
             sortOrder: props.value.sortOrder,
@@ -479,50 +514,72 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         });
     }
 
+    const handleDividerColorChange = (newColor: ColorPaletteEntry | null) => {
+        if (props.value.type !== 'divider') throw new Error(`wrong item type`);
+        props.onChange({
+            ...props.value,
+            color: newColor?.id || null,
+        });
+    };
+
     return <>
-        <div className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type}`} style={style as any}>
+        <div
+            className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type} ${colorInfo.cssClass}`}
+            style={style as any}
+        >
             <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
-            {/* <div className="td icon">{props.value.songId ? <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div> : gIconMap.Add()}</div> */}
             <div className="td songIndex">{props.value.type === 'song' && (props.value.index + 1)}
-                {/* id:{props.value.id} so:{props.value.sortOrder} */}
             </div>
             <div className="td dragHandle draggable">{showDragHandle && gCharMap.Hamburger()}
-                {/* <InspectObject src={props.value} tooltip="snth" /> */}
             </div>
-            <div className="td songName">
-                {props.value.type === 'song' && <div>{props.value.song.name}</div>}
-                {/* value used to be props.value.song || null */}
-                {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
-                {props.value.type === 'divider' && <div className='divider'>{gDividerText}</div>}
 
-            </div>
-            <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
-            <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>            <div className="td tempo">
-                {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}
-                {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
-            </div>
-            {/* </div>
-        <div className="tr"> */}
-            <div className="td comment">
-                <div className="comment">
-                    {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>!{occurrences}</div></Tooltip>}
-                    {props.value.type !== 'new' &&
-                        <InputBase
-                            className="cmdbSimpleInput"
-                            placeholder="Comment"
-                            // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                            // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
-                            onMouseDownCapture={(e) => e.stopPropagation()}
-                            value={props.value.subtitle || ""}
-                            onChange={(e) => handleCommentChange(e.target.value)}
-                        />}
-                </div>
-                {/* {showTags && enrichedSong && enrichedSong.tags.length > 0 && (
-                    <CMChipContainer>
-                        {enrichedSong.tags.filter(a => a.tag.showOnSongLists).map(a => <CMStandardDBChip key={a.id} model={a.tag} variation={StandardVariationSpec.Weak} size="small" />)}
-                    </CMChipContainer>
-                )} */}
-            </div>
+            {props.value.type === 'divider' ? (
+                <>
+                    <div className="td comment">
+                        <div className='comment dividerComment'>
+                            {gDividerText}
+                            <InputBase
+                                className="cmdbSimpleInput"
+                                placeholder="Comment"
+                                // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
+                                // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
+                                onMouseDownCapture={(e) => e.stopPropagation()}
+                                value={props.value.subtitle || ""}
+                                onChange={(e) => handleCommentChange(e.target.value)}
+                            />
+                        </div>
+                        <ColorPick size={'small'} value={props.value.color} onChange={handleDividerColorChange} />
+                    </div>
+                </>
+            ) : (
+                <>
+                    <div className="td songName">
+                        {props.value.type === 'song' && <div>{props.value.song.name}</div>}
+                        {/* value used to be props.value.song || null */}
+                        {props.value.type === 'new' && <SongAutocomplete onChange={handleAutocompleteChange} value={null} fadedSongIds={props.songList.songs.map(s => s.songId)} />}
+                    </div>
+                    <div className="td length">{props.value.type === 'song' && props.value.song.lengthSeconds && formatSongLength(props.value.song.lengthSeconds)}</div>
+                    <div className="td runningLength">{props.value.type === 'song' && props.value.runningTimeSeconds && <>{formatSongLength(props.value.runningTimeSeconds)}{props.value.songsWithUnknownLength ? <>+</> : <>&nbsp;</>}</>}</div>            <div className="td tempo">
+                        {enrichedSong?.startBPM && <MetronomeButton bpm={enrichedSong.startBPM} isTapping={false} onSyncClick={() => { }} tapTrigger={0} variant='tiny' />} {formattedBPM}
+                        {(props.value.type === 'new') && <Tooltip title="Add a divider"><span><CMSmallButton onClick={handleNewDivider}>+Divider</CMSmallButton></span></Tooltip>}
+                    </div>
+                    <div className="td comment">
+                        <div className="comment">
+                            {isDupeWarning && <Tooltip title={`This song occurs ${occurrences} times in this set list. Is that right?`}><div className='warnIndicator'>!{occurrences}</div></Tooltip>}
+                            {props.value.type !== 'new' &&
+                                <InputBase
+                                    className="cmdbSimpleInput"
+                                    placeholder="Comment"
+                                    // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
+                                    // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
+                                    onMouseDownCapture={(e) => e.stopPropagation()}
+                                    value={props.value.subtitle || ""}
+                                    onChange={(e) => handleCommentChange(e.target.value)}
+                                />}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     </>;
 };
@@ -664,6 +721,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                     const div: SetlistAPI.EventSongListDividerItem = {
                         type: 'divider',
                         id: getUniqueNegativeID(),
+                        color: p.color,
                         eventSongListId: list.id,
                         sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
                         subtitle: p.comment,
@@ -920,6 +978,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
             })),
             dividers: newValue.dividers.map(d => ({
                 sortOrder: d.sortOrder,
+                color: d.color,
                 subtitle: d.subtitle || "",
             })),
         }).then(() => {
@@ -1000,6 +1059,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
             })),
             dividers: value.dividers.map(d => ({
                 sortOrder: d.sortOrder,
+                color: d.color,
                 subtitle: d.subtitle || "",
             })),
         }).then(() => {

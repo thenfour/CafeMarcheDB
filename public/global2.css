@@ -1142,6 +1142,9 @@ in particular the date range picker is wide.*/
 
 
 /* -  --------------------------------- */
+.paletteeditor2 .contentSection {
+    width: auto;
+}
 
 .paletteeditor2 .paletteSwatchContainer {
     display: flex;

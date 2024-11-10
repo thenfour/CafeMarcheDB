@@ -82,10 +82,11 @@ export interface ColorSwatchProps {
     variation: ColorVariationSpec;
     hoverVariation?: ColorVariationSpec;
     onDrop?: (e: ColorPaletteEntry) => void;
+    size?: "normal" | "small";
 };
 
 // props.color can never be null.
-export const ColorSwatch = (props: ColorSwatchProps) => {
+export const ColorSwatch = ({ size = "normal", ...props }: ColorSwatchProps) => {
     const [hovering, setHovering] = React.useState<boolean>(false);
 
     const entry = !!props.color ? props.color : CreateNullPaletteEntry();
@@ -130,12 +131,12 @@ export const ColorSwatch = (props: ColorSwatchProps) => {
         onDragStart={onDragStart} // Event when drag starts
         onDragOver={props.onDrop && onDragOver} // Event when something is dragged over
         onDrop={props.onDrop && onDrop} // Event when something is dropped
-        className={`${props.variation.selected ? "selected" : ""} colorSwatchRoot interactable applyColor ${style.cssClass} ${props.isSpacer ? "spacer" : ""}`}
+        className={`${props.variation.selected ? "selected" : ""} colorSwatchRoot interactable applyColor ${style.cssClass} ${props.isSpacer ? "spacer" : ""} size_${size}`}
         style={style.style}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
     >
-        {entry.label}
+        {size === "normal" && entry.label}
     </div>;
 };
 
@@ -272,16 +273,17 @@ export const ColorPaletteListComponent = (props: ColorPaletteListComponentProps)
 export interface ColorPickProps {
     value: ColorPaletteEntry | null | string;
     readonly?: boolean;
-    allowNull: boolean;
-    palettes: ColorPaletteList;
+    allowNull?: boolean;
+    palettes?: ColorPaletteList;
     onChange: (value: ColorPaletteEntry | null) => void;
+    size?: "normal" | "small";
 };
 
 // props.color can never be null.
-export const ColorPick = (props: ColorPickProps) => {
+export const ColorPick = ({ allowNull = true, palettes = gGeneralPaletteList, ...props }: ColorPickProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const isOpen = Boolean(anchorEl);
-    const entry = props.palettes.findEntry(props.value);
+    const entry = palettes.findEntry(props.value);
 
     const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
         if (props.readonly) return;
@@ -290,14 +292,14 @@ export const ColorPick = (props: ColorPickProps) => {
 
     return <>
         <div onClick={handleOpen}>
-            <ColorSwatch color={entry} variation={StandardVariationSpec.Strong} />
+            <ColorSwatch color={entry} variation={StandardVariationSpec.Strong} size={props.size} />
         </div>
         <Popover
             anchorEl={anchorEl}
             open={isOpen}
             onClose={() => setAnchorEl(null)}
         >
-            <ColorPaletteListComponent allowNull={props.allowNull} palettes={props.palettes} onClick={(e: ColorPaletteEntry | null) => {
+            <ColorPaletteListComponent allowNull={allowNull} palettes={palettes} onClick={(e: ColorPaletteEntry | null) => {
                 if (props.readonly) return;
                 props.onChange(e);
                 setAnchorEl(null);

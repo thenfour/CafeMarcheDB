@@ -32,6 +32,15 @@
 
 }
 
+.colorSwatchRoot.size_small {
+    --size: 20px;
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+}
+
+
+
 .colorSwatchRoot>* {
     flex-grow: 1;
     font-size: 14px;
