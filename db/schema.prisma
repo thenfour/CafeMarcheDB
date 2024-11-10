@@ -609,6 +609,10 @@ model EventSegment {
   description String  @db.MediumText // short description, like 
   uid         String? @default(uuid()) // used for unique identification but is NOT secret like the accessToken.
 
+  // segments have their own status as well, this is mostly used in the case where you're using an event like a doodle, and segments can be cancelled.
+  statusId Int?
+  status   EventStatus? @relation(fields: [statusId], references: [id], onDelete: SetNull)
+
   // conform to DateTimeRangeSpec
   startsAt       DateTime? // date null means TBD
   durationMillis BigInt
@@ -617,6 +621,7 @@ model EventSegment {
   responses EventSegmentUserResponse[]
 
   @@index([name])
+  @@index([statusId])
   @@index([startsAt])
   @@index([eventId])
 }
@@ -648,7 +653,8 @@ model EventStatus {
   iconName     String?
   isDeleted    Boolean @default(false)
 
-  events Event[]
+  events        Event[]
+  eventSegments EventSegment[]
 
   @@index([label])
   @@index([sortOrder])

@@ -606,8 +606,9 @@ export const EventAttendanceDetailRow = ({ responseInfo, user, event, refetch, r
             const segmentResponse = responseInfo.getResponseForUserAndSegment({ user, segment });
             assert(!!segmentResponse, "segmentResponse shouldn't be null.");
             const attendance = dashboardContext.eventAttendance.getById(segmentResponse.response.attendanceId);
+            const status = dashboardContext.eventStatus.getById(segment.statusId);
             return <React.Fragment key={segment.id}>
-                <td className='responseCell'>
+                <td className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
                     <div className='responseCellContents'>
                         {iseg === 0 && <div className='editButton'>{!readonly && authorizedForEdit && <EventAttendanceEditButton {...{ event, user, responseInfo, refetch, userMap }} />}</div>}
                         {!!attendance ? <AttendanceChip value={attendance} variation={attendanceVariant} /> : "--"}
@@ -732,13 +733,16 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     <th>
                         <div className='interactable' onClick={() => setSortField('instrument')}>Instrument {sortField === 'instrument' && gCharMap.DownArrow()}</div>
                     </th>
-                    {event.segments.map(seg => <React.Fragment key={seg.id}>
-                        <th className='responseCell' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
-                            <div className='interactable'>
-                                {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
-                            </div>
-                        </th>
-                    </React.Fragment>)}
+                    {event.segments.map(seg => {
+                        const status = dashboardContext.eventStatus.getById(seg.statusId);
+                        return <React.Fragment key={seg.id}>
+                            <th className={`responseCell segmentSignificance_${status?.significance || "none"}`} onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
+                                <div className='interactable'>
+                                    {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
+                                </div>
+                            </th>
+                        </React.Fragment>;
+                    })}
                     <th>Comments</th>
                 </tr>
             </thead>
@@ -765,9 +769,12 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                             description={<SettingMarkdown setting='EventInviteUsersDialogDescriptionMarkdown' />}
                         />}
                     </td>
-                    {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
-                        <td className='responseCell'>{seg.attendeeCount}</td>
-                    </React.Fragment>)}
+                    {segAttendees.map(seg => {
+                        const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
+                        return <React.Fragment key={seg.segment.id}>
+                            <td className={`responseCell segmentSignificance_${status?.significance || "none"}`}>{seg.attendeeCount}</td>
+                        </React.Fragment>;
+                    })}
                     <td>{/*Comments*/}</td>
                 </tr>
             </tfoot>
@@ -884,10 +891,13 @@ export const EventVisibilityControl = ({ event, refetch }: { event: EventWithTyp
 
 export interface EventStatusValueProps {
     onClick?: () => void;
-    status: db3.EventStatusPayloadMinimum | null;
+    statusId: number | null | undefined;
+    size: "small";
 };
 export const EventStatusValue = (props: EventStatusValueProps) => {
-    return !props.status ? (<Button onClick={props.onClick}>Set event status</Button>) : (<CMStatusIndicator model={props.status} onClick={props.onClick} getText={o => o?.label || ""} />);
+    const dashboardContext = useDashboardContext();
+    const status = dashboardContext.eventStatus.getById(props.statusId);
+    return status && (<CMStatusIndicator size={props.size} model={status} onClick={props.onClick} getText={o => o?.label || ""} />);
 };
 
 
@@ -1009,7 +1019,8 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
                 <tr>
                     <th>Instrument group</th>
                     {isSingleSegment ? <th key="__">Response</th> : event.segments.map((seg) => {
-                        return <th key={seg.id}>{seg.name}</th>;
+                        const status = dashboardContext.eventStatus.getById(seg.statusId);
+                        return <th className={`segmentStatusSignificance_${status?.significance || "none"}`} key={seg.id}>{seg.name}</th>;
                     })}
                 </tr>
                 {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
@@ -1046,7 +1057,8 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
                                 }
                                 return (aatt.strength < batt.strength) ? 1 : -1;
                             });
-                            return <td key={seg.id}>
+                            const status = dashboardContext.eventStatus.getById(seg.statusId);
+                            return <td key={seg.id} className={`segmentStatusSignificance_${status?.significance || "none"}`}>
                                 <div className='attendanceResponseColorBarCell'>
                                     <div className='attendanceResponseColorBarSegmentContainer'>
                                         {sortedResponses.map(resp => {
@@ -1075,9 +1087,12 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
                 <tr>
                     <td>
                     </td>
-                    {segAttendees.map(seg => <React.Fragment key={seg.segment.id}>
-                        <td className='responseCell'>{seg.attendeeCount}</td>
-                    </React.Fragment>)}
+                    {segAttendees.map(seg => {
+                        const status = dashboardContext.eventStatus.getById(seg.segment.statusId);
+                        return <React.Fragment key={seg.segment.id}>
+                            <td className={`responseCell`}>{seg.attendeeCount}</td>
+                        </React.Fragment>
+                    })}
                 </tr>
             </tfoot>
         </table>
@@ -1616,13 +1631,6 @@ export const EventTableClientColumns = {
     id: new DB3Client.PKColumnClient({ columnName: "id" }),
     name: new DB3Client.GenericStringColumnClient({ columnName: "name", cellWidth: 150, fieldCaption: "Event name", className: "titleText" }),
     dateRange: new DB3Client.EventDateRangeColumn({ startsAtColumnName: "startsAt", headerName: "Date range", durationMillisColumnName: "durationMillis", isAllDayColumnName: "isAllDay" }),
-    // slug: new DB3Client.SlugColumnClient({
-    //     columnName: "slug", cellWidth: 150, fieldCaption: "URL (auto-generated)", previewSlug: (obj) => {
-    //         const id = obj.id || "???";
-    //         const slug = obj.slug || undefined;
-    //         return API.events.getURIForEvent(id, slug);
-    //     }
-    // }),
     description: new DB3Client.MarkdownStringColumnClient({ columnName: "description", cellWidth: 150 }),
     isDeleted: new DB3Client.BoolColumnClient({ columnName: "isDeleted" }),
     locationDescription: new DB3Client.GenericStringColumnClient({ columnName: "locationDescription", cellWidth: 150, fieldCaption: "Location" }),

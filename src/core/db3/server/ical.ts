@@ -72,39 +72,9 @@ export const addEventToCalendar2 = (
         );
     }
 
-    // const userSegmentResponses = eventVerbose.
-
     const eventUserResponse = getEventUserResponse();
-    // const numberOfPositiveResponses = user == null ? 0 : (eventVerbose.segments
-    //     .reduce((acc, seg) => {
-    //         const userResponse = seg.responses.find(sr => sr.userId === user.id);
-    //         if (!userResponse) return acc;
-    //         if (!userResponse.attendanceId) return acc;
-    //         const attendance = eventAttendances.find(ea => ea.id === userResponse.attendanceId);
-    //         if (!attendance) return acc;
-    //         if (attendance.strength < 50) return acc;
-    //         return acc + 1;
-    //     }, 0));
 
-    // URI for event
-    // URI for user calendar
-    // URI for event calendar
     const eventURL = process.env.CMDB_BASE_URL + `backstage/event/${event.eventId}/${slugify(event.name)}`; // 
-
-    // // for all-day events, the datetime range will return midnight of the start day.
-    // // BUT this will lead to issues because of timezones. In order to output a UTC date,
-    // // the time gets shifted and will likely be the previous day. For all-day events therefore,
-    // // let's be precise and use an ISO string (20240517) because all-day events are not subject to
-    // // time zone offsets.
-    // let start: Date | string = dateRange.getStartDateTime()!;
-    // let end: Date | string = dateRange.getLastDateTime()!; // this date must be IN the time range so don't use "end", use "last"
-    // if (dateRange.isAllDay()) {
-    //     start = prepareAllDayDateForICal(start);
-    //     end = prepareAllDayDateForICal(end);
-    //     // end = new Date(start);
-    //     // end.setMilliseconds(start.getMilliseconds() + dateRange.getDurationMillis());
-    //     //end = prepareAllDayDateForICal(end);
-    // }
 
     let summary = `CM: ${event.name}`;
     if (user && isUserAttending(user.id)) {
@@ -144,9 +114,10 @@ export const addEventToCalendar = (
     user: null | Prisma.UserGetPayload<{}>,
     event: EventForCal,
     eventVerbose: db3.EventClientPayload_Verbose,
-    eventAttendanceIdsRepresentingGoing: number[]
+    eventAttendanceIdsRepresentingGoing: number[],
+    cancelledStatusIds: number[],
 ): ICalEvent[] => {
-    const inputs = GetEventCalendarInput(event)!;
+    const inputs = GetEventCalendarInput(event, cancelledStatusIds)!;
     return inputs
         .segments
         .map(input => addEventToCalendar2(calendar, user, input, eventVerbose, eventAttendanceIdsRepresentingGoing))
@@ -184,7 +155,6 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
 
     const table = db3.xEventVerbose;
     const minDate = floorLocalToLocalDay(new Date()); // avoid tight loop where date changes every render, by flooring to day.
-    //minDate.setDate(minDate.getDate() - 1);
     minDate.setMonth(minDate.getMonth() - 12); // #226 this is a default calendar export and it should not make events disappear immediately.
 
     const eventsTableParams: db3.EventTableParams = {
@@ -208,16 +178,17 @@ export const CalExportCore = async ({ accessToken, type, ...args }: CalExportCor
 
     const events = eventsRaw.items as db3.EventClientPayload_Verbose[];
 
-    //const sourceURL = process.env.CMDB_BASE_URL + GetICalRelativeURIForUserAndEvent({ userAccessToken: currentUser?.accessToken || null, eventUid });
     const cal = createCalendar({
         sourceURL: args.sourceURI,
     });
 
     const eventAttendances = await db.eventAttendance.findMany();
 
+    const cancelledStatusIds = (await db.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
+
     for (let i = 0; i < events.length; ++i) {
         const event = events[i]!;
-        addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id));
+        addEventToCalendar(cal, currentUser, event, event, eventAttendances.filter(ea => ea.strength >= 50).map(ea => ea.id), cancelledStatusIds);
     }
 
     return cal;

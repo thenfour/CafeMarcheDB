@@ -534,7 +534,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
 
   if (!y.visible) return debugView;
 
-  const mapIndex = !y.allAnswered ? 0 : (y.allAffirmative ? 1 : (y.allNegative ? 2 : 3));
+  const mapIndex = !y.allUncancelledSegmentsAnswered ? 0 : (y.allUncancelledSegmentsAffirmative ? 1 : (y.allUncancelledSegmentResponsesNegative ? 2 : 3));
 
   // require any answered otherwise you get "you responded: no response".
   if (y.visible && !y.alertFlag && y.anyAnswered && props.minimalWhenNotAlert) {
@@ -569,7 +569,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
           />
         </div>}
         <div className="segmentList">
-          {y.segmentUserResponses.map(segment => {
+          {y.uncancelledSegmentUserResponses.map(segment => {
             return <EventAttendanceSegmentControl
               isSingleSegment={y.isSingleSegment}
               key={segment.segment.id}
@@ -592,7 +592,7 @@ export const EventAttendanceControl = (props: EventAttendanceControlProps) => {
             value={y.eventUserResponse.instrument}
             onSelect={() => setUserSelectedEdit(true)}
           />}
-          {y.segmentUserResponses.map(segment => {
+          {y.uncancelledSegmentUserResponses.map(segment => {
             return <EventAttendanceAnswerControl
               forceEditMode={false} // compact mode never has edit by default
               key={segment.segment.id}

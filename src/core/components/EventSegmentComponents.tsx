@@ -16,6 +16,7 @@ import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { IsNullOrWhitespace } from "shared/utils";
 import { gIconMap } from "../db3/components/IconMap";
+import { EventStatusValue, EventTableClientColumns } from "./EventComponents";
 
 
 
@@ -60,6 +61,7 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
         columns: [
             EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
+            EventTableClientColumns.status,
             EventSegmentClientColumns.dateRange,
             EventSegmentClientColumns.description,
             EventSegmentClientColumns.event,
@@ -178,7 +180,10 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     return <div className={`EventSegmentPanel segment`}>
         <div className="header">
             <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
-            {!props.readonly && editAuthorized && <Button className="editButton" onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
+            <div style={{ display: "flex" }}>
+                <EventStatusValue statusId={props.segment.statusId} size="small" />
+                {!props.readonly && editAuthorized && <Button className="editButton" onClick={() => setEditOpen(true)}>{gIconMap.Edit()}Edit</Button>}
+            </div>
         </div>
         <div className="content">
             <div className='name'>
@@ -186,6 +191,7 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
             </div>
 
             <Markdown markdown={props.segment.description} />
+
             {!props.readonly && editOpen && (<EventSegmentEditDialog
                 initialValue={props.segment}
                 markdownSettingPrefix="EditEventSegment"

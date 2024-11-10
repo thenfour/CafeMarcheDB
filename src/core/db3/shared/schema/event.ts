@@ -263,6 +263,7 @@ export const xEventStatus = new db3.xTable({
         MakeSignificanceField("significance", EventStatusSignificance, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeIconField("iconName", gIconOptions, { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new GhostField({ memberName: "events", authMap: xEventAuthMap_R_EOwn_EManagers }),
+        new GhostField({ memberName: "eventSegments", authMap: xEventAuthMap_R_EOwn_EManagers }),
     ]
 });
 
@@ -882,6 +883,14 @@ export const xEventSegment = new db3.xTable({
             authMap: xEventAuthMap_R_EOwn_EManagers,
             allowNull: false
         }),
+        new ForeignSingleField<Prisma.EventStatusGetPayload<{}>>({
+            columnName: "status",
+            fkMember: "statusId",
+            allowNull: true,
+            foreignTableID: "EventStatus",
+            authMap: xEventAuthMap_R_EOwn_EManagers,
+            getQuickFilterWhereClause: (query: string) => false,
+        }),
 
         new ForeignSingleField<Prisma.EventGetPayload<{}>>({
             columnName: "event",
@@ -1301,6 +1310,7 @@ export const EventResponses_MinimalEventSegmentArgs = Prisma.validator<Prisma.Ev
         startsAt: true, // for attendance control
         durationMillis: true, // for attendance control
         isAllDay: true, // for attendance control
+        statusId: true,
     }
 });
 export type EventResponses_MinimalEventSegment = Prisma.EventSegmentGetPayload<typeof EventResponses_MinimalEventSegmentArgs>;

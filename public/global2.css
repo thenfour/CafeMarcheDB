@@ -288,6 +288,10 @@ input.CMTextInputBase.titleText {
     text-align: center;
 }
 
+.EventCompletenessTabContent .segmentStatusSignificance_Cancelled {
+    opacity: 50%;
+}
+
 .searchListItem {
     cursor: pointer;
 }
@@ -1457,6 +1461,10 @@ in particular the date range picker is wide.*/
     table-layout: fixed;
 }
 
+.attendanceDetailTable .segmentSignificance_Cancelled {
+    opacity: 50%;
+}
+
 .attendanceDetailTable .responseCell {
     min-width: 100px;
     text-align: center;
@@ -1526,13 +1534,15 @@ in particular the date range picker is wide.*/
 }
 
 
-.EventSegmentPanel.segment .header {
+.EventSegmentPanel.segment>.header {
     padding: 4px 12px;
     background-color: #ddd;
     color: #888;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.EventSegmentPanel.segment .content {
+.EventSegmentPanel.segment>.content {
     padding: 8px;
 }
 

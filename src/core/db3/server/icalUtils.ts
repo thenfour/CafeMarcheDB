@@ -27,7 +27,9 @@ export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongL
         id: true,
         sortOrder: true,
         subtitle: true,
+        isInterruption: true,
         eventSongListId: true,
+        color: true,
     },
 });
 
@@ -52,9 +54,6 @@ export const EventSongListForCalArgs = Prisma.validator<Prisma.EventSongListDefa
                     }
                 }
             },
-            // orderBy: {
-            //     sortOrder: "asc",
-            // }
         },
     },
 });
@@ -68,6 +67,7 @@ export const EventSegmentForCalArgs = Prisma.validator<Prisma.EventSegmentDefaul
         isAllDay: true,
         durationMillis: true,
         uid: true,
+        statusId: true,
     }
 });
 
@@ -135,11 +135,8 @@ export type EventCalendarInput = Pick<EventForCal,
 > &
     Pick<EventSegmentForCal, "isAllDay" | "uid"> &
 {
-    //inputHash: string,
     description: string,
-    //summary: string,
     name: string,
-    //cancelledText: string,
     statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance),
 
     start: Date,
@@ -165,10 +162,7 @@ function prepareAllDayDateForICal(date) {
 type GetEventSegmentCalendarInputArgs = {
     event: Partial<EventForCal>;
     segment: EventSegmentForCal;
-    //statusSignificance: db3.EventStatusSignificance | undefined;
-    //calStatus: ICalEventStatus;
     descriptionText: string;
-    //locationDescription: string;
 };
 export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, ...args }: GetEventSegmentCalendarInputArgs): EventCalendarInput | null => {
     const dateRange = new DateTimeRange({
@@ -206,11 +200,10 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
     const ret: EventCalendarInput = {
         // note: when calculating changes, we must ignore revision
         revision: 0,
-        //inputHash: "",
 
         eventId: event.id!,
         segmentId: segment.id,
-        name,//: `${event.name || ""} ${segment.name || ""}`,
+        name,
         uid: segment.uid,//
 
         locationDescription: event.locationDescription || "",
@@ -224,7 +217,6 @@ export const GetEventSegmentCalendarInput = ({ segment, event, descriptionText, 
         statusSignificance,
     };
 
-    //ret.inputHash = hash256(JSON.stringify(ret));
     ret.revision = event.revision!;
 
     return ret;
@@ -239,7 +231,7 @@ type GetEventCalendarInputResult = {
     inputHash: string;
     segments: EventCalendarInput[];
 };
-export const GetEventCalendarInput = (event: Partial<EventForCal>): GetEventCalendarInputResult | null => {
+export const GetEventCalendarInput = (event: Partial<EventForCal>, cancelledStatusIds: number[]): GetEventCalendarInputResult | null => {
     // if you pass in something that is insufficient for using as an event.
     // it's theoretical because it's always going to be an event object.
     if (event.revision === undefined) return null;
@@ -248,12 +240,6 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): GetEventCale
 
     const setLists = event.songLists ? event.songLists.map(l => SongListIndexAndNamesToString(l)) : [];
 
-    // const statusSignificance: undefined | (keyof typeof db3.EventStatusSignificance) = event.status?.significance as any;
-
-    // const calStatus = (statusSignificance === db3.EventStatusSignificance.Cancelled) ? ICalEventStatus.CANCELLED :
-    //     (statusSignificance === db3.EventStatusSignificance.FinalConfirmation) ? ICalEventStatus.CONFIRMED :
-    //         ICalEventStatus.TENTATIVE;
-
     // there's no point in maintaining the structure of songlists etc; it ends up as part of the description
     // so just bake it, and keep the payload simple.
     let descriptionText = event.description ? markdownToPlainText(event.description) : "";
@@ -261,11 +247,13 @@ export const GetEventCalendarInput = (event: Partial<EventForCal>): GetEventCale
         descriptionText += "\n\n" + setLists.join(`\n\n`);
     }
 
-    const segmentsForCalendar = event.segments!.map(segment => GetEventSegmentCalendarInput({
-        segment,
-        event,
-        descriptionText,
-    }));
+    const segmentsForCalendar = event.segments!
+        .filter(segment => !segment.statusId || !cancelledStatusIds.includes(segment.statusId))
+        .map(segment => GetEventSegmentCalendarInput({
+            segment,
+            event,
+            descriptionText,
+        }));
 
     const validSegments = segmentsForCalendar.filter(e => !!e);
 

@@ -9,6 +9,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
+import { EventTableClientColumns } from "src/core/components/EventComponents";
 
 
 // if you pass an eventId querystring param,
@@ -34,6 +35,7 @@ const MainContent = () => {
         columns: [
             EventSegmentClientColumns.id,
             EventSegmentClientColumns.name,
+            EventTableClientColumns.status, // ya
             EventSegmentClientColumns.dateRange,
             EventSegmentClientColumns.description,
             EventSegmentClientColumns.event,
