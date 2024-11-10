@@ -130,11 +130,16 @@
     display: flex;
 }
 
-.songListSongTable .tr.item.type_divider .dividerComment {
+.songListSongTable .tr.item.type_divider .dividerComment,
+.songListSongTable .tr.item.type_divider .dividerComment input {
     padding-left: 20px;
     color: var(--color-foreground);
     /* background-color: var(--color-background); */
     /* opacity: 50%; */
+
+    /* helps text stand out against the hatch background*/
+    --dist: 4px;
+    text-shadow: 0 0 var(--dist) var(--color-background), 0 0 var(--dist) var(--color-background), 0 0 var(--dist) var(--color-background);
 }
 
 .songListSongTable .td.icon {
