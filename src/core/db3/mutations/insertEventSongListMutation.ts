@@ -26,6 +26,8 @@ export default resolver.pipe(
         const fields: Prisma.EventSongListUncheckedCreateInput = {
             eventId: args.eventId,
             name: args.name,
+            isActuallyPlayed: args.isActuallyPlayed,
+            isOrdered: args.isOrdered,
             //createdByUserId: currentUser.id,
             //visiblePermissionId: args.visiblePermissionId,
             description: args.description,

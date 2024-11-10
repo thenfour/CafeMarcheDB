@@ -389,7 +389,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
             <div className={`columnName-name ${editAuthorized && "draggable dragHandle"}`}>
                 {editAuthorized && <div className="dragHandleIcon ">{gCharMap.Hamburger()}</div>}
                 {props.value.name}
-                <Tooltip disableInteractive title={`This is the playlist that was actually played or will be played`}><span className='verified songListVerified'>{gIconMap.Check()}</span></Tooltip>
+                {props.value.isActuallyPlayed && <Tooltip disableInteractive title={`This is the playlist that was actually played or will be played`}><span className='verified songListVerified'>{gIconMap.Check()}</span></Tooltip>}
             </div>
             {!props.readonly && editAuthorized && <Button onClick={props.onEnterEditMode}>{gIconMap.Edit()}Edit</Button>}
 
