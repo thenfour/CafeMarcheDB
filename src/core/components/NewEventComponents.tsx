@@ -1,9 +1,9 @@
 import { Button, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { useRouter } from "next/router";
 import React from "react";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
-import { EventTableClientColumns } from "src/core/components/EventComponents";
+//import { EventTableClientColumns } from "src/core/components/EventComponents";
+import { Permission } from "shared/permissions";
 import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -12,10 +12,10 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import { API } from "src/core/db3/clientAPI";
 import * as db3 from "src/core/db3/db3";
 import { TAnyModel, TinsertEventArgs } from "src/core/db3/shared/apiTypes";
-import { DashboardContext } from "./DashboardContext";
-import { Permission } from "shared/permissions";
 import { gIconMap } from "../db3/components/IconMap";
 import { simulateLinkClick } from "./CMCoreComponents2";
+import { DashboardContext } from "./DashboardContext";
+import { EventTableClientColumns } from "./EventComponentsBase";
 
 interface NewEventDialogProps {
     onCancel: () => void;

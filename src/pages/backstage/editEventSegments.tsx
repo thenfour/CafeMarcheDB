@@ -9,8 +9,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
-import { EventTableClientColumns } from "src/core/components/EventComponents";
-
+import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
 
 // if you pass an eventId querystring param,
 // it will act as the fixed value of the event column.

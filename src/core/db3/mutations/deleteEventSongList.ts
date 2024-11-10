@@ -44,6 +44,8 @@ export default resolver.pipe(
             dividers: oldDividers.map(x => ({
                 id: x.id,
                 sortOrder: x.sortOrder,
+                color: x.color,
+                isInterruption: x.isInterruption,
                 subtitle: x.subtitle || "",
             })),
         };

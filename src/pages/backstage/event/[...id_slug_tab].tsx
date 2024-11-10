@@ -5,7 +5,7 @@ import { Permission } from "shared/permissions";
 import { CoerceToNumberOrNull, IsEntirelyIntegral } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
-import { EventBreadcrumbs, EventDetailFull, EventTableClientColumns, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
+import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
 import { NewEventButton } from "src/core/components/NewEventComponents";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
@@ -13,6 +13,7 @@ import DashboardLayout from "src/core/layouts/DashboardLayout";
 import React from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { GetServerSideProps } from 'next';
+import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();

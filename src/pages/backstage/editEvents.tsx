@@ -7,11 +7,10 @@ import * as db3 from "src/core/db3/db3";
 import * as DB3Client from "src/core/db3/DB3Client";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 import { useRouter } from "next/router";
-import { pickFromObject } from "shared/utils";
-import { EventTableClientColumns } from "src/core/components/EventComponents";
 import React from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { simulateLinkClick } from "src/core/components/CMCoreComponents2";
+import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
 
 const ExtraActions = ({ gridArgs }: { gridArgs: DB3EditGridExtraActionsArgs }) => {
     const router = useRouter();
@@ -40,7 +39,6 @@ const MainContent = () => {
             EventTableClientColumns.id,
             EventTableClientColumns.name,
             EventTableClientColumns.dateRange,
-            //EventTableClientColumns.slug,
             EventTableClientColumns.description,
             EventTableClientColumns.isDeleted,
             EventTableClientColumns.locationDescription,
