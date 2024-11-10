@@ -22,6 +22,8 @@ import * as DB3ClientCore from "./DB3ClientCore";
 import { gIconMap } from "./IconMap";
 
 import { MutationArgsToWorkflowDef, TWorkflowMutationResult, WorkflowDef } from "shared/workflowEngine";
+import { ColorSwatch } from "src/core/components/Color";
+import { gGeneralPaletteList, gStrong } from "shared/color";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -260,7 +262,7 @@ const ActivityLogFile = ({ file, cacheData }: { file: Prisma.FileGetPayload<{}>,
 
 
 type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number, sortOrder: number, subtitle: string, type: "song" };
-type ActivityLogSongListDividerPayload = { id?: number | undefined, sortOrder: number, subtitle: string, type: "div" };
+type ActivityLogSongListDividerPayload = { id?: number | undefined, sortOrder: number, subtitle: string, color: string | null | undefined, type: "div" };
 type ActivityLogSongListV1 = { id: number, songId: number, sortOrder: number, subtitle: string }[];
 type ActivityLogSongListV2 = Partial<TinsertOrUpdateEventSongListArgs> & Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'>;
 
@@ -307,9 +309,9 @@ const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogS
                 {items.map((s, i) => <tr key={i}>
                     <td>{s.id}</td>
                     <td>{s.sortOrder}</td>
-                    <td>
+                    <td >
                         {s.type === "song" && <ActivityLogSong songId={s.songId} cacheData={cacheData} />}
-                        {s.type === "div" && "-----"}
+                        {s.type === "div" && <div style={{ display: "flex" }}><div>-----</div><ColorSwatch color={gGeneralPaletteList.findEntry(s.color || null)} size="small" variation={gStrong} /></div>}
                     </td>
                     <td>{s.subtitle}</td>
                 </tr>)}
