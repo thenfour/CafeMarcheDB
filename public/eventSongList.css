@@ -384,15 +384,15 @@ li.songDropdownOption {
     font-size: 26px;
     font-weight: bold;
     font-style: normal;
-    padding-left: 0;
-    padding: 14px 0;
+    padding: 0;
+    padding-bottom: 6px;
     /* white-space: nowrap; */
     max-width: 450px;
 }
 
 .songListSongTable .tr.item.type_divider.style_BreakBefore {
     border-top: 4px solid var(--color-background);
-    margin-top: 8px;
+    margin-top: 16px;
 }
 
 .songListSongTable .tr.item.type_divider.style_BreakAfter {
@@ -402,6 +402,7 @@ li.songDropdownOption {
 
 .songListSongTable .tr.item.type_divider.style_Minimal.style_BreakBefore {
     border-top: 2px dashed var(--color-background);
+    margin-top: 4px;
 }
 
 .songListSongTable .tr.item.type_divider.style_Minimal.style_BreakAfter {
@@ -424,7 +425,7 @@ li.songDropdownOption {
     padding-left: 0px;
 }
 
-.songListSongTable .tr.item.type_divider.style_Break .dividerCommentText input {
+.songListSongTable .tr.item.type_divider .dividerCommentText input {
     width: 350px;
 }
 
@@ -443,6 +444,10 @@ li.songDropdownOption {
 
 .songListSongTable .tr.item.type_divider.nohatch .dividerCommentText {
     text-shadow: none;
+}
+
+.songListSongTable .tr.item.type_divider.style_Minimal .dividerCommentText {
+    font-size: 14px;
 }
 
 .songListSongTable .tr.item.type_divider.style_Minimal.style_Break .dividerBreakDiv {
