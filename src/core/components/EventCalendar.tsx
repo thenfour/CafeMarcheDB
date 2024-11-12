@@ -272,7 +272,8 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
 };
 
 export const BigEventCalendarInner = () => {
-    const [selectedEvent, setSelectedEvent] = React.useState<EventWithSearchResult | null>(null);
+    //const [selectedEvent, setSelectedEvent] = React.useState<EventWithSearchResult | null>(null);
+    const [selectedEventId, setSelectedEventId] = React.useState<number | null>(null);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
     //const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
     //const [enrichedEvents, setEnrichedEvents] = React.useState<EventWithSearchResult[]>([]);
@@ -316,6 +317,11 @@ export const BigEventCalendarInner = () => {
     };
 
     const { enrichedEvents, results } = useEventListData(filterSpec, 100);
+    const eventsWithSearch = enrichedEvents.map(e => ({
+        event: e,
+        result: results,
+    }));
+    const selectedEvent = eventsWithSearch.find(e => e.event.id === selectedEventId) || null;
 
     // nossr to prevent using server's locale settings.
     return <>
@@ -324,17 +330,14 @@ export const BigEventCalendarInner = () => {
                 <BigEventCalendarMonth
                     selectedEvent={selectedEvent}
                     setSelectedEvent={(e) => {
-                        if (e?.event.id === selectedEvent?.event.id) {
-                            setSelectedEvent(null);
+                        if (e?.event.id === selectedEventId) { // deselect behavior
+                            setSelectedEventId(null);
                             return;
                         }
-                        setSelectedEvent(e);
+                        setSelectedEventId(e?.event.id || null);
                     }}
                     date={date}
-                    enrichedEvents={enrichedEvents.map(e => ({
-                        event: e,
-                        result: results,
-                    }))}
+                    enrichedEvents={eventsWithSearch}
                     filterSpec={filterSpec}
                     results={results}
                     setMonthStr={setMonthStr}
