@@ -2,11 +2,12 @@
     background-color: white;
     margin-top: 10px;
     padding: 8px;
-    border-left: 4px solid #ccc;
+    padding-top: 0;
+    border-left: 4px solid #eee;
 }
 
 .songListItem:hover {
-    border-left: 4px solid var(--cm-blue);
+    border-left: 4px solid #ccc;
 }
 
 .songListItem .resultIndex {
@@ -16,12 +17,12 @@
 }
 
 .songListItem .nameLink {
-    font-size: 21px;
-    font-weight: bold;
-    padding: 4px 10px;
-    padding-left: 0;
-    /* background-color: #0081; */
-    /* border-radius: 4px; */
+    font-size: 26px;
+    line-height: 24px;
+    padding: 4px 10px 4px 0;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: -1px;
 }
 
 .songListItem .titleLine {

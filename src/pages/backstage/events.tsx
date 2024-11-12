@@ -85,9 +85,31 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbarContext = React.useContext(SnackbarContext);
 
+    const [autoLoadCount, setAutoLoadCount] = React.useState(0);
+    const MAX_AUTO_LOADS = 15;
+
     const handleCopy = async () => {
         await CopyEventListCSV(snackbarContext, events);
     };
+
+    // useEffect hook to check if more data needs to be loaded
+    React.useEffect(() => {
+        const checkIfNeedsMoreData = () => {
+            const contentElement = document.querySelector('.eventList.searchResults');
+            if (contentElement) {
+                const contentHeight = contentElement.scrollHeight;
+                const viewportHeight = window.innerHeight;
+
+                if (contentHeight <= viewportHeight && hasMore && autoLoadCount < MAX_AUTO_LOADS) {
+                    setAutoLoadCount(prevCount => prevCount + 1);
+                    loadMoreData();
+                }
+            }
+        };
+
+        // Delay the check to ensure the DOM has updated
+        setTimeout(checkIfNeedsMoreData, 0);
+    }, [events]);
 
     return <div className="eventList searchResults">
         <div className="searchRecordCount">
@@ -114,7 +136,7 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
             next={loadMoreData}
             hasMore={hasMore}
             loader={<h4>Loading...</h4>}
-            scrollableTarget="scrollableDiv"
+        //scrollableTarget="scrollableDiv"
         >
             {events.map((event, i) => (
                 <EventListItem
@@ -134,10 +156,10 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
 
 const gStaticFilters: EventsFilterSpecStatic[] = [
     {
-        label: "Everything",
+        label: "All",
         helpText: "Searching all events",
         orderByColumn: EventOrderByColumnOptions.startsAt,
-        orderByDirection: "asc",
+        orderByDirection: "desc",
         typeFilterBehavior: DiscreteCriterionFilterType.hasSomeOf,
         typeFilterOptions: [],
         typeFilterEnabled: false,
