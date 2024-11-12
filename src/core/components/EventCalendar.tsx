@@ -1,19 +1,19 @@
+import { NoSsr, Tooltip } from "@mui/material";
 import dayjs from "dayjs";
 import moment from 'moment';
+import "moment/locale/nl-be"; // forces the calendar to use nl-BE locale
 import * as React from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
-import { StandardVariationSpec, gAppColors } from 'shared/color';
+import { StandardVariationSpec } from 'shared/color';
 import * as db3 from "src/core/db3/db3";
-import { DiscreteCriterionFilterType, MakeEmptySearchResultsRet, SearchResultsRet } from '../db3/shared/apiTypes';
-import { AdminInspectObject, CMSinglePageSurfaceCard, InspectObject } from './CMCoreComponents';
+import { RenderMuiIcon, gCharMap } from "../db3/components/IconMap";
+import { DiscreteCriterionFilterType, SearchResultsRet } from '../db3/shared/apiTypes';
+import { AdminInspectObject, CMSinglePageSurfaceCard } from './CMCoreComponents';
 import { useURLState } from './CMCoreComponents2';
 import { GetStyleVariablesForColor } from './Color';
-import { EventListItem, EventSearchItemContainer } from './EventComponents';
+import { DashboardContext, useDashboardContext } from "./DashboardContext";
+import { EventListItem } from './EventComponents';
 import { CalcEventAttendance, CalculateEventSearchResultsMetadata, EventAttendanceResult, EventOrderByColumnOptions, EventsFilterSpec } from './EventComponentsBase';
-import { RenderMuiIcon, gCharMap, gIconMap } from "../db3/components/IconMap";
-import { NoSsr, Tooltip } from "@mui/material";
-import { DashboardContext } from "./DashboardContext";
-import "moment/locale/nl-be"; // forces the calendar to use nl-BE locale
 import { useEventListData } from "./EventSearch";
 
 
@@ -21,6 +21,17 @@ import { useEventListData } from "./EventSearch";
 type EventWithSearchResult = {
     event: db3.EnrichedSearchEventPayload;
     result: SearchResultsRet;
+}
+
+type TCalendarEventItem = {
+    segment: db3.EnrichedSearchEventPayload["segments"][0];
+    event: db3.EnrichedSearchEventPayload;
+    result: SearchResultsRet;
+    isSingleSegmentEvent: boolean;
+};
+
+function GetEventName(e: TCalendarEventItem) {
+    return e.isSingleSegmentEvent ? e.event.name : `${e.event.name}: ${e.segment.name}`;
 }
 
 
@@ -45,7 +56,7 @@ type EventWithSearchResult = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 interface CustomEventProps {
-    event: EventWithSearchResult;
+    event: TCalendarEventItem;
     continuesAfter: boolean;
     continuesPrior: boolean;
     //selected: boolean;
@@ -54,7 +65,7 @@ interface CustomEventProps {
 
 const CustomEvent = (props: CustomEventProps) => {
     return <div className={`CMCustomEvent applyColor`}>
-        {props.event.event.name}
+        {GetEventName(props.event)}
     </div>;
 }
 
@@ -64,7 +75,7 @@ interface SegmentAttendanceIndicatorProps {
 };
 
 const SegmentAttendanceIndicator = (props: SegmentAttendanceIndicatorProps) => {
-    const dashboardContext = React.useContext(DashboardContext);
+    //const dashboardContext = React.useContext(DashboardContext);
 
     const style = GetStyleVariablesForColor({
         ...StandardVariationSpec.Strong,
@@ -114,40 +125,10 @@ const AttendanceIndicator = (props: AttendanceIndicatorProps) => {
     </>;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// interface StatusIndicatorProps {
-//     data: EventWithSearchResult;
-// };
-
-// const StatusIndicator = (props: StatusIndicatorProps) => {
-//     //const dashboardContext = React.useContext(DashboardContext);
-//     if (!props.data.event.status) return null;
-//     const shownStatuses: (string | null)[] = [
-//         db3.EventStatusSignificance.FinalConfirmation,
-//         db3.EventStatusSignificance.Cancelled,
-//     ];
-
-//     // having ALL statuses shown is actually annoying and unuseful; only show if it's confirmed.
-//     if (!shownStatuses.includes(props.data.event.status.significance)) return null;
-
-//     const statusStyle = GetStyleVariablesForColor({
-//         ...StandardVariationSpec.Strong,
-//         color: props.data.event.status?.color || null,
-//     });
-
-//     return <Tooltip title={`${props.data.event.status.label}\n${props.data.event.status.description}`} disableInteractive>
-//         <div className={`statusIndicator badge applyColor ${statusStyle.cssClass}`} style={statusStyle.style}>
-//             {RenderMuiIcon(props.data.event.status.iconName)}
-//         </div>
-//     </Tooltip >;
-// }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 
 interface CustomEventWrapperProps {
-    event: EventWithSearchResult;
+    event: TCalendarEventItem;
     selected: boolean;
     continuesAfter: boolean;
     continuesPrior: boolean;
@@ -163,7 +144,7 @@ const CustomEventWrapper = (props: React.PropsWithChildren<CustomEventWrapperPro
         //alertOnly: false,
     });
 
-    return <Tooltip title={db3.EventAPI.getLabel(eventData.event)} disableInteractive>
+    return <Tooltip title={GetEventName(props.event)} disableInteractive>
         <div className={`CMCustomEventWrapper ${props.selected && "selected"} ${y.alertFlag && "attendanceAlert"} statusSignificance_${props.event.event.status?.significance}`}>
             <div className="badgeContainer">
                 {/* <StatusIndicator data={props.event} /> */}
@@ -190,8 +171,32 @@ export interface BigEventCalendarMonthProps {
 };
 
 export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
+    const dashboardContext = useDashboardContext();
     // moment.locale('nl-be'); // doesn't work.
     const localizer = momentLocalizer(moment) // or globalizeLocalizer
+
+    const isSegmentCancelled = (segment: db3.EnrichedSearchEventPayload["segments"][0]) => {
+        const status = dashboardContext.eventStatus.getById(segment.statusId);
+        return (status?.significance === db3.EventStatusSignificance.Cancelled);
+    };
+
+    // don't show events. show segments.
+    const eventsWithMore = props.enrichedEvents.map(e => {
+        const uncancelledSegments = e.event.segments.filter(s => !isSegmentCancelled(s));
+        return {
+            event: e,
+            result: e.result,
+            uncancelledSegments,
+        };
+    });
+
+    const segments: TCalendarEventItem[] = eventsWithMore.flatMap((event, index) => event.uncancelledSegments.map(segment => ({
+        segment: segment,
+        event: event.event.event,
+        result: event.result,
+        isSingleSegmentEvent: event.uncancelledSegments.length === 1,
+    })));
+
     return <div className="EventCalendarMonthContainer">
         <AdminInspectObject src={props.filterSpec} label='filterSpec' />
         <AdminInspectObject src={props.results} label='results' />
@@ -206,15 +211,18 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
             <Calendar
                 className="CMBigCalendar"
                 localizer={localizer}
-                events={props.enrichedEvents}
+                events={segments}
 
                 // Note: "End" is actually the canonical end - as in, the first time OUTSIDE the range. yay for strictness.
-                startAccessor={(e: EventWithSearchResult) => e.event.startsAt}
-                endAccessor={(e: EventWithSearchResult) => {
-                    return db3.getEventSegmentDateTimeRange(e.event).getEndDateTime();
+                startAccessor={(e: TCalendarEventItem) => e.segment.startsAt}
+                endAccessor={(e: TCalendarEventItem) => {
+                    return db3.getEventSegmentDateTimeRange(e.segment).getEndDateTime();
                 }}
-                titleAccessor={(e: EventWithSearchResult) => e.event.name}
-                allDayAccessor={(e: EventWithSearchResult) => e.event.isAllDay}
+                titleAccessor={(e: TCalendarEventItem) => {
+                    if (e.isSingleSegmentEvent) return e.event.name;
+                    return `${e.event.name}: ${e.segment.name}`
+                }}
+                allDayAccessor={(e: TCalendarEventItem) => e.segment.isAllDay}
 
                 // don't allow drilling down; it's more confusing than helpful
                 drilldownView={null}
@@ -225,7 +233,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
                 }}
                 date={props.date}
 
-                onSelectEvent={(e: EventWithSearchResult) => {
+                onSelectEvent={(e: TCalendarEventItem) => {
                     props.setSelectedEvent(e);
                 }}
                 selected={props.selectedEvent}
@@ -249,7 +257,7 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
                     agenda: false,
                 }}
                 // function (event: Object, start: Date, end: Date, isSelected: boolean) => {className?: string, style?: Object}
-                eventPropGetter={(event: EventWithSearchResult, start: Date, end: Date, isSelected: boolean): { className?: string, style?: Object } => {
+                eventPropGetter={(event: TCalendarEventItem, start: Date, end: Date, isSelected: boolean): { className?: string, style?: Object } => {
                     const x = GetStyleVariablesForColor({ color: event.event.type?.color, ...StandardVariationSpec.Strong, selected: isSelected });
                     return {
                         className: `applyColor ${x.cssClass}`,
@@ -331,25 +339,6 @@ export const BigEventCalendarInner = () => {
                     results={results}
                     setMonthStr={setMonthStr}
                 />
-                {/* 
-                <EventListQuerier
-                    filterSpec={filterSpec}
-                    setResults={(r, ee) => {
-                        setResults(r);
-                        setEnrichedEvents(ee.map(e => ({
-                            event: e,
-                            result: r,
-                        })));
-
-                        // when new results arrive, the old selected item is invalidated and needs to be replaced by the new object.
-                        if (selectedEvent) {
-                            const n = enrichedEvents.find(e => e.event.id === selectedEvent.event.id) || null;
-                            setSelectedEvent(n);
-                        }
-                    }}
-                    render={(isLoading) => <div className={`queryProgressLine ${isLoading ? "loading" : "idle"}`}></div>}
-                /> */}
-
             </div>
         </CMSinglePageSurfaceCard>
 
