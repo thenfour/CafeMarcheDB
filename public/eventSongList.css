@@ -431,6 +431,7 @@ li.songDropdownOption {
 
 .songListSongTable .tr.item.type_divider.style_Break .dividerBreakDiv.after {
     flex-grow: 1;
+    max-width: 200px;
 }
 
 .songListSongTable .tr.item.type_divider .dividerCommentContainer {
@@ -448,6 +449,7 @@ li.songDropdownOption {
 
 .songListSongTable .tr.item.type_divider.style_Minimal .dividerCommentText {
     font-size: 14px;
+    opacity: 50%;
 }
 
 .songListSongTable .tr.item.type_divider.style_Minimal.style_Break .dividerBreakDiv {

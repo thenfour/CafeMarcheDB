@@ -586,7 +586,6 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
 
     const handleTextStyleChange = (newValue: db3.EventSongListDividerTextStyle) => {
         if (props.value.type !== 'divider') throw new Error(`wrong item type`);
-        console.log(`hi`);
         props.onChange({
             ...props.value,
             textStyle: newValue,
