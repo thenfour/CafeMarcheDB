@@ -21,7 +21,7 @@ import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
-import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
+import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
 import { CMDialogContentText, CMSmallButton, SetlistBreakIcon } from './CMCoreComponents2';
 import { ColorPick, GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from './DashboardContext';
@@ -31,6 +31,7 @@ import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
 import { CMSelectDisplayStyle, CMSingleSelect } from './CMSelect';
 import { CMSelectNullBehavior } from './CMSingleSelectDialog';
+import { ReactiveInputDialog } from './ReactiveInputDialog';
 
 const DividerIsInterruptionButton = ({ value, onClick, className }: { value: boolean, onClick?: () => void, className?: string }) => {
     return <Tooltip title={value ? "This divider resets the running time and song count" : "This divider is a comment"} disableInteractive >

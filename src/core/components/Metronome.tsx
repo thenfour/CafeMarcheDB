@@ -2,12 +2,12 @@ import { Button } from "@mui/base";
 import { DialogContent, Tooltip } from "@mui/material";
 import React from "react";
 import { Clamp, CoerceToNumberOrNull } from "shared/utils";
-import { ReactiveInputDialog } from "./CMCoreComponents";
 import { CMTextInputBase } from "./CMTextField";
 import { DashboardContext } from './DashboardContext';
 //import { useURLState } from "./CMCoreComponents2";
 import { gIconMap } from "../db3/components/IconMap";
 import { Knob } from "./Knob";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 const gTickSampleFilePath = "/Metronome2.mp3";
 const gMinBPM = 40;

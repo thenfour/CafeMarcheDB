@@ -4,11 +4,11 @@ import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitl
 import { StandardVariationSpec } from "shared/color";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
-import { ReactiveInputDialog } from "./CMCoreComponents";
 import { SearchInput } from "./CMTextField";
 import { gIconMap } from "../db3/components/IconMap";
 import { useSnackbar } from "./SnackbarContext";
 import { CoalesceBool } from "shared/utils";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 type Tid = number | string;
 

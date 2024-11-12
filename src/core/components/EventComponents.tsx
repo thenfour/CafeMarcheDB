@@ -22,7 +22,7 @@ import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
 import { GetICalRelativeURIForUserAndEvent, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
-import { AdminInspectObject, AttendanceChip, CMStatusIndicator, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip, ReactiveInputDialog } from './CMCoreComponents';
+import { AdminInspectObject, AttendanceChip, CMStatusIndicator, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
 import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
@@ -43,6 +43,7 @@ import { VisibilityControl, VisibilityValue } from './VisibilityControl';
 import { Checklist } from '@mui/icons-material';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
 import { CMTab, CMTabPanel } from './TabPanel';
+import { ReactiveInputDialog } from './ReactiveInputDialog';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {

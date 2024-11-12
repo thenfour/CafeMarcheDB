@@ -5,10 +5,10 @@ import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool } from "shared/utils";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "./CMChip";
-import { ReactiveInputDialog } from "./CMCoreComponents";
 import { SearchInput } from "./CMTextField";
 import { useSnackbar } from "./SnackbarContext";
 import { gIconMap } from "../db3/components/IconMap";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 export enum CMSelectNullBehavior {
     NonNullable = "NonNullable",

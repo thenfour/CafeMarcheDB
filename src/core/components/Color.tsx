@@ -1,7 +1,7 @@
 import { DialogContent } from "@mui/material";
 import React from "react";
 import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationSpec, CreateNullPaletteEntry, GetColorPaletteEntryWithVariation, StandardVariationSpec, gGeneralPaletteList, gHiddenColorIds } from "shared/color";
-import { ReactiveInputDialog } from "./CMCoreComponents";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 // in total there are the following variations:
 // - strong - disabled - not selected

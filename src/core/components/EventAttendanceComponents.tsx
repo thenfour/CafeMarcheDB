@@ -120,7 +120,7 @@ import { Timing } from 'shared/time';
 import { SnackbarContext } from "src/core/components/SnackbarContext";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
-import { AdminInspectObject, AttendanceChip, ReactiveInputDialog } from './CMCoreComponents';
+import { AdminInspectObject, AttendanceChip } from './CMCoreComponents';
 import { AnimatedCircularProgress, CMSmallButton, NameValuePair } from "./CMCoreComponents2";
 import { CalcEventAttendance, EventWithMetadata } from "./EventComponentsBase";
 //import { CompactMutationMarkdownControl } from './SettingMarkdown';
@@ -132,6 +132,7 @@ import { DashboardContext, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 
 const gCaptionMap = {};

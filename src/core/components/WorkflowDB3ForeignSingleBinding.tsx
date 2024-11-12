@@ -1,11 +1,11 @@
 import { WorkflowDef, WorkflowFieldValueOperator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import { EvaluatedWorkflowContext, FieldComponentProps, WFFieldBinding } from "./WorkflowUserComponents";
 import { Button, DialogActions, DialogContent, DialogTitle } from "@mui/material";
-import { ReactiveInputDialog } from "./CMCoreComponents";
 import React, { useContext } from "react";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { useDashboardContext } from "./DashboardContext";
 import { z } from "zod";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 type TPK = number | null | undefined;
 

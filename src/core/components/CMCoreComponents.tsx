@@ -3,24 +3,20 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useSession } from "@blitzjs/auth";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Tooltip, useMediaQuery } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
 //import dynamic from 'next/dynamic';
 import React, { Suspense } from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
-import { Coalesce, IsNullOrWhitespace } from "shared/utils";
+import { ColorVariationSpec, StandardVariationSpec, gSwatchColors } from 'shared/color';
+import { Coalesce } from "shared/utils";
 import * as db3 from "src/core/db3/db3";
 //import { API } from '../db3/clientAPI'; // <-- NO; circular dependency
-import { Timing } from "shared/time";
-import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
-import { CMDialogContentText } from "./CMCoreComponents2";
-import { CMTextField } from "./CMTextField";
-import { GetStyleVariablesForColor } from './Color';
-import { DashboardContext } from "./DashboardContext";
-import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
 import { Permission } from "shared/permissions";
+import { Timing } from "shared/time";
+import { RenderMuiIcon, gIconMap } from "../db3/components/IconMap";
+import { Coord2D, TAnyModel } from "../db3/shared/apiTypes";
 import { CMChip, CMChipBorderOption, CMChipProps, CMChipShapeOptions, CMChipSizeOptions, CMStandardDBChip, CMStandardDBChipModel, CMStandardDBChipProps } from "./CMChip";
+import { CMTextField } from "./CMTextField";
+import { DashboardContext } from "./DashboardContext";
 
 //const DynamicReactJson = dynamic(() => import('react-json-view'), { ssr: false });
 
@@ -88,33 +84,6 @@ export const CMStatusIndicator = <T extends CMStandardDBChipModel,>(props: CMSta
 
 
 ////////////////////////////////////////////////////////////////
-// wraps <Dialog> except with mobile responsiveness
-export interface ReactiveInputDialogProps {
-    onCancel: () => void;
-    className?: string;
-};
-export const ReactiveInputDialog = (props: React.PropsWithChildren<ReactiveInputDialogProps>) => {
-    const theme = useTheme();
-    const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
-    return (
-        <Dialog
-            className={`ReactiveInputDialog ${props.className} ${fullScreen ? "smallScreen" : "bigScreen"}`}
-            open={true}
-            onClose={props.onCancel}
-            scroll="paper"
-            fullScreen={fullScreen}
-            disableRestoreFocus={true} // this is required to allow the autofocus work on buttons. https://stackoverflow.com/questions/75644447/autofocus-not-working-on-open-form-dialog-with-button-component-in-material-ui-v
-        >
-            <Suspense>
-                {props.children}
-            </Suspense>
-        </Dialog>
-    );
-};
-
-
-
-////////////////////////////////////////////////////////////////
 export interface EditTextFieldProps {
     value: string;
     onChange: (value: string) => void;
@@ -134,35 +103,6 @@ export const EditTextField = (props: EditTextFieldProps) => {
         value={props.value}
     />;
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-export interface ConfirmationDialogProps {
-    onConfirm: () => void;
-    onCancel: () => void;
-    confirmLabel?: string;
-    cancelLabel?: string;
-    title?: () => React.ReactNode;
-    description?: () => React.ReactNode;
-};
-export const ConfirmationDialog = (props: ConfirmationDialogProps) => {
-    return <ReactiveInputDialog
-        onCancel={props.onCancel}
-    >
-        <DialogTitle>
-            {props.title === undefined ? "Confirm?" : ((typeof props.title === 'string' ? props.title : props.title()))}
-        </DialogTitle>
-        <DialogContent dividers>
-            <CMDialogContentText>
-                {(props.description !== undefined) && ((typeof props.description === 'string' ? props.description : props.description()))}
-            </CMDialogContentText>
-        </DialogContent>
-        <DialogActions>
-            <Button onClick={props.onCancel}>{props.cancelLabel || "Cancel"}</Button>
-            <Button onClick={props.onConfirm}>{props.confirmLabel || "OK"}</Button>
-        </DialogActions>
-    </ReactiveInputDialog>;
-};
-
 
 export const AdminContainer = (props: React.PropsWithChildren<{}>) => {
     const sess = useSession(); // use existing session. don't call useAuthenticatedSession which will throw if you're not authenticated. we want the ability to just return "no" without killing the user's request

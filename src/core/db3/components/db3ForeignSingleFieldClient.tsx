@@ -17,7 +17,7 @@ import { assert } from "blitz";
 import React, { Suspense } from "react";
 import { ColorPaletteEntry, ColorVariationSpec, StandardVariationSpec } from "shared/color";
 import { Coalesce, SettingKey, SplitQuickFilter, gQueryOptions, parseIntOrNull } from "shared/utils";
-import { AdminInspectObject, ReactiveInputDialog } from 'src/core/components/CMCoreComponents';
+import { AdminInspectObject } from 'src/core/components/CMCoreComponents';
 import { CMDialogContentText, CMSmallButton, useIsShowingAdminControls } from "src/core/components/CMCoreComponents2";
 import { GenerateForeignSingleSelectStyleSettingName, SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { SnackbarContext } from "src/core/components/SnackbarContext";
@@ -31,6 +31,7 @@ import { IColumnClient, RenderForNewItemDialogArgs, RenderViewerArgs, TMutateFn,
 import { TAnyModel } from "../shared/apiTypes";
 import { RenderMuiIcon } from "./IconMap";
 import { CMChip, CMChipContainer, CMChipSizeOptions } from "src/core/components/CMChip";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 
 
 

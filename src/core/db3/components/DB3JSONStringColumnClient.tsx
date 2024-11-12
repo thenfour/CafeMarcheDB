@@ -7,7 +7,6 @@ import { Prisma } from "db";
 import React, { Suspense } from "react";
 import { formatFileSize } from "shared/rootroot";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
-import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { CMSmallButton, CMTable, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
@@ -25,6 +24,7 @@ import { MutationArgsToWorkflowDef, TWorkflowMutationResult, WorkflowDef } from 
 import { ColorSwatch } from "src/core/components/Color";
 import { gGeneralPaletteList, gStrong } from "shared/color";
 import { Notes } from "@mui/icons-material";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;

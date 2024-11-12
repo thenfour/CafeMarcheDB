@@ -1,8 +1,6 @@
 import { Button, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import React from "react";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
-import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
-//import { EventTableClientColumns } from "src/core/components/EventComponents";
 import { Permission } from "shared/permissions";
 import { EventSegmentClientColumns } from "src/core/components/EventSegmentComponents";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
@@ -16,6 +14,7 @@ import { gIconMap } from "../db3/components/IconMap";
 import { simulateLinkClick } from "./CMCoreComponents2";
 import { DashboardContext } from "./DashboardContext";
 import { EventTableClientColumns } from "./EventComponentsBase";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 interface NewEventDialogProps {
     onCancel: () => void;

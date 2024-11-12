@@ -13,8 +13,9 @@ import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import * as db3 from "../db3";
 import * as DB3ClientCore from "./DB3ClientCore";
 import { TAnyModel } from "../shared/apiTypes";
-import { AdminInspectObject, ReactiveInputDialog } from "src/core/components/CMCoreComponents";
+import { AdminInspectObject } from "src/core/components/CMCoreComponents";
 import { gIconMap } from "./IconMap";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 
 ////////////////////////////////////////////////////////////////
 type db3NewObjectDialogProps = {

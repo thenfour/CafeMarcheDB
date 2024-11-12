@@ -4,7 +4,6 @@ import { Box, Button, CircularProgress, DialogActions, DialogContent, DialogTitl
 import { StandardVariationSpec } from "shared/color";
 import { CoalesceBool, SplitQuickFilter } from "shared/utils";
 import { CMChip, CMChipContainer, CMChipShapeOptions, CMChipSizeOptions } from "src/core/components/CMChip";
-import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
 import { CMDialogContentText } from "src/core/components/CMCoreComponents2";
 import * as db3 from "src/core/db3/db3";
 import { useDashboardContext } from "src/core/components/DashboardContext";
@@ -15,6 +14,7 @@ import { gIconMap } from "./IconMap";
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { useSnackbar } from "src/core/components/SnackbarContext";
 import { CMSelectNullBehavior } from "src/core/components/CMSingleSelectDialog";
+import { ReactiveInputDialog } from "src/core/components/ReactiveInputDialog";
 
 type Tnull = undefined | null;
 

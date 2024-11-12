@@ -11,13 +11,14 @@ import * as db3 from "src/core/db3/db3";
 import { API, HomepageAgendaItemSpec } from '../db3/clientAPI';
 import { gIconMap } from "../db3/components/IconMap";
 import { CMChip, CMChipContainer } from "./CMChip";
-import { EditTextField, ReactiveInputDialog } from "./CMCoreComponents";
+import { EditTextField } from "./CMCoreComponents";
 import { CMDialogContentText } from "./CMCoreComponents2";
 import { useConfirm } from "./ConfirmationDialog";
 import { DashboardContext } from "./DashboardContext";
 import { EventEnrichedVerbose_Event } from "./EventComponentsBase";
 import { AgendaItem } from './homepageComponents';
 import { SettingMarkdown } from "./SettingMarkdown";
+import { ReactiveInputDialog } from "./ReactiveInputDialog";
 
 
 

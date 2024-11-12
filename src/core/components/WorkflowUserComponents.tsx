@@ -11,7 +11,7 @@ import * as DB3Client from "../db3/DB3Client";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { DB3MultiSelect } from "../db3/components/db3Select";
 import * as db3 from "../db3/db3";
-import { AdminInspectObject, ReactiveInputDialog } from "./CMCoreComponents";
+import { AdminInspectObject } from "./CMCoreComponents";
 import { AnimatedCircularProgress, CMSmallButton, EventDateField, Pre } from "./CMCoreComponents2";
 import { CMSelectDisplayStyle } from "./CMSelect";
 import { CMTextField } from "./CMTextField";
@@ -23,6 +23,7 @@ import { chainWorkflowInstanceMutations, EvaluatedWorkflow, WorkflowCompletionCr
 import { Markdown3Editor } from './MarkdownControl3';
 import { WorkflowNodeProgressState } from '../db3/shared/apiTypes';
 import { Markdown } from './RichTextEditor';
+import { ReactiveInputDialog } from './ReactiveInputDialog';
 
 type CMXYPosition = {
     x: number;
