@@ -8,7 +8,7 @@ import React, { Suspense } from "react";
 import { formatFileSize } from "shared/rootroot";
 import { CMChip, CMChipContainer } from "src/core/components/CMChip";
 import { ReactiveInputDialog } from "src/core/components/CMCoreComponents";
-import { CMSmallButton, CMTable, NameValuePair } from "src/core/components/CMCoreComponents2";
+import { CMSmallButton, CMTable, NameValuePair, SetlistBreakIcon } from "src/core/components/CMCoreComponents2";
 import { useDashboardContext } from "src/core/components/DashboardContext";
 import { Markdown } from "src/core/components/RichTextEditor";
 import { useSnackbar } from "src/core/components/SnackbarContext";
@@ -24,6 +24,7 @@ import { gIconMap } from "./IconMap";
 import { MutationArgsToWorkflowDef, TWorkflowMutationResult, WorkflowDef } from "shared/workflowEngine";
 import { ColorSwatch } from "src/core/components/Color";
 import { gGeneralPaletteList, gStrong } from "shared/color";
+import { Notes } from "@mui/icons-material";
 
 type ActivityLogCacheData = Awaited<ReturnType<typeof getDistinctChangeFilterValues>>;
 //type ActivityLogCacheData = ReturnType<typeof getDistinctChangeFilterValues>;
@@ -262,7 +263,15 @@ const ActivityLogFile = ({ file, cacheData }: { file: Prisma.FileGetPayload<{}>,
 
 
 type ActivityLogSongListSongPayload = { id?: number | undefined, songId: number, sortOrder: number, subtitle: string, type: "song" };
-type ActivityLogSongListDividerPayload = { id?: number | undefined, sortOrder: number, subtitle: string, color: string | null | undefined, isInterruption: boolean, type: "div" };
+type ActivityLogSongListDividerPayload = {
+    id?: number | undefined,
+    sortOrder: number,
+    subtitle: string,
+    color: string | null | undefined,
+    isInterruption: boolean,
+    textStyle: null | string,
+    type: "div",
+};
 type ActivityLogSongListV1 = { id: number, songId: number, sortOrder: number, subtitle: string }[];
 type ActivityLogSongListV2 = Partial<TinsertOrUpdateEventSongListArgs> & Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'>;
 
@@ -316,9 +325,9 @@ const ActivityLogSongListViewerV2 = ({ value, cacheData }: { value: ActivityLogS
                                 <div>-----</div>
                                 <ColorSwatch color={gGeneralPaletteList.findEntry(s.color || null)} size="small" variation={gStrong} />
                                 <div style={{ opacity: "50%" }}>{s.isInterruption ? (
-                                    gIconMap.Pause()
+                                    <SetlistBreakIcon />
                                 ) : (
-                                    gIconMap.Comment()
+                                    <Notes />
                                 )}</div>
                             </div>
                         )}

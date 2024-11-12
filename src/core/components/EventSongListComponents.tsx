@@ -5,12 +5,14 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Button, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Switch, Tooltip } from "@mui/material";
+import { Notes, TextFormat } from '@mui/icons-material';
+import { Button, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, SvgIcon, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
+import { ColorPaletteEntry, gSwatchColors } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { CoalesceBool, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
+import { CoalesceBool, getHashedColor, getUniqueNegativeID, IsNullOrWhitespace, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -20,16 +22,53 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable, ReactiveInputDialog } from "./CMCoreComponents";
-import { CMDialogContentText, CMSmallButton } from './CMCoreComponents2';
+import { CMDialogContentText, CMSmallButton, SetlistBreakIcon } from './CMCoreComponents2';
+import { ColorPick, GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from './DashboardContext';
 import { MetronomeButton } from './Metronome';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
-import { ColorPick, GetStyleVariablesForColor } from './Color';
-import { ColorPaletteEntry, gAppColors, gGeneralPaletteList, gSwatchColors } from 'shared/color';
+import { CMSelectDisplayStyle, CMSingleSelect } from './CMSelect';
+import { CMSelectNullBehavior } from './CMSingleSelectDialog';
 
-const gDividerText = <>&nbsp;</>;
+const DividerIsInterruptionButton = ({ value, onClick, className }: { value: boolean, onClick?: () => void, className?: string }) => {
+    return <Tooltip title={value ? "This divider resets the running time and song count" : "This divider is a comment"} disableInteractive >
+        <div
+            className={`${onClick ? "interactable" : "notInteractable"} dividerButton dividerIsInterruptionButton ${value ? "isInterruption" : "notInterruption"} ${className}`}
+            onClick={onClick}
+        >
+            {value ? (
+                <SetlistBreakIcon />
+            ) : (
+                <Notes />
+            )}
+        </div>
+    </Tooltip>
+};
+
+
+const DividerTextStyleButton = ({ value, onClick, className }: { value: (string | null), onClick: (x: db3.EventSongListDividerTextStyle) => void, className?: string }) => {
+
+    const realVal = SetlistAPI.StringToEventSongListDividerTextStyle(value);
+
+    return <CMSingleSelect<db3.EventSongListDividerTextStyle>
+        className='interactable dividerButton dividerTextStyleButton'
+        value={realVal}
+        getOptions={() => Object.keys(db3.EventSongListDividerTextStyle).map(x => SetlistAPI.StringToEventSongListDividerTextStyle(x))}
+        getOptionInfo={(val) => ({
+            id: val,
+        })}
+        nullBehavior={CMSelectNullBehavior.NonNullable}
+        onChange={onClick}
+        renderOption={(item) => item}
+        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
+        customRender={(__onClick) => <TextFormat onClick={__onClick} />}
+    />
+};
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerRowProps {
@@ -48,22 +87,20 @@ export const EventSongListValueViewerDividerRow = (props: EventSongListValueView
         variation: 'strong',
     });
 
-    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${colorInfo.cssClass}`} style={colorInfo.style}>
+    const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.textStyle);
+    const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
+
+    return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${colorInfo.cssClass} ${styleClasses}`} style={colorInfo.style}>
         <div className="td songIndex">
         </div>
-        <div className="td comment">
-            <div className="comment dividerComment">{props.value.subtitle}&nbsp;</div>
-            <div className="flexGrow"></div>
-            <Tooltip title={props.value.isInterruption ? "This divider resets the running time and song count" : "This divider is a comment"} disableInteractive>
-                <div style={{ display: "flex", opacity: "50%" }}>
-                    {props.value.isInterruption ? (
-                        gIconMap.Pause()
-                    ) : (
-                        gIconMap.Comment()
-                    )}
-                </div>
-            </Tooltip>
-
+        <div className="td comment dividerCommentCell">
+            <div className='comment dividerCommentContainer'>
+                <div className='dividerBreakDiv before'></div>
+                {/* <div className="comment dividerCommentText">{IsNullOrWhitespace(props.value.subtitle) ? <>&nbsp;</> : props.value.subtitle}</div> */}
+                <div className="comment dividerCommentText">{props.value.subtitle}</div>
+                <div className='dividerBreakDiv after'></div>
+            </div>
+            <div className='dividerButtonGroup'></div>
         </div>
     </div>
 
@@ -128,6 +165,7 @@ type PortableSongListDivider = {
     comment: string;
     color: string | null;
     isInterruption: boolean;
+    textStyle: string | null;
     type: 'divider';
 };
 
@@ -146,6 +184,7 @@ async function CopySongListJSON(snackbarContext: SnackbarContextType, value: db3
             type: 'divider',
             color: d.color,
             isInterruption: d.isInterruption,
+            textStyle: d.textStyle,
             sortOrder: d.sortOrder,
             comment: d.subtitle || "",
         };
@@ -521,6 +560,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
             color: null,
             eventSongListId: props.value.eventSongListId,
             id: getUniqueNegativeID(),
+            textStyle: db3.EventSongListDividerTextStyle.Default,
             isInterruption: true,
             sortOrder: props.value.sortOrder,
             subtitle: "",
@@ -543,9 +583,21 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         });
     };
 
+    const handleTextStyleChange = (newValue: db3.EventSongListDividerTextStyle) => {
+        if (props.value.type !== 'divider') throw new Error(`wrong item type`);
+        console.log(`hi`);
+        props.onChange({
+            ...props.value,
+            textStyle: newValue,
+        });
+    };
+
+    const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.type === 'divider' ? props.value.textStyle : null);
+    const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
+
     return <>
         <div
-            className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type} ${colorInfo.cssClass}`}
+            className={`tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item ${props.value.type === "new" ? 'invalidItem' : 'validItem'} type_${props.value.type} ${styleClasses} ${colorInfo.cssClass}`}
             style={style as any}
         >
             <div className="td icon">{props.onDelete && <div className="freeButton" onClick={props.onDelete}>{gIconMap.Delete()}</div>}</div>
@@ -556,11 +608,11 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
 
             {props.value.type === 'divider' ? (
                 <>
-                    <div className="td comment">
-                        <div className='comment dividerComment'>
-                            {gDividerText}
+                    <div className="td comment dividerCommentCell">
+                        <div className='comment dividerCommentContainer'>
+                            <div className='dividerBreakDiv before'></div>
                             <InputBase
-                                className="cmdbSimpleInput"
+                                className="cmdbSimpleInput dividerCommentText"
                                 placeholder="Comment"
                                 // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
                                 // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
@@ -568,17 +620,13 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                                 value={props.value.subtitle || ""}
                                 onChange={(e) => handleCommentChange(e.target.value)}
                             />
+                            <div className='dividerBreakDiv after'></div>
                         </div>
-                        <ColorPick size={'small'} value={props.value.color} onChange={handleDividerColorChange} />
-                        <Tooltip title="Reset the setlist? This resets the running time and song number." disableInteractive>
-                            <div className='interactable' onClick={toggleIsInterruptionChange} style={{ display: "flex", marginLeft: "10px" }}>
-                                {props.value.isInterruption ? (
-                                    gIconMap.Pause()
-                                ) : (
-                                    gIconMap.Comment()
-                                )}
-                            </div>
-                        </Tooltip>
+                        <div className='dividerButtonGroup'>
+                            <ColorPick className="dividerButton" size={'small'} value={props.value.color} onChange={handleDividerColorChange} />
+                            <DividerTextStyleButton className='dividerButton' onClick={handleTextStyleChange} value={props.value.textStyle} />
+                            <DividerIsInterruptionButton className='dividerButton' onClick={toggleIsInterruptionChange} value={props.value.isInterruption} />
+                        </div>
                     </div>
                 </>
             ) : (
@@ -753,6 +801,7 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
                         id: getUniqueNegativeID(),
                         color: p.color,
                         isInterruption: p.isInterruption,
+                        textStyle: p.textStyle,
                         eventSongListId: list.id,
                         sortOrder: highestSortOrder + p.sortOrder,// assumes non-zero sort orders
                         subtitle: p.comment,
@@ -1010,6 +1059,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
             dividers: newValue.dividers.map(d => ({
                 sortOrder: d.sortOrder,
                 isInterruption: d.isInterruption,
+                textStyle: d.textStyle,
                 color: d.color,
                 subtitle: d.subtitle || "",
             })),
@@ -1096,6 +1146,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
                 sortOrder: d.sortOrder,
                 color: d.color,
                 isInterruption: d.isInterruption,
+                textStyle: d.textStyle,
                 subtitle: d.subtitle || "",
             })),
         }).then(() => {

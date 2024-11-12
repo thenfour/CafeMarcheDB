@@ -1,6 +1,7 @@
-import { Popover } from "@mui/material";
+import { DialogContent } from "@mui/material";
 import React from "react";
-import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationOptions, ColorVariationSpec, CreateNullPaletteEntry, GetColorPaletteEntryWithVariation, StandardVariationSpec, gAppColors, gGeneralPaletteList, gHiddenColorIds } from "shared/color";
+import { ColorPalette, ColorPaletteEntry, ColorPaletteEntryVariation, ColorPaletteList, ColorVariationSpec, CreateNullPaletteEntry, GetColorPaletteEntryWithVariation, StandardVariationSpec, gGeneralPaletteList, gHiddenColorIds } from "shared/color";
+import { ReactiveInputDialog } from "./CMCoreComponents";
 
 // in total there are the following variations:
 // - strong - disabled - not selected
@@ -83,10 +84,12 @@ export interface ColorSwatchProps {
     hoverVariation?: ColorVariationSpec;
     onDrop?: (e: ColorPaletteEntry) => void;
     size?: "normal" | "small";
+    onClick?: (e: React.MouseEvent<HTMLElement>) => void;
+    className?: string;
 };
 
 // props.color can never be null.
-export const ColorSwatch = ({ size = "normal", ...props }: ColorSwatchProps) => {
+export const ColorSwatch = ({ size = "normal", className, ...props }: ColorSwatchProps) => {
     const [hovering, setHovering] = React.useState<boolean>(false);
 
     const entry = !!props.color ? props.color : CreateNullPaletteEntry();
@@ -131,10 +134,11 @@ export const ColorSwatch = ({ size = "normal", ...props }: ColorSwatchProps) => 
         onDragStart={onDragStart} // Event when drag starts
         onDragOver={props.onDrop && onDragOver} // Event when something is dragged over
         onDrop={props.onDrop && onDrop} // Event when something is dropped
-        className={`${props.variation.selected ? "selected" : ""} colorSwatchRoot interactable applyColor ${style.cssClass} ${props.isSpacer ? "spacer" : ""} size_${size}`}
+        className={`${props.variation.selected ? "selected" : ""} ${className} colorSwatchRoot interactable applyColor ${style.cssClass} ${props.isSpacer ? "spacer" : ""} size_${size}`}
         style={style.style}
         onMouseEnter={() => setHovering(true)}
         onMouseLeave={() => setHovering(false)}
+        onClick={props.onClick}
     >
         {size === "normal" && entry.label}
     </div>;
@@ -277,34 +281,27 @@ export interface ColorPickProps {
     palettes?: ColorPaletteList;
     onChange: (value: ColorPaletteEntry | null) => void;
     size?: "normal" | "small";
+    className?: string;
 };
 
 // props.color can never be null.
-export const ColorPick = ({ allowNull = true, palettes = gGeneralPaletteList, ...props }: ColorPickProps) => {
-    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-    const isOpen = Boolean(anchorEl);
+export const ColorPick = ({ allowNull = true, palettes = gGeneralPaletteList, className, ...props }: ColorPickProps) => {
+    const [open, setOpen] = React.useState<boolean>(false);
     const entry = palettes.findEntry(props.value);
 
-    const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
-        if (props.readonly) return;
-        setAnchorEl(event.currentTarget);
-    };
-
     return <>
-        <div onClick={handleOpen}>
-            <ColorSwatch color={entry} variation={StandardVariationSpec.Strong} size={props.size} />
-        </div>
-        <Popover
-            anchorEl={anchorEl}
-            open={isOpen}
-            onClose={() => setAnchorEl(null)}
-        >
-            <ColorPaletteListComponent allowNull={allowNull} palettes={palettes} onClick={(e: ColorPaletteEntry | null) => {
-                if (props.readonly) return;
-                props.onChange(e);
-                setAnchorEl(null);
-            }}
-            />
-        </Popover >
+        <ColorSwatch color={entry} variation={StandardVariationSpec.Strong} size={props.size} className={className} onClick={() => setOpen(true)} />
+        {open && (
+            <ReactiveInputDialog onCancel={() => setOpen(false)}>
+                <DialogContent>
+                    <ColorPaletteListComponent allowNull={allowNull} palettes={palettes} onClick={(e: ColorPaletteEntry | null) => {
+                        if (props.readonly) return;
+                        props.onChange(e);
+                        setOpen(false)
+                    }}
+                    />
+                </DialogContent>
+            </ReactiveInputDialog >
+        )}
     </>;
 };

@@ -753,6 +753,7 @@ model EventSongListDivider {
   sortOrder      Int     @default(0)
   color          String?
   isInterruption Boolean @default(true) // either interruption or comment.
+  textStyle      String? // EventSongListDividerTextStyle
 
   eventSongListId Int
   eventSongList   EventSongList @relation(fields: [eventSongListId], references: [id], onDelete: Cascade) // when you delete a song list, delete songs in it.

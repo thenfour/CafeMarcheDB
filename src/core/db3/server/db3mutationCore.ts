@@ -607,6 +607,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         sortOrder: a.sortOrder,
         color: a.color,
         isInterruption: a.isInterruption,
+        textStyle: a.textStyle,
         subtitle: a.subtitle || "",
     }));
 
@@ -620,6 +621,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         id: a.id,
         sortOrder: a.sortOrder,
         isInterruption: a.isInterruption,
+        textStyle: a.textStyle,
         color: a.color,
         subtitle: a.subtitle || "",
     }));
@@ -651,6 +653,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
 
                 sortOrder: item.sortOrder,
                 isInterruption: item.isInterruption,
+                textStyle: item.textStyle,
                 color: item.color,
                 subtitle: item.subtitle,
             },
@@ -671,6 +674,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         checkChangedColumn("subtitle");
         checkChangedColumn("color");
         checkChangedColumn("isInterruption");
+        checkChangedColumn("textStyle");
 
         if (Object.entries(data).length < 1) {
             // nothing to update.

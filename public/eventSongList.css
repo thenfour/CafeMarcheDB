@@ -30,9 +30,6 @@
 }
 
 .songListSongTable {
-    /* width: 1000px; */
-    /* for small windows this makes it smaller so it doesn't overflow the screen. */
-    /* max-width: 100%; */
     border-bottom: 1px solid #ccc;
 }
 
@@ -111,6 +108,15 @@
     border-bottom: 1px dotted #0002;
 }
 
+.songListSongTable .tr.item.nodividers {
+    border-bottom: 1px solid transparent;
+}
+
+/* make sure the item ABOVE a nodivider entry also doesn't put its border. */
+.songListSongTable .tr.item:has(+.nodividers) {
+    border-bottom: 1px solid transparent;
+}
+
 .songListSongTable .tr.item.type_divider {
     /* border-bottom: 1px solid #0003;
     margin-bottom: 3px; */
@@ -126,16 +132,17 @@
     background-size: 8px 8px;
 }
 
+.songListSongTable .tr.item.type_divider.nohatch {
+    background: none;
+}
+
 .songListSongTable .tr.item.type_divider .td.comment {
     display: flex;
 }
 
-.songListSongTable .tr.item.type_divider .dividerComment,
-.songListSongTable .tr.item.type_divider .dividerComment input {
+.songListSongTable .tr.item.type_divider .dividerCommentText {
     padding-left: 20px;
     color: var(--color-foreground);
-    /* background-color: var(--color-background); */
-    /* opacity: 50%; */
 
     /* helps text stand out against the hatch background*/
     --dist: 4px;
@@ -222,9 +229,43 @@
     flex-grow: 1;
 }
 
+
+.songListSongTable .dividerButtonGroup {
+    display: flex;
+    align-items: center;
+}
+
+.songListSongTable .dividerButton {
+    background-color: white;
+    border-radius: 50%;
+    border: 1px dotted black;
+    padding: 2px;
+    display: flex;
+}
+
+.songListSongTable .dividerButton+.dividerButton {
+    margin-left: 8px;
+}
+
+.dividerIsInterruptionButton.notInteractable.isInterruption {
+    border: 1px dotted #0004;
+}
+
+.dividerIsInterruptionButton.notInteractable.isInterruption svg {
+    opacity: 50%;
+}
+
+/* for viewing only, don't show these divider indicators; too noisy.*/
+.dividerButton.notInteractable {
+    visibility: hidden;
+}
+
 .songListSongTable .td.comment svg {
     /* mui icons in the divider row */
     fill: var(--color-foreground);
+    --size: 22px;
+    height: var(--size);
+    width: var(--size);
 }
 
 .songListSongTable .th.comment {
@@ -286,10 +327,6 @@
     flex-wrap: wrap;
 }
 
-.songListSongTable .td.comment .cmdbSimpleInput {
-    width: 100%;
-}
-
 .songListSongTable .td.comment input::placeholder {
     color: #0005;
     font-size: 12px;
@@ -337,4 +374,78 @@
 /* autocomplete dropdown for songs */
 li.songDropdownOption {
     white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------------------- */
+
+.songListSongTable .tr.item.type_divider.style_Title .dividerCommentText {
+    font-family: monospace;
+    text-transform: uppercase;
+    font-size: 26px;
+    font-weight: bold;
+    font-style: normal;
+    padding-left: 0;
+    padding: 14px 0;
+    /* white-space: nowrap; */
+    max-width: 450px;
+}
+
+.songListSongTable .tr.item.type_divider.style_BreakBefore {
+    border-top: 4px solid var(--color-background);
+    margin-top: 8px;
+}
+
+.songListSongTable .tr.item.type_divider.style_BreakAfter {
+    border-bottom: 4px solid var(--color-background);
+    margin-bottom: 6px;
+}
+
+.songListSongTable .tr.item.type_divider.style_Minimal.style_BreakBefore {
+    border-top: 2px dashed var(--color-background);
+}
+
+.songListSongTable .tr.item.type_divider.style_Minimal.style_BreakAfter {
+    border-bottom: 2px dashed var(--color-background);
+    margin-bottom: 6px;
+}
+
+.songListSongTable .tr.item.type_divider.style_Break .dividerBreakDiv {
+    border-top: 3px solid var(--color-foreground);
+    height: 0;
+}
+
+.songListSongTable .tr.item.type_divider.style_Break .dividerBreakDiv.before {
+    width: 40px;
+    flex-grow: 0;
+}
+
+.songListSongTable .tr.item.type_divider.style_Break .dividerCommentText {
+    margin: 0 15px;
+    padding-left: 0px;
+}
+
+.songListSongTable .tr.item.type_divider.style_Break .dividerCommentText input {
+    width: 350px;
+}
+
+.songListSongTable .tr.item.type_divider.style_Break .dividerBreakDiv.after {
+    flex-grow: 1;
+}
+
+.songListSongTable .tr.item.type_divider .dividerCommentContainer {
+    display: flex;
+    align-items: center;
+}
+
+.songListSongTable .tr.item.type_divider.style_Break .dividerCommentText {
+    flex-grow: 0;
+}
+
+.songListSongTable .tr.item.type_divider.nohatch .dividerCommentText {
+    text-shadow: none;
+}
+
+.songListSongTable .tr.item.type_divider.style_Minimal.style_Break .dividerBreakDiv {
+    border-top: 2px dashed var(--color-background);
+    height: 0;
 }

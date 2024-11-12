@@ -1,7 +1,7 @@
 // avoiding circular dependencies by breaking this up a bit.
 // this will be LOWER level than CMCoreComponents.
 import { useSession } from "@blitzjs/auth";
-import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, Typography } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Box, Button, CircularProgress, CircularProgressProps, SvgIcon, Typography } from "@mui/material";
 import React, { Suspense } from "react";
 
 import { useRouter } from "next/router";
@@ -12,6 +12,14 @@ import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import * as db3 from "../db3/db3";
 
 
+
+export function SetlistBreakIcon(props) {
+    return (
+        <SvgIcon {...props} viewBox="0 0 24 24">
+            <path d="M4 20 L20 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </SvgIcon>
+    );
+}
 
 
 

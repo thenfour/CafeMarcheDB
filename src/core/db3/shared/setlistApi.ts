@@ -6,19 +6,20 @@
 
 import { Prisma } from "db";
 import { formatSongLength } from "shared/time";
-import { arrayToTSV, IsNullOrWhitespace, toSorted } from "shared/utils";
+import { arrayToTSV, IsNullOrWhitespace, StringToEnumValue, toSorted } from "shared/utils";
 import { getFormattedBPM } from "../clientAPILL";
+import { EventSongListDividerTextStyle } from "../db3";
 //import * as db3 from "src/core/db3/db3";
 
-type LocalSongPayload = Prisma.SongGetPayload<{
-    select: {
-        id: true,
-        name: true,
-        lengthSeconds: true,
-        startBPM: true,
-        endBPM: true,
-    }
-}>;
+// type LocalSongPayload = Prisma.SongGetPayload<{
+//     select: {
+//         id: true,
+//         name: true,
+//         lengthSeconds: true,
+//         startBPM: true,
+//         endBPM: true,
+//     }
+// }>;
 
 // make song nullable for "add new item" support
 export type EventSongListSongItemDb = Prisma.EventSongListSongGetPayload<{
@@ -64,6 +65,7 @@ export type EventSongListDividerItem = Prisma.EventSongListDividerGetPayload<{
         eventSongListId: true,
         subtitle: true,
         isInterruption: true,
+        textStyle: true,
         color: true,
         sortOrder: true,
     }
@@ -103,6 +105,7 @@ type LocalSongListPayload = Prisma.EventSongListGetPayload<{
                 id: true,
                 eventSongListId: true,
                 isInterruption: true,
+                textStyle: true,
                 subtitle: true,
                 color: true,
                 sortOrder: true,
@@ -266,4 +269,27 @@ export function SongListToMarkdown(setlist: LocalSongListPayload) {
 
     const txt = lines.join('\n');
     return txt;
+}
+
+export function StringToEventSongListDividerTextStyle(x: null | string): EventSongListDividerTextStyle {
+    if (!x) return EventSongListDividerTextStyle.Default;
+    return StringToEnumValue(EventSongListDividerTextStyle, x) || EventSongListDividerTextStyle.Default;
+}
+
+export function GetCssClassForEventSongListDividerTextStyle(x: EventSongListDividerTextStyle): string {
+    const stylesMap: Record<keyof typeof EventSongListDividerTextStyle, string> = {
+        "Default": "style_Default nodividers",
+        "DefaultBreak": "style_Default style_Break nohatch nodividers",
+        "DefaultBreakBefore": "style_Default style_BreakBefore nodividers",
+        "DefaultBreakAfter": "style_Default style_BreakAfter nodividers",
+        "Title": "style_Title nohatch nodividers",
+        "TitleBreak": "style_Title style_Break nohatch nodividers",
+        "TitleBreakBefore": "style_Title style_BreakBefore nohatch nodividers",
+        "TitleBreakAfter": "style_Title style_BreakAfter nohatch nodividers",
+        "Minimal": "style_Minimal nohatch nodividers",
+        "MinimalBreak": "style_Minimal style_Break nohatch nodividers",
+        "MinimalBreakBefore": "style_Minimal style_BreakBefore nohatch nodividers",
+        "MinimalBreakAfter": "style_Minimal style_BreakAfter nohatch nodividers",
+    };
+    return stylesMap[x];
 }

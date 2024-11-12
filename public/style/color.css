@@ -32,8 +32,9 @@
 
 }
 
+/* used on setlist divider color picker, synergize with other divider buttons please.*/
 .colorSwatchRoot.size_small {
-    --size: 20px;
+    --size: 28px;
     width: var(--size);
     height: var(--size);
     border-radius: 50%;

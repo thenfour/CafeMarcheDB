@@ -572,6 +572,27 @@ export type SongTaggedFilesPayload = Prisma.FileSongTagGetPayload<{
 
 
 
+// export const EventSongListDividerTextStyle = {
+//     Default: "Default",
+//     MonospaceTitle: "MonospaceTitle",
+//     BreakBefore: "BreakBefore",
+//     BreakAfter: "BreakAfter",
+// } as const satisfies Record<string, string>;
+
+export enum EventSongListDividerTextStyle {
+    Default = "Default",
+    DefaultBreak = "DefaultBreak",
+    DefaultBreakBefore = "DefaultBreakBefore",
+    DefaultBreakAfter = "DefaultBreakAfter",
+    Title = "Title",
+    TitleBreak = "TitleBreak",
+    TitleBreakBefore = "TitleBreakBefore",
+    TitleBreakAfter = "TitleBreakAfter",
+    Minimal = "Minimal",
+    MinimalBreak = "MinimalBreak",
+    MinimalBreakBefore = "MinimalBreakBefore",
+    MinimalBreakAfter = "MinimalBreakAfter",
+};
 
 ////////////////////////////////////////////////////////////////
 

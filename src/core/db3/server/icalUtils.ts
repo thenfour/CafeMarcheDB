@@ -28,6 +28,7 @@ export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongL
         sortOrder: true,
         subtitle: true,
         isInterruption: true,
+        textStyle: true,
         eventSongListId: true,
         color: true,
     },

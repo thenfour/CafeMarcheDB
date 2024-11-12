@@ -46,6 +46,7 @@ export default resolver.pipe(
                 sortOrder: x.sortOrder,
                 color: x.color,
                 isInterruption: x.isInterruption,
+                textStyle: x.textStyle,
                 subtitle: x.subtitle || "",
             })),
         };

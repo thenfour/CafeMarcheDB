@@ -25,7 +25,7 @@ import {
     EventNaturalOrderBy, EventPayload, EventPayloadClient,
     EventSegmentArgs, EventSegmentBehavior, EventSegmentNaturalOrderBy, EventSegmentPayload,
     EventSegmentUserResponseArgs, EventSegmentUserResponseNaturalOrderBy,
-    EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, EventSongListDividerPayload, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
+    EventSegmentUserResponsePayload, EventSongListArgs, EventSongListDividerArgs, EventSongListDividerPayload, EventSongListDividerTextStyle, EventSongListNaturalOrderBy, EventSongListPayload, EventSongListSongArgs, EventSongListSongNaturalOrderBy,
     EventSongListSongPayload, EventStatusArgs, EventStatusNaturalOrderBy, EventStatusPayload, EventStatusSignificance, EventTagArgs, EventTagAssignmentArgs,
     EventTagAssignmentNaturalOrderBy, EventTagAssignmentPayload, EventTagNaturalOrderBy, EventTagPayload, EventTagSignificance, EventTaggedFilesPayload,
     EventTypeArgs, EventTypeNaturalOrderBy, EventTypePayload, EventTypeSignificance, EventUserResponseArgs, EventUserResponseNaturalOrderBy,
@@ -1209,6 +1209,7 @@ export const xEventSongListDivider = new db3.xTable({
         MakePlainTextField("subtitle", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         MakeSortOrderField("sortOrder", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new BoolField({ columnName: "isInterruption", defaultValue: true, authMap: xEventAuthMap_R_EOwn_EManagers, allowNull: false }),
+        new ConstEnumStringField({ allowNull: false, authMap: xEventAuthMap_R_EOwn_EManagers, columnName: "textStyle", defaultValue: EventSongListDividerTextStyle.Default, options: EventSongListDividerTextStyle }),
         MakeColorField("color", { authMap: xEventAuthMap_R_EOwn_EManagers, }),
         new ForeignSingleField<Prisma.EventSongListGetPayload<{}>>({
             columnName: "eventSongList",
