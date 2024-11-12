@@ -16,6 +16,7 @@ import { SettingMarkdown } from "./SettingMarkdown";
 import { IsNullOrWhitespace } from "shared/utils";
 import { gIconMap } from "../db3/components/IconMap";
 import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
+import { useDashboardContext } from "./DashboardContext";
 
 
 
@@ -53,6 +54,7 @@ interface EventSegmentEditDialogProps {
 
 export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
     const currentUser = useCurrentUser()[0]!;
+    const dashboardContext = useDashboardContext();
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: 'primary', currentUser };
 
     const tableSpec = new DB3Client.xTableClientSpec({
@@ -68,7 +70,12 @@ export const EventSegmentEditDialog = (props: EventSegmentEditDialogProps) => {
     });
 
     return <DB3EditObjectDialog
-        initialValue={props.initialValue}
+        initialValue={{
+            ...props.initialValue,
+            // little hack: the payload doesn't contain a status (only statusId).
+            // should probably be added on enriching
+            status: dashboardContext.eventStatus.getById(props.initialValue.statusId),
+        }}
         onDelete={props.onDelete}
         clientIntention={clientIntention}
         onCancel={props.onCancel}
