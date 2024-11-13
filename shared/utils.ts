@@ -1119,3 +1119,29 @@ export function toSorted<T>(array: T[], compareFn?: (a: T, b: T) => number): T[]
     return array.slice().sort(compareFn);
 }
 
+
+// allows calling an async function from a non-async function.
+// like
+// function NonAsyncFunction() {
+//   callAsync(async () => {
+//      await someOtherTask();
+//   });
+// }
+export function callAsync<T>(asyncFunction: () => Promise<T>): T | undefined {
+    let result: T | undefined;
+    let error: any;
+
+    asyncFunction()
+        .then((res) => (result = res))
+        .catch((err) => (error = err));
+
+    if (error) throw error;
+
+    return result;
+}
+
+export async function passthroughWithoutTransaction<T>(fn: (transactionalDb: typeof db) => Promise<T>): Promise<T> {
+    return fn(db);
+}
+
+

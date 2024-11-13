@@ -136,6 +136,7 @@ export const xWorkflowInstanceArgs: Omit<db3.TableDesc, "getInclude"> = {
         new GhostField({ memberName: "logItems", authMap: xColumnAuthMap }),
         new GhostField({ memberName: "nodes", authMap: xColumnAuthMap }),
         new GhostField({ memberName: "events", authMap: xColumnAuthMap }),
+        new GhostField({ memberName: "revision", authMap: xColumnAuthMap }),
     ]
 };
 

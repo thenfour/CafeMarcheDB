@@ -3,18 +3,26 @@ import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma, PrismaClient } from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
+import { callAsync, ChangeAction, CreateChangeContext, passthroughWithoutTransaction, RegisterChange } from "shared/utils";
 import { MutationArgsToWorkflowInstance, TWorkflowChange, TWorkflowInstanceMutationResult } from "shared/workflowEngine";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
+import { Mutex } from "async-mutex";
 
+// need a mutex. db transactions are not mutexes so while the transactional integrity is protected,
+// the processing won't happen in serial. it means 2 transactions can be happening at the same time,
+// where for example both are processing an eventID which has no instance yet. Both transactions will create one.
+
+// in theory this should be per instance ID or per event ID or something.
+// but this is just simpler for small scale.
+const mutex = new Mutex();
 
 async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaClient, args: TUpdateEventWorkflowInstanceArgs): Promise<TWorkflowInstanceMutationResult> {
     const resultChanges: TWorkflowChange[] = [];
-
     // we don't actually want to care about the incoming workflow instance ID. event IDs have 1 wf instance.
+    //debugger;
     assert(args.eventId, "requires exactly 1 event id.");
     const eventRaw = await db.event.findFirst({ where: { id: args.eventId } });
     assert(!!eventRaw, "event not found wut");
@@ -39,7 +47,7 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
             update: async (id, data) => await db.workflowInstance.update({ where: { id }, data }),
             create: async (data) => await db.workflowInstance.create({ data }),
         },
-        [],
+        ["revision"], // ignore revision because we don't know if it needs to be updated; if it needs to be updated depends on everything else that happens here.
     );
 
     resultChanges.push(...instanceSyncRresult.changes);
@@ -151,6 +159,18 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
         resultChanges.push(...assSyncResult.changes);
     }
 
+    if (resultChanges.length) {
+        // increment revision.
+        args.instance.revision = (existingInstance?.revision || 0) + 1;
+        await db.workflowInstance.update({
+            where: { id: args.instance.id },
+            data:
+            {
+                revision: args.instance.revision
+            }
+        });
+    }
+
     return {
         changes: resultChanges,
         serializableInstance: args,
@@ -160,61 +180,81 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
 export default resolver.pipe(
     resolver.authorize(Permission.edit_workflow_instances),
     async (args: TUpdateEventWorkflowInstanceArgs, ctx: AuthenticatedCtx): Promise<TWorkflowInstanceMutationResult> => {
-        //debugger; // todo: this mutation.
-        const currentUser = await mutationCore.getCurrentUserCore(ctx);
-        const clientIntention: db3.xTableClientUsageContext = {
-            intention: "user",
-            mode: "primary",
-            currentUser,
-        };
 
-        const changeContext = CreateChangeContext(`insertOrUpdateEventWorkflowInstance`);
+        return mutex.runExclusive(async () => {
 
-        return await db.$transaction(async (transactionalDb) => {
-            // old instance
-            const oldPayload: TWorkflowInstanceMutationResult = {
-                changes: [],
-                serializableInstance: undefined,
+            const currentUser = await mutationCore.getCurrentUserCore(ctx);
+            const clientIntention: db3.xTableClientUsageContext = {
+                intention: "user",
+                mode: "primary",
+                currentUser,
             };
 
-            if (args.instance.id >= 0) {
-                const oldValuesInfo = await DB3QueryCore2({
-                    clientIntention,
-                    cmdbQueryContext: "insertOrUpdateEventWorkflowInstance",
-                    tableID: db3.xWorkflowInstance_Verbose.tableID,
-                    tableName: db3.xWorkflowInstance_Verbose.tableName,
-                    filter: {
-                        items: [],
-                        pks: [args.instance.id],
-                    },
-                    orderBy: undefined,
-                },
-                    currentUser,
-                    transactionalDb);
+            const changeContext = CreateChangeContext(`insertOrUpdateEventWorkflowInstance`);
 
-                // convert to engine workflow def
-                const oldEngineInstance = db3.WorkflowInstanceQueryResultToMutationArgs(oldValuesInfo.items[0] as db3.WorkflowInstance_Verbose, args.eventId);
-                oldPayload.serializableInstance = {
-                    eventId: args.eventId,
-                    instance: MutationArgsToWorkflowInstance(oldEngineInstance),
+            return await db.$transaction(async (transactionalDb) => {
+                //return await passthroughWithoutTransaction(async (transactionalDb) => {
+
+                // old instance
+                const oldPayload: TWorkflowInstanceMutationResult = {
+                    changes: [],
+                    serializableInstance: undefined,
                 };
-            }
 
-            const newPayload = await InsertOrUpdateWorkflowInstanceCoreAsync(transactionalDb, args);
+                const incomingInstanceid = args.instance.id;
+                const eventWithWfInstanceId = await db.event.findFirst({ where: { id: args.eventId }, select: { workflowInstanceId: true } });
 
-            await RegisterChange({
-                action: oldPayload.serializableInstance ? ChangeAction.update : ChangeAction.insert,
-                changeContext,
-                ctx,
-                pkid: newPayload.serializableInstance!.instance.id,
-                table: 'workflowInstance',
-                oldValues: oldPayload,
-                newValues: newPayload,
-                db: transactionalDb,
-            });
+                //console.log(`BEGIN UPDATING INSTANCE FROM ${incomingInstanceid} => ${eventWithWfInstanceId?.workflowInstanceId || "<none>"}`);
 
-            return newPayload;
-        });
-    }
-);
+                if (eventWithWfInstanceId?.workflowInstanceId) {
+
+                    // the client can be stupid and pass in ids which correspond to old data. should be ultimately ignored  by other logic but proceed for now.
+                    args.instance.id = eventWithWfInstanceId.workflowInstanceId;
+
+                    const oldValuesInfo = await DB3QueryCore2({
+                        clientIntention,
+                        cmdbQueryContext: "insertOrUpdateEventWorkflowInstance",
+                        tableID: db3.xWorkflowInstance_Verbose.tableID,
+                        tableName: db3.xWorkflowInstance_Verbose.tableName,
+                        filter: {
+                            items: [],
+                            pks: [eventWithWfInstanceId.workflowInstanceId],
+                        },
+                        orderBy: undefined,
+                    },
+                        currentUser,
+                        transactionalDb);
+
+                    // convert to engine workflow def
+                    const oldEngineInstance = db3.WorkflowInstanceQueryResultToMutationArgs(oldValuesInfo.items[0] as db3.WorkflowInstance_Verbose, args.eventId);
+                    if (args.instance.revision < oldEngineInstance.instance.revision) {
+                        // note: clients should also increment the revision number.
+                        throw new Error(`rejecting attempt to serialize an old instance version`);
+                    }
+                    oldPayload.serializableInstance = {
+                        eventId: args.eventId,
+                        instance: MutationArgsToWorkflowInstance(oldEngineInstance),
+                    };
+                }
+
+                const newPayload = await InsertOrUpdateWorkflowInstanceCoreAsync(transactionalDb, args);
+
+                await RegisterChange({
+                    action: oldPayload.serializableInstance ? ChangeAction.update : ChangeAction.insert,
+                    changeContext,
+                    ctx,
+                    pkid: newPayload.serializableInstance!.instance.id,
+                    table: 'workflowInstance',
+                    oldValues: oldPayload,
+                    newValues: newPayload,
+                    db: transactionalDb,
+                });
+
+                //console.log(`DONE UPDATING INSTANCE FROM ${incomingInstanceid} => ${newPayload.serializableInstance?.instance.id}`);
+                return newPayload;
+            }); // db transaction
+
+        }); // mutex
+    } // async (args: TUpdateEventWorkflowInstanceArgs, ctx: AuthenticatedCtx): Promise<TWorkflowInstanceMutationResult> => {
+); // resolver.pipe
 

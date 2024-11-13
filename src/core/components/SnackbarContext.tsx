@@ -6,10 +6,14 @@ type SnackbarProps = Pick<AlertProps, 'children' | 'severity'> | null;
 
 export type SnackbarContextType = {
     showMessage: (snackbarProps: SnackbarProps) => void;
+    showSuccess: (message: React.ReactNode) => void;
+    showError: (message: React.ReactNode) => void;
 };
 
 export const SnackbarContext = createContext<SnackbarContextType>({
     showMessage: () => { },
+    showSuccess: () => { },
+    showError: () => { },
 });
 
 export const useSnackbar = () => React.useContext(SnackbarContext);
@@ -20,10 +24,17 @@ export const SnackbarProvider = ({ children }) => {
     const showMessage = (props: SnackbarProps) => {
         setSnackbar(props);
     };
-    // //setSnackbar({ children: 'Role successfully created', severity: 'success' });
+
+    const showSuccess = (message: React.ReactNode) => {
+        showMessage({ children: message, severity: 'success' });
+    };
+
+    const showError = (message: React.ReactNode) => {
+        showMessage({ children: message, severity: 'error' });
+    };
 
     return (
-        <SnackbarContext.Provider value={{ showMessage }}>
+        <SnackbarContext.Provider value={{ showMessage, showSuccess, showError }}>
             {children}
             {/* Add your Snackbar component here */}
             {snackbar &&
