@@ -117,7 +117,8 @@
     border-bottom: 1px solid transparent;
 }
 
-.songListSongTable .tr.item.type_divider {
+.songListSongTable .tr.item.type_divider,
+.hatch {
     /* border-bottom: 1px solid #0003;
     margin-bottom: 3px; */
     /* background-color: #0001; */
@@ -130,6 +131,9 @@
     --bc: transparent;
     background-image: linear-gradient(-45deg, var(--fc) 0%, var(--fc) 12.5%, var(--bc) 12.5%, var(--bc) 50%, var(--fc) 50%, var(--fc) 62.5%, var(--bc) 62.5%, var(--bc) 100%);
     background-size: 8px 8px;
+
+    /* when there's no text */
+    min-height: 24px;
 }
 
 .songListSongTable .tr.item.type_divider.nohatch {
@@ -159,7 +163,7 @@
 
 .songListSongTable .td.songName,
 .songListSongTable .th.songName {
-    width: 220px;
+    width: 260px;
     display: flex;
     justify-content: flex-start;
     font-weight: bold;
@@ -366,7 +370,14 @@
     justify-content: space-between;
 }
 
+
+/* make this list as wide as possible */
 .EventSongListValue>.content {
+    padding: 0px;
+}
+
+/* ... and put the padding in the markdown instead of content div */
+.EventSongListValue>.content>.markdown {
     padding: 10px;
 }
 
@@ -397,11 +408,15 @@ li.songDropdownOption {
 .songListSongTable .tr.item.type_divider.style_BreakBefore {
     border-top: 4px solid var(--color-background);
     margin-top: 16px;
+    margin-left: 30px;
+    margin-right: 30px;
 }
 
 .songListSongTable .tr.item.type_divider.style_BreakAfter {
     border-bottom: 4px solid var(--color-background);
     margin-bottom: 6px;
+    margin-left: 30px;
+    margin-right: 30px;
 }
 
 .songListSongTable .tr.item.type_divider.style_Minimal.style_BreakBefore {
@@ -435,7 +450,8 @@ li.songDropdownOption {
 
 .songListSongTable .tr.item.type_divider.style_Break .dividerBreakDiv.after {
     flex-grow: 1;
-    max-width: 200px;
+    /* max-width: 200px; */
+    margin-right: 30px;
 }
 
 .songListSongTable .tr.item.type_divider .dividerCommentContainer {
