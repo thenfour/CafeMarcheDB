@@ -279,10 +279,11 @@ export const Markdown3Editor = ({ readonly = false, beginInPreview = false, ...p
         <div className="header">
             <div className="tabs">
                 <Tooltip title={"Ctrl+Shift+P to toggle modes"} disableInteractive>
-                    <div className={`tab write ${tab === "write" ? "selected" : "notselected"} freeButton`} onClick={() => changeTab("write")}>Write</div>
-                </Tooltip>
-                <Tooltip title={"Ctrl+Shift+P to toggle modes"} disableInteractive>
-                    <div className={`tab preview ${tab === "preview" ? "selected" : "notselected"} freeButton`} onClick={() => changeTab("preview")}>Preview</div>
+                    {tab === "write" ? (
+                        <div className={`tab preview selected freeButton`} onClick={() => changeTab("preview")}>Preview</div>
+                    ) : (
+                        <div className={`tab write selected freeButton`} onClick={() => changeTab("write")}>Continue editing</div>
+                    )}
                 </Tooltip>
             </div>
             {(tab === "write") && <div className="toolbar">
