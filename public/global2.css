@@ -284,6 +284,14 @@ input.CMTextInputBase.titleText {
     background-color: white;
 }
 
+.EventCompletenessTabContent th {
+    background-color: white;
+}
+
+.EventCompletenessTabContent th:hover {
+    background-color: #eee;
+}
+
 .EventCompletenessTabContent tfoot td {
     text-align: center;
 }
@@ -1567,6 +1575,24 @@ in particular the date range picker is wide.*/
     font-weight: bold;
 }
 
+.EventSegmentPanel.segment.statusSignificance_Cancelled {
+    border: 0;
+    /* opacity: 50%; */
+}
+
+.EventSegmentPanel.segment.statusSignificance_Cancelled>.header {
+    background-color: #eee;
+    color: #aaa;
+}
+
+.EventSegmentPanel.segment.statusSignificance_Cancelled>.header>.dateRange {
+    font-size: 16px;
+}
+
+.EventSegmentPanel.segment.statusSignificance_Cancelled>.content {
+    opacity: 50%;
+}
+
 .newSegmentButton {
     margin: 10px;
 }
@@ -2736,4 +2762,25 @@ span.faded {
 
 table.TopAlignedCells td {
     vertical-align: top;
+}
+
+.dotMenuDots {
+    width: 24px;
+    border-radius: 4px;
+    margin: 0 6px;
+    text-align: center;
+    font-weight: normal;
+    font-style: normal;
+    display: flex;
+    justify-content: center;
+}
+
+.dotMenuDots:hover {
+    background-color: #00f1;
+}
+
+.nowrap {
+    display: flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
 }

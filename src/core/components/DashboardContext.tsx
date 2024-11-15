@@ -137,7 +137,6 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
         };
     }, []);
 
-
     const [dashboardData, { refetch }] = useQuery(getDashboardData, {});
     valueRef.current.userClientIntention = { intention: currentUser ? "user" : 'public', mode: 'primary', currentUser }
     valueRef.current.userTag = new TableAccessor(dashboardData.userTag);

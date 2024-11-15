@@ -2,10 +2,10 @@
 // drag reordering https://www.npmjs.com/package/react-smooth-dnd
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
-import { Button } from "@mui/material";
+import { Button, Divider, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React from "react";
 import { useCurrentUser } from 'src/auth/hooks/useCurrentUser';
-import { SnackbarContext } from "src/core/components/SnackbarContext";
+import { SnackbarContext, useSnackbar } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { API } from '../db3/clientAPI';
@@ -14,9 +14,11 @@ import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
 import { IsNullOrWhitespace } from "shared/utils";
-import { gIconMap } from "../db3/components/IconMap";
+import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
 import { useDashboardContext } from "./DashboardContext";
+import { ConfirmationDialog } from "./ReactiveInputDialog";
+import { useConfirm } from "./ConfirmationDialog";
 
 
 
@@ -148,9 +150,10 @@ export interface EventSegmentPanelProps {
 export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPanelProps) => {
     const { showMessage: showSnackbar } = React.useContext(SnackbarContext);
     const [editOpen, setEditOpen] = React.useState<boolean>(false);
-    const user = useCurrentUser()[0]!;
+    //const user = useCurrentUser()[0]!;
+    const dashboardContext = useDashboardContext();
     const publicData = useAuthenticatedSession();
-    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+    //const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
 
     const handleDelete = (saveClient: DB3Client.xTableRenderClient) => {
         saveClient.doDeleteMutation(props.segment.id, 'softWhenPossible').then(e => {
@@ -178,12 +181,14 @@ export const EventSegmentPanel = ({ event, refetch, ...props }: EventSegmentPane
     };
 
     const editAuthorized = db3.xEventSegment.authorizeRowForEdit({
-        clientIntention,
+        clientIntention: dashboardContext.userClientIntention,
         publicData,
         model: props.segment,
     });
 
-    return <div className={`EventSegmentPanel segment`}>
+    const status = dashboardContext.eventStatus.getById(props.segment.statusId);
+
+    return <div className={`EventSegmentPanel segment statusSignificance_${status?.significance}`}>
         <div className="header">
             <div className="dateRange">{API.events.getEventSegmentFormattedDateRange(props.segment)}</div>
             <div style={{ display: "flex" }}>
@@ -220,6 +225,9 @@ interface SegmentListProps {
 
 export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) => {
 
+    const dashboardContext = useDashboardContext();
+    const segments = event.segments.toSorted((a, b) => db3.compareEventSegments(a, b, db3.getCancelledStatusIds(dashboardContext.eventStatus.items)));
+
     // if there is only 1 segment and there's no description for the segment, don't display at all.
     // the only time to show segment lists is when there's something that's not shown elsewhere.
     const enableList = (event.segments.length > 1) || !IsNullOrWhitespace(event.segments[0]?.description);
@@ -231,7 +239,7 @@ export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) 
             refetch={tableClient.refetch}
         />}
         {enableList && <div className="segmentList">
-            {event.segments.map(segment => {
+            {segments.map(segment => {
                 return <EventSegmentPanel
                     key={segment.id}
                     segment={segment}
@@ -291,3 +299,75 @@ export const EditSingleSegmentDateButton = (props: EditSingleSegmentDateButtonPr
 
     </>;
 };
+
+
+
+interface EventSegmentDotMenuCopyUserResponsesFromMenuItemProps {
+    event: db3.EventVerbose_Event,
+    fromSegment: db3.EventVerbose_EventSegment,
+    toSegment: db3.EventVerbose_EventSegment,
+    readonly: boolean;
+    refetch: () => void;
+    onClose: () => void;
+};
+
+export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSegmentDotMenuCopyUserResponsesFromMenuItemProps) => {
+    return <MenuItem>
+        <ListItemIcon>{gIconMap.Delete()}</ListItemIcon>
+        Copy responses from {props.fromSegment.name}
+    </MenuItem>;
+};
+
+interface EventSegmentDotMenuProps {
+    event: db3.EventVerbose_Event,
+    segment: db3.EventVerbose_EventSegment,
+    readonly: boolean;
+    refetch: () => void;
+};
+
+export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
+    // TODO (#329)
+    //return null;
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const snackbar = useSnackbar();
+    const confirm = useConfirm();
+
+    const handleClear = async () => {
+
+    };
+
+    return <>
+        <div className="interactable freeButton dotMenuDots eventSegmentDotMenu" onClick={(e) => setAnchorEl(anchorEl ? null : e.currentTarget)}>
+            <div>{gCharMap.VerticalEllipses()}</div>
+        </div>
+        <Menu
+            //id="menu-searchResults"
+            anchorEl={anchorEl}
+            keepMounted
+            open={Boolean(anchorEl)}
+            onClose={() => setAnchorEl(null)}
+        >
+            <MenuItem onClick={async () => {
+                setAnchorEl(null);
+                if (await confirm({
+                    title: `Sure you want to clear all responses for ${props.segment.name}? This cannot be undone. (${props.segment.responses.length} in total)`,
+                    description: null,
+                })) {
+                    snackbar.invokeAsync(handleClear);
+                }
+            }}>
+                <ListItemIcon>{gIconMap.Delete()}</ListItemIcon>
+                Clear all user responses
+            </MenuItem>
+            <Divider />
+            {props.event.segments
+                .filter(seg => seg.id !== props.segment.id)
+                .map(fromSegment => <EventSegmentDotMenuCopyUserResponsesFromMenuItem
+                    {...props}
+                    fromSegment={fromSegment}
+                    toSegment={props.segment}
+                    onClose={() => setAnchorEl(null)}
+                />)}
+        </Menu>
+    </>;
+}

@@ -8,12 +8,18 @@ export type SnackbarContextType = {
     showMessage: (snackbarProps: SnackbarProps) => void;
     showSuccess: (message: React.ReactNode) => void;
     showError: (message: React.ReactNode) => void;
+    invokeAsync: (
+        asyncFunction: () => Promise<any>,
+        successMessage?: React.ReactNode,
+        errorMessage?: React.ReactNode
+    ) => Promise<void>;
 };
 
 export const SnackbarContext = createContext<SnackbarContextType>({
     showMessage: () => { },
     showSuccess: () => { },
     showError: () => { },
+    invokeAsync: async () => { },
 });
 
 export const useSnackbar = () => React.useContext(SnackbarContext);
@@ -33,8 +39,22 @@ export const SnackbarProvider = ({ children }) => {
         showMessage({ children: message, severity: 'error' });
     };
 
+    const invokeAsync = async (
+        asyncFunction: () => Promise<any>,
+        successMessage?: React.ReactNode,
+        errorMessage?: React.ReactNode
+    ) => {
+        try {
+            await asyncFunction();
+            showSuccess(successMessage || "Success");
+        } catch (error) {
+            console.error(error);
+            showError(errorMessage || "error; see console");
+        }
+    };
+
     return (
-        <SnackbarContext.Provider value={{ showMessage, showSuccess, showError }}>
+        <SnackbarContext.Provider value={{ showMessage, showSuccess, showError, invokeAsync }}>
             {children}
             {/* Add your Snackbar component here */}
             {snackbar &&

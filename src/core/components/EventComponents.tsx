@@ -3,6 +3,7 @@
 // https://codesandbox.io/s/material-ui-sortable-list-with-react-smooth-dnd-swrqx?file=/src/index.js:113-129
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
+import { Checklist } from '@mui/icons-material';
 import HomeIcon from '@mui/icons-material/Home';
 import PlaceIcon from '@mui/icons-material/Place';
 import { Breadcrumbs, Button, Checkbox, DialogActions, DialogContent, DialogTitle, Link, MenuItem, Select, Tooltip } from "@mui/material";
@@ -22,7 +23,7 @@ import { API } from '../db3/clientAPI';
 import { gCharMap, gIconMap, RenderMuiIcon } from '../db3/components/IconMap';
 import { GetICalRelativeURIForUserAndEvent, gNullValue, SearchResultsRet } from '../db3/shared/apiTypes';
 import { CMChipContainer, CMStandardDBChip } from './CMChip';
-import { AdminInspectObject, AttendanceChip, CMStatusIndicator, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
+import { AdminInspectObject, AttendanceChip, InspectObject, InstrumentChip, InstrumentFunctionalGroupChip } from './CMCoreComponents';
 import { CMDialogContentText, EventDateField, NameValuePair } from './CMCoreComponents2';
 import { CMTextInputBase } from './CMTextField';
 import { ChoiceEditCell } from './ChooseItemDialog';
@@ -32,18 +33,17 @@ import { EditFieldsDialogButton, EditFieldsDialogButtonApi } from './EditFieldsD
 import { EventAttendanceControl } from './EventAttendanceComponents';
 import { CalculateEventMetadata_Verbose, CalculateEventSearchResultsMetadata, EventEnrichedVerbose_Event, EventsFilterSpec, EventWithMetadata } from './EventComponentsBase';
 import { EventFrontpageTabContent } from './EventFrontpageComponents';
-import { EditSingleSegmentDateButton, SegmentList } from './EventSegmentComponents';
+import { EditSingleSegmentDateButton, EventSegmentDotMenu, SegmentList } from './EventSegmentComponents';
 import { EventSongListTabContent } from './EventSongListComponents';
 import { Markdown3Editor } from './MarkdownControl3';
+import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown } from './RichTextEditor';
 import { GenerateDefaultDescriptionSettingName, SettingMarkdown } from './SettingMarkdown';
 import { FilesTabContent } from './SongFileComponents';
+import { CMTab, CMTabPanel } from './TabPanel';
 import { AddUserButton } from './UserComponents';
 import { VisibilityControl, VisibilityValue } from './VisibilityControl';
-import { Checklist } from '@mui/icons-material';
 import { EventWorkflowTabContent } from './WorkflowEventComponents';
-import { CMTab, CMTabPanel } from './TabPanel';
-import { ReactiveInputDialog } from './ReactiveInputDialog';
 
 type EventWithTypePayload = Prisma.EventGetPayload<{
     include: {
@@ -737,9 +737,12 @@ export const EventAttendanceDetail = ({ refetch, eventData, tableClient, ...prop
                     {event.segments.map(seg => {
                         const status = dashboardContext.eventStatus.getById(seg.statusId);
                         return <React.Fragment key={seg.id}>
-                            <th className={`responseCell segmentSignificance_${status?.significance || "none"}`} onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
-                                <div className='interactable'>
-                                    {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
+                            <th className={`responseCell segmentSignificance_${status?.significance || "none"}`}>
+                                <div style={{ display: "flex", alignItems: "center" }}>
+                                    <div className='interactable' onClick={() => { setSortField('response'); setSortSegmentId(seg.id); }}>
+                                        {isSingleSegment ? "Response" : seg.name} {sortField === 'response' && seg.id === sortSegmentId && gCharMap.DownArrow()}
+                                    </div>
+                                    <EventSegmentDotMenu event={event} refetch={refetch} readonly={props.readonly} segment={seg} />
                                 </div>
                             </th>
                         </React.Fragment>;
@@ -961,10 +964,12 @@ export interface EventCompletenessTabContentProps {
     //responseInfo: db3.EventResponseInfo;
     eventData: VerboseEventWithMetadata;
     userMap: db3.UserInstrumentList;
+    readonly: boolean;
+    refetch: () => void;
     //functionalGroupsClient: DB3Client.xTableRenderClient;
 }
 
-export const EventCompletenessTabContent = ({ eventData, userMap }: EventCompletenessTabContentProps) => {
+export const EventCompletenessTabContent = ({ eventData, userMap, ...props }: EventCompletenessTabContentProps) => {
     const dashboardContext = React.useContext(DashboardContext);
 
     //const [minStrength, setMinStrength] = React.useState<number>(50);
@@ -1006,7 +1011,12 @@ export const EventCompletenessTabContent = ({ eventData, userMap }: EventComplet
                     <th>Instrument group</th>
                     {isSingleSegment ? <th key="__">Response</th> : event.segments.map((seg) => {
                         const status = dashboardContext.eventStatus.getById(seg.statusId);
-                        return <th className={`segmentStatusSignificance_${status?.significance || "none"}`} key={seg.id}>{seg.name}</th>;
+                        return <th className={`segmentStatusSignificance_${status?.significance || "none"}`} key={seg.id}>
+                            <div style={{ display: "flex", justifyContent: "center" }}>
+                                <div>{seg.name}</div>
+                                <EventSegmentDotMenu event={event} readonly={props.readonly} refetch={props.refetch} segment={seg} />
+                            </div>
+                        </th>;
                     })}
                 </tr>
                 {(functionalGroupsClient.items as db3.InstrumentFunctionalGroupPayload[]).map(functionalGroup => {
@@ -1372,7 +1382,7 @@ export const EventDetailFullTab2Area = ({ eventData, refetch, selectedTab, event
             summaryTitle="by instrument"
         >
             <SettingMarkdown setting='EventCompletenessTabMarkdown' />
-            <EventCompletenessTabContent eventData={eventData} userMap={userMap} />
+            <EventCompletenessTabContent eventData={eventData} userMap={userMap} readonly={props.readonly} refetch={refetch} />
         </CMTab>
 
         <CMTab

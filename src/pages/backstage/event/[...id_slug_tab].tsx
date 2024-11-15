@@ -14,6 +14,7 @@ import React from 'react';
 import { DashboardContext } from "src/core/components/DashboardContext";
 import { GetServerSideProps } from 'next';
 import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
+import { TableAccessor } from "shared/rootroot";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
@@ -111,20 +112,44 @@ export const getServerSideProps: GetServerSideProps = async ({ params, req }) =>
             id: true,
             name: true,
             startsAt: true,
+            segments: {
+                select: {
+                    startsAt: true,
+                    statusId: true,
+                }
+            }
         },
         where: {
             id,
         }
     });
 
+    const statuses = await db.eventStatus.findMany();
+    //const eventStatusAccessor = new TableAccessor(statuses);
+    const cancelledStatusIds = db3.getCancelledStatusIds(statuses);
+    const isCancelled = (statusId: number | null) => {
+        if (!statusId) return false;
+        return cancelledStatusIds.includes(statusId);
+    }
+
     if (event) {
         // Format the date using the user's locale
         const acceptLanguage = req.headers['accept-language'] || 'en-US'; // Default to 'en-US' if not specified
         const locale = acceptLanguage.split(',')[0]; // Get the first preferred language
         const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
-        const formattedDate = event.startsAt ? ` | ${event.startsAt.toLocaleDateString(locale, options)}` : "";
 
-        ret.props.title = `${event.name}${formattedDate}`;
+        // skip cancelled segments
+        const validSegmentsSorted = event.segments
+            .filter(s => !isCancelled(s.statusId))
+            .toSorted((a, b) => db3.compareEventSegments(a, b, cancelledStatusIds));
+        if (!validSegmentsSorted.length) {
+            ret.props.title = `${event.name}`;
+        } else {
+            const seg = validSegmentsSorted[0]!;
+            let formattedDate = seg.startsAt ? seg.startsAt.toLocaleDateString(locale, options) : "TBD";
+            ret.props.title = `${event.name} | ${formattedDate}`;
+        }
+
         ret.props.eventId = event.id;
     }
 

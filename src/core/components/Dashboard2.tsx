@@ -47,9 +47,9 @@ import { ConfirmProvider } from "./ConfirmationDialog";
 const drawerWidth = 260;
 
 
-const AppBarUserIcon_MenuItems = () => {
+const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
     //const [logoutMutation] = useMutation(logout);
-    const router = useRouter();
+    //const router = useRouter();
     //const [currentUser] = useCurrentUser();
     const sess = useSession();
     const showAdminControlsMutation = API.other.setShowingAdminControlsMutation.useToken();
@@ -60,6 +60,7 @@ const AppBarUserIcon_MenuItems = () => {
     const [stopImpersonatingMutation] = useMutation(stopImpersonating);
 
     const onClickStopImpersonating = async () => {
+        closeMenu();
         await stopImpersonatingMutation();
     };
 
@@ -75,8 +76,14 @@ const AppBarUserIcon_MenuItems = () => {
         {(!!sess.isSysAdmin) && <>
 
             {isShowingAdminControls ?
-                <MenuItem onClick={() => onClickShowAdminControls(false)}>Hide admin config {gIconMap.Settings()}</MenuItem>
-                : <MenuItem onClick={() => onClickShowAdminControls(true)}>Show admin config {gIconMap.Settings()}</MenuItem>
+                <MenuItem onClick={() => {
+                    onClickShowAdminControls(false);
+                    closeMenu();
+                }}>Hide admin config {gIconMap.Settings()}</MenuItem>
+                : <MenuItem onClick={() => {
+                    onClickShowAdminControls(true);
+                    closeMenu();
+                }}>Show admin config {gIconMap.Settings()}</MenuItem>
             }
 
             <Divider /></>
@@ -84,27 +91,29 @@ const AppBarUserIcon_MenuItems = () => {
 
         {currentUser &&
             <>
-                <MenuItem component={Link} href={`/backstage/wiki/${slugify("calendar-sync-help")}`} target="_blank" rel="noreferrer">
+                <MenuItem component={Link} href={`/backstage/wiki/${slugify("calendar-sync-help")}`} target="_blank" rel="noreferrer" onClick={closeMenu}>
                     {gIconMap.Help()} How to use calendar sync...
                 </MenuItem>
                 <MenuItem onClick={async () => {
                     const uri = getAbsoluteUrl(GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken }));
                     await navigator.clipboard.writeText(uri);
+                    closeMenu();
                     showSnackbar({ children: "Link address copied", severity: 'success' });
                 }}>
                     {gIconMap.ContentCopy()} Copy Calendar Link Address
                 </MenuItem>
-                <MenuItem component={Link} href={GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken })} target="_blank" rel="noreferrer">
+                <MenuItem component={Link} href={GetICalRelativeURIForUserUpcomingEvents({ userAccessToken: currentUser.accessToken })} target="_blank" rel="noreferrer" onClick={closeMenu}>
                     {gIconMap.CalendarMonth()} Calendar feed (iCal format)
                 </MenuItem>
                 <Divider />
             </>
         }
 
-        <MenuItem component={Link} href='/backstage/profile'>Your profile</MenuItem>
+        <MenuItem component={Link} href='/backstage/profile' onClick={closeMenu}>Your profile</MenuItem>
 
         <MenuItem onClick={async () => {
             // just doing the mutation here will keep a bunch of app state; better to cleanly navigate to a simple logout page where we don't risk access exceptions.
+            closeMenu();
             simulateLinkClick(Routes.LogoutPage());
         }}>
             Log out
@@ -149,7 +158,7 @@ const AppBarUserIcon_Desktop = () => {
                     setAnchorEl(null)
                 }}
             >
-                <AppBarUserIcon_MenuItems />
+                <AppBarUserIcon_MenuItems closeMenu={() => setAnchorEl(null)} />
             </Menu>
         </Box>
     );
@@ -187,7 +196,7 @@ const AppBarUserIcon_Mobile = () => {
                 open={Boolean(anchorEl)}
                 onClose={() => setAnchorEl(null)}
             >
-                <AppBarUserIcon_MenuItems />
+                <AppBarUserIcon_MenuItems closeMenu={() => setAnchorEl(null)} />
             </Menu>
         </Box>
     );

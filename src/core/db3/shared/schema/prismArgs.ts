@@ -811,19 +811,39 @@ export type EventSongListPayload = Prisma.EventSongListGetPayload<typeof EventSo
 
 
 export const EventSegmentNaturalOrderBy: Prisma.EventSegmentOrderByWithRelationInput[] = [
+    // this is not completely correct because cancelled event segments should be separated from the rest. but i don't have significance available here.
     { startsAt: "asc" },
     { id: "asc" },
 ];
 
-export const compareEventSegments = (a: Prisma.EventSegmentGetPayload<{ select: { startsAt: true } }>, b: Prisma.EventSegmentGetPayload<{ select: { startsAt: true } }>) => {
+export function getCancelledStatusIds<T extends Prisma.EventStatusGetPayload<{ select: { id: true, significance: true } }>>(eventStatuses: T[]): number[] {
+    return eventStatuses
+        .filter(s => s.significance === EventStatusSignificance.Cancelled)
+        .map(x => x.id);
+}
+
+export const compareEventSegments = (
+    a: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, statusId: true } }>,
+    b: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, statusId: true } }>,
+    cancelledStatusIds: number[],
+) => {
+    const a_isCancelled = a.statusId && cancelledStatusIds.includes(a.statusId);
+    const b_isCancelled = b.statusId && cancelledStatusIds.includes(b.statusId);
+
+    // Cancelled events come last
+    if (a_isCancelled && !b_isCancelled) return 1;
+    if (!a_isCancelled && b_isCancelled) return -1;
+
     if (a.startsAt === null) {
-        if (b.startsAt === null) return 0; // both null.
-        return 1;// a is null (future, after)
+        if (b.startsAt === null) return 0;
+        return 1;
     }
-    // a is not null.
-    if (b.startsAt === null) return -1; // null is after.
+    if (b.startsAt === null) return -1;
+
     return a.startsAt.getTime() - b.startsAt.getTime();
 };
+
+
 
 
 // all info that will appear on an event detail page

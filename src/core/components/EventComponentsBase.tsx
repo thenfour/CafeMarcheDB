@@ -233,9 +233,10 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
     if (!props.eventData.responseInfo) throw new Error("no response info");
 
     const segmentUserResponses = Object.values(props.eventData.responseInfo.getResponsesBySegmentForUser(user));
-    segmentUserResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
+    const cancelledStatusIds = db3.getCancelledStatusIds(dashboardContext.eventStatus.items);
+    segmentUserResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment, cancelledStatusIds));
 
-    const cancelledStatusIds = dashboardContext.eventStatus.items.filter(s => s.significance === db3.EventStatusSignificance.Cancelled).map(x => x.id);
+    //const cancelledStatusIds = dashboardContext.eventStatus.items.filter(s => s.significance === db3.EventStatusSignificance.Cancelled).map(x => x.id);
     const isCancelledSegment = (seg: Prisma.EventSegmentGetPayload<{ select: { statusId: true } }>) => {
         if (!seg.statusId) return false;
         return cancelledStatusIds.includes(seg.statusId);
@@ -276,7 +277,6 @@ export const CalcEventAttendance = (props: CalcEventAttendanceArgs): EventAttend
         allowInstrumentSelect: false,
     };
 
-    //ret.segmentUserResponses.sort((a, b) => db3.compareEventSegments(a.segment, b.segment));
     //const eventResponse = props.eventData.responseInfo.getEventResponseForUser(user, dashboardContext, props.userMap);
     assert(!!ret.eventUserResponse, "getEventResponseForUser should be designed to always return an event response obj");
 
