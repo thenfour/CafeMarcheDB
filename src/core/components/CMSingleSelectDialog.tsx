@@ -249,8 +249,8 @@ export function CMSingleSelectDialog<T>(props: CMSingleSelectDialogProps<T>) {
 
         </DialogContent>
         <DialogActions>
-            <Button onClick={props.onCancel}>Cancel</Button>
             <Button onClick={() => { props.onOK(selectedOption as any); }} disabled={!ssl.allowNull && !selectedOption}>OK</Button>
+            <Button onClick={props.onCancel}>Cancel</Button>
         </DialogActions>
 
     </ReactiveInputDialog>

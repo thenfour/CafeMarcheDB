@@ -5,14 +5,13 @@
 // https://developer.chrome.com/blog/web-custom-formats-for-the-async-clipboard-api/
 
 import { useAuthenticatedSession } from '@blitzjs/auth';
-import { Notes, TextFormat } from '@mui/icons-material';
-import { Button, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, SvgIcon, Switch, Tooltip } from "@mui/material";
+import { Button, Checkbox, DialogActions, DialogContent, DialogTitle, Divider, FormControlLabel, InputBase, ListItemIcon, Menu, MenuItem, Select, Switch, Tooltip } from "@mui/material";
 import { assert } from 'blitz';
 import React from "react";
 import * as ReactSmoothDnd /*{ Container, Draggable, DropResult }*/ from "react-smooth-dnd";
-import { ColorPaletteEntry, gSwatchColors } from 'shared/color';
+import { gSwatchColors } from 'shared/color';
 import { formatSongLength } from 'shared/time';
-import { CoalesceBool, getHashedColor, getUniqueNegativeID, IsNullOrWhitespace, moveItemInArray } from "shared/utils";
+import { CoalesceBool, getHashedColor, getUniqueNegativeID, moveItemInArray } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { SnackbarContext, SnackbarContextType } from "src/core/components/SnackbarContext";
 import * as DB3Client from "src/core/db3/DB3Client";
@@ -22,53 +21,107 @@ import { gCharMap, gIconMap } from '../db3/components/IconMap';
 import { TAnyModel } from '../db3/shared/apiTypes';
 import * as SetlistAPI from '../db3/shared/setlistApi';
 import { AdminInspectObject, ReactSmoothDndContainer, ReactSmoothDndDraggable } from "./CMCoreComponents";
-import { CMDialogContentText, CMSmallButton, SetlistBreakIcon } from './CMCoreComponents2';
+import { CMDialogContentText, CMSmallButton, CMTextarea, NameValuePair } from './CMCoreComponents2';
 import { ColorPick, GetStyleVariablesForColor } from './Color';
 import { DashboardContext } from './DashboardContext';
+import { Markdown3Editor } from './MarkdownControl3';
 import { MetronomeButton } from './Metronome';
+import { ReactiveInputDialog } from './ReactiveInputDialog';
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from './SettingMarkdown';
 import { SongAutocomplete } from './SongAutocomplete';
-import { CMSelectDisplayStyle, CMSingleSelect } from './CMSelect';
-import { CMSelectNullBehavior } from './CMSingleSelectDialog';
-import { ReactiveInputDialog } from './ReactiveInputDialog';
+import { ArrowBack, ArrowForward, ArrowRight } from '@mui/icons-material';
 
-const DividerIsInterruptionButton = ({ value, onClick, className }: { value: boolean, onClick?: () => void, className?: string }) => {
-    return <Tooltip title={value ? "This divider resets the running time and song count" : "This divider is a comment"} disableInteractive >
+
+type DividerEditDialogProperties = {
+    comment: string;
+    color: string | null;
+    format: db3.EventSongListDividerTextStyle;
+    isInterruption: boolean;
+};
+
+const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { sortOrder: number, value: DividerEditDialogProperties, onClick: (x: DividerEditDialogProperties) => void, songList: db3.EventSongListPayload }) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    const [controlledValue, setControlledValue] = React.useState<DividerEditDialogProperties>(value);
+
+    const makeFakeSongList = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListPayload => {
+        const ret = {
+            ...songList,
+            isOrdered: false,
+            isActuallyPlayed: false,
+            dividers: songList.dividers.filter(item => Math.abs(item.sortOrder - sortOrder) <= 2).map(d => ({ ...d })),
+            songs: songList.songs.filter(item => Math.abs(item.sortOrder - sortOrder) <= 2).map(d => ({ ...d })),
+        };
+        const d = ret.dividers.find(x => x.sortOrder === sortOrder);
+        if (!d) throw new Error();
+        d.textStyle = testFormat;
+        d.subtitle = controlledValue.comment;
+        d.color = controlledValue.color;
+        d.isInterruption = controlledValue.isInterruption;
+        return ret;
+    };
+
+    const styleOption = (testFormat: db3.EventSongListDividerTextStyle) => <div style={{ backgroundColor: "white" }}>
+        <Button onClick={() => setControlledValue({ ...controlledValue, format: testFormat })}>{testFormat}</Button>
+        <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(testFormat)} event={undefined} showHeader={false} />
+    </div>;
+
+    return <>
         <div
-            className={`${onClick ? "interactable" : "notInteractable"} dividerButton dividerIsInterruptionButton ${value ? "isInterruption" : "notInterruption"} ${className}`}
-            onClick={onClick}
+            className={`interactable dividerButton`}
+            onClick={(e) => setOpen(true)}
         >
-            {value ? (
-                <SetlistBreakIcon />
-            ) : (
-                <Notes />
-            )}
+            {gIconMap.Edit()}
         </div>
-    </Tooltip>
+        {open && <ReactiveInputDialog
+            onCancel={() => setOpen(false)}
+        >
+            <DialogTitle style={{ display: "flex", alignItems: "center" }}>Setlist <ArrowForward /> Edit setlist divider</DialogTitle>
+            <DialogContent style={{ width: "var(--content-max-width)" }}>
+                <Markdown3Editor
+                    onChange={(v) => setControlledValue({ ...controlledValue, comment: v })}
+                    minHeight={100}
+                    value={controlledValue.comment}
+                    autoFocus
+                    onSave={() => onClick(controlledValue)}
+                />
+                <NameValuePair
+                    name={"Color"}
+                    value={<ColorPick
+                        onChange={(value) => setControlledValue({ ...controlledValue, color: value?.id || null })}
+                        value={controlledValue.color}
+                        allowNull
+                    />}
+                />
+                <NameValuePair
+                    name={"Is a break / Resets running time?"}
+                    value={<Checkbox
+                        value={controlledValue.isInterruption}
+                        onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
+                    />}
+                />
+                <NameValuePair
+                    name={"Style"}
+                    value={
+                        <Select value={controlledValue.format} onChange={(v) => setControlledValue({ ...controlledValue, format: v.target.value as db3.EventSongListDividerTextStyle })}>
+                            {Object.values(db3.EventSongListDividerTextStyle).map(option => <MenuItem key={option} value={option} style={{ display: "flex", flexDirection: "column" }}>
+                                <h3>{option}</h3>
+                                <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(option)} event={undefined} showHeader={false} disableInteraction />
+                            </MenuItem>)}
+                        </Select>
+                        //styleOption(controlledValue.format)
+                        //Object.values(db3.EventSongListDividerTextStyle).map(testFormat => styleOption(testFormat))
+                    }
+                />
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => { onClick(controlledValue); setOpen(false); }} startIcon={gIconMap.Save()}>Ok</Button>
+                <Button onClick={() => setOpen(false)} startIcon={gIconMap.Cancel()}>Cancel</Button>
+            </DialogActions>
+        </ReactiveInputDialog >}
+    </>;
+
 };
-
-
-const DividerTextStyleButton = ({ value, onClick, className }: { value: (string | null), onClick: (x: db3.EventSongListDividerTextStyle) => void, className?: string }) => {
-
-    const realVal = SetlistAPI.StringToEventSongListDividerTextStyle(value);
-
-    return <CMSingleSelect<db3.EventSongListDividerTextStyle>
-        className='interactable dividerButton dividerTextStyleButton'
-        value={realVal}
-        getOptions={() => Object.keys(db3.EventSongListDividerTextStyle).map(x => SetlistAPI.StringToEventSongListDividerTextStyle(x))}
-        getOptionInfo={(val) => ({
-            id: val,
-        })}
-        nullBehavior={CMSelectNullBehavior.NonNullable}
-        onChange={onClick}
-        renderOption={(item) => item}
-        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
-        customRender={(__onClick) => <TextFormat onClick={__onClick} />}
-    />
-};
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,7 +130,7 @@ interface EventSongListValueViewerRowProps {
     songList: db3.EventSongListPayload;
 };
 
-export const EventSongListValueViewerDividerRow = (props: EventSongListValueViewerRowProps) => {
+export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValueViewerRowProps, "value">) => {
     if (props.value.type !== 'divider') throw new Error(`wrongtype`);
 
     const colorInfo = GetStyleVariablesForColor({
@@ -98,7 +151,8 @@ export const EventSongListValueViewerDividerRow = (props: EventSongListValueView
             <div className='comment dividerCommentContainer'>
                 <div className='dividerBreakDiv before'></div>
                 {/* <div className="comment dividerCommentText">{IsNullOrWhitespace(props.value.subtitle) ? <>&nbsp;</> : props.value.subtitle}</div> */}
-                <div className="comment dividerCommentText">{props.value.subtitle}</div>
+                {/* <div className="comment dividerCommentText">{props.value.subtitle}</div> */}
+                <Markdown markdown={props.value.subtitle} className='comment dividerCommentText' compact />
                 <div className='dividerBreakDiv after'></div>
             </div>
             <div className='dividerButtonGroup'></div>
@@ -337,12 +391,132 @@ export const EventSongListDotMenu = (props: EventSongListDotMenuProps) => {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 interface EventSongListValueViewerProps {
     value: db3.EventSongListPayload;
-    event: db3.EventClientPayload_Verbose;
+    event: db3.EventClientPayload_Verbose | undefined;
     readonly: boolean;
     onEnterEditMode?: () => void; // if undefined, don't allow editing.
 };
 
 type SongListSortSpec = "sortOrderAsc" | "sortOrderDesc" | "nameAsc" | "nameDesc";
+
+export const EventSongListValueViewerTable = ({ showHeader = true, disableInteraction = false, ...props }: EventSongListValueViewerProps & { showHeader?: boolean | undefined, disableInteraction?: boolean | undefined }) => {
+    const [sortSpec, setSortSpec] = React.useState<SongListSortSpec>("sortOrderAsc");
+    const snackbarContext = React.useContext(SnackbarContext);
+
+    const user = useCurrentUser()[0]!;
+    const publicData = useAuthenticatedSession();
+    const clientIntention: db3.xTableClientUsageContext = { intention: 'user', mode: 'primary', currentUser: user };
+
+    const editAuthorized = db3.xEventSongList.authorizeRowForEdit({
+        clientIntention,
+        publicData,
+        model: props.value,
+    });
+
+    const rowItems = SetlistAPI.GetRowItems(props.value);
+
+    const stats = API.events.getSongListStats(props.value);
+
+    const handleClickSortOrderTH = () => {
+        if (sortSpec === 'sortOrderAsc') {
+            setSortSpec('sortOrderDesc');
+        }
+        else {
+            setSortSpec('sortOrderAsc');
+        }
+    };
+
+    const handleClickSongNameTH = () => {
+        if (sortSpec === 'nameAsc') {
+            setSortSpec('nameDesc');
+        }
+        else {
+            setSortSpec('nameAsc');
+        }
+    };
+
+    // create a id -> index map.
+    // the list is already sorted by sortorder
+    const indexMap = new Map<number, number>();
+    props.value.songs.forEach((s, i) => {
+        indexMap.set(s.id, i + 1);
+    });
+
+    let sortedSongs = [...props.value.songs];
+    sortedSongs.sort((a, b) => {
+        switch (sortSpec) {
+            case 'nameAsc':
+                return a.song.name < b.song.name ? -1 : 1;
+            case 'nameDesc':
+                return a.song.name > b.song.name ? -1 : 1;
+            default:
+            case 'sortOrderAsc':
+                return a.sortOrder < b.sortOrder ? -1 : 1;
+            case 'sortOrderDesc':
+                return a.sortOrder > b.sortOrder ? -1 : 1;
+        }
+    });
+
+    const getCombinedList = (): db3.EventSongListPayload => {
+        if (!props.event) throw new Error();
+
+        const t: db3.EventSongListPayload = { ...props.event.songLists[0]!, songs: [] }; // create a copy of any random list
+        // replace its song lists with a new array of combined
+        const d = new Map<number, db3.EventSongListSongPayload>();
+        props.event.songLists.forEach(sl => {
+            sl.songs.forEach(sls => {
+                d.set(sls.songId, sls);
+            });
+        });
+
+        t.songs = [...d.values()];
+        t.songs.sort((a, b) => {
+            return a.song.name < b.song.name ? -1 : 1;
+        });
+        return t;
+    };
+
+    return <div className="songListSongTable" style={{ pointerEvents: disableInteraction ? "none" : undefined }}>
+        {showHeader && <div className="thead">
+            <div className="tr">
+                <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
+                <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
+                <div className="th length">Len</div>
+                <div className="th runningLength">∑T</div>
+                <div className="th tempo">Bpm</div>
+                <div className="th comment">
+                    Comment
+                    {props.event &&
+                        <EventSongListDotMenu
+                            readonly={true}
+                            multipleLists={props.event.songLists.length > 1}
+                            handleCopySongNames={async () => await CopySongListNames(props.value, snackbarContext)}
+                            handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value)}
+                            handleCopyCSV={async () => await CopySongListCSV(snackbarContext, props.value)}
+                            handleCopyJSON={async () => await CopySongListJSON(snackbarContext, props.value)}
+                            handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value)}
+
+                            handleCopyCombinedSongNames={async () => await CopySongListNames(getCombinedList(), snackbarContext)}
+                            handleCopyCombinedMarkdown={async () => await CopySongListMarkdown(snackbarContext, getCombinedList())}
+                            handleCopyCombinedCSV={async () => await CopySongListCSV(snackbarContext, getCombinedList())}
+                            handleCopyCombinedJSON={async () => await CopySongListJSON(snackbarContext, getCombinedList())}
+
+                            handlePasteAppend={async () => { }}
+                            handlePasteReplace={async () => { }}
+                        />}
+                </div>
+            </div>
+        </div>}
+
+        <div className="tbody">
+            {
+                rowItems.map((s, index) => <EventSongListValueViewerRow key={s.id} value={s} songList={props.value} />)
+            }
+
+        </div>
+    </div>;
+};
+
+
 
 export const EventSongListValueViewer = (props: EventSongListValueViewerProps) => {
     //const [currentUser] = useCurrentUser();
@@ -405,7 +579,9 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         }
     });
 
-    const getCombinedList = () => {
+    const getCombinedList = (): db3.EventSongListPayload => {
+        if (!props.event) throw new Error();
+
         const t: db3.EventSongListPayload = { ...props.event.songLists[0]!, songs: [] }; // create a copy of any random list
         // replace its song lists with a new array of combined
         const d = new Map<number, db3.EventSongListSongPayload>();
@@ -442,44 +618,7 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
 
             <Markdown markdown={props.value.description} />
 
-            <div className="songListSongTable">
-                <div className="thead">
-                    <div className="tr">
-                        <div className="th songIndex interactable" onClick={handleClickSortOrderTH}># {sortSpec === 'sortOrderAsc' && gCharMap.DownArrow()} {sortSpec === 'sortOrderDesc' && gCharMap.UpArrow()}</div>
-                        <div className="th songName interactable" onClick={handleClickSongNameTH}>Song {sortSpec === 'nameAsc' && gCharMap.DownArrow()} {sortSpec === 'nameDesc' && gCharMap.UpArrow()}</div>
-                        <div className="th length">Len</div>
-                        <div className="th runningLength">∑T</div>
-                        <div className="th tempo">Bpm</div>
-                        <div className="th comment">
-                            Comment
-                            <EventSongListDotMenu
-                                readonly={true}
-                                multipleLists={props.event.songLists.length > 1}
-                                handleCopySongNames={async () => await CopySongListNames(props.value, snackbarContext)}
-                                handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, props.value)}
-                                handleCopyCSV={async () => await CopySongListCSV(snackbarContext, props.value)}
-                                handleCopyJSON={async () => await CopySongListJSON(snackbarContext, props.value)}
-                                handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, props.value)}
-
-                                handleCopyCombinedSongNames={async () => await CopySongListNames(getCombinedList(), snackbarContext)}
-                                handleCopyCombinedMarkdown={async () => await CopySongListMarkdown(snackbarContext, getCombinedList())}
-                                handleCopyCombinedCSV={async () => await CopySongListCSV(snackbarContext, getCombinedList())}
-                                handleCopyCombinedJSON={async () => await CopySongListJSON(snackbarContext, getCombinedList())}
-
-                                handlePasteAppend={async () => { }}
-                                handlePasteReplace={async () => { }}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="tbody">
-                    {
-                        rowItems.map((s, index) => <EventSongListValueViewerRow key={s.id} value={s} songList={props.value} />)
-                    }
-
-                </div>
-            </div>
+            <EventSongListValueViewerTable {...props} />
 
             <div className="stats CMSidenote">
                 {stats.songCount} songs,
@@ -489,6 +628,8 @@ export const EventSongListValueViewer = (props: EventSongListValueViewerProps) =
         </div>
     </div>;
 };
+
+
 
 
 
@@ -568,30 +709,6 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
         });
     }
 
-    const handleDividerColorChange = (newColor: ColorPaletteEntry | null) => {
-        if (props.value.type !== 'divider') throw new Error(`wrong item type`);
-        props.onChange({
-            ...props.value,
-            color: newColor?.id || null,
-        });
-    };
-
-    const toggleIsInterruptionChange = () => {
-        if (props.value.type !== 'divider') throw new Error(`wrong item type`);
-        props.onChange({
-            ...props.value,
-            isInterruption: !props.value.isInterruption,
-        });
-    };
-
-    const handleTextStyleChange = (newValue: db3.EventSongListDividerTextStyle) => {
-        if (props.value.type !== 'divider') throw new Error(`wrong item type`);
-        props.onChange({
-            ...props.value,
-            textStyle: newValue,
-        });
-    };
-
     const textStyle = SetlistAPI.StringToEventSongListDividerTextStyle(props.value.type === 'divider' ? props.value.textStyle : null);
     const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
 
@@ -611,8 +728,9 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                     <div className="td comment dividerCommentCell">
                         <div className='comment dividerCommentContainer'>
                             <div className='dividerBreakDiv before'></div>
-                            <InputBase
+                            <CMTextarea
                                 className="cmdbSimpleInput dividerCommentText"
+                                // style={{ height: "14px" }}
                                 placeholder="Comment"
                                 // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
                                 // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
@@ -620,12 +738,43 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                                 value={props.value.subtitle || ""}
                                 onChange={(e) => handleCommentChange(e.target.value)}
                             />
+                            {/* <InputBase
+                                className="cmdbSimpleInput dividerCommentText"
+                                style={{ height: "14px" }}
+                                placeholder="Comment"
+                                multiline
+                                // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
+                                // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
+                                onMouseDownCapture={(e) => e.stopPropagation()}
+                                value={props.value.subtitle || ""}
+                                onChange={(e) => handleCommentChange(e.target.value)}
+                            /> */}
                             <div className='dividerBreakDiv after'></div>
                         </div>
                         <div className='dividerButtonGroup'>
-                            <ColorPick className="dividerButton" size={'small'} value={props.value.color} onChange={handleDividerColorChange} />
+                            <DividerEditInDialogButton
+                                value={{
+                                    color: props.value.color,
+                                    comment: props.value.subtitle || "",
+                                    format: textStyle,
+                                    isInterruption: props.value.isInterruption,
+                                }}
+                                sortOrder={props.value.sortOrder}
+                                songList={props.songList}
+                                onClick={(newVals) => {
+                                    props.onChange({
+                                        ...props.value,
+                                        type: 'divider',
+                                        color: newVals.color,
+                                        subtitle: newVals.comment,
+                                        isInterruption: newVals.isInterruption,
+                                        textStyle: newVals.format,
+                                    })
+                                }}
+                            />
+                            {/* <ColorPick className="dividerButton" size={'small'} value={props.value.color} onChange={handleDividerColorChange} />
                             <DividerTextStyleButton className='dividerButton' onClick={handleTextStyleChange} value={props.value.textStyle} />
-                            <DividerIsInterruptionButton className='dividerButton' onClick={toggleIsInterruptionChange} value={props.value.isInterruption} />
+                            <DividerIsInterruptionButton className='dividerButton' onClick={toggleIsInterruptionChange} value={props.value.isInterruption} /> */}
                         </div>
                     </div>
                 </>
@@ -673,40 +822,17 @@ interface EventSongListValueEditorProps {
     rowMode: db3.DB3RowMode;
 };
 
-// state managed internally.
-export const EventSongListValueEditor = (props: EventSongListValueEditorProps) => {
+export const EventSongListValueEditor = ({ value, setValue, ...props }: EventSongListValueEditorProps & {
+    value: db3.EventSongListPayload,
+    setValue: (x: db3.EventSongListPayload) => void,
+}) => {
     const snackbarContext = React.useContext(SnackbarContext);
-    const [grayed, setGrayed] = React.useState<boolean>(false);
     const currentUser = useCurrentUser()[0]!;
     const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
-    const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
+    //const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
     const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
 
-    // const ensureHasNewRow = (list: EventSongListItem[]) => {
-    //     // make sure there is at least 1 "new" item.
-    //     if (!list.some(s => s.type === 'new')) {
-    //         const id = newRowId;// getUniqueNegativeID(); // make sure all objects have IDs, for tracking changes
-    //         const sortOrders = list.map(song => song.sortOrder);
-    //         const newSortOrder = 1 + Math.max(0, ...sortOrders);
-    //         list.push({
-    //             eventSongListId: props.initialValue.id,
-    //             id,
-    //             sortOrder: newSortOrder,
-    //             type: "new",
-    //         });
-    //     }
-    // };
-    //const [showTags, setShowTags] = React.useState<boolean>(false);
-
-    // make sure the caller's object doesn't get modified. esp. create a copy of the songs array so we can manipulate it. any refs we modify should not leak outside of this component.
-    //const initialValueCopy: db3.EventSongListPayload = { ...props.initialValue, songs: [...props.initialValue.songs.map(s => ({ ...s }))], dividers: [...props.initialValue.dividers.map(d => ({ ...d }))] };
-
-    //const [value, setValue] = React.useState<db3.EventSongListPayload>(() => JSON.parse(JSON.stringify(props.initialValue)));
-    const [value, setValue] = React.useState<db3.EventSongListPayload>(JSON.parse(JSON.stringify(props.initialValue)));
-
-    // row items are a combination of songs + dividers, with a new blank row at the end
     const rowItems = SetlistAPI.GetRowItems(value);
-    //ensureHasNewRow(rowItems);
 
     const tableSpec = new DB3Client.xTableClientSpec({
         table: db3.xEventSongList,
@@ -825,20 +951,6 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
             throw new Error(`unknown type?`);
         }));
 
-        // const items = obj.map((s): db3.EventSongListSongPayload => ({
-        //     eventSongListId: list.id,
-        //     id: getUniqueNegativeID(),
-        //     songId: s.song.id,
-        //     song: s.song,
-        //     subtitle: s.comment,
-        //     sortOrder: s.sortOrder,
-        // }));
-        // remove the dummy row, merge the lists
-        //list.songs = [...list.songs.filter(s => !!s.song), ...items];
-        // and set sort orders
-        //list.songs.forEach((item, index) => item.sortOrder = index);
-        // and ensure it has a dummy row.
-        //ensureHasNewRow(list.songs);
         handleRowsUpdated(newItems);
     };
 
@@ -861,61 +973,35 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
     const nameColumn = tableSpec.getColumn("name");
     const nameField = nameColumn.renderForNewDialog!({ key: "name", row: value, validationResult, api, value: value.name, clientIntention, autoFocus: true });
 
-    return <>
-        <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
+    return <div className="EventSongListValue">
 
-            <DialogTitle>
-                <SettingMarkdown setting='EditEventSongListDialogTitle' />
-            </DialogTitle>
-            <DialogContent dividers>
-                <CMDialogContentText>
-                    <SettingMarkdown setting='EditEventSongListDialogDescription' />
-                    <AdminInspectObject src={props.initialValue} label="initial value" />
-                    <AdminInspectObject src={value} label="value" />
-                    <AdminInspectObject src={stats} label="stats" />
-                    <AdminInspectObject src={rowItems} label="rowitems" />
-                </CMDialogContentText>
+        {nameField}
 
-                <div className="EventSongListValue">
+        <FormControlLabel
+            control={
+                <Switch checked={value.isOrdered} onChange={e => {
+                    const nv = { ...value };
+                    nv.isOrdered = e.target.checked;
+                    setValue(nv);
+                }} />
+            }
+            label="Does order matter?"
+        />
 
-                    {props.onDelete && <Button onClick={() => setShowingDeleteConfirmation(true)}>{gIconMap.Delete()}Delete</Button>}
-                    {props.onDelete && showingDeleteConfirmation && (<div className="deleteConfirmationControl">Are you sure you want to delete this item?
-                        <Button onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</Button>
-                        <Button onClick={() => {
-                            if (!props.onDelete) return;
-                            setShowingDeleteConfirmation(false);
-                            props.onDelete();
-                        }}>yes</Button>
-                    </div>)}
+        <FormControlLabel
+            control={
+                <Switch checked={value.isActuallyPlayed} onChange={e => {
+                    const nv = { ...value };
+                    nv.isActuallyPlayed = e.target.checked;
+                    setValue(nv);
+                }} />
+            }
+            label="As performed / actually played live?"
+        />
 
-                    {nameField}
+        {/* {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })} */}
 
-
-                    <FormControlLabel
-                        control={
-                            <Switch checked={value.isOrdered} onChange={e => {
-                                const nv = { ...value };
-                                nv.isOrdered = e.target.checked;
-                                setValue(nv);
-                            }} />
-                        }
-                        label="Does order matter?"
-                    />
-
-                    <FormControlLabel
-                        control={
-                            <Switch checked={value.isActuallyPlayed} onChange={e => {
-                                const nv = { ...value };
-                                nv.isActuallyPlayed = e.target.checked;
-                                setValue(nv);
-                            }} />
-                        }
-                        label="As performed / actually played live?"
-                    />
-
-                    {/* {tableSpec.getColumn("sortOrder").renderForNewDialog!({ key: "sortOrder", row: value, validationResult, api, value: value.sortOrder, clientIntention, autoFocus: false })} */}
-
-                    {/*
+        {/*
           TITLE                  DURATION    BPM      Comment
 ☰ 1. 🗑 Paper Spaceships______   3:54       104 |||   ____________________
 ☰ 2. 🗑 Jet Begine____________   4:24       120 ||||  ____________________
@@ -931,85 +1017,144 @@ export const EventSongListValueEditor = (props: EventSongListValueEditorProps) =
 
                  */}
 
-                    <div className="songListSongTable">
-                        <div className="thead">
-                            <div className="tr">
-                                <div className="th dragHandle"></div>
-                                <div className="th songIndex">#</div>
-                                <div className="th icon"></div>
-                                <div className="th songName">Song</div>
-                                <div className="th length">Len</div>
-                                <div className="th runningLength">∑T</div>
-                                <div className="th tempo">bpm</div>
-                                <div className="th comment">
-                                    Comment
-                                    <EventSongListDotMenu
-                                        readonly={false}
-                                        multipleLists={false} // don't bother with this from the editor
-                                        // showTags={showTags}
-                                        // setShowTags={setShowTags}
-                                        handleCopySongNames={async () => await CopySongListNames(value, snackbarContext)}
-                                        handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
-                                        handleCopyCSV={async () => await CopySongListCSV(snackbarContext, value)}
-                                        handleCopyJSON={async () => await CopySongListJSON(snackbarContext, value)}
-                                        handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, value)}
-                                        handleCopyCombinedSongNames={async () => { }}
-                                        handleCopyCombinedMarkdown={async () => { }}
-                                        handleCopyCombinedCSV={async () => { }}
-                                        handleCopyCombinedJSON={async () => { }}
-                                        handlePasteAppend={handlePasteAppend}
-                                        handlePasteReplace={handlePasteReplace}
-                                    />
-                                    {/* <FormControlLabel className='CMFormControlLabel'
+        <div className="songListSongTable">
+            <div className="thead">
+                <div className="tr">
+                    <div className="th dragHandle"></div>
+                    <div className="th songIndex">#</div>
+                    <div className="th icon"></div>
+                    <div className="th songName">Song</div>
+                    <div className="th length">Len</div>
+                    <div className="th runningLength">∑T</div>
+                    <div className="th tempo">bpm</div>
+                    <div className="th comment">
+                        Comment
+                        <EventSongListDotMenu
+                            readonly={false}
+                            multipleLists={false} // don't bother with this from the editor
+                            // showTags={showTags}
+                            // setShowTags={setShowTags}
+                            handleCopySongNames={async () => await CopySongListNames(value, snackbarContext)}
+                            handleCopyIndexSongNames={async () => await CopySongListIndexAndNames(snackbarContext, value)}
+                            handleCopyCSV={async () => await CopySongListCSV(snackbarContext, value)}
+                            handleCopyJSON={async () => await CopySongListJSON(snackbarContext, value)}
+                            handleCopyMarkdown={async () => await CopySongListMarkdown(snackbarContext, value)}
+                            handleCopyCombinedSongNames={async () => { }}
+                            handleCopyCombinedMarkdown={async () => { }}
+                            handleCopyCombinedCSV={async () => { }}
+                            handleCopyCombinedJSON={async () => { }}
+                            handlePasteAppend={handlePasteAppend}
+                            handlePasteReplace={handlePasteReplace}
+                        />
+                        {/* <FormControlLabel className='CMFormControlLabel'
                                         control={<Checkbox size="small" checked={showTags} onClick={() => setShowTags(!showTags)} />} label="Show tags" /> */}
-                                </div>
-                            </div>
-                        </div>
-                        <ReactSmoothDndContainer
-                            dragHandleSelector=".dragHandle"
-                            lockAxis="y"
-                            onDrop={onDrop}
-                        >
-                            {
-                                rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
-                                    <EventSongListValueEditorRow key={s.id} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} />
-                                </ReactSmoothDndDraggable>
-                                )
-                            }
-                            <EventSongListValueEditorRow
-                                key={"newRow"}
-                                //index={rowItems.length}
-                                showDragHandle={false}
-                                value={{
-                                    type: 'new',
-                                    id: newRowId,
-                                    eventSongListId: value.id,
-                                    sortOrder: rowItems.length,
-                                }}
-                                onChange={handleRowChange}
-                                songList={value} />
-                        </ReactSmoothDndContainer>
                     </div>
-
-                    <div className="stats">
-                        {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
-                        {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
-                    </div>
-
-                    {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}
                 </div>
+            </div>
+            <ReactSmoothDndContainer
+                dragHandleSelector=".dragHandle"
+                lockAxis="y"
+                onDrop={onDrop}
+            >
+                {
+                    rowItems.map((s, index) => <ReactSmoothDndDraggable key={s.id}>
+                        <EventSongListValueEditorRow key={s.id} value={s} onChange={handleRowChange} songList={value} onDelete={() => handleRowDelete(s)} />
+                    </ReactSmoothDndDraggable>
+                    )
+                }
+                <EventSongListValueEditorRow
+                    key={"newRow"}
+                    //index={rowItems.length}
+                    showDragHandle={false}
+                    value={{
+                        type: 'new',
+                        id: newRowId,
+                        eventSongListId: value.id,
+                        sortOrder: rowItems.length,
+                    }}
+                    onChange={handleRowChange}
+                    songList={value} />
+            </ReactSmoothDndContainer>
+        </div>
+
+        <div className="stats">
+            {stats.songCount} songs, length: {formatSongLength(stats.durationSeconds)}
+            {stats.songsOfUnknownDuration > 0 && <div>(with {stats.songsOfUnknownDuration} songs of unknown length)</div>}
+        </div>
+
+        {tableSpec.getColumn("description").renderForNewDialog!({ key: "description", row: value, validationResult, api, value: value.description, clientIntention, autoFocus: false })}
+    </div>;
+};
+
+
+
+
+export const EventSongListValueEditorDialog = (props: EventSongListValueEditorProps) => {
+    //const snackbarContext = React.useContext(SnackbarContext);
+    const [grayed, setGrayed] = React.useState<boolean>(false);
+    const [preview, setPreview] = React.useState<boolean>(false);
+    const currentUser = useCurrentUser()[0]!;
+    // const clientIntention: db3.xTableClientUsageContext = { intention: "user", mode: "primary", currentUser };
+    const [showingDeleteConfirmation, setShowingDeleteConfirmation] = React.useState<boolean>(false);
+    // const newRowId = React.useMemo(() => getUniqueNegativeID(), []);
+    const [value, setValue] = React.useState<db3.EventSongListPayload>(JSON.parse(JSON.stringify(props.initialValue)));
+
+    const rowItems = SetlistAPI.GetRowItems(value);
+
+    const stats = API.events.getSongListStats(value);
+
+    return <>
+        <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
+
+            {props.onDelete && showingDeleteConfirmation && (<div className="deleteConfirmationControl">Are you sure you want to delete this setlist?
+                <Button onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</Button>
+                <Button onClick={() => {
+                    if (!props.onDelete) return;
+                    setShowingDeleteConfirmation(false);
+                    props.onDelete();
+                }}>yes</Button>
+            </div>)}
+
+            <DialogTitle>
+                <div>Edit setlist</div>
+                <SettingMarkdown setting='EditEventSongListDialogTitle' />
+                <div style={{ display: "flex" }}>
+                    {preview ? (<Button onClick={() => setPreview(false)} startIcon={<ArrowBack />}>Continue editing</Button>)
+                        : (<Button onClick={() => setPreview(true)} startIcon={gIconMap.Visibility()}>Preview</Button>)}
+                    <div className='flex-spacer'></div>
+                    {props.onDelete && <Button onClick={() => setShowingDeleteConfirmation(true)}>{gIconMap.Delete()}Delete</Button>}
+                </div>
+            </DialogTitle>
+            <DialogContent dividers>
+                <CMDialogContentText>
+                    <SettingMarkdown setting='EditEventSongListDialogDescription' />
+                    <AdminInspectObject src={props.initialValue} label="initial value" />
+                    <AdminInspectObject src={value} label="value" />
+                    <AdminInspectObject src={stats} label="stats" />
+                    <AdminInspectObject src={rowItems} label="rowitems" />
+                </CMDialogContentText>
+
+                {preview ? (
+                    <EventSongListValueViewer readonly={true} value={value} event={props.event} />
+                ) : (
+                    <EventSongListValueEditor {...props} value={value} setValue={setValue} />
+                )}
+
             </DialogContent>
             <DialogActions>
-                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
                 <Button onClick={() => {
                     setGrayed(true);
                     props.onSave(value);
                 }} startIcon={gIconMap.Save()} disabled={grayed}>OK</Button>
+                <Button onClick={props.onCancel} startIcon={gIconMap.Cancel()} disabled={grayed}>Cancel</Button>
             </DialogActions>
 
         </ReactiveInputDialog>
     </>;
 };
+
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1087,7 +1232,7 @@ export const EventSongListControl = (props: EventSongListControlProps) => {
     };
 
     return <>
-        {!props.readonly && editAuthorized && editMode && <EventSongListValueEditor
+        {!props.readonly && editAuthorized && editMode && <EventSongListValueEditorDialog
             initialValue={props.value}
             onSave={handleSave}
             onDelete={handleDelete}
@@ -1158,7 +1303,7 @@ export const EventSongListNewEditor = (props: EventSongListNewEditorProps) => {
         });
     };
 
-    return <EventSongListValueEditor
+    return <EventSongListValueEditorDialog
         onSave={handleSave}
         event={props.event}
         initialValue={initialValue}

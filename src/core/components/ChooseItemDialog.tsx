@@ -114,8 +114,8 @@ export function ChooseItemDialog<T>(props: ChooseItemDialogProps<T>) {
 
             </DialogContent>
             <DialogActions>
-                <Button onClick={props.onCancel}>Cancel</Button>
                 <Button onClick={() => { props.onOK(selectedObj || null) }}>OK</Button>
+                <Button onClick={props.onCancel}>Cancel</Button>
             </DialogActions>
         </Dialog>
     );

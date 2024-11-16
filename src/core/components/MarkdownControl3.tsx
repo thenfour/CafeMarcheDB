@@ -95,7 +95,7 @@ interface Markdown3EditorProps {
 
 type M3Tab = "write" | "preview";
 
-export const Markdown3Editor = ({ readonly = false, beginInPreview = false, ...props }: Markdown3EditorProps) => {
+export const Markdown3Editor = ({ readonly = false, beginInPreview = false, autoFocus = false, ...props }: Markdown3EditorProps) => {
     const [tab, setTab] = React.useState<M3Tab>(beginInPreview ? "preview" : "write");
 
     const [headingTrig, setHeadingTrig] = React.useState<number>(0);
@@ -149,6 +149,7 @@ export const Markdown3Editor = ({ readonly = false, beginInPreview = false, ...p
     React.useEffect(() => {
 
         if (tab === 'write') {
+            //console.log(`refocus + 1 => ${refocusTrig + 1}`);
             setRefocusTrig(refocusTrig + 1); // tell the textarea to focus again.
         }
 
@@ -355,7 +356,7 @@ export const Markdown3Editor = ({ readonly = false, beginInPreview = false, ...p
                     onSave={props.onSave}
                     height={props.minHeight}
                     value={props.value}
-                    autoFocus={props.autoFocus}
+                    autoFocus={autoFocus}
                     headingTrig={headingTrig}
                     boldTrig={boldTrig}
                     italicTrig={italicTrig}

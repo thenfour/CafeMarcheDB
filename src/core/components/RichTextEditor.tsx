@@ -466,7 +466,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     };
 
     const style: React.CSSProperties = {
-        minHeight: props.height || 400,
+        minHeight: props.height || 200,
     };
 
     const insertTextAtCursor = (textToInsert) => {
@@ -500,12 +500,14 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setTimeout(() => {
                 textarea.selectionStart = start;
                 textarea.selectionEnd = end + startMarker.length + endMarker.length;
+                //console.log(`focusing text 503`);
                 textarea.focus();
             }, 0);
         } else {
             newText = `${textBefore}${startMarker}${endMarker}${textAfter}`;
             setTimeout(() => {
                 textarea.selectionStart = textarea.selectionEnd = start + startMarker.length;
+                //console.log(`focusing text 510`);
                 textarea.focus();
             }, 0);
         }
@@ -535,6 +537,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setTimeout(() => {
                 textarea.selectionStart = start + prefix.length;
                 textarea.selectionEnd = start + prefix.length + quotedText.length;
+                //console.log(`focusing text 54`);
                 textarea.focus();
             }, 0);
         } else {
@@ -542,6 +545,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             newText = `${textBefore}${prefix}> ${textAfter}`;
             setTimeout(() => {
                 textarea.selectionStart = textarea.selectionEnd = start + prefix.length + 2; // Position cursor right after "> "
+                //console.log(`focusing text htn`);
                 textarea.focus();
             }, 0);
         }
@@ -578,6 +582,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setTimeout(() => {
                 textarea.selectionStart = start + prefix.length;
                 textarea.selectionEnd = start + prefix.length + modifiedText.length;
+                //console.log(`focusing text chhtn`);
                 textarea.focus();
             }, 0);
         } else {
@@ -585,6 +590,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             newText = `${textBefore}${prefix}${listMarker}${textAfter}`;
             setTimeout(() => {
                 textarea.selectionStart = textarea.selectionEnd = start + prefix.length + listMarker.length;
+                //console.log(`focusing text 99htn`);
                 textarea.focus();
             }, 0);
         }
@@ -615,6 +621,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setTimeout(() => {
                 textarea.selectionStart = start + 1; // After '['
                 textarea.selectionEnd = start + placeholderText.length + 1; // Before ']'
+                //console.log(`focusing text h987tn`);
                 textarea.focus();
             }, 0);
         } else {
@@ -626,6 +633,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setTimeout(() => {
                 textarea.selectionStart = insertPosition; // After '('
                 textarea.selectionEnd = insertPosition + placeholderText.length; // Before ')'
+                //console.log(`focusing text htn6666`);
                 textarea.focus();
             }, 0);
         }
@@ -655,6 +663,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setTimeout(() => {
                 textarea.selectionStart = start;
                 textarea.selectionEnd = start + indentedText.length;
+                //console.log(`focusing te7f7dxt htn`);
                 textarea.focus();
             }, 0);
         } else {
@@ -663,6 +672,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             newText = textarea.value.substring(0, lineStart) + SPACES + textarea.value.substring(lineStart);
             setTimeout(() => {
                 textarea.selectionStart = textarea.selectionEnd = start + INDENT_SIZE;
+                //console.log(`focusithdg text htn`);
                 textarea.focus();
             }, 0);
         }
@@ -691,6 +701,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             setTimeout(() => {
                 textarea.selectionStart = start;
                 textarea.selectionEnd = start + outdentedText.length;
+                //console.log(`focust htn`);
                 textarea.focus();
             }, 0);
         } else {
@@ -701,12 +712,14 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
                 newText = textarea.value.substring(0, lineStart) + currentLine.substring(INDENT_SIZE);
                 setTimeout(() => {
                     textarea.selectionStart = textarea.selectionEnd = Math.max(lineStart, start - INDENT_SIZE);
+                    //console.log(`focusingrrhtn`);
                     textarea.focus();
                 }, 0);
             } else {
                 newText = textarea.value;  // No indent to remove
                 setTimeout(() => {
                     textarea.selectionStart = textarea.selectionEnd = start;
+                    //console.log(`focusirrrrrhtn`);
                     textarea.focus();
                 }, 0);
             }
@@ -888,7 +901,8 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     }, [props.attachFilesTrig]);
 
     React.useEffect(() => {
-        if ((props.refocusTrig || 0) > 0) {
+        if ((props.refocusTrig || 0) > 1) { // this always gets incremented once because of internal state changing. wait until 2 before actually focusing.
+            //console.log(`focusin9999 htn refocusTrig = ${props.refocusTrig || 0}`);
             ta.current.focus();
         }
     }, [props.refocusTrig]);
@@ -896,6 +910,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     React.useEffect(() => {
         if ((props.specialCharacterTrig || 0) > 0) {
             insertTextAtCursor(props.specialCharacter);
+            //console.log(`focusxgxgxgxgxgxgxext htn`);
             ta.current.focus();
         }
     }, [props.specialCharacterTrig]);
@@ -996,7 +1011,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             <ReactTextareaAutocomplete
                 containerClassName="editorContainer"
                 loadingComponent={() => <div>Loading...</div>}
-                autoFocus={CoalesceBool(props.autoFocus, false)}
+                autoFocus={false}
                 innerRef={textarea => setTa(textarea)}
                 value={props.value || ""}
                 height={props.height || 400}

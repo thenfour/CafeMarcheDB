@@ -268,8 +268,8 @@ const EventCustomFieldEditDialog = (props: EventCustomFieldEditDialogProps) => {
 
         </DialogContent>
         <DialogActions>
-            <Button onClick={props.onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
             <Button onClick={() => props.onOK(currentValue)} startIcon={gIconMap.Save()}>OK</Button>
+            <Button onClick={props.onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
         </DialogActions>
 
     </ReactiveInputDialog>;

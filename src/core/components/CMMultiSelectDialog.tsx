@@ -198,8 +198,8 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
                 )}
             </DialogContent>
             <DialogActions>
-                <Button onClick={props.onCancel}>Cancel</Button>
                 <Button onClick={() => { props.onOK(selectedOptions); }}>OK</Button>
+                <Button onClick={props.onCancel}>Cancel</Button>
             </DialogActions>
         </ReactiveInputDialog>
     );

@@ -2784,3 +2784,10 @@ table.TopAlignedCells td {
     flex-wrap: nowrap;
     white-space: nowrap;
 }
+
+textarea {
+    border-radius: 4px;
+    padding: 6px;
+    resize: vertical;
+    border: 1px solid #0001;
+}

@@ -331,15 +331,19 @@
     flex-wrap: wrap;
 }
 
-.songListSongTable .td.comment input::placeholder {
-    color: #0005;
+.songListSongTable .td.comment input::placeholder,
+.songListSongTable .td.comment textarea::placeholder {
+    color: #0004;
     font-size: 12px;
+    text-shadow: none;
+    font-style: italic;
 }
 
-.songListSongTable .td.comment:hover input::placeholder {
+/* .songListSongTable .td.comment:hover input::placeholder,
+.songListSongTable .td.comment:hover textarea::placeholder {
     color: #000;
     font-size: 12px;
-}
+} */
 
 
 .EventSongListValue {
@@ -406,26 +410,26 @@ li.songDropdownOption {
 }
 
 .songListSongTable .tr.item.type_divider.style_BreakBefore {
-    border-top: 4px solid var(--color-background);
+    border-top: 4px solid var(--color-foreground);
     margin-top: 16px;
     margin-left: 30px;
     margin-right: 30px;
 }
 
 .songListSongTable .tr.item.type_divider.style_BreakAfter {
-    border-bottom: 4px solid var(--color-background);
+    border-bottom: 4px solid var(--color-foreground);
     margin-bottom: 6px;
     margin-left: 30px;
     margin-right: 30px;
 }
 
 .songListSongTable .tr.item.type_divider.style_Minimal.style_BreakBefore {
-    border-top: 2px dashed var(--color-background);
+    border-top: 2px dashed var(--color-foreground);
     margin-top: 4px;
 }
 
 .songListSongTable .tr.item.type_divider.style_Minimal.style_BreakAfter {
-    border-bottom: 2px dashed var(--color-background);
+    border-bottom: 2px dashed var(--color-foreground);
     margin-bottom: 6px;
 }
 
@@ -442,10 +446,12 @@ li.songDropdownOption {
 .songListSongTable .tr.item.type_divider.style_Break .dividerCommentText {
     margin: 0 15px;
     padding-left: 0px;
+    flex-grow: 1;
 }
 
-.songListSongTable .tr.item.type_divider .dividerCommentText input {
-    width: 350px;
+.songListSongTable .tr.item.type_divider .dividerCommentText input,
+.songListSongTable .tr.item.type_divider textarea.dividerCommentText {
+    width: 450px;
 }
 
 .songListSongTable .tr.item.type_divider.style_Break .dividerBreakDiv.after {
@@ -457,10 +463,6 @@ li.songDropdownOption {
 .songListSongTable .tr.item.type_divider .dividerCommentContainer {
     display: flex;
     align-items: center;
-}
-
-.songListSongTable .tr.item.type_divider.style_Break .dividerCommentText {
-    flex-grow: 0;
 }
 
 .songListSongTable .tr.item.type_divider.nohatch .dividerCommentText {
