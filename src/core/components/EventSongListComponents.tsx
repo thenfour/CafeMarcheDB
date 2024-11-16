@@ -152,11 +152,10 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
         </div>
         <div className="td comment dividerCommentCell">
             <div className='comment dividerCommentContainer'>
-                <div className='dividerBreakDiv before'></div>
-                {/* <div className="comment dividerCommentText">{IsNullOrWhitespace(props.value.subtitle) ? <>&nbsp;</> : props.value.subtitle}</div> */}
-                {/* <div className="comment dividerCommentText">{props.value.subtitle}</div> */}
+                {/* <div className='dividerBreakDiv before'></div> */}
+                <div className='dividerBreakDiv'></div>
                 <Markdown markdown={props.value.subtitle} className='comment dividerCommentText' compact />
-                <div className='dividerBreakDiv after'></div>
+                {/* <div className='dividerBreakDiv after'></div> */}
             </div>
             <div className='dividerButtonGroup'></div>
         </div>

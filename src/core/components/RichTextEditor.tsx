@@ -373,7 +373,7 @@ export const Markdown = (props: MarkdownProps) => {
 
     return <NoSsr>
         <div className={`markdown renderedContent ${props.compact && "compact"} ${props.className || ""}`} onClick={props.onClick}>
-            <div ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
+            <div className='extraContainerDiv' ref={containerRef} id={props.id} dangerouslySetInnerHTML={{ __html: html }}></div>
         </div >
     </NoSsr>;
 };
