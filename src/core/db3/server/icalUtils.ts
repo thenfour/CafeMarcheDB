@@ -7,20 +7,8 @@ import * as db3 from "../db3";
 import { DateTimeRange } from "shared/time";
 import { ICalEventStatus } from "ical-generator";
 import { SongListIndexAndNamesToString } from "../shared/setlistApi";
+import { markdownToPlainText } from "shared/markdownUtils";
 
-
-// Function to convert Markdown to plain text
-const markdownToPlainText = (markdownText: string): string => {
-    const md = new MarkdownIt();
-    const htmlText = md.render(markdownText);
-
-    // Convert HTML to plain text
-    const plainText = convert(htmlText, {
-        wordwrap: null
-    });
-
-    return plainText;
-};
 
 export const EventSongListDividerForCalArgs = Prisma.validator<Prisma.EventSongListDividerDefaultArgs>()({
     select: {
