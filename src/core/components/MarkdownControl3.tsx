@@ -21,25 +21,56 @@ interface SpecialCharacterDropdownProps {
 }
 
 const specialCharacters = [
+    {
+        category: 'Formats', symbols: [
+            '{{big:big text}}',
+            '{{bigger:Bigger text}}',
+            '{{highlight:Highlight yellow}}',
+            '{{highlightred:Highlight red}}',
+            '{{highlightgreen:Highlight green}}',
+            '{{highlightblue:Highlight blue}}',
+        ], display: [
+            <span className='markdown-class-big'>Big text</span>,
+            <span className='markdown-class-bigger'>Bigger text</span>,
+            <span className='markdown-class-highlight'>Highlight yellow</span>,
+            <span className='markdown-class-highlightred'>Highlight red</span>,
+            <span className='markdown-class-highlightgreen'>Highlight green</span>,
+            <span className='markdown-class-highlightblue'>Highlight blue</span>,
+        ]
+    },
     { category: 'Musical Symbols', symbols: ['♪', '♫', '♩', '♬', '♭', '♮', '♯', '𝄞', '𝄢', '𝄡'], display: undefined },
     //{ category: 'Rehearsal marks', symbols: ['Ⓐ', 'Ⓑ', 'Ⓒ', 'Ⓓ', 'Ⓔ', 'Ⓕ', 'Ⓖ', 'Ⓗ', 'Ⓘ', 'Ⓙ', 'Ⓚ', 'Ⓛ', 'Ⓜ', 'Ⓝ', 'Ⓞ', 'Ⓟ', 'Ⓠ', 'Ⓡ', 'Ⓢ', 'Ⓣ', 'Ⓤ', 'Ⓥ', 'Ⓦ', 'Ⓧ', 'Ⓨ', 'Ⓩ', '⓪', '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨'] },
     //{ category: 'Math Symbols', symbols: ['∞', '√', '∑', 'π', '∆', '≈', '≠', '≤', '≥', '∫', '∂', '∇', '∈', '∉', '∪', '∩', '⊂', '⊃', '⊆', '⊇'] },
     //{ category: 'Currency Symbols', symbols: ['$', '€', '£', '¥', '₩', '₽', '₹', '₺', '₿'] },
     //{ category: 'Rehearsal marks', symbols: ['🄰', '🄱', '🄲', '🄳', '🄴', '🄵', '🄶', '🄷', '🄸', '🄹', '🄺', '🄻', '🄼', '🄽', '🄾', '🄿', '🅀', '🅁', '🅂', '🅃', '🅄', '🅅', '🅆', '🅇', '🅈', '🅉', '🅊', '🅋', '🅌', '🅍', '🅎', '🅏', '🅐', '🅑', '🅒', '🅓', '🅔', '🅕', '🅖', '🅗', '🅘', '🅙', '🅚', '🅛', '🅜', '🅝', '🅞', '🅟', '🅠', '🅡', '🅢', '🅣', '🅤', '🅥', '🅦', '🅧', '🅨', '🅩'] },
     //{ category: 'Rehearsal marks', symbols: ['{{enclosed:A}}'], display:["A"] },
-    { category: 'Rehearsal marks', symbols: ['{{enclosed:A}}', '{{enclosed:B}}', '{{enclosed:C}}', '{{enclosed:D}}', '{{enclosed:E}}', '{{enclosed:F}}', '{{enclosed:G}}', '{{enclosed:H}}', '{{enclosed:I}}', '{{enclosed:J}}', '{{enclosed:K}}', '{{enclosed:L}}', '{{enclosed:M}}', '{{enclosed:N}}', '{{enclosed:O}}', '{{enclosed:P}}', '{{enclosed:Q}}', '{{enclosed:R}}', '{{enclosed:S}}', '{{enclosed:T}}', '{{enclosed:U}}', '{{enclosed:V}}', '{{enclosed:W}}', '{{enclosed:X}}', '{{enclosed:Y}}', '{{enclosed:Z}}', '{{enclosed:1}}', '{{enclosed:2}}', '{{enclosed:3}}', '{{enclosed:4}}', '{{enclosed:5}}', '{{enclosed:6}}', '{{enclosed:7}}', '{{enclosed:8}}', '{{enclosed:9}}', '{{enclosed:10}}'], display: ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'] },
+    {
+        category: 'Rehearsal marks', symbols: [
+            '{{enclosed:A}}', '{{enclosed:B}}', '{{enclosed:C}}', '{{enclosed:D}}', '{{enclosed:E}}', '{{enclosed:F}}', '{{enclosed:G}}', '{{enclosed:1}}', '{{enclosed:2}}', '{{enclosed:3}}'],
+        display: [<span className='markdown-class-enclosed'>A</span>,
+        <span className='markdown-class-enclosed'>B</span>,
+        <span className='markdown-class-enclosed'>C</span>,
+        <span className='markdown-class-enclosed'>D</span>,
+        <span className='markdown-class-enclosed'>E</span>,
+        <span className='markdown-class-enclosed'>F</span>,
+        <span className='markdown-class-enclosed'>G</span>,
+        <span className='markdown-class-enclosed'>1</span>,
+        <span className='markdown-class-enclosed'>2</span>,
+        <span className='markdown-class-enclosed'>3</span>,
+        ]
+    },
     { category: 'Arrows', symbols: ['→', '←', '↑', '↓', '↔', '↕', '⇒', '⇐', '⇑', '⇓', '⇔', '⇕'], display: undefined },
     { category: 'Miscellaneous', symbols: ['©', '®', '™', '✓', '✗', '★', '☆', '♠', '♣', '♥', '♦', '☀', '☁', '☂', '☃', '☎', '✉', '✂', '✍', '✏'], display: undefined },
 ];
 
 const SpecialCharacterDropdown: React.FC<SpecialCharacterDropdownProps> = ({ anchorEl, onSelect, onClose }) => {
 
-    return <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={onClose}>
+    return <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={onClose} className='markdown'>
         {specialCharacters.map((category) => (
             <div key={category.category}>
-                <MenuItem disabled>{category.category}</MenuItem>
+                <MenuItem disabled dense>{category.category}</MenuItem>
                 {category.symbols.map((symbol, i) => (
-                    <MenuItem key={i} onClick={() => onSelect(symbol)}>
+                    <MenuItem key={i} onClick={() => onSelect(symbol)} dense>
                         {category.display ? category.display[i] : symbol}
                     </MenuItem>
                 ))}
