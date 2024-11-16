@@ -10,7 +10,7 @@ import { CreateChangeContext } from "shared/utils";
 
 // entry point ////////////////////////////////////////////////
 export default resolver.pipe(
-    resolver.authorize(Permission.login),
+    resolver.authorize(Permission.manage_events),
     async (args: TinsertOrUpdateEventSongListArgs, ctx: AuthenticatedCtx) => {
 
         if (!args.id) {
