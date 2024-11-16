@@ -538,9 +538,10 @@ export const CMTable = <T extends Object,>({ rows, columns, ...props }: CMTableP
 
 interface CMTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
     autoHeight?: boolean | undefined;
+    autoFocus?: boolean | undefined;
 };
 
-export const CMTextarea: React.FC<CMTextareaProps> = ({ autoHeight = true, ...props }) => {
+export const CMTextarea: React.FC<CMTextareaProps> = ({ autoHeight = true, autoFocus = false, ...props }) => {
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
     React.useEffect(() => {
@@ -551,6 +552,9 @@ export const CMTextarea: React.FC<CMTextareaProps> = ({ autoHeight = true, ...pr
             const newHeight = textarea.scrollHeight + 3; // at least on chrome we need a bit of margin to get rid of initial scrollbar.
             textarea.style.height = `${newHeight}px`;
             //console.log(`setting height to ${newHeight}`);
+        }
+        if (textarea && autoFocus) {
+            textarea.focus();
         }
     }, [props.value]);
 

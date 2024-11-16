@@ -15,6 +15,7 @@ import { CMDialogContentText } from "./CMCoreComponents2";
 export interface ReactiveInputDialogProps {
     onCancel: () => void;
     className?: string;
+    style?: React.CSSProperties;
 };
 export const ReactiveInputDialog = (props: React.PropsWithChildren<ReactiveInputDialogProps>) => {
     const theme = useTheme();
@@ -23,6 +24,7 @@ export const ReactiveInputDialog = (props: React.PropsWithChildren<ReactiveInput
         <Dialog
             className={`ReactiveInputDialog ${props.className} ${fullScreen ? "smallScreen" : "bigScreen"}`}
             open={true}
+            style={props.style}
             onClose={props.onCancel}
             scroll="paper"
             fullScreen={fullScreen}

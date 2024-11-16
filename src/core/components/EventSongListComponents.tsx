@@ -33,16 +33,15 @@ import { SongAutocomplete } from './SongAutocomplete';
 import { ArrowBack, ArrowForward, ArrowRight } from '@mui/icons-material';
 
 
-type DividerEditDialogProperties = {
-    comment: string;
-    color: string | null;
-    format: db3.EventSongListDividerTextStyle;
-    isInterruption: boolean;
-};
-
-const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { sortOrder: number, value: DividerEditDialogProperties, onClick: (x: DividerEditDialogProperties) => void, songList: db3.EventSongListPayload }) => {
-    const [open, setOpen] = React.useState<boolean>(false);
-    const [controlledValue, setControlledValue] = React.useState<DividerEditDialogProperties>(value);
+const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClose }: {
+    sortOrder: number,
+    value: SetlistAPI.EventSongListDividerItem,
+    onClick: (x: SetlistAPI.EventSongListDividerItem) => void,
+    songList: db3.EventSongListPayload,
+    onClose: () => void,
+}) => {
+    //const [open, setOpen] = React.useState<boolean>(false);
+    const [controlledValue, setControlledValue] = React.useState<SetlistAPI.EventSongListDividerItem>({ ...value });
 
     const makeFakeSongList = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListPayload => {
         const ret = {
@@ -54,17 +53,65 @@ const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { so
         };
         const d = ret.dividers.find(x => x.sortOrder === sortOrder);
         if (!d) throw new Error();
+        Object.assign(d, value);
         d.textStyle = testFormat;
-        d.subtitle = controlledValue.comment;
-        d.color = controlledValue.color;
-        d.isInterruption = controlledValue.isInterruption;
         return ret;
     };
 
-    const styleOption = (testFormat: db3.EventSongListDividerTextStyle) => <div style={{ backgroundColor: "white" }}>
-        <Button onClick={() => setControlledValue({ ...controlledValue, format: testFormat })}>{testFormat}</Button>
-        <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(testFormat)} event={undefined} showHeader={false} />
-    </div>;
+    return <ReactiveInputDialog
+        onCancel={onClose}
+    >
+        <DialogTitle style={{ display: "flex", alignItems: "center" }}>Setlist <ArrowForward /> Edit setlist divider</DialogTitle>
+        <DialogContent style={{ width: "var(--content-max-width)" }}>
+            <Markdown3Editor
+                onChange={(v) => setControlledValue({ ...controlledValue, subtitle: v })}
+                minHeight={100}
+                value={controlledValue.subtitle || ""}
+                autoFocus
+                onSave={() => onClick(controlledValue)}
+            />
+            <NameValuePair
+                name={"Color"}
+                value={<ColorPick
+                    onChange={(value) => setControlledValue({ ...controlledValue, color: value?.id || null })}
+                    value={controlledValue.color}
+                    allowNull
+                />}
+            />
+            <NameValuePair
+                name={"Is a break / Resets running time?"}
+                value={<Checkbox
+                    value={controlledValue.isInterruption}
+                    onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
+                />}
+            />
+            <NameValuePair
+                name={"Style"}
+                value={
+                    <div style={{ backgroundColor: "white" }}>
+                        <Select value={controlledValue.textStyle} onChange={(v) => setControlledValue({ ...controlledValue, textStyle: v.target.value as db3.EventSongListDividerTextStyle })}>
+                            {Object.values(db3.EventSongListDividerTextStyle).map(option => <MenuItem key={option} value={option} style={{ display: "flex", flexDirection: "column" }}>
+                                <h3>{option}</h3>
+                                <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(option)} event={undefined} showHeader={false} disableInteraction />
+                            </MenuItem>)}
+                        </Select>
+                    </div>
+                    //styleOption(controlledValue.format)
+                    //Object.values(db3.EventSongListDividerTextStyle).map(testFormat => styleOption(testFormat))
+                }
+            />
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={() => { onClick(controlledValue); onClose(); }} startIcon={gIconMap.Save()}>Ok</Button>
+            <Button onClick={onClose} startIcon={gIconMap.Cancel()}>Cancel</Button>
+        </DialogActions>
+    </ReactiveInputDialog >
+};
+
+
+const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { sortOrder: number, value: SetlistAPI.EventSongListDividerItem, onClick: (x: SetlistAPI.EventSongListDividerItem) => void, songList: db3.EventSongListPayload }) => {
+    const [open, setOpen] = React.useState<boolean>(false);
+    //const [controlledValue, setControlledValue] = React.useState<SetlistAPI.EventSongListDividerItem>({ ...value });
 
     return <>
         <div
@@ -73,52 +120,7 @@ const DividerEditInDialogButton = ({ sortOrder, value, onClick, songList }: { so
         >
             {gIconMap.Edit()}
         </div>
-        {open && <ReactiveInputDialog
-            onCancel={() => setOpen(false)}
-        >
-            <DialogTitle style={{ display: "flex", alignItems: "center" }}>Setlist <ArrowForward /> Edit setlist divider</DialogTitle>
-            <DialogContent style={{ width: "var(--content-max-width)" }}>
-                <Markdown3Editor
-                    onChange={(v) => setControlledValue({ ...controlledValue, comment: v })}
-                    minHeight={100}
-                    value={controlledValue.comment}
-                    autoFocus
-                    onSave={() => onClick(controlledValue)}
-                />
-                <NameValuePair
-                    name={"Color"}
-                    value={<ColorPick
-                        onChange={(value) => setControlledValue({ ...controlledValue, color: value?.id || null })}
-                        value={controlledValue.color}
-                        allowNull
-                    />}
-                />
-                <NameValuePair
-                    name={"Is a break / Resets running time?"}
-                    value={<Checkbox
-                        value={controlledValue.isInterruption}
-                        onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
-                    />}
-                />
-                <NameValuePair
-                    name={"Style"}
-                    value={
-                        <Select value={controlledValue.format} onChange={(v) => setControlledValue({ ...controlledValue, format: v.target.value as db3.EventSongListDividerTextStyle })}>
-                            {Object.values(db3.EventSongListDividerTextStyle).map(option => <MenuItem key={option} value={option} style={{ display: "flex", flexDirection: "column" }}>
-                                <h3>{option}</h3>
-                                <EventSongListValueViewerTable readonly={true} value={makeFakeSongList(option)} event={undefined} showHeader={false} disableInteraction />
-                            </MenuItem>)}
-                        </Select>
-                        //styleOption(controlledValue.format)
-                        //Object.values(db3.EventSongListDividerTextStyle).map(testFormat => styleOption(testFormat))
-                    }
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => { onClick(controlledValue); setOpen(false); }} startIcon={gIconMap.Save()}>Ok</Button>
-                <Button onClick={() => setOpen(false)} startIcon={gIconMap.Cancel()}>Cancel</Button>
-            </DialogActions>
-        </ReactiveInputDialog >}
+        {open && <DividerEditInDialogDialog sortOrder={sortOrder} value={value} onClick={onClick} songList={songList} onClose={() => setOpen(false)} />}
     </>;
 
 };
@@ -145,6 +147,7 @@ export const EventSongListValueViewerDividerRow = (props: Pick<EventSongListValu
     const styleClasses = SetlistAPI.GetCssClassForEventSongListDividerTextStyle(textStyle);
 
     return <div className={`SongListValueViewerRow tr ${props.value.id <= 0 ? 'newItem' : 'existingItem'} item validItem type_divider ${colorInfo.cssClass} ${styleClasses}`} style={colorInfo.style}>
+        <div className='divBreak'></div>
         <div className="td songIndex">
         </div>
         <div className="td comment dividerCommentCell">
@@ -678,6 +681,7 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
 
     const handleCommentChange = (newText: string) => {
         if (props.value.type === 'new') return;
+        //console.log(`comment change: ${newText}`);
         const item = { ...props.value, subtitle: newText };
         props.onChange(item);
     };
@@ -729,8 +733,8 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                         <div className='comment dividerCommentContainer'>
                             <div className='dividerBreakDiv before'></div>
                             <CMTextarea
+                                autoFocus={true}
                                 className="cmdbSimpleInput dividerCommentText"
-                                // style={{ height: "14px" }}
                                 placeholder="Comment"
                                 // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
                                 // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
@@ -738,43 +742,17 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
                                 value={props.value.subtitle || ""}
                                 onChange={(e) => handleCommentChange(e.target.value)}
                             />
-                            {/* <InputBase
-                                className="cmdbSimpleInput dividerCommentText"
-                                style={{ height: "14px" }}
-                                placeholder="Comment"
-                                multiline
-                                // this is required to prevent the popup from happening when you click into the text field. you must explicitly click the popup indicator.
-                                // a bit of a hack/workaround but necessary https://github.com/mui/material-ui/issues/23164
-                                onMouseDownCapture={(e) => e.stopPropagation()}
-                                value={props.value.subtitle || ""}
-                                onChange={(e) => handleCommentChange(e.target.value)}
-                            /> */}
                             <div className='dividerBreakDiv after'></div>
                         </div>
                         <div className='dividerButtonGroup'>
                             <DividerEditInDialogButton
-                                value={{
-                                    color: props.value.color,
-                                    comment: props.value.subtitle || "",
-                                    format: textStyle,
-                                    isInterruption: props.value.isInterruption,
-                                }}
+                                value={props.value}
                                 sortOrder={props.value.sortOrder}
                                 songList={props.songList}
                                 onClick={(newVals) => {
-                                    props.onChange({
-                                        ...props.value,
-                                        type: 'divider',
-                                        color: newVals.color,
-                                        subtitle: newVals.comment,
-                                        isInterruption: newVals.isInterruption,
-                                        textStyle: newVals.format,
-                                    })
+                                    props.onChange(newVals);
                                 }}
                             />
-                            {/* <ColorPick className="dividerButton" size={'small'} value={props.value.color} onChange={handleDividerColorChange} />
-                            <DividerTextStyleButton className='dividerButton' onClick={handleTextStyleChange} value={props.value.textStyle} />
-                            <DividerIsInterruptionButton className='dividerButton' onClick={toggleIsInterruptionChange} value={props.value.isInterruption} /> */}
                         </div>
                     </div>
                 </>
@@ -1104,7 +1082,7 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
     const stats = API.events.getSongListStats(value);
 
     return <>
-        <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor">
+        <ReactiveInputDialog onCancel={props.onCancel} className="EventSongListValueEditor" style={{ minHeight: "100vh" }}>
 
             {props.onDelete && showingDeleteConfirmation && (<div className="deleteConfirmationControl">Are you sure you want to delete this setlist?
                 <Button onClick={() => setShowingDeleteConfirmation(false)}>nope, cancel</Button>
@@ -1135,7 +1113,9 @@ export const EventSongListValueEditorDialog = (props: EventSongListValueEditorPr
                 </CMDialogContentText>
 
                 {preview ? (
-                    <EventSongListValueViewer readonly={true} value={value} event={props.event} />
+                    <div style={{ pointerEvents: "none" }}>
+                        <EventSongListValueViewer readonly={true} value={value} event={props.event} />
+                    </div>
                 ) : (
                     <EventSongListValueEditor {...props} value={value} setValue={setValue} />
                 )}
