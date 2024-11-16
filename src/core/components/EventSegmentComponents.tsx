@@ -19,6 +19,10 @@ import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase
 import { useDashboardContext } from "./DashboardContext";
 import { ConfirmationDialog } from "./ReactiveInputDialog";
 import { useConfirm } from "./ConfirmationDialog";
+import { useMutation } from "@blitzjs/rpc";
+import clearEventSegmentResponses from "../db3/mutations/clearEventSegmentResponses";
+import copyEventSegmentResponses from "../db3/mutations/copyEventSegmentResponses";
+import { Permission } from "shared/permissions";
 
 
 
@@ -312,7 +316,27 @@ interface EventSegmentDotMenuCopyUserResponsesFromMenuItemProps {
 };
 
 export const EventSegmentDotMenuCopyUserResponsesFromMenuItem = (props: EventSegmentDotMenuCopyUserResponsesFromMenuItemProps) => {
-    return <MenuItem>
+    const snackbar = useSnackbar();
+    const confirm = useConfirm();
+    const [copyEventSegmentResponsesMutation] = useMutation(copyEventSegmentResponses);
+
+    const handleCopyEventSegmentResponses = async () => {
+        await copyEventSegmentResponsesMutation({
+            fromEventSegmentId: props.fromSegment.id,
+            toEventSegmentId: props.toSegment.id,
+        });
+    };
+
+    return <MenuItem onClick={async () => {
+        props.onClose();
+        if (await confirm({
+            title: `Are you sure? Existing ${props.toSegment.responses.length} responses will be clobbered; ${props.fromSegment.responses.length} responses from ${props.fromSegment.name} will be copied to segment '${props.toSegment.name}'. This cannot be undone.`,
+            description: null,
+        })) {
+            await snackbar.invokeAsync(handleCopyEventSegmentResponses);
+            props.refetch();
+        }
+    }}>
         <ListItemIcon>{gIconMap.Delete()}</ListItemIcon>
         Copy responses from {props.fromSegment.name}
     </MenuItem>;
@@ -331,9 +355,15 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const snackbar = useSnackbar();
     const confirm = useConfirm();
+    const [clearEventSegmentResponsesMutation] = useMutation(clearEventSegmentResponses);
+    const dashboardContext = useDashboardContext();
+
+    if (!dashboardContext.isAuthorized(Permission.admin_events)) return null;
 
     const handleClear = async () => {
-
+        await clearEventSegmentResponsesMutation({
+            eventSegmentId: props.segment.id,
+        });
     };
 
     return <>
@@ -353,7 +383,8 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
                     title: `Sure you want to clear all responses for ${props.segment.name}? This cannot be undone. (${props.segment.responses.length} in total)`,
                     description: null,
                 })) {
-                    snackbar.invokeAsync(handleClear);
+                    await snackbar.invokeAsync(handleClear);
+                    props.refetch();
                 }
             }}>
                 <ListItemIcon>{gIconMap.Delete()}</ListItemIcon>

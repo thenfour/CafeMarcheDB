@@ -108,16 +108,33 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number, 
     }
 };
 
+type EventSegmentChangeHookModelType = Prisma.EventSegmentUserResponseGetPayload<{
+    select: {
+        id: true,
+        eventSegment: {
+            select: {
+                eventId: true,
+            }
+        }
+    }
+}>;
 
-export const CallMutateEventHooks = async (args: { tableName: string, model: TAnyModel & { id: number } }): Promise<void> => {
+export const CallMutateEventHooks = async (args: { tableNameOrSpecialMutationKey: string, model: TAnyModel & { id: number } }): Promise<void> => {
     let eventIdToUpdate: null | number | undefined = null;
-    switch (args.tableName.toLowerCase()) {
+    switch (args.tableNameOrSpecialMutationKey.toLowerCase()) {
         case "event":
             eventIdToUpdate = args.model.id;
             await RecalcEventDateRangeAndIncrementRevision(eventIdToUpdate, args.model as any);
             return;
         case "eventsegment":
             eventIdToUpdate = (args.model as Prisma.EventSegmentGetPayload<{ select: { id: true, eventId: true } }>).eventId;
+            break;
+        case "eventsegmentuserresponse":
+            eventIdToUpdate = (args.model as EventSegmentChangeHookModelType).eventSegment.eventId;
+            break;
+        case "mutation:copyeventsegmentresponses":
+        case "mutation:cleareventsegmentresponses":
+            eventIdToUpdate = args.model.id; // is event id.
             break;
         case "eventsonglist":
             eventIdToUpdate = (args.model as Prisma.EventSongListGetPayload<{ select: { id: true, eventId: true } }>).eventId;
@@ -275,7 +292,7 @@ export const deleteImpl = async (table: db3.xTable, id: number, ctx: Authenticat
         const choice = await dbTableClient.deleteMany({ where: { [table.pkMember]: id } });
 
         await CallMutateEventHooks({
-            tableName: table.tableName,
+            tableNameOrSpecialMutationKey: table.tableName,
             model: oldValues,
         });
 
@@ -367,7 +384,7 @@ export const insertImpl = async <TReturnPayload,>(table: db3.xTable, fields: TAn
         });
 
         await CallMutateEventHooks({
-            tableName: table.tableName,
+            tableNameOrSpecialMutationKey: table.tableName,
             model: { id: obj[table.pkMember], ...obj },
         });
 
@@ -466,7 +483,7 @@ export const updateImpl = async (table: db3.xTable, pkid: number, fields: TAnyMo
         });
 
         await CallMutateEventHooks({
-            tableName: table.tableName,
+            tableNameOrSpecialMutationKey: table.tableName,
             model: { id: pkid, ...obj },
         });
 
@@ -707,7 +724,7 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
     });
 
     await CallMutateEventHooks({
-        tableName: "EventSongList",
+        tableNameOrSpecialMutationKey: "EventSongList",
         model: { id: args.songListID }
     });
 
@@ -1220,7 +1237,7 @@ export const UpdateEventCustomFieldValues = async (changeContext: ChangeContext,
     });
 
     await CallMutateEventHooks({
-        tableName: "event:eventCustomFieldValue",
+        tableNameOrSpecialMutationKey: "event:eventCustomFieldValue",
         model: { id: args.eventId }
     });
 };
