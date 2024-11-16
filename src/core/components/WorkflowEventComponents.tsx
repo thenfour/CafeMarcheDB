@@ -5,7 +5,7 @@ import { ReactFlowProvider } from "@xyflow/react";
 import * as React from 'react';
 import { gGeneralPaletteList } from "shared/color";
 import { Permission } from "shared/permissions";
-import { arraysContainSameValues, callAsync, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace, sleep } from "shared/utils";
+import { arraysContainSameValues, callAsync, CoalesceBool, getUniqueNegativeID, IsNullOrWhitespace } from "shared/utils";
 import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
@@ -16,30 +16,17 @@ import { ColorPick } from "./Color";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 
-import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWorkflowInstance, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowInstanceToMutationArgs, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
-import UnsavedChangesHandler from "./UnsavedChangesHandler";
-import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
-import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowLogView, WorkflowRenderer } from "./WorkflowUserComponents";
 import { useMutation, useQuery } from "@blitzjs/rpc";
+import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWorkflowInstance, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import insertOrUpdateEventWorkflowInstance from "../db3/mutations/insertOrUpdateEventWorkflowInstance";
-import { useSnackbar } from "./SnackbarContext";
 import getWorkflowDefAndInstanceForEvent from "../db3/queries/getWorkflowDefAndInstanceForEvent";
+import { useSnackbar } from "./SnackbarContext";
+import UnsavedChangesHandler from "./UnsavedChangesHandler";
 import { DB3ForeignSingleBindingValueComponent, EventTypeBindingOperand2Component, MakeDB3ForeignSingleBinding } from "./WorkflowDB3ForeignSingleBinding";
-import { nanoid } from "nanoid";
-
-interface MockEvent {
-    name: string;
-    description: string | null;
-    locationDescription: string | null;
-    typeId: number | null;
-    statusId: number | null;
-    expectedAttendanceUserTagId: number | null;
-    frontpageVisible: boolean;
-    tagIds: number[];
-};
-
-// include custom fields
-type MockEventModel = MockEvent & Record<string, any>;
+import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
+import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowRenderer } from "./WorkflowUserComponents";
+import { MockEvent, MockEventModel } from "../db3/server/eventWorkflow";
+import saveEventWorkflowModel from "../db3/mutations/saveEventWorkflowModel";
 
 const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
     const ret: MockEventModel = {
@@ -64,7 +51,7 @@ export function getMockEventBinding(args: {
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
     tidiedNodeInstance: WorkflowTidiedNodeInstance,
-    setModel?: (newModel: MockEvent) => void,
+    setModelValue?: (member: string, value: unknown) => void,
     setOperand2?: (newOperand: unknown) => void,
 }): WFFieldBinding<unknown> {
 
@@ -80,9 +67,7 @@ export function getMockEventBinding(args: {
                     fieldNameForDisplay: cf.name,
                     value: args.model[cf.name],
                     setValue: (val) => {
-                        const newModel = { ...args.model };
-                        newModel[cf.name] = CoalesceBool(val, false); // TODO: default value? or allow null or ..sometihng?
-                        args.setModel && args.setModel(newModel);
+                        args.setModelValue && args.setModelValue(cf.name, CoalesceBool(val, false));
                     },
                 });
             case db3.EventCustomFieldDataType.RichText:
@@ -94,9 +79,7 @@ export function getMockEventBinding(args: {
                     value: args.model[cf.name] || "",
                     setOperand2: args.setOperand2,
                     setValue: (val) => {
-                        const newModel = { ...args.model };
-                        newModel[cf.name] = val;
-                        args.setModel && args.setModel(newModel);
+                        args.setModelValue && args.setModelValue(cf.name, val);
                     },
                 });
             case db3.EventCustomFieldDataType.SimpleText:
@@ -107,9 +90,7 @@ export function getMockEventBinding(args: {
                     fieldNameForDisplay: cf.name,
                     value: args.model[cf.name] || "",
                     setValue: (val) => {
-                        const newModel = { ...args.model };
-                        newModel[cf.name] = val;
-                        args.setModel && args.setModel(newModel);
+                        args.setModelValue && args.setModelValue(cf.name, val);
                     },
                 });
             case db3.EventCustomFieldDataType.Options:
@@ -134,9 +115,7 @@ export function getMockEventBinding(args: {
                 fieldNameForDisplay: field,
                 value: args.model[field] || "",
                 setValue: (val) => {
-                    const newModel = { ...args.model };
-                    newModel[field] = val;
-                    args.setModel && args.setModel(newModel);
+                    args.setModelValue && args.setModelValue(field, val);
                 },
             });
         case "locationDescription":
@@ -149,9 +128,7 @@ export function getMockEventBinding(args: {
                 //setOperand2: args.setOperand2,
                 value: args.model[field] || "",
                 setValue: (val) => {
-                    const newModel = { ...args.model };
-                    newModel[field] = val;
-                    args.setModel && args.setModel(newModel);
+                    args.setModelValue && args.setModelValue(field, val);
                 },
             });
         case "frontpageVisible": // defaults to false
@@ -163,9 +140,7 @@ export function getMockEventBinding(args: {
                 //setOperand2: args.setOperand2,
                 value: args.model[field],
                 setValue: (val) => {
-                    const newModel = { ...args.model };
-                    newModel[field] = CoalesceBool(val, false);
-                    args.setModel && args.setModel(newModel);
+                    args.setModelValue && args.setModelValue(field, CoalesceBool(val, false));
                 },
             });
         case "typeId":
@@ -177,9 +152,7 @@ export function getMockEventBinding(args: {
                 setOperand2: args.setOperand2,
                 value: args.model[field],
                 setValue: (val) => {
-                    const newModel = { ...args.model };
-                    newModel[field] = val || null;
-                    args.setModel && args.setModel(newModel);
+                    args.setModelValue && args.setModelValue(field, val || null);
                 },
                 FieldValueComponent: (props) => <DB3ForeignSingleBindingValueComponent {...props} />,
                 FieldOperand2Component: (props) => <EventTypeBindingOperand2Component {...props} />,
@@ -312,24 +285,28 @@ interface MakeInstanceMutatorArgs {
     dashboardContext: DashboardContextData;
     workflowDef: WorkflowDef;
     model: MockEventModel;
-    setModel: (m: MockEventModel) => void;
+    resetModel: () => void;
+    //setModel: (m: MockEventModel) => void;
+    setModelValue: (member: string, value: unknown) => void,
     instance: WorkflowInstance;
     setInstance: (x: WorkflowInstance) => void;
     evaluationTrigger: number;
     setEvaluationTrigger: (x: number) => void;
-    setEvaluationReason: (x: string) => void;
+    //setEvaluationReason: (x: string) => void;
 };
 
 function MakeInstanceMutatorAndRenderer({
     dashboardContext,
     workflowDef,
     model,
-    setModel,
+    //setModel,
+    resetModel,
+    setModelValue,
     instance,
     setInstance,
     evaluationTrigger,
     setEvaluationTrigger,
-    setEvaluationReason,
+    //    setEvaluationReason,
 }: MakeInstanceMutatorArgs): [WorkflowInstanceMutator, WorkflowRenderer] {
 
     // const setOperand2 = (nodeDefId: number, newOperand: unknown) => {
@@ -352,8 +329,9 @@ function MakeInstanceMutatorAndRenderer({
                 flowDef,
                 nodeDef,
                 tidiedNodeInstance,
-                setModel: (newModel) => {
-                    setModel(newModel);
+                setModelValue: (member, value) => {
+                    //setModel(newModel);
+                    setModelValue(member, value);
                     setInstance({ ...instance }); // trigger re-eval
                 },
                 //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
@@ -376,9 +354,11 @@ function MakeInstanceMutatorAndRenderer({
             return binding.valueAsString;
         },
         ResetModelAndInstance: () => {
-            setModel(MakeEmptyModel(dashboardContext));
+            //setModel(MakeEmptyModel(dashboardContext));
+            resetModel();
+
             setInstance(WorkflowInitializeInstance(workflowDef));
-            setEvaluationReason("ResetModelAndInstance");
+            //setEvaluationReason("ResetModelAndInstance");
             setEvaluationTrigger(evaluationTrigger + 1);
         },
         SetAssigneesForNode: (args) => {
@@ -481,7 +461,7 @@ function MakeInstanceMutatorAndRenderer({
             //console.log("instance mutator: onWorkflowInstanceMutationChainComplete");
             setInstance(newInstance);
             if (reEvaluationNeeded) {
-                setEvaluationReason("instance mutator requested");
+                //setEvaluationReason("instance mutator requested");
                 setEvaluationTrigger(evaluationTrigger + 1);
             }
         },
@@ -507,13 +487,19 @@ function MakeInstanceMutatorAndRenderer({
                 flowDef,
                 nodeDef,
                 tidiedNodeInstance: evaluatedNode,
-                setModel: (value) => {
-                    setModel(value);
+                setModelValue: (member, value) => {
+                    setModelValue(member, value);
                     setInstance({ ...instance }); // trigger reeval when the model changes. important lel
-
-                    setEvaluationReason("model changed");
+                    //setEvaluationReason("model changed");
                     setEvaluationTrigger(evaluationTrigger + 1);
                 },
+                // setModel: (value) => {
+                //     setModel(value);
+                //     setInstance({ ...instance }); // trigger reeval when the model changes. important lel
+
+                //     setEvaluationReason("model changed");
+                //     setEvaluationTrigger(evaluationTrigger + 1);
+                // },
                 //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
                 //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
@@ -526,7 +512,7 @@ function MakeInstanceMutatorAndRenderer({
                 flowDef,
                 nodeDef,
                 tidiedNodeInstance: evaluatedNode,
-                setModel: (value) => {
+                setModelValue: (member, value) => {
                     throw new Error(`should not be called from here.`);
                 },
                 //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
@@ -586,16 +572,24 @@ export const WorkflowEditorForEvent = (props: WorkflowEditorForEventProps) => {
     //     setWorkflowInstance({ ...workflowInstance }); // trigger re-eval
     // };
 
+    const setModelValue = (member: string, value: unknown) => {
+        // here we don't use a real model.
+        const newModel = { ...model, [member]: value };
+        setModel(newModel);
+    };
+
     const [instanceMutator, renderer] = MakeInstanceMutatorAndRenderer({
         model,
         dashboardContext,
         evaluationTrigger,
         instance: workflowInstance,
         setInstance: setWorkflowInstance,
-        setEvaluationReason,
+        //setEvaluationReason,
         setEvaluationTrigger,
-        setModel,
+        //setModelValue,        
+        resetModel: () => setModel(MakeEmptyModel(dashboardContext)),
         workflowDef,
+        setModelValue,
     });
 
     // re-evaluate when requested
@@ -839,11 +833,12 @@ type EvaluatedWorkflowObjects =
         model: MockEventModel;
     };
 
-function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrigger: number) {
+function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrigger: number, upstreamRefresh: () => void) {
     const dashboardContext = useDashboardContext();
     //const [myInstanceId, _] = React.useState(() => nanoid(3));
     const ownReloadTrigger = React.useRef<number>(0);
     const [evaluationTrigger, setEvaluationTrigger] = React.useState<number>(0);
+    const [saveEventWorkflowModelMutation] = useMutation(saveEventWorkflowModel);
 
     // When we invoke the instance upsert mutation, because of React's unpredictable rendering behavior,
     // combined with async mutation calling, it can be invoked in a non-sequential way. In other words,
@@ -910,6 +905,19 @@ function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrig
 
     };
 
+    const setModelValue = (member: string, value: unknown) => {
+        snackbar.invokeAsync(async () => {
+            await saveEventWorkflowModelMutation({
+                eventId: event.id,
+                values: {
+                    [member]: value,
+                }
+            });
+            upstreamRefresh();
+            //ownReloadTrigger.current++;
+        });
+    };
+
     const [instanceMutator, renderer] = (!workflowObjects.workflowDef || !workflowObjects.workflowInstance) ?
         [undefined, undefined]
         : MakeInstanceMutatorAndRenderer({
@@ -917,9 +925,11 @@ function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrig
             workflowDef: workflowObjects.workflowDef,
             evaluationTrigger,
             setEvaluationTrigger,
-            setEvaluationReason,
+            //setEvaluationReason,
+            resetModel: () => { throw new Error() },
             model,
-            setModel: () => console.log(`todo: model saving`),
+            //setModel,
+            setModelValue,
             instance: workflowObjects.workflowInstance,
             setInstance: (newInstance) => {
                 handleNeedToSubmitInstanceForMutation(newInstance);
@@ -973,7 +983,7 @@ function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrig
 export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
     //const [myInstanceId, _] = React.useState(() => nanoid(3));
 
-    const evaluatedObjects = useEvaluatedWorkflow(props.event, props.refreshTrigger);
+    const evaluatedObjects = useEvaluatedWorkflow(props.event, props.refreshTrigger, props.refetch);
 
     // if any of this stuff is null the workflow would not be relevant.
     if (!evaluatedObjects.workflowDef) return null;

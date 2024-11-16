@@ -145,4 +145,17 @@ export class TableAccessor<TRow extends { id: number }> {
 
 };
 
+// https://stackoverflow.com/questions/53807517/how-to-test-if-two-types-are-exactly-the-same
+export type IfEquals<T, U, Y = unknown, N = never> =
+    (<G>() => G extends T ? 1 : 2) extends
+    (<G>() => G extends U ? 1 : 2) ? Y : N;
+
+// Compile-time check that the schema matches the original type
+/** Trigger a compiler error when a value is _not_ an exact type. */
+export declare const exactType: <T, U>(
+    draft: T & IfEquals<T, U>,
+    expected: U & IfEquals<T, U>
+) => IfEquals<T, U>
+
+export const AssertEqualTypes = <T, U>() => (true as IfEquals<T, U>);
 

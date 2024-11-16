@@ -1,23 +1,16 @@
 // insertOrUpdateEventWorkflowInstance
 import { resolver } from "@blitzjs/rpc";
+import { Mutex } from "async-mutex";
 import { assert, AuthenticatedCtx } from "blitz";
-import db, { Prisma, PrismaClient } from "db";
+import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { callAsync, ChangeAction, CreateChangeContext, passthroughWithoutTransaction, RegisterChange } from "shared/utils";
+import { ChangeAction, CreateChangeContext, RegisterChange } from "shared/utils";
 import { MutationArgsToWorkflowInstance, TWorkflowChange, TWorkflowInstanceMutationResult } from "shared/workflowEngine";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
 import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
-import { Mutex } from "async-mutex";
-
-// need a mutex. db transactions are not mutexes so while the transactional integrity is protected,
-// the processing won't happen in serial. it means 2 transactions can be happening at the same time,
-// where for example both are processing an eventID which has no instance yet. Both transactions will create one.
-
-// in theory this should be per instance ID or per event ID or something.
-// but this is just simpler for small scale.
-const mutex = new Mutex();
+import { gWorkflowMutex } from "../server/eventWorkflow";
 
 async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaClient, args: TUpdateEventWorkflowInstanceArgs): Promise<TWorkflowInstanceMutationResult> {
     const resultChanges: TWorkflowChange[] = [];
@@ -34,21 +27,21 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
     const existingInstance = await db.workflowInstance.findFirst({ where: { id: args.instance.id } });
     const existingInstanceAsArray = existingInstance ? [existingInstance] : [];
 
-    const instanceSyncRresult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceGetPayload<{}>>(
-        WorkflowObjectType.workflowInstance,
-        existingInstanceAsArray,
-        [desiredInstanceAsPrisma],
-        [
+    const instanceSyncRresult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceGetPayload<{}>>({
+        entityName: WorkflowObjectType.workflowInstance,
+        existingEntities: existingInstanceAsArray,
+        desiredEntities: [desiredInstanceAsPrisma],
+        allowedKeysForCreate: [
             "lastEvaluatedWorkflowDefId",
             "revision",
         ],
-        {
+        dbOperations: {
             deleteMany: async (ids) => await db.workflowInstance.deleteMany({ where: { id: { in: ids } } }),
             update: async (id, data) => await db.workflowInstance.update({ where: { id }, data }),
             create: async (data) => await db.workflowInstance.create({ data }),
         },
-        ["revision"], // ignore revision because we don't know if it needs to be updated; if it needs to be updated depends on everything else that happens here.
-    );
+        ignoreDiffFieldsForUpdates: ["revision"], // ignore revision because we don't know if it needs to be updated; if it needs to be updated depends on everything else that happens here.
+    });
 
     resultChanges.push(...instanceSyncRresult.changes);
 
@@ -80,11 +73,11 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
         return outp;
     });
 
-    const nodesSyncResult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceNodeGetPayload<{}>>(
-        WorkflowObjectType.workflowNodeInstance,
-        existingNodes,
-        desiredNodes,
-        [
+    const nodesSyncResult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceNodeGetPayload<{}>>({
+        entityName: WorkflowObjectType.workflowNodeInstance,
+        existingEntities: existingNodes,
+        desiredEntities: desiredNodes,
+        allowedKeysForCreate: [
             //"id",
             "instanceId",
             "nodeDefId",
@@ -96,12 +89,12 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
             "lastFieldValueAsString",
             "lastProgressState",
         ],
-        {
+        dbOperations: {
             deleteMany: async (ids) => await db.workflowInstanceNode.deleteMany({ where: { id: { in: ids } } }),
             update: async (id, data) => await db.workflowInstanceNode.update({ where: { id }, data }),
             create: async (data) => await db.workflowInstanceNode.create({ data }),
         },
-    );
+    });
 
     resultChanges.push(...nodesSyncResult.changes);
 
@@ -125,17 +118,17 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
     for (const node of desiredInstanceAsPrisma.nodes) {
         const existingAssignees = await db.workflowInstanceNodeAssignee.findMany({ where: { instanceNodeId: node.id } });
         const desiredAssignees = node.assignees;
-        const assSyncResult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceNodeAssigneeGetPayload<{}>>(
-            WorkflowObjectType.workflowNodeInstanceAssignee,
-            existingAssignees,
-            desiredAssignees,
-            ["instanceNodeId", "userId"],
-            {
+        const assSyncResult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceNodeAssigneeGetPayload<{}>>({
+            entityName: WorkflowObjectType.workflowNodeInstanceAssignee,
+            existingEntities: existingAssignees,
+            desiredEntities: desiredAssignees,
+            allowedKeysForCreate: ["instanceNodeId", "userId"],
+            dbOperations: {
                 deleteMany: async (ids) => await db.workflowInstanceNodeAssignee.deleteMany({ where: { id: { in: ids } } }),
                 update: async (id, data) => await db.workflowInstanceNodeAssignee.update({ where: { id }, data }),
                 create: async (data) => await db.workflowInstanceNodeAssignee.create({ data }),
             },
-        );
+        });
 
         resultChanges.push(...assSyncResult.changes);
     }
@@ -144,17 +137,17 @@ async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaCl
     for (const node of desiredInstanceAsPrisma.nodes) {
         const existingAssignees = await db.workflowInstanceNodeLastAssignee.findMany({ where: { instanceNodeId: node.id } });
         const desiredAssignees = node.lastAssignees;
-        const assSyncResult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceNodeLastAssigneeGetPayload<{}>>(
-            WorkflowObjectType.workflowNodeInstanceLastAssignee,
-            existingAssignees,
-            desiredAssignees,
-            ["instanceNodeId", "userId"],
-            {
+        const assSyncResult = await mutationCore.SyncNonSelfReferencingEntities<Prisma.WorkflowInstanceNodeLastAssigneeGetPayload<{}>>({
+            entityName: WorkflowObjectType.workflowNodeInstanceLastAssignee,
+            existingEntities: existingAssignees,
+            desiredEntities: desiredAssignees,
+            allowedKeysForCreate: ["instanceNodeId", "userId"],
+            dbOperations: {
                 deleteMany: async (ids) => await db.workflowInstanceNodeLastAssignee.deleteMany({ where: { id: { in: ids } } }),
                 update: async (id, data) => await db.workflowInstanceNodeLastAssignee.update({ where: { id }, data }),
                 create: async (data) => await db.workflowInstanceNodeLastAssignee.create({ data }),
             },
-        );
+        });
 
         resultChanges.push(...assSyncResult.changes);
     }
@@ -181,7 +174,7 @@ export default resolver.pipe(
     resolver.authorize(Permission.edit_workflow_instances),
     async (args: TUpdateEventWorkflowInstanceArgs, ctx: AuthenticatedCtx): Promise<TWorkflowInstanceMutationResult> => {
 
-        return mutex.runExclusive(async () => {
+        return gWorkflowMutex.runExclusive(async () => {
 
             const currentUser = await mutationCore.getCurrentUserCore(ctx);
             const clientIntention: db3.xTableClientUsageContext = {
