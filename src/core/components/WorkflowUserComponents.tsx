@@ -981,7 +981,7 @@ export const WorkflowNodeComponent = ({ evaluatedNode, ...props }: WorkflowNodeP
                     >
                         {nodeDef.name}
                     </div>
-                    <div className='activeControls'>{activeControls}</div>
+                    {nodeDef.displayStyle === WorkflowNodeDisplayStyle.Editable && <div className='activeControls'>{activeControls}</div>}
                     <div className='dotMenu'><WorkflowNodeDotMenu evaluatedNode={evaluatedNode} /></div>
                 </div>
                 <div className="body">

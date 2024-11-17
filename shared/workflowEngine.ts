@@ -114,6 +114,7 @@ export interface WorkflowNodeGroupDef {
 export enum WorkflowNodeDisplayStyle {
     Hidden = "Hidden",
     Normal = "Normal",
+    Editable = "Editable",
 };
 
 export interface WorkflowNodeAssignee {
