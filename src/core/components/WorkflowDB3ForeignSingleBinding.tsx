@@ -1,12 +1,10 @@
-import { WorkflowDef, WorkflowFieldValueOperator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
-import { EvaluatedWorkflowContext, FieldComponentProps, WFFieldBinding } from "./WorkflowUserComponents";
-import { Button, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import React, { useContext } from "react";
+import { WorkflowDef, WorkflowFieldValueOperator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { z } from "zod";
+import { CMSmallButton } from "./CMCoreComponents2";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { useDashboardContext } from "./DashboardContext";
-import { z } from "zod";
-import { ReactiveInputDialog } from "./ReactiveInputDialog";
-import { CMSmallButton } from "./CMCoreComponents2";
+import { EvaluatedWorkflowContext, FieldComponentProps, WFFieldBinding } from "./WorkflowUserComponents";
 
 type TPK = number | null | undefined;
 
@@ -37,22 +35,41 @@ type TPK = number | null | undefined;
 //     </>;
 // }
 
+// const incomingValueToNumberArray = (incomingValue: any) => {
+//     const schema = z.array(z.number());
+//     const val = schema.safeParse(incomingValue);
+//     if (val.success) {
+//         return val.data;
+//     }
+//     return [];
+// };
+
+
+// return <CMMultiSelect
+//     displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+//     value={incomingValueToNumberArray(props.binding.value)}
+//     getOptions={(args) => dashboardContext.eventType.items.map(x => x.id)}
+//     getOptionInfo={(id) => {
+//         const x = dashboardContext.eventType.getById(id)!;
+//         return {
+//             id: x.id,
+//             color: x.color,
+//             tooltip: x.description,
+//         };
+//     }}
+//     onChange={(options) => props.binding.setValue(options)}
+//     renderOption={(id) => {
+//         const x = dashboardContext.eventType.getById(id)!;
+//         return x.text;
+//     }}
+// />;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 export const EventTypeBindingValueComponent = (props: FieldComponentProps<TPK>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
     const dashboardContext = useDashboardContext();
-    const [open, setOpen] = React.useState<boolean>(false);
-
-    // const incomingValueToNumberArray = (incomingValue: any) => {
-    //     const schema = z.array(z.number());
-    //     const val = schema.safeParse(incomingValue);
-    //     if (val.success) {
-    //         return val.data;
-    //     }
-    //     return [];
-    // };
+    //const [open, setOpen] = React.useState<boolean>(false);
 
     const incomingValueToNumber = (incomingValue: any) => {
         const schema = z.number();
@@ -90,27 +107,7 @@ export const EventTypeBindingValueComponent = (props: FieldComponentProps<TPK>) 
         }}
         customRender={(onClick) => <CMSmallButton onClick={onClick}>select</CMSmallButton>}
     />;
-
-    // return <CMMultiSelect
-    //     displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
-    //     value={incomingValueToNumberArray(props.binding.value)}
-    //     getOptions={(args) => dashboardContext.eventType.items.map(x => x.id)}
-    //     getOptionInfo={(id) => {
-    //         const x = dashboardContext.eventType.getById(id)!;
-    //         return {
-    //             id: x.id,
-    //             color: x.color,
-    //             tooltip: x.description,
-    //         };
-    //     }}
-    //     onChange={(options) => props.binding.setValue(options)}
-    //     renderOption={(id) => {
-    //         const x = dashboardContext.eventType.getById(id)!;
-    //         return x.text;
-    //     }}
-    // />;
 }
-
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,6 +146,187 @@ export const EventTypeBindingOperand2Component = (props: FieldComponentProps<TPK
         }}
     />;
 }
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+export const EventStatusBindingValueComponent = (props: FieldComponentProps<TPK>) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    const dashboardContext = useDashboardContext();
+    //const [open, setOpen] = React.useState<boolean>(false);
+
+    const incomingValueToNumber = (incomingValue: any) => {
+        const schema = z.number();
+        const val = schema.safeParse(incomingValue);
+        if (val.success) {
+            return val.data;
+        }
+        return null;
+    };
+
+    return <CMSingleSelect
+        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
+        chipShape="rectangle"
+        value={incomingValueToNumber(props.binding.value)}
+        getOptions={(args) => dashboardContext.eventStatus.items.map(x => x.id)}
+        getOptionInfo={(id) => {
+            const x = dashboardContext.eventStatus.getById(id);
+            if (!x) return {
+                id: -1,
+                color: null,
+                tooltip: undefined,
+            };
+            return {
+                id: x.id,
+                color: x.color,
+                tooltip: x.description,
+            };
+        }}
+        onChange={(option) => props.binding.setValue(option)}
+        renderOption={(id) => {
+            if (!id || id < 0) {
+                return "--";
+            }
+            const x = dashboardContext.eventStatus.getById(id)!;
+            return x.label;
+        }}
+        customRender={(onClick) => <CMSmallButton onClick={onClick}>select</CMSmallButton>}
+    />;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+export const EventStatusBindingOperand2Component = (props: FieldComponentProps<TPK>) => {
+    const dashboardContext = useDashboardContext();
+    const toPkArray = (x: any): TPK[] => {
+        const schema = z.array(z.number());
+        const parsed = schema.safeParse(x);
+        if (!parsed.success) return [];
+        return parsed.data;
+    };
+    const val = toPkArray(props.binding.nodeDef.fieldValueOperand2);
+    return <CMMultiSelect<TPK>
+        displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+        readonly={props.readonly}
+        chipShape={"rectangle"}
+        chipSize={"small"}
+        onChange={v => {
+            props.binding.setOperand2(v);
+        }}
+        value={val}
+
+        getOptions={(args) => dashboardContext.eventStatus.items.map(e => e.id)}
+        renderOption={opt => (opt && (dashboardContext.eventStatus.getById(opt)?.label)) || "<none>"}
+        getOptionInfo={opt => {
+            const x = dashboardContext.eventStatus.getById(opt);
+            if (!x) return {
+                id: -1,
+            }
+            return {
+                id: x.id,
+                tooltip: x.description,
+                color: x.color,
+            };
+        }}
+    />;
+}
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+export const UserTagIdBindingValueComponent = (props: FieldComponentProps<TPK>) => {
+    const ctx = useContext(EvaluatedWorkflowContext);
+    if (!ctx) throw new Error(`Workflow context is required`);
+    const dashboardContext = useDashboardContext();
+
+    const incomingValueToNumber = (incomingValue: any) => {
+        const schema = z.number();
+        const val = schema.safeParse(incomingValue);
+        if (val.success) {
+            return val.data;
+        }
+        return null;
+    };
+
+    return <CMSingleSelect
+        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
+        chipShape="rounded"
+        value={incomingValueToNumber(props.binding.value)}
+        getOptions={(args) => dashboardContext.userTag.items.map(x => x.id)}
+        getOptionInfo={(id) => {
+            const x = dashboardContext.userTag.getById(id);
+            if (!x) return {
+                id: -1,
+                color: null,
+                tooltip: undefined,
+            };
+            return {
+                id: x.id,
+                color: x.color,
+                tooltip: x.description,
+            };
+        }}
+        onChange={(option) => props.binding.setValue(option)}
+        renderOption={(id) => {
+            if (!id || id < 0) {
+                return "--";
+            }
+            const x = dashboardContext.userTag.getById(id)!;
+            return x.text;
+        }}
+        customRender={(onClick) => <CMSmallButton onClick={onClick}>change</CMSmallButton>}
+    />;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+export const UserTagIdBindingOperand2Component = (props: FieldComponentProps<TPK>) => {
+    const dashboardContext = useDashboardContext();
+    const toPkArray = (x: any): TPK[] => {
+        const schema = z.array(z.number());
+        const parsed = schema.safeParse(x);
+        if (!parsed.success) return [];
+        return parsed.data;
+    };
+    const val = toPkArray(props.binding.nodeDef.fieldValueOperand2);
+    return <CMMultiSelect<TPK>
+        displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+        readonly={props.readonly}
+        chipShape={"rounded"}
+        chipSize={"small"}
+        onChange={v => {
+            props.binding.setOperand2(v);
+        }}
+        value={val}
+
+        getOptions={(args) => dashboardContext.userTag.items.map(e => e.id)}
+        renderOption={opt => (opt && (dashboardContext.userTag.getById(opt)?.text)) || "<none>"}
+        getOptionInfo={opt => {
+            const x = dashboardContext.userTag.getById(opt);
+            if (!x) return {
+                id: -1,
+            }
+            return {
+                id: x.id,
+                tooltip: x.description,
+                color: x.color,
+            };
+        }}
+    />;
+}
+
+
+
+
 
 
 

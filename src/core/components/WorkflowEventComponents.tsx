@@ -24,7 +24,7 @@ import getWorkflowDefAndInstanceForEvent from "../db3/queries/getWorkflowDefAndI
 import { MockEvent, MockEventModel } from "../db3/server/eventWorkflow";
 import { useSnackbar } from "./SnackbarContext";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
-import { EventTypeBindingOperand2Component, EventTypeBindingValueComponent, MakeDB3ForeignSingleBinding } from "./WorkflowDB3ForeignSingleBinding";
+import { EventStatusBindingOperand2Component, EventStatusBindingValueComponent, EventTypeBindingOperand2Component, EventTypeBindingValueComponent, MakeDB3ForeignSingleBinding, UserTagIdBindingOperand2Component, UserTagIdBindingValueComponent } from "./WorkflowDB3ForeignSingleBinding";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowRenderer } from "./WorkflowUserComponents";
 
@@ -161,7 +161,33 @@ export function getMockEventBinding(args: {
                 FieldOperand2Component: (props) => <EventTypeBindingOperand2Component {...props} />,
             });
         case "expectedAttendanceUserTagId":
+            return MakeDB3ForeignSingleBinding({
+                tidiedNodeInstance: args.tidiedNodeInstance,
+                flowDef: args.flowDef,
+                nodeDef: args.nodeDef,
+                fieldNameForDisplay: field,
+                setOperand2: args.setOperand2,
+                value: args.model[field],
+                setValue: (val) => {
+                    args.setModelValue && args.setModelValue(field, val || null);
+                },
+                FieldValueComponent: (props) => <UserTagIdBindingValueComponent {...props} />,
+                FieldOperand2Component: (props) => <UserTagIdBindingOperand2Component {...props} />,
+            });
         case "statusId":
+            return MakeDB3ForeignSingleBinding({
+                tidiedNodeInstance: args.tidiedNodeInstance,
+                flowDef: args.flowDef,
+                nodeDef: args.nodeDef,
+                fieldNameForDisplay: field,
+                setOperand2: args.setOperand2,
+                value: args.model[field],
+                setValue: (val) => {
+                    args.setModelValue && args.setModelValue(field, val || null);
+                },
+                FieldValueComponent: (props) => <EventStatusBindingValueComponent {...props} />,
+                FieldOperand2Component: (props) => <EventStatusBindingOperand2Component {...props} />,
+            });
         case "tagIds":
         // return MakeDB3TagsBinding({
         //     tidiedNodeInstance: args.tidiedNodeInstance,
