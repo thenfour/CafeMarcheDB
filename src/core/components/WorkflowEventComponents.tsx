@@ -1,6 +1,6 @@
 // workflow client code specific to CMDB events
 
-import { Button, Checkbox, CircularProgress, Skeleton } from "@mui/material";
+import { Button, Checkbox, CircularProgress } from "@mui/material";
 import { ReactFlowProvider } from "@xyflow/react";
 import * as React from 'react';
 import { gGeneralPaletteList } from "shared/color";
@@ -10,7 +10,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { AdminContainer, AdminInspectObject, InspectObject } from "./CMCoreComponents";
-import { AnimatedCircularProgress, NameValuePair } from "./CMCoreComponents2";
+import { NameValuePair } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { ColorPick } from "./Color";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
@@ -19,14 +19,14 @@ import { Markdown3Editor } from "./MarkdownControl3";
 import { useMutation, useQuery } from "@blitzjs/rpc";
 import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWorkflowInstance, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import insertOrUpdateEventWorkflowInstance from "../db3/mutations/insertOrUpdateEventWorkflowInstance";
+import saveEventWorkflowModel from "../db3/mutations/saveEventWorkflowModel";
 import getWorkflowDefAndInstanceForEvent from "../db3/queries/getWorkflowDefAndInstanceForEvent";
+import { MockEvent, MockEventModel } from "../db3/server/eventWorkflow";
 import { useSnackbar } from "./SnackbarContext";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
-import { DB3ForeignSingleBindingValueComponent, EventTypeBindingOperand2Component, MakeDB3ForeignSingleBinding } from "./WorkflowDB3ForeignSingleBinding";
+import { EventTypeBindingOperand2Component, EventTypeBindingValueComponent, MakeDB3ForeignSingleBinding } from "./WorkflowDB3ForeignSingleBinding";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowRenderer } from "./WorkflowUserComponents";
-import { MockEvent, MockEventModel } from "../db3/server/eventWorkflow";
-import saveEventWorkflowModel from "../db3/mutations/saveEventWorkflowModel";
 
 const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
     const ret: MockEventModel = {
@@ -69,6 +69,7 @@ export function getMockEventBinding(args: {
                     setValue: (val) => {
                         args.setModelValue && args.setModelValue(cf.name, CoalesceBool(val, false));
                     },
+                    setOperand2: args.setOperand2,
                 });
             case db3.EventCustomFieldDataType.RichText:
                 return MakeRichTextBinding({
@@ -92,6 +93,7 @@ export function getMockEventBinding(args: {
                     setValue: (val) => {
                         args.setModelValue && args.setModelValue(cf.name, val);
                     },
+                    setOperand2: args.setOperand2,
                 });
             case db3.EventCustomFieldDataType.Options:
                 console.log(`todo: handle case db3.EventCustomFieldDataType.Options`);
@@ -113,6 +115,7 @@ export function getMockEventBinding(args: {
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
                 fieldNameForDisplay: field,
+                setOperand2: args.setOperand2,
                 value: args.model[field] || "",
                 setValue: (val) => {
                     args.setModelValue && args.setModelValue(field, val);
@@ -125,7 +128,7 @@ export function getMockEventBinding(args: {
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
                 fieldNameForDisplay: field,
-                //setOperand2: args.setOperand2,
+                setOperand2: args.setOperand2,
                 value: args.model[field] || "",
                 setValue: (val) => {
                     args.setModelValue && args.setModelValue(field, val);
@@ -137,7 +140,7 @@ export function getMockEventBinding(args: {
                 flowDef: args.flowDef,
                 nodeDef: args.nodeDef,
                 fieldNameForDisplay: field,
-                //setOperand2: args.setOperand2,
+                setOperand2: args.setOperand2,
                 value: args.model[field],
                 setValue: (val) => {
                     args.setModelValue && args.setModelValue(field, CoalesceBool(val, false));
@@ -154,7 +157,7 @@ export function getMockEventBinding(args: {
                 setValue: (val) => {
                     args.setModelValue && args.setModelValue(field, val || null);
                 },
-                FieldValueComponent: (props) => <DB3ForeignSingleBindingValueComponent {...props} />,
+                FieldValueComponent: (props) => <EventTypeBindingValueComponent {...props} />,
                 FieldOperand2Component: (props) => <EventTypeBindingOperand2Component {...props} />,
             });
         case "expectedAttendanceUserTagId":
@@ -334,7 +337,6 @@ function MakeInstanceMutatorAndRenderer({
                     setModelValue(member, value);
                     setInstance({ ...instance }); // trigger re-eval
                 },
-                //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
                 //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
             });
             return binding.doesFieldValueSatisfyCompletionCriteria();
@@ -467,18 +469,6 @@ function MakeInstanceMutatorAndRenderer({
         },
     };
 
-    // // re-evaluate when requested
-    // React.useEffect(() => {
-    //     // workflowInstance.log.push({
-    //     //     type: WorkflowLogItemType.Comment,
-    //     //     at: new Date(),
-    //     //     comment: "Evaluating due to React.useEffect[evaluationTrigger]",
-    //     // });
-
-    //     const x = EvaluateWorkflow(workflowDef, workflowInstance, instanceMutator, `onWorkflowDefMutationChainComplete with reason: [${evaluationReason}]`);
-    //     setEvaluatedInstance(x);
-    // }, [evaluationTrigger]);
-
     const renderer: WorkflowRenderer = {
         RenderFieldValueForNode: ({ flowDef, nodeDef, evaluatedNode, readonly }) => {
             const binding = getMockEventBinding({
@@ -490,18 +480,11 @@ function MakeInstanceMutatorAndRenderer({
                 setModelValue: (member, value) => {
                     setModelValue(member, value);
                     setInstance({ ...instance }); // trigger reeval when the model changes. important lel
-                    //setEvaluationReason("model changed");
                     setEvaluationTrigger(evaluationTrigger + 1);
                 },
-                // setModel: (value) => {
-                //     setModel(value);
-                //     setInstance({ ...instance }); // trigger reeval when the model changes. important lel
-
-                //     setEvaluationReason("model changed");
-                //     setEvaluationTrigger(evaluationTrigger + 1);
-                // },
-                //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
-                //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+                setOperand2: (n) => {
+                    throw new Error(`set operand2 not expected here`);
+                },
             });
             return <binding.FieldValueComponent binding={binding} readonly={readonly} />;
         },
@@ -515,8 +498,7 @@ function MakeInstanceMutatorAndRenderer({
                 setModelValue: (member, value) => {
                     throw new Error(`should not be called from here.`);
                 },
-                //setOperand2: (n) => { throw new Error("unsupported setOperand2") },
-                //setOperand2: (newOperand) => setOperand2(nodeDef.id, newOperand),
+                setOperand2: setValue,
             });
             return <binding.FieldOperand2Component binding={binding} readonly={readonly} />;
         }

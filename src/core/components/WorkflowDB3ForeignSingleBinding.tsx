@@ -6,35 +6,111 @@ import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect"
 import { useDashboardContext } from "./DashboardContext";
 import { z } from "zod";
 import { ReactiveInputDialog } from "./ReactiveInputDialog";
+import { CMSmallButton } from "./CMCoreComponents2";
 
 type TPK = number | null | undefined;
 
+// /////////////////////////////////////////////////////////////////////////////////////////////
+// export const DB3ForeignSingleBindingValueComponent = (props: FieldComponentProps<TPK>) => {
+//     const ctx = useContext(EvaluatedWorkflowContext);
+//     if (!ctx) throw new Error(`Workflow context is required`);
+//     const [open, setOpen] = React.useState<boolean>(false);
+//     const [value, setValue] = React.useState<TPK>(props.binding.value);
+
+//     return <>
+//         <Button onClick={() => setOpen(true)}>Edit</Button>
+//         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
+//             <DialogTitle>
+//                 {props.binding.fieldNameForDisplay}
+//             </DialogTitle>
+//             <DialogContent dividers>
+//                 ...
+//             </DialogContent>
+//             <DialogActions>
+//                 <Button onClick={() => setOpen(false)}>Cancel</Button>
+//                 <Button onClick={() => {
+//                     props.binding.setValue(value);
+//                     setOpen(false);
+//                 }}>OK</Button>
+//             </DialogActions>
+//         </ReactiveInputDialog>}
+//     </>;
+// }
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////
-export const DB3ForeignSingleBindingValueComponent = (props: FieldComponentProps<TPK>) => {
+export const EventTypeBindingValueComponent = (props: FieldComponentProps<TPK>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
+    const dashboardContext = useDashboardContext();
     const [open, setOpen] = React.useState<boolean>(false);
-    const [value, setValue] = React.useState<TPK>(props.binding.value);
 
-    return <>
-        <Button onClick={() => setOpen(true)}>Edit</Button>
-        {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-            <DialogTitle>
-                {props.binding.fieldNameForDisplay}
-            </DialogTitle>
-            <DialogContent dividers>
-                ...
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={() => {
-                    props.binding.setValue(value);
-                    setOpen(false);
-                }}>OK</Button>
-            </DialogActions>
-        </ReactiveInputDialog>}
-    </>;
+    // const incomingValueToNumberArray = (incomingValue: any) => {
+    //     const schema = z.array(z.number());
+    //     const val = schema.safeParse(incomingValue);
+    //     if (val.success) {
+    //         return val.data;
+    //     }
+    //     return [];
+    // };
+
+    const incomingValueToNumber = (incomingValue: any) => {
+        const schema = z.number();
+        const val = schema.safeParse(incomingValue);
+        if (val.success) {
+            return val.data;
+        }
+        return null;
+    };
+
+    return <CMSingleSelect
+        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
+        value={incomingValueToNumber(props.binding.value)}
+        getOptions={(args) => dashboardContext.eventType.items.map(x => x.id)}
+        getOptionInfo={(id) => {
+            const x = dashboardContext.eventType.getById(id);
+            if (!x) return {
+                id: -1,
+                color: null,
+                tooltip: undefined,
+            };
+            return {
+                id: x.id,
+                color: x.color,
+                tooltip: x.description,
+            };
+        }}
+        onChange={(option) => props.binding.setValue(option)}
+        renderOption={(id) => {
+            if (!id || id < 0) {
+                return "--";
+            }
+            const x = dashboardContext.eventType.getById(id)!;
+            return x.text;
+        }}
+        customRender={(onClick) => <CMSmallButton onClick={onClick}>select</CMSmallButton>}
+    />;
+
+    // return <CMMultiSelect
+    //     displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+    //     value={incomingValueToNumberArray(props.binding.value)}
+    //     getOptions={(args) => dashboardContext.eventType.items.map(x => x.id)}
+    //     getOptionInfo={(id) => {
+    //         const x = dashboardContext.eventType.getById(id)!;
+    //         return {
+    //             id: x.id,
+    //             color: x.color,
+    //             tooltip: x.description,
+    //         };
+    //     }}
+    //     onChange={(options) => props.binding.setValue(options)}
+    //     renderOption={(id) => {
+    //         const x = dashboardContext.eventType.getById(id)!;
+    //         return x.text;
+    //     }}
+    // />;
 }
+
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,15 +129,15 @@ export const EventTypeBindingOperand2Component = (props: FieldComponentProps<TPK
         chipShape={"rectangle"}
         chipSize={"small"}
         onChange={v => {
-            console.log(`setting operand2`);
+            console.log(`setting type operatnd 2`);
             props.binding.setOperand2(v);
         }}
         value={val}
 
-        getOptions={(args) => dashboardContext.eventStatus.items.map(e => e.id)}
-        renderOption={opt => (opt && (dashboardContext.eventStatus.getById(opt)?.label)) || "<none>"}
+        getOptions={(args) => dashboardContext.eventType.items.map(e => e.id)}
+        renderOption={opt => (opt && (dashboardContext.eventType.getById(opt)?.text)) || "<none>"}
         getOptionInfo={opt => {
-            const x = dashboardContext.eventStatus.getById(opt);
+            const x = dashboardContext.eventType.getById(opt);
             if (!x) return {
                 id: -1,
             }
@@ -100,14 +176,15 @@ export const MakeDB3ForeignSingleBinding = (args: {
         value: args.value,
         valueAsString: JSON.stringify(args.value),
         setValue: args.setValue || (() => { }),
-        setOperand2: args.setOperand2 || (() => console.log(`setoperand2 needs to eventually be connected to workflowdef mutation.`)),
+        setOperand2: args.setOperand2 || (() => {
+            console.log(`setoperand2 needs to eventually be connected to workflowdef mutation.`);
+        }),
         doesFieldValueSatisfyCompletionCriteria: () => {
             if (!args.nodeDef.fieldValueOperator) {
                 return false;
             }
             const lhs = args.value;
             const rhs = args.nodeDef.fieldValueOperand2;
-
             switch (args.nodeDef.fieldValueOperator) {
                 case WorkflowFieldValueOperator.Falsy:
                 case WorkflowFieldValueOperator.IsNull:
@@ -121,13 +198,13 @@ export const MakeDB3ForeignSingleBinding = (args: {
                 case WorkflowFieldValueOperator.NotEqualsOperand2:
                     return lhs !== rhs;
                 case WorkflowFieldValueOperator.EqualsAnyOf:
-                    if (Array.isArray(rhs)) return false;
-                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
-                    return (args.nodeDef.fieldValueOperand2 as any[]).includes(lhs);
+                    if (Array.isArray(lhs)) return false;
+                    if (!Array.isArray(rhs)) return false;
+                    return (rhs as any[]).includes(lhs);
                 case WorkflowFieldValueOperator.IsNotAnyOf:
-                    if (Array.isArray(rhs)) return true;
-                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
-                    return !(args.nodeDef.fieldValueOperand2 as any[]).includes(lhs);
+                    if (Array.isArray(lhs)) return false;
+                    if (!Array.isArray(rhs)) return false;
+                    return !(rhs as any[]).includes(lhs);
                 default:
                     console.warn(`unknown FSV field operator ${args.nodeDef.fieldValueOperator}`);
                     return false;

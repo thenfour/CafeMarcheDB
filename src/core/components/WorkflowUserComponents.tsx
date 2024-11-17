@@ -1232,10 +1232,10 @@ export const MakeBoolBinding = (args: {
                 case WorkflowFieldValueOperator.NotEqualsOperand2:
                     return args.value !== args.nodeDef.fieldValueOperand2;
                 case WorkflowFieldValueOperator.EqualsAnyOf:
-                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
                     return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
                 case WorkflowFieldValueOperator.IsNotAnyOf:
-                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
                 case WorkflowFieldValueOperator.StringPopulated:
                     return false;
@@ -1257,6 +1257,10 @@ export const WFSingleLineTextField = (props: FieldComponentProps<string>) => {
     if (!ctx) throw new Error(`Workflow context is required`);
     const [open, setOpen] = React.useState<boolean>(false);
     const [value, setValue] = React.useState<string>(props.binding.value);
+
+    React.useEffect(() => {
+        setValue(props.binding.value);
+    }, [props.binding.value]);
 
     return <>
         <Button onClick={() => setOpen(true)}>Edit</Button>
@@ -1293,6 +1297,10 @@ export const WFRichTextField = (props: FieldComponentProps<string>) => {
     if (!ctx) throw new Error(`Workflow context is required`);
     const [open, setOpen] = React.useState<boolean>(false);
     const [value, setValue] = React.useState<string>(props.binding.value);
+
+    React.useEffect(() => {
+        setValue(props.binding.value);
+    }, [props.binding.value]);
 
     return <>
         <Button onClick={() => setOpen(true)}>Edit</Button>
@@ -1373,10 +1381,10 @@ export const MakeSingleLineTextBinding = (args: {
                 case WorkflowFieldValueOperator.NotEqualsOperand2:
                     return !eq();
                 case WorkflowFieldValueOperator.EqualsAnyOf:
-                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
                     return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
                 case WorkflowFieldValueOperator.IsNotAnyOf:
-                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
                 default:
                     console.warn(`unknown text field operator ${args.nodeDef.fieldValueOperator}`);
@@ -1430,10 +1438,10 @@ export const MakeRichTextBinding = (args: {
                 case WorkflowFieldValueOperator.NotEqualsOperand2:
                     return !eq();
                 case WorkflowFieldValueOperator.EqualsAnyOf:
-                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
                     return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
                 case WorkflowFieldValueOperator.IsNotAnyOf:
-                    if (Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
                 default:
                     console.warn(`unknown text field operator ${args.nodeDef.fieldValueOperator}`);
