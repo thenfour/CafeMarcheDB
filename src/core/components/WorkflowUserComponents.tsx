@@ -1240,6 +1240,7 @@ export const MakeBoolBinding = (args: {
                 case WorkflowFieldValueOperator.StringPopulated:
                 case WorkflowFieldValueOperator.HasOnlyAllowedValues:
                 case WorkflowFieldValueOperator.ContainsAllValues:
+                case WorkflowFieldValueOperator.StringMatchesPattern:
                     return false;
                 default:
                     // be tolerant to out of range
@@ -1344,6 +1345,49 @@ export const TextOperand = (props: FieldComponentProps<string>) => {
     />;
 }
 
+const StringSatisfiesCriteria = (fieldValueOperator: WorkflowFieldValueOperator, lhsAny: any, rhsAny: any) => {
+    const lhs = String(lhsAny).trim().toLowerCase();
+    const rhs = String(rhsAny).trim().toLowerCase();
+    const isNull = () => IsNullOrWhitespace(lhs);
+
+    const eq = () => lhs === rhs;
+    if (!fieldValueOperator) {
+        return false;
+    }
+
+    switch (fieldValueOperator) {
+        case WorkflowFieldValueOperator.Falsy:
+        case WorkflowFieldValueOperator.IsNull:
+            return isNull();
+        case WorkflowFieldValueOperator.Truthy:
+        case WorkflowFieldValueOperator.StringPopulated:
+        case WorkflowFieldValueOperator.IsNotNull:
+            return !isNull();
+        case WorkflowFieldValueOperator.EqualsOperand2:
+            return eq();
+        case WorkflowFieldValueOperator.NotEqualsOperand2:
+            return !eq();
+        case WorkflowFieldValueOperator.EqualsAnyOf:
+            return rhs.split(",").map((s) => s.trim()).includes(lhs);
+        case WorkflowFieldValueOperator.IsNotAnyOf:
+            return !rhs.split(",").map((s) => s.trim()).includes(lhs);
+        case WorkflowFieldValueOperator.HasOnlyAllowedValues:
+        case WorkflowFieldValueOperator.ContainsAllValues:
+            return false;
+        case WorkflowFieldValueOperator.StringMatchesPattern:
+            try {
+                const pattern = new RegExp(rhs, "i"); // Case-insensitive match
+                return pattern.test(lhs);
+            } catch (e) {
+                console.warn(`Invalid regex pattern: ${rhs}`, e);
+                return false;
+            }
+        default:
+            console.warn(`unknown text field operator ${fieldValueOperator}`);
+            return false;
+    }
+};
+
 export const MakeSingleLineTextBinding = (args: {
     flowDef: WorkflowDef,
     nodeDef: WorkflowNodeDef,
@@ -1363,39 +1407,7 @@ export const MakeSingleLineTextBinding = (args: {
         valueAsString: JSON.stringify(args.value),
         setValue: args.setValue || (() => { }),
         setOperand2: args.setOperand2 || (() => { }),
-        doesFieldValueSatisfyCompletionCriteria: () => {
-            const isNull = () => IsNullOrWhitespace(args.value);
-            const eq = () => args.value.trim().toLowerCase() === ((args.nodeDef.fieldValueOperand2 as string) || "").trim().toLowerCase();
-            if (!args.nodeDef.fieldValueOperator) {
-                return false;
-            }
-
-            switch (args.nodeDef.fieldValueOperator) {
-                case WorkflowFieldValueOperator.Falsy:
-                case WorkflowFieldValueOperator.IsNull:
-                    return isNull();
-                case WorkflowFieldValueOperator.Truthy:
-                case WorkflowFieldValueOperator.StringPopulated:
-                case WorkflowFieldValueOperator.IsNotNull:
-                    return !isNull();
-                case WorkflowFieldValueOperator.EqualsOperand2:
-                    return eq();
-                case WorkflowFieldValueOperator.NotEqualsOperand2:
-                    return !eq();
-                case WorkflowFieldValueOperator.EqualsAnyOf:
-                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
-                    return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
-                case WorkflowFieldValueOperator.IsNotAnyOf:
-                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
-                    return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
-                case WorkflowFieldValueOperator.HasOnlyAllowedValues:
-                case WorkflowFieldValueOperator.ContainsAllValues:
-                    return false;
-                default:
-                    console.warn(`unknown text field operator ${args.nodeDef.fieldValueOperator}`);
-                    return false;
-            }
-        },
+        doesFieldValueSatisfyCompletionCriteria: () => StringSatisfiesCriteria(args.nodeDef.fieldValueOperator, args.value, args.nodeDef.fieldValueOperand2),
         FieldValueComponent: WFSingleLineTextField,
         FieldOperand2Component: TextOperand,
     };
@@ -1423,39 +1435,7 @@ export const MakeRichTextBinding = (args: {
         valueAsString: JSON.stringify(args.value),
         setValue: args.setValue || (() => { }),
         setOperand2: args.setOperand2 || (() => { }),
-        doesFieldValueSatisfyCompletionCriteria: () => {
-            const isNull = () => IsNullOrWhitespace(args.value);
-            const eq = () => args.value.trim().toLowerCase() === ((args.nodeDef.fieldValueOperand2 as string) || "").trim().toLowerCase();
-            if (!args.nodeDef.fieldValueOperator) {
-                return false;
-            }
-
-            switch (args.nodeDef.fieldValueOperator) {
-                case WorkflowFieldValueOperator.Falsy:
-                case WorkflowFieldValueOperator.IsNull:
-                    return isNull();
-                case WorkflowFieldValueOperator.Truthy:
-                case WorkflowFieldValueOperator.StringPopulated:
-                case WorkflowFieldValueOperator.IsNotNull:
-                    return !isNull();
-                case WorkflowFieldValueOperator.EqualsOperand2:
-                    return eq();
-                case WorkflowFieldValueOperator.NotEqualsOperand2:
-                    return !eq();
-                case WorkflowFieldValueOperator.EqualsAnyOf:
-                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
-                    return (args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
-                case WorkflowFieldValueOperator.IsNotAnyOf:
-                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
-                    return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
-                case WorkflowFieldValueOperator.HasOnlyAllowedValues:
-                case WorkflowFieldValueOperator.ContainsAllValues:
-                    return false;
-                default:
-                    console.warn(`unknown text field operator ${args.nodeDef.fieldValueOperator}`);
-                    return false;
-            }
-        },
+        doesFieldValueSatisfyCompletionCriteria: () => StringSatisfiesCriteria(args.nodeDef.fieldValueOperator, args.value, args.nodeDef.fieldValueOperand2),
         FieldValueComponent: WFRichTextField,
         FieldOperand2Component: TextOperand,
     };

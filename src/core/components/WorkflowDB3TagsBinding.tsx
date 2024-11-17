@@ -29,7 +29,7 @@ export const EventTagsBindingValueComponent = (props: FieldComponentProps<TPK[]>
     const dashboardContext = useDashboardContext();
 
     return <CMMultiSelect
-        displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
+        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
         value={valueToNumberArray(props.binding.value)}
         getOptions={(args) => dashboardContext.eventTag.items.map(x => x.id)}
         getOptionInfo={(id) => {
@@ -142,6 +142,8 @@ export const MakeDB3TagsBinding = (args: {
                     return lhs.every((value) => rhs.includes(value)); // rhs are the only allowed values in the model
                 case WorkflowFieldValueOperator.ContainsAllValues: // SUPERSET
                     return rhs.every((value) => lhs.includes(value)); // contains ALL of
+                case WorkflowFieldValueOperator.StringMatchesPattern:
+                    return false;
                 default:
                     console.warn(`unknown FSV field operator ${args.nodeDef.fieldValueOperator}`);
                     return false;

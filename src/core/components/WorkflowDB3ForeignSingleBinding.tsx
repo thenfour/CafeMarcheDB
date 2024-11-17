@@ -278,6 +278,8 @@ export const MakeDB3ForeignSingleBinding = (args: {
             const lhs: TPK = args.value;
             const rhs = toPkArray(args.nodeDef.fieldValueOperand2);
             switch (args.nodeDef.fieldValueOperator) {
+                case WorkflowFieldValueOperator.StringMatchesPattern:
+                    return false;
                 case WorkflowFieldValueOperator.Falsy:
                 case WorkflowFieldValueOperator.IsNull:
                     return !lhs;
