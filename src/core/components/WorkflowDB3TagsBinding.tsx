@@ -28,11 +28,8 @@ export const EventTagsBindingValueComponent = (props: FieldComponentProps<TPK[]>
     if (!ctx) throw new Error(`Workflow context is required`);
     const dashboardContext = useDashboardContext();
 
-    // console.log(`EventTagsBindingValueComponent value = `);
-    // console.log(valueToNumberArray(props.binding.value));
-
     return <CMMultiSelect
-        displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
+        displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
         value={valueToNumberArray(props.binding.value)}
         getOptions={(args) => dashboardContext.eventTag.items.map(x => x.id)}
         getOptionInfo={(id) => {

@@ -513,8 +513,8 @@ function MakeInstanceMutatorAndRenderer({
                 },
             });
 
-            // console.log(`renderer value; value = `);
-            // console.log(binding.value);
+            console.log(`renderer value; value = `);
+            console.log(model);
 
             return <binding.FieldValueComponent binding={binding} readonly={readonly} />;
         },

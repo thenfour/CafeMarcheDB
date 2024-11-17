@@ -71,11 +71,6 @@ export const useMultiSelectLogic = <T,>(
         setSelectedOptionsX(selectedOptions.map(o => makeTX(o)));
     }, [...selectedOptions]);
 
-    // React.useEffect(() => {
-    //     console.log(`multiselectlogic values:`);
-    //     console.log(selectedOptionsX);
-    // }, [...selectedOptionsX]);
-
     const toggleSelection = (x: TX): T[] => {
         if (isSelected(x.info)) {
             const ret = selectedOptions.filter(alreadySelected => props.getOptionInfo(alreadySelected).id !== x.info.id);
@@ -127,6 +122,10 @@ export function CMMultiSelectDialog<T>(props: CMMultiSelectDialogProps<T>) {
 
     // if any of these are missing, allow insert from string will not be available.
     const allowInsertFromString = CoalesceBool(props.allowInsertFromString, true) && props.doesItemExactlyMatchText && props.doInsertFromString;
+
+    React.useEffect(() => {
+        setSelectedOptions(props.initialValues || []);
+    }, [...props.initialValues || []]);
 
     const msl = useMultiSelectLogic(props, selectedOptions, filterText);
     type TX = typeof msl.allOptionsX[0];

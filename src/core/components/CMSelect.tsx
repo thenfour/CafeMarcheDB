@@ -87,11 +87,6 @@ interface CMMultiSelectProps<Toption> {
 export const CMMultiSelect = <Toption,>(props: CMMultiSelectProps<Toption>) => {
     const [multiEditDialogOpen, setMultiEditDialogOpen] = React.useState(false);
 
-    // React.useEffect(() => {
-    //     console.log(`value changed to`);
-    //     console.log(props.value);
-    // }, [props.value]);
-
     const msl = useMultiSelectLogic(props, props.value, undefined);
     type TX = typeof msl.allOptionsX[0];
 
