@@ -193,7 +193,7 @@ export default resolver.pipe(
                     serializableInstance: undefined,
                 };
 
-                const incomingInstanceid = args.instance.id;
+                //const incomingInstanceid = args.instance.id;
                 const eventWithWfInstanceId = await db.event.findFirst({ where: { id: args.eventId }, select: { workflowInstanceId: true } });
 
                 //console.log(`BEGIN UPDATING INSTANCE FROM ${incomingInstanceid} => ${eventWithWfInstanceId?.workflowInstanceId || "<none>"}`);

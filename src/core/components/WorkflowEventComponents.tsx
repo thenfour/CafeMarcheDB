@@ -1,6 +1,6 @@
 // workflow client code specific to CMDB events
 
-import { Button, Checkbox } from "@mui/material";
+import { Button, Checkbox, CircularProgress, Skeleton } from "@mui/material";
 import { ReactFlowProvider } from "@xyflow/react";
 import * as React from 'react';
 import { gGeneralPaletteList } from "shared/color";
@@ -10,7 +10,7 @@ import * as DB3Client from "src/core/db3/DB3Client";
 import * as db3 from "src/core/db3/db3";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { AdminContainer, AdminInspectObject, InspectObject } from "./CMCoreComponents";
-import { NameValuePair } from "./CMCoreComponents2";
+import { AnimatedCircularProgress, NameValuePair } from "./CMCoreComponents2";
 import { CMTextField } from "./CMTextField";
 import { ColorPick } from "./Color";
 import { DashboardContextData, useDashboardContext } from "./DashboardContext";
@@ -1006,7 +1006,9 @@ export const EventWorkflowTabInner = (props: EventWorkflowTabContentProps) => {
 };
 
 export const EventWorkflowTabContent = (props: EventWorkflowTabContentProps) => {
-    return <React.Suspense>
+    return <React.Suspense fallback={<div style={{ display: "flex" }}>
+        <CircularProgress />
+    </div>}>
         <EventWorkflowTabInner {...props} />
     </React.Suspense>;
 };

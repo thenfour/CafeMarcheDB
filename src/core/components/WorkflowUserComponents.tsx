@@ -1187,11 +1187,11 @@ export const BoolField = (props: FieldComponentProps<boolean | null>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
     if (props.readonly) {
-        return props.binding.value ? "Approved" : "Not approved yet";
+        return props.binding.value ? "Complete" : "Not complete yet";
     }
     return <CMSmallButton onClick={() => {
         props.binding.setValue(!props.binding.value);
-    }}>{props.binding.value ? "unapprove" : "approve"}</CMSmallButton>
+    }}>{props.binding.value ? "Mark as not completed" : "Mark completed"}</CMSmallButton>
 }
 
 export const BoolOperand = (props: FieldComponentProps<boolean | null>) => {
