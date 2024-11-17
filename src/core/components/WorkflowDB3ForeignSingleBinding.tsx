@@ -298,7 +298,7 @@ export const MakeDB3ForeignSingleBinding = (args: {
                 case WorkflowFieldValueOperator.IsNotAnyOf:
                     return !(rhs as any[]).includes(lhs);
                 default:
-                    //assertUnreachable(args.nodeDef.fieldValueOperator);
+                    assertUnreachable(args.nodeDef.fieldValueOperator);
                     console.warn(`unknown FSV field operator ${args.nodeDef.fieldValueOperator}`);
                     return false;
             }

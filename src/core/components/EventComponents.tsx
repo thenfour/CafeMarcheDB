@@ -110,7 +110,7 @@ const EventCustomFieldValueValueView_Options = (props: EventCustomFieldValueCont
     const dashboardContext = useDashboardContext();
     const fieldSpec = dashboardContext.eventCustomField.getById(props.value.customFieldId);
     assert(!!fieldSpec, `fieldspec not found for id ${props.value.customFieldId}`);
-    let options: db3.EventCustomFieldOption[] = JSON.parse(fieldSpec.optionsJson || "[]");
+    const options = db3.ParseEventCustomFieldOptionsJson(fieldSpec.optionsJson);
     let selectedOption = options.find(o => o.id === props.deserializedValue);
     return <div>{selectedOption ? selectedOption.label : "<none>"}</div>;
 }
@@ -119,7 +119,7 @@ const EventCustomFieldValueValueEdit_Options = (props: EventCustomFieldValueCont
     const dashboardContext = useDashboardContext();
     const fieldSpec = dashboardContext.eventCustomField.getById(props.value.customFieldId);
     assert(!!fieldSpec, `fieldspec not found for id ${props.value.customFieldId}`);
-    let options: db3.EventCustomFieldOption[] = JSON.parse(fieldSpec.optionsJson || "[]");
+    const options = db3.ParseEventCustomFieldOptionsJson(fieldSpec.optionsJson);
     return <Select value={props.deserializedValue || gNullValue} onChange={e => props.onChange(e.target.value)}>
         <MenuItem value={gNullValue}>--</MenuItem>
         {options.map(o => {

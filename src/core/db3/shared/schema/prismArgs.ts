@@ -650,6 +650,19 @@ const EventCustomFieldOptionSchema = z.object({
 // Define the schema for an array of EventCustomFieldOption objects
 export const EventCustomFieldOptionArraySchema = z.array(EventCustomFieldOptionSchema);
 
+export type EventCustomFieldOptions = z.infer<typeof EventCustomFieldOptionArraySchema>;
+
+export function ParseEventCustomFieldOptionsJson(optionsJson: string | null): EventCustomFieldOptions {
+    try {
+        const newobj = JSON.parse(optionsJson || "");
+        const r = EventCustomFieldOptionArraySchema.parse(newobj);
+        return r;
+    }
+    catch (e) {
+        return [];
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////
 

@@ -28,6 +28,7 @@ import { EventStatusBindingOperand2Component, EventStatusBindingValueComponent, 
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowRenderer } from "./WorkflowUserComponents";
 import { EventTagsBindingOperand2Component, EventTagsBindingValueComponent, MakeDB3TagsBinding } from "./WorkflowDB3TagsBinding";
+import { EventCustomFieldOptionsBindingOperand2Component, EventCustomFieldOptionsBindingValueComponent, MakeCustomFieldOptionsBinding } from "./WorkflowCustomFieldOptionsBinding";
 
 const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
     const ret: MockEventModel = {
@@ -97,14 +98,27 @@ export function getMockEventBinding(args: {
                     setOperand2: args.setOperand2,
                 });
             case db3.EventCustomFieldDataType.Options:
-                console.log(`todo: handle case db3.EventCustomFieldDataType.Options`);
-                return MakeAlwaysBinding({
+                return MakeCustomFieldOptionsBinding({
                     tidiedNodeInstance: args.tidiedNodeInstance,
-                    fieldNameForDisplay: cf.name,
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
-                    value: false,
+                    fieldNameForDisplay: args.nodeDef.fieldName,
+                    setOperand2: args.setOperand2,
+                    value: args.model[args.nodeDef.fieldName],
+                    setValue: (val) => {
+                        args.setModelValue && args.setModelValue(cf.name, val || null);
+                    },
+                    FieldValueComponent: (props) => <EventCustomFieldOptionsBindingValueComponent {...props} options={db3.ParseEventCustomFieldOptionsJson(cf.optionsJson)} />,
+                    FieldOperand2Component: (props) => <EventCustomFieldOptionsBindingOperand2Component {...props} options={db3.ParseEventCustomFieldOptionsJson(cf.optionsJson)} />,
                 });
+            // console.log(`todo: handle case db3.EventCustomFieldDataType.Options`);
+            // return MakeAlwaysBinding({
+            //     tidiedNodeInstance: args.tidiedNodeInstance,
+            //     fieldNameForDisplay: cf.name,
+            //     flowDef: args.flowDef,
+            //     nodeDef: args.nodeDef,
+            //     value: false,
+            // });
         }
     }
 
@@ -512,9 +526,6 @@ function MakeInstanceMutatorAndRenderer({
                     throw new Error(`set operand2 not expected here`);
                 },
             });
-
-            console.log(`renderer value; value = `);
-            console.log(model);
 
             return <binding.FieldValueComponent binding={binding} readonly={readonly} />;
         },
