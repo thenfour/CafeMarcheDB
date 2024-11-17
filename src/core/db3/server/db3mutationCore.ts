@@ -11,7 +11,7 @@ import { DateTimeRange } from "shared/time";
 import { ChangeAction, ChangeContext, CoalesceBool, CreateChangeContext, ObjectDiff, RegisterChange, getIntersectingFields, sanitize } from "shared/utils";
 import sharp from "sharp";
 import * as db3 from "../db3";
-import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType, getFileCustomData } from "../shared/apiTypes";
+import { CMDBTableFilterModel, FileCustomData, ForkImageParams, ImageFileFormat, ImageMetadata, TAnyModel, TinsertOrUpdateEventSongListArgs, TinsertOrUpdateEventSongListDivider, TinsertOrUpdateEventSongListSong, TransactionalPrismaClient, TupdateEventCustomFieldValue, TupdateEventCustomFieldValuesArgs, WorkflowObjectType, getFileCustomData } from "../shared/apiTypes";
 import { SharedAPI } from "../shared/sharedAPI";
 import { EventForCal, EventForCalArgs, GetEventCalendarInput } from "./icalUtils";
 import { TWorkflowChange } from "shared/workflowEngine";
@@ -53,13 +53,14 @@ export const getCurrentUserCore = async (unauthenticatedCtx: Ctx) => {
     }
 };
 
-export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number, updatingEventModel: Partial<EventForCal>) => {
+export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: number, updatingEventModel: Partial<EventForCal>, db?: TransactionalPrismaClient, }) => {
+    const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     try {
-        assert(!!eventId, "whoa there event id is not valid; bug.");
+        assert(!!args.eventId, "whoa there event id is not valid; bug.");
         // get list of all event segments
-        const segments = await db.eventSegment.findMany({
+        const segments = await transactionalDb.eventSegment.findMany({
             where: {
-                eventId,
+                eventId: args.eventId,
             }
         });
 
@@ -70,14 +71,14 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number, 
         }
 
         // NOTE: this is going to be the wrong date! we need to calculate the date still.
-        let existingEvent = ((await db.event.findFirst({
+        let existingEvent = ((await transactionalDb.event.findFirst({
             where: {
-                id: eventId,
+                id: args.eventId,
             },
             ...EventForCalArgs,
         })) || {}) as Partial<EventForCal>;
 
-        Object.assign(existingEvent, updatingEventModel);
+        Object.assign(existingEvent, args.updatingEventModel);
         const dateUpdates = {
             startsAt: range.getSpec().startsAtDateTime,
             durationMillis: range.getSpec().durationMillis,
@@ -89,14 +90,14 @@ export const RecalcEventDateRangeAndIncrementRevision = async (eventId: number, 
         const existingRevision = existingEvent.revision;
         if (existingRevision === undefined) return;
 
-        const cancelledStatusIds = (await db.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
+        const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
 
         const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds)!;
         const newHash = calInp.inputHash || "-";
         const newRevisionSeq = (newHash === (existingEvent.calendarInputHash || "")) ? existingEvent.revision : (existingRevision + 1);
 
-        await db.event.update({
-            where: { id: eventId },
+        await transactionalDb.event.update({
+            where: { id: args.eventId },
             data: {
                 ...dateUpdates,
                 revision: newRevisionSeq,
@@ -119,12 +120,21 @@ type EventSegmentChangeHookModelType = Prisma.EventSegmentUserResponseGetPayload
     }
 }>;
 
-export const CallMutateEventHooks = async (args: { tableNameOrSpecialMutationKey: string, model: TAnyModel & { id: number } }): Promise<void> => {
+export const CallMutateEventHooks = async (args: {
+    tableNameOrSpecialMutationKey: string,
+    model: TAnyModel & { id: number },
+    db?: TransactionalPrismaClient,
+}): Promise<void> => {
+    const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     let eventIdToUpdate: null | number | undefined = null;
     switch (args.tableNameOrSpecialMutationKey.toLowerCase()) {
         case "event":
             eventIdToUpdate = args.model.id;
-            await RecalcEventDateRangeAndIncrementRevision(eventIdToUpdate, args.model as any);
+            await RecalcEventDateRangeAndIncrementRevision({
+                eventId: eventIdToUpdate,
+                updatingEventModel: args.model as any,
+                db: transactionalDb,
+            });
             return;
         case "eventsegment":
             eventIdToUpdate = (args.model as Prisma.EventSegmentGetPayload<{ select: { id: true, eventId: true } }>).eventId;
@@ -132,6 +142,7 @@ export const CallMutateEventHooks = async (args: { tableNameOrSpecialMutationKey
         case "eventsegmentuserresponse":
             eventIdToUpdate = (args.model as EventSegmentChangeHookModelType).eventSegment.eventId;
             break;
+        case "saveEventWorkflowModel":
         case "mutation:copyeventsegmentresponses":
         case "mutation:cleareventsegmentresponses":
             eventIdToUpdate = args.model.id; // is event id.
@@ -139,7 +150,7 @@ export const CallMutateEventHooks = async (args: { tableNameOrSpecialMutationKey
         case "eventsonglist":
             eventIdToUpdate = (args.model as Prisma.EventSongListGetPayload<{ select: { id: true, eventId: true } }>).eventId;
             if (!eventIdToUpdate) {
-                const sl = await db.eventSongList.findFirst({
+                const sl = await transactionalDb.eventSongList.findFirst({
                     where: {
                         id: args.model.id,
                     },
@@ -153,7 +164,7 @@ export const CallMutateEventHooks = async (args: { tableNameOrSpecialMutationKey
         case "eventsonglistsong":
             {
                 const songListId = (args.model as Prisma.EventSongListSongGetPayload<{ select: { id: true, eventSongListId: true } }>).eventSongListId;
-                const eventIdRet = await db.eventSongList.findFirst({
+                const eventIdRet = await transactionalDb.eventSongList.findFirst({
                     select: {
                         eventId: true,
                     },
@@ -174,7 +185,7 @@ export const CallMutateEventHooks = async (args: { tableNameOrSpecialMutationKey
     }
 
     if (eventIdToUpdate) {
-        await RecalcEventDateRangeAndIncrementRevision(eventIdToUpdate, {});
+        await RecalcEventDateRangeAndIncrementRevision({ eventId: eventIdToUpdate, updatingEventModel: {}, db: transactionalDb });
     }
 };
 
@@ -188,13 +199,16 @@ export interface UpdateAssociationsArgs {
 
     desiredTagIds: number[];
     localId: number;
+
+    db?: TransactionalPrismaClient,
 };
 
 // creates/deletes associations. does not update any other data in associations table; this is only for making/breaking associations.
 // this is specifically for arrays of tag IDs. if the association has more to it than just associating two PKs, then you'll need something more sophisticated.
 export const UpdateAssociations = async ({ changeContext, ctx, ...args }: UpdateAssociationsArgs) => {
+    const transactionalDb: TransactionalPrismaClient = (args.db as any) || (db as any);// have to do this way to avoid excessive stack depth by vs code
     const associationTableName = args.column.getAssociationTableShema().tableName;
-    const currentAssociations = await db[associationTableName].findMany({
+    const currentAssociations = await transactionalDb[associationTableName].findMany({
         where: { [args.column.associationLocalIDMember]: args.localId },
     });
 
@@ -220,13 +234,14 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
             pkid: oldValues.id,
             oldValues,
             ctx,
+            db: transactionalDb,
         });
     }
 
     // create new associations
     for (let i = 0; i < cp.create.length; ++i) {
         const tagId = cp.create[i]!;
-        const newAssoc = await db[associationTableName].create({
+        const newAssoc = await transactionalDb[associationTableName].create({
             data: {
                 [args.column.associationLocalIDMember]: args.localId,
                 [args.column.associationForeignIDMember]: tagId,
@@ -240,6 +255,7 @@ export const UpdateAssociations = async ({ changeContext, ctx, ...args }: Update
             pkid: newAssoc.id,
             newValues: newAssoc,
             ctx,
+            db: transactionalDb,
         });
     }
 };

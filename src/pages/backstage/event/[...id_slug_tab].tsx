@@ -15,6 +15,7 @@ import { DashboardContext } from "src/core/components/DashboardContext";
 import { GetServerSideProps } from 'next';
 import { EventTableClientColumns } from "src/core/components/EventComponentsBase";
 import { TableAccessor } from "shared/rootroot";
+import { Button } from "@mui/material";
 
 const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const params = useParams();
@@ -70,9 +71,12 @@ const MyComponent = ({ eventId }: { eventId: null | number }) => {
     const event = eventRaw ? db3.enrichSearchResultEvent(eventRaw, dashboardContext) : null;
 
     const refetch = () => {
-        setWorkflowRefreshTrigger(workflowRefreshTrigger + 1);
         tableClient.refetch();
     };
+
+    React.useEffect(() => {
+        setWorkflowRefreshTrigger(workflowRefreshTrigger + 1);
+    }, [tableClient.queryResultInfo.resultId]);
 
     return <div className="eventDetailComponent">
         <NewEventButton />

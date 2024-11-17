@@ -1,17 +1,13 @@
 // saveEventWorkflowModel
 import { resolver } from "@blitzjs/rpc";
-import { assert, AuthenticatedCtx } from "blitz";
-import db, { Prisma, PrismaClient } from "db";
+import { AuthenticatedCtx } from "blitz";
+import db, { Prisma } from "db";
+import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { callAsync, ChangeAction, CreateChangeContext, ObjectDiff, passthroughWithoutTransaction, RegisterChange } from "shared/utils";
-import { MutationArgsToWorkflowInstance, TWorkflowChange, TWorkflowInstanceMutationResult } from "shared/workflowEngine";
+import { ChangeAction, CreateChangeContext, ObjectDiff, RegisterChange } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
-import { DB3QueryCore2 } from "../server/db3QueryCore";
-import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
-import { Mutex } from "async-mutex";
-import { gWorkflowMutex, MockEvent, MockEventModel, ZSaveModelMutationInput } from "../server/eventWorkflow";
-import { ComputeChangePlan } from "shared/associationUtils";
+import { gWorkflowMutex, MockEvent, ZSaveModelMutationInput } from "../server/eventWorkflow";
 
 export default resolver.pipe(
     resolver.zod(ZSaveModelMutationInput),
@@ -19,16 +15,8 @@ export default resolver.pipe(
     async (args, ctx: AuthenticatedCtx) => {
         return gWorkflowMutex.runExclusive(async () => {
 
-            const currentUser = await mutationCore.getCurrentUserCore(ctx);
-            const clientIntention: db3.xTableClientUsageContext = {
-                intention: "user",
-                mode: "primary",
-                currentUser,
-            };
-
-            const changeContext = CreateChangeContext(`insertOrUpdateEventWorkflowInstance`);
-
             return await db.$transaction(async (transactionalDb) => {
+                const changeContext = CreateChangeContext(`insertOrUpdateEventWorkflowInstance`);
 
                 const eventUpdateModel: Prisma.EventUpdateInput = {};
                 let newEventTagIds: number[] | undefined;
@@ -126,6 +114,12 @@ export default resolver.pipe(
                         }
                     });
                 }
+
+                await mutationCore.CallMutateEventHooks({
+                    tableNameOrSpecialMutationKey: "mutation:saveEventWorkflowModel",
+                    model: { id: args.eventId },
+                    db: transactionalDb,
+                });
 
                 await RegisterChange({
                     action: ChangeAction.update,

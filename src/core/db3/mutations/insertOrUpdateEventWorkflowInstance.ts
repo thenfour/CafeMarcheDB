@@ -1,6 +1,5 @@
 // insertOrUpdateEventWorkflowInstance
 import { resolver } from "@blitzjs/rpc";
-import { Mutex } from "async-mutex";
 import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
@@ -9,8 +8,8 @@ import { MutationArgsToWorkflowInstance, TWorkflowChange, TWorkflowInstanceMutat
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { DB3QueryCore2 } from "../server/db3QueryCore";
-import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
 import { gWorkflowMutex } from "../server/eventWorkflow";
+import { TransactionalPrismaClient, TUpdateEventWorkflowInstanceArgs, WorkflowObjectType } from "../shared/apiTypes";
 
 async function InsertOrUpdateWorkflowInstanceCoreAsync(db: TransactionalPrismaClient, args: TUpdateEventWorkflowInstanceArgs): Promise<TWorkflowInstanceMutationResult> {
     const resultChanges: TWorkflowChange[] = [];
@@ -222,7 +221,7 @@ export default resolver.pipe(
                     const oldEngineInstance = db3.WorkflowInstanceQueryResultToMutationArgs(oldValuesInfo.items[0] as db3.WorkflowInstance_Verbose, args.eventId);
                     if (args.instance.revision < oldEngineInstance.instance.revision) {
                         // note: clients should also increment the revision number.
-                        throw new Error(`rejecting attempt to serialize an old instance version`);
+                        console.warn(`rejecting attempt to serialize an old instance version`);
                     }
                     oldPayload.serializableInstance = {
                         eventId: args.eventId,

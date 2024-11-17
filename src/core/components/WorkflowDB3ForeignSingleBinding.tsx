@@ -122,9 +122,11 @@ export const MakeDB3ForeignSingleBinding = (args: {
                     return lhs !== rhs;
                 case WorkflowFieldValueOperator.EqualsAnyOf:
                     if (Array.isArray(rhs)) return false;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
                     return (args.nodeDef.fieldValueOperand2 as any[]).includes(lhs);
                 case WorkflowFieldValueOperator.IsNotAnyOf:
                     if (Array.isArray(rhs)) return true;
+                    if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return false;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(lhs);
                 default:
                     console.warn(`unknown FSV field operator ${args.nodeDef.fieldValueOperator}`);

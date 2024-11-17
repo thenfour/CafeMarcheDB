@@ -794,6 +794,7 @@ type WorkflowObjects = {
     workflowDef: WorkflowDef | undefined,
     workflowInstance: WorkflowInstance | undefined,
     refetch: () => void,
+    dataUpdatedAt: number;
 };
 
 function useWorkflowDefAndInstanceForEvent(eventId: number, refreshTrigger: number) {
@@ -804,20 +805,16 @@ function useWorkflowDefAndInstanceForEvent(eventId: number, refreshTrigger: numb
         workflowDef: qr.workflowDef ? mapWorkflowDef(qr.workflowDef) : undefined,
         workflowInstance: qr.workflowInstance ? MutationArgsToWorkflowInstance(db3.WorkflowInstanceQueryResultToMutationArgs(qr.workflowInstance, eventId)) : undefined,
         refetch: qrx.refetch,
+        dataUpdatedAt: qrx.dataUpdatedAt,
     };
 
     if (ret.workflowDef && !ret.workflowInstance) {
         ret.workflowInstance = WorkflowInitializeInstance(ret.workflowDef!);
     }
 
-    //React.useEffect(() => console.log(`WorkflowDef and INSTANCE loaded from db`), [qrx.dataUpdatedAt]);
-
-    // // ensure an instance object exists
-    // const initialInstance = React.useMemo(() => {
-    //     if (!ret.workflowDef) return undefined;
-    //     WorkflowInitializeInstance(ret.workflowDef!);
-    // }, [ret.workflowDef?.id]);
-    //ret.workflowInstance = ret.workflowInstance || initialInstance;
+    // React.useEffect(() => {
+    //     console.log(`WorkflowDef and INSTANCE loaded from db with refresh trigger ${refreshTrigger}`)
+    // }, [qrx.dataUpdatedAt]);
 
     return ret;
 }
@@ -852,7 +849,7 @@ function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrig
     // when the mutation completes, it will let us know the new latest revision. set the waiting for revision number to this one and we know we're up-to-date.
     const waitingForDbRevisionGteRef = React.useRef<number>(0);
 
-    const [evaluationReason, setEvaluationReason] = React.useState<string>("");
+    //const [evaluationReason, setEvaluationReason] = React.useState<string>("");
     const snackbar = useSnackbar();
     const [insertOrUpdateEventWorkflowInstanceMutation] = useMutation(insertOrUpdateEventWorkflowInstance);
 
@@ -871,6 +868,7 @@ function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrig
     }, [workflowObjects.workflowInstance?.revision || 0]);
 
     const model = GetModelForEvent(dashboardContext, event);
+    //console.log(`getting model for event; typeid=${model.typeId}`);
 
     const handleNeedToSubmitInstanceForMutation = (newInstance: WorkflowInstance) => {
         if (!workflowObjects.workflowInstance) throw new Error();
@@ -965,7 +963,7 @@ function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrig
         }
         const evalResult = evaluate();
         setEvaluatedInstance(evalResult);
-    }, [evaluationTrigger, workflowObjects.workflowInstance!.revision, workflowObjects.workflowDef?.id]);
+    }, [evaluationTrigger, workflowObjects.workflowInstance!.revision, workflowObjects.workflowDef?.id, workflowObjects.dataUpdatedAt]);
 
     const ret: EvaluatedWorkflowObjects = {
         ...workflowObjects,
