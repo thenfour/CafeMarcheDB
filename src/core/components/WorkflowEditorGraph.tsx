@@ -10,7 +10,6 @@ import { GetStyleVariablesForColor } from "./Color";
 import { EvaluatedWorkflow, WorkflowCompletionCriteriaType, WorkflowDef, WorkflowEvaluatedNode, WorkflowFieldValueOperator, WorkflowMakeConnectionId, WorkflowManualCompletionStyle, WorkflowNodeDef, WorkflowNodeDisplayStyle, WorkflowNodeGroupDef } from "shared/workflowEngine";
 import { WorkflowGroupEditor, WorkflowNodeEditor } from "./WorkflowEditorDetail";
 import { EvaluatedWorkflowContext, WorkflowContainer, WorkflowDefMutatorFnChainSpec, WorkflowLogView, WorkflowNodeProgressIndicator } from "./WorkflowUserComponents";
-import { CMSmallButton } from "./CMCoreComponents2";
 
 
 const makeNormalNodeId = (nodeDefId: number) => {
@@ -446,7 +445,7 @@ export const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = (
 
     const readonly = props.readonly || !ctx.instanceMutator.CanCurrentUserEditDefs();
 
-    const fieldNames = ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef, });
+    const fields = ctx.instanceMutator.GetModelFields({ flowDef: ctx.flowDef, });
 
     return (
         <div style={{ width: '100%', height: '900px', border: '2px solid #0002' }}>
@@ -516,7 +515,7 @@ export const WorkflowReactFlowEditor: React.FC<WorkflowReactFlowEditorProps> = (
                                     width: undefined,
                                     height: undefined,
                                     fieldValueOperator: WorkflowFieldValueOperator.IsNotNull,
-                                    fieldName: fieldNames[0] || "",
+                                    fieldName: fields[0]?.memberName || "",
                                 };
 
                                 ctx.chainDefMutations([

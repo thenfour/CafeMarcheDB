@@ -663,6 +663,28 @@ export function ParseEventCustomFieldOptionsJson(optionsJson: string | null): Ev
     }
 }
 
+export const GetCustomFieldMemberName = (
+    cf: Prisma.EventCustomFieldGetPayload<{ select: { id: true } }>
+): string => {
+    return `cf:${cf.id}`;
+};
+
+export const GetCustomFieldIdFromMember = (member: string): number | null => {
+    const prefix = 'cf:';
+    if (!member.startsWith(prefix)) {
+        return null;
+    }
+
+    const idPart = member.substring(prefix.length);
+    const idPattern = /^\d+$/;
+    if (!idPattern.test(idPart)) {
+        return null;
+    }
+    const id = Number(idPart);
+    // Additional check to ensure conversion was successful
+    return isNaN(id) ? null : id;
+};
+
 
 ////////////////////////////////////////////////////////////////
 

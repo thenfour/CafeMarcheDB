@@ -373,6 +373,11 @@ interface WorkflowInstanceMutator_Args {
 
 type WorkflowInstanceMutatorFn<TextraArgs> = (args: WorkflowInstanceMutator_Args & TextraArgs) => WorkflowInstance | undefined;
 
+export type WorkflowModelFieldSpec = {
+    memberName: string;
+    displayName: string;
+}
+
 export interface WorkflowInstanceMutator {
     CanCurrentUserViewInstances: () => boolean,
     CanCurrentUserEditInstances: () => boolean,
@@ -380,7 +385,7 @@ export interface WorkflowInstanceMutator {
     CanCurrentUserEditDefs: () => boolean,
 
     DoesFieldValueSatisfyCompletionCriteria: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, tidiedNodeInstance: WorkflowTidiedNodeInstance, assignee: undefined | WorkflowNodeAssignee }) => boolean;
-    GetModelFieldNames: (args: { flowDef: WorkflowDef }) => string[];
+    GetModelFields: (args: { flowDef: WorkflowDef }) => WorkflowModelFieldSpec[];
 
     // equality-comparable and db-serializable
     GetFieldValueAsString: (args: { flowDef: WorkflowDef, nodeDef: WorkflowNodeDef, node: WorkflowTidiedNodeInstance }) => string;

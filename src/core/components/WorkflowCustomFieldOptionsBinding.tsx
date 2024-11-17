@@ -74,7 +74,6 @@ export const EventCustomFieldOptionsBindingValueComponent = (props: FieldCompone
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 export const EventCustomFieldOptionsBindingOperand2Component = (props: FieldComponentProps<TPK> & OptionsProps) => {
-    const dashboardContext = useDashboardContext();
     const val = valueToStringArray(props.binding.nodeDef.fieldValueOperand2);
     return <CMMultiSelect<TPK>
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}

@@ -26,7 +26,6 @@ const DueDateDefControl = (props: DueDateDefControlProps) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
     const readonly = !ctx.instanceMutator.CanCurrentUserEditDefs();
-    //const [customDays, setCustomDays] = React.useState<number>(1);
 
     type TOption = {
         label: string;
@@ -186,7 +185,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
 
     if (!ctx.instanceMutator.CanCurrentUserViewDefs()) return <div>Unauthorized to view workflow definitions</div>;
 
-    const fieldNames = ctx.instanceMutator.GetModelFieldNames({ flowDef: ctx.flowDef });//, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) });
+    const fields = ctx.instanceMutator.GetModelFields({ flowDef: ctx.flowDef });//, nodeDef: props.nodeDef, node: ctx.getEvaluatedNode(props.nodeDef.id) });
 
     return <div className="CMWorkflowNodeEditorContainer">
 
@@ -465,7 +464,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                         <div style={{ display: "flex", alignItems: "center" }}>
                             <FormControl variant="standard">
                                 <InputLabel>Field</InputLabel>
-                                <Select variant="filled" readOnly={readonly} size="small" value={props.nodeDef.fieldName || fieldNames[0] || "--never-never-never-field--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
+                                <Select variant="filled" readOnly={readonly} size="small" value={props.nodeDef.fieldName || fields[0]?.memberName || "--never-never-never-field--" /* passing in potentially undefined means MUI will think you want a controlled value rather than uncontrolled. */}
                                     onChange={readonly ? undefined : (e) => {
                                         ctx.chainDefMutations([
                                             {
@@ -480,7 +479,7 @@ export const WorkflowNodeEditor = (props: WorkflowNodeEditorProps) => {
                                             }
                                         ], `setting which field`);
                                     }}>
-                                    {fieldNames.map(f => <MenuItem key={f} value={f}>{f}</MenuItem>)}
+                                    {fields.map(f => <MenuItem key={f.memberName} value={f.memberName}>{f.displayName}</MenuItem>)}
                                 </Select>
                             </FormControl>
                             <FormControl variant="standard">

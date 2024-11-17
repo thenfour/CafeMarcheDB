@@ -4,7 +4,7 @@ import { AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { ComputeChangePlan } from "shared/associationUtils";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, ObjectDiff, RegisterChange } from "shared/utils";
+import { ChangeAction, CreateChangeContext, ObjectDiff, passthroughWithoutTransaction, RegisterChange } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { gWorkflowMutex, MockEvent, ZSaveModelMutationInput } from "../server/eventWorkflow";
@@ -15,7 +15,8 @@ export default resolver.pipe(
     async (args, ctx: AuthenticatedCtx) => {
         return gWorkflowMutex.runExclusive(async () => {
 
-            return await db.$transaction(async (transactionalDb) => {
+            //return await db.$transaction(async (transactionalDb) => {
+            return await passthroughWithoutTransaction(async (transactionalDb) => {
                 const changeContext = CreateChangeContext(`insertOrUpdateEventWorkflowInstance`);
 
                 const eventUpdateModel: Prisma.EventUpdateInput = {};
@@ -47,7 +48,7 @@ export default resolver.pipe(
                         default:
                             {
                                 // custom value
-                                const cf = customFields.find(x => x.name === member);
+                                const cf = customFields.find(x => x.id === db3.GetCustomFieldIdFromMember(member));
                                 if (!cf) {
                                     throw new Error(`no updateable value or custom field value matches '${member}'`);
                                 }

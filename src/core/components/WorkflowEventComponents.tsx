@@ -17,18 +17,18 @@ import { DashboardContextData, useDashboardContext } from "./DashboardContext";
 import { Markdown3Editor } from "./MarkdownControl3";
 
 import { useMutation, useQuery } from "@blitzjs/rpc";
-import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWorkflowInstance, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
+import { EvaluatedWorkflow, EvaluateWorkflow, mapWorkflowDef, MutationArgsToWorkflowInstance, WorkflowDef, WorkflowInitializeInstance, WorkflowInstance, WorkflowInstanceMutator, WorkflowModelFieldSpec, WorkflowNodeDef, WorkflowTidiedNodeInstance } from "shared/workflowEngine";
 import insertOrUpdateEventWorkflowInstance from "../db3/mutations/insertOrUpdateEventWorkflowInstance";
 import saveEventWorkflowModel from "../db3/mutations/saveEventWorkflowModel";
 import getWorkflowDefAndInstanceForEvent from "../db3/queries/getWorkflowDefAndInstanceForEvent";
 import { MockEvent, MockEventModel } from "../db3/server/eventWorkflow";
 import { useSnackbar } from "./SnackbarContext";
 import UnsavedChangesHandler from "./UnsavedChangesHandler";
+import { EventCustomFieldOptionsBindingOperand2Component, EventCustomFieldOptionsBindingValueComponent, MakeCustomFieldOptionsBinding } from "./WorkflowCustomFieldOptionsBinding";
 import { EventStatusBindingOperand2Component, EventStatusBindingValueComponent, EventTypeBindingOperand2Component, EventTypeBindingValueComponent, MakeDB3ForeignSingleBinding, UserTagIdBindingOperand2Component, UserTagIdBindingValueComponent } from "./WorkflowDB3ForeignSingleBinding";
+import { EventTagsBindingOperand2Component, EventTagsBindingValueComponent, MakeDB3TagsBinding } from "./WorkflowDB3TagsBinding";
 import { WorkflowEditorPOC, WorkflowReactFlowEditor } from "./WorkflowEditorGraph";
 import { EvaluatedWorkflowContext, EvaluatedWorkflowProvider, MakeAlwaysBinding, MakeBoolBinding, MakeRichTextBinding, MakeSingleLineTextBinding, WFFieldBinding, WorkflowContainer, WorkflowRenderer } from "./WorkflowUserComponents";
-import { EventTagsBindingOperand2Component, EventTagsBindingValueComponent, MakeDB3TagsBinding } from "./WorkflowDB3TagsBinding";
-import { EventCustomFieldOptionsBindingOperand2Component, EventCustomFieldOptionsBindingValueComponent, MakeCustomFieldOptionsBinding } from "./WorkflowCustomFieldOptionsBinding";
 
 const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel => {
     const ret: MockEventModel = {
@@ -42,7 +42,7 @@ const MakeEmptyModel = (dashboardContext: DashboardContextData): MockEventModel 
         tagIds: [],
     };
     for (const f of dashboardContext.eventCustomField.items) {
-        ret[f.name] = null; // todo: default values for custom fields?
+        ret[db3.GetCustomFieldMemberName(f)] = null; // todo: default values for custom fields?
     }
     return ret;
 };
@@ -58,8 +58,9 @@ export function getMockEventBinding(args: {
 }): WFFieldBinding<unknown> {
 
     // do custom fields first
-    const cf = args.dashboardContext.eventCustomField.find(x => x.name === args.nodeDef.fieldName);
+    const cf = args.dashboardContext.eventCustomField.find(x => x.id === db3.GetCustomFieldIdFromMember(args.nodeDef.fieldName));
     if (cf) {
+        const cfMemberName = db3.GetCustomFieldMemberName(cf);
         switch (cf.dataType as db3.EventCustomFieldDataType) {
             case db3.EventCustomFieldDataType.Checkbox:
                 return MakeBoolBinding({
@@ -67,9 +68,9 @@ export function getMockEventBinding(args: {
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
                     fieldNameForDisplay: cf.name,
-                    value: args.model[cf.name],
+                    value: args.model[cfMemberName],
                     setValue: (val) => {
-                        args.setModelValue && args.setModelValue(cf.name, CoalesceBool(val, false));
+                        args.setModelValue && args.setModelValue(cfMemberName, CoalesceBool(val, false));
                     },
                     setOperand2: args.setOperand2,
                 });
@@ -79,10 +80,10 @@ export function getMockEventBinding(args: {
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
                     fieldNameForDisplay: cf.name,
-                    value: args.model[cf.name] || "",
+                    value: args.model[cfMemberName] || "",
                     setOperand2: args.setOperand2,
                     setValue: (val) => {
-                        args.setModelValue && args.setModelValue(cf.name, val);
+                        args.setModelValue && args.setModelValue(cfMemberName, val);
                     },
                 });
             case db3.EventCustomFieldDataType.SimpleText:
@@ -91,9 +92,9 @@ export function getMockEventBinding(args: {
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
                     fieldNameForDisplay: cf.name,
-                    value: args.model[cf.name] || "",
+                    value: args.model[cfMemberName] || "",
                     setValue: (val) => {
-                        args.setModelValue && args.setModelValue(cf.name, val);
+                        args.setModelValue && args.setModelValue(cfMemberName, val);
                     },
                     setOperand2: args.setOperand2,
                 });
@@ -102,11 +103,12 @@ export function getMockEventBinding(args: {
                     tidiedNodeInstance: args.tidiedNodeInstance,
                     flowDef: args.flowDef,
                     nodeDef: args.nodeDef,
-                    fieldNameForDisplay: args.nodeDef.fieldName,
+                    fieldNameForDisplay: cf.name,
                     setOperand2: args.setOperand2,
-                    value: args.model[args.nodeDef.fieldName],
+                    value: args.model[cfMemberName],
                     setValue: (val) => {
-                        args.setModelValue && args.setModelValue(cf.name, val || null);
+                        //console.log(`setting ${cfMemberName} = ${val}`);
+                        args.setModelValue && args.setModelValue(cfMemberName, val || null);
                     },
                     FieldValueComponent: (props) => <EventCustomFieldOptionsBindingValueComponent {...props} options={db3.ParseEventCustomFieldOptionsJson(cf.optionsJson)} />,
                     FieldOperand2Component: (props) => <EventCustomFieldOptionsBindingOperand2Component {...props} options={db3.ParseEventCustomFieldOptionsJson(cf.optionsJson)} />,
@@ -381,8 +383,17 @@ function MakeInstanceMutatorAndRenderer({
             });
             return binding.doesFieldValueSatisfyCompletionCriteria();
         },
-        GetModelFieldNames: (args) => {
-            return Object.keys(MakeEmptyModel(dashboardContext));
+        GetModelFields: (args) => {
+            const model = MakeEmptyModel(dashboardContext);
+            const ret: WorkflowModelFieldSpec[] = Object.keys(model).map(f => {
+                const customFieldId = db3.GetCustomFieldIdFromMember(f);
+                const cf = dashboardContext.eventCustomField.getById(customFieldId);
+                return {
+                    displayName: cf ? cf.name : f,
+                    memberName: f,
+                }
+            });
+            return ret;
         },
         // result should be equality-comparable and database-serializable
         GetFieldValueAsString: ({ flowDef, nodeDef, node }) => {
@@ -713,7 +724,7 @@ export const WorkflowViewer = (props: { value: WorkflowDef }) => {
         CanCurrentUserEditDefs: () => dashboardCtx.isAuthorized(Permission.edit_workflow_defs),
 
         DoesFieldValueSatisfyCompletionCriteria: ({ flowDef, nodeDef, tidiedNodeInstance, assignee }): boolean => false,
-        GetModelFieldNames: (args) => [],
+        GetModelFields: (args) => [],
         GetFieldValueAsString: ({ flowDef, nodeDef, node }) => "",
         ResetModelAndInstance: () => { },
         SetAssigneesForNode: (args) => undefined,
@@ -787,13 +798,14 @@ function GetModelForEvent(dashboardContext: DashboardContextData, event: db3.Eve
     for (const cfv of event.customFieldValues) {
         const cf = dashboardContext.eventCustomField.getById(cfv.customFieldId);
         if (!cf) throw new Error(`CFV ref no good for id: ${cfv.customFieldId}`);
+        const cfMemberName = db3.GetCustomFieldMemberName(cf);
         if (IsNullOrWhitespace(cfv.jsonValue)) {
-            ret[cf.name] = null;
+            ret[cfMemberName] = null;
             continue;
         }
         try {
             const deserializedValue = JSON.parse(cfv.jsonValue);
-            ret[cf.name] = deserializedValue;
+            ret[cfMemberName] = deserializedValue;
         } catch (e) {
             console.log(e);
             console.log(`json value:`);
