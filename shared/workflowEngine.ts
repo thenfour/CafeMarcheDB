@@ -95,6 +95,8 @@ export enum WorkflowFieldValueOperator {
     Falsy = "Falsy",
     EqualsAnyOf = "EqualsAnyOf", // support multiple operands
     IsNotAnyOf = "IsNotAnyOf",
+    HasOnlyAllowedValues = "HasOnlyAllowedValues",
+    ContainsAllValues = "ContainsAllValues",
 };
 
 // when displaying the workflow, nodes are grouped together

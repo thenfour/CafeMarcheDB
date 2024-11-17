@@ -5,80 +5,32 @@ import { CMSmallButton } from "./CMCoreComponents2";
 import { CMMultiSelect, CMSelectDisplayStyle, CMSingleSelect } from "./CMSelect";
 import { useDashboardContext } from "./DashboardContext";
 import { EvaluatedWorkflowContext, FieldComponentProps, WFFieldBinding } from "./WorkflowUserComponents";
+import { arraysContainSameValues, assertUnreachable } from "shared/utils";
 
 type TPK = number | null | undefined;
 
-// /////////////////////////////////////////////////////////////////////////////////////////////
-// export const DB3ForeignSingleBindingValueComponent = (props: FieldComponentProps<TPK>) => {
-//     const ctx = useContext(EvaluatedWorkflowContext);
-//     if (!ctx) throw new Error(`Workflow context is required`);
-//     const [open, setOpen] = React.useState<boolean>(false);
-//     const [value, setValue] = React.useState<TPK>(props.binding.value);
+const incomingValueToNumber = (incomingValue: any) => {
+    const schema = z.number();
+    const val = schema.safeParse(incomingValue);
+    if (val.success) {
+        return val.data;
+    }
+    return null;
+};
 
-//     return <>
-//         <Button onClick={() => setOpen(true)}>Edit</Button>
-//         {open && <ReactiveInputDialog onCancel={() => setOpen(false)}>
-//             <DialogTitle>
-//                 {props.binding.fieldNameForDisplay}
-//             </DialogTitle>
-//             <DialogContent dividers>
-//                 ...
-//             </DialogContent>
-//             <DialogActions>
-//                 <Button onClick={() => setOpen(false)}>Cancel</Button>
-//                 <Button onClick={() => {
-//                     props.binding.setValue(value);
-//                     setOpen(false);
-//                 }}>OK</Button>
-//             </DialogActions>
-//         </ReactiveInputDialog>}
-//     </>;
-// }
+const toPkArray = (x: any): TPK[] => {
+    const schema = z.array(z.number());
+    const parsed = schema.safeParse(x);
+    if (!parsed.success) return [];
+    return parsed.data;
+};
 
-// const incomingValueToNumberArray = (incomingValue: any) => {
-//     const schema = z.array(z.number());
-//     const val = schema.safeParse(incomingValue);
-//     if (val.success) {
-//         return val.data;
-//     }
-//     return [];
-// };
-
-
-// return <CMMultiSelect
-//     displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
-//     value={incomingValueToNumberArray(props.binding.value)}
-//     getOptions={(args) => dashboardContext.eventType.items.map(x => x.id)}
-//     getOptionInfo={(id) => {
-//         const x = dashboardContext.eventType.getById(id)!;
-//         return {
-//             id: x.id,
-//             color: x.color,
-//             tooltip: x.description,
-//         };
-//     }}
-//     onChange={(options) => props.binding.setValue(options)}
-//     renderOption={(id) => {
-//         const x = dashboardContext.eventType.getById(id)!;
-//         return x.text;
-//     }}
-// />;
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 export const EventTypeBindingValueComponent = (props: FieldComponentProps<TPK>) => {
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
     const dashboardContext = useDashboardContext();
-    //const [open, setOpen] = React.useState<boolean>(false);
-
-    const incomingValueToNumber = (incomingValue: any) => {
-        const schema = z.number();
-        const val = schema.safeParse(incomingValue);
-        if (val.success) {
-            return val.data;
-        }
-        return null;
-    };
 
     return <CMSingleSelect
         displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
@@ -113,12 +65,6 @@ export const EventTypeBindingValueComponent = (props: FieldComponentProps<TPK>) 
 /////////////////////////////////////////////////////////////////////////////////////////////
 export const EventTypeBindingOperand2Component = (props: FieldComponentProps<TPK>) => {
     const dashboardContext = useDashboardContext();
-    const toPkArray = (x: any): TPK[] => {
-        const schema = z.array(z.number());
-        const parsed = schema.safeParse(x);
-        if (!parsed.success) return [];
-        return parsed.data;
-    };
     const val = toPkArray(props.binding.nodeDef.fieldValueOperand2);
     return <CMMultiSelect<TPK>
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
@@ -126,7 +72,6 @@ export const EventTypeBindingOperand2Component = (props: FieldComponentProps<TPK
         chipShape={"rectangle"}
         chipSize={"small"}
         onChange={v => {
-            console.log(`setting type operatnd 2`);
             props.binding.setOperand2(v);
         }}
         value={val}
@@ -155,16 +100,6 @@ export const EventStatusBindingValueComponent = (props: FieldComponentProps<TPK>
     const ctx = useContext(EvaluatedWorkflowContext);
     if (!ctx) throw new Error(`Workflow context is required`);
     const dashboardContext = useDashboardContext();
-    //const [open, setOpen] = React.useState<boolean>(false);
-
-    const incomingValueToNumber = (incomingValue: any) => {
-        const schema = z.number();
-        const val = schema.safeParse(incomingValue);
-        if (val.success) {
-            return val.data;
-        }
-        return null;
-    };
 
     return <CMSingleSelect
         displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
@@ -200,12 +135,6 @@ export const EventStatusBindingValueComponent = (props: FieldComponentProps<TPK>
 /////////////////////////////////////////////////////////////////////////////////////////////
 export const EventStatusBindingOperand2Component = (props: FieldComponentProps<TPK>) => {
     const dashboardContext = useDashboardContext();
-    const toPkArray = (x: any): TPK[] => {
-        const schema = z.array(z.number());
-        const parsed = schema.safeParse(x);
-        if (!parsed.success) return [];
-        return parsed.data;
-    };
     const val = toPkArray(props.binding.nodeDef.fieldValueOperand2);
     return <CMMultiSelect<TPK>
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
@@ -248,15 +177,6 @@ export const UserTagIdBindingValueComponent = (props: FieldComponentProps<TPK>) 
     if (!ctx) throw new Error(`Workflow context is required`);
     const dashboardContext = useDashboardContext();
 
-    const incomingValueToNumber = (incomingValue: any) => {
-        const schema = z.number();
-        const val = schema.safeParse(incomingValue);
-        if (val.success) {
-            return val.data;
-        }
-        return null;
-    };
-
     return <CMSingleSelect
         displayStyle={CMSelectDisplayStyle.CustomButtonWithDialog}
         chipShape="rounded"
@@ -291,12 +211,6 @@ export const UserTagIdBindingValueComponent = (props: FieldComponentProps<TPK>) 
 /////////////////////////////////////////////////////////////////////////////////////////////
 export const UserTagIdBindingOperand2Component = (props: FieldComponentProps<TPK>) => {
     const dashboardContext = useDashboardContext();
-    const toPkArray = (x: any): TPK[] => {
-        const schema = z.array(z.number());
-        const parsed = schema.safeParse(x);
-        if (!parsed.success) return [];
-        return parsed.data;
-    };
     const val = toPkArray(props.binding.nodeDef.fieldValueOperand2);
     return <CMMultiSelect<TPK>
         displayStyle={CMSelectDisplayStyle.SelectedWithDialog}
@@ -361,8 +275,8 @@ export const MakeDB3ForeignSingleBinding = (args: {
             if (!args.nodeDef.fieldValueOperator) {
                 return false;
             }
-            const lhs = args.value;
-            const rhs = args.nodeDef.fieldValueOperand2;
+            const lhs: TPK = args.value;
+            const rhs = toPkArray(args.nodeDef.fieldValueOperand2);
             switch (args.nodeDef.fieldValueOperator) {
                 case WorkflowFieldValueOperator.Falsy:
                 case WorkflowFieldValueOperator.IsNull:
@@ -371,19 +285,18 @@ export const MakeDB3ForeignSingleBinding = (args: {
                 case WorkflowFieldValueOperator.StringPopulated:
                 case WorkflowFieldValueOperator.IsNotNull:
                     return !!lhs;
+                case WorkflowFieldValueOperator.ContainsAllValues:
+                case WorkflowFieldValueOperator.HasOnlyAllowedValues:
                 case WorkflowFieldValueOperator.EqualsOperand2:
-                    return lhs === rhs;
+                    return arraysContainSameValues([lhs], rhs);
                 case WorkflowFieldValueOperator.NotEqualsOperand2:
-                    return lhs !== rhs;
+                    return !arraysContainSameValues([lhs], rhs);
                 case WorkflowFieldValueOperator.EqualsAnyOf:
-                    if (Array.isArray(lhs)) return false;
-                    if (!Array.isArray(rhs)) return false;
                     return (rhs as any[]).includes(lhs);
                 case WorkflowFieldValueOperator.IsNotAnyOf:
-                    if (Array.isArray(lhs)) return false;
-                    if (!Array.isArray(rhs)) return false;
                     return !(rhs as any[]).includes(lhs);
                 default:
+                    //assertUnreachable(args.nodeDef.fieldValueOperator);
                     console.warn(`unknown FSV field operator ${args.nodeDef.fieldValueOperator}`);
                     return false;
             }

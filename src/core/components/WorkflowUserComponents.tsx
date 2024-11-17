@@ -1238,6 +1238,8 @@ export const MakeBoolBinding = (args: {
                     if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
                 case WorkflowFieldValueOperator.StringPopulated:
+                case WorkflowFieldValueOperator.HasOnlyAllowedValues:
+                case WorkflowFieldValueOperator.ContainsAllValues:
                     return false;
                 default:
                     // be tolerant to out of range
@@ -1386,6 +1388,9 @@ export const MakeSingleLineTextBinding = (args: {
                 case WorkflowFieldValueOperator.IsNotAnyOf:
                     if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                case WorkflowFieldValueOperator.HasOnlyAllowedValues:
+                case WorkflowFieldValueOperator.ContainsAllValues:
+                    return false;
                 default:
                     console.warn(`unknown text field operator ${args.nodeDef.fieldValueOperator}`);
                     return false;
@@ -1443,6 +1448,9 @@ export const MakeRichTextBinding = (args: {
                 case WorkflowFieldValueOperator.IsNotAnyOf:
                     if (!Array.isArray(args.nodeDef.fieldValueOperand2)) return true;
                     return !(args.nodeDef.fieldValueOperand2 as any[]).includes(args.value);
+                case WorkflowFieldValueOperator.HasOnlyAllowedValues:
+                case WorkflowFieldValueOperator.ContainsAllValues:
+                    return false;
                 default:
                     console.warn(`unknown text field operator ${args.nodeDef.fieldValueOperator}`);
                     return false;

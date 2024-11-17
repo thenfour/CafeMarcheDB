@@ -65,7 +65,16 @@ export const useMultiSelectLogic = <T,>(
 
     React.useEffect(() => {
         setSelectedOptionsX(selectedOptions.map(o => makeTX(o)));
-    }, [props.getOptions, selectedOptions, props.getOptionInfo, allOptionsX]);
+    }, [props.getOptions, props.getOptionInfo, allOptionsX]);
+
+    React.useEffect(() => {
+        setSelectedOptionsX(selectedOptions.map(o => makeTX(o)));
+    }, [...selectedOptions]);
+
+    // React.useEffect(() => {
+    //     console.log(`multiselectlogic values:`);
+    //     console.log(selectedOptionsX);
+    // }, [...selectedOptionsX]);
 
     const toggleSelection = (x: TX): T[] => {
         if (isSelected(x.info)) {
