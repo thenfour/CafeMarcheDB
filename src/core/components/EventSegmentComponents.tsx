@@ -13,7 +13,7 @@ import { DB3EditObjectDialog } from '../db3/components/db3NewObjectDialog';
 import { useAuthenticatedSession } from "@blitzjs/auth";
 import { Markdown } from "./RichTextEditor";
 import { SettingMarkdown } from "./SettingMarkdown";
-import { IsNullOrWhitespace } from "shared/utils";
+import { IsNullOrWhitespace, toSorted } from "shared/utils";
 import { gCharMap, gIconMap } from "../db3/components/IconMap";
 import { EventStatusValue, EventTableClientColumns } from "./EventComponentsBase";
 import { useDashboardContext } from "./DashboardContext";
@@ -230,7 +230,7 @@ interface SegmentListProps {
 export const SegmentList = ({ event, tableClient, ...props }: SegmentListProps) => {
 
     const dashboardContext = useDashboardContext();
-    const segments = event.segments.toSorted((a, b) => db3.compareEventSegments(a, b, db3.getCancelledStatusIds(dashboardContext.eventStatus.items)));
+    const segments = toSorted(event.segments, (a, b) => db3.compareEventSegments(a, b, db3.getCancelledStatusIds(dashboardContext.eventStatus.items)));
 
     // if there is only 1 segment and there's no description for the segment, don't display at all.
     // the only time to show segment lists is when there's something that's not shown elsewhere.

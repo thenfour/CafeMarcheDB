@@ -2,7 +2,7 @@ import { BlitzPage, useParams } from "@blitzjs/next";
 import db from "db";
 import { Suspense } from "react";
 import { Permission } from "shared/permissions";
-import { CoerceToNumberOrNull, IsEntirelyIntegral } from "shared/utils";
+import { CoerceToNumberOrNull, IsEntirelyIntegral, toSorted } from "shared/utils";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { NavRealm } from "src/core/components/Dashboard2";
 import { EventBreadcrumbs, EventDetailFull, gEventDetailTabSlugIndices } from "src/core/components/EventComponents";
@@ -143,9 +143,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params, req }) =>
         const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' };
 
         // skip cancelled segments
-        const validSegmentsSorted = event.segments
-            .filter(s => !isCancelled(s.statusId))
-            .toSorted((a, b) => db3.compareEventSegments(a, b, cancelledStatusIds));
+        const validSegmentsSorted = toSorted(
+            event.segments
+                .filter(s => !isCancelled(s.statusId)),
+            (a, b) => db3.compareEventSegments(a, b, cancelledStatusIds));
         if (!validSegmentsSorted.length) {
             ret.props.title = `${event.name}`;
         } else {

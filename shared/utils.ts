@@ -1115,6 +1115,7 @@ export function sanitize<T>(inp: any, keys: (keyof T)[]): T {
 //     return result;
 // }
 
+// uberspace cannot do toSorted. use this.
 export function toSorted<T>(array: T[], compareFn?: (a: T, b: T) => number): T[] {
     return array.slice().sort(compareFn);
 }
