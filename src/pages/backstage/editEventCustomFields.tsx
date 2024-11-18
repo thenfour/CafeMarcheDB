@@ -44,7 +44,7 @@ const CustomFieldValueEditor = (props: CustomFieldValueEditorProps) => {
 };
 
 const CustomFieldEditor = () => {
-    const [value, setValue] = React.useState<db3.EventCustomFieldOption[]>([]);
+    const [value, setValue] = React.useState<db3.EventCustomFieldOptions>([]);
     const [expanded, setExpanded] = React.useState<boolean>(false);
     const snackbar = useSnackbar();
 
@@ -77,9 +77,7 @@ const CustomFieldEditor = () => {
                 <Button size='small' onClick={async () => {
                     const text = await navigator.clipboard.readText();
                     try {
-                        const newobj = JSON.parse(text);
-                        // validate the object.
-                        db3.EventCustomFieldOptionArraySchema.parse(newobj);
+                        const newobj = db3.ParseEventCustomFieldOptionsJson(text);
                         setValue(newobj);
                         snackbar.showMessage({ severity: "success", children: `list successfully replaced` });
                     }
@@ -91,8 +89,7 @@ const CustomFieldEditor = () => {
                 <Button size='small' onClick={async () => {
                     const text = await navigator.clipboard.readText();
                     try {
-                        const newobj = JSON.parse(text);
-                        db3.EventCustomFieldOptionArraySchema.parse(newobj);
+                        const newobj = db3.ParseEventCustomFieldOptionsJson(text);
                         setValue([...value, ...newobj]);
                         snackbar.showMessage({ severity: "success", children: `list successfully replaced` });
                     }
