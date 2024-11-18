@@ -394,6 +394,7 @@ export const EventSegmentDotMenu = (props: EventSegmentDotMenuProps) => {
             {props.event.segments
                 .filter(seg => seg.id !== props.segment.id)
                 .map(fromSegment => <EventSegmentDotMenuCopyUserResponsesFromMenuItem
+                    key={fromSegment.id}
                     {...props}
                     fromSegment={fromSegment}
                     toSegment={props.segment}

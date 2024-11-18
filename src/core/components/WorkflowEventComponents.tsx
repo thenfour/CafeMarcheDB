@@ -939,7 +939,7 @@ function useEvaluatedWorkflow(event: db3.EventClientPayload_Verbose, refreshTrig
     };
 
     const setModelValue = (member: string, value: unknown) => {
-        snackbar.invokeAsync(async () => {
+        void snackbar.invokeAsync(async () => {
             await saveEventWorkflowModelMutation({
                 eventId: event.id,
                 values: {

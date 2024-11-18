@@ -76,12 +76,12 @@ const AppBarUserIcon_MenuItems = ({ closeMenu }: { closeMenu: () => void }) => {
         {(!!sess.isSysAdmin) && <>
 
             {isShowingAdminControls ?
-                <MenuItem onClick={() => {
-                    onClickShowAdminControls(false);
+                <MenuItem onClick={async () => {
+                    await onClickShowAdminControls(false);
                     closeMenu();
                 }}>Hide admin config {gIconMap.Settings()}</MenuItem>
-                : <MenuItem onClick={() => {
-                    onClickShowAdminControls(true);
+                : <MenuItem onClick={async () => {
+                    await onClickShowAdminControls(true);
                     closeMenu();
                 }}>Show admin config {gIconMap.Settings()}</MenuItem>
             }
