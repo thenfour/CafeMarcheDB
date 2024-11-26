@@ -58,7 +58,8 @@ const MainContent = () => {
                 size: "small",
                 renderAsChip: (args) => {
                     if (!args) return "--";
-                    const user = args.value as db3.UserPayloadMinimum;
+                    const user = args.value as (db3.UserPayloadMinimum | null | undefined);
+                    if (!user) return "--";
                     return <CMChip
                         size="small"
                         tooltip={`${user.name} #${user.id}`}
