@@ -724,9 +724,15 @@ export const UpdateEventSongListSongs = async ({ changeContext, ctx, ...args }: 
         });
     }
 
+    // const newValues: Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'> = {
+    //     songs: cp.desiredState,
+    //     dividers: cpDiv.desiredState,
+    // }
+
+    // #340 / #331 removing activity log bloat temporarily
     const newValues: Pick<TinsertOrUpdateEventSongListArgs, 'songs' | 'dividers'> = {
-        songs: cp.desiredState,
-        dividers: cpDiv.desiredState,
+        songs: [],
+        dividers: [],
     }
 
     // make a custom change obj. let's not bother with "old state"; this just gets too verbose and that's not helpful.

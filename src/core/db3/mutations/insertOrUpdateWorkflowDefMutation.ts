@@ -3,7 +3,7 @@ import { resolver } from "@blitzjs/rpc";
 import { assert, AuthenticatedCtx } from "blitz";
 import db, { Prisma } from "db";
 import { Permission } from "shared/permissions";
-import { ChangeAction, CreateChangeContext, getUniqueNegativeID, ObjectDiff, RegisterChange } from "shared/utils";
+import { ChangeAction, CreateChangeContext, getUniqueNegativeID, ObjectDiff, passthroughWithoutTransaction, RegisterChange } from "shared/utils";
 import * as db3 from "../db3";
 import * as mutationCore from "../server/db3mutationCore";
 import { TinsertOrUpdateWorkflowDefArgs, TransactionalPrismaClient, WorkflowObjectType } from "../shared/apiTypes";
@@ -408,7 +408,9 @@ export default resolver.pipe(
 
         const changeContext = CreateChangeContext(`insertOrUpdateWorkflow`);
 
-        return await db.$transaction(async (transactionalDb) => {
+        //return await db.$transaction(async (transactionalDb) => {
+        return await passthroughWithoutTransaction(async (transactionalDb) => {
+            debugger;
             // old workflow def
             //let oldSerializableDef: TinsertOrUpdateWorkflowDefArgs | undefined = undefined;
             const oldPayload: TWorkflowMutationResult = {
@@ -436,6 +438,10 @@ export default resolver.pipe(
             }
 
             const newPayload = await InsertOrUpdateWorkflowCoreAsync(args, transactionalDb);
+            const registeredPayload = { ...newPayload };
+
+            // #340 activity log payload bloat
+            registeredPayload.serializableFlowDef = undefined;
 
             await RegisterChange({
                 action: oldPayload.serializableFlowDef ? ChangeAction.update : ChangeAction.insert,
@@ -443,9 +449,12 @@ export default resolver.pipe(
                 ctx,
                 pkid: newPayload.serializableFlowDef!.id,
                 table: 'workflowDef',
-                oldValues: oldPayload,
-                newValues: newPayload,
+                oldValues: null,//oldPayload,// #340 activity log payload bloat
+                newValues: registeredPayload,// #340 activity log payload bloat
                 db: transactionalDb,
+                options: {
+                    dontCalculateChanges: true,
+                }
             });
 
             return newPayload;
