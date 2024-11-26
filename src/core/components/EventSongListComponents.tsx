@@ -43,17 +43,22 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
     //const [open, setOpen] = React.useState<boolean>(false);
     const [controlledValue, setControlledValue] = React.useState<SetlistAPI.EventSongListDividerItem>({ ...value });
 
+    React.useEffect(() => {
+        setControlledValue({ ...value });
+    }, [value]);
+
     const makeFakeSongList = (testFormat: db3.EventSongListDividerTextStyle): db3.EventSongListPayload => {
+
         const ret = {
             ...songList,
-            isOrdered: false,
-            isActuallyPlayed: false,
+            isOrdered: songList.isOrdered,
+            isActuallyPlayed: songList.isActuallyPlayed,
             dividers: songList.dividers.filter(item => Math.abs(item.sortOrder - sortOrder) <= 2).map(d => ({ ...d })),
             songs: songList.songs.filter(item => Math.abs(item.sortOrder - sortOrder) <= 2).map(d => ({ ...d })),
         };
         const d = ret.dividers.find(x => x.sortOrder === sortOrder);
         if (!d) throw new Error();
-        Object.assign(d, value);
+        Object.assign(d, controlledValue);
         d.textStyle = testFormat;
         return ret;
     };
@@ -81,7 +86,7 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
             <NameValuePair
                 name={"Is a break / Resets running time?"}
                 value={<Checkbox
-                    value={controlledValue.isInterruption}
+                    checked={controlledValue.isInterruption}
                     onChange={(e) => setControlledValue({ ...controlledValue, isInterruption: e.target.checked })}
                 />}
             />
@@ -96,8 +101,6 @@ const DividerEditInDialogDialog = ({ sortOrder, value, onClick, songList, onClos
                             </MenuItem>)}
                         </Select>
                     </div>
-                    //styleOption(controlledValue.format)
-                    //Object.values(db3.EventSongListDividerTextStyle).map(testFormat => styleOption(testFormat))
                 }
             />
         </DialogContent>
@@ -680,7 +683,6 @@ export const EventSongListValueEditorRow = (props: EventSongListValueEditorRowPr
 
     const handleCommentChange = (newText: string) => {
         if (props.value.type === 'new') return;
-        //console.log(`comment change: ${newText}`);
         const item = { ...props.value, subtitle: newText };
         props.onChange(item);
     };

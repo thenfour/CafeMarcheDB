@@ -394,55 +394,6 @@ export interface EventsFilterSpec {
 
 
 
-
-// export interface EventListQuerierProps {
-//     filterSpec: EventsFilterSpec;
-//     setResults: (v: SearchResultsRet, enrichedEvents: db3.EnrichedSearchEventPayload[]) => void;
-//     render: (isLoading: boolean) => React.ReactNode;
-// };
-
-// const EventListQuerierInner = (props: EventListQuerierProps) => {
-//     const dashboardContext = React.useContext(DashboardContext);
-
-//     const [searchResult, queryExtra] = useQuery(getSearchResults, {
-//         page: props.filterSpec.page,
-//         pageSize: props.filterSpec.pageSize,
-//         tableID: db3.xEvent.tableID,
-//         refreshSerial: props.filterSpec.refreshSerial,
-//         sort: [{
-//             db3Column: props.filterSpec.orderByColumn,
-//             direction: props.filterSpec.orderByDirection,
-//         }],
-
-//         quickFilter: props.filterSpec.quickFilter,
-//         discreteCriteria: [
-//             props.filterSpec.dateFilter,
-//             props.filterSpec.typeFilter,
-//             props.filterSpec.statusFilter,
-//             props.filterSpec.tagFilter,
-//         ],
-//     });
-
-//     React.useEffect(() => {
-//         if (queryExtra.isSuccess) {
-//             const enrichedEvents = searchResult.results.map(e => db3.enrichSearchResultEvent(e as db3.EventVerbose_Event, dashboardContext));
-//             props.setResults({ ...searchResult, }, enrichedEvents);
-//         }
-//     }, [queryExtra.dataUpdatedAt]);
-
-//     return <>{props.render(queryExtra.isLoading)}</>;// <div className={`queryProgressLine idle`}></div>;
-// };
-
-
-// export const EventListQuerier = (props: EventListQuerierProps) => {
-//     return <Suspense fallback={props.render(true)}>
-//         <EventListQuerierInner
-//             {...props}
-//         />
-//     </Suspense>
-// };
-
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 export interface EventStatusValueProps {

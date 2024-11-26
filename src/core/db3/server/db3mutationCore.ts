@@ -64,8 +64,12 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
             }
         });
 
+        const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
+
         let range = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
         for (const segment of segments) {
+            const isCancelledSegment = segment.statusId && cancelledStatusIds.includes(segment.statusId);
+            if (isCancelledSegment) continue;
             const r = db3.getEventSegmentDateTimeRange(segment);
             range = range.unionWith(r);
         }
@@ -89,8 +93,6 @@ export const RecalcEventDateRangeAndIncrementRevision = async (args: { eventId: 
 
         const existingRevision = existingEvent.revision;
         if (existingRevision === undefined) return;
-
-        const cancelledStatusIds = (await transactionalDb.eventStatus.findMany({ select: { id: true }, where: { significance: db3.EventStatusSignificance.Cancelled } })).map(x => x.id);
 
         const calInp = GetEventCalendarInput(existingEvent, cancelledStatusIds)!;
         const newHash = calInp.inputHash || "-";
