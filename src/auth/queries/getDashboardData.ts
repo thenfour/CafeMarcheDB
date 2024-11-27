@@ -9,6 +9,7 @@ import { arraysContainSameValues } from "shared/utils";
 import { xMenuLink, xTableClientUsageContext } from "src/core/db3/db3";
 import { DB3QueryCore2 } from "src/core/db3/server/db3QueryCore";
 import { getCurrentUserCore } from "src/core/db3/server/db3mutationCore";
+import { TransactionalPrismaClient } from "src/core/db3/shared/apiTypes";
 
 
 async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
@@ -87,6 +88,49 @@ async function RefreshSessionPermissions(ctx: AuthenticatedCtx) {
 
 
 
+async function getTopRelevantEvents(limit: number, db: TransactionalPrismaClient): Promise<number[]> {
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now);
+    sevenDaysFromNow.setDate(now.getDate() + 7);
+
+    const twentyFourHoursAgo = new Date(now);
+    twentyFourHoursAgo.setDate(now.getDate() - 1);
+
+    const formatDate = (date: Date) =>
+        date.toISOString().slice(0, 19).replace("T", " ");
+
+    const nowFormatted = formatDate(now);
+    const sevenDaysFromNowFormatted = formatDate(sevenDaysFromNow);
+    const twentyFourHoursAgoFormatted = formatDate(twentyFourHoursAgo);
+
+    const query = `
+    WITH ClassifiedEvents AS (
+      SELECT
+        id,
+        startsAt,
+        CASE 
+          WHEN startsAt <= '${nowFormatted}' AND (endDateTime IS NULL OR endDateTime >= '${nowFormatted}') THEN 1 -- Ongoing
+          WHEN startsAt >= '${nowFormatted}' AND startsAt <= '${sevenDaysFromNowFormatted}' THEN 2 -- Upcoming
+          WHEN endDateTime IS NOT NULL AND endDateTime >= '${twentyFourHoursAgoFormatted}' AND endDateTime <= '${nowFormatted}' THEN 3 -- Recent past
+          ELSE 4 -- Default/Unclassified (optional, for events that don't fit the criteria)
+        END AS relevance_class
+      FROM Event
+    )
+    SELECT id
+    FROM ClassifiedEvents
+    WHERE relevance_class IN (1, 2, 3) -- Filter to relevant events
+    ORDER BY
+      relevance_class ASC, -- Primary sorting by relevance
+      startsAt ASC
+    LIMIT ${limit};
+    
+    `;
+
+    const events = (await db.$queryRaw(Prisma.raw(query))) as { id: number }[];
+    const ret = events.map(e => e.id);
+    return ret;
+}
+
 
 
 
@@ -108,6 +152,8 @@ export default resolver.pipe(
                 orderBy: undefined,
             }, currentUser);
 
+            const relevantEventsCall = getTopRelevantEvents(5, db);
+
             const results = await Promise.all([
                 db.userTag.findMany(),
                 db.permission.findMany(),
@@ -125,6 +171,7 @@ export default resolver.pipe(
                 db.songCreditType.findMany(),
                 menuItemsCall,
                 db.eventCustomField.findMany(),
+                relevantEventsCall,
             ]);
 
             const rsp = await RefreshSessionPermissions(ctx);
@@ -146,7 +193,9 @@ export default resolver.pipe(
                 songCreditType,
                 dynMenuLinks,
                 eventCustomField,
+                relevantEventIds,
             ] = results;
+
             const ret = {
                 userTag,
                 permission,
@@ -166,6 +215,7 @@ export default resolver.pipe(
                 eventCustomField,
                 sessionPermissionsChanged: rsp,
                 serverStartupState: getServerStartState(),
+                relevantEventIds,
             };
             if (process.env.NODE_ENV === "development") {
                 sw.loghelper("total", ret);

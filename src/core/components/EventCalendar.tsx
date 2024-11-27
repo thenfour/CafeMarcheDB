@@ -271,14 +271,18 @@ export const BigEventCalendarMonth = (props: BigEventCalendarMonthProps) => {
     </div>;
 };
 
-export const BigEventCalendarInner = () => {
+export const BigEventCalendarInner = (props: { selectedEventId: undefined | number }) => {
     //const [selectedEvent, setSelectedEvent] = React.useState<EventWithSearchResult | null>(null);
-    const [selectedEventId, setSelectedEventId] = React.useState<number | null>(null);
+    const [selectedEventId, setSelectedEventId] = React.useState<number | null>(props.selectedEventId || null);
     const [refreshSerial, setRefreshSerial] = React.useState<number>(0);
     //const [results, setResults] = React.useState<SearchResultsRet>(MakeEmptySearchResultsRet());
     //const [enrichedEvents, setEnrichedEvents] = React.useState<EventWithSearchResult[]>([]);
     // a string like 2024-06
     const [monthStr, setMonthStr] = useURLState<string | null>("month", null);
+
+    React.useEffect(() => {
+        setSelectedEventId(props.selectedEventId || null);
+    }, [props.selectedEventId]);
 
     const regex = /(2\d{3})(\d\d)/;
     let date = new Date();
@@ -358,9 +362,9 @@ export const BigEventCalendarInner = () => {
 
 
 
-export const BigEventCalendar = () => {
+export const BigEventCalendar = (props: { selectedEventId: undefined | number }) => {
     // nossr to prevent using server's locale settings.
     return <NoSsr>
-        <BigEventCalendarInner />
+        <BigEventCalendarInner {...props} />
     </NoSsr>;
 };

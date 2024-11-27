@@ -155,6 +155,7 @@ export const DashboardContextProvider = ({ children }: React.PropsWithChildren<{
     valueRef.current.dynMenuLinks = new TableAccessor(dashboardData.dynMenuLinks);
     valueRef.current.eventCustomField = new TableAccessor(dashboardData.eventCustomField);
     valueRef.current.serverStartupState = dashboardData.serverStartupState;
+    valueRef.current.relevantEventIds = dashboardData.relevantEventIds;
 
     valueRef.current.instrument = new TableAccessor(dashboardData.instrument.map(i => db3.enrichInstrument(i, valueRef.current)));
 

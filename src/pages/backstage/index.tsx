@@ -3,11 +3,19 @@ import { Suspense } from "react";
 import { Permission } from "shared/permissions";
 import { useCurrentUser } from "src/auth/hooks/useCurrentUser";
 import { CMSinglePageSurfaceCard, PermissionBoundary } from "src/core/components/CMCoreComponents";
+import { useDashboardContext } from "src/core/components/DashboardContext";
 import { BigEventCalendar } from "src/core/components/EventCalendar";
 import { SettingMarkdown } from "src/core/components/SettingMarkdown";
 import { gIconMap } from "src/core/db3/components/IconMap";
 import DashboardLayout from "src/core/layouts/DashboardLayout";
 
+
+const HomepageBigEventCalendar = () => {
+  const dashboardContext = useDashboardContext();
+  if (!dashboardContext) return null;
+  if (dashboardContext.relevantEventIds.length < 1) return null;
+  return <BigEventCalendar selectedEventId={dashboardContext.relevantEventIds[0]} />;
+};
 
 const DynamicContent = () => {
   const [currentUser] = useCurrentUser();
@@ -33,12 +41,11 @@ const DynamicContent = () => {
     <SettingMarkdown setting="BackstageFrontpageHeaderMarkdown" />
 
     <PermissionBoundary permission={Permission.view_events_nonpublic}>
-      <BigEventCalendar />
+
+      <HomepageBigEventCalendar />
     </PermissionBoundary>
 
     <SettingMarkdown setting="BackstageFrontpageMarkdown" />
-
-
 
     {/* <DashboardInner /> */}
   </Suspense>

@@ -1451,6 +1451,8 @@ export class DashboardContextDataBase {
 
     currentUser: UserPayload | null;
     serverStartupState: ServerStartInfo;
+
+    relevantEventIds: number[];
 }
 
 

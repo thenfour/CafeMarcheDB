@@ -43,6 +43,7 @@ import { MetronomeDialogButton } from "./Metronome";
 import { SnackbarContext } from "./SnackbarContext";
 import { getAbsoluteUrl } from "../db3/clientAPILL";
 import { ConfirmProvider } from "./ConfirmationDialog";
+import { AdminInspectObject } from "./CMCoreComponents";
 
 const drawerWidth = 260;
 
@@ -676,6 +677,8 @@ const Dashboard3 = ({ navRealm, basePermission, children }: React.PropsWithChild
             className="mainContentBackdrop"
         >
             <Toolbar />
+            <AdminInspectObject label="DashboardCtx" src={dashboardContext} />
+
             <React.Suspense>
                 {forceLogin ? <LoginSignup /> : children}
             </React.Suspense>

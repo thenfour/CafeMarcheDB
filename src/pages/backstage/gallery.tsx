@@ -262,7 +262,7 @@ G A B c | d e f g |
 
 
 const EventCalendarTester = () => {
-    return <BigEventCalendar />
+    return <BigEventCalendar selectedEventId={undefined} />
 };
 
 
