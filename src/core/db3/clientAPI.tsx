@@ -246,20 +246,28 @@ class EventsAPI {
     //     return ret;
     // }
 
-    getEventSegmentFormattedDateRange(segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay } }>) {
+    getEventSegmentFormattedDateRange(segment: Prisma.EventSegmentGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay: true, } }>) {
         return db3.getEventSegmentDateTimeRange(segment).toString();
         //return "daterangehere";
     }
 
-    getEventDateRange(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
-        let ret = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
-        for (const segment of event.segments) {
-            const r = db3.getEventSegmentDateTimeRange(segment);
-            const newRet = ret.unionWith(r);
-            ret = newRet;
-        }
-        return ret;
+    getEventDateRange(event: Prisma.EventGetPayload<{ select: { startsAt: true, durationMillis: true, isAllDay: true, } }>) {
+        return new DateTimeRange({
+            startsAtDateTime: event.startsAt,
+            durationMillis: Number(event.durationMillis),
+            isAllDay: event.isAllDay,
+        });
     }
+
+    // getEventDateRange(event: Prisma.EventGetPayload<{ select: { segments: { select: { startsAt: true, durationMillis: true, isAllDay } } } }>) {
+    //     let ret = new DateTimeRange({ startsAtDateTime: null, durationMillis: 0, isAllDay: true });
+    //     for (const segment of event.segments) {
+    //         const r = db3.getEventSegmentDateTimeRange(segment);
+    //         const newRet = ret.unionWith(r);
+    //         ret = newRet;
+    //     }
+    //     return ret;
+    // }
 
     getURIForEvent(event: Prisma.EventGetPayload<{ select: { id: true, name: true } }>, tabSlug?: string) {
         return ClientAPILL.getURIForEvent(event, tabSlug);
