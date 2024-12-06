@@ -6,7 +6,7 @@ import * as db3 from "src/core/db3/db3";
 import { MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared/apiTypes";
 import { fetchSearchResultsApi } from './SearchBase';
 
-const gPageSize = 15;
+const gPageSize = 20;
 
 function GetSearchResultsQueryArgs(filterSpec: EventsFilterSpec, offset: number, take: number) {
     return {

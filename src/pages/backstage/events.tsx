@@ -1,5 +1,5 @@
 import { BlitzPage } from "@blitzjs/next";
-import { ListItemIcon, Menu, MenuItem } from "@mui/material";
+import { Button, ListItemIcon, Menu, MenuItem } from "@mui/material";
 import React, { Suspense } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 import { StandardVariationSpec } from "shared/color";
@@ -136,7 +136,6 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
             next={loadMoreData}
             hasMore={hasMore}
             loader={<h4>Loading...</h4>}
-        //scrollableTarget="scrollableDiv"
         >
             {events.map((event, i) => (
                 <EventListItem
@@ -148,7 +147,7 @@ const EventsList = ({ filterSpec, results, events, refetch, loadMoreData, hasMor
                 />
             ))}
         </InfiniteScroll>
-
+        {hasMore && <Button onClick={loadMoreData}>Load more results...</Button>}
     </div>;
 };
 

@@ -6,7 +6,7 @@ import { MakeEmptySearchResultsRet, SearchResultsRet } from "src/core/db3/shared
 import { fetchSearchResultsApi } from './SearchBase';
 import { EnrichedVerboseSong, SongsFilterSpec } from './SongComponentsBase';
 
-const gPageSize = 15;
+const gPageSize = 20;
 
 function GetSearchResultsQueryArgs(filterSpec: SongsFilterSpec, offset: number, take: number) {
     return {
