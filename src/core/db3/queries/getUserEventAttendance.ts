@@ -5,6 +5,7 @@ import { Permission } from "shared/permissions";
 import { getCurrentUserCore } from "../server/db3mutationCore";
 import { GetFilteredSongsItemSongSelect, GetFilteredSongsRet } from "../shared/apiTypes";
 import { ZGetUserEventAttendanceArgrs } from "src/auth/schemas";
+import { toSorted } from "shared/utils";
 
 type UserEventAttendanceQueryResult_EventSegment = Prisma.EventSegmentGetPayload<{
     select: {
@@ -82,11 +83,11 @@ export default resolver.pipe(
             // If the user has responded to events, we start from the earliest one.
             // If that earliest event is in the past, we also include events in the future by using today's date if it's later.
             const now = new Date();
-            const candidates = [
+            const candidates = toSorted([
                 earliestUserEvent?.startsAt,
                 earliestUserEventSegment?.startsAt,
                 now,
-            ].filter(x => !!x).toSorted((a, b) => a.valueOf() - b.valueOf());
+            ].filter(x => !!x), (a, b) => a.valueOf() - b.valueOf());
             const earliestDateFilter = candidates[0]!;
 
             const q = await db.event.findMany({
