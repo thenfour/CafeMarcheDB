@@ -798,6 +798,7 @@ export type EnrichedUser<T extends EnrichUserInput> = Omit<T,
     },
 }>;
 
+
 // takes a bare event and applies eventstatus, type, visiblePermission, et al
 export function enrichUser<T extends EnrichUserInput>(
     item: T,
@@ -832,3 +833,4 @@ export function enrichUser<T extends EnrichUserInput>(
     return ret;
 }
 
+export type EnrichedVerboseUser = EnrichedUser<UserPayload>;

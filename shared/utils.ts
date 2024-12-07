@@ -219,6 +219,7 @@ export enum Setting {
     RolesAdminPage_markdown = "RolesAdminPage_markdown",
     settings_markdown = "settings_markdown",
     songs_markdown = "songs_markdown",
+    usersearch_markdown = "usersearch_markdown",
     AdminLogsPage_markdown = "AdminLogsPage_markdown",
     UserInstrumentsPage_markdown = "UserInstrumentsPage_markdown",
     EventSongListTabDescription = "EventSongListTabDescription",

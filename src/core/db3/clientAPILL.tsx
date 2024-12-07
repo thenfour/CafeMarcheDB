@@ -27,6 +27,12 @@ export const getURIForSong = (song: Prisma.SongGetPayload<{ select: { id: true, 
     return getAbsoluteUrl(`/backstage/song/${parts.join("/")}`);
 };
 
+export const getURIForUser = (song: Prisma.SongGetPayload<{ select: { id: true, name: true } }>) => {
+    const parts: string[] = [song.id.toString()];
+    parts.push(slugify(song.name));
+    return getAbsoluteUrl(`/backstage/user/${parts.join("/")}`);
+};
+
 export function getURLClass(url: string, baseDomain: string = window.location.hostname): "internalPage" | "internalAPI" | "external" {
     try {
         const parsedUrl = new URL(url, window.location.origin);
